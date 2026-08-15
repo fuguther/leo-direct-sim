@@ -12,3 +12,5 @@
   2. 验收阶梯落地（不变量 + 新旧差分 + 对抗复核 + 变异测试 + 分级验收声明）。
   3. 性能 profile 后再定 GPU/并行优化点（先测量，不猜）。
   4. 公开仓库前：确认 LITERATURE 无第三方论文全文、补 LICENSE、恢复 GitHub Actions（公开库免费）。
+
+- 2026-08-16 GitHub 工作流规则落地并硬执行：AGENTS.md 扩充为完整 Git/GitHub 规则（分支/提交/PR/合并/授权/收尾十诫 + 三端职责 + 多 Agent 写入仲裁，继承旧库《三端工作流与边界》与治理草案 v0.3）；main 远端 ruleset `main-protection` 已启用（必须 PR + pytest 必过 + 禁 force-push/删除），实测直推 main 被远端拒绝；仓库设置仅允许 squash merge、合并后自动删分支。PR #3 为此规则自身的首次全程验证。
