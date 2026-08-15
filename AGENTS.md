@@ -12,44 +12,30 @@
 5. 删除、移动、覆盖任何已跟踪路径前必须逐条列出并等用户批准。
 6. 机器私密配置（`remote.env` 等）不入库，只入库 `.template`。
 
-## Git / GitHub 工作流（任何 Agent 必须逐条遵守）
+## Git / GitHub 工作流
 
-**总原则：`main` 永远绿、永远可部署。一切改动经 PR 合入，CI 全绿才可合并；远端由 ruleset 硬执行，不靠自觉。**
+**总原则：`main` 永远绿、永远可部署。一切改动经 PR + CI 绿合入；远端 ruleset 硬执行（直推 main 会被拒），本节是行为细则。**
 
-1. **分支**：从最新 `main` 切 `codex/<yyyymmdd>-<主题>`（如 `codex/20260816-fix-reward`）。一个分支只做一件事，寿命 < 3 天，合并即删（远端已开启 merge 后自动删分支）。
-2. **提交**：commit message 用类型前缀 `feat|fix|docs|exp|chore` + 中文简述；一个 commit 只含一个变更主题（代码、数据、文档不混；重构与修 bug 不混）。正文写清证据（测试数字、回执、diff 范围）。
-3. **PR**：`gh pr create --base main`，标题同 commit，正文必须含：改了什么、为什么、验证证据（真实的 passed/failed/skipped 数字）。禁止自夸式描述。
-4. **合并条件（远端硬执行）**：CI `pytest` 检查必须通过；一律 `gh pr merge --squash --delete-branch`。CI 红禁止合并，先把失败修绿。
-5. **推送**：每个工作日结束 push 全部分支（GitHub 兼作每日备份）。禁止 force-push main；main 禁止删除。
-6. **授权（长期有效，2026-08-16 用户授予）**：满足下列全部条件时，Agent 可自主完成 commit → push → PR → squash merge → 删分支全流程，**无需逐次请示**：
-   - CI `pytest` 检查通过（远端 required check 绿）；
-   - PR 正文已写明改动内容与真实验证证据（passed/failed/skipped 数字）；
-   - diff 只含声明的变更主题，无夹带；
-   - 不涉及删除/移动/覆盖已跟踪路径（这类仍须逐条列出等用户批准）。
-   可用 `gh pr merge --auto --squash --delete-branch`（仓库已开 auto-merge），CI 绿后自动合入。
-   **以下动作仍需用户当场授权**：删除/移动路径、修改 ruleset 或仓库设置、force-push、改仓库可见性、建删 tag、发布 release。
-   每次自主合并必须在 NOTES.md 留痕（PR 号、改动主题、CI 证据）。
-7. **收尾**：每个工作单元结束 = commit + push + 更新 `NOTES.md`（做了什么、证据在哪、下一步）。工作区必须 clean，做不到就 stash 并在 NOTES.md 写明原因。
-8. **禁止入库**：`CODE/Results/`、`leo_sim_out/`、`out/`、`remote.env`、`.env`、`__pycache__/`、`.DS_Store`（.gitignore 已配；发现漏网先补 gitignore 再提交）。
-9. **VM 部署**：只允许 main 上的干净 commit，经 `CODE/scripts/remote/push-remote.sh` 执行；跑实验前必须已部署；部署后记录回执 SHA。
-10. **冲突处理**：发现历史/文档/代码互相矛盾时，并列报告出处与影响，禁止静默融合或擅自覆盖。
+1. **开工**：先 `git status`，非 clean 先处置（发现他人未提交改动：停下报告，不擅自处理）；从最新 main 切 `<agent>/<yyyymmdd>-<主题>` 分支（如 `codex/20260816-fix-reward`）。一个分支一件事，寿命 < 3 天。
+2. **提交**：类型前缀 `feat|fix|docs|exp|chore` + 中文简述；一个 commit 一个主题（代码、数据、文档不混；重构与修 bug 不混）；正文附证据（测试数字、回执、diff 范围）。
+3. **PR**：`gh pr create --base main`；正文三要素：改了什么、为什么、验证证据（真实 passed/failed/skipped 数字）。禁止自夸式描述。
+4. **合并**：条件 = CI `pytest` 绿（远端硬检查，红了物理上合不进）。统一用 `gh pr merge --auto --squash --delete-branch`：CI 绿自动合入、自动删分支。
+5. **授权（长期有效，2026-08-16 用户授予）**：同时满足以下四条时，Agent 可自主走完 commit → push → PR → 合并 → 删分支全流程，无需逐次请示：CI 绿；PR 证据齐；diff 只含声明的主题；不碰删除/移动/覆盖已跟踪路径。**仍需当场授权**：删除/移动路径、改 ruleset 或仓库设置、force-push、改可见性、建删 tag、发 release。每次自主合并在 NOTES.md 留痕（PR 号、主题、CI 证据）。
+6. **收尾**：每个工作单元结束 = commit + push + 更新 NOTES.md（做了什么、证据在哪、下一步）；工作区必须 clean，做不到就 stash 并在 NOTES.md 写明原因；每个工作日结束 push 全部分支；PR 挂起超 1 天未推进必须关闭、转 draft 或报告原因。
+7. **禁止入库**：`CODE/Results/`、`leo_sim_out/`、`out/`、`remote.env`、`.env`、`__pycache__/`、`.DS_Store`（.gitignore 已配；发现漏网先补 gitignore 再提交）。
+8. **VM 部署**：只允许 main 上的干净 commit，经 `CODE/scripts/remote/push-remote.sh` 执行；跑实验前必须已部署；部署后记录回执 SHA。
+9. **矛盾处理**：发现历史/文档/代码互相矛盾时，并列报告出处与影响，禁止静默融合或擅自覆盖。
 
-## 防失控护栏（针对自治失控模式）
+## 防失控护栏
 
-11. **禁止刷提交**：一个工作单元一个 commit；禁止空 commit、无实质变化 commit、为刷绿 CI 而反复试错的 commit 流。同一 CI 失败最多重试 2 次；第 2 次失败后必须停止，在 PR 写明失败分析（真实错误文本、定位、假设），报告用户等待指示——禁止无限试错。
-12. **禁止为变绿而削弱检查**：CI 红时只能修代码缺陷或测试自身的真实缺陷；禁止删测试、放宽断言、注释检查、改 workflow 让它「看起来过」。确需调整测试门槛的改动必须单独 PR 并在标题明示「测试调整」。
-13. **禁止搁置**：开工前必须 `git status`，非 clean 先处置（旧库启动顺序规则的延续）；每个工作单元结束立即 commit + push（规则 7），禁止把工作成果长期留在未提交/未推送状态；分支寿命 < 3 天，PR 挂起超过 1 天未推进必须关闭、转 draft 或报告原因。
-14. **工作树防交叉**：同一本地工作树同时只允许一个会话写操作；并行会话必须用独立 worktree 或 clone（`git worktree add`）；禁止在他人分支/PR 上追加提交——续作须从 main 新切分支，或由原分支写入者明确交接；发现工作区有他人未提交改动时停下报告，不擅自处置。
+10. **禁止刷提交**：禁止空 commit；CI 红之后，每次推送必须附带新的诊断或修复——无新信息的重推一律禁止；连续 2 次修复仍红，停止操作，在 PR 写明失败分析（错误原文、定位、假设），报告用户等指示。
+11. **禁止削弱检查**：CI 红时只能修代码缺陷或测试自身的真实缺陷；禁止删测试、放宽断言、注释检查、改 workflow 让它「看起来过」。确需调整测试门槛的，单独 PR 并在标题明示「测试调整」。
+12. **main 红优先**：发现 main 红（无论谁造成），优先修 main，不在红 main 上继续堆新 PR。
+13. **多 Agent 仲裁**：一个分支写入者唯一，禁止多 Agent 写同一分支；并行会话用独立 worktree/clone（`git worktree add`），不在他人分支/PR 上追加提交（续作从 main 新切分支，或由原写入者明确交接）；涉及 `CODE/leo_sim/kernel.py`、`receipt.py`、`governance.py`、`learning.py` 或 `experiment_platform/` 授权链的承重改动，生产者不得自批，需独立冷启动复核。
 
 ## 三端职责（本地 / GitHub / VM，单向链）
 
 继承旧调研《三端工作流与边界》（2026-06-26，存旧库）：**本地**做设计/开发/分析，不当唯一备份；**GitHub** 是唯一代码版本真相源（本地与远端不得漂移，全分支每日 push）；**VM** 只做受控执行与生产原始证据，不长期维护代码、不手工改、不跑未提交代码。从论文 claim 必须能反溯：本地分析 → GitHub commit → VM 原始实验。
-
-## 多 Agent 写入仲裁
-
-- 一个任务一个分支；分支写入者唯一，禁止多 Agent 写同一分支。
-- 并行会话各自从 main 切分支（必要时用 git worktree 隔离工作树），冲突时停在可复核状态并报告，不擅自合并消解。
-- 合并以 CI 绿 + PR 记录为凭；生产者不得自批高影响改动。
 
 ## 渐进式验证协议
 
