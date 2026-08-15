@@ -21,7 +21,14 @@
 3. **PR**：`gh pr create --base main`，标题同 commit，正文必须含：改了什么、为什么、验证证据（真实的 passed/failed/skipped 数字）。禁止自夸式描述。
 4. **合并条件（远端硬执行）**：CI `pytest` 检查必须通过；一律 `gh pr merge --squash --delete-branch`。CI 红禁止合并，先把失败修绿。
 5. **推送**：每个工作日结束 push 全部分支（GitHub 兼作每日备份）。禁止 force-push main；main 禁止删除。
-6. **授权**：Agent 执行任何 git 变更（commit/push/merge/建删分支/改仓库设置）前必须得到用户当场授权；一次授权只覆盖当次动作，不构成长期许可。
+6. **授权（长期有效，2026-08-16 用户授予）**：满足下列全部条件时，Agent 可自主完成 commit → push → PR → squash merge → 删分支全流程，**无需逐次请示**：
+   - CI `pytest` 检查通过（远端 required check 绿）；
+   - PR 正文已写明改动内容与真实验证证据（passed/failed/skipped 数字）；
+   - diff 只含声明的变更主题，无夹带；
+   - 不涉及删除/移动/覆盖已跟踪路径（这类仍须逐条列出等用户批准）。
+   可用 `gh pr merge --auto --squash --delete-branch`（仓库已开 auto-merge），CI 绿后自动合入。
+   **以下动作仍需用户当场授权**：删除/移动路径、修改 ruleset 或仓库设置、force-push、改仓库可见性、建删 tag、发布 release。
+   每次自主合并必须在 NOTES.md 留痕（PR 号、改动主题、CI 证据）。
 7. **收尾**：每个工作单元结束 = commit + push + 更新 `NOTES.md`（做了什么、证据在哪、下一步）。工作区必须 clean，做不到就 stash 并在 NOTES.md 写明原因。
 8. **禁止入库**：`CODE/Results/`、`leo_sim_out/`、`out/`、`remote.env`、`.env`、`__pycache__/`、`.DS_Store`（.gitignore 已配；发现漏网先补 gitignore 再提交）。
 9. **VM 部署**：只允许 main 上的干净 commit，经 `CODE/scripts/remote/push-remote.sh` 执行；跑实验前必须已部署；部署后记录回执 SHA。
