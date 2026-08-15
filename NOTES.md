@@ -2,6 +2,7 @@
 
 ## 当前状态
 
+- 2026-08-16 任务 7（链路预算）完成：`test_link_budget_characterization.py` 钉死旧 get_data_rate(:8295)/los_slant_range(:8282) 数值行为（RF 派生量 + 4 距离点 MCS 速率 golden + 单调/零速率性质）；关键发现：旧 shannonRate 不进返回值（MCS 量化才是输出）、旧参数下 6000km 速率=0（新平台默认 1Gbps 长距不可由旧预算复现）。`ANALYSIS/LINK-BUDGET-DESIGN-20260816.md` 集成设计稿（接入点=服务开始采样、配置面、零速率语义、receipt/守恒影响、验证计划），集成代码留后续。
 - 2026-08-16 任务 6（M2 temporal/multistep）交设计稿：`ANALYSIS/TEMPORAL-MULTISTEP-DESIGN-20260816.md`——旧侧清点（routing_multistep 三函数无运行时调用，以 SimulationRL.py:6980-7062 内联版为准；temporal_encoder 三模式）、新平台接入点（remember 需 packet_key 合同扩展、MultistepLearner 包装器方案、framestack 观测管线）、配置面草案、五条验证计划。评估后按任务授权的降级路径只交设计稿：实现涉 learning 合同承重改动且 DDQN 臂本地无 TF 不可验收，拆 PR-1（纯回报换算+golden）/PR-2（接线+差分）留后续。
 - 2026-08-16 任务 5（迁移 M1 Q-Learning 表）完成：`learning.TabularQLearning`（纯 numpy，无需 TF）。表征 golden：更新规则 (1−α)Q+α(r+γ·maxQ)（旧 5791-5794）、终结直写（5743）、均匀初始化（5703-5704）、合法集 argmax/探索（5758-5769）；合同适配全部 docstring 声明。config/receipt/__main__ 全链接入（algorithm="qlearning"，checkpoint=q_table.json+sha 校验，eval 不更新表）。E2E：真控制面+hop 路由+qlearning 跑通且 receipt verify 通过。
 - 2026-08-16 任务 4（验收阶梯成文）完成：`ANALYSIS/ACCEPTANCE-LADDER-20260816.md`——三层判据（A 点对点解析等价 / B 机制各对合同 / C 系统差异可归因）+ 8 条不变量清单 + 机制逐个加挂差分玩法 + 变异测试第一批 10 条注入清单（标出 4 个待补捕获测试缺口：M-3/M-4/M-8/M-9）。
