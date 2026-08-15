@@ -605,14 +605,21 @@ class Kernel:
         self.env = simpy.Environment()
         self.learning_gate(cfg)
         self.learning_out_dir = learning_out_dir
-        self.learner = (
-            _learning.TensorflowDDQN(
+        algorithm = cfg["learning"]["algorithm"]
+        if algorithm == "ddqn":
+            self.learner = _learning.TensorflowDDQN(
                 self.cfg_rt["contract"], cfg["learning"],
                 cfg["learning"]["seed"]
                 if cfg["learning"]["seed"] is not None
                 else self.cfg_sc["seed"])
-            if cfg["learning"]["algorithm"] == "ddqn" else None
-        )
+        elif algorithm == "qlearning":
+            self.learner = _learning.TabularQLearning(
+                self.cfg_rt["contract"], cfg["learning"],
+                cfg["learning"]["seed"]
+                if cfg["learning"]["seed"] is not None
+                else self.cfg_sc["seed"])
+        else:
+            self.learner = None
 
         if geometry is None:
             geometry = model.Constellation(
@@ -745,7 +752,8 @@ class Kernel:
     def learning_gate(cfg):
         requested = (cfg["routing"]["learning_enabled"]
                      or cfg["learning"]["algorithm"] != "none")
-        if requested:
+        # tabular Q-learning is pure numpy; only the DDQN arm needs TF
+        if requested and cfg["learning"]["algorithm"] == "ddqn":
             _learning.require_tensorflow()
 
     def _poke(self, event):
@@ -1641,7 +1649,8 @@ class Kernel:
             "control_enabled": bool(self.cfg_cp["enabled"]),
             "monitor": self.monitor,
             "learning_algorithm": (
-                "ddqn" if self.learner is not None else "none"),
+                self.cfg_learning["algorithm"]
+                if self.learner is not None else "none"),
             "learning_mode": (
                 self.learner.mode if self.learner is not None else "train"),
         }

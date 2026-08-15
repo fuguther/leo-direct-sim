@@ -145,6 +145,7 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "reward_w1": (int, float),  # M1 queue reward weight (legacy w1=20)
         "reward_beta": (int, float),  # M1 decay rate s^-1 (legacy _M1_BETA=200)
         "arrive_reward": (int, float),  # terminal delivery reward (legacy 50)
+        "qlearning_alpha": (int, float),  # tabular Q update rate (legacy 0.25)
         "epsilon_start": (int, float),
         "epsilon_end": (int, float),
         "epsilon_decay_s": (int, float),
@@ -170,7 +171,7 @@ VALID_DEMAND_MODES = {
 VALID_ASSOCIATION = {"bbm", "mbb"}
 VALID_POLICIES = {"hop", "delay", "capacity", "oracle"}
 VALID_CONTRACTS = {"C1", "C3", "C4", "C5", "C6", "C7", "GAT", "MPNN"}
-VALID_ALGORITHMS = {"none", "ddqn"}
+VALID_ALGORITHMS = {"none", "ddqn", "qlearning"}
 VALID_ISL_DIRS = {"N", "S", "E", "W"}
 
 DEFAULTS: dict[str, dict[str, Any]] = {
@@ -262,6 +263,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "reward_w1": 20.0,
         "reward_beta": 200.0,
         "arrive_reward": 50.0,
+        "qlearning_alpha": 0.25,
         "epsilon_start": 1.0,
         "epsilon_end": 0.05,
         "epsilon_decay_s": 300.0,
@@ -535,6 +537,8 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
         raise ConfigError("learning.reward_beta must be > 0")
     if lr["arrive_reward"] < 0:
         raise ConfigError("learning.arrive_reward must be >= 0")
+    if not 0 < lr["qlearning_alpha"] <= 1:
+        raise ConfigError("learning.qlearning_alpha must be in (0, 1]")
     if lr["lr"] <= 0:
         raise ConfigError("learning.lr must be > 0")
     if lr["batch_size"] < 1 or lr["replay_size"] < 1 or lr["target_update_interval"] < 1:

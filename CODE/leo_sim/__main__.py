@@ -245,8 +245,8 @@ def _cmd_run(args) -> int:
     try:
         result = kernel.run_simulation(
             resolved, rows,
-            learning_out_dir=(Path(out_dir) / "ddqn")
-            if cfg["learning"]["algorithm"] == "ddqn" else None,
+            learning_out_dir=(Path(out_dir) / cfg["learning"]["algorithm"])
+            if cfg["learning"]["algorithm"] in ("ddqn", "qlearning") else None,
         )
     except learning.LearningUnavailable as exc:
         print(f"RUN REFUSED (fail closed): {exc}")

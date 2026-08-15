@@ -536,6 +536,175 @@ class TensorflowDDQN:
         }
 
 
+class TabularQLearning:
+    """Tabular Q-learning baseline — migration of the legacy M1 QLearning
+    class (SimulationRL.py:5682) onto the V2 learning contract.
+
+    Semantics kept from the legacy implementation (line numbers cited):
+    - Q values are initialized uniform in [0, 1) (__init__, 5703-5704;
+      createQTable at 10238 is dead code and is NOT the reference);
+    - exploration picks uniformly among LEGAL actions, exploitation argmaxes
+      over legal actions only (5758-5769; the legacy code masks unavailable
+      directions to -inf, which is argmax-equivalent to the legal set);
+    - non-terminal update Q <- (1-alpha)*Q + alpha*(r + gamma*max_a' Q(s',a'))
+      over legal next actions (5791-5794);
+    - a terminal transition writes the terminal reward DIRECTLY into
+      Q(s, a) (5743);
+    - alpha default 0.25 (558), gamma default 0.99 (274).
+
+    Deliberate contract adaptations (documented, not drift):
+    - the legacy discrete 5-tuple state (getState, 9443) has no V2 analog;
+      table keys are the exact float64 bytes of the V2 contract observation;
+    - epsilon follows the shared V2 schedule (epsilon_start/end/decay_s),
+      not the legacy LAMBDA/decayRate/GT^2 formula (5810);
+    - rewards are the V2 kernel's M1 queue reward + arrive_reward (task-1
+      baseline); the legacy QLearning distance reward V1 (5783) is excluded
+      from v1 per plan (ANALYSIS/LEO-V2-ORIGINAL-PLAN.md:86).
+    Pure numpy: no TensorFlow required.
+    """
+
+    def __init__(self, contract: str, cfg: dict, seed: int):
+        if contract not in CONTRACT_DIMS:
+            raise ValueError(f"unknown learning contract {contract!r}")
+        self.contract = contract
+        self.cfg = dict(cfg)
+        self.seed = int(seed)
+        self.rng = np.random.default_rng(self.seed)
+        self.mode = cfg["mode"]
+        self.alpha = float(cfg.get("qlearning_alpha", 0.25))
+        self.gamma = float(cfg["gamma"])
+        self.table: dict[bytes, np.ndarray] = {}
+        checkpoint = cfg.get("checkpoint_path")
+        if checkpoint:
+            path = Path(checkpoint)
+            if not path.is_file():
+                raise LearningUnavailable(f"Q-learning checkpoint not found: {path}")
+            actual_sha = hashlib.sha256(path.read_bytes()).hexdigest()
+            if actual_sha != cfg.get("checkpoint_sha256"):
+                raise LearningUnavailable(
+                    "Q-learning checkpoint SHA-256 differs from resolved config")
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            entries = payload.get("entries")
+            if not isinstance(entries, list):
+                raise LearningUnavailable("Q-learning checkpoint lacks entries")
+            for key_hex, values in entries:
+                arr = np.asarray(values, dtype=np.float64)
+                if arr.shape != (len(ACTIONS),):
+                    raise LearningUnavailable(
+                        "Q-learning checkpoint row width mismatch")
+                self.table[bytes.fromhex(key_hex)] = arr
+            self.loaded_checkpoint = str(path.resolve())
+            self.loaded_checkpoint_sha256 = actual_sha
+        else:
+            self.loaded_checkpoint = None
+            self.loaded_checkpoint_sha256 = None
+        self.decisions = 0
+        self.transitions = 0
+        self.train_steps = 0  # tabular: one Q-table update per train step
+
+    @staticmethod
+    def _key(observation) -> bytes:
+        return np.ascontiguousarray(
+            np.asarray(observation, dtype=np.float64)).tobytes()
+
+    def _row(self, observation) -> np.ndarray:
+        key = self._key(observation)
+        row = self.table.get(key)
+        if row is None:
+            # legacy init: np.random.rand per (state, action) (5703-5704)
+            row = self.rng.random(len(ACTIONS))
+            self.table[key] = row
+        return row
+
+    @staticmethod
+    def _legal(mask: dict) -> np.ndarray:
+        legal = np.flatnonzero([bool(mask.get(a, False)) for a in ACTIONS])
+        if not len(legal):
+            raise ValueError("Q-learning decision requires at least one legal action")
+        return legal
+
+    def epsilon(self, now: float) -> float:
+        if self.mode == "eval":
+            return 0.0
+        start = float(self.cfg["epsilon_start"])
+        end = float(self.cfg["epsilon_end"])
+        decay = float(self.cfg["epsilon_decay_s"])
+        return end + (start - end) * math.exp(-max(0.0, float(now)) / decay)
+
+    def choose(self, observation: np.ndarray, mask: dict, now: float) -> str:
+        legal = self._legal(mask)
+        if self.rng.random() < self.epsilon(now):
+            chosen = int(self.rng.choice(legal))
+        else:
+            row = self._row(observation)
+            chosen = int(legal[np.argmax(row[legal])])
+        self.decisions += 1
+        return ACTIONS[chosen]
+
+    def remember(self, state, action: str, reward: float, next_state,
+                 next_mask: dict, done: bool) -> None:
+        if action not in ACTIONS:
+            raise ValueError(f"unknown Q-learning action {action!r}")
+        row = self._row(state)
+        idx = ACTIONS.index(action)
+        if self.mode == "train":
+            if done:
+                # legacy: terminal writes the reward directly (5743)
+                row[idx] = float(reward)
+            else:
+                next_row = self._row(next_state)
+                legal_next = self._legal(next_mask)
+                max_next = float(np.max(next_row[legal_next]))
+                row[idx] = ((1.0 - self.alpha) * row[idx]
+                            + self.alpha * (float(reward) + self.gamma * max_next))
+            self.train_steps += 1
+        self.transitions += 1
+
+    def save_and_verify(self, directory: str | Path) -> dict:
+        out = Path(directory)
+        out.mkdir(parents=True, exist_ok=True)
+        table_path = out / "q_table.json"
+        payload = {
+            "schema": "leo-sim-qlearning-table/v1",
+            "entries": [[key.hex(), [float(v) for v in row]]
+                        for key, row in sorted(self.table.items())],
+        }
+        table_path.write_text(json.dumps(payload, sort_keys=True) + "\n",
+                              encoding="utf-8")
+        checkpoint_sha = hashlib.sha256(table_path.read_bytes()).hexdigest()
+        loaded = json.loads(table_path.read_text(encoding="utf-8"))
+        verified = loaded == payload
+        metadata = self.diagnostics()
+        metadata.update({
+            "schema": "leo-sim-qlearning/v1",
+            "checkpoint": table_path.name,
+            "checkpoint_sha256": checkpoint_sha,
+            "checkpoint_verified": verified,
+        })
+        (out / "metadata.json").write_text(
+            json.dumps(metadata, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8")
+        if not verified:
+            raise LearningUnavailable(
+                "saved Q-learning checkpoint failed reload verification")
+        return metadata
+
+    def diagnostics(self) -> dict:
+        return {
+            "algorithm": "qlearning",
+            "contract": self.contract,
+            "mode": self.mode,
+            "loaded_checkpoint": self.loaded_checkpoint,
+            "loaded_checkpoint_sha256": self.loaded_checkpoint_sha256,
+            "actions": list(ACTIONS),
+            "decisions": self.decisions,
+            "transitions": self.transitions,
+            "train_steps": self.train_steps,
+            "table_size": len(self.table),
+            "seed": self.seed,
+        }
+
+
 def queue_reward(wait_s: float, w1: float, beta: float) -> float:
     """Corrected (M1) queue reward: ``w1 * exp(-beta * max(wait_s, 0))``.
 

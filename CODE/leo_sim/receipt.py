@@ -437,6 +437,48 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
                 if expected is not None and learning.get(
                         "loaded_checkpoint_sha256") != expected:
                     errors.append("loaded checkpoint SHA != resolved eval config")
+    elif requested_learning == "qlearning":
+        if not isinstance(learning, dict):
+            errors.append("Q-learning run must have a learning ledger")
+        else:
+            for key in ("decisions", "transitions", "train_steps",
+                        "table_size"):
+                if not _is_nonneg_int(learning.get(key)):
+                    errors.append(f"learning.{key} must be a non-negative integer")
+            if learning.get("algorithm") != "qlearning":
+                errors.append("learning.algorithm mismatch")
+            if learning.get("mode") not in {"train", "eval"}:
+                errors.append("learning.mode invalid")
+            if learning.get("checkpoint_verified") is not True:
+                errors.append("learning checkpoint was not verified after save/load")
+            sha = learning.get("checkpoint_sha256")
+            if not (isinstance(sha, str) and len(sha) == 64
+                    and all(c in "0123456789abcdef" for c in sha)):
+                errors.append("learning.checkpoint_sha256 invalid")
+            checkpoint = verify_root / "qlearning" / "q_table.json"
+            if not checkpoint.is_file() or checkpoint.is_symlink():
+                errors.append("learning checkpoint artifact missing")
+            elif isinstance(sha, str) and _sha_file(checkpoint) != sha:
+                errors.append("learning checkpoint artifact SHA mismatch")
+            mc = ledgers.get("mechanism_counters")
+            if isinstance(mc, dict):
+                for key, counter in (
+                        ("decisions", "learning_decisions"),
+                        ("transitions", "learning_transitions"),
+                        ("train_steps", "learning_train_steps")):
+                    if learning.get(key) != mc.get(counter):
+                        errors.append(f"learning.{key} != mechanism counter")
+            if learning.get("mode") == "eval":
+                if learning.get("train_steps") != 0:
+                    errors.append("learning eval mode performed training")
+                expected = (resolved_cfg or {}).get("learning", {}).get(
+                    "checkpoint_sha256")
+                if expected is not None and learning.get(
+                        "loaded_checkpoint_sha256") != expected:
+                    errors.append("loaded checkpoint SHA != resolved eval config")
+    elif requested_learning is not None:
+        errors.append(f"unknown requested learning algorithm "
+                      f"{requested_learning!r}")
 
     # stop_time: finite, and exactly the horizon on a natural end
     stop = ledgers.get("stop_time_s")
