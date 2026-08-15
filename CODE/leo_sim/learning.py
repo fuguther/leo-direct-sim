@@ -34,6 +34,13 @@ CONTRACTS = ("C1", "C3", "C4", "C5", "C6", "C7", "GAT", "MPNN")
 # per-origin feature block layout (all normalized):
 #   [isl_queue_ratio, access_load_ratio, n_visible_cells_norm, aoi_norm]
 ORIGIN_FEATURES = 4
+# own-state feature block layout (all normalized):
+#   [access_slots_ratio, qN, qS, qE, qW, visible_cells_ratio, bias_flag]
+# qN/qS/qE/qW are the satellite's OWN per-direction ISL egress queue
+# occupancies (the M2 local out-queue observation, absorbed as the v1
+# baseline); a direction with no link reads 1.0 (worst case), matching the
+# legacy infQueue clip semantics.
+OWN_FEATURES = 7
 # Destination-conditioning features appended to every contract's observation:
 #   [dst_bearing_sin, dst_bearing_cos, dst_dist_norm]
 # bearing is the azimuth of the destination in the local ENU tangent plane at
@@ -42,15 +49,15 @@ ORIGIN_FEATURES = 4
 DEST_FEATURES = 3
 _DEST_DIST_NORM_KM = 20000.0
 _EARTH_R_KM = 6371.0
-C3_DIM = 4 + ORIGIN_FEATURES            # own state + mean aggregate
-C4_DIM = 4 + ORIGIN_FEATURES            # own + AoI-weighted aggregate
-C5_DIM = 4 + ORIGIN_FEATURES + 1        # own + freshest entry + staleness flag
+C3_DIM = OWN_FEATURES + ORIGIN_FEATURES            # own state + mean aggregate
+C4_DIM = OWN_FEATURES + ORIGIN_FEATURES            # own + AoI-weighted aggregate
+C5_DIM = OWN_FEATURES + ORIGIN_FEATURES + 1        # own + freshest entry + staleness flag
 C6_MAX_HOPS = 4
-C6_DIM = 4 + C6_MAX_HOPS * ORIGIN_FEATURES      # own + per-hop buckets
+C6_DIM = OWN_FEATURES + C6_MAX_HOPS * ORIGIN_FEATURES      # own + per-hop buckets
 C7_MAX_ENTRIES = 5
-C7_DIM = 4 + C7_MAX_ENTRIES * (ORIGIN_FEATURES + 1)  # own + AoI-ordered seq
+C7_DIM = OWN_FEATURES + C7_MAX_ENTRIES * (ORIGIN_FEATURES + 1)  # own + AoI-ordered seq
 C1_MAX_NEIGHBORS = 4
-C1_DIM = 4 + C1_MAX_NEIGHBORS * ORIGIN_FEATURES
+C1_DIM = OWN_FEATURES + C1_MAX_NEIGHBORS * ORIGIN_FEATURES
 
 # Every contract appends the 3 destination-conditioning features.
 CONTRACT_DIMS = {
@@ -78,7 +85,7 @@ def graph_state_dim(max_nodes: int = GRAPH_MAX_NODES,
     return (max_nodes * node_feat_dim
             + max_nodes * max_nodes
             + len(GRAPH_DIRS) * max_nodes
-            + 4 + DEST_FEATURES)  # own-state tail + destination features
+            + OWN_FEATURES + DEST_FEATURES)  # own-state tail + destination features
 
 
 GRAPH_CONTRACT_DIMS = {c: graph_state_dim() for c in GRAPH_CONTRACTS}
@@ -529,13 +536,37 @@ class TensorflowDDQN:
         }
 
 
+def queue_reward(wait_s: float, w1: float, beta: float) -> float:
+    """Corrected (M1) queue reward: ``w1 * exp(-beta * max(wait_s, 0))``.
+
+    Legacy source: getQueueReward M1 branch, SimulationRL.py:10289-10291
+    (beta = _M1_BETA = 200 s^-1, SimulationRL.py:345; w1 default 20,
+    SimulationRL.py:270). ``wait_s`` is the packet's realized queueing delay
+    in seconds on the hop being rewarded — the analog of the legacy
+    ``block.queueTime[-1]`` (send minus receive checkpoint,
+    SimulationRL.py:2052). Absorbed as the v1 baseline per
+    ANALYSIS/LEO-V2-ORIGINAL-PLAN.md:86.
+    """
+    return float(w1) * math.exp(-float(beta) * max(float(wait_s), 0.0))
+
+
 def own_state(slots_used: int, slots_cap: int, isl_queue_bits: dict,
               isl_queue_cap: int, n_visible: int, n_cells: int) -> np.ndarray:
-    total_q = sum(isl_queue_bits.values())
-    max_q = max(1, isl_queue_cap * max(1, len(isl_queue_bits)))
+    """Own state: access-slot ratio + per-direction ISL egress queue
+    occupancy + visible-cell ratio + bias flag.
+
+    The per-direction queue block is the M2 local out-queue observation
+    (legacy _appendOwnQueueM2, SimulationRL.py:9866-9875): each direction is
+    min(queue/cap, 1.0); a direction with no link reads as fully congested
+    (1.0), matching the legacy infQueue clip (getQueues,
+    SimulationRL.py:9077-9092).
+    """
+    cap = max(1, isl_queue_cap)
+    qs = [1.0 if d not in isl_queue_bits
+          else min(isl_queue_bits[d] / cap, 1.0) for d in GRAPH_DIRS]
     return np.array([
         slots_used / max(1, slots_cap),
-        total_q / max_q,
+        *qs,
         n_visible / max(1, n_cells),
         1.0,  # bias/valid flag marking real own measurement
     ], dtype=np.float64)
@@ -706,8 +737,9 @@ def build_graph_observation(contract: str, sat: int, cache, now: float,
             readout[GRAPH_DIRS.index(fd), i] = 1.0
 
     tail = np.asarray(own, dtype=np.float64).reshape(-1)
-    if tail.shape[0] != 4:
-        raise ValueError(f"graph tail requires a 4-dim own state, got {tail.shape}")
+    if tail.shape[0] != OWN_FEATURES:
+        raise ValueError(
+            f"graph tail requires a {OWN_FEATURES}-dim own state, got {tail.shape}")
     df = (np.asarray(dst_feats, dtype=np.float64).reshape(-1)
           if dst_feats is not None else np.zeros(DEST_FEATURES))
     if df.shape[0] != DEST_FEATURES:

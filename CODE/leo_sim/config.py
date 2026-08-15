@@ -142,6 +142,9 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "replay_size": int,
         "target_update_interval": int,
         "reward": str,  # queue (corrected queue reward) — the ONLY v1 reward
+        "reward_w1": (int, float),  # M1 queue reward weight (legacy w1=20)
+        "reward_beta": (int, float),  # M1 decay rate s^-1 (legacy _M1_BETA=200)
+        "arrive_reward": (int, float),  # terminal delivery reward (legacy 50)
         "epsilon_start": (int, float),
         "epsilon_end": (int, float),
         "epsilon_decay_s": (int, float),
@@ -253,6 +256,12 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "replay_size": 50_000,
         "target_update_interval": 500,
         "reward": "queue",
+        # corrected (M1) queue reward parameters, absorbed as the v1 baseline
+        # (legacy w1/_M1_BETA defaults, SimulationRL.py:270/345) plus the
+        # legacy ArriveReward (SimulationRL.py:579)
+        "reward_w1": 20.0,
+        "reward_beta": 200.0,
+        "arrive_reward": 50.0,
         "epsilon_start": 1.0,
         "epsilon_end": 0.05,
         "epsilon_decay_s": 300.0,
@@ -520,6 +529,12 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
         # entry points and are rejected, not parked "for later".
         raise ConfigError("learning.reward must be 'queue' (corrected queue reward); "
                           "distance/linear rewards are excluded from v1")
+    if lr["reward_w1"] <= 0:
+        raise ConfigError("learning.reward_w1 must be > 0")
+    if lr["reward_beta"] <= 0:
+        raise ConfigError("learning.reward_beta must be > 0")
+    if lr["arrive_reward"] < 0:
+        raise ConfigError("learning.arrive_reward must be >= 0")
     if lr["lr"] <= 0:
         raise ConfigError("learning.lr must be > 0")
     if lr["batch_size"] < 1 or lr["replay_size"] < 1 or lr["target_update_interval"] < 1:

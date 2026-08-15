@@ -65,7 +65,7 @@ class CapExceeded(KernelError):
 class DataPacket:
     __slots__ = ("pid", "src", "dst", "bits", "deadline", "emitted_at", "path",
                  "assigned_sat", "learning_state", "learning_action",
-                 "learning_reward")
+                 "learning_reward", "isl_enqueued_at")
 
     def __init__(self, pid, src, dst, bits, deadline, emitted_at):
         self.pid = pid
@@ -79,6 +79,9 @@ class DataPacket:
         self.learning_state = None
         self.learning_action = None
         self.learning_reward = None
+        # enqueue time on the current ISL egress queue; the realized queue
+        # wait (service start minus this) feeds the M1 queue reward
+        self.isl_enqueued_at = None
 
 
 class QueueArea:
@@ -475,6 +478,7 @@ class ISLLink:
         return k.geometry.isl_available(self.sat, self.peer, k.env.now)
 
     def put_data(self, pkt: DataPacket) -> None:
+        pkt.isl_enqueued_at = self.k.env.now
         self.data_q.append(pkt)
         self.data_bits += pkt.bits
         self.data_area.add(pkt.bits, self.k.env.now)
@@ -858,6 +862,17 @@ class Kernel:
                 yield self.env.timeout(max(0.0, min(ups) - t0))
                 continue
             end = t0 + dur
+            if (link_ref[0] == "isl" and isinstance(pkt, DataPacket)
+                    and pkt.learning_state is not None
+                    and pkt.isl_enqueued_at is not None):
+                # M1 queue reward: settle the packet's REALIZED queue wait at
+                # the instant its service actually starts (legacy analog:
+                # checkPointsSend - checkPoints, SimulationRL.py:2052).
+                pkt.learning_reward = _learning.queue_reward(
+                    t0 - pkt.isl_enqueued_at,
+                    self.cfg_learning["reward_w1"],
+                    self.cfg_learning["reward_beta"])
+                pkt.isl_enqueued_at = None
             fail_t, fail_kind = end, None
             if self.cfg_links["geometry_loss"]:
                 nxt = next_change(t0, end)
@@ -1360,6 +1375,13 @@ class Kernel:
                                     terminal_reward: float | None = None) -> None:
         if self.learner is None or pkt.learning_state is None:
             return
+        if terminal_reward is None and pkt.learning_reward is None:
+            # the forward reward is settled when the packet's ISL service
+            # actually starts; reaching here without it means the reward was
+            # never realized — fail loud instead of storing a silent None
+            raise KernelError(
+                "learning transition closed with unrealized reward "
+                f"(pid={pkt.pid})")
         reward = (pkt.learning_reward if terminal_reward is None
                   else float(terminal_reward))
         self.learner.remember(
@@ -1375,12 +1397,14 @@ class Kernel:
         self._finish_learning_transition(pkt, state, mask, False)
         action = self.learner.choose(state, mask, self.env.now)
         if action == "deliver":
-            reward = 1.0
+            # terminal delivery reward: legacy ArriveReward (v1 has no
+            # distance component; see ANALYSIS/REWARD-DIFF-20260816.md)
+            reward = float(self.cfg_learning["arrive_reward"])
         else:
-            link = self.isls[sat][action]
-            ratio = (link.data_bits + link.ctrl_bits) / max(
-                1, self.cfg_links["isl_queue_bits"])
-            reward = math.exp(-max(0.0, ratio))
+            # forward reward is the M1 queue reward over the packet's
+            # REALIZED queue wait, settled when its ISL service starts
+            # (_transmit); unknown at decision time by construction
+            reward = None
         pkt.learning_state = state
         pkt.learning_action = action
         pkt.learning_reward = reward
