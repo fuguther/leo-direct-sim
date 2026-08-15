@@ -12,12 +12,20 @@
 5. 删除、移动、覆盖任何已跟踪路径前必须逐条列出并等用户批准。
 6. 机器私密配置（`remote.env` 等）不入库，只入库 `.template`。
 
-## Git 纪律
+## Git / GitHub 工作流（任何 Agent 必须逐条遵守）
 
-- `main` 永远绿：提交前跑 `python -m pytest CODE/leo_sim/tests CODE/tests -q`（无 TF 环境下学习用例按设计跳过/报错属预期）。
-- 工作分支 `codex/<yyyymmdd>-<主题>`，合并即删；CODE/ 改动走分支 + PR + squash merge。
-- 文档类（NOTES.md、DECISIONS.md、ANALYSIS/）可直接提交 main。
-- 每个工作日结束 push 全部分支。
+**总原则：`main` 永远绿、永远可部署。一切改动经 PR 合入，CI 全绿才可合并；远端由 ruleset 硬执行，不靠自觉。**
+
+1. **分支**：从最新 `main` 切 `codex/<yyyymmdd>-<主题>`（如 `codex/20260816-fix-reward`）。一个分支只做一件事，寿命 < 3 天，合并即删（远端已开启 merge 后自动删分支）。
+2. **提交**：commit message 用类型前缀 `feat|fix|docs|exp|chore` + 中文简述；一个 commit 只含一个变更主题（代码、数据、文档不混；重构与修 bug 不混）。正文写清证据（测试数字、回执、diff 范围）。
+3. **PR**：`gh pr create --base main`，标题同 commit，正文必须含：改了什么、为什么、验证证据（真实的 passed/failed/skipped 数字）。禁止自夸式描述。
+4. **合并条件（远端硬执行）**：CI `pytest` 检查必须通过；一律 `gh pr merge --squash --delete-branch`。CI 红禁止合并，先把失败修绿。
+5. **推送**：每个工作日结束 push 全部分支（GitHub 兼作每日备份）。禁止 force-push main；main 禁止删除。
+6. **授权**：Agent 执行任何 git 变更（commit/push/merge/建删分支/改仓库设置）前必须得到用户当场授权；一次授权只覆盖当次动作，不构成长期许可。
+7. **收尾**：每个工作单元结束 = commit + push + 更新 `NOTES.md`（做了什么、证据在哪、下一步）。工作区必须 clean，做不到就 stash 并在 NOTES.md 写明原因。
+8. **禁止入库**：`CODE/Results/`、`leo_sim_out/`、`out/`、`remote.env`、`.env`、`__pycache__/`、`.DS_Store`（.gitignore 已配；发现漏网先补 gitignore 再提交）。
+9. **VM 部署**：只允许 main 上的干净 commit，经 `CODE/scripts/remote/push-remote.sh` 执行；跑实验前必须已部署；部署后记录回执 SHA。
+10. **冲突处理**：发现历史/文档/代码互相矛盾时，并列报告出处与影响，禁止静默融合或擅自覆盖。
 
 ## 渐进式验证协议
 
