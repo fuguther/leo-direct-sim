@@ -20,7 +20,7 @@
 
 | # | 能力 | 旧平台位置 | 迁移注意（说明书证据） | 建议顺序 |
 |---|---|---|---|---|
-| M1 | **Q-Learning 表** | SimulationRL.py:5682 | 结构简单，适合作首个迁移练手件；注意 `createQTable`(10238) 是无调用点的死代码，以 `QLearning.__init__`(5703-5704) 内联初始化为准 | 1（最先） |
+| M1 | **Q-Learning 表** | SimulationRL.py:5682 | 已迁移（2026-08-16）：`learning.TabularQLearning`——表征测试按 5791-5794 更新规则/5743 终结直写/5703-5704 随机初始化抽 golden；合同适配（连续观测哈希键、V2 epsilon 调度、V2 reward 喂入）在类 docstring 逐条声明；E2E+receipt 链绿 | 1（最先） |
 | M2 | **temporal/multistep**（GRU 时序编码、n-step/TD-λ） | temporal_encoder.py、routing_multistep.py | routing_multistep 三个函数均无运行时调用（SimulationRL 内联重写，6980-7031）；迁移以新平台合同观测为准重接，不照搬内联版 | 2 |
 | M3 | **path-credit** | routing_path_credit.py:47/341/1014 | PathTrajectoryReplay/PathCreditMixer/ReturnPredictor 三类完整；注意 ReturnPredictor.save/load 在生产无调用（仅 mixer 权重存取接线） | 3 |
 | M4 | **MAPPO** | routing_mappo.py | **实为半成品**：RecurrentMAPPOAgent 从未实例化、`train_ppo_update` 仅 raise NotImplementedError(564-567)、FrameStackBPAgent 无实例化——此项不是「迁移」而是「参照旧设计补完实现」，工作量最大 | 4（最后） |

@@ -2,6 +2,7 @@
 
 ## 当前状态
 
+- 2026-08-16 任务 5（迁移 M1 Q-Learning 表）完成：`learning.TabularQLearning`（纯 numpy，无需 TF）。表征 golden：更新规则 (1−α)Q+α(r+γ·maxQ)（旧 5791-5794）、终结直写（5743）、均匀初始化（5703-5704）、合法集 argmax/探索（5758-5769）；合同适配全部 docstring 声明。config/receipt/__main__ 全链接入（algorithm="qlearning"，checkpoint=q_table.json+sha 校验，eval 不更新表）。E2E：真控制面+hop 路由+qlearning 跑通且 receipt verify 通过。
 - 2026-08-16 任务 4（验收阶梯成文）完成：`ANALYSIS/ACCEPTANCE-LADDER-20260816.md`——三层判据（A 点对点解析等价 / B 机制各对合同 / C 系统差异可归因）+ 8 条不变量清单 + 机制逐个加挂差分玩法 + 变异测试第一批 10 条注入清单（标出 4 个待补捕获测试缺口：M-3/M-4/M-8/M-9）。
 - 2026-08-16 任务 3（决策级差分快照）完成：kernel 加 output-only decision sink（每跳：候选集/所选动作/自身队列/观测摘要 dim+sha256_16+L2），comparison.py 直臂写 decisions.jsonl；旧臂只读不可改，开 SIM_LOG_LEVEL=1 解析其 packet_fate dump 归一化为逐跳 JSONL（候选/观测字段该 runtime 不记录，置 null 并注明）。行为不变由 test_decision_snapshot.py 双跑对照（fates/totals/deliveries/occupied 等 9 键全等）证明。
 - 2026-08-16 任务 2（手工可算最小场景解析断言）完成：`CODE/leo_sim/tests/test_analytic_scenarios.py` 4 场景——单星直连精确时延（2·(0.08+PROP_GSL)，abs 1e-9）、两跳转发精确总时延、接入槽满等待计数（slots=1 被 8s 服务占死：requests=1/preposition_grants=1/waiting_at_stop=1/双包 IN_SYSTEM）、horizon 在途结算（occupied isl_s = horizon − t_start 精确到账）。推导全部写进 docstring。
