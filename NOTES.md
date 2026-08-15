@@ -2,6 +2,7 @@
 
 ## 当前状态
 
+- 2026-08-16 任务 6（M2 temporal/multistep）交设计稿：`ANALYSIS/TEMPORAL-MULTISTEP-DESIGN-20260816.md`——旧侧清点（routing_multistep 三函数无运行时调用，以 SimulationRL.py:6980-7062 内联版为准；temporal_encoder 三模式）、新平台接入点（remember 需 packet_key 合同扩展、MultistepLearner 包装器方案、framestack 观测管线）、配置面草案、五条验证计划。评估后按任务授权的降级路径只交设计稿：实现涉 learning 合同承重改动且 DDQN 臂本地无 TF 不可验收，拆 PR-1（纯回报换算+golden）/PR-2（接线+差分）留后续。
 - 2026-08-16 任务 5（迁移 M1 Q-Learning 表）完成：`learning.TabularQLearning`（纯 numpy，无需 TF）。表征 golden：更新规则 (1−α)Q+α(r+γ·maxQ)（旧 5791-5794）、终结直写（5743）、均匀初始化（5703-5704）、合法集 argmax/探索（5758-5769）；合同适配全部 docstring 声明。config/receipt/__main__ 全链接入（algorithm="qlearning"，checkpoint=q_table.json+sha 校验，eval 不更新表）。E2E：真控制面+hop 路由+qlearning 跑通且 receipt verify 通过。
 - 2026-08-16 任务 4（验收阶梯成文）完成：`ANALYSIS/ACCEPTANCE-LADDER-20260816.md`——三层判据（A 点对点解析等价 / B 机制各对合同 / C 系统差异可归因）+ 8 条不变量清单 + 机制逐个加挂差分玩法 + 变异测试第一批 10 条注入清单（标出 4 个待补捕获测试缺口：M-3/M-4/M-8/M-9）。
 - 2026-08-16 任务 3（决策级差分快照）完成：kernel 加 output-only decision sink（每跳：候选集/所选动作/自身队列/观测摘要 dim+sha256_16+L2），comparison.py 直臂写 decisions.jsonl；旧臂只读不可改，开 SIM_LOG_LEVEL=1 解析其 packet_fate dump 归一化为逐跳 JSONL（候选/观测字段该 runtime 不记录，置 null 并注明）。行为不变由 test_decision_snapshot.py 双跑对照（fates/totals/deliveries/occupied 等 9 键全等）证明。
