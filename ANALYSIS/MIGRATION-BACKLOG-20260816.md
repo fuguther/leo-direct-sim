@@ -7,10 +7,25 @@
 
 | 能力 | 旧平台位置 | 备注（说明书证据） |
 |---|---|---|
-| Q-Learning 表 | SimulationRL.py:5682 | 计划删除项；新平台用解析基线（hop/delay/capacity/oracle）替代 |
-| MAPPO | routing_mappo.py | 计划删除项；且实测为未完成死代码（RecurrentMAPPOAgent 无实例化、train_ppo_update 仅 raise NotImplementedError:564-567） |
-| path-credit | routing_path_credit.py:341/1014 | 计划删除项 |
-| temporal/multistep（GRU 时序编码、n-step/TD-λ） | temporal_encoder.py、routing_multistep.py | 计划删除项 |
+| M3、线性奖励、旧 checkpoint 兼容 | SimulationRL.py 多处 | 计划删除项（原文：「不进入 v1，所有模型重新训练」） |
+| C2、dataRate/dataRateOG 重复入口 | — | 计划删除项 |
+| Gateway 全家（类、4/31 网关流量入口、inputRL*） | SimulationRL.py:2573 等 | 新架构已替代（计划第 1 节） |
+| SIM_* 兼容别名、仿真内绘图 | — | 计划删除项（改离线分析） |
+| legacy 切换模式 | SimulationRL.py:744-751 | 新 BBM/MBB 状态机替代 |
+| FSOlink | SimulationRL.py:1827 | 计划未点名，但实测从未实例化（死代码）→ 不迁 |
+| monitor dashboard | monitor.py | 操作工具，非仿真语义；需要时可另写 |
+| save_on_interrupt | SimulationRL.py:11356 | 新平台以自然结束回执为唯一完成形态，语义不兼容 |
+
+## M 类：用户 2026-08-16 批准迁移（覆盖计划原删除判项）
+
+| # | 能力 | 旧平台位置 | 迁移注意（说明书证据） | 建议顺序 |
+|---|---|---|---|---|
+| M1 | **Q-Learning 表** | SimulationRL.py:5682 | 结构简单，适合作首个迁移练手件；注意 `createQTable`(10238) 是无调用点的死代码，以 `QLearning.__init__`(5703-5704) 内联初始化为准 | 1（最先） |
+| M2 | **temporal/multistep**（GRU 时序编码、n-step/TD-λ） | temporal_encoder.py、routing_multistep.py | routing_multistep 三个函数均无运行时调用（SimulationRL 内联重写，6980-7031）；迁移以新平台合同观测为准重接，不照搬内联版 | 2 |
+| M3 | **path-credit** | routing_path_credit.py:47/341/1014 | PathTrajectoryReplay/PathCreditMixer/ReturnPredictor 三类完整；注意 ReturnPredictor.save/load 在生产无调用（仅 mixer 权重存取接线） | 3 |
+| M4 | **MAPPO** | routing_mappo.py | **实为半成品**：RecurrentMAPPOAgent 从未实例化、`train_ppo_update` 仅 raise NotImplementedError(564-567)、FrameStackBPAgent 无实例化——此项不是「迁移」而是「参照旧设计补完实现」，工作量最大 | 4（最后） |
+
+迁移统一要求：每项先写旧行为表征/golden 测试，再在新平台实现转绿；一个能力一个 PR；观测/奖励语义以 B1/B2 对照结论为基准。
 | M3、线性奖励、旧 checkpoint 兼容 | SimulationRL.py 多处 | 计划删除项（原文：「不进入 v1，所有模型重新训练」） |
 | C2、dataRate/dataRateOG 重复入口 | — | 计划删除项 |
 | Gateway 全家（类、4/31 网关流量入口、inputRL*） | SimulationRL.py:2573 等 | 新架构已替代（计划第 1 节） |
@@ -43,6 +58,6 @@
 | C3 | replay buffer 跨运行持久化/续训（save_replay_buffer:10475 等） | 长训练分段续跑可能有用 | 低优先 |
 | C4 | 旧后处理/绘图函数群 | 论文出图风格参考 | 不迁，需要时按新账本数据重写 |
 
-## 用户确认项
+## 用户确认记录
 
-- A/B 两类如无异议即按此执行；C 类四项请逐项批复（迁/不迁/暂缓）。
+- 2026-08-16 用户批复：MAPPO、path-credit、temporal/multistep、Q-Learning 四项改判迁移（见 M 类）；其余 A/B/C 分类维持。C 类维持「不迁/仅参照」待后续需要时再议。
