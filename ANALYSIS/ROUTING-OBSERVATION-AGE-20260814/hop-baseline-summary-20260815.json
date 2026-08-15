@@ -1,0 +1,26 @@
+{
+  "101|100": {
+    "completion_ratio": 0.9973,
+    "natural_end": true
+  },
+  "101|200": {
+    "completion_ratio": 0.9475,
+    "natural_end": true
+  },
+  "101|50": {
+    "completion_ratio": 0.9945,
+    "natural_end": true
+  },
+  "102|100": {
+    "completion_ratio": 0.9973,
+    "natural_end": true
+  },
+  "102|200": {
+    "completion_ratio": 0.9244,
+    "natural_end": true
+  },
+  "102|50": {
+    "completion_ratio": 1.0,
+    "natural_end": true
+  }
+}

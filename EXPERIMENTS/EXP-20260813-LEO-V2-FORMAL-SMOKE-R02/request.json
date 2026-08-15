@@ -1,0 +1,90 @@
+{
+  "acceptance": {
+    "min_delivered_packets": 1,
+    "min_multisat_deliveries": 1,
+    "require_control_delivery": true,
+    "require_data_isl": true
+  },
+  "config": {
+    "access": {
+      "acquisition_delay_s": 0.1,
+      "association": "bbm",
+      "dual_connect": false,
+      "hysteresis_deg": 1.0,
+      "min_dwell_s": 1.0,
+      "slots_per_satellite": 4
+    },
+    "control_plane": {
+      "advertise_interval_s": 2.0,
+      "enabled": true,
+      "vis_k": 2
+    },
+    "demand": {
+      "mode": "uniform",
+      "offered_mbps": 1.0,
+      "packet_bits": 1000000
+    },
+    "endpoints": {
+      "aggregation_deg": 1.0,
+      "grid_deg": 0.25,
+      "sites": [
+        {
+          "demand_weight": 1.0,
+          "lat": 0.1,
+          "lon": 0.1,
+          "name": "equator"
+        },
+        {
+          "demand_weight": 1.0,
+          "lat": 52.6,
+          "lon": 90.4,
+          "name": "north"
+        }
+      ]
+    },
+    "execution": {
+      "max_entities": 2000,
+      "max_events": 500000,
+      "max_packets": 20000,
+      "monitor": false
+    },
+    "learning": {
+      "algorithm": "none"
+    },
+    "links": {
+      "ge_enabled": true,
+      "ge_gsl": {
+        "mean_bad_s": 1.0,
+        "mean_good_s": 300.0
+      },
+      "ge_isl": {
+        "mean_bad_s": 0.5,
+        "mean_good_s": 900.0
+      }
+    },
+    "outputs": {
+      "out_dir": "CODE/Results/EXP-20260813-LEO-V2-FORMAL-SMOKE-R02-main-s7",
+      "plotting": false
+    },
+    "routing": {
+      "contract": "C3",
+      "learning_enabled": false,
+      "policy": "hop"
+    },
+    "scenario": {
+      "altitude_km": 550.0,
+      "duration_s": 120.0,
+      "inclination_deg": 53.0,
+      "min_elevation_deg": 25.0,
+      "name": "leo-v2-formal-smoke-r02",
+      "num_planes": 3,
+      "num_satellites": 24,
+      "seed": 7,
+      "time_step_s": 0.1
+    }
+  },
+  "experiment_id": "EXP-20260813-LEO-V2-FORMAL-SMOKE-R02",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-request/v1",
+  "work_finalization": "CODE/work/WP-LEO-V2-FORMAL-SMOKE/R02/finalization.json"
+}

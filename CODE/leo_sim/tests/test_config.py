@@ -1,0 +1,77 @@
+"""Tests for CODE.leo_sim.config — strict versioned YAML configuration."""
+import pytest
+
+from CODE.leo_sim import config
+
+
+def test_defaults_resolve_and_hash_stable():
+    r1 = config.resolve_config()
+    r2 = config.resolve_config()
+    assert r1["version"] == config.CONFIG_SCHEMA_VERSION
+    assert r1["sha256"] == r2["sha256"]
+    assert r1["canonical_json"] == r2["canonical_json"]
+    for group in config.SCHEMA:
+        assert group in r1["config"]
+
+
+def test_unknown_field_rejected():
+    with pytest.raises(config.ConfigError, match="unknown field"):
+        config.resolve_config({"scenario": {"bogus": 1}})
+    with pytest.raises(config.ConfigError, match="unknown top-level"):
+        config.resolve_config({"gateway": {}})
+
+
+def test_profile_and_overrides_resolve():
+    r = config.resolve_config(profile="smoke", overrides={"scenario": {"duration_s": 3.0}})
+    assert r["config"]["scenario"]["duration_s"] == 3.0
+    assert r["config"]["scenario"]["num_satellites"] == 12
+    with pytest.raises(config.ConfigError, match="unknown profile"):
+        config.resolve_config(profile="nope")
+
+
+def test_invalid_combinations_rejected():
+    with pytest.raises(config.ConfigError, match="dual_connect"):
+        config.resolve_config({"access": {"association": "mbb"}})
+    with pytest.raises(config.ConfigError, match="csv_path"):
+        config.resolve_config({"demand": {"mode": "csv"}})
+    with pytest.raises(config.ConfigError, match="burst"):
+        config.resolve_config({"demand": {"mode": "burst"}})
+    with pytest.raises(config.ConfigError, match="learning"):
+        config.resolve_config({"routing": {"learning_enabled": True}})
+    with pytest.raises(config.ConfigError, match="divisible"):
+        config.resolve_config({"scenario": {"num_satellites": 7, "num_planes": 3}})
+
+
+def test_learning_eval_requires_sha_bound_checkpoint():
+    with pytest.raises(config.ConfigError, match="checkpoint_path and checkpoint_sha256"):
+        config.resolve_config({
+            "routing": {"policy": "hop", "learning_enabled": True},
+            "control_plane": {"enabled": True},
+            "learning": {"algorithm": "ddqn", "mode": "eval"},
+        })
+    with pytest.raises(config.ConfigError, match="lowercase SHA-256"):
+        config.resolve_config({
+            "routing": {"policy": "hop", "learning_enabled": True},
+            "control_plane": {"enabled": True},
+            "learning": {"algorithm": "ddqn", "mode": "eval",
+                         "checkpoint_path": "/tmp/model.keras",
+                         "checkpoint_sha256": "bad"},
+        })
+
+
+def test_bool_rejected_for_numeric():
+    with pytest.raises(config.ConfigError, match="bool"):
+        config.resolve_config({"scenario": {"seed": True}})
+
+
+def test_load_config_file(tmp_path):
+    p = tmp_path / "c.yaml"
+    p.write_text(
+        "profile: smoke\nscenario:\n  duration_s: 2.0\n  num_satellites: 6\n  num_planes: 2\n"
+    )
+    r = config.load_config_file(str(p))
+    assert r["config"]["scenario"]["duration_s"] == 2.0
+    bad = tmp_path / "bad.yaml"
+    bad.write_text("config_version: other/v9\n")
+    with pytest.raises(config.ConfigError, match="config_version"):
+        config.load_config_file(str(bad))

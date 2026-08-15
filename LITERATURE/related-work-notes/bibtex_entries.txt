@@ -1,0 +1,116 @@
+@article{han2023load,
+  author    = {Chi Han and Wei Xiong and Ronghuan Yu},
+  title     = {Load-Balancing Routing for LEO Satellite Network with Distributed Hops-Based Back-Pressure Strategy},
+  journal   = {Sensors},
+  year      = {2023},
+  volume    = {23},
+  number    = {24},
+  pages     = {9789},
+  doi       = {10.3390/s23249789},
+  publisher = {MDPI}
+}
+
+@article{bai2025grlrr,
+  author    = {Luxin Bai and Hailong Ma and Yiming Jiang and Zinuo Yin and Huiqing Wan and Hongguang Wang},
+  title     = {GRL-RR: A Graph Reinforcement Learning-based resilient routing framework for software-defined LEO mega-constellations},
+  journal   = {Computer Networks},
+  year      = {2025},
+  volume    = {259},
+  pages     = {111089},
+  doi       = {10.1016/j.comnet.2025.111089},
+  publisher = {Elsevier}
+}
+
+@inproceedings{liao2024realtime,
+  author    = {Hailong Liao and Xian Zhang and Jiaen Zhou and Xuehua Li},
+  title     = {Real-Time Routing Design for LEO Satellite Networks: An Enhanced Multi-Agent DRL Approach},
+  booktitle = {2024 IEEE/CIC International Conference on Communications in China (ICCC Workshops)},
+  year      = {2024},
+  pages     = {547--552},
+  doi       = {10.1109/icccworkshops62562.2024.10693714},
+  address   = {Beijing, China},
+  publisher = {IEEE}
+}
+
+@article{deng2020nextgen,
+  author    = {Boyu Deng and Chunxiao Jiang and Haipeng Yao and Song Guo and Shanghong Zhao},
+  title     = {The Next Generation Heterogeneous Satellite Communication Networks: Integration of Resource Management and Deep Reinforcement Learning},
+  journal   = {IEEE Wireless Communications},
+  year      = {2020},
+  volume    = {27},
+  number    = {2},
+  pages     = {105--111},
+  doi       = {10.1109/mwc.001.1900178},
+  publisher = {IEEE}
+}
+
+@inproceedings{lozano2024madrl,
+  author    = {Federico Lozano-Cuadra and Beatriz Soret},
+  title     = {Multi-Agent Deep Reinforcement Learning for Distributed Satellite Routing},
+  booktitle = {2024 IEEE International Conference on Machine Learning for Communication and Networking (ICMLCN)},
+  year      = {2024},
+  pages     = {1--2},
+  doi       = {10.1109/icmlcn59089.2024.10624767},
+  address   = {Madrid, Spain},
+  publisher = {IEEE}
+}
+
+@article{zhang2025grlr,
+  author    = {Senbai Zhang and Aijun Liu and Chen Han and Xin Xu and Xiaohu Liang and Kang An and Yunyang Zhang},
+  title     = {GRLR: Routing With Graph Neural Network and Reinforcement Learning for Mega LEO Satellite Constellations},
+  journal   = {IEEE Transactions on Vehicular Technology},
+  year      = {2025},
+  volume    = {74},
+  number    = {2},
+  pages     = {3225--3237},
+  doi       = {10.1109/tvt.2024.3471658},
+  publisher = {IEEE}
+}
+
+@article{ran2025graphpr,
+  author    = {Yongyi Ran and Yajie Ding and Shuangwu Chen and Jizhao Lei and Jiangtao Luo},
+  title     = {Fully-Distributed Dynamic Packet Routing for LEO Satellite Networks: A GNN-Enhanced Multi-Agent Reinforcement Learning Approach},
+  journal   = {IEEE Transactions on Vehicular Technology},
+  year      = {2025},
+  volume    = {74},
+  number    = {3},
+  pages     = {5229--5234},
+  doi       = {10.1109/tvt.2024.3499933},
+  publisher = {IEEE}
+}
+
+@article{rao2025dgaierl,
+  author    = {Zheheng Rao and Zhenyu Zhu and Dusit Niyato and Ye Yao and Yanyan Xu and Yanyu Cheng},
+  title     = {Dynamic LEO Satellite Routing Approach Based on Deep Graph Attention and Incremental Evolutionary Reinforcement Learning},
+  journal   = {IEEE Internet of Things Journal},
+  year      = {2025},
+  volume    = {12},
+  number    = {23},
+  pages     = {50126--50142},
+  doi       = {10.1109/jiot.2025.3607492},
+  publisher = {IEEE}
+}
+
+@article{mnih2015dqn,
+  author    = {Volodymyr Mnih and Koray Kavukcuoglu and David Silver and Andrei A. Rusu and Joel Veness and Marc G. Bellemare and Alex Graves and Martin Riedmiller and Andreas K. Fidjeland and Georg Ostrovski and Stig Petersen and Charles Beattie and Amir Sadik and Ioannis Antonoglou and Helen King and Dharshan Kumaran and Daan Wierstra and Shane Legg and Demis Hassabis},
+  title     = {Human-level control through deep reinforcement learning},
+  journal   = {Nature},
+  year      = {2015},
+  volume    = {518},
+  number    = {7540},
+  pages     = {529--533},
+  doi       = {10.1038/nature14236},
+  publisher = {Nature Publishing Group}
+}
+
+@inproceedings{vanhasselt2016ddqn,
+  author    = {Hado Van Hasselt and Arthur Guez and David Silver},
+  title     = {Deep Reinforcement Learning with Double Q-Learning},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
+  year      = {2016},
+  volume    = {30},
+  number    = {1},
+  articleno = {10295},
+  doi       = {10.1609/aaai.v30i1.10295},
+  publisher = {AAAI}
+}

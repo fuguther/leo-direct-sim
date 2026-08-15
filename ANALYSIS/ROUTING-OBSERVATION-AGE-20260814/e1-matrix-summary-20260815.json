@@ -1,0 +1,5134 @@
+{
+  "cells": {
+    "GAT|h1|m100|ts41|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3577,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3577,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3577,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m100|ts41|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9017,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.001538274809718132,
+        "mean_latency_s": 0.3334,
+        "natural_end": true,
+        "p95_latency_s": 0.4834,
+        "train_steps": 8947
+      },
+      "train_seed": 41
+    },
+    "GAT|h1|m100|ts41|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3326,
+          "natural_end": true,
+          "p95_latency_s": 0.494,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3326,
+          "natural_end": true,
+          "p95_latency_s": 0.494,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3326,
+          "natural_end": true,
+          "p95_latency_s": 0.494,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m100|ts41|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9454,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.0004981787060387433,
+        "mean_latency_s": 0.3357,
+        "natural_end": true,
+        "p95_latency_s": 0.4965,
+        "train_steps": 9386
+      },
+      "train_seed": 41
+    },
+    "GAT|h1|m100|ts42|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3521,
+          "natural_end": true,
+          "p95_latency_s": 0.7,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3521,
+          "natural_end": true,
+          "p95_latency_s": 0.7,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3521,
+          "natural_end": true,
+          "p95_latency_s": 0.7,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m100|ts42|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9016,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.0006841622525826097,
+        "mean_latency_s": 0.3337,
+        "natural_end": true,
+        "p95_latency_s": 0.4823,
+        "train_steps": 8946
+      },
+      "train_seed": 42
+    },
+    "GAT|h1|m100|ts42|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3322,
+          "natural_end": true,
+          "p95_latency_s": 0.4937,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3322,
+          "natural_end": true,
+          "p95_latency_s": 0.4937,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3322,
+          "natural_end": true,
+          "p95_latency_s": 0.4937,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m100|ts42|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9454,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.0006033441750332713,
+        "mean_latency_s": 0.3352,
+        "natural_end": true,
+        "p95_latency_s": 0.4965,
+        "train_steps": 9386
+      },
+      "train_seed": 42
+    },
+    "GAT|h1|m100|ts43|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3573,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3573,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3573,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m100|ts43|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9016,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.0010471106506884098,
+        "mean_latency_s": 0.3337,
+        "natural_end": true,
+        "p95_latency_s": 0.4841,
+        "train_steps": 8946
+      },
+      "train_seed": 43
+    },
+    "GAT|h1|m100|ts43|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3326,
+          "natural_end": true,
+          "p95_latency_s": 0.494,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3326,
+          "natural_end": true,
+          "p95_latency_s": 0.494,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3326,
+          "natural_end": true,
+          "p95_latency_s": 0.494,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m100|ts43|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9455,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.001302802935242653,
+        "mean_latency_s": 0.3354,
+        "natural_end": true,
+        "p95_latency_s": 0.4965,
+        "train_steps": 9387
+      },
+      "train_seed": 43
+    },
+    "GAT|h1|m100|ts44|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3576,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3576,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3576,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m100|ts44|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9017,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.0008277193992398679,
+        "mean_latency_s": 0.3331,
+        "natural_end": true,
+        "p95_latency_s": 0.4841,
+        "train_steps": 8947
+      },
+      "train_seed": 44
+    },
+    "GAT|h1|m100|ts44|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3271,
+          "natural_end": true,
+          "p95_latency_s": 0.4876,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3271,
+          "natural_end": true,
+          "p95_latency_s": 0.4876,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3271,
+          "natural_end": true,
+          "p95_latency_s": 0.4876,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m100|ts44|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9454,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.000890056136995554,
+        "mean_latency_s": 0.3346,
+        "natural_end": true,
+        "p95_latency_s": 0.494,
+        "train_steps": 9386
+      },
+      "train_seed": 44
+    },
+    "GAT|h1|m100|ts45|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3568,
+          "natural_end": true,
+          "p95_latency_s": 0.7001,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3568,
+          "natural_end": true,
+          "p95_latency_s": 0.7001,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3568,
+          "natural_end": true,
+          "p95_latency_s": 0.7001,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m100|ts45|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9017,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.0008333513978868723,
+        "mean_latency_s": 0.3338,
+        "natural_end": true,
+        "p95_latency_s": 0.4814,
+        "train_steps": 8947
+      },
+      "train_seed": 45
+    },
+    "GAT|h1|m100|ts45|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3223,
+          "natural_end": true,
+          "p95_latency_s": 0.4807,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3223,
+          "natural_end": true,
+          "p95_latency_s": 0.4807,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3223,
+          "natural_end": true,
+          "p95_latency_s": 0.4807,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m100|ts45|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9454,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.0006390047492459416,
+        "mean_latency_s": 0.3348,
+        "natural_end": true,
+        "p95_latency_s": 0.4965,
+        "train_steps": 9386
+      },
+      "train_seed": 45
+    },
+    "GAT|h1|m200|ts41|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6302,
+          "natural_end": true,
+          "p95_latency_s": 1.2239,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6302,
+          "natural_end": true,
+          "p95_latency_s": 1.2239,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6302,
+          "natural_end": true,
+          "p95_latency_s": 1.2239,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m200|ts41|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16809,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.0016262943390756845,
+        "mean_latency_s": 0.5863,
+        "natural_end": true,
+        "p95_latency_s": 0.9304,
+        "train_steps": 16735
+      },
+      "train_seed": 41
+    },
+    "GAT|h1|m200|ts41|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.724,
+          "natural_end": true,
+          "p95_latency_s": 1.3636,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.724,
+          "natural_end": true,
+          "p95_latency_s": 1.3636,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.724,
+          "natural_end": true,
+          "p95_latency_s": 1.3636,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m200|ts41|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17160,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.001044906908646226,
+        "mean_latency_s": 0.7427,
+        "natural_end": true,
+        "p95_latency_s": 1.4072,
+        "train_steps": 17086
+      },
+      "train_seed": 41
+    },
+    "GAT|h1|m200|ts42|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9462,
+          "conservation_ok": true,
+          "decisions": 11194,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6277,
+          "natural_end": true,
+          "p95_latency_s": 1.1917,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9462,
+          "conservation_ok": true,
+          "decisions": 11194,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6277,
+          "natural_end": true,
+          "p95_latency_s": 1.1917,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9462,
+          "conservation_ok": true,
+          "decisions": 11194,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6277,
+          "natural_end": true,
+          "p95_latency_s": 1.1917,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m200|ts42|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16808,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.0010443583596497774,
+        "mean_latency_s": 0.5862,
+        "natural_end": true,
+        "p95_latency_s": 0.9289,
+        "train_steps": 16734
+      },
+      "train_seed": 42
+    },
+    "GAT|h1|m200|ts42|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7236,
+          "natural_end": true,
+          "p95_latency_s": 1.3815,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7236,
+          "natural_end": true,
+          "p95_latency_s": 1.3815,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7236,
+          "natural_end": true,
+          "p95_latency_s": 1.3815,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m200|ts42|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17160,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.0010844828793779016,
+        "mean_latency_s": 0.7424,
+        "natural_end": true,
+        "p95_latency_s": 1.4072,
+        "train_steps": 17086
+      },
+      "train_seed": 42
+    },
+    "GAT|h1|m200|ts43|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6325,
+          "natural_end": true,
+          "p95_latency_s": 1.2167,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6325,
+          "natural_end": true,
+          "p95_latency_s": 1.2167,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6325,
+          "natural_end": true,
+          "p95_latency_s": 1.2167,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m200|ts43|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16810,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.001874781446531415,
+        "mean_latency_s": 0.5865,
+        "natural_end": true,
+        "p95_latency_s": 0.9339,
+        "train_steps": 16736
+      },
+      "train_seed": 43
+    },
+    "GAT|h1|m200|ts43|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7101,
+          "natural_end": true,
+          "p95_latency_s": 1.3319,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7101,
+          "natural_end": true,
+          "p95_latency_s": 1.3319,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7101,
+          "natural_end": true,
+          "p95_latency_s": 1.3319,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m200|ts43|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17160,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.0007593558402732015,
+        "mean_latency_s": 0.7399,
+        "natural_end": true,
+        "p95_latency_s": 1.3976,
+        "train_steps": 17086
+      },
+      "train_seed": 43
+    },
+    "GAT|h1|m200|ts44|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11194,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6384,
+          "natural_end": true,
+          "p95_latency_s": 1.24,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11194,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6384,
+          "natural_end": true,
+          "p95_latency_s": 1.24,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11194,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6384,
+          "natural_end": true,
+          "p95_latency_s": 1.24,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m200|ts44|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16809,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.0009445335599593818,
+        "mean_latency_s": 0.5865,
+        "natural_end": true,
+        "p95_latency_s": 0.9261,
+        "train_steps": 16735
+      },
+      "train_seed": 44
+    },
+    "GAT|h1|m200|ts44|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.724,
+          "natural_end": true,
+          "p95_latency_s": 1.3721,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.724,
+          "natural_end": true,
+          "p95_latency_s": 1.3721,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.724,
+          "natural_end": true,
+          "p95_latency_s": 1.3721,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m200|ts44|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17160,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.004445428028702736,
+        "mean_latency_s": 0.7428,
+        "natural_end": true,
+        "p95_latency_s": 1.4072,
+        "train_steps": 17086
+      },
+      "train_seed": 44
+    },
+    "GAT|h1|m200|ts45|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6423,
+          "natural_end": true,
+          "p95_latency_s": 1.2718,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6423,
+          "natural_end": true,
+          "p95_latency_s": 1.2718,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6423,
+          "natural_end": true,
+          "p95_latency_s": 1.2718,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m200|ts45|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16808,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.0011383985402062535,
+        "mean_latency_s": 0.5862,
+        "natural_end": true,
+        "p95_latency_s": 0.9339,
+        "train_steps": 16734
+      },
+      "train_seed": 45
+    },
+    "GAT|h1|m200|ts45|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.724,
+          "natural_end": true,
+          "p95_latency_s": 1.3721,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.724,
+          "natural_end": true,
+          "p95_latency_s": 1.3721,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.724,
+          "natural_end": true,
+          "p95_latency_s": 1.3721,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m200|ts45|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17160,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.0005987322656437755,
+        "mean_latency_s": 0.7426,
+        "natural_end": true,
+        "p95_latency_s": 1.4072,
+        "train_steps": 17086
+      },
+      "train_seed": 45
+    },
+    "GAT|h1|m50|ts41|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3115,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3115,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3115,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m50|ts41|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.0011729587567970157,
+        "mean_latency_s": 0.3028,
+        "natural_end": true,
+        "p95_latency_s": 0.3667,
+        "train_steps": 4359
+      },
+      "train_seed": 41
+    },
+    "GAT|h1|m50|ts41|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3713,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3713,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3713,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m50|ts41|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.00279240682721138,
+        "mean_latency_s": 0.2945,
+        "natural_end": true,
+        "p95_latency_s": 0.3563,
+        "train_steps": 4645
+      },
+      "train_seed": 41
+    },
+    "GAT|h1|m50|ts42|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3112,
+          "natural_end": true,
+          "p95_latency_s": 0.3912,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3112,
+          "natural_end": true,
+          "p95_latency_s": 0.3912,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3112,
+          "natural_end": true,
+          "p95_latency_s": 0.3912,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m50|ts42|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.0008960783598013222,
+        "mean_latency_s": 0.3039,
+        "natural_end": true,
+        "p95_latency_s": 0.3743,
+        "train_steps": 4359
+      },
+      "train_seed": 42
+    },
+    "GAT|h1|m50|ts42|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.307,
+          "natural_end": true,
+          "p95_latency_s": 0.3626,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.307,
+          "natural_end": true,
+          "p95_latency_s": 0.3626,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.307,
+          "natural_end": true,
+          "p95_latency_s": 0.3626,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m50|ts42|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.0031000981107354164,
+        "mean_latency_s": 0.2949,
+        "natural_end": true,
+        "p95_latency_s": 0.3593,
+        "train_steps": 4645
+      },
+      "train_seed": 42
+    },
+    "GAT|h1|m50|ts43|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3009,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3009,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3009,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m50|ts43|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.0010364658664911985,
+        "mean_latency_s": 0.3036,
+        "natural_end": true,
+        "p95_latency_s": 0.3759,
+        "train_steps": 4359
+      },
+      "train_seed": 43
+    },
+    "GAT|h1|m50|ts43|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3054,
+          "natural_end": true,
+          "p95_latency_s": 0.3656,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3054,
+          "natural_end": true,
+          "p95_latency_s": 0.3656,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3054,
+          "natural_end": true,
+          "p95_latency_s": 0.3656,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m50|ts43|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.001444737776182592,
+        "mean_latency_s": 0.2953,
+        "natural_end": true,
+        "p95_latency_s": 0.3593,
+        "train_steps": 4645
+      },
+      "train_seed": 43
+    },
+    "GAT|h1|m50|ts44|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3069,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3069,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3069,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m50|ts44|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.0010958416387438774,
+        "mean_latency_s": 0.3037,
+        "natural_end": true,
+        "p95_latency_s": 0.3743,
+        "train_steps": 4359
+      },
+      "train_seed": 44
+    },
+    "GAT|h1|m50|ts44|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m50|ts44|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.001989989075809717,
+        "mean_latency_s": 0.2946,
+        "natural_end": true,
+        "p95_latency_s": 0.3571,
+        "train_steps": 4645
+      },
+      "train_seed": 44
+    },
+    "GAT|h1|m50|ts45|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3091,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3091,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3091,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m50|ts45|fs101",
+      "obs_hops": 1,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.0009241073275916278,
+        "mean_latency_s": 0.3024,
+        "natural_end": true,
+        "p95_latency_s": 0.3743,
+        "train_steps": 4359
+      },
+      "train_seed": 45
+    },
+    "GAT|h1|m50|ts45|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h1|m50|ts45|fs102",
+      "obs_hops": 1,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.001710721175186336,
+        "mean_latency_s": 0.2949,
+        "natural_end": true,
+        "p95_latency_s": 0.3593,
+        "train_steps": 4645
+      },
+      "train_seed": 45
+    },
+    "GAT|h2|m100|ts41|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3509,
+          "natural_end": true,
+          "p95_latency_s": 0.7001,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3509,
+          "natural_end": true,
+          "p95_latency_s": 0.7001,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3509,
+          "natural_end": true,
+          "p95_latency_s": 0.7001,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m100|ts41|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9016,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.0007093061576597393,
+        "mean_latency_s": 0.3332,
+        "natural_end": true,
+        "p95_latency_s": 0.4834,
+        "train_steps": 8946
+      },
+      "train_seed": 41
+    },
+    "GAT|h2|m100|ts41|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3284,
+          "natural_end": true,
+          "p95_latency_s": 0.49,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3284,
+          "natural_end": true,
+          "p95_latency_s": 0.49,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3284,
+          "natural_end": true,
+          "p95_latency_s": 0.49,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m100|ts41|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9455,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.001311442581936717,
+        "mean_latency_s": 0.3346,
+        "natural_end": true,
+        "p95_latency_s": 0.4965,
+        "train_steps": 9387
+      },
+      "train_seed": 41
+    },
+    "GAT|h2|m100|ts42|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3565,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3565,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3565,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m100|ts42|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9016,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.0006769567262381315,
+        "mean_latency_s": 0.3329,
+        "natural_end": true,
+        "p95_latency_s": 0.4841,
+        "train_steps": 8946
+      },
+      "train_seed": 42
+    },
+    "GAT|h2|m100|ts42|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3291,
+          "natural_end": true,
+          "p95_latency_s": 0.4889,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3291,
+          "natural_end": true,
+          "p95_latency_s": 0.4889,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3291,
+          "natural_end": true,
+          "p95_latency_s": 0.4889,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m100|ts42|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9454,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.0035654562525451183,
+        "mean_latency_s": 0.3351,
+        "natural_end": true,
+        "p95_latency_s": 0.4962,
+        "train_steps": 9386
+      },
+      "train_seed": 42
+    },
+    "GAT|h2|m100|ts43|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3569,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3569,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3569,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m100|ts43|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9017,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.0014484459534287453,
+        "mean_latency_s": 0.3336,
+        "natural_end": true,
+        "p95_latency_s": 0.4841,
+        "train_steps": 8947
+      },
+      "train_seed": 43
+    },
+    "GAT|h2|m100|ts43|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3318,
+          "natural_end": true,
+          "p95_latency_s": 0.4934,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3318,
+          "natural_end": true,
+          "p95_latency_s": 0.4934,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3318,
+          "natural_end": true,
+          "p95_latency_s": 0.4934,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m100|ts43|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9454,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.0007750166696496308,
+        "mean_latency_s": 0.3349,
+        "natural_end": true,
+        "p95_latency_s": 0.496,
+        "train_steps": 9386
+      },
+      "train_seed": 43
+    },
+    "GAT|h2|m100|ts44|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3539,
+          "natural_end": true,
+          "p95_latency_s": 0.7001,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3539,
+          "natural_end": true,
+          "p95_latency_s": 0.7001,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3539,
+          "natural_end": true,
+          "p95_latency_s": 0.7001,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m100|ts44|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9016,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.0014427417190745473,
+        "mean_latency_s": 0.3328,
+        "natural_end": true,
+        "p95_latency_s": 0.4834,
+        "train_steps": 8946
+      },
+      "train_seed": 44
+    },
+    "GAT|h2|m100|ts44|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3264,
+          "natural_end": true,
+          "p95_latency_s": 0.4867,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3264,
+          "natural_end": true,
+          "p95_latency_s": 0.4867,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3264,
+          "natural_end": true,
+          "p95_latency_s": 0.4867,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m100|ts44|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9454,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.0008528933394700289,
+        "mean_latency_s": 0.3348,
+        "natural_end": true,
+        "p95_latency_s": 0.494,
+        "train_steps": 9386
+      },
+      "train_seed": 44
+    },
+    "GAT|h2|m100|ts45|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3569,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3569,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3569,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m100|ts45|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9016,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.0008256830042228103,
+        "mean_latency_s": 0.3336,
+        "natural_end": true,
+        "p95_latency_s": 0.4823,
+        "train_steps": 8946
+      },
+      "train_seed": 45
+    },
+    "GAT|h2|m100|ts45|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3326,
+          "natural_end": true,
+          "p95_latency_s": 0.494,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3326,
+          "natural_end": true,
+          "p95_latency_s": 0.494,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3326,
+          "natural_end": true,
+          "p95_latency_s": 0.494,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m100|ts45|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9455,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.0009790800977498293,
+        "mean_latency_s": 0.3351,
+        "natural_end": true,
+        "p95_latency_s": 0.4962,
+        "train_steps": 9387
+      },
+      "train_seed": 45
+    },
+    "GAT|h2|m200|ts41|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11194,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6381,
+          "natural_end": true,
+          "p95_latency_s": 1.2274,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11194,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6381,
+          "natural_end": true,
+          "p95_latency_s": 1.2274,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11194,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6381,
+          "natural_end": true,
+          "p95_latency_s": 1.2274,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m200|ts41|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16808,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.0026473202742636204,
+        "mean_latency_s": 0.5863,
+        "natural_end": true,
+        "p95_latency_s": 0.9304,
+        "train_steps": 16734
+      },
+      "train_seed": 41
+    },
+    "GAT|h2|m200|ts41|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7102,
+          "natural_end": true,
+          "p95_latency_s": 1.3287,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7102,
+          "natural_end": true,
+          "p95_latency_s": 1.3287,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7102,
+          "natural_end": true,
+          "p95_latency_s": 1.3287,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m200|ts41|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17160,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.0011608465574681759,
+        "mean_latency_s": 0.7429,
+        "natural_end": true,
+        "p95_latency_s": 1.4072,
+        "train_steps": 17086
+      },
+      "train_seed": 41
+    },
+    "GAT|h2|m200|ts42|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11194,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6372,
+          "natural_end": true,
+          "p95_latency_s": 1.2274,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11194,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6372,
+          "natural_end": true,
+          "p95_latency_s": 1.2274,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11194,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6372,
+          "natural_end": true,
+          "p95_latency_s": 1.2274,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m200|ts42|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16809,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.004108457826077938,
+        "mean_latency_s": 0.5857,
+        "natural_end": true,
+        "p95_latency_s": 0.9289,
+        "train_steps": 16735
+      },
+      "train_seed": 42
+    },
+    "GAT|h2|m200|ts42|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7236,
+          "natural_end": true,
+          "p95_latency_s": 1.3721,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7236,
+          "natural_end": true,
+          "p95_latency_s": 1.3721,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7236,
+          "natural_end": true,
+          "p95_latency_s": 1.3721,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m200|ts42|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17159,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.0010231222258880734,
+        "mean_latency_s": 0.7423,
+        "natural_end": true,
+        "p95_latency_s": 1.4072,
+        "train_steps": 17085
+      },
+      "train_seed": 42
+    },
+    "GAT|h2|m200|ts43|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11195,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6335,
+          "natural_end": true,
+          "p95_latency_s": 1.2357,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11195,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6335,
+          "natural_end": true,
+          "p95_latency_s": 1.2357,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11195,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6335,
+          "natural_end": true,
+          "p95_latency_s": 1.2357,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m200|ts43|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16808,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.0022626747377216816,
+        "mean_latency_s": 0.5861,
+        "natural_end": true,
+        "p95_latency_s": 0.9339,
+        "train_steps": 16734
+      },
+      "train_seed": 43
+    },
+    "GAT|h2|m200|ts43|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7103,
+          "natural_end": true,
+          "p95_latency_s": 1.3264,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7103,
+          "natural_end": true,
+          "p95_latency_s": 1.3264,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7103,
+          "natural_end": true,
+          "p95_latency_s": 1.3264,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m200|ts43|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17160,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.0024541355669498444,
+        "mean_latency_s": 0.7401,
+        "natural_end": true,
+        "p95_latency_s": 1.3976,
+        "train_steps": 17086
+      },
+      "train_seed": 43
+    },
+    "GAT|h2|m200|ts44|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6421,
+          "natural_end": true,
+          "p95_latency_s": 1.2674,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6421,
+          "natural_end": true,
+          "p95_latency_s": 1.2674,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6421,
+          "natural_end": true,
+          "p95_latency_s": 1.2674,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m200|ts44|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16810,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.0011438785586506128,
+        "mean_latency_s": 0.5863,
+        "natural_end": true,
+        "p95_latency_s": 0.9261,
+        "train_steps": 16736
+      },
+      "train_seed": 44
+    },
+    "GAT|h2|m200|ts44|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7191,
+          "natural_end": true,
+          "p95_latency_s": 1.3639,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7191,
+          "natural_end": true,
+          "p95_latency_s": 1.3639,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7191,
+          "natural_end": true,
+          "p95_latency_s": 1.3639,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m200|ts44|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17160,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.0006967285298742354,
+        "mean_latency_s": 0.7428,
+        "natural_end": true,
+        "p95_latency_s": 1.4072,
+        "train_steps": 17086
+      },
+      "train_seed": 44
+    },
+    "GAT|h2|m200|ts45|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.639,
+          "natural_end": true,
+          "p95_latency_s": 1.2607,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.639,
+          "natural_end": true,
+          "p95_latency_s": 1.2607,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.639,
+          "natural_end": true,
+          "p95_latency_s": 1.2607,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m200|ts45|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16809,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.0011512472992762923,
+        "mean_latency_s": 0.5862,
+        "natural_end": true,
+        "p95_latency_s": 0.9339,
+        "train_steps": 16735
+      },
+      "train_seed": 45
+    },
+    "GAT|h2|m200|ts45|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7081,
+          "natural_end": true,
+          "p95_latency_s": 1.3244,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7081,
+          "natural_end": true,
+          "p95_latency_s": 1.3244,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7081,
+          "natural_end": true,
+          "p95_latency_s": 1.3244,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m200|ts45|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17160,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.000478339905384928,
+        "mean_latency_s": 0.7427,
+        "natural_end": true,
+        "p95_latency_s": 1.4072,
+        "train_steps": 17086
+      },
+      "train_seed": 45
+    },
+    "GAT|h2|m50|ts41|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3047,
+          "natural_end": true,
+          "p95_latency_s": 0.3875,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3047,
+          "natural_end": true,
+          "p95_latency_s": 0.3875,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3047,
+          "natural_end": true,
+          "p95_latency_s": 0.3875,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m50|ts41|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.0006225281395018101,
+        "mean_latency_s": 0.3033,
+        "natural_end": true,
+        "p95_latency_s": 0.3651,
+        "train_steps": 4359
+      },
+      "train_seed": 41
+    },
+    "GAT|h2|m50|ts41|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3028,
+          "natural_end": true,
+          "p95_latency_s": 0.3616,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3028,
+          "natural_end": true,
+          "p95_latency_s": 0.3616,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3028,
+          "natural_end": true,
+          "p95_latency_s": 0.3616,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m50|ts41|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.0013239389518275857,
+        "mean_latency_s": 0.2947,
+        "natural_end": true,
+        "p95_latency_s": 0.3577,
+        "train_steps": 4645
+      },
+      "train_seed": 41
+    },
+    "GAT|h2|m50|ts42|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3055,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3055,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3055,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m50|ts42|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.0010645824950188398,
+        "mean_latency_s": 0.3026,
+        "natural_end": true,
+        "p95_latency_s": 0.3752,
+        "train_steps": 4359
+      },
+      "train_seed": 42
+    },
+    "GAT|h2|m50|ts42|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m50|ts42|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.0013342986349016428,
+        "mean_latency_s": 0.295,
+        "natural_end": true,
+        "p95_latency_s": 0.3577,
+        "train_steps": 4645
+      },
+      "train_seed": 42
+    },
+    "GAT|h2|m50|ts43|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3074,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3074,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3074,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m50|ts43|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.0015308267902582884,
+        "mean_latency_s": 0.303,
+        "natural_end": true,
+        "p95_latency_s": 0.3759,
+        "train_steps": 4359
+      },
+      "train_seed": 43
+    },
+    "GAT|h2|m50|ts43|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3055,
+          "natural_end": true,
+          "p95_latency_s": 0.3614,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3055,
+          "natural_end": true,
+          "p95_latency_s": 0.3614,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3055,
+          "natural_end": true,
+          "p95_latency_s": 0.3614,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m50|ts43|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.0015375639777630568,
+        "mean_latency_s": 0.2952,
+        "natural_end": true,
+        "p95_latency_s": 0.3593,
+        "train_steps": 4645
+      },
+      "train_seed": 43
+    },
+    "GAT|h2|m50|ts44|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3064,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3064,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3064,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m50|ts44|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.0018711582524701953,
+        "mean_latency_s": 0.3026,
+        "natural_end": true,
+        "p95_latency_s": 0.3667,
+        "train_steps": 4359
+      },
+      "train_seed": 44
+    },
+    "GAT|h2|m50|ts44|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3089,
+          "natural_end": true,
+          "p95_latency_s": 0.3707,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3089,
+          "natural_end": true,
+          "p95_latency_s": 0.3707,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3089,
+          "natural_end": true,
+          "p95_latency_s": 0.3707,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m50|ts44|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.0012421662686392665,
+        "mean_latency_s": 0.295,
+        "natural_end": true,
+        "p95_latency_s": 0.3564,
+        "train_steps": 4645
+      },
+      "train_seed": 44
+    },
+    "GAT|h2|m50|ts45|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2910,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.307,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2910,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.307,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2910,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.307,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m50|ts45|fs101",
+      "obs_hops": 2,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.0008225251222029328,
+        "mean_latency_s": 0.3026,
+        "natural_end": true,
+        "p95_latency_s": 0.3718,
+        "train_steps": 4359
+      },
+      "train_seed": 45
+    },
+    "GAT|h2|m50|ts45|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3096,
+          "natural_end": true,
+          "p95_latency_s": 0.3679,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3096,
+          "natural_end": true,
+          "p95_latency_s": 0.3679,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3096,
+          "natural_end": true,
+          "p95_latency_s": 0.3679,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h2|m50|ts45|fs102",
+      "obs_hops": 2,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.0010740180732682347,
+        "mean_latency_s": 0.2943,
+        "natural_end": true,
+        "p95_latency_s": 0.3564,
+        "train_steps": 4645
+      },
+      "train_seed": 45
+    },
+    "GAT|h3|m100|ts41|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3577,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3577,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3577,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m100|ts41|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9017,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.0009674666216596961,
+        "mean_latency_s": 0.3338,
+        "natural_end": true,
+        "p95_latency_s": 0.4834,
+        "train_steps": 8947
+      },
+      "train_seed": 41
+    },
+    "GAT|h3|m100|ts41|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3326,
+          "natural_end": true,
+          "p95_latency_s": 0.494,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3326,
+          "natural_end": true,
+          "p95_latency_s": 0.494,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3326,
+          "natural_end": true,
+          "p95_latency_s": 0.494,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m100|ts41|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9455,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.0007145280251279473,
+        "mean_latency_s": 0.3352,
+        "natural_end": true,
+        "p95_latency_s": 0.4965,
+        "train_steps": 9387
+      },
+      "train_seed": 41
+    },
+    "GAT|h3|m100|ts42|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3575,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3575,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3575,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m100|ts42|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9016,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.002188348211348057,
+        "mean_latency_s": 0.3336,
+        "natural_end": true,
+        "p95_latency_s": 0.4841,
+        "train_steps": 8946
+      },
+      "train_seed": 42
+    },
+    "GAT|h3|m100|ts42|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3303,
+          "natural_end": true,
+          "p95_latency_s": 0.4921,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3303,
+          "natural_end": true,
+          "p95_latency_s": 0.4921,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3303,
+          "natural_end": true,
+          "p95_latency_s": 0.4921,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m100|ts42|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9454,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.0012376030208542943,
+        "mean_latency_s": 0.3348,
+        "natural_end": true,
+        "p95_latency_s": 0.4977,
+        "train_steps": 9386
+      },
+      "train_seed": 42
+    },
+    "GAT|h3|m100|ts43|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3577,
+          "natural_end": true,
+          "p95_latency_s": 0.7076,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3577,
+          "natural_end": true,
+          "p95_latency_s": 0.7076,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3577,
+          "natural_end": true,
+          "p95_latency_s": 0.7076,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m100|ts43|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9017,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.000694148417096585,
+        "mean_latency_s": 0.3333,
+        "natural_end": true,
+        "p95_latency_s": 0.4841,
+        "train_steps": 8947
+      },
+      "train_seed": 43
+    },
+    "GAT|h3|m100|ts43|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3322,
+          "natural_end": true,
+          "p95_latency_s": 0.4934,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3322,
+          "natural_end": true,
+          "p95_latency_s": 0.4934,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3322,
+          "natural_end": true,
+          "p95_latency_s": 0.4934,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m100|ts43|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9455,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.0008854353218339384,
+        "mean_latency_s": 0.335,
+        "natural_end": true,
+        "p95_latency_s": 0.4965,
+        "train_steps": 9387
+      },
+      "train_seed": 43
+    },
+    "GAT|h3|m100|ts44|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3573,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3573,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3573,
+          "natural_end": true,
+          "p95_latency_s": 0.7096,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m100|ts44|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9016,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.0006831567734479904,
+        "mean_latency_s": 0.3338,
+        "natural_end": true,
+        "p95_latency_s": 0.4834,
+        "train_steps": 8946
+      },
+      "train_seed": 44
+    },
+    "GAT|h3|m100|ts44|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3322,
+          "natural_end": true,
+          "p95_latency_s": 0.4937,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3322,
+          "natural_end": true,
+          "p95_latency_s": 0.4937,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3322,
+          "natural_end": true,
+          "p95_latency_s": 0.4937,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m100|ts44|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9454,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.0007385475910268724,
+        "mean_latency_s": 0.3348,
+        "natural_end": true,
+        "p95_latency_s": 0.4938,
+        "train_steps": 9386
+      },
+      "train_seed": 44
+    },
+    "GAT|h3|m100|ts45|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3514,
+          "natural_end": true,
+          "p95_latency_s": 0.7001,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3514,
+          "natural_end": true,
+          "p95_latency_s": 0.7001,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5904,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3514,
+          "natural_end": true,
+          "p95_latency_s": 0.7001,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m100|ts45|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 100.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7629,
+        "conservation_ok": true,
+        "decisions": 9017,
+        "in_system_ratio": 0.1219,
+        "last_loss": 0.0012250643922016025,
+        "mean_latency_s": 0.334,
+        "natural_end": true,
+        "p95_latency_s": 0.4823,
+        "train_steps": 8947
+      },
+      "train_seed": 45
+    },
+    "GAT|h3|m100|ts45|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3321,
+          "natural_end": true,
+          "p95_latency_s": 0.4934,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3321,
+          "natural_end": true,
+          "p95_latency_s": 0.4934,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9973,
+          "conservation_ok": true,
+          "decisions": 5944,
+          "in_system_ratio": 0.0027,
+          "last_loss": null,
+          "mean_latency_s": 0.3321,
+          "natural_end": true,
+          "p95_latency_s": 0.4934,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m100|ts45|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 100.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.774,
+        "conservation_ok": true,
+        "decisions": 9455,
+        "in_system_ratio": 0.111,
+        "last_loss": 0.0007608155719935894,
+        "mean_latency_s": 0.3349,
+        "natural_end": true,
+        "p95_latency_s": 0.496,
+        "train_steps": 9387
+      },
+      "train_seed": 45
+    },
+    "GAT|h3|m200|ts41|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11195,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6324,
+          "natural_end": true,
+          "p95_latency_s": 1.2239,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11195,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6324,
+          "natural_end": true,
+          "p95_latency_s": 1.2239,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9469,
+          "conservation_ok": true,
+          "decisions": 11195,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6324,
+          "natural_end": true,
+          "p95_latency_s": 1.2239,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m200|ts41|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16810,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.0038627467583864927,
+        "mean_latency_s": 0.5865,
+        "natural_end": true,
+        "p95_latency_s": 0.9304,
+        "train_steps": 16736
+      },
+      "train_seed": 41
+    },
+    "GAT|h3|m200|ts41|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7103,
+          "natural_end": true,
+          "p95_latency_s": 1.3264,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7103,
+          "natural_end": true,
+          "p95_latency_s": 1.3264,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7103,
+          "natural_end": true,
+          "p95_latency_s": 1.3264,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m200|ts41|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17160,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.0027150060050189495,
+        "mean_latency_s": 0.743,
+        "natural_end": true,
+        "p95_latency_s": 1.4072,
+        "train_steps": 17086
+      },
+      "train_seed": 41
+    },
+    "GAT|h3|m200|ts42|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6419,
+          "natural_end": true,
+          "p95_latency_s": 1.2676,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6419,
+          "natural_end": true,
+          "p95_latency_s": 1.2676,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6419,
+          "natural_end": true,
+          "p95_latency_s": 1.2676,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m200|ts42|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16809,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.003076109103858471,
+        "mean_latency_s": 0.5862,
+        "natural_end": true,
+        "p95_latency_s": 0.9289,
+        "train_steps": 16735
+      },
+      "train_seed": 42
+    },
+    "GAT|h3|m200|ts42|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7095,
+          "natural_end": true,
+          "p95_latency_s": 1.3177,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7095,
+          "natural_end": true,
+          "p95_latency_s": 1.3177,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7095,
+          "natural_end": true,
+          "p95_latency_s": 1.3177,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m200|ts42|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17159,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.0010137981735169888,
+        "mean_latency_s": 0.7425,
+        "natural_end": true,
+        "p95_latency_s": 1.4072,
+        "train_steps": 17085
+      },
+      "train_seed": 42
+    },
+    "GAT|h3|m200|ts43|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6376,
+          "natural_end": true,
+          "p95_latency_s": 1.2623,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6376,
+          "natural_end": true,
+          "p95_latency_s": 1.2623,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6376,
+          "natural_end": true,
+          "p95_latency_s": 1.2623,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m200|ts43|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16809,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.0015770306345075369,
+        "mean_latency_s": 0.5861,
+        "natural_end": true,
+        "p95_latency_s": 0.9339,
+        "train_steps": 16735
+      },
+      "train_seed": 43
+    },
+    "GAT|h3|m200|ts43|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7238,
+          "natural_end": true,
+          "p95_latency_s": 1.3636,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7238,
+          "natural_end": true,
+          "p95_latency_s": 1.3636,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11321,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7238,
+          "natural_end": true,
+          "p95_latency_s": 1.3636,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m200|ts43|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17160,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.0012412955984473228,
+        "mean_latency_s": 0.7401,
+        "natural_end": true,
+        "p95_latency_s": 1.3976,
+        "train_steps": 17086
+      },
+      "train_seed": 43
+    },
+    "GAT|h3|m200|ts44|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6419,
+          "natural_end": true,
+          "p95_latency_s": 1.2676,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6419,
+          "natural_end": true,
+          "p95_latency_s": 1.2676,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11196,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6419,
+          "natural_end": true,
+          "p95_latency_s": 1.2676,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m200|ts44|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16809,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.002411625115200877,
+        "mean_latency_s": 0.5864,
+        "natural_end": true,
+        "p95_latency_s": 0.9261,
+        "train_steps": 16735
+      },
+      "train_seed": 44
+    },
+    "GAT|h3|m200|ts44|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7073,
+          "natural_end": true,
+          "p95_latency_s": 1.3192,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7073,
+          "natural_end": true,
+          "p95_latency_s": 1.3192,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9238,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7073,
+          "natural_end": true,
+          "p95_latency_s": 1.3192,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m200|ts44|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17160,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.0006448226631619036,
+        "mean_latency_s": 0.7428,
+        "natural_end": true,
+        "p95_latency_s": 1.4072,
+        "train_steps": 17086
+      },
+      "train_seed": 44
+    },
+    "GAT|h3|m200|ts45|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11197,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6379,
+          "natural_end": true,
+          "p95_latency_s": 1.2636,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11197,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6379,
+          "natural_end": true,
+          "p95_latency_s": 1.2636,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9475,
+          "conservation_ok": true,
+          "decisions": 11197,
+          "in_system_ratio": 0.0068,
+          "last_loss": null,
+          "mean_latency_s": 0.6379,
+          "natural_end": true,
+          "p95_latency_s": 1.2636,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m200|ts45|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 200.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.7246,
+        "conservation_ok": true,
+        "decisions": 16810,
+        "in_system_ratio": 0.1203,
+        "last_loss": 0.056159839034080505,
+        "mean_latency_s": 0.5862,
+        "natural_end": true,
+        "p95_latency_s": 0.9339,
+        "train_steps": 16736
+      },
+      "train_seed": 45
+    },
+    "GAT|h3|m200|ts45|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7194,
+          "natural_end": true,
+          "p95_latency_s": 1.36,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7194,
+          "natural_end": true,
+          "p95_latency_s": 1.36,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9244,
+          "conservation_ok": true,
+          "decisions": 11322,
+          "in_system_ratio": 0.0079,
+          "last_loss": null,
+          "mean_latency_s": 0.7194,
+          "natural_end": true,
+          "p95_latency_s": 1.36,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m200|ts45|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 200.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.7023,
+        "conservation_ok": true,
+        "decisions": 17160,
+        "in_system_ratio": 0.117,
+        "last_loss": 0.0005519359256140888,
+        "mean_latency_s": 0.7425,
+        "natural_end": true,
+        "p95_latency_s": 1.4072,
+        "train_steps": 17086
+      },
+      "train_seed": 45
+    },
+    "GAT|h3|m50|ts41|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3067,
+          "natural_end": true,
+          "p95_latency_s": 0.3868,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3067,
+          "natural_end": true,
+          "p95_latency_s": 0.3868,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3067,
+          "natural_end": true,
+          "p95_latency_s": 0.3868,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m50|ts41|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.001241220161318779,
+        "mean_latency_s": 0.3036,
+        "natural_end": true,
+        "p95_latency_s": 0.3743,
+        "train_steps": 4359
+      },
+      "train_seed": 41
+    },
+    "GAT|h3|m50|ts41|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3044,
+          "natural_end": true,
+          "p95_latency_s": 0.3616,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3044,
+          "natural_end": true,
+          "p95_latency_s": 0.3616,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3044,
+          "natural_end": true,
+          "p95_latency_s": 0.3616,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m50|ts41|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.0010711430804803967,
+        "mean_latency_s": 0.2937,
+        "natural_end": true,
+        "p95_latency_s": 0.3559,
+        "train_steps": 4645
+      },
+      "train_seed": 41
+    },
+    "GAT|h3|m50|ts42|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3086,
+          "natural_end": true,
+          "p95_latency_s": 0.3912,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3086,
+          "natural_end": true,
+          "p95_latency_s": 0.3912,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3086,
+          "natural_end": true,
+          "p95_latency_s": 0.3912,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m50|ts42|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.0023287851363420486,
+        "mean_latency_s": 0.3043,
+        "natural_end": true,
+        "p95_latency_s": 0.3752,
+        "train_steps": 4359
+      },
+      "train_seed": 42
+    },
+    "GAT|h3|m50|ts42|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m50|ts42|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.0016166658606380224,
+        "mean_latency_s": 0.2952,
+        "natural_end": true,
+        "p95_latency_s": 0.3577,
+        "train_steps": 4645
+      },
+      "train_seed": 42
+    },
+    "GAT|h3|m50|ts43|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3067,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3067,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3067,
+          "natural_end": true,
+          "p95_latency_s": 0.3823,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m50|ts43|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.0007608633604831994,
+        "mean_latency_s": 0.3034,
+        "natural_end": true,
+        "p95_latency_s": 0.3759,
+        "train_steps": 4359
+      },
+      "train_seed": 43
+    },
+    "GAT|h3|m50|ts43|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3116,
+          "natural_end": true,
+          "p95_latency_s": 0.3715,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m50|ts43|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.0036918604746460915,
+        "mean_latency_s": 0.2951,
+        "natural_end": true,
+        "p95_latency_s": 0.3593,
+        "train_steps": 4645
+      },
+      "train_seed": 43
+    },
+    "GAT|h3|m50|ts44|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.31,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.31,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.31,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m50|ts44|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.001716491300612688,
+        "mean_latency_s": 0.3039,
+        "natural_end": true,
+        "p95_latency_s": 0.3718,
+        "train_steps": 4359
+      },
+      "train_seed": 44
+    },
+    "GAT|h3|m50|ts44|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3051,
+          "natural_end": true,
+          "p95_latency_s": 0.3656,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3051,
+          "natural_end": true,
+          "p95_latency_s": 0.3656,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3051,
+          "natural_end": true,
+          "p95_latency_s": 0.3656,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m50|ts44|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.001086727948859334,
+        "mean_latency_s": 0.2952,
+        "natural_end": true,
+        "p95_latency_s": 0.3577,
+        "train_steps": 4645
+      },
+      "train_seed": 44
+    },
+    "GAT|h3|m50|ts45|fs101": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3109,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3109,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 0.9945,
+          "conservation_ok": true,
+          "decisions": 2909,
+          "in_system_ratio": 0.0055,
+          "last_loss": null,
+          "mean_latency_s": 0.3109,
+          "natural_end": true,
+          "p95_latency_s": 0.3917,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m50|ts45|fs101",
+      "obs_hops": 3,
+      "offered_mbps": 50.0,
+      "traffic_seed": 101,
+      "train": {
+        "completion_ratio": 0.747,
+        "conservation_ok": true,
+        "decisions": 4423,
+        "in_system_ratio": 0.1191,
+        "last_loss": 0.0007522008381783962,
+        "mean_latency_s": 0.3021,
+        "natural_end": true,
+        "p95_latency_s": 0.3743,
+        "train_steps": 4359
+      },
+      "train_seed": 45
+    },
+    "GAT|h3|m50|ts45|fs102": {
+      "contract": "GAT",
+      "eval": [
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3056,
+          "natural_end": true,
+          "p95_latency_s": 0.3654,
+          "seed": 201,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3056,
+          "natural_end": true,
+          "p95_latency_s": 0.3654,
+          "seed": 202,
+          "train_steps": 0
+        },
+        {
+          "completion_ratio": 1.0,
+          "conservation_ok": true,
+          "decisions": 3056,
+          "in_system_ratio": 0.0,
+          "last_loss": null,
+          "mean_latency_s": 0.3056,
+          "natural_end": true,
+          "p95_latency_s": 0.3654,
+          "seed": 203,
+          "train_steps": 0
+        }
+      ],
+      "key": "GAT|h3|m50|ts45|fs102",
+      "obs_hops": 3,
+      "offered_mbps": 50.0,
+      "traffic_seed": 102,
+      "train": {
+        "completion_ratio": 0.786,
+        "conservation_ok": true,
+        "decisions": 4714,
+        "in_system_ratio": 0.1171,
+        "last_loss": 0.0012462688609957695,
+        "mean_latency_s": 0.2939,
+        "natural_end": true,
+        "p95_latency_s": 0.3559,
+        "train_steps": 4645
+      },
+      "train_seed": 45
+    }
+  }
+}

@@ -1,0 +1,2 @@
+run_id,experiment_id,attempt_id,arm,model_seed,traffic_seed,execution_status,artifact_status,analysis_status,claim_eligible,code_commit,request_hash,effective_config_hash,artifact_uri,artifact_hash,started_at,ended_at,exclusion_reason
+

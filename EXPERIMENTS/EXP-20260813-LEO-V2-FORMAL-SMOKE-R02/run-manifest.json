@@ -1,0 +1,31 @@
+{
+  "execution_authorized": false,
+  "experiment_id": "EXP-20260813-LEO-V2-FORMAL-SMOKE-R02",
+  "planned_runs": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "code_sha256": "34a30a4285e4c8f3085fd6bc237c2852e8b41405c16d03981cf4048148a14462",
+      "config_path": "resolved/EXP-20260813-LEO-V2-FORMAL-SMOKE-R02-main-s7.leo-sim.yaml",
+      "config_sha256": "a078e080afd0d8940b2840a0d78433b171870338c9820c2951f47391926df928",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "b01506fc2d7f363b9535d988e9b0016883d5e123927eb75e49476f9967dbd979",
+        "CODE/scripts/remote/deployment_guard.py": "e95c73295881c1721e91f3ab48ea0d0e873556e110b9b9e85414b3bb6ae65511",
+        "CODE/scripts/remote/remote_job.py": "3f725a1b79c4c7de9ee7db062b0e522a355df0f073df30ad29d6f89111cf1910",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "",
+      "run_id": "EXP-20260813-LEO-V2-FORMAL-SMOKE-R02-main-s7",
+      "runtime_kind": "leo_sim_v2",
+      "seed": 7,
+      "trace_identity_sha256": "7f784093682b952626fd2ae161f7ee81e469c173e09cfbcf396ccfc47093a871"
+    }
+  ],
+  "request_sha256": "27e4a1aa19a3d430718436ce72225dee22a817971f10025907098ad1bf0869aa",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-run-manifest/v1"
+}

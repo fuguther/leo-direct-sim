@@ -1,0 +1,17 @@
+{
+  "artifact_hashes": {
+    "RUNBOOK.md": "d1ac23865b269110221332577f8e18ea5ff27a308e5734178e068457e4346d6d",
+    "analysis-request.json": "6914411f51793f0d299696e1283c40b2dcd4a62d7d4d65ce97f892bc7ed1840e",
+    "request.json": "27e4a1aa19a3d430718436ce72225dee22a817971f10025907098ad1bf0869aa",
+    "resolved/EXP-20260813-LEO-V2-FORMAL-SMOKE-R02-main-s7.leo-sim.yaml": "003b8c3f263df677a2213c9940e07331988a64f3a1590aa913f6ae8adc946c34",
+    "run-manifest.json": "89b82515091f091b399bea4d132ae41957b7b0c534028e0a7a362ee74d789171"
+  },
+  "errors": [],
+  "execution_authorized": false,
+  "experiment_id": "EXP-20260813-LEO-V2-FORMAL-SMOKE-R02",
+  "launcher_generated": false,
+  "request_sha256": "27e4a1aa19a3d430718436ce72225dee22a817971f10025907098ad1bf0869aa",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-compile-report/v1",
+  "status": "COMPILED_REVIEW_REQUIRED"
+}
