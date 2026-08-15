@@ -2,6 +2,7 @@
 
 ## 当前状态
 
+- 2026-08-16 仓库已公开（https://github.com/fuguther/leo-direct-sim）：公开前扫描无密钥/内网地址/第三方论文全文；MIT LICENSE 已加；GitHub Actions CI 已启用（公开库免费），首次 run success（23s，313 测试）。待办 4 中「公开」相关项已完成。
 - 2026-08-16 新基地建立：从旧私有工作区 `fuguther/leo-research-workspace` 分拆，只含新平台（leo_sim V2）及其治理链与现行科研资产；不带 git 历史，旧库保留全部历史与旧平台（Gateway 汇聚）代码。白名单与取舍依据见 `ANALYSIS/PLATFORM-DOCUMENTATION/05-new-repo-plan.md`。
 - 已带证据状态（继承自旧库 NOTES，细节可回旧库查证）：五类机制验收 PASS；Gateway/直连同 trace 对照双臂可运行；DDQN train/eval 全链（VM，TF 2.13.1 CPU）PASS 且 receipt verified；GAT/MPNN 图编码器已接入学习热路径并通过验收；人口重力流量已实现并通过 platform-check。以上均只证明工程链可运行，不证明算法优越。
 - 待办（按优先级）：
