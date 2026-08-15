@@ -2,6 +2,7 @@
 
 ## 当前状态
 
+- 2026-08-16 VM 根分区清理完成：/tmp 下 39 个 leo-* 实验项（37G，含 8-15 正式学习实验 formal-exp1/exp2 的 receipt 与检查点）整体迁至 `/data/leo-tmp-results-salvage-20260816/`（mv 逐项校验，0 失败）；根分区从 100% 满恢复至 10% 占用。教训记入纪律：任何 `--out` 一律指向 /data 下路径；salvage 目录内容的去留待用户逐条批准。
 - 2026-08-16 VM 部署链适配并首验通过：规范 VM 根改为 `/data/论文/leo-direct-sim`（PR #1，7 文件 9 处）、deployment_guard 顶层布局适配（PR #2）；已从 main `de5dc92` 部署到 VM 新独立目录（200 文件，本地/远端 tree SHA `800bfe77…` 一致，部署回执 `8e98cc0a…`）。VM 冒烟：config validate OK、dry-run OK、真实 smoke run 守恒（conservation_ok=true、IN_SYSTEM_AT_STOP=0）且 receipt verify 通过。**注意：VM 根分区 `/` 已 100% 满（40G/40G），/tmp 不可用**——本次唯一失败就是 /tmp 写盘触发 fail-closed（行为正确）；/data 仍有 431G。/tmp 清理待用户决定。
 - 2026-08-16 仓库已公开（https://github.com/fuguther/leo-direct-sim）：公开前扫描无密钥/内网地址/第三方论文全文；MIT LICENSE 已加；GitHub Actions CI 已启用（公开库免费），首次 run success（23s，313 测试）。待办 4 中「公开」相关项已完成。
 - 2026-08-16 新基地建立：从旧私有工作区 `fuguther/leo-research-workspace` 分拆，只含新平台（leo_sim V2）及其治理链与现行科研资产；不带 git 历史，旧库保留全部历史与旧平台（Gateway 汇聚）代码。白名单与取舍依据见 `ANALYSIS/PLATFORM-DOCUMENTATION/05-new-repo-plan.md`。
