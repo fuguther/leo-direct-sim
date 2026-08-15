@@ -2,6 +2,8 @@
 
 ## 当前状态
 
+- 2026-08-16 任务 2（手工可算最小场景解析断言）完成：`CODE/leo_sim/tests/test_analytic_scenarios.py` 4 场景——单星直连精确时延（2·(0.08+PROP_GSL)，abs 1e-9）、两跳转发精确总时延、接入槽满等待计数（slots=1 被 8s 服务占死：requests=1/preposition_grants=1/waiting_at_stop=1/双包 IN_SYSTEM）、horizon 在途结算（occupied isl_s = horizon − t_start 精确到账）。推导全部写进 docstring。
+- 2026-08-16 任务 1（reward/观测迁移对照）完成：确认三处漂移 bug（队列奖励 exp(-占用比)→M1 实测队列奖励 w1·exp(−β·t)、deliver 1.0→arrive_reward=50、own_state 聚合→M2 逐方向 4 维缺方向=1.0），已修复并合并 PR #11（CI pytest pass 14s；本地 319 passed/0 failed，基线 313）。逐分量对照表：`ANALYSIS/REWARD-DIFF-20260816.md`；golden 防漂移：`CODE/leo_sim/tests/test_reward_migration.py`。另发现：`CODE/experiment_platform/tests` 5 个失败为 main 既有（缺 EXPERIMENTS/ANALYSIS 文件，不在 CI 范围），待处置。
 - 2026-08-16 VM 根分区清理完成：/tmp 下 39 个 leo-* 实验项（37G，含 8-15 正式学习实验 formal-exp1/exp2 的 receipt 与检查点）整体迁至 `/data/leo-tmp-results-salvage-20260816/`（mv 逐项校验，0 失败）；根分区从 100% 满恢复至 10% 占用。教训记入纪律：任何 `--out` 一律指向 /data 下路径；salvage 目录内容的去留待用户逐条批准。
 - 2026-08-16 VM 部署链适配并首验通过：规范 VM 根改为 `/data/论文/leo-direct-sim`（PR #1，7 文件 9 处）、deployment_guard 顶层布局适配（PR #2）；已从 main `de5dc92` 部署到 VM 新独立目录（200 文件，本地/远端 tree SHA `800bfe77…` 一致，部署回执 `8e98cc0a…`）。VM 冒烟：config validate OK、dry-run OK、真实 smoke run 守恒（conservation_ok=true、IN_SYSTEM_AT_STOP=0）且 receipt verify 通过。**注意：VM 根分区 `/` 已 100% 满（40G/40G），/tmp 不可用**——本次唯一失败就是 /tmp 写盘触发 fail-closed（行为正确）；/data 仍有 431G。/tmp 清理待用户决定。
 - 2026-08-16 仓库已公开（https://github.com/fuguther/leo-direct-sim）：公开前扫描无密钥/内网地址/第三方论文全文；MIT LICENSE 已加；GitHub Actions CI 已启用（公开库免费），首次 run success（23s，313 测试）。待办 4 中「公开」相关项已完成。
