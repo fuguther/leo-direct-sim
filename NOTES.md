@@ -2,6 +2,7 @@
 
 ## 当前状态
 
+- 2026-08-16 任务 3（决策级差分快照）完成：kernel 加 output-only decision sink（每跳：候选集/所选动作/自身队列/观测摘要 dim+sha256_16+L2），comparison.py 直臂写 decisions.jsonl；旧臂只读不可改，开 SIM_LOG_LEVEL=1 解析其 packet_fate dump 归一化为逐跳 JSONL（候选/观测字段该 runtime 不记录，置 null 并注明）。行为不变由 test_decision_snapshot.py 双跑对照（fates/totals/deliveries/occupied 等 9 键全等）证明。
 - 2026-08-16 任务 2（手工可算最小场景解析断言）完成：`CODE/leo_sim/tests/test_analytic_scenarios.py` 4 场景——单星直连精确时延（2·(0.08+PROP_GSL)，abs 1e-9）、两跳转发精确总时延、接入槽满等待计数（slots=1 被 8s 服务占死：requests=1/preposition_grants=1/waiting_at_stop=1/双包 IN_SYSTEM）、horizon 在途结算（occupied isl_s = horizon − t_start 精确到账）。推导全部写进 docstring。
 - 2026-08-16 任务 1（reward/观测迁移对照）完成：确认三处漂移 bug（队列奖励 exp(-占用比)→M1 实测队列奖励 w1·exp(−β·t)、deliver 1.0→arrive_reward=50、own_state 聚合→M2 逐方向 4 维缺方向=1.0），已修复并合并 PR #11（CI pytest pass 14s；本地 319 passed/0 failed，基线 313）。逐分量对照表：`ANALYSIS/REWARD-DIFF-20260816.md`；golden 防漂移：`CODE/leo_sim/tests/test_reward_migration.py`。另发现：`CODE/experiment_platform/tests` 5 个失败为 main 既有（缺 EXPERIMENTS/ANALYSIS 文件，不在 CI 范围），待处置。
 - 2026-08-16 VM 根分区清理完成：/tmp 下 39 个 leo-* 实验项（37G，含 8-15 正式学习实验 formal-exp1/exp2 的 receipt 与检查点）整体迁至 `/data/leo-tmp-results-salvage-20260816/`（mv 逐项校验，0 失败）；根分区从 100% 满恢复至 10% 占用。教训记入纪律：任何 `--out` 一律指向 /data 下路径；salvage 目录内容的去留待用户逐条批准。

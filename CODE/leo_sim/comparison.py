@@ -99,12 +99,23 @@ def _write_legacy_input(path: Path, gateway_names: list[str], constellation: str
                 writer.writerow([alias, "", "", "", ""])
 
 
+def _write_decisions_jsonl(records: list[dict], path: Path) -> str:
+    with path.open("w", encoding="utf-8") as handle:
+        for rec in records:
+            handle.write(json.dumps(rec, ensure_ascii=False, sort_keys=True)
+                         + "\n")
+    return str(path)
+
+
 def _direct_arm(resolved: dict, rows: list[dict], trace_bytes: bytes,
                 manifest: dict, out_dir: Path) -> dict:
     out_dir.mkdir(parents=True, exist_ok=False)
     started = time.perf_counter()
-    result = kernel.run_simulation(resolved, rows)
+    decisions: list[dict] = []
+    result = kernel.run_simulation(resolved, rows, decision_sink=decisions)
     wall = time.perf_counter() - started
+    decisions_path = _write_decisions_jsonl(
+        decisions, out_dir / "decisions.jsonl")
     run_receipt = receipt.write_run(
         str(out_dir), resolved, trace_bytes, manifest, result, rows)
     errors = receipt.verify_receipt_dir(str(out_dir))
@@ -121,8 +132,59 @@ def _direct_arm(resolved: dict, rows: list[dict], trace_bytes: bytes,
         "fate_counts": run_receipt["fate_counts"],
         "totals": run_receipt["totals"],
         "mechanisms": run_receipt["mechanisms"],
+        "decisions_log": decisions_path,
         "result_dir": str(out_dir),
     }
+
+
+def _legacy_decision_rows(run_trace_dir: Path) -> list[dict]:
+    """Normalize the retained runtime's packet_fate diagnostic dump into
+    per-hop decision rows.
+
+    The legacy runtime is read-only: for non-learning comparison policies it
+    logs only each packet's final hop path (packet_fate_log, dumped by
+    flush_replay_trace, SimulationRL.py:1292; columns :870-873). Per-hop
+    candidate sets and observation vectors are NOT logged by that runtime —
+    those fields are null here by construction, not by omission.
+    """
+    parquet = run_trace_dir / "packet_fate.parquet"
+    csv_gz = run_trace_dir / "packet_fate.csv.gz"
+    rows: list[dict] = []
+    if csv_gz.is_file():
+        import gzip
+        with gzip.open(csv_gz, "rt", encoding="utf-8") as handle:
+            records = list(csv.DictReader(handle))
+    elif parquet.is_file():
+        try:
+            import pandas as pd
+        except ImportError as exc:
+            raise ComparisonError(
+                "legacy packet_fate dump is parquet but pandas is unavailable; "
+                "cannot normalize legacy decision rows") from exc
+        records = pd.read_parquet(parquet).to_dict("records")
+    else:
+        raise ComparisonError(
+            f"legacy packet_fate dump missing in {run_trace_dir} "
+            "(SIM_LOG_LEVEL=1 was requested)")
+    for rec in records:
+        path_ids = [p for p in str(rec["path_csv"]).split("|") if p]
+        status = int(rec["status"])
+        terminal = "DELIVERED" if status == 0 else "LOST"
+        for i, sat_id in enumerate(path_ids):
+            nxt = path_ids[i + 1] if i + 1 < len(path_ids) else terminal
+            rows.append({
+                "t": None,
+                "pid": str(rec["block_id"]),
+                "od_pair": str(rec["od_pair"]),
+                "hop": i,
+                "sat": sat_id,
+                "kind": "forward" if i + 1 < len(path_ids) else "terminal",
+                "chosen": nxt,
+                "candidates": None,
+                "obs": None,
+                "source": "legacy_packet_fate_log",
+            })
+    return rows
 
 
 def _legacy_arm(resolved: dict, trace_path: Path, trace_sha: str,
@@ -161,6 +223,10 @@ def _legacy_arm(resolved: dict, trace_path: Path, trace_sha: str,
         "SIM_RESULTS_ROOT": str(legacy_root.resolve()),
         "SIM_SEED": str(int(cfg["scenario"]["seed"])),
         "SIM_GSL_KEEP_STABLE": "1",
+        # LOG_LEVEL 1 enables the retained runtime's packet_fate diagnostic
+        # dump (output only; no simulation semantics change) so the legacy
+        # arm can emit per-packet hop-path decision snapshots.
+        "SIM_LOG_LEVEL": "1",
         "SIM_GSL_HANDOVER_MODE": (
             "mbb" if cfg["access"]["association"] == "mbb" else "legacy"),
     })
@@ -186,6 +252,9 @@ def _legacy_arm(resolved: dict, trace_path: Path, trace_sha: str,
         raise ComparisonError("legacy_gateway trace receipt is absent or invalid")
     if trace_receipt.get("trace_sha256") != trace_sha:
         raise ComparisonError("legacy_gateway consumed a different trace SHA-256")
+    decisions_path = _write_decisions_jsonl(
+        _legacy_decision_rows(receipts[0].parent),
+        out_dir / "decisions.jsonl")
     return {
         "runtime": "legacy_gateway",
         "wall_seconds": wall,
@@ -195,6 +264,7 @@ def _legacy_arm(resolved: dict, trace_path: Path, trace_sha: str,
         "packets": trace_receipt["packets"],
         "bits": trace_receipt["bits"],
         "projection": trace_receipt["projection"],
+        "decisions_log": decisions_path,
         "result_dir": str(receipts[0].parent.parent),
         "log": str(log_path),
     }
@@ -264,6 +334,10 @@ def run_comparison(config_path: str | Path, out_dir: str | Path) -> dict:
         "same_trace": same_trace,
         "checks": checks,
         "seed": cfg["scenario"]["seed"],
+        "decision_snapshots": {
+            "satellite_direct": "per-hop: candidates + chosen + own queues + observation summary (kernel decision sink, output only)",
+            "legacy_gateway": "per-packet hop path only (packet_fate_log); per-hop candidates/observations are not logged by the retained read-only runtime",
+        },
         "arms": {"satellite_direct": direct, "legacy_gateway": legacy},
     }
     (root / "comparison-summary.json").write_text(
