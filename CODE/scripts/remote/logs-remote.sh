@@ -58,7 +58,7 @@ from pathlib import Path
 
 status_path = Path(sys.argv[1])
 log_dir = Path(os.path.abspath(sys.argv[2]))
-expected = Path("/data/论文/LEO-Research-Workspace/CODE/Results/_overnight_logs")
+expected = Path("/data/论文/leo-direct-sim/CODE/Results/_overnight_logs")
 results = expected.parent
 if results.is_symlink() or not results.is_dir() or results.resolve(strict=True) != results:
     raise SystemExit("canonical Results path is missing, linked, or resolves elsewhere")
@@ -98,7 +98,7 @@ from collections import deque
 from pathlib import Path
 
 root = Path(os.path.abspath(sys.argv[1]))
-expected = Path("/data/论文/LEO-Research-Workspace/CODE/Results/_overnight_logs")
+expected = Path("/data/论文/leo-direct-sim/CODE/Results/_overnight_logs")
 results = expected.parent
 if root != expected or results.is_symlink() or not results.is_dir() or results.resolve(strict=True) != results:
     raise SystemExit("canonical Results/log root is missing, linked, or resolves elsewhere")

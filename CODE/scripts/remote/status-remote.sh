@@ -51,7 +51,7 @@ status_path = Path(sys.argv[1])
 session_override = sys.argv[2] or ""
 launch_nonce_override = sys.argv[3] or ""
 workspace = Path(os.path.abspath(sys.argv[4]))
-expected_workspace = Path("/data/论文/LEO-Research-Workspace")
+expected_workspace = Path("/data/论文/leo-direct-sim")
 if workspace != expected_workspace or workspace.is_symlink() or workspace.resolve(strict=True) != workspace:
     raise SystemExit("canonical workspace is missing, linked, or resolves elsewhere")
 results = workspace / "CODE" / "Results"
