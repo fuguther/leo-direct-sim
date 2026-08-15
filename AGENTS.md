@@ -25,6 +25,7 @@
 7. **禁止入库**：`CODE/Results/`、`leo_sim_out/`、`out/`、`remote.env`、`.env`、`__pycache__/`、`.DS_Store`（.gitignore 已配；发现漏网先补 gitignore 再提交）。
 8. **VM 部署**：只允许 main 上的干净 commit，经 `CODE/scripts/remote/push-remote.sh` 执行；跑实验前必须已部署；部署后记录回执 SHA。
 9. **矛盾处理**：发现历史/文档/代码互相矛盾时，并列报告出处与影响，禁止静默融合或擅自覆盖。
+10. **旧平台参照**：旧平台（Gateway 汇聚）代码在本机旧工作区 `/Users/lge/Desktop/LEO-Research-Workspace`（私有库 `fuguther/leo-research-workspace`），只读引用、禁止修改、**禁止复制进本库**（其为无 LICENSE 第三方仓库的衍生作品，本库公开）。参考旧平台先查 `ANALYSIS/PLATFORM-DOCUMENTATION/02-kimi-platform-spec.md` 的行号索引与「不一致清单」，迁移取舍以 `ANALYSIS/MIGRATION-BACKLOG-20260816.md` 为准。
 
 ## 防失控护栏
 
