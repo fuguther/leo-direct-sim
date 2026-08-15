@@ -42,6 +42,7 @@ shared by data and control; control has non-preemptive priority.
 from __future__ import annotations
 
 import math
+import hashlib
 from collections import deque
 
 import numpy as np
@@ -589,7 +590,7 @@ class ISLLink:
 
 class Kernel:
     def __init__(self, resolved: dict, rows: list[dict], geometry=None,
-                 learning_out_dir=None):
+                 learning_out_dir=None, decision_sink=None):
         cfg = resolved["config"]
         self.resolved = resolved
         self.cfg_sc = cfg["scenario"]
@@ -630,6 +631,9 @@ class Kernel:
                 "diagnostic runs)")
         self.geometry = geometry
         self.num_sats = geometry.num_satellites
+        # optional output-only per-hop decision snapshot sink (a list); when
+        # None the recording code paths are never entered
+        self.decision_sink = decision_sink
 
         self.ge_enabled = bool(self.cfg_links["ge_enabled"])
 
@@ -1410,6 +1414,44 @@ class Kernel:
         pkt.learning_reward = reward
         return action
 
+    def _record_decision(self, pkt: DataPacket, sat: int, kind: str,
+                         candidates: list, chosen: str) -> None:
+        """Append one per-hop decision snapshot to the optional decision sink.
+
+        Output only: never influences routing, learning, timing, or fates.
+        ``candidates`` is the legal action set at decision time; for learning
+        runs ``obs`` summarizes the observation actually used (dim, short
+        content hash, L2 norm) so decision streams are diffable without
+        storing full vectors.
+        """
+        if self.decision_sink is None:
+            return
+        obs = pkt.learning_state
+        obs_summary = None
+        if obs is not None:
+            arr = np.ascontiguousarray(np.asarray(obs, dtype=np.float64))
+            obs_summary = {
+                "contract": self.cfg_rt["contract"],
+                "dim": int(arr.size),
+                "sha256_16": hashlib.sha256(arr.tobytes()).hexdigest()[:16],
+                "l2_norm": float(np.linalg.norm(arr)),
+            }
+        self.decision_sink.append({
+            "t": float(self.env.now),
+            "pid": pkt.pid,
+            "src": pkt.src,
+            "dst": pkt.dst,
+            "sat": sat,
+            "kind": kind,
+            "policy": (self.cfg_rt["policy"] if self.learner is None
+                       else f"ddqn:{self.cfg_rt['contract']}"),
+            "candidates": list(candidates),
+            "chosen": chosen,
+            "own_queue_bits": {d: int(lnk.data_bits + lnk.ctrl_bits)
+                               for d, lnk in self.isls[sat].items()},
+            "obs": obs_summary,
+        })
+
     def _decide(self, pkt: DataPacket, sat: int) -> None:
         now = self.env.now
         if pkt.deadline is not None and now > pkt.deadline:
@@ -1431,6 +1473,8 @@ class Kernel:
                     )
                     if action != "deliver":
                         raise KernelError("DDQN selected a non-deliver action from deliver-only mask")
+                self._record_decision(pkt, sat, "deliver", ["deliver"],
+                                      "deliver")
                 dl.put(pkt)
             else:
                 self._fail(pkt, "ACCESS_QUEUE_OVERFLOW")
@@ -1468,6 +1512,7 @@ class Kernel:
                 action = self._learning_action(pkt, sat, mask)
             else:
                 action = legal[0]
+            self._record_decision(pkt, sat, "forward", legal, action)
             self.isls[sat][action].put_data(pkt)
             return
         if unavailable:
@@ -1696,7 +1741,8 @@ class Kernel:
 
 
 def run_simulation(resolved: dict, rows: list[dict], geometry=None,
-                   learning_out_dir=None) -> dict:
+                   learning_out_dir=None, decision_sink=None) -> dict:
     kern = Kernel(resolved, rows, geometry=geometry,
-                  learning_out_dir=learning_out_dir)
+                  learning_out_dir=learning_out_dir,
+                  decision_sink=decision_sink)
     return kern.run()
