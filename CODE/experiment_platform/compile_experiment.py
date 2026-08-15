@@ -52,9 +52,9 @@ NON_LEARNING_DORMANT_CONFIG_PATHS = [
     "csr",
 ]
 EXECUTION_BOUNDARY = {
-    "remote_workspace": "/data/论文/LEO-Research-Workspace",
-    "remote_code": "/data/论文/LEO-Research-Workspace/CODE",
-    "remote_results": "/data/论文/LEO-Research-Workspace/CODE/Results",
+    "remote_workspace": "/data/论文/leo-direct-sim",
+    "remote_code": "/data/论文/leo-direct-sim/CODE",
+    "remote_results": "/data/论文/leo-direct-sim/CODE/Results",
     "forbidden_legacy_roots": [
         "/data/论文/MA-DRL_Routing_Simulator-main",
         "/data/论文/MA-DRL_Routing_Simulator-main/Results",

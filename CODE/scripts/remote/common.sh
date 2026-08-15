@@ -10,7 +10,7 @@ RSYNC_BIN="${RSYNC_BIN:-/usr/bin/rsync}"
 TAR_BIN="${TAR_BIN:-/usr/bin/tar}"
 GIT_BIN="${GIT_BIN:-/usr/bin/git}"
 LOCAL_PYTHON="${LOCAL_PYTHON:-python3}"
-CANONICAL_REMOTE_WORKSPACE_DIR="/data/论文/LEO-Research-Workspace"
+CANONICAL_REMOTE_WORKSPACE_DIR="/data/论文/leo-direct-sim"
 
 die() {
     echo "[remote] $*" >&2

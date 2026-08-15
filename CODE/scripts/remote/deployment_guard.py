@@ -17,7 +17,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
 
 
-CANONICAL_WORKSPACE = Path("/data/论文/LEO-Research-Workspace")
+CANONICAL_WORKSPACE = Path("/data/论文/leo-direct-sim")
 DEPLOYED_DIRS = (
     "ANALYSIS",
     "ARCHIVE-20260803",

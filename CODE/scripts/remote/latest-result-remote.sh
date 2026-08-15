@@ -23,7 +23,7 @@ from pathlib import Path
 
 status_path = Path(sys.argv[1]).resolve(strict=False)
 project_dir = Path(os.path.abspath(sys.argv[2]))
-expected_code = Path("/data/论文/LEO-Research-Workspace/CODE")
+expected_code = Path("/data/论文/leo-direct-sim/CODE")
 if project_dir != expected_code or project_dir.is_symlink() or project_dir.resolve(strict=True) != project_dir:
     raise SystemExit("canonical CODE path is missing, linked, or resolves elsewhere")
 results_dir = project_dir / "Results"

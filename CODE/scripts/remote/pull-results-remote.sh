@@ -169,7 +169,7 @@ def die(message: str) -> None:
 
 
 project_lexical = Path(os.path.abspath(sys.argv[1]))
-expected_code = Path("/data/论文/LEO-Research-Workspace/CODE")
+expected_code = Path("/data/论文/leo-direct-sim/CODE")
 if project_lexical != expected_code or project_lexical.is_symlink() or project_lexical.resolve(strict=True) != project_lexical:
     die(f"canonical CODE path is missing, linked, or resolves elsewhere: {project_lexical}")
 project_dir = project_lexical
