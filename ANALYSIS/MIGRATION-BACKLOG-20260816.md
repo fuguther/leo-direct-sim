@@ -39,8 +39,8 @@
 
 | # | 能力 | 旧平台位置 | 新平台现状 | 建议 |
 |---|---|---|---|---|
-| B1 | **M1 正确队列奖励** `w1·exp(−β·t)` | SimulationRL.py:10269（docstring 记 M1 fix） | 待核验（疑似漂移，用户报告的 training bug 嫌疑点） | **最高优先**：逐分量差分对照，今夜任务 1 的锚点 |
-| B2 | **M2 本地出向队列观测** | SimulationRL.py（_appendOwnQueueM2:9866 等） | 待核验 | 同上，与 B1 同包核验 |
+| B1 | **M1 正确队列奖励** `w1·exp(−β·t)` | SimulationRL.py:10269（docstring 记 M1 fix） | 已核验：修复前为 `exp(−占用比)`，系漂移 bug；2026-08-16 已按实测排队等待修复（REWARD-DIFF-20260816） | 最高优先：逐分量差分对照，任务 1 锚点 |
+| B2 | **M2 本地出向队列观测** | SimulationRL.py（_appendOwnQueueM2:9866 等） | 已核验：修复前 own_state 为聚合队列比，逐方向信息丢失；2026-08-16 已改为逐方向 4 维（缺方向=1.0 对齐 infQueue 截断） | 同上，与 B1 同包核验 |
 | B3 | 真正 Double-DQN（online argmax + target eval + next mask） | DDQNAgent:6190 | 已实现（learning.py:276、ddqn_targets:804） | 已一致，差分测试固化防漂移 |
 | B4 | C1/C3–C7 合同语义（计划定义：C1=自身+一跳；C3–C7 同 vis_k 缓存，差别仅在表示/聚合/AoI） | DDQNAgent + getDeepState 家族 | 已实现（learning.py:593/724） | 核验合同逐条等价；测试 test_learning.py 已有部分覆盖 |
 | B5 | **链路预算/香农速率**（计划原文：「经表征测试确认正确的轨道、几何、ISL 和链路预算计算」明确保留） | get_data_rate:8295、los_slant_range:8282 | **缺口**：新平台链路速率为配置常数 | **高优先迁移**：先用表征测试固定旧数值，再作为可选速率模型迁入（E1 已发现瓶颈在接入侧，速率建模直接影响主线结论） |

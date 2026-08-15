@@ -106,14 +106,19 @@
 空闲释放（`idle_release_s`，无 waiter 时 keep-stable 优先）、需求请求或空槽
 preposition；`_access_tick_sat`（`:1070`）把释放槽按 FIFO 顺序 grant 给等待端点。
 
-### 学习奖励（`_learning_action`，`:1373-1386`）
+### 学习奖励（`_learning_action`，`:1373-1386`；结算点 `_transmit` ISL 服务开始处）
 
-FACT，新平台奖励只有两条：
-```python
-if action == "deliver": reward = 1.0
-else: reward = exp(-(data_bits + ctrl_bits)/isl_queue_bits)   # (0,1]
-```
-无距离奖励、无 again/unav 惩罚、无 arrive 高奖励（对照旧平台第 9 节的整套奖励）。
+FACT（2026-08-16 迁移对齐修复后，对照 `ANALYSIS/REWARD-DIFF-20260816.md`）：
+- `deliver`：reward = `learning.arrive_reward`（默认 50，对齐旧 ArriveReward，SimulationRL.py:579）。
+- 转发：reward = M1 修正队列奖励 `w1·exp(−β·t)`（`learning.reward_w1=20`、
+  `reward_beta=200`），`t` = 包在本跳 ISL 队列的**实测**排队等待（入队时刻记于
+  `put_data`，服务实际开始时刻在 `_transmit` 结算）；转移完结时 reward 未结算即
+  fail-loud（KernelError）。
+- `_fail`：terminal_reward = 0.0（显式终结；旧 1-step 基线丢包不存终结转移，
+  属有意差异）。
+- 无距离奖励、无 again/unav 惩罚（计划内排除 / 掩码机制替代）。
+- 观测：`own_state` 为 7 维 [接入槽比, qN/qS/qE/qW 逐方向出向队列占用（M2 基线，
+  缺方向=1.0 对齐旧 infQueue 截断）, 可见小区比, 1.0]。
 
 ## 6. control.py — 控制平面（109 行）
 

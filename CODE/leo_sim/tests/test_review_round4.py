@@ -338,7 +338,7 @@ def test_information_set_routing_and_learning_share_the_arrival_rule():
             # Graph contracts carry the root's own directly measured features
             # (root/valid flags and ECEF position) even with an empty cache;
             # only neighbor rows and the tail block are meaningful to check.
-            assert np.array_equal(obs[-7:-3], own)
+            assert np.array_equal(obs[-(learning.OWN_FEATURES + 3):-3], own)
             assert np.array_equal(obs[-3:], np.zeros(learning.DEST_FEATURES))
             feats = obs[:learning.GRAPH_MAX_NODES * learning.GRAPH_NODE_FEAT_DIM]
             feats = feats.reshape(learning.GRAPH_MAX_NODES,
@@ -346,7 +346,8 @@ def test_information_set_routing_and_learning_share_the_arrival_rule():
             assert feats[0, 6] == 1.0 and feats[0, 7] == 1.0  # root+valid
             assert np.all(feats[1:, 7] == 0.0)  # no valid neighbor rows
         else:
-            assert not np.any(obs[4:])  # only the own-state block may be non-zero
+            # only the own-state block may be non-zero
+            assert not np.any(obs[learning.OWN_FEATURES:])
 
 
 # ------------------------------------------------------- 6. M-Lab grid mapping

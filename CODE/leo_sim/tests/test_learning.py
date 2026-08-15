@@ -65,7 +65,8 @@ def test_graph_observation_width_matches_contract_dim():
         o = learning.build_observation(contract, 0, cache, 6.0, TOPO, own)
         assert o.shape == (learning.CONTRACT_DIMS[contract],), contract
         assert np.array_equal(
-            o[-7:-3], own), "graph tail must carry the own-state block"
+            o[-(learning.OWN_FEATURES + 3):-3], own), \
+            "graph tail must carry the own-state block"
 
 
 def test_graph_observation_uses_only_arrived_valid_cache():
@@ -137,9 +138,10 @@ def test_empty_cache_yields_zero_blocks():
         o = learning.build_observation(contract, 0, cache, 6.0, TOPO, own)
         assert o.shape == (dim,)
         if contract in learning.GRAPH_CONTRACTS:
-            assert np.array_equal(o[-7:-3], own)  # own block in graph tail
+            assert np.array_equal(o[-(learning.OWN_FEATURES + 3):-3],
+                                  own)  # own block in graph tail
         else:
-            assert np.array_equal(o[:4], own)     # own state is always present
+            assert np.array_equal(o[:learning.OWN_FEATURES], own)
         # destination features are zeroed when no destination is supplied
         assert np.array_equal(o[-3:], np.zeros(learning.DEST_FEATURES))
 
