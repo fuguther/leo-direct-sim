@@ -20,7 +20,6 @@ from typing import Any, Iterable
 CANONICAL_WORKSPACE = Path("/data/论文/leo-direct-sim")
 DEPLOYED_DIRS = (
     "ANALYSIS",
-    "ARCHIVE-20260803",
     "CODE",
     "EXPERIMENTS",
     "LITERATURE",
@@ -31,7 +30,9 @@ DEPLOYED_FILES = (
     ".gitignore",
     "AGENTS.md",
     "DECISIONS.md",
+    "LICENSE",
     "NOTES.md",
+    "README.md",
 )
 
 
