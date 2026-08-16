@@ -889,8 +889,10 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
         and pair[1] > 0
     }
     if set(pf) != set(trace_rows):
-        missing = sorted(set(trace_rows) - set(pf), key=int)[:5]
-        extra = sorted(set(pf) - set(trace_rows), key=int)[:5]
+        # lexicographic sort keeps malformed ids (non-numeric strings) in the
+        # error message without crashing verify with int("abc")
+        missing = sorted(set(trace_rows) - set(pf))[:5]
+        extra = sorted(set(pf) - set(trace_rows))[:5]
         errors.append(f"packet_fates id set != trace id set (missing={missing}, extra={extra})")
     for pid_s, pair in pf.items():
         fate, bits = pair
