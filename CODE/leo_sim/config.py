@@ -425,6 +425,14 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
             raise ConfigError("demand.mode=burst requires burst_start_s and burst_duration_s")
         if dm["burst_start_s"] < 0 or dm["burst_duration_s"] <= 0:
             raise ConfigError("burst window invalid")
+        # a burst window that never intersects [0, duration_s] would silently
+        # run the whole experiment at multiplier 1 while still declaring the
+        # burst mechanism: fail closed on a non-observed treatment
+        if not (dm["burst_start_s"] < sc["duration_s"]
+                and dm["burst_start_s"] + dm["burst_duration_s"] > 0):
+            raise ConfigError(
+                "burst window must intersect the scenario horizon "
+                "[0, duration_s]")
     if dm["deadline_s"] is not None and dm["deadline_s"] <= 0:
         raise ConfigError("demand.deadline_s must be > 0 when set")
     if dm["gravity_alpha"] <= 0 or dm["gravity_d_floor_km"] <= 0:
