@@ -1,0 +1,66 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:U3-oldnew-diff:independent_review",
+    "title": "新旧平台训练设置差异与可比性评审",
+    "goal": "你是迁移评审员。旧平台（Gateway 汇聚架构，单体 SimulationRL.py）代码不在本仓库，但本仓库 ANALYSIS/PLATFORM-DOCUMENTATION/02-kimi-platform-spec.md 是旧平台逐行说明书（含 SimulationRL.py 行号），03-platform-diff-detailed-kimi.md 是逐行差异表，REWARD-DIFF-20260816.md 是奖励/观测逐分量对照。请基于这些文档加新平台代码，评审：(1) 训练全链路设置差异清单并逐项给证据：时间尺度（旧 ~290x 轨道时间压缩 ndeltas、Test length 5.0s vs 新物理秒、formal 120s）、链路速率（旧 get_data_rate 距离相关 SNR+MCS 量化表 vs 新常数 1Gbps/100Mbps）、队列（旧包数 infQueue=5000 vs 新比特硬队列）、状态编码（旧 getDeepStateDiff 28/32/40 维 vs 新 C1/C3-C7/GAT/MPNN）、奖励（旧 distanceRewV4+againPenalty+queueReward+ArriveReward 50 vs 新纯队列+50）、超参（旧 batch16/buffer1000/updateF1000/nTrain2/epsilon 按步数衰减 vs 新 batch64/replay50000/target500/每转移训练/epsilon 按秒衰减）、动作（旧 4 方向 vs 新 deliver+4 方向）、训练语义（旧 Target-DQN 默认 true_ddqn=false vs 新 canonical Double-DQN）；(2) 每项差异判定：计划内有意收敛 / 未对齐漂移风险 / 不可比，给出判定理由；(3) 对'用新平台复现或对比旧平台结论'的可比性影响：哪些旧结论不能直接引用、哪些可以、需要什么桥接；(4) 特别核查：新旧合同命名撞车（旧 C4/C5 是图状态+GAT/MPNN 编码，新 C4/C5 是缓存聚合规则；旧 c6/c7 是 RAAC 图），以及信息年龄（AoI）主线在两平台的语义与动力学可比性（旧 290x 时间压缩下的 AoI 与物理秒下的 AoI 含义不同）；(5) 给出结论影响排序与'要复用旧结论必须先做的对照实验/桥接工作'清单。要求：每个结论绑定本仓库文档或新平台代码行号；区分 FACT/INFERENCE/未验证；不替任何一方辩护。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "def4b260591c87f0bfed372c24678f83b4467b31",
+      "paths": [
+        "ANALYSIS/PLATFORM-DOCUMENTATION/02-kimi-platform-spec.md",
+        "ANALYSIS/PLATFORM-DOCUMENTATION/03-platform-diff-detailed-kimi.md",
+        "ANALYSIS/REWARD-DIFF-20260816.md",
+        "ANALYSIS/MIGRATION-BACKLOG-20260816.md",
+        "ANALYSIS/TEMPORAL-MULTISTEP-DESIGN-20260816.md",
+        "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md",
+        "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/01-routing-state-age-novelty-audit.md",
+        "CODE/leo_sim/learning.py",
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/comparison.py",
+        "CODE/leo_sim/profiles/formal_exp1.yaml",
+        "CODE/leo_sim/profiles/experiment_base.yaml",
+        "README.md",
+        "NOTES.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "逐项给出差异清单与判定（有意/漂移/不可比）",
+      "每个结论绑定 github://<commit>/<path> 或文档行号证据",
+      "给出影响排序与复用旧结论的桥接清单",
+      "每条发现标注 FACT / INFERENCE / 未验证"
+    ],
+    "requiredEvidence": [
+      "github://fuguther/leo-direct-sim/blob/def4b260591c87f0bfed372c24678f83b4467b31/ANALYSIS/PLATFORM-DOCUMENTATION/03-platform-diff-detailed-kimi.md 等文档与代码的精确引用"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "f9b733119590231ee133a4873a1fc976ae5426af912edd932eb3129d63259d4f"
+}
