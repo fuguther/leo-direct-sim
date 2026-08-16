@@ -728,7 +728,11 @@ class Kernel:
             "learning_decisions": 0,
             "learning_transitions": 0,
             "learning_train_steps": 0,
+            "learning_discarded_at_stop": 0,
         }
+        # packets holding an open (not yet closed) learning transition; the
+        # horizon close must account for every one of them, never silently
+        self._learning_open: set[DataPacket] = set()
         self.closed_at: float | None = None
 
         # process creation order fixes same-time ordering: handover ticks and
@@ -1376,10 +1380,17 @@ class Kernel:
             sat_lat, sat_lon, _ = self.geometry.subpoint(sat, self.env.now)
             dst_feats = _learning.destination_features(
                 sat_lat, sat_lon, ep.lat, ep.lon)
+        root_pos = None
+        if self.cfg_rt["contract"] in _learning.GRAPH_CONTRACTS:
+            # The root satellite's own position is directly measured local
+            # state: query geometry, never the control cache — the control
+            # plane explicitly refuses to cache a satellite's own looped
+            # advertisement, so a cache lookup would read (0, 0, 0).
+            root_pos = self.geometry.positions(self.env.now)[sat]
         return _learning.build_observation(
             self.cfg_rt["contract"], sat, self.caches[sat], self.env.now,
             self.topo, own, self.cfg_links["isl_queue_bits"],
-            obs_hops=obs_hops, dst_feats=dst_feats,
+            obs_hops=obs_hops, dst_feats=dst_feats, root_pos=root_pos,
         )
 
     def _finish_learning_transition(self, pkt: DataPacket, next_state,
@@ -1388,9 +1399,12 @@ class Kernel:
         if self.learner is None or pkt.learning_state is None:
             return
         if terminal_reward is None and pkt.learning_reward is None:
-            # the forward reward is settled when the packet's ISL service
-            # actually starts; reaching here without it means the reward was
-            # never realized — fail loud instead of storing a silent None
+            # every reward is settled where the rewarded event actually
+            # happens: the forward queue reward at ISL service start
+            # (_transmit), the arrival reward at real delivery
+            # (_deliver_after_prop, passed as terminal_reward). Reaching here
+            # with neither means the reward was never realized — fail loud
+            # instead of storing a silent None
             raise KernelError(
                 "learning transition closed with unrealized reward "
                 f"(pid={pkt.pid})")
@@ -1403,23 +1417,52 @@ class Kernel:
         pkt.learning_state = None
         pkt.learning_action = None
         pkt.learning_reward = None
+        self._learning_open.discard(pkt)
+
+    def _close_learning_at_stop(self) -> None:
+        """Explicitly discard every learning transition still open at the
+        stop time (packets pending re-decision, queued on an ISL/downlink,
+        in service, or in propagation).
+
+        A horizon-truncated episode is NOT remembered: fabricating a terminal
+        reward for it would corrupt training. The discards are counted in the
+        mechanism counters so the receipt can check
+        ``decisions == transitions + discarded_at_stop`` instead of the
+        difference vanishing silently."""
+        if self.learner is None:
+            return
+        for pkt in self._learning_open:
+            pkt.learning_state = None
+            pkt.learning_action = None
+            pkt.learning_reward = None
+            self.mech["learning_discarded_at_stop"] += 1
+        self._learning_open.clear()
 
     def _learning_action(self, pkt: DataPacket, sat: int, mask: dict) -> str:
         state = self._learning_observation(sat, pkt.dst)
-        self._finish_learning_transition(pkt, state, mask, False)
-        action = self.learner.choose(state, mask, self.env.now)
-        if action == "deliver":
-            # terminal delivery reward: legacy ArriveReward (v1 has no
-            # distance component; see ANALYSIS/REWARD-DIFF-20260816.md)
-            reward = float(self.cfg_learning["arrive_reward"])
+        if pkt.learning_state is not None and pkt.learning_reward is None:
+            # The only action allowed to be open without a settled reward is
+            # deliver: its arrival reward exists only at real delivery. A
+            # deliver that never reached the user (e.g. the downlink was hard
+            # retired and the packet bounced back to pending) settles at 0 on
+            # re-decision — it must NOT collect arrive_reward.
+            if pkt.learning_action != "deliver":
+                raise KernelError(
+                    "unsettled non-deliver learning transition at re-decision "
+                    f"(pid={pkt.pid}, action={pkt.learning_action})")
+            self._finish_learning_transition(
+                pkt, state, mask, False, terminal_reward=0.0)
         else:
-            # forward reward is the M1 queue reward over the packet's
-            # REALIZED queue wait, settled when its ISL service starts
-            # (_transmit); unknown at decision time by construction
-            reward = None
+            self._finish_learning_transition(pkt, state, mask, False)
+        action = self.learner.choose(state, mask, self.env.now)
+        # No reward is known at decision time by construction: a forward
+        # action's M1 queue reward is settled when its ISL service actually
+        # starts (_transmit); the deliver arrival reward is settled at real
+        # delivery (_deliver_after_prop).
         pkt.learning_state = state
         pkt.learning_action = action
-        pkt.learning_reward = reward
+        pkt.learning_reward = None
+        self._learning_open.add(pkt)
         return action
 
     def _record_decision(self, pkt: DataPacket, sat: int, kind: str,
@@ -1566,6 +1609,10 @@ class Kernel:
         self._finish_learning_transition(
             pkt, np.zeros(_learning.CONTRACT_DIMS[self.cfg_rt["contract"]]),
             {a: False for a in _learning.ACTIONS}, True,
+            # the arrival reward (legacy ArriveReward,
+            # ANALYSIS/REWARD-DIFF-20260816.md) exists only here, at real
+            # delivery — never at the deliver decision
+            terminal_reward=float(self.cfg_learning["arrive_reward"]),
         )
         self.ledger.record(pkt.pid, "DELIVERED", pkt.bits)
         self.deliveries[pkt.pid] = {"delivered_at": now, "path": list(pkt.path)}
@@ -1634,6 +1681,7 @@ class Kernel:
         }
         self.access_stats["waiting_at_stop"] = sum(
             len(q) for q in self.access_wait)
+        self._close_learning_at_stop()
         self.ledger.close_at_stop()
         self.ctrl_ledger.close_at_stop()
         if interrupted:
