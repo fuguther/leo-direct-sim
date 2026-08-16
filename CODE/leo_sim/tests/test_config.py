@@ -42,6 +42,24 @@ def test_invalid_combinations_rejected():
         config.resolve_config({"scenario": {"num_satellites": 7, "num_planes": 3}})
 
 
+def test_burst_window_must_intersect_scenario_horizon():
+    base = {
+        "scenario": {"duration_s": 120.0},
+        "demand": {"mode": "burst", "burst_start_s": 121.0,
+                   "burst_duration_s": 10.0, "burst_multiplier": 5.0},
+    }
+    with pytest.raises(config.ConfigError, match="intersect"):
+        config.resolve_config(base)
+    # window starting exactly at the horizon is also out of [0, duration)
+    base["demand"]["burst_start_s"] = 120.0
+    with pytest.raises(config.ConfigError, match="intersect"):
+        config.resolve_config(base)
+    # an intersecting window (including zero-length overlap edge) is valid
+    base["demand"]["burst_start_s"] = 110.0
+    ok = config.resolve_config(base)
+    assert ok["config"]["demand"]["mode"] == "burst"
+
+
 def test_learning_eval_requires_sha_bound_checkpoint():
     with pytest.raises(config.ConfigError, match="checkpoint_path and checkpoint_sha256"):
         config.resolve_config({
@@ -75,3 +93,11 @@ def test_load_config_file(tmp_path):
     bad.write_text("config_version: other/v9\n")
     with pytest.raises(config.ConfigError, match="config_version"):
         config.load_config_file(str(bad))
+
+
+def test_ge_dwell_rejects_bool():
+    # bool is an int subclass: must not pass the GE dwell type check
+    with pytest.raises(config.ConfigError, match="mean dwell"):
+        config.resolve_config({"links": {"ge_enabled": True,
+                                         "ge_gsl": {"mean_good_s": True,
+                                                    "mean_bad_s": 1.0}}})

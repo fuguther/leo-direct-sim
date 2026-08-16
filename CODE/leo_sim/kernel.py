@@ -636,7 +636,11 @@ class Kernel:
                 "geometry provider does not certify next-change times; "
                 "failing closed (set links.geometry_loss=false only for "
                 "diagnostic runs)")
-        self.geometry = geometry
+        # exact-argument memoization wrapper: transparent and bit-equivalent
+        # (cached values are the first-computed results for identical pure
+        # queries), bounded LRU, filled only on demand — never reads future
+        # times itself.
+        self.geometry = model.MemoizedGeometry(geometry)
         self.num_sats = geometry.num_satellites
         # optional output-only per-hop decision snapshot sink (a list); when
         # None the recording code paths are never entered
@@ -663,7 +667,7 @@ class Kernel:
             per_ep_rows.setdefault(r["src_grid_id"], []).append(r)
 
         self.topo = routing.build_topology(
-            geometry, self.num_sats, self.cfg_links["isl_dirs"])
+            self.geometry, self.num_sats, self.cfg_links["isl_dirs"])
         # static routing structures: topo never changes, so build the reverse
         # adjacency and its sorted neighbour lists once instead of rebuilding
         # them on every decision (behaviour-identical, same iteration order)
@@ -868,9 +872,17 @@ class Kernel:
                     if nxt is not None:
                         ups.append(nxt)
                 if not ge_up:
-                    ups.append(ge.next_up(t0))
+                    nxt_up = ge.next_up(t0)
+                    if nxt_up <= self.horizon:
+                        ups.append(nxt_up)
                     self.mech["ge_waits"] += 1
-                if expiry is not None and (not ups or min(ups) >= expiry):
+                # Only fail with the expiry fate when the deadline actually
+                # lies within the horizon: a deadline beyond the horizon is
+                # never reached by the run, so an unrecoverable-within-horizon
+                # link must settle as IN_SYSTEM_AT_STOP (stalled), not be
+                # mislabelled DATA_DEADLINE_EXPIRED at t0.
+                if expiry is not None and expiry <= self.horizon \
+                        and (not ups or min(ups) >= expiry):
                     self._fail(pkt, expiry_fate)
                     return "fail"
                 if not ups:
@@ -1577,6 +1589,14 @@ class Kernel:
             if self.learner is not None:
                 mask = {a: a in legal for a in _learning.ACTIONS}
                 action = self._learning_action(pkt, sat, mask)
+                if action not in legal:
+                    # fail loud like the deliver-only branch: a learner that
+                    # returns an action outside the legal mask must never
+                    # silently overflow an ISL queue (put_data does not
+                    # re-check room())
+                    raise KernelError(
+                        f"learner selected action {action!r} outside the "
+                        f"legal mask {sorted(legal)}")
             else:
                 action = legal[0]
             self._record_decision(pkt, sat, "forward", legal, action)
@@ -1655,10 +1675,10 @@ class Kernel:
         events = 0
         try:
             while True:
-                try:
-                    t_next = self.env.peek()
-                except Exception:
-                    break
+                # simpy.peek() returns inf when the queue is empty; no
+                # exception is expected here, so a raise must propagate
+                # (fail loud) instead of being converted into a natural end
+                t_next = self.env.peek()
                 if t_next > self.horizon or t_next == math.inf:
                     break
                 self.env.step()

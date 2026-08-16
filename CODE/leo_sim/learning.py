@@ -643,6 +643,11 @@ class TabularQLearning:
         key = self._key(observation)
         row = self.table.get(key)
         if row is None:
+            if self.mode == "eval":
+                # Eval must evaluate a fixed policy: an unseen state gets a
+                # deterministic all-zero row (argmax = first legal action),
+                # never a random-init row, and the table is not mutated.
+                return np.zeros(len(ACTIONS))
             # legacy init: np.random.rand per (state, action) (5703-5704)
             row = self.rng.random(len(ACTIONS))
             self.table[key] = row
@@ -665,7 +670,7 @@ class TabularQLearning:
 
     def choose(self, observation: np.ndarray, mask: dict, now: float) -> str:
         legal = self._legal(mask)
-        if self.rng.random() < self.epsilon(now):
+        if self.mode != "eval" and self.rng.random() < self.epsilon(now):
             chosen = int(self.rng.choice(legal))
         else:
             row = self._row(observation)
