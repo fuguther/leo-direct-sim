@@ -120,3 +120,45 @@
 - **设计选择需声明**：B1–B5、B7–B8（建模抽象）、C2（当前逐跳出口强制 deliver）、
   C4（无历史）、C6（TabularQ 表示）、C7（hop 基线定义）。
 - **验证缺口**：D1、D5、D7、D8（归因/变异/证据粒度/VM 学习臂 profile）。
+
+---
+
+## H. 第 2 轮三方挖问题（2026-08-17，GPT 两路 + Kimi + Codex）
+
+> 覆盖第 1 轮盲区模块（receipt/governance/trace/config/rng/fates/comparison/
+> platform_check/experiment_platform）+ 5 个修复分支的交叉回归审查。
+> 状态：✔ 已修（PR）/ ⚠ 需拍板 / 📋 计划。
+
+| # | 发现 | 严重度 | 验证 | 处置 |
+|---|---|---|---|---|
+| H2-1 | **acceptance `non_oracle_routing` 恒真死门**：`routing_label != "oracle"` 恒 True（label 实为 analysis_upper_bound/None），direct 场景误配 oracle 仍 PASS | major | FACT（字符串推理）+ Codex 复现 | ✔ PR #35 |
+| H2-2 | **receipt verify 遇畸形 packet_fates 键崩溃**：`sorted(key=int)` 对 `"abc"` 抛 ValueError，违反「绝不 raise」契约（CLI/remote 兜底 fail-closed） | minor | FACT+实跑复现 | ✔ PR #36 |
+| H2-3 | **正式验收门踩 diagnostic occupied**：remote_job `require_data_isl` 用 occupied.isl_s（FIELD_AUTHORITY=diagnostic，不重算） | major | FACT | ✔ PR #38（改用 recomputed 多星交付数） |
+| H2-4 | **fast_train「bit-equivalent」声明不成立**：eager float64 vs fast float32；非终态全 False mask eager raise / fast 静默回退 | minor | FACT（代码读定，未数值对照） | 📋 改注释+fast 补 fail-closed |
+| H2-5 | **forward 分支缺「学习动作∈掩码」断言**：越掩码动作直接 put_data（ISLLink.put_data 不查 room）静默超容（deliver 分支有断言） | minor→major 防御缺口 | FACT+Codex 复现（主库抛原始 KeyError） | ✔ PR #37 |
+| H2-6 | **run 循环吞 peek 异常当自然结束**（fail-open 形状） | minor | FACT | ✔ PR #37 |
+| H2-7 | **pending 等待不进任何 queue-area**：等待时间无独立可观测口径（与端到端时延对不上账） | major | FACT | 📋 Q0-WAIT 前置（已入 Q0-INTERFACE-DESIGN） |
+| H2-8 | **comparison `legacy_conservation` 名不副实**：实际只查 trace 摄入无错，非包级守恒 | minor | FACT | 📋 改标签/补守恒 |
+| H2-9 | **账本 bit 身份不绑定（GPT F1）**：record 的 bits 可≠登记值，一增一减伪造守恒（receipt 层用 trace 逐包兜底） | minor | FACT+复现 | ✔ PR #32 |
+| H2-10 | **burst 窗口可完全落窗外（GPT F3）**：multiplier 恒 1 仍声明 burst | major | FACT+复现 | ✔ PR #33 |
+| H2-11 | **GE dwell 接受 bool（GPT F3-review）**：True 属 int 通过校验 | major | FACT+复现 | ✔ PR #34 |
+| H2-12 | **非 csv 意图 sites 可空/不足（GPT F1-review）**：密封意图在不可生成 demand 上假绿 | major | FACT+复现 | ✔ PR #34（governance 密封前要求 ≥2 sites） |
+| H2-13 | **comparison 未绑定资源参数（GPT F2）**：direct/legacy 两臂资源不等价，差异不可归因 | major | FACT+INFERENCE | ⚠ 需拍板（不能映射的资源 fail-closed） |
+| H2-14 | **rng named-streams 位置相关（GPT F4）**：子集/重排改变同名流 | minor | FACT | 📋 按 canonical name 派生 |
+| H2-15 | **governance project_root 可省略（GPT F5）**：csv/pop 输入 containment 仅在传入时强制 | minor | FACT | 📋 强制 project_root |
+| H2-16 | **experiment_platform NaN schema（GPT F6）** | minor | INFERENCE 未复现 | 📋 待负例确认 |
+| H2-17 | **CSV 微秒量化排序拒绝合法输入（GPT F7）** | minor | FACT | ⚠ 声明精度 or 保持高精度 |
+| H2-18 | **future-endpoints 残留观测侧信道（GPT F8）**：own_state 分母 len(endpoints) 随远端激活瞬变，本地 obs 在控制传播前变化 | major | INFERENCE（分支回归） | ⚠ 需拍板：obs 信息集统一（抵达缓存 or 声明） |
+| H2-19 | **TabularQ eval 全零行 tie 偏置（GPT F9）**：未见状态恒取 ACTIONS 序首合法 | minor | INFERENCE | 📋 声明（deliver 优先） |
+| H2-20 | **FIFO 双定义分叉（Kimi）**：_try_grant 用 (req_t,cell) vs _access_tick_sat 用插入序；与惰性端点合并后同 req_t 可不同「最老」 | minor | FACT+INFERENCE | 📋 统一为插入序 |
+| H2-21 | **occupied 分支 fate 错标边界（Kimi）**：GE 恢复超 horizon 且 deadline>horizon → 误标 DATA_DEADLINE_EXPIRED（main 几何路径同样问题） | major | FACT+复现 | ✔ PR #29 f800415（统一走 stalled） |
+| H2-22 | **access FIFO wait 口径变化（GPT F10）**：跨星撤销等待计入 total，口径从「grant 等待」变「请求生命周期」 | minor | FACT | 📋 区分 granted/cancelled 统计 |
+
+### 第 2 轮干净背书（三方一致）
+
+- fates 双账本语义闭合；trace 序列化再校验保证「编译成功⟹加载成功」；
+  authorize/deployment_guard 严密；model certified next-change fail-closed；
+  Gateways.csv 无别名冲突（latent 风险当前不可达）。
+- downlink（#25）与 occupied（#29）修复经交叉回归未见新正确性错误
+  （occupied 的 fate 错标边界已按 H2-21 修复）；TabularQ（#30）干净，
+  DDQN eval 惰性 rng 消耗无需同类修正。
