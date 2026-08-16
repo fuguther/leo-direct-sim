@@ -149,6 +149,11 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "epsilon_start": (int, float),
         "epsilon_end": (int, float),
         "epsilon_decay_s": (int, float),
+        # DDQN-only: tf.function-compiled train step vs eager fallback. It
+        # lives in the resolved config (and therefore the config SHA) because
+        # it selects between two training execution paths; no environment
+        # variable may steer it.
+        "fast_train": bool,
     },
     "execution": {
         "max_events": int,
@@ -267,6 +272,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "epsilon_start": 1.0,
         "epsilon_end": 0.05,
         "epsilon_decay_s": 300.0,
+        "fast_train": True,
     },
     "execution": {
         "max_events": 1_000_000,

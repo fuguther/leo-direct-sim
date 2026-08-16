@@ -147,11 +147,29 @@ def test_empty_cache_yields_zero_blocks():
 
 
 def test_c6_buckets_by_actual_hop_count():
-    cache = _entries([(1, 5.0, 1), (2, 5.0, 2)])
-    o = learning.build_observation("C6", 0, cache, 6.0, TOPO, _own())
-    h1 = o[4:4 + learning.ORIGIN_FEATURES]
-    h2 = o[4 + learning.ORIGIN_FEATURES:4 + 2 * learning.ORIGIN_FEATURES]
-    assert np.any(h1 != 0) and np.any(h2 != 0)
+    # distinct access loads make the two hop buckets identifiable by value
+    c = control.LocalCache()
+    c.put(control.CacheEntry(
+        1, {"isl_queue_bits": {}, "access_slots_used": 1,
+            "access_slots_cap": 4, "visible_cells": []},
+        5.0, 5.01, 10.0, hops=1))
+    c.put(control.CacheEntry(
+        2, {"isl_queue_bits": {}, "access_slots_used": 3,
+            "access_slots_cap": 4, "visible_cells": []},
+        5.0, 5.01, 10.0, hops=2))
+    o = learning.build_observation("C6", 0, c, 6.0, TOPO, _own())
+    # hop buckets start after the own-state block, not at offset 4 (the
+    # OWN_FEATURES=7 block would be sliced mid-field at offset 4)
+    base = learning.OWN_FEATURES
+    h1 = o[base:base + learning.ORIGIN_FEATURES]
+    h2 = o[base + learning.ORIGIN_FEATURES:base + 2 * learning.ORIGIN_FEATURES]
+    # ORIGIN_FEATURES layout: [queue_ratio, access_load, n_visible, aoi]
+    assert h1[1] == pytest.approx(0.25)   # 1-hop bucket: origin 1 (used 1/4)
+    assert h2[1] == pytest.approx(0.75)   # 2-hop bucket: origin 2 (used 3/4)
+    assert np.array_equal(
+        o[base + 2 * learning.ORIGIN_FEATURES:
+          base + 4 * learning.ORIGIN_FEATURES],
+        np.zeros(2 * learning.ORIGIN_FEATURES))  # buckets 3-4 empty
 
 
 def test_action_mask_legality():

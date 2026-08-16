@@ -18,7 +18,6 @@ import importlib.util
 import hashlib
 import json
 import math
-import os
 from collections import deque
 from pathlib import Path
 
@@ -74,7 +73,21 @@ ACTIONS = ("deliver", "N", "S", "E", "W")
 # subgraph, not a hand-rolled fixed aggregate.  These names are new: they do
 # NOT reuse the V1 C4/C5 semantics (V2's C4/C5 are cache-aggregation rules).
 GRAPH_MAX_NODES = 32
-GRAPH_NODE_FEAT_DIM = 15
+# Node feature layout (all normalized), v2 (18 dims; the v1 15-dim layout
+# predates the access-load/visible-cells/AoI block, so pre-v2 graph
+# checkpoints fail the contract width check and must be retrained):
+#   [0:4]  per-direction ISL egress queue occupancy (N/S/E/W)
+#   [4]    hop distance of the entry from the root
+#   [5]    node degree
+#   [6]    is_root flag
+#   [7]    valid-node flag (padding rows stay 0)
+#   [8:12] first-hop direction one-hot from the root (V1-style readout)
+#   [12:15] ECEF position relative to the root, scaled by 7000 km
+#   [15]   access-slot load ratio (payload access_slots_used / cap)
+#   [16]   visible-cell count, clipped at 10
+#   [17]   entry AoI normalized by TTL (the root's own fresh state lives in
+#          the own-state tail; the root row reads 0 here)
+GRAPH_NODE_FEAT_DIM = 18
 GRAPH_DIRS = ("N", "S", "E", "W")
 GRAPH_CONTRACTS = ("GAT", "MPNN")
 
@@ -294,10 +307,14 @@ class TensorflowDDQN:
         if contract not in CONTRACT_DIMS:
             raise ValueError(f"unknown learning contract {contract!r}")
         self.tf = require_tensorflow()
+        # Op determinism is part of the reproducibility claim: record the
+        # outcome instead of swallowing it. The value lands in diagnostics()
+        # and therefore in the receipt-bound learning ledger.
+        self.op_determinism: bool | str = True
         try:
             self.tf.config.experimental.enable_op_determinism()
-        except Exception:
-            pass
+        except Exception as exc:
+            self.op_determinism = f"unavailable: {type(exc).__name__}: {exc}"
         self.tf.keras.utils.set_random_seed(int(seed))
         self.contract = contract
         self.input_dim = CONTRACT_DIMS[contract]
@@ -319,6 +336,9 @@ class TensorflowDDQN:
                 path, compile=False, custom_objects=_graph_custom_objects())
             if tuple(self.online.input_shape) != (None, self.input_dim) \
                     or tuple(self.online.output_shape) != (None, len(ACTIONS)):
+                # fail closed: graph checkpoints predate the 15->18 node
+                # feature widening (GRAPH_NODE_FEAT_DIM) and must be
+                # retrained, never silently reshaped
                 raise LearningUnavailable(
                     "DDQN checkpoint shape does not match contract/actions")
             self.loaded_checkpoint = str(path.resolve())
@@ -336,9 +356,12 @@ class TensorflowDDQN:
         self.train_steps = 0
         self.last_loss = None
         # tf.function-compiled DDQN train step (bit-equivalent to the eager
-        # path; ~5-6x faster). LEO_FAST_TRAIN=0 falls back to eager for
+        # path; ~5-6x faster). The switch is config-bound
+        # (learning.fast_train, part of the resolved config SHA) — never an
+        # environment variable, so one config SHA maps to exactly one
+        # training execution path. fast_train=False falls back to eager for
         # equivalence checks without changing the math.
-        self._fast_enabled = os.environ.get("LEO_FAST_TRAIN", "1").strip() not in ("0", "false", "no")
+        self._fast_enabled = bool(cfg["fast_train"])
         self._fast_train_fn = None
         self._fast_train_net_id = None
         self._fast_train_tgt_id = None
@@ -533,6 +556,10 @@ class TensorflowDDQN:
             "replay_size": len(self.replay),
             "last_loss": self.last_loss,
             "seed": self.seed,
+            # execution-path bindings: which train path ran and whether TF
+            # op determinism was actually enabled on this host
+            "fast_train": self._fast_enabled,
+            "op_determinism": self.op_determinism,
         }
 
 
@@ -835,9 +862,9 @@ def _bfs_first_dirs(sat: int, topo: dict) -> dict[int, str]:
 
 
 def _graph_node_features(origin: int, entry, root: int, first_dir: str,
-                         topo: dict, isl_queue_cap: int,
+                         topo: dict, isl_queue_cap: int, now: float,
                          root_pos: tuple = (0.0, 0.0, 0.0)) -> np.ndarray:
-    """15-dim node feature for one subgraph node (V2 payload semantics)."""
+    """18-dim node feature for one subgraph node (V2 payload semantics)."""
     p = entry.payload if entry is not None else {}
     q = p.get("isl_queue_bits", {}) if entry is not None else {}
     used = p.get("access_slots_used", 0) if entry is not None else 0
@@ -845,6 +872,11 @@ def _graph_node_features(origin: int, entry, root: int, first_dir: str,
     nvis = len(p.get("visible_cells", ())) if entry is not None else 0
     hop = entry.hops if entry is not None else 0
     pos = p.get("position", (0.0, 0.0, 0.0)) if entry is not None else (0.0, 0.0, 0.0)
+    if origin == root:
+        # the root never has a cache self-entry (its own advertisement is
+        # refused); its position is directly measured and supplied as
+        # root_pos, so the root row is exactly the frame origin
+        pos = root_pos
     deg = sum(1 for _d, n in topo.get(origin, {}).items() if n is not None)
     feats = np.zeros(GRAPH_NODE_FEAT_DIM, dtype=np.float64)
     for i, d in enumerate(GRAPH_DIRS):
@@ -857,6 +889,12 @@ def _graph_node_features(origin: int, entry, root: int, first_dir: str,
         feats[8 + GRAPH_DIRS.index(first_dir)] = 1.0
     rel = np.asarray(pos, dtype=np.float64) - np.asarray(root_pos, dtype=np.float64)
     feats[12:15] = rel / 7000.0
+    # access load, visible-cell count and AoI — the same quantities the
+    # vector contracts expose in their per-origin block (ORIGIN_FEATURES)
+    feats[15] = used / cap
+    feats[16] = min(1.0, nvis / 10.0)
+    feats[17] = (0.0 if entry is None else
+                 min(1.0, max(0.0, entry.aoi(now)) / max(entry.ttl_s, 1e-9)))
     return feats
 
 
@@ -864,14 +902,22 @@ def build_graph_observation(contract: str, sat: int, cache, now: float,
                             topo: dict, own: np.ndarray,
                             isl_queue_cap: int = 256_000_000,
                             obs_hops: int | None = None,
-                            dst_feats: np.ndarray | None = None) -> np.ndarray:
+                            dst_feats: np.ndarray | None = None,
+                            root_pos: tuple | None = None) -> np.ndarray:
     """Fixed-width flattened k-hop subgraph for the GAT/MPNN contracts.
 
-    Layout: node features [MAX_N, 15] + directed adjacency [MAX_N, MAX_N]
-    + directional readout masks [4, MAX_N] + own-state tail [4].
+    Layout: node features [MAX_N, GRAPH_NODE_FEAT_DIM] + directed adjacency
+    [MAX_N, MAX_N] + directional readout masks [4, MAX_N] + own-state tail
+    [OWN_FEATURES] + destination features [DEST_FEATURES].
     Nodes are the actually-arrived valid cache origins plus the root; only
     payload fields carried by arrived ControlPackets enter node features
     (no future geometry, no hidden global queues).
+
+    ``root_pos`` is the root satellite's own ECEF position, supplied by the
+    kernel from direct geometry (the control plane never caches a
+    satellite's own advertisement). Without it node positions would degrade
+    to drifting absolute coordinates; the (0, 0, 0) fallback exists only
+    for direct non-kernel callers.
     """
     entries = information_set(contract, sat, cache, now, topo,
                               obs_hops=obs_hops)
@@ -881,16 +927,15 @@ def build_graph_observation(contract: str, sat: int, cache, now: float,
     nodes = [sat] + origins[:n - 1]
     overflow = max(0, len(origins) - (n - 1))
     index = {node: i for i, node in enumerate(nodes)}
-    root_entry = entries.get(sat)
-    root_pos = (root_entry.payload.get("position", (0.0, 0.0, 0.0))
-                if root_entry is not None else (0.0, 0.0, 0.0))
+    if root_pos is None:
+        root_pos = (0.0, 0.0, 0.0)
 
     feats = np.zeros((n, GRAPH_NODE_FEAT_DIM), dtype=np.float64)
     for i, node in enumerate(nodes):
         entry = entries.get(node) if node != sat else None
         feats[i] = _graph_node_features(
             node, entry, sat, first_dirs.get(node), topo, isl_queue_cap,
-            root_pos=root_pos)
+            now, root_pos=root_pos)
 
     adj = np.zeros((n, n), dtype=np.float64)
     for dst, node in enumerate(nodes):
@@ -925,11 +970,12 @@ def build_graph_observation(contract: str, sat: int, cache, now: float,
 def build_observation(contract: str, sat: int, cache, now: float, topo,
                       own: np.ndarray, isl_queue_cap: int = 256_000_000,
                       obs_hops: int | None = None,
-                      dst_feats: np.ndarray | None = None) -> np.ndarray:
+                      dst_feats: np.ndarray | None = None,
+                      root_pos: tuple | None = None) -> np.ndarray:
     if contract in GRAPH_CONTRACTS:
         return build_graph_observation(
             contract, sat, cache, now, topo, own, isl_queue_cap,
-            obs_hops=obs_hops, dst_feats=dst_feats)
+            obs_hops=obs_hops, dst_feats=dst_feats, root_pos=root_pos)
     entries = information_set(contract, sat, cache, now, topo,
                               obs_hops=obs_hops)
     feats = {o: _origin_features(e, now, isl_queue_cap) for o, e in entries.items()}

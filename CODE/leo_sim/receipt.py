@@ -43,6 +43,10 @@ RECEIPT_KEYS = {
     "handover_event_count", "conservation_ok",
 }
 DEP_KEYS = {"python", "simpy", "numpy", "pyyaml"}
+# DDQN runs additionally pin the TensorFlow build: the training path depends
+# on it, so its version is part of the run identity (and its absence on the
+# verifying host fails closed).
+TF_DEP_KEY = "tensorflow"
 REQUESTED_KEYS = {"policy", "association", "ge_enabled", "control_enabled", "monitor",
                   "learning_algorithm", "learning_mode"}
 EFFECTIVE_KEYS = {"control_plane", "ge", "mbb", "learning"}
@@ -64,6 +68,7 @@ MECHANISM_COUNTER_KEYS = {
     "control_tx_started", "control_tx_completed", "control_initialized",
     "ge_initialized", "mbb_events", "learning_initialized",
     "learning_decisions", "learning_transitions", "learning_train_steps",
+    "learning_discarded_at_stop",
 }
 MECHANISM_COUNTER_BOOLS = {"control_initialized", "ge_initialized",
                            "learning_initialized"}
@@ -102,16 +107,22 @@ def code_sha256() -> str:
     return h.hexdigest()
 
 
-def dependency_versions() -> dict:
+def dependency_versions(with_tensorflow: bool = False) -> dict:
     import numpy
     import simpy
     import yaml
-    return {
+    deps = {
         "python": platform.python_version(),
         "simpy": simpy.__version__,
         "numpy": numpy.__version__,
         "pyyaml": yaml.__version__,
     }
+    if with_tensorflow:
+        # a DDQN run pins the TF build; on a TF-less host this ImportError
+        # is the intended fail-closed behavior
+        import tensorflow
+        deps[TF_DEP_KEY] = tensorflow.__version__
+    return deps
 
 
 def requested_from_config(cfg: dict) -> dict:
@@ -307,7 +318,8 @@ def build_receipt(resolved: dict, manifest: dict, result: dict,
         "trace_identity_sha256": manifest.get("trace_identity_sha256", ""),
         "code_sha256": code_sha256(),
         "ledgers_sha256": ledgers_sha256,
-        "deps": dependency_versions(),
+        "deps": dependency_versions(
+            with_tensorflow=requested["learning_algorithm"] == "ddqn"),
         "seed": resolved["config"]["scenario"]["seed"],
         "horizon_s": result["horizon_s"],
         "natural_end": result["natural_end"],
@@ -371,6 +383,22 @@ def _is_nonneg_int(x) -> bool:
     return isinstance(x, int) and not isinstance(x, bool) and x >= 0
 
 
+def _learning_transition_accounting(mc: dict) -> list[str]:
+    """Every learning decision opens exactly one transition; by the stop time
+    each is either remembered (transitions) or explicitly discarded at the
+    horizon (learning_discarded_at_stop). Any other difference means
+    transitions were silently lost."""
+    if not all(_is_nonneg_int(mc.get(k)) for k in (
+            "learning_decisions", "learning_transitions",
+            "learning_discarded_at_stop")):
+        return []  # the counter schema check reports the type problem
+    if (mc["learning_decisions"] - mc["learning_transitions"]
+            != mc["learning_discarded_at_stop"]):
+        return ["learning decisions != transitions + discarded_at_stop "
+                "(transitions silently lost)"]
+    return []
+
+
 def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
                       verify_root: Path, resolved_cfg: dict | None) -> list[str]:
     """Schema/type/range and internal-relation checks for ledgers.json.
@@ -429,6 +457,16 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
                         ("train_steps", "learning_train_steps")):
                     if learning.get(key) != mc.get(counter):
                         errors.append(f"learning.{key} != mechanism counter")
+                errors.extend(_learning_transition_accounting(mc))
+            od = learning.get("op_determinism")
+            if od is not True and not isinstance(od, str):
+                errors.append("learning.op_determinism must be true or a "
+                              "recorded failure string")
+            expected_fast = (resolved_cfg or {}).get("learning", {}).get(
+                "fast_train")
+            if expected_fast is not None \
+                    and learning.get("fast_train") is not expected_fast:
+                errors.append("learning.fast_train != resolved config")
             if learning.get("mode") == "eval":
                 if learning.get("train_steps") != 0:
                     errors.append("learning eval mode performed training")
@@ -468,6 +506,7 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
                         ("train_steps", "learning_train_steps")):
                     if learning.get(key) != mc.get(counter):
                         errors.append(f"learning.{key} != mechanism counter")
+                errors.extend(_learning_transition_accounting(mc))
             if learning.get("mode") == "eval":
                 if learning.get("train_steps") != 0:
                     errors.append("learning eval mode performed training")
@@ -774,15 +813,27 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
         if receipt.get("trace_identity_sha256") != expected_identity:
             errors.append("receipt trace identity mismatch")
 
-    # 3. code and dependency identity (deps are REQUIRED, exact key set)
+    # 3. code and dependency identity (deps are REQUIRED, exact key set;
+    # DDQN runs additionally pin tensorflow)
     if code_sha256() != receipt.get("code_sha256"):
         errors.append("leo_sim code sha mismatch (sources changed since the run)")
+    want_tf = bool(resolved_cfg) and (
+        (resolved_cfg.get("learning") or {}).get("algorithm") == "ddqn")
+    expected_dep_keys = DEP_KEYS | ({TF_DEP_KEY} if want_tf else set())
     deps = receipt.get("deps")
-    if not isinstance(deps, dict) or set(deps) != DEP_KEYS:
-        errors.append(f"deps must be exactly {sorted(DEP_KEYS)}")
-    elif deps != dependency_versions():
-        errors.append(f"dependency versions differ from the run: "
-                      f"{deps} vs {dependency_versions()}")
+    if not isinstance(deps, dict) or set(deps) != expected_dep_keys:
+        errors.append(f"deps must be exactly {sorted(expected_dep_keys)}")
+    else:
+        try:
+            local_deps = dependency_versions(with_tensorflow=want_tf)
+        except ImportError:
+            errors.append(
+                "tensorflow is not importable on this host; cannot verify "
+                "the DDQN dependency pin")
+        else:
+            if deps != local_deps:
+                errors.append(f"dependency versions differ from the run: "
+                              f"{deps} vs {local_deps}")
 
     # 4. run completion state
     if not receipt.get("natural_end") or receipt.get("interrupted"):
