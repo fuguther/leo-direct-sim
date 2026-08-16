@@ -1,0 +1,66 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:E3-verification",
+    "title": "仿真平台验证与工程专家审阅",
+    "goal": "你是仿真平台验证与软件工程专家（熟悉验证与确认 V&V、测试分层、fail-closed、可复现性、性能工程）。背景：这是从旧平台（Gateway 汇聚）重写的新平台（卫星直连），旧平台不能当标准答案（其自身有历史问题），平台目标是可复现、可反驳、fail-closed。请只读深度审阅：(1) 验收框架是否成立：解析物理锚点（手算场景）、自洽不变量（守恒/唯一 fate/无未来信息/确定性）、合同一致（奖励/观测/信息集 golden）、差异归因（新旧双臂对照）、变异测试（故意破坏看测试能否抓住）、多方对抗评审、VM 运行闭环——这套分层标准有没有漏洞，如何补强；(2) 找隐蔽 bug 类问题：转移生命周期、观测信息泄漏、回执/守恒、确定性、测试假绿（已知一例 C6 已修）、配置 fail-closed 缺口；(3) 性能：5 仿真秒≈1 小时墙钟，学习热路径未 profile，等价优化清单（几何缓存、静态结构预计算、去掉学习路径白算）是否合理，VM 测量应测什么；(4) 按你的专业经验列出最可能被新设计遗漏的 3-5 个验证/工程问题（给具体场景）。要求：每个结论绑定 github://e6e3a701d845d1258a940950aca317b89b884dd2 路径证据；区分 FACT/INFERENCE/未验证；不修改仓库、不执行命令。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/learning.py",
+        "CODE/leo_sim/routing.py",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/fates.py",
+        "CODE/leo_sim/governance.py",
+        "CODE/leo_sim/acceptance.py",
+        "CODE/leo_sim/platform_check.py",
+        "CODE/leo_sim/comparison.py",
+        "CODE/leo_sim/tests/test_analytic_scenarios.py",
+        "CODE/leo_sim/tests/test_reward_migration.py",
+        "CODE/leo_sim/tests/test_learning_semantics.py",
+        "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+        "ANALYSIS/PERF-PROFILE-20260816.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "每个结论绑定 github://e6e3a701d845d1258a940950aca317b89b884dd2/<路径>#L<行>",
+      "给出最可能被遗漏的 3-5 个验证/工程问题，每项带具体场景",
+      "区分 FACT / INFERENCE / 未验证",
+      "不修改仓库、不执行命令、不声称最终验证"
+    ],
+    "requiredEvidence": [
+      "github://fuguther/leo-direct-sim/blob/e6e3a701d845d1258a940950aca317b89b884dd2/<路径>#L<行>"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "58e2925413db346ef7aa26ac93f55ef6c843d8ba842426ec8c25aa2d66fd5121"
+}
