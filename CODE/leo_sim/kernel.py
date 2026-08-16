@@ -868,7 +868,9 @@ class Kernel:
                     if nxt is not None:
                         ups.append(nxt)
                 if not ge_up:
-                    ups.append(ge.next_up(t0))
+                    nxt_up = ge.next_up(t0)
+                    if nxt_up <= self.horizon:
+                        ups.append(nxt_up)
                     self.mech["ge_waits"] += 1
                 if expiry is not None and (not ups or min(ups) >= expiry):
                     self._fail(pkt, expiry_fate)
