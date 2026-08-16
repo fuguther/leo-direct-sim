@@ -394,10 +394,17 @@ class DownlinkServer(_DRRMixin):
                     ep = k.endpoints[c]
                     link = ep.links.get(self.sat)
                     if link is None or link.state not in ("active", "retiring"):
-                        pkt = self.queues[c].popleft()
-                        self.queued_bits -= pkt.bits
-                        self.area.remove(pkt.bits, k.env.now)
-                        k.pending[self.sat].append(pkt)
+                        # drain the WHOLE queue: every packet whose endpoint
+                        # lost this association goes back to pending in FIFO
+                        # order in one wake.  Draining one packet per wake
+                        # would strand the tail of a backlogged queue until
+                        # the next poke (and with no further traffic it could
+                        # sit until the horizon).
+                        while self.queues[c]:
+                            pkt = self.queues[c].popleft()
+                            self.queued_bits -= pkt.bits
+                            self.area.remove(pkt.bits, k.env.now)
+                            k.pending[self.sat].append(pkt)
             sel = self._drr_select(cells, self._servable)
             if sel is None:
                 # Sleep until poked or until GSL geometry recovers for any
