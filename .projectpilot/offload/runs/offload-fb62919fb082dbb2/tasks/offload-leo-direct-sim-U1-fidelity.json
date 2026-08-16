@@ -1,0 +1,95 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:U1-fidelity",
+    "title": "仿真保真度与物理层充分性评审",
+    "goal": "你是 LEO 卫星网络与深度强化学习路由方向的独立评审员。请对仓库在精确 commit 上做只读深度评审，逐条回答并给证据：(1) 平台作为 LEO 路由 RL 训练环境，物理/网络建模哪些做得到位、哪些缺失或过度简化：轨道动力学（Walker-delta、地球自转、J2 缺失）、传播时延、链路速率/MCS/链路预算（当前为常数 1Gbps/100Mbps，链路预算仅设计稿）、Doppler、中断（几何失效+Gilbert-Elliott）、接入 K 槽、BBM/MBB 切换、有限队列+DRR、显式控制平面（TTL/AoI/vis_k 广播）、不可变 trace 流量、人口重力；(2) 已知缺口（链路预算未集成、无 Doppler、无 ARQ、固定速率、无外部真实测量验证锚点）对训练结论的威胁等级分别是什么；(3) 与业界常用模拟器（Hypatia、ns-3-leo、SNS3-NTN、Lozano-Cuadra 开源 MA-DRL 模拟器）相比，本平台处于什么保真度档位，哪些抽象在论文里可辩护、哪些会直接削弱结论；(4) 给出分级补齐清单：必须补（支撑特定类型主张）、应该补、可选补，并说明每项支撑什么主张。要求：每个结论绑定 github:// 精确 commit 证据或外部原始来源；明确区分 FACT（代码事实）/ INFERENCE（推断）/ 未验证；指出代码与文档之间的矛盾与反例；不要写泛泛赞美，不要替仓库辩护。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "def4b260591c87f0bfed372c24678f83b4467b31",
+      "paths": [
+        "README.md",
+        "AGENTS.md",
+        "NOTES.md",
+        "DECISIONS.md",
+        "ANALYSIS/PLATFORM-DOCUMENTATION/02-v2-platform.md",
+        "ANALYSIS/PLATFORM-DOCUMENTATION/03-platform-diff-detailed-kimi.md",
+        "ANALYSIS/REWARD-DIFF-20260816.md",
+        "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+        "ANALYSIS/MIGRATION-BACKLOG-20260816.md",
+        "ANALYSIS/PERF-PROFILE-20260816.md",
+        "ANALYSIS/TEMPORAL-MULTISTEP-DESIGN-20260816.md",
+        "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/trace.py",
+        "CODE/leo_sim/model.py",
+        "CODE/leo_sim/grid.py",
+        "CODE/leo_sim/population.py",
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/control.py",
+        "CODE/leo_sim/outage.py",
+        "CODE/leo_sim/fates.py",
+        "CODE/leo_sim/routing.py",
+        "CODE/leo_sim/learning.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/governance.py",
+        "CODE/leo_sim/acceptance.py",
+        "CODE/leo_sim/comparison.py",
+        "CODE/leo_sim/platform_check.py",
+        "CODE/leo_sim/__main__.py",
+        "CODE/leo_sim/rng.py",
+        "CODE/leo_sim/profiles/smoke.yaml",
+        "CODE/leo_sim/profiles/formal_exp1.yaml",
+        "CODE/leo_sim/profiles/experiment_base.yaml",
+        "CODE/leo_sim/tests/test_reward_migration.py",
+        "CODE/leo_sim/tests/test_learning.py",
+        "CODE/leo_sim/tests/test_analytic_scenarios.py",
+        "CODE/leo_sim/tests/test_fates_outage.py",
+        "CODE/leo_sim/tests/test_kernel.py",
+        "CODE/leo_sim/tests/test_handover.py",
+        "CODE/leo_sim/tests/test_qlearning_migration.py",
+        "LITERATURE/related-work-notes/lit-survey-20260813-drl-gnn-leo-routing.md",
+        "CODE/legacy_trace_runtime.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result",
+      "web_research"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "每个重要结论绑定 github://<commit>/<path> 证据或外部原始来源",
+      "每条发现标注 FACT / INFERENCE / 未验证",
+      "给出威胁等级与必须/应该/可选三级补齐清单",
+      "不修改仓库、不执行命令、不声称最终验证"
+    ],
+    "requiredEvidence": [
+      "github://fuguther/leo-direct-sim/blob/def4b260591c87f0bfed372c24678f83b4467b31/<路径>#L<行> 形式的仓库证据",
+      "外部模拟器对照给出 https:// 原始链接"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "1422bab4da86805b70847878b6adf5dd48bd264d95d9a737ed87b65e5040c49d"
+}
