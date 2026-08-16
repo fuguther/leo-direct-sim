@@ -646,3 +646,17 @@ def test_receipt_each_ledger_field_wrong_type_never_crashes(tmp_path,
     _rebind_ledger(out)
     errors = receipt.verify_receipt_dir(str(out))
     assert errors
+
+
+def test_receipt_control_bits_bound_to_resolved_packet_bits(tmp_path):
+    out = _run_dir(tmp_path)
+    lp = out / "ledgers.json"
+    led = json.loads(lp.read_text(encoding="utf-8"))
+    # fabricate a well-formed instance whose bits disagree with the resolved
+    # config's control_plane.packet_bits: the receipt must reject it
+    led["control_instances"]["fabricated_bits"] = ["CONTROL_EXPIRED", 9000, None]
+    lp.write_text(json.dumps(led, indent=2, sort_keys=True) + "\n",
+                  encoding="utf-8")
+    _rebind_ledger(out)
+    errors = receipt.verify_receipt_dir(str(out))
+    assert any("packet_bits" in e for e in errors), errors

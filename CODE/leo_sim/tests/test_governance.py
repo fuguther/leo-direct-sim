@@ -1,6 +1,7 @@
 """Tests for the V2 governance integration surface."""
 import json
 
+import hashlib
 import pytest
 
 from CODE.leo_sim import config, governance
@@ -171,3 +172,22 @@ def test_authorization_rejects_rebound_request_that_no_longer_produced_config(
     with pytest.raises(authorize_experiment.AuthorizationError,
                        match="does not derive from request"):
         authorize_experiment._verified_experiment(tmp_path, out)
+
+
+def test_formal_population_gravity_intent_binds_input_sha(tmp_path):
+    demand = tmp_path / "EXPERIMENTS" / "inputs" / "pop.tif"
+    demand.parent.mkdir(parents=True)
+    demand.write_bytes(b"fake-tiff-bytes-12345")
+    request = {
+        "runtime_kind": "leo_sim_v2",
+        "config": {"demand": {
+            "mode": "population_gravity",
+            "population_path": "EXPERIMENTS/inputs/pop.tif",
+        }},
+    }
+    intent = governance.build_run_intent(request, project_root=tmp_path)
+    assert intent["input_sha256"] == hashlib.sha256(
+        demand.read_bytes()).hexdigest()
+    request["config"]["demand"]["population_path"] = "../outside.tif"
+    with pytest.raises(governance.IntentError, match="inside the project"):
+        governance.build_run_intent(request, project_root=tmp_path)

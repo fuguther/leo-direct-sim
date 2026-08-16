@@ -16,8 +16,12 @@ import pytest
 from CODE.leo_sim import kernel, model
 from CODE.leo_sim.tests.helpers import StaticGeometry, cell, cell_center, make_cfg, row
 
-PROP_GSL = 600.0 / model.C_KM_S    # one GSL hop, StaticGeometry slant_km
-PROP_ISL = 1000.0 / model.C_KM_S   # one ISL hop, StaticGeometry isl_km
+# Independent physical constant: analytic anchors must not inherit their
+# "truth" from the production module under test (else a wrong production
+# C_KM_S would drift the expectations with it and tests stay green).
+LIGHT_SPEED_KM_S = 299_792.458
+PROP_GSL = 600.0 / LIGHT_SPEED_KM_S    # one GSL hop, StaticGeometry slant_km
+PROP_ISL = 1000.0 / LIGHT_SPEED_KM_S   # one ISL hop, StaticGeometry isl_km
 
 A = cell(0.0, 0.0)
 B = cell(0.0, 10.0)
@@ -138,3 +142,10 @@ def test_horizon_settles_in_flight_packet_with_exact_occupied_time():
     assert res["occupied"]["isl_s"] == pytest.approx(1.0 - t_start, abs=1e-9)
     assert res["occupied"]["gsl_uplink_s"] == pytest.approx(
         BITS / 100e6, abs=1e-12)
+
+
+def test_production_speed_of_light_matches_independent_literal():
+    from CODE.leo_sim import model
+    assert model.C_KM_S == LIGHT_SPEED_KM_S, (
+        "production model.C_KM_S drifted from the independent analytic "
+        "literal; do not edit the literal, fix the production constant")
