@@ -1577,6 +1577,14 @@ class Kernel:
             if self.learner is not None:
                 mask = {a: a in legal for a in _learning.ACTIONS}
                 action = self._learning_action(pkt, sat, mask)
+                if action not in legal:
+                    # fail loud like the deliver-only branch: a learner that
+                    # returns an action outside the legal mask must never
+                    # silently overflow an ISL queue (put_data does not
+                    # re-check room())
+                    raise KernelError(
+                        f"learner selected action {action!r} outside the "
+                        f"legal mask {sorted(legal)}")
             else:
                 action = legal[0]
             self._record_decision(pkt, sat, "forward", legal, action)
@@ -1655,10 +1663,10 @@ class Kernel:
         events = 0
         try:
             while True:
-                try:
-                    t_next = self.env.peek()
-                except Exception:
-                    break
+                # simpy.peek() returns inf when the queue is empty; no
+                # exception is expected here, so a raise must propagate
+                # (fail loud) instead of being converted into a natural end
+                t_next = self.env.peek()
                 if t_next > self.horizon or t_next == math.inf:
                     break
                 self.env.step()
