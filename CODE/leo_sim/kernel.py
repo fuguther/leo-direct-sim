@@ -458,6 +458,7 @@ class ISLLink:
         self.data_area = QueueArea()
         self.ctrl_area = QueueArea()
         self.wake = kern.env.event()
+        self.current: DataPacket | ControlPacket | None = None
         self._svc = None
         ge_cfg = kern.cfg_links["ge_isl"]
         self.ge = outage.GilbertElliott(
@@ -522,6 +523,7 @@ class ISLLink:
                 continue
             is_ctrl = bool(self.ctrl_q)
             pkt = self.ctrl_q.popleft() if is_ctrl else self.data_q.popleft()
+            self.current = pkt
             if is_ctrl:
                 self.ctrl_bits -= pkt.bits
                 self.ctrl_area.remove(pkt.bits, k.env.now)
@@ -537,6 +539,7 @@ class ISLLink:
             outcome = yield k.env.process(
                 k._transmit(dur, pkt, ("isl", self.sat, self.peer, self.ge), occ))
             self._svc = None
+            self.current = None
             if outcome == "stalled":
                 if is_ctrl:
                     self.ctrl_q.appendleft(pkt)
@@ -722,6 +725,12 @@ class Kernel:
         self.monitor_log: list[tuple] = []
         self.monitor = bool(self.cfg_ex["monitor"])
         self.data_packet_count = 0
+        # Q0 readiness: monotonic state version (bumped once per event step)
+        # and the set of data packets currently propagating between nodes
+        # (scheduled timeout arrivals), so a global snapshot can include the
+        # in-flight component of the network state.
+        self._state_version = 0
+        self._in_flight: dict[int, dict] = {}
         self.ctrl_seq = 0
         self.ctrl_iid = 0
         self.mech = {
@@ -793,6 +802,110 @@ class Kernel:
         self.data_packet_count += 1
         if self.data_packet_count > self.cfg_ex["max_packets"]:
             raise CapExceeded("max_packets exceeded")
+
+    # ------------------------------------------------------- Q0 snapshot
+    def snapshot_global(self) -> dict:
+        """Read-only global state snapshot for a centralized Q0 planner.
+
+        Bound to the current simulation time and the monotonic
+        ``_state_version`` (bumped once per event step), so a plan computed
+        from this snapshot is provably stale after any intervening event.
+        All nested containers are freshly constructed per call: the caller
+        may not reach into kernel objects through this view.  The snapshot is
+        CURRENT-state only: Q0-A (global current information) may use it;
+        future information (Q0-B) needs a separate, explicitly labelled
+        future view.  Physical constraints remain enforced by the kernel at
+        execution time; this interface never writes.
+        """
+        now = self.env.now
+
+        def _drr_state(srv) -> dict:
+            return {"deficit": dict(srv.deficit),
+                    "rr_cursor": srv.rr_cursor}
+
+        def _svc_state(srv) -> dict | None:
+            if srv._svc is None:
+                return None
+            t0, occ = srv._svc
+            return {"started_at": t0, "occ_key": occ}
+
+        isl_links = {}
+        for s in range(self.num_sats):
+            isl_links[s] = {}
+            for d, lnk in self.isls[s].items():
+                isl_links[s][d] = {
+                    "peer": lnk.peer,
+                    "data_bits": lnk.data_bits,
+                    "ctrl_bits": lnk.ctrl_bits,
+                    "data_q": [p.pid for p in lnk.data_q],
+                    "ctrl_q": [c.iid for c in lnk.ctrl_q],
+                    "in_service": (
+                        {"pid": lnk.current.pid} if lnk.current is not None
+                        else None),
+                    "svc": _svc_state(lnk),
+                    "ge_bad": bool(lnk.ge.is_down(now)) if self.ge_enabled
+                    else False,
+                }
+
+        endpoints = {}
+        for cell, ep in self.endpoints.items():
+            endpoints[cell] = {
+                "queue": [p.pid for p in ep.queue],
+                "queued_bits": ep.queued_bits,
+                "links": {
+                    sat: {"state": lk.state, "since": lk.since,
+                          "ready_at": lk.ready_at,
+                          "retire_at": lk.retire_at, "cause": lk.cause}
+                    for sat, lk in ep.links.items()
+                },
+            }
+
+        downlinks = {}
+        for s in range(self.num_sats):
+            dl = self.downlinks[s]
+            downlinks[s] = {
+                "queues": {cell: [p.pid for p in q]
+                           for cell, q in dl.queues.items()},
+                "queued_bits": dl.queued_bits,
+                "in_service": dl.current.pid if dl.current is not None else None,
+                "svc": _svc_state(dl),
+                "drr": _drr_state(dl),
+            }
+
+        uplinks = {}
+        for s in range(self.num_sats):
+            up = self.uplinks[s]
+            uplinks[s] = {
+                "in_service": (up.current[1].pid
+                               if up.current is not None else None),
+                "svc": _svc_state(up),
+                "drr": _drr_state(up),
+            }
+
+        return {
+            "now": now,
+            "state_version": self._state_version,
+            "topology": {s: dict(nb) for s, nb in self.topo.items()},
+            "slots": {s: sorted(v) for s, v in enumerate(self.slots)},
+            "access_wait": {
+                s: {cell: req_t for cell, req_t in self.access_wait[s].items()}
+                for s in range(self.num_sats)},
+            "access_last_busy": dict(self.access_last_busy),
+            "endpoints": endpoints,
+            "pending": {s: [p.pid for p in self.pending[s]]
+                        for s in range(self.num_sats)},
+            "uplinks": uplinks,
+            "downlinks": downlinks,
+            "isl_links": isl_links,
+            "in_flight": {pid: dict(v) for pid, v in self._in_flight.items()},
+            "caches": {
+                s: {origin: {"serve_cells": sorted(entry.payload.get(
+                        "serve_cells", ())),
+                             "generated_at": entry.generated_at}
+                    for origin, entry in self.caches[s].valid_entries(now).items()}
+                for s in range(self.num_sats)
+            },
+        }
 
     def _gsl_ge(self, sat: int, cell: str) -> outage.GilbertElliott:
         key = (sat, cell)
@@ -1508,6 +1621,7 @@ class Kernel:
             }
         self.decision_sink.append({
             "t": float(self.env.now),
+            "state_version": self._state_version,
             "pid": pkt.pid,
             "src": pkt.src,
             "dst": pkt.dst,
@@ -1619,7 +1733,10 @@ class Kernel:
             self._decide(pkt, sat)
 
     def _ingress_after_prop(self, pkt: DataPacket, sat: int, prop: float):
+        self._in_flight[pkt.pid] = {
+            "kind": "ingress", "sat": sat, "arrival_at": self.env.now + prop}
         yield self.env.timeout(prop)
+        self._in_flight.pop(pkt.pid, None)
         if pkt.deadline is not None and self.env.now > pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             return
@@ -1628,7 +1745,10 @@ class Kernel:
         self._decide(pkt, sat)
 
     def _isl_arrive_after_prop(self, pkt: DataPacket, sat: int, prop: float):
+        self._in_flight[pkt.pid] = {
+            "kind": "isl", "sat": sat, "arrival_at": self.env.now + prop}
         yield self.env.timeout(prop)
+        self._in_flight.pop(pkt.pid, None)
         if pkt.deadline is not None and self.env.now > pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             return
@@ -1637,7 +1757,10 @@ class Kernel:
         self._decide(pkt, sat)
 
     def _deliver_after_prop(self, pkt: DataPacket, sat: int, prop: float):
+        self._in_flight[pkt.pid] = {
+            "kind": "deliver", "sat": sat, "arrival_at": self.env.now + prop}
         yield self.env.timeout(prop)
+        self._in_flight.pop(pkt.pid, None)
         now = self.env.now
         if pkt.deadline is not None and now > pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
@@ -1682,6 +1805,7 @@ class Kernel:
                 if t_next > self.horizon or t_next == math.inf:
                     break
                 self.env.step()
+                self._state_version += 1
                 events += 1
                 if events > self.cfg_ex["max_events"]:
                     raise CapExceeded("max_events exceeded")
