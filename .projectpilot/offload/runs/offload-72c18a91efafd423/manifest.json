@@ -1,0 +1,305 @@
+{
+  "version": 1,
+  "planId": "offload-72c18a91efafd423",
+  "relayManifest": {
+    "planId": "offload-72c18a91efafd423",
+    "projectId": "leo-direct-sim",
+    "backend": "web_chat",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:E1-network-arch",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+        "paths": [
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/outage.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/population.py",
+          "CODE/leo_sim/profiles/formal_exp1.yaml",
+          "CODE/leo_sim/profiles/experiment_base.yaml",
+          "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md",
+          "ANALYSIS/PLATFORM-DOCUMENTATION/02-v2-platform.md",
+          "ANALYSIS/PERF-PROFILE-20260816.md"
+        ],
+        "promptHash": "4c0ee663dedc4191424902158e80ab73417265a32b1518a61aa341bcc457fd46"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:E1-network-arch:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+        "paths": [
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/outage.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/population.py",
+          "CODE/leo_sim/profiles/formal_exp1.yaml",
+          "CODE/leo_sim/profiles/experiment_base.yaml",
+          "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md",
+          "ANALYSIS/PLATFORM-DOCUMENTATION/02-v2-platform.md",
+          "ANALYSIS/PERF-PROFILE-20260816.md"
+        ],
+        "promptHash": "f88fafde72c94d58c8d1732daf9e2cd0f11ac04c94769bba9bf044466b4a13cf"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:E2-routing-rl",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+        "paths": [
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/tests/test_learning.py",
+          "CODE/leo_sim/tests/test_learning_semantics.py",
+          "CODE/leo_sim/tests/test_reward_migration.py",
+          "CODE/leo_sim/profiles/formal_exp1.yaml",
+          "ANALYSIS/REWARD-DIFF-20260816.md",
+          "ANALYSIS/TEMPORAL-MULTISTEP-DESIGN-20260816.md"
+        ],
+        "promptHash": "28498663df98985bd68819fc3ce8234d2ebe72f9e0f1f3e6140213a6966e6d01"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:E2-routing-rl:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+        "paths": [
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/tests/test_learning.py",
+          "CODE/leo_sim/tests/test_learning_semantics.py",
+          "CODE/leo_sim/tests/test_reward_migration.py",
+          "CODE/leo_sim/profiles/formal_exp1.yaml",
+          "ANALYSIS/REWARD-DIFF-20260816.md",
+          "ANALYSIS/TEMPORAL-MULTISTEP-DESIGN-20260816.md"
+        ],
+        "promptHash": "c9684037414c2f020c896c757686142a347604ef13f87d32ca206eb7410bf334"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:E3-verification",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/acceptance.py",
+          "CODE/leo_sim/platform_check.py",
+          "CODE/leo_sim/comparison.py",
+          "CODE/leo_sim/tests/test_analytic_scenarios.py",
+          "CODE/leo_sim/tests/test_reward_migration.py",
+          "CODE/leo_sim/tests/test_learning_semantics.py",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+          "ANALYSIS/PERF-PROFILE-20260816.md"
+        ],
+        "promptHash": "58e2925413db346ef7aa26ac93f55ef6c843d8ba842426ec8c25aa2d66fd5121"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:E3-verification:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/acceptance.py",
+          "CODE/leo_sim/platform_check.py",
+          "CODE/leo_sim/comparison.py",
+          "CODE/leo_sim/tests/test_analytic_scenarios.py",
+          "CODE/leo_sim/tests/test_reward_migration.py",
+          "CODE/leo_sim/tests/test_learning_semantics.py",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+          "ANALYSIS/PERF-PROFILE-20260816.md"
+        ],
+        "promptHash": "54a29edca50ebadfeb73278785eecf33f8b71f2a3275d9e64fe38250c84e905f"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "72c18a91efafd4236b9cb2dbb34d8a995ec2d91fabcfadee600ae91c13b4f55b"
+  },
+  "sourceBaseCommit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:E1-network-arch",
+      "promptHash": "4c0ee663dedc4191424902158e80ab73417265a32b1518a61aa341bcc457fd46",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+        "paths": [
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/outage.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/population.py",
+          "CODE/leo_sim/profiles/formal_exp1.yaml",
+          "CODE/leo_sim/profiles/experiment_base.yaml",
+          "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md",
+          "ANALYSIS/PLATFORM-DOCUMENTATION/02-v2-platform.md",
+          "ANALYSIS/PERF-PROFILE-20260816.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:E1-network-arch:independent_review",
+      "promptHash": "f88fafde72c94d58c8d1732daf9e2cd0f11ac04c94769bba9bf044466b4a13cf",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+        "paths": [
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/outage.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/population.py",
+          "CODE/leo_sim/profiles/formal_exp1.yaml",
+          "CODE/leo_sim/profiles/experiment_base.yaml",
+          "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md",
+          "ANALYSIS/PLATFORM-DOCUMENTATION/02-v2-platform.md",
+          "ANALYSIS/PERF-PROFILE-20260816.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:E2-routing-rl",
+      "promptHash": "28498663df98985bd68819fc3ce8234d2ebe72f9e0f1f3e6140213a6966e6d01",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+        "paths": [
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/tests/test_learning.py",
+          "CODE/leo_sim/tests/test_learning_semantics.py",
+          "CODE/leo_sim/tests/test_reward_migration.py",
+          "CODE/leo_sim/profiles/formal_exp1.yaml",
+          "ANALYSIS/REWARD-DIFF-20260816.md",
+          "ANALYSIS/TEMPORAL-MULTISTEP-DESIGN-20260816.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:E2-routing-rl:independent_review",
+      "promptHash": "c9684037414c2f020c896c757686142a347604ef13f87d32ca206eb7410bf334",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+        "paths": [
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/tests/test_learning.py",
+          "CODE/leo_sim/tests/test_learning_semantics.py",
+          "CODE/leo_sim/tests/test_reward_migration.py",
+          "CODE/leo_sim/profiles/formal_exp1.yaml",
+          "ANALYSIS/REWARD-DIFF-20260816.md",
+          "ANALYSIS/TEMPORAL-MULTISTEP-DESIGN-20260816.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:E3-verification",
+      "promptHash": "58e2925413db346ef7aa26ac93f55ef6c843d8ba842426ec8c25aa2d66fd5121",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/acceptance.py",
+          "CODE/leo_sim/platform_check.py",
+          "CODE/leo_sim/comparison.py",
+          "CODE/leo_sim/tests/test_analytic_scenarios.py",
+          "CODE/leo_sim/tests/test_reward_migration.py",
+          "CODE/leo_sim/tests/test_learning_semantics.py",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+          "ANALYSIS/PERF-PROFILE-20260816.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:E3-verification:independent_review",
+      "promptHash": "54a29edca50ebadfeb73278785eecf33f8b71f2a3275d9e64fe38250c84e905f",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/acceptance.py",
+          "CODE/leo_sim/platform_check.py",
+          "CODE/leo_sim/comparison.py",
+          "CODE/leo_sim/tests/test_analytic_scenarios.py",
+          "CODE/leo_sim/tests/test_reward_migration.py",
+          "CODE/leo_sim/tests/test_learning_semantics.py",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+          "ANALYSIS/PERF-PROFILE-20260816.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
