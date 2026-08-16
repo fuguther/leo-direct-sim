@@ -341,6 +341,9 @@ class UplinkServer(_DRRMixin):
             now = k.env.now
             prop = model.propagation_delay_s(
                 k.geometry.slant_range_km(self.sat, ep.lat, ep.lon, now))
+            k._in_flight[pkt.pid] = {
+                "kind": "ingress", "sat": self.sat,
+                "arrival_at": k.env.now + prop}
             k.env.process(k._ingress_after_prop(pkt, self.sat, prop))
 
 
@@ -437,6 +440,9 @@ class DownlinkServer(_DRRMixin):
             now = k.env.now
             prop = model.propagation_delay_s(
                 k.geometry.slant_range_km(self.sat, ep.lat, ep.lon, now))
+            k._in_flight[pkt.pid] = {
+                "kind": "deliver", "sat": self.sat,
+                "arrival_at": k.env.now + prop}
             k.env.process(k._deliver_after_prop(pkt, self.sat, prop))
 
 
@@ -564,6 +570,9 @@ class ISLLink:
             if is_ctrl:
                 k.env.process(k._ctrl_arrive_after_prop(pkt, self.sat, self.peer, prop))
             else:
+                k._in_flight[pkt.pid] = {
+                    "kind": "isl", "sat": self.peer,
+                    "arrival_at": k.env.now + prop}
                 k.env.process(k._isl_arrive_after_prop(pkt, self.peer, prop))
 
     def _expire_waiting(self) -> None:
@@ -827,30 +836,55 @@ class Kernel:
             if srv._svc is None:
                 return None
             t0, occ = srv._svc
+            # remaining service time is derivable from the in-service packet
+            # and its link rate (uplink/downlink only; ISL rate depends on
+            # data-vs-control, resolved by the caller)
             return {"started_at": t0, "occ_key": occ}
+
+        def _packet_info(pkt) -> dict:
+            return {
+                "bits": pkt.bits,
+                "deadline": pkt.deadline,
+                "dst": pkt.dst,
+                "path": list(pkt.path),
+                "assigned_sat": getattr(pkt, "assigned_sat", None),
+            }
 
         isl_links = {}
         for s in range(self.num_sats):
             isl_links[s] = {}
             for d, lnk in self.isls[s].items():
+                in_service = None
+                if lnk.current is not None:
+                    if isinstance(lnk.current, ControlPacket):
+                        in_service = {"iid": lnk.current.iid}
+                    else:
+                        in_service = {"pid": lnk.current.pid}
+                remaining = None
+                if lnk._svc is not None and lnk.current is not None:
+                    t0, _ = lnk._svc
+                    remaining = (lnk.current.bits / self.isl_rate_bps) - (now - t0)
                 isl_links[s][d] = {
                     "peer": lnk.peer,
                     "data_bits": lnk.data_bits,
                     "ctrl_bits": lnk.ctrl_bits,
-                    "data_q": [p.pid for p in lnk.data_q],
+                    "data_q": [{"pid": p.pid, **_packet_info(p)}
+                               for p in lnk.data_q],
                     "ctrl_q": [c.iid for c in lnk.ctrl_q],
-                    "in_service": (
-                        {"pid": lnk.current.pid} if lnk.current is not None
-                        else None),
+                    "in_service": in_service,
                     "svc": _svc_state(lnk),
+                    "remaining_service_s": remaining,
                     "ge_bad": bool(lnk.ge.is_down(now)) if self.ge_enabled
                     else False,
+                    "ge_next_flip": (float(lnk.ge._next_flip)
+                                     if self.ge_enabled else math.inf),
                 }
 
         endpoints = {}
         for cell, ep in self.endpoints.items():
             endpoints[cell] = {
-                "queue": [p.pid for p in ep.queue],
+                "queue": [{"pid": p.pid, **_packet_info(p)}
+                          for p in ep.queue],
                 "queued_bits": ep.queued_bits,
                 "links": {
                     sat: {"state": lk.state, "since": lk.since,
@@ -864,11 +898,17 @@ class Kernel:
         for s in range(self.num_sats):
             dl = self.downlinks[s]
             downlinks[s] = {
-                "queues": {cell: [p.pid for p in q]
+                "queues": {cell: [{"pid": p.pid, **_packet_info(p)}
+                                  for p in q]
                            for cell, q in dl.queues.items()},
                 "queued_bits": dl.queued_bits,
-                "in_service": dl.current.pid if dl.current is not None else None,
+                "in_service": ({"pid": dl.current.pid}
+                               if dl.current is not None else None),
                 "svc": _svc_state(dl),
+                "remaining_service_s": (
+                    (dl.current.bits / self.dl_rate_bps)
+                    - (now - dl._svc[0]) if dl._svc is not None
+                    and dl.current is not None else None),
                 "drr": _drr_state(dl),
             }
 
@@ -876,10 +916,21 @@ class Kernel:
         for s in range(self.num_sats):
             up = self.uplinks[s]
             uplinks[s] = {
-                "in_service": (up.current[1].pid
+                "in_service": ({"pid": up.current[1].pid}
                                if up.current is not None else None),
                 "svc": _svc_state(up),
+                "remaining_service_s": (
+                    (up.current[1].bits / self.ul_rate_bps)
+                    - (now - up._svc[0]) if up._svc is not None
+                    and up.current is not None else None),
                 "drr": _drr_state(up),
+            }
+
+        gsl_ge = {}
+        for (sat, cell), ge in self.gsl_ge.items():
+            gsl_ge[f"{sat}:{cell}"] = {
+                "bad": bool(ge.is_down(now)),
+                "next_flip": float(ge._next_flip),
             }
 
         return {
@@ -892,11 +943,13 @@ class Kernel:
                 for s in range(self.num_sats)},
             "access_last_busy": dict(self.access_last_busy),
             "endpoints": endpoints,
-            "pending": {s: [p.pid for p in self.pending[s]]
+            "pending": {s: [{"pid": p.pid, **_packet_info(p)}
+                            for p in self.pending[s]]
                         for s in range(self.num_sats)},
             "uplinks": uplinks,
             "downlinks": downlinks,
             "isl_links": isl_links,
+            "gsl_ge": gsl_ge,
             "in_flight": {pid: dict(v) for pid, v in self._in_flight.items()},
             "caches": {
                 s: {origin: {"serve_cells": sorted(entry.payload.get(
@@ -1733,8 +1786,6 @@ class Kernel:
             self._decide(pkt, sat)
 
     def _ingress_after_prop(self, pkt: DataPacket, sat: int, prop: float):
-        self._in_flight[pkt.pid] = {
-            "kind": "ingress", "sat": sat, "arrival_at": self.env.now + prop}
         yield self.env.timeout(prop)
         self._in_flight.pop(pkt.pid, None)
         if pkt.deadline is not None and self.env.now > pkt.deadline:
@@ -1745,8 +1796,6 @@ class Kernel:
         self._decide(pkt, sat)
 
     def _isl_arrive_after_prop(self, pkt: DataPacket, sat: int, prop: float):
-        self._in_flight[pkt.pid] = {
-            "kind": "isl", "sat": sat, "arrival_at": self.env.now + prop}
         yield self.env.timeout(prop)
         self._in_flight.pop(pkt.pid, None)
         if pkt.deadline is not None and self.env.now > pkt.deadline:
@@ -1757,8 +1806,6 @@ class Kernel:
         self._decide(pkt, sat)
 
     def _deliver_after_prop(self, pkt: DataPacket, sat: int, prop: float):
-        self._in_flight[pkt.pid] = {
-            "kind": "deliver", "sat": sat, "arrival_at": self.env.now + prop}
         yield self.env.timeout(prop)
         self._in_flight.pop(pkt.pid, None)
         now = self.env.now
