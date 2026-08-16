@@ -310,11 +310,16 @@ class TensorflowDDQN:
         # Op determinism is part of the reproducibility claim: record the
         # outcome instead of swallowing it. The value lands in diagnostics()
         # and therefore in the receipt-bound learning ledger.
-        self.op_determinism: bool | str = True
         try:
             self.tf.config.experimental.enable_op_determinism()
         except Exception as exc:
-            self.op_determinism = f"unavailable: {type(exc).__name__}: {exc}"
+            # Determinism is a declared invariant; a host that cannot enable
+            # TF op determinism must not produce a run that later passes the
+            # receipt gate while being potentially nondeterministic.
+            raise LearningUnavailable(
+                "TensorFlow op determinism could not be enabled "
+                f"({type(exc).__name__}: {exc})") from exc
+        self.op_determinism = True
         self.tf.keras.utils.set_random_seed(int(seed))
         self.contract = contract
         self.input_dim = CONTRACT_DIMS[contract]

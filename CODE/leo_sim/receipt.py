@@ -458,10 +458,10 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
                     if learning.get(key) != mc.get(counter):
                         errors.append(f"learning.{key} != mechanism counter")
                 errors.extend(_learning_transition_accounting(mc))
-            od = learning.get("op_determinism")
-            if od is not True and not isinstance(od, str):
-                errors.append("learning.op_determinism must be true or a "
-                              "recorded failure string")
+            if learning.get("op_determinism") is not True:
+                errors.append("learning.op_determinism must be true "
+                              "(fail-closed: runs without TF op determinism "
+                              "are rejected)")
             expected_fast = (resolved_cfg or {}).get("learning", {}).get(
                 "fast_train")
             if expected_fast is not None \
@@ -935,6 +935,13 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
                               "[fate, positive int bits, received_at|None]")
                 continue
             fate, bits, received_at = pair
+            if resolved_cfg is not None:
+                expected = (resolved_cfg.get("control_plane") or {}).get(
+                    "packet_bits")
+                if expected is not None and bits != expected:
+                    errors.append(
+                        f"control_instances[{iid}] bits {bits} != resolved "
+                        f"control_plane.packet_bits {expected}")
             if not (received_at is None or _is_nonneg_num(received_at)):
                 errors.append(f"control_instances[{iid}] received_at must be "
                               "None or a finite non-negative number")
