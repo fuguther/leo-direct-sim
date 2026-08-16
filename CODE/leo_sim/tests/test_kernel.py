@@ -111,6 +111,38 @@ def test_geometry_loss_in_flight_accounts_occupied_time():
     assert abs(res["occupied"]["gsl_uplink_s"] - 0.05) < 1e-6
 
 
+def test_future_endpoints_not_prebuilt_and_no_preposition_leak():
+    """A cell whose first traffic is in the future must not pre-exist: it
+    must not pre-position a K slot, appear in advertisements or inflate
+    observation denominators before any demand.  Regression: the kernel used
+    to build every trace cell at t=0, so a future-only endpoint could grab
+    the only slot before the present traffic arrived."""
+    a, b = cell(0.0, 10.0), cell(0.0, 0.0)  # b sorts first (would preposition)
+    geo = StaticGeometry(1, neighbors_map={0: {}}, visible=lambda *_: True,
+                         gsl_changes=[])
+    cfg = make_cfg({
+        "scenario": {"duration_s": 8.0, "num_satellites": 1,
+                     "num_planes": 1, "time_step_s": 0.1},
+        "access": {"slots_per_satellite": 1, "uplink_rate_mbps": 200.0,
+                   "downlink_rate_mbps": 200.0, "idle_release_s": 0.2,
+                   "min_dwell_s": 0.0, "hysteresis_deg": 0.0,
+                   "acquisition_delay_s": 0.0},
+    })
+    rows = [row(1, 0.0, a, b), row(2, 5.0, b, a)]
+    k = kernel.Kernel(cfg, rows, geometry=geo)
+    assert len(k.endpoints) == 0  # nothing pre-built from the full trace
+    res = k.run()
+    # the future cell never pre-positioned the single slot: the present
+    # traffic (A) wins the first grant, and the future cell B is only
+    # associated after the slot frees (regression: pre-built B grabbed the
+    # slot at t=0 and starved A)
+    assoc = [e for e in res["handover"]["events"] if e["type"] == "associate"]
+    assert assoc[0]["endpoint"] == a
+    assert res["access"]["preposition_grants"] == 0
+    assert res["fates"][1] == "DELIVERED"
+    assert res["fates"][2] == "DELIVERED"
+
+
 def test_random_outage_in_flight():
     cfg = make_cfg({
         # mean_good ~ 0: the GSL goes down essentially immediately and stays

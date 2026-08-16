@@ -648,8 +648,12 @@ class Kernel:
         self.dl_rate_bps = self.cfg_access["downlink_rate_mbps"] * 1e6
         self.isl_rate_bps = self.cfg_links["isl_rate_mbps"] * 1e6
 
-        # sparse activation: only trace-active cells become endpoints; every
-        # row passes the unified packet-row contract regardless of its origin
+        # Sparse activation: endpoints are created lazily the first time a
+        # cell becomes active (first emission from it, or first packet routed
+        # to it).  Pre-building every trace cell at t=0 would leak the full
+        # future trace into the present: future endpoints pre-position K
+        # slots, appear in control advertisements (visible/serve cells) and
+        # inflate observation denominators before any demand exists.
         rows = sorted(rows, key=lambda r: (r["emit_time_s"], r["packet_id"]))
         tracemod.validate_packet_rows(
             rows, horizon_s=self.horizon,
@@ -657,9 +661,6 @@ class Kernel:
         self.endpoints: dict[str, TrafficEndpoint] = {}
         per_ep_rows: dict[str, list[dict]] = {}
         for r in rows:
-            for c in (r["src_grid_id"], r["dst_grid_id"]):
-                if c not in self.endpoints:
-                    self.endpoints[c] = TrafficEndpoint(c)
             per_ep_rows.setdefault(r["src_grid_id"], []).append(r)
 
         self.topo = routing.build_topology(
@@ -706,6 +707,9 @@ class Kernel:
                 n_entities += 1
         if n_entities > self.cfg_ex["max_entities"]:
             raise CapExceeded(f"entities {n_entities} > max_entities")
+        # base entity count (sat servers + ISL links) for the lazy-endpoint
+        # cap check; endpoints created at runtime must respect the same bound
+        self._entity_base = n_entities
 
         self.ledger = fates.DataFateLedger()
         self.ctrl_ledger = fates.ControlFateLedger()
@@ -742,21 +746,41 @@ class Kernel:
         self._learning_open: set[DataPacket] = set()
         self.closed_at: float | None = None
 
-        # process creation order fixes same-time ordering: handover ticks and
-        # control advertisers at t=0 precede emissions at t=0. The horizon
-        # closer is created last; events AT the horizon are still processed
-        # (closed interval [0, horizon]) and final accounting settles at the
-        # exact horizon, never at an incidental last-event time.
-        for cell in sorted(self.endpoints):
-            self.env.process(self._endpoint_ticker(self.endpoints[cell]))
+        # process creation order fixes same-time ordering: control
+        # advertisers at t=0 precede emissions at t=0. Endpoint tickers are
+        # created by _ensure_endpoint when a cell first becomes active. The
+        # horizon closer is created last; events AT the horizon are still
+        # processed (closed interval [0, horizon]) and final accounting
+        # settles at the exact horizon, never at an incidental last-event
+        # time.
         if self.cfg_cp["enabled"] and self.cfg_cp["vis_k"] > 0:
             for s in range(self.num_sats):
                 self.env.process(self._control_advertiser(s))
         for cell in sorted(per_ep_rows):
-            self.env.process(self._emitter(self.endpoints[cell], per_ep_rows[cell]))
+            self.env.process(self._emitter(cell, per_ep_rows[cell]))
         for s in range(self.num_sats):
             self.env.process(self._pending_ticker(s))
         self.env.process(self._horizon_closer())
+
+    def _ensure_endpoint(self, cell: str) -> TrafficEndpoint:
+        """Create a trace cell's endpoint the first time it becomes active.
+
+        Future-only endpoints must not pre-exist: they would pre-position K
+        slots, appear in control advertisements and inflate observation
+        denominators before any demand exists (causal leak from the full
+        trace into the present).
+        """
+        ep = self.endpoints.get(cell)
+        if ep is not None:
+            return ep
+        if len(self.endpoints) + self._entity_base >= self.cfg_ex["max_entities"]:
+            raise CapExceeded(
+                f"entities {len(self.endpoints) + self._entity_base + 1} "
+                f"> max_entities")
+        ep = TrafficEndpoint(cell)
+        self.endpoints[cell] = ep
+        self.env.process(self._endpoint_ticker(ep))
+        return ep
 
     # ------------------------------------------------------------------ util
     @staticmethod
@@ -937,8 +961,9 @@ class Kernel:
         yield self.env.timeout(self.horizon)
         self.closed_at = self.env.now
 
-    def _emitter(self, ep: TrafficEndpoint, rows):
+    def _emitter(self, cell: str, rows):
         for r in rows:
+            ep = self._ensure_endpoint(cell)
             delay = r["emit_time_s"] - self.env.now
             if delay > 0:
                 yield self.env.timeout(delay)
@@ -1101,7 +1126,14 @@ class Kernel:
         if any(l.state == "retiring" for l in ep.links.values()):
             return  # wait for the retiring link to clear first
         if self._endpoint_demand(ep):
+            had_link = ep.primary_link() is not None
             self._request_or_grant(ep, now)
+            if not had_link and ep.primary_link() is not None:
+                # fresh grant for an endpoint with pending/downlink demand:
+                # re-decide its pending packets now instead of waiting for the
+                # next tick (lazy endpoint activation must not add one
+                # time_step of latency to first delivery)
+                self._redecide_cell_pending(ep.cell)
         elif not any(self.access_wait[s] for s in range(self.num_sats)):
             self._try_grant(ep, now, preposition=True)
 
@@ -1125,6 +1157,23 @@ class Kernel:
             self.access_stats["wait_time_s_total"] += wt
             self.access_stats["wait_time_s_max"] = max(
                 self.access_stats["wait_time_s_max"], wt)
+            self._redecide_cell_pending(cell)
+
+    def _redecide_cell_pending(self, cell: str) -> None:
+        """Re-decide pending packets destined to ``cell`` on every satellite.
+
+        A fresh destination grant can happen on a different satellite than the
+        one currently holding the packet in its pending list (e.g. the egress
+        grant fires while the packet still waits on the previous hop), so the
+        scan is global.
+        """
+        for s in range(self.num_sats):
+            waiting = [p for p in self.pending[s] if p.dst == cell]
+            if not waiting:
+                continue
+            self.pending[s] = [p for p in self.pending[s] if p.dst != cell]
+            for pkt in waiting:
+                self._decide(pkt, s)
 
     def _control_advertiser(self, sat: int):
         interval = self.cfg_cp["advertise_interval_s"]
@@ -1518,7 +1567,7 @@ class Kernel:
         if len(pkt.path) > self.cfg_rt["max_hops"]:
             self._fail(pkt, "NO_ROUTE")
             return
-        ep = self.endpoints[pkt.dst]
+        ep = self._ensure_endpoint(pkt.dst)
         link = ep.links.get(sat)
         if (link is not None and link.state == "active"
                 and self.geometry.gsl_available(sat, ep.lat, ep.lon, now)):
