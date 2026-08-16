@@ -470,8 +470,10 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
         ge = lk[name]
         if not isinstance(ge, Mapping) or set(ge) != {"mean_good_s", "mean_bad_s"}:
             raise ConfigError(f"links.{name} must have exactly mean_good_s and mean_bad_s")
-        if not all(isinstance(ge[k], (int, float)) and ge[k] > 0
-                   for k in ("mean_good_s", "mean_bad_s")):
+        if any(isinstance(ge[k], bool)
+               or not isinstance(ge[k], (int, float))
+               or ge[k] <= 0
+               for k in ("mean_good_s", "mean_bad_s")):
             raise ConfigError(f"links.{name} mean dwell times must be > 0")
     if cp["vis_k"] < 0:
         raise ConfigError("control_plane.vis_k must be >= 0")

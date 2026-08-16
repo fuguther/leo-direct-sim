@@ -75,3 +75,11 @@ def test_load_config_file(tmp_path):
     bad.write_text("config_version: other/v9\n")
     with pytest.raises(config.ConfigError, match="config_version"):
         config.load_config_file(str(bad))
+
+
+def test_ge_dwell_rejects_bool():
+    # bool is an int subclass: must not pass the GE dwell type check
+    with pytest.raises(config.ConfigError, match="mean dwell"):
+        config.resolve_config({"links": {"ge_enabled": True,
+                                         "ge_gsl": {"mean_good_s": True,
+                                                    "mean_bad_s": 1.0}}})
