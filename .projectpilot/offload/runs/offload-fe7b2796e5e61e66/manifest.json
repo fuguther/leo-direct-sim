@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "planId": "offload-fe7b2796e5e61e66",
+  "relayManifest": {
+    "planId": "offload-fe7b2796e5e61e66",
+    "projectId": "leo-direct-sim",
+    "backend": "web_chat",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:H1-unknown-problems",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/tests",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+          "ANALYSIS/PERF-PROFILE-20260816.md",
+          "CODE/leo_sim/profiles"
+        ],
+        "promptHash": "2294cf25d5f2dc3f13b8bb5c7c99deb65810c235ab64240a99a43d90222f7578"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:H1-unknown-problems:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/tests",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+          "ANALYSIS/PERF-PROFILE-20260816.md",
+          "CODE/leo_sim/profiles"
+        ],
+        "promptHash": "e3bbe9c610cb9fdf7e01b7b058acd58253d8b9f602149ea5127e96ab44e3419d"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "fe7b2796e5e61e6661354194f675a094d2484821d6c2c9ccb8ba77e4df75dbce"
+  },
+  "sourceBaseCommit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:H1-unknown-problems",
+      "promptHash": "2294cf25d5f2dc3f13b8bb5c7c99deb65810c235ab64240a99a43d90222f7578",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/tests",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+          "ANALYSIS/PERF-PROFILE-20260816.md",
+          "CODE/leo_sim/profiles"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:H1-unknown-problems:independent_review",
+      "promptHash": "e3bbe9c610cb9fdf7e01b7b058acd58253d8b9f602149ea5127e96ab44e3419d",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/tests",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+          "ANALYSIS/PERF-PROFILE-20260816.md",
+          "CODE/leo_sim/profiles"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
