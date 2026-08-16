@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "planId": "offload-1af5e77fa446ac73",
+  "relayManifest": {
+    "planId": "offload-1af5e77fa446ac73",
+    "projectId": "leo-direct-sim",
+    "backend": "web_chat",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:Q0-algo-selection",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/config.py",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+          "PAPER/"
+        ],
+        "promptHash": "61cf8491daf421714e277e4eb1371db444f056aa81ea95366bcfdb03606adbfd"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:Q0-algo-selection:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/config.py",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+          "PAPER/"
+        ],
+        "promptHash": "5a8d2d311d61043601b1347c3efbbe9ab033a298f7255a18f91d78765023c4eb"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "1af5e77fa446ac7346830191ab4d8f34069c343fa7c067bce1ecca52af7e94cc"
+  },
+  "sourceBaseCommit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:Q0-algo-selection",
+      "promptHash": "61cf8491daf421714e277e4eb1371db444f056aa81ea95366bcfdb03606adbfd",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/config.py",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+          "PAPER/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:Q0-algo-selection:independent_review",
+      "promptHash": "5a8d2d311d61043601b1347c3efbbe9ab033a298f7255a18f91d78765023c4eb",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/config.py",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+          "PAPER/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
