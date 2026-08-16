@@ -400,8 +400,31 @@ class DownlinkServer(_DRRMixin):
                         k.pending[self.sat].append(pkt)
             sel = self._drr_select(cells, self._servable)
             if sel is None:
-                yield self.wake
-                self.wake = k.env.event()
+                # Sleep until poked or until GSL geometry recovers for any
+                # queued cell.  Without this timer a temporary GSL outage
+                # strands queued packets until a new put() pokes the server,
+                # even after the satellite is visible again (the ISL server
+                # already schedules geometry recovery this way).  Wake events
+                # are also poked by kernel association changes (_release /
+                # _associate / _activate_after_delay), so a released or
+                # re-associated endpoint's packets move back to pending
+                # promptly instead of waiting for the next put().
+                recovery = None
+                now = k.env.now
+                for c in cells:
+                    ep = k.endpoints[c]
+                    nxt = k.geometry.next_gsl_change(
+                        self.sat, ep.lat, ep.lon, now, k.horizon)
+                    if nxt is not None:
+                        recovery = nxt if recovery is None else min(recovery, nxt)
+                if recovery is not None:
+                    yield self.wake | k.env.timeout(
+                        max(0.0, recovery - k.env.now))
+                    if self.wake.triggered:
+                        self.wake = k.env.event()
+                else:
+                    yield self.wake
+                    self.wake = k.env.event()
                 continue
             cell, pkt = sel
             self.queues[cell].popleft()
@@ -1238,6 +1261,7 @@ class Kernel:
                     interrupt=self.env.event())
         ep.links[sat] = link
         self.slots[sat].add(ep.cell)
+        self._poke(self.downlinks[sat].wake)
         self.handover_events.append({"t": now, "endpoint": ep.cell,
                                      "type": "associate", "sat": sat})
         if acq <= 0:
@@ -1251,12 +1275,14 @@ class Kernel:
         if ep.links.get(link.sat) is link and link.state == "acquiring":
             link.state = "active"
             self._poke(self.uplinks[link.sat].wake)
+            self._poke(self.downlinks[link.sat].wake)
 
     def _release(self, ep: TrafficEndpoint, sat: int, now: float, reason: str):
         link = ep.links.pop(sat, None)
         if link is None:
             return
         self.slots[sat].discard(ep.cell)
+        self._poke(self.downlinks[sat].wake)
         self.access_stats["slot_hold_s_total"] += now - link.since
         rel = self.access_stats["releases"]
         rel[reason] = rel.get(reason, 0) + 1
