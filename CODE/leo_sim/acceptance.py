@@ -47,15 +47,18 @@ def _case_checks(name: str, result: dict) -> dict[str, bool]:
     common = {
         "natural_end": result["natural_end"] is True,
         "data_conservation": result["conservation_ok"] is True,
-        "delivered_data": fates["DELIVERED"] > 0,
+            "delivered_data": fates["DELIVERED"] > 0,
     }
     if name == "direct":
+        # routing_label is ORACLE_LABEL ("analysis_upper_bound") for oracle
+        # policy and None otherwise; "!= 'oracle'" would be always true and
+        # would pass even if the direct scenario accidentally used oracle
         return {
             **common,
             "multi_satellite_data_service": result["occupied"]["isl_s"] > 0,
             "control_packets_arrived": result["control"]["counters"]["arrived"] > 0,
             "control_plane_used": effective["control_plane"] is True,
-            "non_oracle_routing": result["routing_label"] != "oracle",
+            "non_oracle_routing": result["routing_label"] is None,
         }
     if name == "k1":
         return {
