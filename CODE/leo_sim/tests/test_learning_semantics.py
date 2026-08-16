@@ -64,6 +64,16 @@ class _StubLearner:
         return {"stub": True}
 
 
+class _RogueLearner(_StubLearner):
+    """Returns an action outside the legal mask: the kernel must fail loud
+    instead of silently overflowing an ISL queue (put_data does not
+    re-check room())."""
+
+    def choose(self, state, mask, now):
+        self.decisions += 1
+        return "deliver" if mask.get("deliver") else "N"
+
+
 # ------------------------------------------- 1. arrival reward at real delivery
 
 class _HandoverGeometry(StaticGeometry):
@@ -381,3 +391,24 @@ def test_decision_snapshot_policy_label_uses_algorithm():
     assert forward, "expected at least one forward decision in the sink"
     assert all(d["policy"].startswith("qlearning:") for d in forward), (
         [d["policy"] for d in forward])
+
+
+def test_rogue_learner_out_of_mask_action_fails_loud():
+    """A learner returning an action outside the legal mask must raise
+    KernelError (like the deliver-only branch) instead of silently
+    overflowing an ISL queue."""
+    cfg = make_cfg({
+        "scenario": {"num_satellites": 2, "num_planes": 1, "duration_s": 2.0},
+        "control_plane": {"enabled": True},
+        "routing": {"policy": "hop", "learning_enabled": True},
+        "learning": {"algorithm": "qlearning"},
+    })
+    geo = _HandoverGeometry(
+        2, neighbors_map=LINE,
+        visible=lambda s, lat, lon, t: (s == 0 and abs(lat - 31.0) < 1.0
+                                        ) or (s == 1 and abs(lat - 40.0) < 1.0))
+    k = kernel.Kernel(
+        cfg, [row(1, 0.0, cell(31.0, 121.0), cell(40.0, 116.0))], geometry=geo)
+    k.learner = _RogueLearner()
+    with pytest.raises(kernel.KernelError):
+        k.run()

@@ -113,6 +113,22 @@ def test_eval_mode_does_not_update_table(tmp_path):
     assert ql.train_steps == 0 and ql.transitions == 1
 
 
+def test_eval_mode_does_not_consume_rng_or_mutate_table():
+    """Eval mode must evaluate a fixed policy: no epsilon roll per decision,
+    and unseen states get a deterministic zero row (first legal action)
+    instead of a random-init row inserted into the table."""
+    cfg = {"mode": "eval", "gamma": 0.99}
+    q = learning.TabularQLearning("C3", cfg, seed=7)
+    obs = np.zeros(learning.CONTRACT_DIMS["C3"])
+    mask = {"deliver": False, "N": True, "S": False, "E": True, "W": False}
+    state_before = q.rng.bit_generator.state
+    action = q.choose(obs, mask, 1.0)
+    state_after = q.rng.bit_generator.state
+    assert q.table == {}  # unseen state must not be written into the table
+    assert state_after == state_before  # no RNG consumed
+    assert action == "N"  # deterministic: first legal action on a zero row
+
+
 def test_save_load_roundtrip_verified(tmp_path):
     ql = _learner()
     ql.remember(np.zeros(4), "E", 1.5, np.ones(4), FULL_MASK, False)

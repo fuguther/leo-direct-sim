@@ -33,6 +33,22 @@ def test_invalid_fate_and_unregistered_rejected():
         led.record(1, "CONTROL_EXPIRED")
 
 
+def test_fate_bits_must_match_registered_offered_bits():
+    """Per-packet bit identity is part of the ledger invariant: offsetting
+    bit errors must not be able to fake bit conservation."""
+    led = fates.DataFateLedger()
+    led.register(1, 100)
+    led.register(2, 100)
+    with pytest.raises(fates.FateError):
+        led.record(1, "DELIVERED", 150)
+    with pytest.raises(fates.FateError):
+        led.record(2, "ACCESS_REJECTED", 50)
+    ctl = fates.ControlFateLedger()
+    ctl.register(10, 80)
+    with pytest.raises(fates.FateError):
+        ctl.record(10, "DELIVERED", 81, received_at=1.0)
+
+
 def test_control_ledger_full_accounting_and_conservation():
     c = fates.ControlFateLedger()
     c.register(1, 8000)
