@@ -1,6 +1,13 @@
 # NOTES.md
 
 ## 当前状态
+- 2026-08-17 自主合并留痕（AGENTS.md 授权，全部 CI pytest 绿）：PR #29
+  （occupied 停表口径 + expiry 超 horizon 走 stalled）、#34（GE bool 拒绝 +
+  意图 sites 要求）、#30（TabularQ eval RNG）、#31（几何记忆化缓存）、
+  #32（账本 bit 绑定）、#33（burst 窗口）、#35（acceptance 死门）、#36
+  （receipt verify 崩溃）、#37（forward 掩码断言 + peek fail-loud）、#38
+  （正式门改 recomputed）、#27（文档 §G/H + Q0 调研/接口设计 + 晨报）。
+  第 1 轮 P1 项 #25/#26/#28 按目标规则留待用户确认后合并。
 - 2026-08-17 夜第 1 轮三方挖问题闭环：GPT 两路 12+12 条发现、Kimi 49 条观察、Codex 本地复现验证。确认 5 条真 bug 并修复（均待复核/待拍板合并）：PR #25 downlink 恢复唤醒（Kimi APPROVE + 整队排空改进）、#26 接入 FIFO（Kimi REQUEST_CHANGES→已修 pop 缺陷+白盒测试）、#28 未来端点惰性激活（Kimi REQUEST_CHANGES→已移激活点+反例测试）、#29 occupied 停表口径（GE 恢复超 horizon 走 stalled）、#30 TabularQ eval RNG。P0-1 几何缓存完成（357 绿+等价验收，分支 codex/20260816-geom-cache 待 Kimi 复核）。Q0 算法选型三方调研完成（GPT 两路 + Kimi 交叉修正 §6），文档 ANALYSIS/Q0-ALGO-RESEARCH-20260817.md。汇总文档 ANALYSIS/EXPERT-REVIEW-20260816.md §G（PR #27）。第 2 轮 GPT 挖问题已派发（op 636052b2…，聚焦盲区模块+修复回归）。
 - 2026-08-17 P0-1 几何记忆化缓存：实现 `model.MemoizedGeometry`（精确 t 分槽 LRU，位级等价；组合查询由缓存 ecef 重算；非 Constellation 委托+缓存），kernel 接入。验收：smoke/geometry_loss 两组改前改后 ledgers 逐字节一致；全量 357 passed（+3 测试）；性能：acceptance 3.42→2.97s、dense-oracle 1.07→0.80s、140 星 hop 6.36→5.91s。分支 codex/20260816-geom-cache（commit a34d2d3）已推送，待 Kimi 复核后开 PR。
 - 2026-08-17 夜第 1 轮三方挖问题：GPT 两路（H1 primary/review）完整回收（各 12 条发现，网页抓取留痕 /tmp/gpt_h1_*.txt）；Kimi 独立挖出 49 条观察（输出截断，核心候选已纳入清单）；Codex 本地复现验证确认两条新 bug 并修复（PR #25 downlink 恢复唤醒、PR #26 接入 FIFO 插队，均 355 passed + acceptance PASS，待 Kimi 冷启动复核）。第 1 轮汇总已并入 `ANALYSIS/EXPERT-REVIEW-20260816.md` §G（新发现 G1-1..8、Q0 就绪度 G2、Q0 实验设计 G3、已知清单重分类 G4）。Q0 算法选型调研已派发 GPT（op 8fde67c8…，webResearch）。
