@@ -279,3 +279,76 @@ def test_graph_node_features_carry_access_load_visibility_aoi():
         # tail, which these payload-derived fields must not duplicate
         assert np.array_equal(feats[0, 15:18], np.zeros(3))
         assert feats[0, 7] == 1.0  # root is still a valid node
+
+
+# ---------------------------------------- 修复 C：学习动作空间不被启发式预裁剪
+class _MaskRecordingLearner:
+    """Greedy-first-legal learner that records every mask it was offered."""
+
+    def __init__(self):
+        self.mode = "eval"
+        self.decisions = 0
+        self.transitions = 0
+        self.train_steps = 0
+        self.masks = []
+
+    def choose(self, state, mask, now):
+        self.decisions += 1
+        self.masks.append(dict(mask))
+        if mask.get("deliver"):
+            return "deliver"
+        for a in ("N", "S", "E", "W"):
+            if mask.get(a):
+                return a
+        raise AssertionError(f"no legal action in mask {mask}")
+
+    def remember(self, state, action, reward, next_state, next_mask, done):
+        self.transitions += 1
+
+    def diagnostics(self):
+        return {"stub": True}
+
+
+class _FourSatGeometry(StaticGeometry):
+    def subpoint(self, sat_id, t):
+        return (0.0, float(sat_id), 550.0)
+
+    def positions(self, t):
+        return tuple((float(i), 0.0, 550.0) for i in range(self.num_satellites))
+
+
+def test_learning_action_space_not_preclipped_to_heuristic_best():
+    """DDQN must be able to pick ANY locally legal direction, not only the
+    heuristic-best one. Regression: kernel passed best_only=True for learning
+    runs, so a non-optimal-but-legal direction never reached the mask."""
+    A, B = cell(31.0, 121.0), cell(40.0, 116.0)
+    # sat0 -> E:1 (1 hop to B); sat0 -> W:2 -> E:3 (2 hops to B): E is the
+    # heuristic-best direction, W is legal but worse per the heuristic
+    geo = _FourSatGeometry(
+        4,
+        neighbors_map={0: {"E": 1, "W": 2}, 1: {"W": 0},
+                       2: {"E": 3, "W": 0}, 3: {"W": 2}},
+        visible=lambda s, lat, lon, t: (
+            (s == 0 and abs(lat - 31.0) < 1.0)
+            or (s in (1, 3) and abs(lat - 40.0) < 1.0)),
+    )
+    cfg = make_cfg({
+        "scenario": {"duration_s": 10.0, "num_satellites": 4, "num_planes": 1},
+        "control_plane": {"enabled": True, "vis_k": 4, "ttl_s": 20.0,
+                          "advertise_interval_s": 1.0},
+        "routing": {"policy": "hop", "learning_enabled": True},
+        "learning": {"algorithm": "qlearning"},
+    })
+    k = kernel.Kernel(cfg, [row(1, 0.0, A, B)], geometry=geo)
+    learner = _MaskRecordingLearner()
+    k.learner = learner
+    result = k.run()
+    assert result["natural_end"]
+    assert result["fates"][1] == "DELIVERED"
+    forward_masks = [m for m in learner.masks if not m.get("deliver")]
+    assert forward_masks, "packet must have made a forward decision"
+    # both E (heuristic best) and W (legal, longer) must be selectable
+    last_forward = forward_masks[-1]
+    assert last_forward.get("E") is True
+    assert last_forward.get("W") is True, (
+        "learning action set was pre-clipped to the heuristic best direction")

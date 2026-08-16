@@ -1535,7 +1535,11 @@ class Kernel:
             self.cfg_rt["policy"], sat, pkt.dst, now, self.geometry, self.topo,
             self.caches[sat], own_q, self.isl_rate_bps, model.propagation_delay_s,
             oracle_targets=[s for s in self._serving_sats(pkt.dst) if s != sat],
-            best_only=self.learner is not None)
+            # learning must choose among ALL local legal directions: the
+            # heuristic only orders candidates, it never pre-clips the
+            # learner's action set (otherwise DDQN is a tie-breaker over the
+            # heuristic-best path and cannot learn to deviate from it)
+            best_only=False)
         if status == "unreachable":
             self._fail(pkt, "NO_ROUTE")
             return
