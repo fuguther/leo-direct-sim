@@ -44,9 +44,12 @@ def test_hop_policy_picks_fewest_hops():
     assert dirs1[0] == "E"
 
 
-def test_learning_candidate_set_excludes_longer_reachable_detours():
-    # 0->1->3 is two hops; 0->2->4->3 is three. A learning policy may choose
-    # among equal shortest paths, but may not explore a known longer detour.
+def test_best_only_returns_only_shortest_ties():
+    # routing-library parameter test: 0->1->3 is two hops, 0->2->4->3 is
+    # three; best_only=True returns only the shortest-tie directions. The
+    # kernel's learning path no longer passes best_only=True (the learner's
+    # action set spans every locally legal direction), so this test pins the
+    # library function itself, not any learning-policy semantics.
     topo_map = {
         0: {"E": 1, "N": 2}, 1: {"W": 0, "E": 3},
         2: {"S": 0, "E": 4}, 4: {"W": 2, "E": 3},
