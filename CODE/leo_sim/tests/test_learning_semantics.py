@@ -352,3 +352,32 @@ def test_learning_action_space_not_preclipped_to_heuristic_best():
     assert last_forward.get("E") is True
     assert last_forward.get("W") is True, (
         "learning action set was pre-clipped to the heuristic best direction")
+
+
+def test_decision_snapshot_policy_label_uses_algorithm():
+    """Decision snapshots must record the REAL learning algorithm
+    (qlearning), not hard-code ddqn — otherwise Q-learning audit trails are
+    mislabeled (regression for the label fix)."""
+    A, B = cell(31.0, 121.0), cell(40.0, 116.0)
+    geo = _FourSatGeometry(
+        2,
+        neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+        visible=lambda s, lat, lon, t: (
+            (s == 0 and abs(lat - 31.0) < 1.0)
+            or (s == 1 and abs(lat - 40.0) < 1.0)),
+    )
+    cfg = make_cfg({
+        "control_plane": {"enabled": True},
+        "routing": {"policy": "hop", "learning_enabled": True},
+        "learning": {"algorithm": "qlearning"},
+    })
+    sink = []
+    k = kernel.Kernel(cfg, [row(1, 0.0, A, B)], geometry=geo,
+                      decision_sink=sink)
+    k.learner = _MaskRecordingLearner()
+    result = k.run()
+    assert result["natural_end"]
+    forward = [d for d in sink if d["kind"] == "forward"]
+    assert forward, "expected at least one forward decision in the sink"
+    assert all(d["policy"].startswith("qlearning:") for d in forward), (
+        [d["policy"] for d in forward])
