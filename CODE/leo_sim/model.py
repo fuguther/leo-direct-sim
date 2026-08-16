@@ -89,10 +89,12 @@ class MemoizedGeometry:
       provider and its exact result is memoized.
     """
 
-    #: how many distinct recent instants each query family retains; the
-    #: entries under one instant are bounded by the constellation/endpoint
-    #: counts, so memory stays small while a burst of certified next-change
-    #: bisection samples (unique times) cannot evict the current event time.
+    #: how many distinct instants each query family retains (FIFO over
+    #: first-seen time; hits do not refresh).  Entries under one instant are
+    #: bounded by the constellation/endpoint counts, so memory stays small.
+    #: A burst of certified next-change bisection samples (unique times) CAN
+    #: evict the current event time's slot; that only costs recomputation
+    #: (values are bit-identical pure functions), never correctness.
     _TIME_CAPACITY = 128
 
     def __init__(self, inner, capacity: int = 4096):
@@ -227,6 +229,9 @@ class MemoizedGeometry:
     def gsl_available(self, sat_id: int, lat: float, lon: float, t: float) -> bool:
         # both model.Constellation and test helpers implement this as
         # ground_visible; keeping the identity here preserves bit-equivalence.
+        # NOTE: this assumes gsl_available == ground_visible for every wrapped
+        # provider (currently true for both in-repo providers); a future
+        # provider with distinct semantics must override or be excluded.
         return self.ground_visible(sat_id, lat, lon, t)
 
     def slant_range_km(self, sat_id: int, lat: float, lon: float, t: float):
