@@ -162,3 +162,32 @@
 - downlink（#25）与 occupied（#29）修复经交叉回归未见新正确性错误
   （occupied 的 fate 错标边界已按 H2-21 修复）；TabularQ（#30）干净，
   DDQN eval 惰性 rng 消耗无需同类修正。
+
+---
+
+## I. 第 3 轮三方挖问题（2026-08-17，Kimi + GPT + Codex，基于合并后 main 1599d3e）
+
+> 前置更正：**#25/#26/#28 未合入 main**（git 证据；main 的 12 个修复是
+> #22/#24/#29/#30/#31/#32/#33/#34/#35/#36/#37/#38）。G1-1（downlink 恢复
+> 唤醒）与 A3（未来端点预建）在 main 上仍是开放状态。
+
+| # | 发现 | 严重度 | 验证 | 处置 |
+|---|---|---|---|---|
+| K1 | **_transmit down-wait 不竞退休中断**：退休链路被钉死到链路恢复（复现 retire_at=1.5 但 5.009 才释放、交付 7.786 vs 应 ~1.6；期间整星服务停摆） | major | Kimi 动态复现 + Codex 复核 | ✔ PR #41（待复核） |
+| K2 | **occupied 停表计入服务前 down-wait**（G1-7 残留）：_svc 调用时刻盖戳，停表结算把等待计入（复现 0.6033 vs 真实 0.5） | minor→Q0 major | Kimi 动态复现 + Codex 复核 | ✔ PR #41（_svc 传输开始时重盖戳） |
+| K3 | **down-wait fail-fast 提前判死**：deadline 未到即记 DATA_DEADLINE_EXPIRED（复现 0.6s 判死，早于 deadline 2.0 与退休 1.5） | major | Kimi 动态复现 + Codex 复核 | ✔ PR #41（取消提前判死，到点才判） |
+| I3-4 | **#38 正式门换的「recomputed」判据本身不可重算**：deliveries[].path 是 kernel 自报（receipt 只查 int 列表，不对拓扑/service_log 重算） | minor | FACT+INFERENCE | 📋 authority 改标或 receipt 补 path 重算 |
+| I3-5 | **burst/diurnal 无 effectiveness 观测**：窗口与 horizon 相交 ≠ 有包落入窗口，正式门无法察觉处理未发生 | minor | FACT | 📋 加 burst_packets_in_window 计数并入 effective/门 |
+| I3-6 | **acceptance 仍用 diagnostic occupied 做门**（multi_satellite_data_service） | info | FACT | 📋 一致性注记（方向偏安全侧） |
+| I3-7 | **Q0 快照缺几何可用性**（isl/gsl 当前可用 + 下一几何变化时刻） | major（Q0-I 阻塞） | FACT（设计稿 §2 行 1 要求） | 📋 PR #40 后续补齐 |
+| I3-8 | **Q0 快照 remaining_service_s 继承 K2 的 _svc 陈旧时间戳**（down-wait 期间失真/为负） | Q0 major | FACT（同 K2 根） | ✔ PR #41 修复后快照受益 |
+| I3-9 | **Q0 快照 GE next_flip 暴露 RNG 未来 vs 设计稿「只含当前时刻」** | 设计选择需拍板 | 设计稿自相矛盾 | ⚠ Q0-A/Q0-B 分界 |
+
+### 第 3 轮干净背书（Kimi）
+
+- TabularQ eval × decision-snapshot：eval 不耗 RNG/不写表，decisions==transitions+
+  discarded 闭合，无新缺陷。
+- 账本 bit 绑定 × receipt 校验：链闭合（kernel FateError→interrupted→natural_end
+  false→verify 拒；receipt 独立 trace bits 重算 + 双向比对）。
+- burst × trace 编译：窗口相交门 + thinning 确定性 + 序列化二次校验正确
+  （除 I3-5 外）。
