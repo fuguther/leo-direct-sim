@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "planId": "offload-c7a1631603663898",
+  "relayManifest": {
+    "planId": "offload-c7a1631603663898",
+    "projectId": "leo-direct-sim",
+    "backend": "web_chat",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:H3-round3",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "1599d3e3c7d5d74f22ddb497969f28fe8b90b73c",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/acceptance.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/rng.py",
+          "CODE/leo_sim/comparison.py",
+          "CODE/leo_sim/tests",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md"
+        ],
+        "promptHash": "2e5483e2a8b6f86a1746061fff14bc29b0f0b5137b5ac6fc6477696e0721d110"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:H3-round3:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "1599d3e3c7d5d74f22ddb497969f28fe8b90b73c",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/acceptance.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/rng.py",
+          "CODE/leo_sim/comparison.py",
+          "CODE/leo_sim/tests",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md"
+        ],
+        "promptHash": "66f3012987bf31c7c1afd03d239947f16f47b96604eaaaffb9e93ae32970f968"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "c7a163160366389898483ff73d1d671a1bdf5191bbf897e69210333d407f1c2b"
+  },
+  "sourceBaseCommit": "1599d3e3c7d5d74f22ddb497969f28fe8b90b73c",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:H3-round3",
+      "promptHash": "2e5483e2a8b6f86a1746061fff14bc29b0f0b5137b5ac6fc6477696e0721d110",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "1599d3e3c7d5d74f22ddb497969f28fe8b90b73c",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/acceptance.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/rng.py",
+          "CODE/leo_sim/comparison.py",
+          "CODE/leo_sim/tests",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:H3-round3:independent_review",
+      "promptHash": "66f3012987bf31c7c1afd03d239947f16f47b96604eaaaffb9e93ae32970f968",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "1599d3e3c7d5d74f22ddb497969f28fe8b90b73c",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/acceptance.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/rng.py",
+          "CODE/leo_sim/comparison.py",
+          "CODE/leo_sim/tests",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
