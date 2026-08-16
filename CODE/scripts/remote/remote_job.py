@@ -112,8 +112,11 @@ def v2_governance_errors(receipt: dict[str, Any], ledgers: dict[str, Any],
         and len(row["path"]) >= 2)
     if multisat < acceptance.get("min_multisat_deliveries", 0):
         errors.append("multi-satellite delivery count is below the authorized minimum")
-    if acceptance.get("require_data_isl") \
-            and not (ledgers.get("occupied", {}).get("isl_s", 0) > 0):
+    if acceptance.get("require_data_isl") and multisat == 0:
+        # recomputed criterion: a delivery whose path spans >=2 satellites
+        # proves real data ISL service; occupied.isl_s is FIELD_AUTHORITY
+        # "diagnostic" (self-reported, never recomputed) and must not gate
+        # formal authorization
         errors.append("authorized smoke requires actual data ISL service")
     if acceptance.get("require_control_delivery") \
             and not (receipt.get("control", {}).get("counters", {}).get("arrived", 0) > 0):

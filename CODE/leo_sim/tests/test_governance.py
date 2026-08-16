@@ -10,9 +10,13 @@ from CODE.work.finalize_decision import file_sha256
 
 
 def test_valid_intent_seals_identities():
+    sites = {"endpoints": {"sites": [
+        {"name": "a", "lat": 0.0, "lon": 0.0},
+        {"name": "b", "lat": 0.0, "lon": 10.0},
+    ]}}
     intent = governance.build_run_intent({
         "runtime_kind": "leo_sim_v2",
-        "config": {"scenario": {"duration_s": 5.0}},
+        "config": {"scenario": {"duration_s": 5.0}, **sites},
     })
     assert intent["schema"] == governance.INTENT_SCHEMA
     assert len(intent["config_sha256"]) == 64
@@ -21,12 +25,28 @@ def test_valid_intent_seals_identities():
     # deterministic
     again = governance.build_run_intent({
         "runtime_kind": "leo_sim_v2",
-        "config": {"scenario": {"duration_s": 5.0}},
+        "config": {"scenario": {"duration_s": 5.0}, **sites},
     })
     assert intent["config_sha256"] == again["config_sha256"]
     chain = governance.execution_chain_sha256()
     assert set(chain) == set(governance.EXECUTION_CHAIN_PATHS)
     assert all(len(value) == 64 for value in chain.values())
+
+
+def test_non_csv_intent_requires_two_sites():
+    # csv supplies rows directly; other modes compile traffic from sites, so
+    # an intent sealed without two sites would be green on ungenerable demand
+    with pytest.raises(governance.IntentError, match="two endpoints.sites"):
+        governance.build_run_intent({
+            "runtime_kind": "leo_sim_v2",
+            "config": {"scenario": {"duration_s": 5.0}},
+        })
+    with pytest.raises(governance.IntentError, match="two endpoints.sites"):
+        governance.build_run_intent({
+            "runtime_kind": "leo_sim_v2",
+            "config": {"endpoints": {"sites": [
+                {"name": "a", "lat": 0.0, "lon": 0.0}]}},
+        })
 
 
 def test_wrong_runtime_kind_rejected():
@@ -118,7 +138,11 @@ def test_compile_experiment_refuses_nonempty_or_symlink_output(tmp_path):
                        "min_multisat_deliveries": 0,
                        "require_data_isl": False,
                        "require_control_delivery": False},
-        "config": {"scenario": {"duration_s": 1.0}},
+        "config": {"scenario": {"duration_s": 1.0},
+                   "endpoints": {"sites": [
+                       {"name": "a", "lat": 0.0, "lon": 0.0},
+                       {"name": "b", "lat": 0.0, "lon": 10.0},
+                   ]}},
     }), encoding="utf-8")
     out = tmp_path / "out"
     out.mkdir()
@@ -138,7 +162,11 @@ def test_authorization_rejects_rebound_request_that_no_longer_produced_config(
                        "min_multisat_deliveries": 0,
                        "require_data_isl": False,
                        "require_control_delivery": False},
-        "config": {"scenario": {"duration_s": 1.0, "seed": 7}},
+        "config": {"scenario": {"duration_s": 1.0, "seed": 7},
+                   "endpoints": {"sites": [
+                       {"name": "a", "lat": 0.0, "lon": 0.0},
+                       {"name": "b", "lat": 0.0, "lon": 10.0},
+                   ]}},
     }
     request_path = tmp_path / "request-input.json"
     request_path.write_text(json.dumps(request), encoding="utf-8")
@@ -180,7 +208,10 @@ def test_formal_population_gravity_intent_binds_input_sha(tmp_path):
     demand.write_bytes(b"fake-tiff-bytes-12345")
     request = {
         "runtime_kind": "leo_sim_v2",
-        "config": {"demand": {
+        "config": {"endpoints": {"sites": [
+            {"name": "a", "lat": 0.0, "lon": 0.0},
+            {"name": "b", "lat": 0.0, "lon": 10.0},
+        ]}, "demand": {
             "mode": "population_gravity",
             "population_path": "EXPERIMENTS/inputs/pop.tif",
         }},
