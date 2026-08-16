@@ -1,0 +1,65 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:E2-routing-rl",
+    "title": "LEO 路由与强化学习专家审阅",
+    "goal": "你是低轨卫星路由与强化学习专家（熟悉逐跳 DRL/DQN 路由、POMDP、信息年龄 AoI、奖励塑形、GNN 路由）。请对平台学习链路做只读深度审阅，逐条给证据：(1) 问题设定是否成立：逐包逐跳、分布式、无全局信息、动作=deliver+四方向、掩码=本地合法方向（最近已去掉启发式预裁剪）；(2) 奖励设计（M1 队列奖励 w1*exp(-beta*t) 服务开始结算、到达 50、失败 0、无距离奖励）作为路由信号是否合理，有无奖励漏洞或误导；(3) 观测/特征（own_state 7 维、origin 4 维、目的地 3 维、C1/C3-C7/GAT/MPNN 合同、信息边界=已到达未过期缓存）对信息年龄研究主线是否充分，GAT 缺显式 AoI 特征的影响；(4) 训练循环（每转移一次梯度、batch 64、replay 50k、epsilon 按仿真秒衰减、train 禁续训、5秒仿真≈1小时墙钟）的合理性与短板；(5) 基线设计（最短路、查表法基线实际不学习）能否支撑对比结论；(6) 按你的专业经验列出最可能被新设计遗漏的 3-5 个问题（给具体场景与复现条件）。要求：每个结论绑定 github://e6e3a701d845d1258a940950aca317b89b884dd2 路径证据或外部文献；区分 FACT/INFERENCE/未验证；不修改仓库、不执行命令。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+      "paths": [
+        "CODE/leo_sim/learning.py",
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/routing.py",
+        "CODE/leo_sim/control.py",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/tests/test_learning.py",
+        "CODE/leo_sim/tests/test_learning_semantics.py",
+        "CODE/leo_sim/tests/test_reward_migration.py",
+        "CODE/leo_sim/profiles/formal_exp1.yaml",
+        "ANALYSIS/REWARD-DIFF-20260816.md",
+        "ANALYSIS/TEMPORAL-MULTISTEP-DESIGN-20260816.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result",
+      "web_research"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "每个结论绑定 github://e6e3a701d845d1258a940950aca317b89b884dd2/<路径>#L<行> 或外部文献",
+      "给出最可能被遗漏的 3-5 个问题，每项带具体场景与影响",
+      "区分 FACT / INFERENCE / 未验证",
+      "不修改仓库、不执行命令、不声称最终验证"
+    ],
+    "requiredEvidence": [
+      "github://fuguther/leo-direct-sim/blob/e6e3a701d845d1258a940950aca317b89b884dd2/<路径>#L<行>",
+      "相关文献给 arXiv/DOI 链接"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "28498663df98985bd68819fc3ce8234d2ebe72f9e0f1f3e6140213a6966e6d01"
+}
