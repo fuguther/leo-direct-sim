@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "planId": "offload-91d22098eaa37614",
+  "relayManifest": {
+    "planId": "offload-91d22098eaa37614",
+    "projectId": "leo-direct-sim",
+    "backend": "web_chat",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:H2-round2",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+        "paths": [
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/rng.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/comparison.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/experiment_platform/",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md"
+        ],
+        "promptHash": "106f44e9f47e4d910461e4efe3159d854160c86bc25d97650cd090732ca07c59"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:H2-round2:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+        "paths": [
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/rng.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/comparison.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/experiment_platform/",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md"
+        ],
+        "promptHash": "9fd4b658f5a2d16e6a3fe926fe17ef7800ef2c9899a879205e3516844f6f3042"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "91d22098eaa37614100f2ea3fbd41130eb9c5aa939e72df4252f35a264c9c07e"
+  },
+  "sourceBaseCommit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:H2-round2",
+      "promptHash": "106f44e9f47e4d910461e4efe3159d854160c86bc25d97650cd090732ca07c59",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+        "paths": [
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/rng.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/comparison.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/experiment_platform/",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:H2-round2:independent_review",
+      "promptHash": "9fd4b658f5a2d16e6a3fe926fe17ef7800ef2c9899a879205e3516844f6f3042",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+        "paths": [
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/rng.py",
+          "CODE/leo_sim/fates.py",
+          "CODE/leo_sim/comparison.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/experiment_platform/",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ACCEPTANCE-LADDER-20260816.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
