@@ -98,6 +98,23 @@ def build_run_intent(request: dict, *, project_root: Path | None = None) -> dict
         if not source.is_file() or source.is_symlink():
             raise IntentError(f"M-Lab demand input is not a regular file: {source}")
         input_sha256 = hashlib.sha256(source.read_bytes()).hexdigest()
+    elif mode == "population_gravity":
+        raw_source = Path(resolved["config"]["demand"]["population_path"])
+        base = Path(project_root).resolve() if project_root is not None else Path.cwd()
+        source = raw_source if raw_source.is_absolute() else base / raw_source
+        source = source.resolve()
+        if project_root is not None:
+            try:
+                source.relative_to(base)
+            except ValueError as exc:
+                raise IntentError(
+                    "formal population_gravity demand input must remain inside "
+                    "the project root") from exc
+        if not source.is_file() or source.is_symlink():
+            raise IntentError(
+                "population_gravity demand input is not a regular file: "
+                f"{source}")
+        input_sha256 = hashlib.sha256(source.read_bytes()).hexdigest()
     return {
         "schema": INTENT_SCHEMA,
         "runtime_kind": RUNTIME_KIND,
