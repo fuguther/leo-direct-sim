@@ -306,7 +306,7 @@ class UplinkServer(_DRRMixin):
             self._svc = (k.env.now, "gsl_uplink_s")
             outcome = yield k.env.process(
                 k._transmit(dur, pkt, ("gsl", self.sat, ep, ep.links.get(self.sat)),
-                            "gsl_uplink_s"))
+                            "gsl_uplink_s", owner=self))
             k.service_log["uplink_bits"].append((k.env.now, cell, pkt.bits))
             self._svc = None
             self.current = None
@@ -414,7 +414,7 @@ class DownlinkServer(_DRRMixin):
             self._svc = (k.env.now, "gsl_downlink_s")
             outcome = yield k.env.process(
                 k._transmit(dur, pkt, ("gsl", self.sat, ep, ep.links.get(self.sat)),
-                            "gsl_downlink_s"))
+                            "gsl_downlink_s", owner=self))
             self._svc = None
             self.current = None
             if outcome == "retired":
@@ -535,7 +535,8 @@ class ISLLink:
             occ = "ctrl_isl_s" if is_ctrl else "isl_s"
             self._svc = (k.env.now, occ)
             outcome = yield k.env.process(
-                k._transmit(dur, pkt, ("isl", self.sat, self.peer, self.ge), occ))
+                k._transmit(dur, pkt, ("isl", self.sat, self.peer, self.ge),
+                            occ, owner=self))
             self._svc = None
             if outcome == "stalled":
                 if is_ctrl:
@@ -812,7 +813,8 @@ class Kernel:
         if not link.interrupt.triggered:
             link.interrupt.succeed()
 
-    def _transmit(self, dur: float, pkt, link_ref, occ_key: str):
+    def _transmit(self, dur: float, pkt, link_ref, occ_key: str,
+                  owner=None):
         """Race service completion vs geometry loss vs GE outage vs deadline
         vs (GSL only) hard link retirement.
 
@@ -855,6 +857,7 @@ class Kernel:
             expiry_fate = "DATA_DEADLINE_EXPIRED"
         while True:
             t0 = self.env.now
+            interrupt = link.interrupt if link is not None else None
             if self.ge_enabled:
                 self.mech[ge_q_key] += 1
             geom_up = (not self.cfg_links["geometry_loss"]) or avail(t0)
@@ -876,26 +879,52 @@ class Kernel:
                     if nxt_up <= self.horizon:
                         ups.append(nxt_up)
                     self.mech["ge_waits"] += 1
-                # Only fail with the expiry fate when the deadline actually
-                # lies within the horizon: a deadline beyond the horizon is
-                # never reached by the run, so an unrecoverable-within-horizon
-                # link must settle as IN_SYSTEM_AT_STOP (stalled), not be
-                # mislabelled DATA_DEADLINE_EXPIRED at t0.
-                if expiry is not None and expiry <= self.horizon \
-                        and (not ups or min(ups) >= expiry):
-                    self._fail(pkt, expiry_fate)
-                    return "fail"
-                if not ups:
-                    # never available again within the horizon: settle the
-                    # packet back in its queue at the exact horizon
+                # Wait for the earliest of: link recovery, the actual
+                # deadline, or the hard retirement interrupt.  The packet is
+                # NEVER failed at t0 before its deadline: retirement may free
+                # it for re-association, and the expiry fate may only be
+                # assigned once the deadline is actually reached (or, with no
+                # deadline, settle as IN_SYSTEM_AT_STOP at the horizon).
+                wake_at = None
+                for u in ups:
+                    if u is not None:
+                        wake_at = u if wake_at is None else min(wake_at, u)
+                if expiry is not None and expiry <= self.horizon:
+                    wake_at = (expiry if wake_at is None
+                               else min(wake_at, expiry))
+                if wake_at is None:
+                    # never available again within the horizon and no
+                    # deadline: settle the packet at the exact horizon
                     if t0 >= self.horizon:
                         return "stalled"
-                    yield self.env.timeout(max(0.0, self.horizon - t0))
-                    if self.env.now >= self.horizon:
-                        return "stalled"
-                    continue
-                yield self.env.timeout(max(0.0, min(ups) - t0))
+                    wait = self.env.timeout(max(0.0, self.horizon - t0))
+                else:
+                    wait = self.env.timeout(max(0.0, wake_at - t0))
+                # the down-wait MUST race the link retirement interrupt: a
+                # retiring link's hard deadline applies to the waiting
+                # service too ("retirement deadline races any in-flight
+                # service").  Without the race the link stays pinned until
+                # the outage recovers, blocking the whole server and every
+                # endpoint on it.
+                if interrupt is not None and not interrupt.triggered:
+                    yield wait | interrupt
+                else:
+                    yield wait
+                if expiry is not None and expiry <= self.horizon \
+                        and self.env.now >= expiry:
+                    # the deadline has actually been reached while the link
+                    # is still not usable: fail at the deadline
+                    self._fail(pkt, expiry_fate)
+                    return "fail"
+                if wake_at is None and self.env.now >= self.horizon:
+                    return "stalled"
                 continue
+            if owner is not None and owner._svc is not None \
+                    and owner._svc[0] != t0:
+                # service is about to actually start: restamp the caller's
+                # _svc so the stop-time settle does not book the pre-service
+                # down-wait as occupied (K2)
+                owner._svc = (t0, occ_key)
             end = t0 + dur
             if (link_ref[0] == "isl" and isinstance(pkt, DataPacket)
                     and pkt.learning_state is not None
@@ -923,7 +952,6 @@ class Kernel:
                 fail_t, fail_kind = retire_t, "RETIRE"
             # race the wait against a possibly later-scheduled retirement
             # interrupt: on ANY wake the whole race is recomputed from now.
-            interrupt = link.interrupt if link is not None else None
             wait = self.env.timeout(max(0.0, fail_t - t0))
             if interrupt is not None and not interrupt.triggered:
                 yield wait | interrupt
