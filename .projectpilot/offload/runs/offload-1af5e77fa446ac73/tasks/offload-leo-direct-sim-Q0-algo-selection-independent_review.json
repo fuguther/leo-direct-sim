@@ -1,0 +1,58 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:Q0-algo-selection:independent_review",
+    "title": "Q0 最优算法选型（四层证据）",
+    "goal": "你是运筹优化/卫星网络/强化学习方向的资深研究员。研究背景：LEO 直连星座仿真平台（代码在 github.com/fuguther/leo-direct-sim，commit c8c84f56，可读路径 CODE/leo_sim/kernel.py、routing.py、config.py、ANALYSIS/EXPERT-REVIEW-20260816.md、ANALYSIS/ACCEPTANCE-LADDER-20260816.md、PAPER/）。研究问题（用户 Q0 说明书）：Q0 解除调度器信息传播限制（全局当前状态瞬时可见；可进一步允许完整未来信息），但必须保持全部网络物理约束：卫星轨道/拓扑、传播时延、有限链路容量、有限队列、接入 K 槽、BBM/MBB 切换、几何失效/随机中断、共享链路竞争。现有 routing.oracle 只是逐包逐跳全局信息路由基线，不是联合最优。请回答：\n一、算法族选型：在以下候选中给出哪个/哪些组合能在当前模型下实现（或逼近）联合最优上界，并给出理由：(1) 时间扩展网络流 / 最小费用流；(2) MILP / 混合整数规划；(3) 连续时间调度 / 抢占与非抢占单机-并行机调度；(4) 动态规划 / 最短路径族（含 wait 的时变图）；(5) 滚动时域优化（receding horizon / MPC）；(6) 其他（网络编码、最大权重匹配、拍卖/市场机制）。对每个候选给出：代表性文献（作者+年份+标题，必须真实可核验）、数学形式化（变量/约束/目标，说明如何表达排队、容量、接入槽、切换、中断）、计算复杂度（N=24-140 星、T=30-60s、包数上万时的可行性判断）、与平台对应性（哪些 kernel 物理约束能被直接表达，哪些表达不了）。\n二、信息裁剪后的适用性：在以下裁剪下，原最优算法是否仍适用，还是应切换算法（分散 RL、局部贪心、队列稳定策略）：(a) 砍掉远端队列信息（只留本地队列）；(b) 砍掉远端拓扑/可见性信息；(c) 砍掉 AoI/控制信息；(d) 只能看当前时刻、不能看未来。给出判断与理由。\n三、可计算性结论：Q0『当前信息上界』与『未来信息上界』各建议用什么算法族、什么求解器/近似方案、小规模原型（8-24 星）可行的规模上限，以及信息裁剪实验应对比哪些 arm。\n要求：文献引用真实可核验（DOI/arXiv/会议出处），禁止编造；区分已证结论与领域共识；明确标注不确定性；结论绑定证据（文献 URL 或仓库路径）。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/routing.py",
+        "CODE/leo_sim/config.py",
+        "ANALYSIS/EXPERT-REVIEW-20260816.md",
+        "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+        "PAPER/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result",
+      "web_research"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "每个候选算法给出文献/数学/复杂度/平台对应性四层证据",
+      "信息裁剪逐项给出适用性判断与理由",
+      "给出 Q0 当前/未来上界的算法建议与小规模原型规模上限",
+      "文献引用真实可核验，禁止编造"
+    ],
+    "requiredEvidence": [
+      "GitHub 或原始来源证据"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "5a8d2d311d61043601b1347c3efbbe9ab033a298f7255a18f91d78765023c4eb"
+}
