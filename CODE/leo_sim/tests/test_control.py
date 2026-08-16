@@ -175,3 +175,35 @@ def test_control_instances_do_not_consume_data_trace_packet_cap():
     assert res["natural_end"] is True
     assert res["control"]["counters"]["registered"] > 1
     assert res["fates"][1] == "DELIVERED"
+
+
+def test_access_fifo_no_queue_jump():
+    """A free slot on a contended satellite goes to the earliest requester,
+    not to whichever endpoint ticker runs first."""
+    # sorted cell order: holder(178) < jumper(179) < waiter(180); the jumper's
+    # endpoint ticker would run before the waiter's and used to grab the
+    # released slot via _try_grant, bypassing the waiter's older request
+    holder, jumper, waiter = cell(0.0, -2.0), cell(0.0, -1.0), cell(0.0, 0.0)
+    geo = StaticGeometry(1, neighbors_map={0: {}}, visible=lambda *_: True,
+                         gsl_changes=[])
+    cfg = make_cfg({
+        "scenario": {"duration_s": 6.0, "num_satellites": 1,
+                     "num_planes": 1, "time_step_s": 0.1},
+        "access": {"slots_per_satellite": 1, "uplink_rate_mbps": 200.0,
+                   "downlink_rate_mbps": 200.0, "idle_release_s": 0.2,
+                   "min_dwell_s": 0.0, "hysteresis_deg": 0.0,
+                   "acquisition_delay_s": 0.0},
+    })
+    rows = [
+        row(1, 0.0, holder, waiter),
+        row(2, 0.05, waiter, holder),
+        row(3, 0.10, jumper, holder),
+    ]
+    res = kernel.run_simulation(cfg, rows, geometry=geo)
+    assoc = [e for e in res["handover"]["events"] if e["type"] == "associate"]
+    t_waiter = min(e["t"] for e in assoc if e["endpoint"] == waiter)
+    t_jumper = min(e["t"] for e in assoc if e["endpoint"] == jumper)
+    assert t_waiter < t_jumper, (
+        "FIFO violated: later requester granted before earlier one "
+        f"({t_jumper:.3f} < {t_waiter:.3f})")
+    assert all(res["fates"][p] == "DELIVERED" for p in (1, 2, 3))
