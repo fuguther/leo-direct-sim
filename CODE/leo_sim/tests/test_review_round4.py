@@ -553,6 +553,22 @@ def test_receipt_malformed_packet_fate_never_crashes(tmp_path, bad):
     assert errors
 
 
+def test_receipt_malformed_packet_fate_key_never_crashes(tmp_path):
+    out = _run_dir(tmp_path)
+    lp = out / "ledgers.json"
+    led = json.loads(lp.read_text(encoding="utf-8"))
+    # rename one key to a non-numeric id: the id-set diff sort used key=int
+    # and crashed with ValueError on ids like "abc" instead of returning
+    # the error list
+    old = next(iter(led["packet_fates"]))
+    led["packet_fates"]["abc"] = led["packet_fates"].pop(old)
+    lp.write_text(json.dumps(led, indent=2, sort_keys=True) + "\n",
+                  encoding="utf-8")
+    _rebind_ledger(out)
+    errors = receipt.verify_receipt_dir(str(out))
+    assert errors  # fail-closed with an error list, never an exception
+
+
 @pytest.mark.parametrize("bad", [None, 7, "x", []])
 def test_receipt_malformed_mechanism_counters_never_crashes(tmp_path, bad):
     out = _run_dir(tmp_path)

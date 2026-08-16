@@ -77,6 +77,14 @@ def build_run_intent(request: dict, *, project_root: Path | None = None) -> dict
     if not isinstance(user, dict):
         raise IntentError("request.config must be a mapping")
     resolved = config_mod.resolve_config(user, profile=request.get("profile"))
+    if resolved["config"]["demand"]["mode"] != "csv" and \
+            len(resolved["config"]["endpoints"]["sites"]) < 2:
+        # csv mode supplies rows directly; every other mode compiles traffic
+        # from these sites and needs traffic between distinct cells.  Fail at
+        # seal time so an intent cannot be marked green on ungenerable demand
+        # (trace compilation would fail later anyway).
+        raise IntentError(
+            "non-csv demand requires at least two endpoints.sites")
     mode = resolved["config"]["demand"]["mode"]
     input_sha256 = ""
     if mode == "csv":

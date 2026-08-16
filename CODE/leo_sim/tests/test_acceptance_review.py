@@ -174,6 +174,26 @@ def test_local_run_never_self_declares_research_eligible():
     assert result["mechanisms"]["effective"]["mbb"] is False
 
 
+def test_direct_acceptance_non_oracle_routing_check_not_vacuous():
+    from CODE.leo_sim import acceptance
+    base = {
+        "natural_end": True,
+        "conservation_ok": True,
+        "fate_counts": {"DELIVERED": 1},
+        "occupied": {"isl_s": 1.0},
+        "control": {"counters": {"arrived": 1}},
+        "mechanisms": {"effective": {"control_plane": True}},
+        "handover": {"events": []},
+        "access": {},
+        "routing_label": routing.ORACLE_LABEL,
+    }
+    # the oracle label must FAIL the gate: the previous "!= 'oracle'" check
+    # was always true and let an oracle-labelled direct scenario pass
+    assert acceptance._case_checks("direct", base)["non_oracle_routing"] is False
+    base["routing_label"] = None
+    assert acceptance._case_checks("direct", base)["non_oracle_routing"] is True
+
+
 class _PermanentlyDownIsl(StaticGeometry):
     def isl_available(self, a, b, t):
         return False

@@ -215,6 +215,45 @@ def test_random_outage_in_flight():
     assert res["mechanisms"]["effective"]["ge_gsl_queries"] > 0
 
 
+def test_ge_downwait_beyond_horizon_not_counted_as_occupied():
+    """A packet that never transmits a bit (GE down with recovery beyond the
+    horizon) must not have its waiting time counted as occupied at the stop.
+    Regression: the stop-time closer added env.now - pick_time for any _svc
+    still set, and ge.next_up() was appended without a horizon clamp, so the
+    whole wait from pick to horizon was booked as occupied (inconsistent with
+    the _transmit wait branch, which never counts down-wait)."""
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "num_satellites": 1,
+                     "num_planes": 1},
+        "links": {"ge_enabled": True,
+                  "ge_gsl": {"mean_good_s": 1e-9, "mean_bad_s": 1e9}},
+    })
+    geo = StaticGeometry(1, visible=one_sat_visible_all)
+    # emit at t=1.0: GE flipped bad near t=0 and recovers far beyond horizon
+    res = kernel.run_simulation(cfg, [row(1, 1.0, A, B)], geometry=geo)
+    assert res["fates"][1] == "IN_SYSTEM_AT_STOP"
+    assert res["occupied"]["gsl_uplink_s"] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_ge_downwait_beyond_horizon_with_late_deadline_settles_in_system():
+    """When GE recovery is beyond the horizon AND the packet's deadline is
+    also beyond the horizon, the run never reaches the deadline: the packet
+    must settle as IN_SYSTEM_AT_STOP, not be mislabelled
+    DATA_DEADLINE_EXPIRED at emission time."""
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "num_satellites": 1,
+                     "num_planes": 1},
+        "links": {"ge_enabled": True,
+                  "ge_gsl": {"mean_good_s": 1e-9, "mean_bad_s": 1e9}},
+    })
+    geo = StaticGeometry(1, visible=one_sat_visible_all)
+    # deadline (3.0) > horizon (2.0) > recovery start; GE stays down
+    res = kernel.run_simulation(
+        cfg, [row(1, 1.0, A, B, deadline=3.0)], geometry=geo)
+    assert res["fates"][1] == "IN_SYSTEM_AT_STOP"
+    assert res["occupied"]["gsl_uplink_s"] == pytest.approx(0.0, abs=1e-9)
+
+
 def test_no_route_when_discovery_impossible():
     # control plane disabled + non-oracle policy: no way to learn who sees dst
     nb = {0: {"E": 1}, 1: {"W": 0}}

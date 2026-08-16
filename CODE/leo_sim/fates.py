@@ -55,6 +55,12 @@ class DataFateLedger:
             raise FateError(f"fate for unregistered packet {packet_id}")
         if packet_id in self._fates:
             raise FateError(f"duplicate fate for packet {packet_id}")
+        if bits is not None and bits != self._offered[packet_id]:
+            # per-packet bit identity is part of the ledger invariant: two
+            # offsetting bit errors must not be able to fake conservation
+            raise FateError(
+                f"fate bits {bits} != registered offered bits "
+                f"{self._offered[packet_id]} for packet {packet_id}")
         self._fates[packet_id] = fate
         self._bits[packet_id] = self._offered[packet_id] if bits is None else bits
 
@@ -128,6 +134,10 @@ class ControlFateLedger:
             raise FateError(f"fate for unregistered control packet {iid}")
         if iid in self._fates:
             raise FateError(f"duplicate control fate for {iid}")
+        if bits != self._offered[iid]:
+            raise FateError(
+                f"fate bits {bits} != registered offered bits "
+                f"{self._offered[iid]} for control instance {iid}")
         if fate in CONTROL_ARRIVAL_FATES:
             if received_at is None:
                 raise FateError(f"control fate {fate} requires a receive time")
