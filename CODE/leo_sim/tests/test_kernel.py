@@ -170,6 +170,37 @@ def test_endpoint_activated_at_first_emission_not_at_t0():
     assert c in k.endpoints  # created at its first emission
 
 
+def test_future_src_does_not_preposition_when_present_cell_cannot_grant():
+    """Kimi probe-2 counterexample: even when the present-demand cell cannot
+    win the t=0 race (not yet visible), a future src cell must not
+    pre-position the slot at t=0.  Regression: the emitter created future src
+    endpoints at t=0, so B could preposition the only slot and hold it idle."""
+    a, b = cell(0.0, 10.0), cell(0.0, 0.0)
+    ac, bc = cell_center(a), cell_center(b)
+
+    def vis(s, lat, lon, t):
+        if (lat, lon) == ac:
+            return t >= 1.0  # present cell A visible only from t=1
+        return True          # future src cell B always visible
+
+    geo = StaticGeometry(1, neighbors_map={0: {}}, visible=vis, gsl_changes=[])
+    cfg = make_cfg({
+        "scenario": {"duration_s": 8.0, "num_satellites": 1,
+                     "num_planes": 1, "time_step_s": 0.1},
+        "access": {"slots_per_satellite": 1, "uplink_rate_mbps": 200.0,
+                   "downlink_rate_mbps": 200.0, "idle_release_s": 0.2,
+                   "min_dwell_s": 0.0, "hysteresis_deg": 0.0,
+                   "acquisition_delay_s": 0.0},
+    })
+    rows = [row(1, 0.0, a, b), row(2, 5.0, b, a)]
+    res = kernel.run_simulation(cfg, rows, geometry=geo)
+    # B (future src) must not be associated before its first emission at t=5
+    assoc_b = [e["t"] for e in res["handover"]["events"]
+               if e["type"] == "associate" and e["endpoint"] == b]
+    assert assoc_b and min(assoc_b) >= 5.0
+    assert res["fates"][2] == "DELIVERED"
+
+
 def test_random_outage_in_flight():
     cfg = make_cfg({
         # mean_good ~ 0: the GSL goes down essentially immediately and stays
