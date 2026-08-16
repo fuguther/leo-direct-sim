@@ -10,7 +10,7 @@
 |---|---|---|---|---|
 | A1 | **正奖励绕路漏洞**：转发奖励 (0,20]×γ^hops、到达 50、失败 0、无距离/时延/跳数成本 → 多走空闲跳可获更高累计回报 | blocking | E2×2 | ⚠ 奖励塑形需拍板（加跳数/时延成本或 shaping） |
 | A2 | **动作掩码信息侧信道**：候选由 vis_k=12 完整缓存+静态图可达性生成，观测仅 obs_hops=2 → 掩码泄露观测外信息 | blocking | E2 独立、E3 | ⚠ 目标发现应与观测同一信息集 |
-| A3 | **因果泄漏（未来端点）**：kernel 用全时域 trace 建全部 endpoints，未来端点提前参与槽位预置/控制广告/观测分母 | blocking | E3×2 | 🔧 改为按活跃集/惰性构建（需对照实验） |
+| A3 | **因果泄漏（未来端点）**：kernel 用全时域 trace 建全部 endpoints，未来端点提前参与槽位预置/控制广告/观测分母 | blocking | E3×2 | ✔ PR #28（惰性激活，已量化+回归，待 Kimi 复核） |
 | A4 | **确定性不 fail-closed**：enable_op_determinism 失败仅记字符串，receipt 接受失败串，platform_check 不要求 True | major | E3×2 | ✔ 已修（见 PR 24） |
 
 ## B. 建模真实性（E1 网络架构）
@@ -83,8 +83,8 @@
 | G1-3 | **delay/capacity 把「远端 metric 未知」折叠为 unreachable → 立即 NO_ROUTE**：信息不足被转换成不可逆丢包，夸大低信息臂劣势 | major | 代码确凿（routing.py 边权 +inf；kernel `unreachable` → NO_ROUTE） | ⚠ 需拍板：拆分 METRIC_UNKNOWN 与 TOPO_UNREACHABLE，后者才直接丢 |
 | G1-4 | **max_hops 语义 off-by-one**：`len(pkt.path)`=访问卫星数=ISL 跳数+1，`> max_hops` 实际最多允许 max_hops-1 跳 | minor | 代码确凿（kernel.py:1518 + path.append 时序） | ⚠ 需拍板：冻结合同（按跳数修正 or 按访问卫星数改文档/字段名） |
 | G1-5 | **seen_ctrl 去重集合无 TTL/窗口**：随 horizon×广告率×星座规模单调增长 | minor | 代码确凿（kernel.py seen_ctrl.add，无淘汰） | 📋 内存优化（按 origin 保留窗口） |
-| G1-6 | **TabularQ eval 消耗 RNG**：epsilon roll 每次决策消耗一次随机数；未见过状态 `_row` 随机初始化并写入表 | minor | 代码确凿（learning.py choose/remember） | 📋 小修：eval 不消费 RNG/不写表 |
-| G1-7 | **occupied 停表可能计入下行等待**：`_transmit` 下行等待中 GE next_up>horizon 且 interrupt 触发时，`_svc` 未清、settle 把等待计入占用 | minor | INFERENCE（代码路径存在，未构造出动态复现） | 📋 低优先，修 `_svc` 结算口径 |
+| G1-6 | **TabularQ eval 消耗 RNG**：epsilon roll 每次决策消耗一次随机数；未见过状态 `_row` 随机初始化并写入表 | minor | 代码确凿 + 动态复现（基线 table_size=1/rng_changed） | ✔ PR #30（待 Kimi 复核） |
+| G1-7 | **occupied 停表可能计入下行等待**：`_transmit` 下行等待中 GE next_up>horizon 时 `_svc` 未清、settle 把等待计入占用 | minor | ✔ 动态复现（基线 occupied=1.0，包从未发 bit） | ✔ PR #29（待 Kimi 复核） |
 | G1-8 | **LocalCache.expirations += 0 死代码** | info | 代码确凿 | 📋 顺手清理 |
 
 ### G2 Q0 就绪度（GPT 两路一致，blocking）
