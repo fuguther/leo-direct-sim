@@ -143,6 +143,33 @@ def test_future_endpoints_not_prebuilt_and_no_preposition_leak():
     assert res["fates"][2] == "DELIVERED"
 
 
+def test_endpoint_activated_at_first_emission_not_at_t0():
+    """A src cell whose first emission is in the future must not be created
+    at t=0: activation happens at the actual emission instant.  Regression:
+    the emitter used to call _ensure_endpoint before its delay yield, so a
+    future src cell was created at t=0 (and could pre-position a slot)."""
+    a, b, c = cell(0.0, 10.0), cell(0.0, 0.0), cell(0.0, 20.0)
+    geo = StaticGeometry(1, neighbors_map={0: {}}, visible=lambda *_: True,
+                         gsl_changes=[])
+    cfg = make_cfg({
+        "scenario": {"duration_s": 8.0, "num_satellites": 1,
+                     "num_planes": 1, "time_step_s": 0.1},
+        "access": {"slots_per_satellite": 2, "uplink_rate_mbps": 200.0,
+                   "downlink_rate_mbps": 200.0, "idle_release_s": 0.2,
+                   "min_dwell_s": 0.0, "hysteresis_deg": 0.0,
+                   "acquisition_delay_s": 0.0},
+    })
+    # c appears only as a src at t=5.0 (never a dst), so it must not exist
+    # before its first emission
+    rows = [row(1, 0.0, a, b), row(2, 5.0, c, a)]
+    k = kernel.Kernel(cfg, rows, geometry=geo)
+    k.env.run(until=4.9)
+    assert a in k.endpoints  # present traffic activated
+    assert c not in k.endpoints  # future src cell not yet created
+    k.env.run(until=5.6)
+    assert c in k.endpoints  # created at its first emission
+
+
 def test_random_outage_in_flight():
     cfg = make_cfg({
         # mean_good ~ 0: the GSL goes down essentially immediately and stays

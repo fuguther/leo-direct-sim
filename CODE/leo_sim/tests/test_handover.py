@@ -46,10 +46,13 @@ def _handover_cfg(duration=30.0, **access_over):
 
 def test_bbm_switches_on_better_elevation():
     cfg = _handover_cfg()
-    res = kernel.run_simulation(cfg, [row(1, 6.0, A, B)],
-                                geometry=_crossover_geometry())
-    assert res["fates"][1] == "DELIVERED"
-    assert res["deliveries"][1]["path"] == [1]  # A on sat1, B served by sat1
+    # lazy endpoint activation: a src cell is created at its first emission.
+    # pkt1 at t=0 activates A on sat0 (pre-crossover); the t=5 crossover then
+    # exercises the BBM switch; pkt2 arrives after the switch.
+    rows = [row(1, 0.0, A, B), row(2, 6.0, A, B)]
+    res = kernel.run_simulation(cfg, rows, geometry=_crossover_geometry())
+    assert [res["fates"][p] for p in (1, 2)] == ["DELIVERED"] * 2
+    assert res["deliveries"][2]["path"] == [1]  # A on sat1, B served by sat1
     bbm = [e for e in res["handover"]["events"] if e["type"] == "bbm"]
     assert bbm and bbm[0]["from"] == 0 and bbm[0]["to"] == 1
 
@@ -68,19 +71,23 @@ def test_hysteresis_blocks_switch():
     geo = StaticGeometry(2, neighbors_map=LINE, visible=vis, elevation=elev,
                          gsl_changes=[2.0])
     cfg = _handover_cfg(**{"hysteresis_deg": 30.0})
-    res = kernel.run_simulation(cfg, [row(1, 6.0, A, B)], geometry=geo)
-    assert res["fates"][1] == "DELIVERED"
-    assert res["deliveries"][1]["path"] == [0, 1]  # forwarded: A stayed on sat0
+    rows = [row(1, 0.0, A, B), row(2, 6.0, A, B)]
+    res = kernel.run_simulation(cfg, rows, geometry=geo)
+    assert [res["fates"][p] for p in (1, 2)] == ["DELIVERED"] * 2
+    # pkt2 after the crossover: hysteresis still holds A on sat0 -> forwarded
+    assert res["deliveries"][2]["path"] == [0, 1]
     assert [e for e in res["handover"]["events"]
             if e["type"] in ("bbm", "mbb") and e.get("from") == 0] == []
 
 
 def test_min_dwell_blocks_voluntary_switch():
     cfg = _handover_cfg(**{"min_dwell_s": 100.0})
-    res = kernel.run_simulation(cfg, [row(1, 6.0, A, B)],
+    rows = [row(1, 0.0, A, B), row(2, 6.0, A, B)]
+    res = kernel.run_simulation(cfg, rows,
                                 geometry=_crossover_geometry(loss=False))
-    assert res["fates"][1] == "DELIVERED"
-    assert res["deliveries"][1]["path"] == [0, 1]  # dwell held the old link
+    assert [res["fates"][p] for p in (1, 2)] == ["DELIVERED"] * 2
+    # pkt2 after the crossover: min dwell holds the old link -> forwarded
+    assert res["deliveries"][2]["path"] == [0, 1]
     assert [e for e in res["handover"]["events"] if e["type"] == "bbm"] == []
 
 

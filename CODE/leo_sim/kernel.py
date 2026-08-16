@@ -963,10 +963,13 @@ class Kernel:
 
     def _emitter(self, cell: str, rows):
         for r in rows:
-            ep = self._ensure_endpoint(cell)
             delay = r["emit_time_s"] - self.env.now
             if delay > 0:
                 yield self.env.timeout(delay)
+            # activate at the actual emission instant, never earlier: an
+            # emitter for a future row must not create its endpoint at t=0
+            # (that would re-open the A3 preposition/ads/obs leak)
+            ep = self._ensure_endpoint(cell)
             self._count_data_packet()
             pkt = DataPacket(r["packet_id"], r["src_grid_id"], r["dst_grid_id"],
                              r["bits"], r["deadline_at_s"], self.env.now)
@@ -1126,9 +1129,8 @@ class Kernel:
         if any(l.state == "retiring" for l in ep.links.values()):
             return  # wait for the retiring link to clear first
         if self._endpoint_demand(ep):
-            had_link = ep.primary_link() is not None
             self._request_or_grant(ep, now)
-            if not had_link and ep.primary_link() is not None:
+            if ep.primary_link() is not None:
                 # fresh grant for an endpoint with pending/downlink demand:
                 # re-decide its pending packets now instead of waiting for the
                 # next tick (lazy endpoint activation must not add one
