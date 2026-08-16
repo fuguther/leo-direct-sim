@@ -1,6 +1,7 @@
 # NOTES.md
 
 ## 当前状态
+- 2026-08-16 等价优化第一批（PR 待合并）：①oracle_targets 仅 oracle 策略时计算（学习/非 oracle 路径不再每次白扫服务星）；②决策快照 policy 标签改用真实 algorithm（qlearning 不再误标 ddqn）；③路由反向邻接/排序邻接表初始化时预计算（不再每次决策重建）。验收：改前/改后同配置 smoke 的 ledgers_sha256 逐字节一致（fee84a04…），全量 350 passed。下一步：几何记忆化缓存（P0-1）、hop 用 BFS（B-2）、VM 学习臂 profile。
 - 2026-08-16 学习动作空间去预裁剪（用户拍板问题7选A，PR 待合并）：kernel 学习路径 best_only 恒 False，DDQN 动作空间=全部本地合法方向（不再被启发式最优预裁剪）；新增回归测试（E 最优/W 合法更远场景断言掩码同时含 E、W），修复前失败/修复后通过；Kimi 独立复核通过（无 blocking/major）。顺带修正 test_routing 因本次改动而过时的命名/注释（best_only 现为 routing 库参数，kernel 学习路径不再使用）。本地 350 passed。
 - 2026-08-16 六项训练信号修复（Kimi 实现 + Codex 独立验收，PR 待合并）：①到达奖励改实际送达时结算（修下行硬退休白拿50）；②horizon 在途学习转移显式丢弃并计入回执（decisions==transitions+discarded 恒等式校验）；③fast_train 入 resolved config、op-determinism 失败记录、DDQN 回执 pin tensorflow 版本；④GAT/MPNN 根位置改由几何直传；⑤图节点特征补接入负载/可见小区/AoI（15→18维）；⑥修 C6 假绿测试。本地 349 passed（基线 342+7 回归，stash 对照修复前失败/修复后通过）。待办：VM 补 DDQN 真实冒烟、spec 文档重生成、config SHA 漂移是否 bump 版本待定。
 

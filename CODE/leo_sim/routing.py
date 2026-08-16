@@ -90,18 +90,21 @@ def _reverse_adj(topo) -> dict[int, set[int]]:
     return radj
 
 
-def _multi_source_dist(adj, sources, edge_cost) -> dict[int, float]:
+def _multi_source_dist(adj, sources, edge_cost,
+                       sorted_adj: dict | None = None) -> dict[int, float]:
     dist = {s: float("inf") for s in adj}
     pq = []
     for s in sources:
         if s in dist:
             dist[s] = 0.0
             heapq.heappush(pq, (0.0, s))
+    if sorted_adj is None:
+        sorted_adj = {u: sorted(adj.get(u, ())) for u in adj}
     while pq:
         d, u = heapq.heappop(pq)
         if d > dist[u]:
             continue
-        for v in sorted(adj.get(u, ())):
+        for v in sorted_adj.get(u, ()):
             w = edge_cost(u, v)
             if w == float("inf"):
                 continue
@@ -127,7 +130,9 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
                     geometry, topo, cache, own_queue_bits: dict,
                     isl_rate_bps: float, prop_delay,
                     oracle_targets: list[int] | None = None,
-                    best_only: bool = False) -> tuple[list[str], str]:
+                    best_only: bool = False,
+                    reverse_adj: dict | None = None,
+                    sorted_adj: dict | None = None) -> tuple[list[str], str]:
     """Return (ordered candidate directions, status).
 
     status: "ok" (candidates non-empty), "no_info" (no destination
@@ -151,8 +156,14 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
     # multi-source search expands backward from the targets over the reverse
     # adjacency, so dist[x] is the cost of a real directed path x -> target.
     # edge_cost(u, v) below is evaluated with u = popped node, v = predecessor
-    # being relaxed, i.e. the forward edge v -> u.
-    adj = _reverse_adj(topo)
+    # being relaxed, i.e. the forward edge v -> u. The reverse adjacency and
+    # its sorted neighbour lists are static (topo never changes) and are
+    # precomputed by the kernel; tests may pass None to rebuild on demand.
+    if reverse_adj is None:
+        reverse_adj = _reverse_adj(topo)
+    adj = reverse_adj
+    if sorted_adj is None:
+        sorted_adj = {u: sorted(adj.get(u, ())) for u in adj}
 
     def observed_propagation(a, b):
         """Propagation metric available at `sat` for forward edge a -> b."""
@@ -202,7 +213,8 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
 
     # dist[x] = forward cost from x to the nearest target; the search expands
     # backward from targets, so the forward edge cost is evaluated reversed.
-    dist = _multi_source_dist(adj, targets, lambda u, v: fwd_cost(v, u))
+    dist = _multi_source_dist(
+        adj, targets, lambda u, v: fwd_cost(v, u), sorted_adj=sorted_adj)
     if dist.get(sat, float("inf")) == float("inf"):
         return [], "unreachable"
     scored = []
