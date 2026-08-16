@@ -64,3 +64,59 @@
 3. A3 未来端点因果泄漏：改活跃集/惰性构建 + 对照实验。
 4. B6 MBB 积压包语义：对照实验后修。
 5. A1/C3 奖励塑形、A2/C2 掩码/出口语义：等专家结果已齐，列设计稿待拍板。
+
+---
+
+## G. 第 1 轮三方挖问题汇总（2026-08-17 夜）
+
+> 来源：GPT 两路独立挖掘（网页对话已抓取留痕：`/tmp/gpt_h1_primary.txt`、
+> `/tmp/gpt_h1_review.txt`）、Kimi 独立挖掘（`/tmp/kimi_hunt1_out.txt`，
+> 输出部分截断）、Codex 本地独立复现/验证。状态标注：✔ 已修（分支/PR）、
+> ⚠ 需拍板、📋 计划、✖ 未成立。
+
+### G1 新发现（不在 A–D 已知清单内）
+
+| # | 发现 | 严重度 | 验证 | 处置 |
+|---|---|---|---|---|
+| G1-1 | **DownlinkServer 无几何恢复唤醒**：队列头包遇临时 GSL 中断时只 `yield self.wake`，唯一 wake 来源是 put()；`_release`/`_associate` 也不唤醒下行服务端 → 可见性恢复后包仍睡眠到 horizon | major | ✔ 复现：time_step=1s、GSL [0.15,0.6) 中断，pkt2 修复前 IN_SYSTEM_AT_STOP / 修复后 DELIVERED | ✔ PR #25（待 Kimi 复核） |
+| G1-2 | **接入 FIFO 被 `_try_grant` 插队**：endpoint ticker 先于 sat ticker 运行，后请求者可在持有者释放槽位同刻插队；跨星授予残留 stale waiter 并漏记等待时间 | major | ✔ 复现：jumper(t=0.10) 先于 waiter(t=0.05) 获授（0.2 < 0.4） | ✔ PR #26（待 Kimi 复核） |
+| G1-3 | **delay/capacity 把「远端 metric 未知」折叠为 unreachable → 立即 NO_ROUTE**：信息不足被转换成不可逆丢包，夸大低信息臂劣势 | major | 代码确凿（routing.py 边权 +inf；kernel `unreachable` → NO_ROUTE） | ⚠ 需拍板：拆分 METRIC_UNKNOWN 与 TOPO_UNREACHABLE，后者才直接丢 |
+| G1-4 | **max_hops 语义 off-by-one**：`len(pkt.path)`=访问卫星数=ISL 跳数+1，`> max_hops` 实际最多允许 max_hops-1 跳 | minor | 代码确凿（kernel.py:1518 + path.append 时序） | ⚠ 需拍板：冻结合同（按跳数修正 or 按访问卫星数改文档/字段名） |
+| G1-5 | **seen_ctrl 去重集合无 TTL/窗口**：随 horizon×广告率×星座规模单调增长 | minor | 代码确凿（kernel.py seen_ctrl.add，无淘汰） | 📋 内存优化（按 origin 保留窗口） |
+| G1-6 | **TabularQ eval 消耗 RNG**：epsilon roll 每次决策消耗一次随机数；未见过状态 `_row` 随机初始化并写入表 | minor | 代码确凿（learning.py choose/remember） | 📋 小修：eval 不消费 RNG/不写表 |
+| G1-7 | **occupied 停表可能计入下行等待**：`_transmit` 下行等待中 GE next_up>horizon 且 interrupt 触发时，`_svc` 未清、settle 把等待计入占用 | minor | INFERENCE（代码路径存在，未构造出动态复现） | 📋 低优先，修 `_svc` 结算口径 |
+| G1-8 | **LocalCache.expirations += 0 死代码** | info | 代码确凿 | 📋 顺手清理 |
+
+### G2 Q0 就绪度（GPT 两路一致，blocking）
+
+- G2-1 **无统一全局状态快照接口**：S_t^global 分散在 endpoints/slots/caches/pending/
+  各链路队列/server._svc/DRR deficit/GE 等对象；decision_sink 明确 output-only。
+- G2-2 **无 planner 联合方案注入接口**：只能逐包逐跳 next-hop；`put_data`/`put`/
+  `_associate` 不自带容量/K 守卫，需受校验的 `apply_joint_plan`（原子预留、过期 fail-closed）。
+- G2-3 **无显式 WAIT 动作**：pending 只在 no_info/临时不可用时被动触发；
+  routing.py「oracle may decide to wait」是文档-实现不一致。
+- G2-4 **pending 为无容量 list、不计 queue_area**：Q0 的 WAIT 必须映射到有限
+  holding queue（容量/bits 记账/queue-area/deadline sweep/overflow 语义）。
+- G2-5 **物理约束底座可复用**：room/K/geometry/GE/deadline/retirement 均在现有
+  执行路径强制；Q0 安全架构=planner 只决定、Kernel 唯一执行/裁决。
+
+### G3 Q0 实验设计（GPT 建议，blocking 级）
+
+- G3-1 拆分 **Q0-I**（仅解除信息传播限制、保持逐包动作/调度能力）/ **Q0-J**
+  （+显式 WAIT+联合调度）/ **Q0-F**（+完整未来信息），否则 gap 无法归因到
+  「信息不足 vs 决策能力不足」。
+- G3-2 主诊断 Q0 保留与控制臂相同的控制业务流量（隔离「状态可见性」与
+  「信令开销」两个因素）；去控制开销版本单独命名、不得用于纯信息归因。
+- G3-3 冻结跨臂一致的性能目标（delivered bits / deadline 成功率 / 端到端时延
+  tail），不拿逐跳 shaped return 与另一目标的 Q0 直接比较。
+- G3-4 A2/A3 等信息边界 bug 必须清零后再做 Q0 对比，否则 Q0 会把泄漏「合理化」。
+
+### G4 已知清单重分类（GPT 两路一致）
+
+- **应修 bug**：A2（掩码信息集越权）、A3（未来端点因果泄漏）、D6（deadline
+  等时刻语义）、B6（若 MBB 合同确为双连接+正确积压迁移）。
+- **目标规格缺陷**：A1（正奖励绕路）、C3（奖励不计物理时延）——训练 return 与
+  物理性能指标不一致，实验比较前须修正或统一。
+- **设计选择需声明**：B1–B5、B7–B8（建模抽象）、C2（当前逐跳出口强制 deliver）、
+  C4（无历史）、C6（TabularQ 表示）、C7（hop 基线定义）。
+- **验证缺口**：D1、D5、D7、D8（归因/变异/证据粒度/VM 学习臂 profile）。
