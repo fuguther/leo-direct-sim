@@ -887,8 +887,7 @@ class Kernel:
                 # deadline, settle as IN_SYSTEM_AT_STOP at the horizon).
                 wake_at = None
                 for u in ups:
-                    if u is not None:
-                        wake_at = u if wake_at is None else min(wake_at, u)
+                    wake_at = u if wake_at is None else min(wake_at, u)
                 if expiry is not None and expiry <= self.horizon:
                     wake_at = (expiry if wake_at is None
                                else min(wake_at, expiry))
