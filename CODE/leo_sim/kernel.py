@@ -664,6 +664,13 @@ class Kernel:
 
         self.topo = routing.build_topology(
             geometry, self.num_sats, self.cfg_links["isl_dirs"])
+        # static routing structures: topo never changes, so build the reverse
+        # adjacency and its sorted neighbour lists once instead of rebuilding
+        # them on every decision (behaviour-identical, same iteration order)
+        self._routing_reverse_adj = routing._reverse_adj(self.topo)
+        self._routing_sorted_rev_adj = {
+            s: sorted(self._routing_reverse_adj.get(s, ()))
+            for s in self._routing_reverse_adj}
         self.control_children = [
             routing.control_broadcast_children(
                 self.topo, origin, self.cfg_cp["vis_k"])
@@ -1495,7 +1502,7 @@ class Kernel:
             "sat": sat,
             "kind": kind,
             "policy": (self.cfg_rt["policy"] if self.learner is None
-                       else f"ddqn:{self.cfg_rt['contract']}"),
+                       else f"{self.cfg_learning['algorithm']}:{self.cfg_rt['contract']}"),
             "candidates": list(candidates),
             "chosen": chosen,
             "own_queue_bits": {d: int(lnk.data_bits + lnk.ctrl_bits)
@@ -1534,12 +1541,17 @@ class Kernel:
         cands, status = routing.choose_next_hop(
             self.cfg_rt["policy"], sat, pkt.dst, now, self.geometry, self.topo,
             self.caches[sat], own_q, self.isl_rate_bps, model.propagation_delay_s,
-            oracle_targets=[s for s in self._serving_sats(pkt.dst) if s != sat],
+            # oracle_targets is consumed only by the oracle policy; compute it
+            # only there instead of scanning serving satellites every decision
+            oracle_targets=([s for s in self._serving_sats(pkt.dst) if s != sat]
+                            if self.cfg_rt["policy"] == "oracle" else None),
             # learning must choose among ALL local legal directions: the
             # heuristic only orders candidates, it never pre-clips the
             # learner's action set (otherwise DDQN is a tie-breaker over the
             # heuristic-best path and cannot learn to deviate from it)
-            best_only=False)
+            best_only=False,
+            reverse_adj=self._routing_reverse_adj,
+            sorted_adj=self._routing_sorted_rev_adj)
         if status == "unreachable":
             self._fail(pkt, "NO_ROUTE")
             return
