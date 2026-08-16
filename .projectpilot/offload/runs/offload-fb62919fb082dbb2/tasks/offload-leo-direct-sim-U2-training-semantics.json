@@ -1,0 +1,68 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:U2-training-semantics",
+    "title": "奖励、观测与训练循环语义审计（含隐性 bug 独立核查）",
+    "goal": "你是强化学习系统审计员，专长奖励设计、部分可观测 MDP 与 DQN 训练语义。请对仓库学习链路做独立深度审计，全部结论绑定行号证据：(1) 奖励函数语义：M1 队列奖励 w1*exp(-beta*t)（w1=20,beta=200，注释称在 ISL 服务实际开始时刻结算实测排队等待）、deliver 奖励 arrive_reward=50、丢包/过期/无路由 terminal_reward=0.0；检查奖励归属（上一跳动作）、结算点与文档声明是否一致、reward 有界性、量级配比是否合理；(2) 观测/特征：own_state 7 维（接入槽比+逐方向出向队列+可见小区比+偏置）、origin 4 维、目的地 3 维、C1/C3-C7/GAT/MPNN 合同维度与信息边界（只能看本星直接可测+已到达未过期控制缓存）、动作掩码（deliver 仅当可见且有下行容量，方向仅当有队列容量）；(3) 训练循环：每条 remember 即训练、batch 64、replay 50000、target 每 500 步硬拷贝、epsilon 按仿真秒指数衰减、canonical Double-DQN 目标（online argmax + target eval + next mask + terminal 不 bootstrap）；(4) 请独立核查并裁决以下两个候选隐性 bug 是否成立、严重度、复现条件、最小修复方向：A. kernel.py 的 _transmit 在 ISL 服务开始时结算 forward reward 存入 pkt.learning_reward，随后若传输被几何失效/随机中断/期限中断，_fail 以 terminal_reward=0.0 调用 _finish_learning_transition 会覆盖已结算奖励（转移以 0.0 终结，队列奖励丢失）；B. kernel.py run() 收尾只结算账本/队列面积，从不关闭 horizon 时在途/排队包的学习转移，已结算奖励与状态动作对被静默丢弃（receipt 不可见，违反 fail-loud 契约）；(5) 继续独立寻找同类'算法能跑但训练信号错误'的问题（转移生命周期、reward 归属、掩码、时序、replay 采样、确定性）。要求：对每个问题给出代码路径证据、可复现条件、影响面与最小修复方案；区分 FACT/INFERENCE/未验证；特别说明你与候选 bug A/B 一致或分歧的具体理由。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "def4b260591c87f0bfed372c24678f83b4467b31",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/learning.py",
+        "CODE/leo_sim/routing.py",
+        "CODE/leo_sim/control.py",
+        "CODE/leo_sim/fates.py",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/tests/test_reward_migration.py",
+        "CODE/leo_sim/tests/test_learning.py",
+        "CODE/leo_sim/tests/test_fates_outage.py",
+        "CODE/leo_sim/tests/test_analytic_scenarios.py",
+        "CODE/leo_sim/tests/test_kernel.py",
+        "CODE/leo_sim/tests/test_qlearning_migration.py",
+        "CODE/leo_sim/profiles/formal_exp1.yaml",
+        "ANALYSIS/REWARD-DIFF-20260816.md",
+        "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+        "ANALYSIS/TEMPORAL-MULTISTEP-DESIGN-20260816.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "候选 bug A/B 必须给出明确裁决：成立/不成立/部分成立+理由",
+      "每个结论绑定 github://<commit>/<path>#L<行> 证据",
+      "每条发现标注 FACT / INFERENCE / 未验证",
+      "不修改仓库、不执行命令、不声称最终验证"
+    ],
+    "requiredEvidence": [
+      "github://fuguther/leo-direct-sim/blob/def4b260591c87f0bfed372c24678f83b4467b31/CODE/leo_sim/kernel.py 等文件的精确行号引用"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "7bbcfa2d3bce807eca31e24dd0bbfac8972242f14e3e32d0eb404de5dc84841a"
+}
