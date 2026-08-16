@@ -872,7 +872,13 @@ class Kernel:
                     if nxt_up <= self.horizon:
                         ups.append(nxt_up)
                     self.mech["ge_waits"] += 1
-                if expiry is not None and (not ups or min(ups) >= expiry):
+                # Only fail with the expiry fate when the deadline actually
+                # lies within the horizon: a deadline beyond the horizon is
+                # never reached by the run, so an unrecoverable-within-horizon
+                # link must settle as IN_SYSTEM_AT_STOP (stalled), not be
+                # mislabelled DATA_DEADLINE_EXPIRED at t0.
+                if expiry is not None and expiry <= self.horizon \
+                        and (not ups or min(ups) >= expiry):
                     self._fail(pkt, expiry_fate)
                     return "fail"
                 if not ups:
