@@ -1,8 +1,8 @@
 # Q0 最优算法选型调研（2026-08-17）
 
 > 状态：GPT 两路（primary + independent_review）已完成并交叉一致；Codex
-> 已交叉审阅并抽查文献真实性；Kimi 复核待派（见 §5）。结论供 Q0 实现前
-> 拍板使用，不预设最终实现。
+> 已交叉审阅并抽查文献真实性；Kimi 独立交叉审阅完成（2026-08-17），修正
+> 意见已并入 §6。结论供 Q0 实现前拍板使用，不预设最终实现。
 
 ## 1. 结论摘要
 
@@ -70,5 +70,29 @@
   （arXiv:2111.11628）真实；经典文献（Ford-Fulkerson、Hoppe-Tardos、
   Orda-Rom、Rockafellar-Wets、Tassiulas-Ephremides、Graham et al.、
   Even-Itai-Shamir）为领域标准引用。
-- 待办：Kimi 复核本结论；按 §4 冻结 objective/合同后进入 Q0 接口实现
-  （全局快照 → 联合计划注入 → WAIT 有限 holding queue）。
+- Kimi 独立交叉审阅：总体同意，6 条修正已并入 §6。
+- 待办：按 §4+§6 冻结 objective/合同后进入 Q0 接口实现（全局快照 →
+  联合计划注入 → WAIT 有限 holding queue）。
+
+## 6. Kimi 交叉审阅修正（2026-08-17）
+
+1. **求解机制**：列生成/B&P 应列为 U_future 的**首选**机制（路径=列、MILP=主
+   问题、时变最短路=定价子问题），不是可选优化——预设 3–5 条路径漏掉最优
+   路径时，MILP 输出只是可行解、**不再构成上界**。
+2. **Q0-B 与 Q0-A 的差**：clairvoyant MILP 是逐样本 hindsight bound，不是
+   causal 最优的合法下界替代；需多 trace 样本的期望 hindsight + 方差，
+   单 trace 差值不可解释为「预知未来的价值」。
+3. **信息裁剪 (c) 表述**：AoI 是信息链路属性，Q0 直读真值时 AoI≡0 自然无
+   角色；**裁剪 AoI 的 stale 臂必须建模为 POMDP/belief-state 或鲁棒界**。
+   own-queue-only MaxWeight ≠ 经典回压，其稳定域保证不成立（建议句需与
+   表格一致，不能含糊）。
+4. **目标函数**：字典序会逐层求解+整数可行性检查、伤求解便利；建议同时
+   冻结一个加权标量化用于求解器内部，对外按字典序报告。
+5. **回放验收**：补「planned-vs-executed 逐事件一致性阈值」（说明书 §14.4），
+   不只查容量/队列，还要查服务时刻偏差——连续时间计划注入离散事件 kernel
+   是最大翻车点。
+6. **遗漏算法族**：Lagrangian/价格分解（链路容量对偶）列为 U_future 第三条
+   臂——松弛耦合约束后按包/边分解，同时给对偶下界与可执行启发式。
+7. **最脆弱环节**：physics-only 合同下「计划注入 kernel 回放可行率」；
+   deadline 普遍宽松时字典序第一级退化为吞吐，冻结 objective 前先跑
+   deadline 分布统计。
