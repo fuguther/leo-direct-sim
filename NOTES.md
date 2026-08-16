@@ -1,6 +1,10 @@
 # NOTES.md
 
 ## 当前状态
+- 2026-08-17 Q0 接口第一步：`Kernel.snapshot_global()` 只读全局快照 +
+  `_state_version` 事件版本（写入决策快照）+ `_in_flight` 在途包跟踪，
+  PR #40（kernel 承重，待 Kimi 复核）。GPT 第 3 轮挖问题已派发
+  （op 923e6820…，基于合并后 main 1599d3e）。
 - 2026-08-17 自主合并留痕（AGENTS.md 授权，全部 CI pytest 绿）：PR #29
   （occupied 停表口径 + expiry 超 horizon 走 stalled）、#34（GE bool 拒绝 +
   意图 sites 要求）、#30（TabularQ eval RNG）、#31（几何记忆化缓存）、
