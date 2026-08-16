@@ -1,0 +1,67 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:H1-unknown-problems:independent_review",
+    "title": "未知问题挖掘 + Q0 就绪度审计",
+    "goal": "你是资深强化学习/网络仿真/验证工程师，对平台做第 1 轮独立未知问题挖掘。背景：已有多轮审阅，已知问题清单见 ANALYSIS/EXPERT-REVIEW-20260816.md 与 ANALYSIS/ACCEPTANCE-LADDER-20260816.md（先读）。你的任务：\n一、寻找**不在已知清单里的新问题**（代码正确性、隐藏 bug、假绿、信息边界、训练语义、可复现性、性能、控制面、回执/守恒、配置 fail-closed），每项给文件:行号证据、严重度、复现条件、影响；明确区分 FACT/INFERENCE/未验证。\n二、Q0 就绪度审计。Q0 关键定义：Q0（完全信息性能参照）关键定义（用户说明书）：解除调度器信息传播限制（全局当前状态瞬时可见/或进一步允许完整未来信息），但必须保持全部网络物理约束：卫星轨道/拓扑、传播时延、有限链路容量、有限队列、接入 K 槽、BBM/MBB 切换、几何失效/随机中断、共享链路竞争。现有 routing.oracle 只是逐包逐跳全局信息路由基线，不是联合最优 Q0。实现 Q0 需要两个接口：①把 Kernel 全局状态（拓扑/链路/队列/包/接入/服务状态）统一暴露给集中式 planner；②把 planner 联合方案注入 Kernel。Q0 还应支持\"等待\"动作（不强制立即转发）与联合竞争处理。\n请逐项核查平台是否具备 Q0 所需的：①全局状态统一快照接口（当前 Kernel 状态分散在各对象，是否有一处可构造 S_t^global）；②planner 联合方案注入 Kernel 的接口（当前是否只能逐包逐跳 next-hop，无法注入'等待/分流/调度'类联合决策）；③等待动作支持（当前 learner/oracle 是否强制立即转发）；④保持物理约束的一致性（Q0 若接入全局状态，是否会绕开队列/容量/接入/切换限制）。对每项给出：现状（证据）、缺口（如需新增什么接口/语义）、是否为阻塞 Q0 的缺失。\n三、按 Q0 研究框架（信息不足 vs 决策能力不足的诊断目标）重新审视已知清单：哪些已知项实为 bug（应修）、哪些是设计选择（应声明）、哪些是 Q0 会放大/掩盖的问题。\n要求：结论绑定 github://c8c84f56e26f90c638759a7a21d874f6db8924f7/<路径>#L<行>；不修改仓库、不执行命令；不要泛泛而谈。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "c8c84f56e26f90c638759a7a21d874f6db8924f7",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/routing.py",
+        "CODE/leo_sim/learning.py",
+        "CODE/leo_sim/control.py",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/fates.py",
+        "CODE/leo_sim/governance.py",
+        "CODE/leo_sim/model.py",
+        "CODE/leo_sim/trace.py",
+        "CODE/leo_sim/tests",
+        "ANALYSIS/EXPERT-REVIEW-20260816.md",
+        "ANALYSIS/ACCEPTANCE-LADDER-20260816.md",
+        "ANALYSIS/PERF-PROFILE-20260816.md",
+        "CODE/leo_sim/profiles"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "给出不在已知清单里的新问题（证据/严重度/复现/影响）",
+      "Q0 就绪度逐项给出现状与缺口（接口/等待动作/物理约束一致性）",
+      "按 Q0 框架重新审视已知清单：bug vs 设计选择 vs Q0 放大项",
+      "区分 FACT / INFERENCE / 未验证",
+      "不修改仓库、不执行命令、不声称最终验证"
+    ],
+    "requiredEvidence": [
+      "github://fuguther/leo-direct-sim/blob/c8c84f56e26f90c638759a7a21d874f6db8924f7/<路径>#L<行>"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "e3bbe9c610cb9fdf7e01b7b058acd58253d8b9f602149ea5127e96ab44e3419d"
+}
