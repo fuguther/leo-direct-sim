@@ -207,3 +207,24 @@ def test_access_fifo_no_queue_jump():
         "FIFO violated: later requester granted before earlier one "
         f"({t_jumper:.3f} < {t_waiter:.3f})")
     assert all(res["fates"][p] == "DELIVERED" for p in (1, 2, 3))
+
+
+def test_try_grant_clears_granting_satellite_waiter():
+    """White-box: a _try_grant on a contended satellite must remove the
+    endpoint from that satellite's wait queue.  Regression: the entry used to
+    linger (get instead of pop) until the next access tick, creating phantom
+    contention for up to one time step."""
+    geo = StaticGeometry(1, neighbors_map={0: {}}, visible=lambda *_: True,
+                         gsl_changes=[])
+    cfg = make_cfg({
+        "scenario": {"num_satellites": 1, "num_planes": 1},
+        "access": {"slots_per_satellite": 1},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    ep = kernel.TrafficEndpoint(cell(0.0, 0.0))
+    k.endpoints[ep.cell] = ep
+    k.access_wait[0][ep.cell] = 1.0
+    assert k._try_grant(ep, 2.0) is True
+    assert ep.cell not in k.access_wait[0], "granting satellite left phantom waiter"
+    assert k.access_stats["grants"] == 1
+    assert abs(k.access_stats["wait_time_s_total"] - 1.0) < 1e-12

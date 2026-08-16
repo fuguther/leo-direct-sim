@@ -1052,6 +1052,7 @@ class Kernel:
                         waiters.items(), key=lambda kv: (kv[1], kv[0]))
                     if ep.cell != oldest_cell:
                         continue
+                    del waiters[ep.cell]  # grant consumes this request
                 else:
                     req_t = None
                 # a successful grant anywhere ends this endpoint's presence
