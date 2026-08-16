@@ -1,0 +1,66 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:E1-network-arch:independent_review",
+    "title": "卫星网络架构与链路建模专家审阅",
+    "goal": "你是资深低轨卫星星座网络架构与链路设计专家（熟悉 Starlink/Iridium 类星座、ISL/GSL、链路预算、切换、控制面、3GPP NTN）。请对平台做只读深度审阅，逐条给证据：(1) 星座/几何建模（Walker-delta、地球自转、无 J2/摄动、ISL 邻接与极区/接缝处理、最大链路距离 6000km）哪些会实质影响路由结论；(2) 链路与物理层（当前固定速率 ISL 1Gbps/GSL 100Mbps、链路预算仅设计稿未集成、无 Doppler、无 ARQ）对路由/拥塞/时延结论的威胁等级；(3) 接入与切换（K 槽、BBM/MBB、迟滞/驻留、硬退休）建模是否符合卫星网络实际、有无隐蔽错误；(4) 控制平面（真实控制包、TTL/AoI、vis_k 广播）作为信息源是否合理、带宽占用是否被低估；(5) 流量建模（uniform/gravity/M-Lab/人口重力、编译期 burst/diurnal）是否支撑路由研究；(6) 按你的专业经验列出最可能被新设计遗漏的 3-5 个问题（不要泛泛而谈，给具体场景）。要求：每个结论绑定 github://e6e3a701d845d1258a940950aca317b89b884dd2 路径证据或外部原始来源；区分 FACT/INFERENCE/未验证；不修改仓库、不执行命令。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "e6e3a701d845d1258a940950aca317b89b884dd2",
+      "paths": [
+        "CODE/leo_sim/model.py",
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/control.py",
+        "CODE/leo_sim/outage.py",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/routing.py",
+        "CODE/leo_sim/trace.py",
+        "CODE/leo_sim/population.py",
+        "CODE/leo_sim/profiles/formal_exp1.yaml",
+        "CODE/leo_sim/profiles/experiment_base.yaml",
+        "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md",
+        "ANALYSIS/PLATFORM-DOCUMENTATION/02-v2-platform.md",
+        "ANALYSIS/PERF-PROFILE-20260816.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result",
+      "web_research"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "每个结论绑定 github://e6e3a701d845d1258a940950aca317b89b884dd2/<路径>#L<行> 或外部原始来源",
+      "给出最可能被遗漏的 3-5 个问题，每项带具体场景与影响",
+      "区分 FACT / INFERENCE / 未验证",
+      "不修改仓库、不执行命令、不声称最终验证"
+    ],
+    "requiredEvidence": [
+      "github://fuguther/leo-direct-sim/blob/e6e3a701d845d1258a940950aca317b89b884dd2/<路径>#L<行>",
+      "外部标准（3GPP NTN、Hypatia、文献）给 https:// 链接"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "f88fafde72c94d58c8d1732daf9e2cd0f11ac04c94769bba9bf044466b4a13cf"
+}
