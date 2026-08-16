@@ -636,7 +636,11 @@ class Kernel:
                 "geometry provider does not certify next-change times; "
                 "failing closed (set links.geometry_loss=false only for "
                 "diagnostic runs)")
-        self.geometry = geometry
+        # exact-argument memoization wrapper: transparent and bit-equivalent
+        # (cached values are the first-computed results for identical pure
+        # queries), bounded LRU, filled only on demand — never reads future
+        # times itself.
+        self.geometry = model.MemoizedGeometry(geometry)
         self.num_sats = geometry.num_satellites
         # optional output-only per-hop decision snapshot sink (a list); when
         # None the recording code paths are never entered
@@ -663,7 +667,7 @@ class Kernel:
             per_ep_rows.setdefault(r["src_grid_id"], []).append(r)
 
         self.topo = routing.build_topology(
-            geometry, self.num_sats, self.cfg_links["isl_dirs"])
+            self.geometry, self.num_sats, self.cfg_links["isl_dirs"])
         # static routing structures: topo never changes, so build the reverse
         # adjacency and its sorted neighbour lists once instead of rebuilding
         # them on every decision (behaviour-identical, same iteration order)

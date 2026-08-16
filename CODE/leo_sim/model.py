@@ -7,10 +7,14 @@ current simulation time (no future ephemeris is ever read).
 from __future__ import annotations
 
 import math
+from collections import OrderedDict
 
 EARTH_RADIUS_KM = 6371.0
 EARTH_ROT_RATE_RAD_S = 7.2921159e-5
 C_KM_S = 299_792.458
+
+
+_MISS = object()
 
 
 def propagation_delay_s(distance_km: float) -> float:
@@ -51,6 +55,271 @@ class GeometryCertificationError(RuntimeError):
     exhausted, non-finite input/margin, or invalid arguments). Fail closed:
     None is ONLY ever returned when the absence of a change in (t0, t1] has
     been proven under the rate-bound contract."""
+
+
+class MemoizedGeometry:
+    """Exact-argument LRU memoization wrapper for a geometry provider.
+
+    Bit-level equivalence contract: the wrapped geometry is a pure function of
+    its arguments, so returning the exact first-computed value for an
+    identical argument tuple never changes control flow or outputs.  Every
+    cache is a bounded LRU (capacity entries per query family) and is only
+    filled on demand — the wrapper itself never reads future times.
+
+    Cache policy: values are keyed by their EXACT arguments (never quantized,
+    so outputs stay bit-identical), but eviction is per time instant — each
+    query family keeps a small LRU of the most recent distinct ``t`` values
+    and, under each ``t``, every (sat, lat, lon)/edge entry computed at that
+    instant.  Discrete-event runs query the same instant many times (one
+    routing decision relaxes every edge at the same ``now``; access/handover
+    scans every satellite at the same ``now``), so the per-instant reuse is
+    what removes the trigonometric recomputation; a plain capacity-LRU over
+    exact ``t`` keys instead thrashes because successive events have distinct
+    times.
+
+    Two modes:
+    - constellation-like providers (expose ``ecef``/``min_elevation_deg``/
+      ``max_isl_km``): the composite queries (elevation / slant range / ISL
+      range / ISL availability / certified next-change searches) are
+      re-derived from the memoized ``ecef`` and exact-arg memoized results,
+      replicating ``Constellation``'s arithmetic bit-for-bit.  This is the
+      routing hot path: one trig computation per satellite per instant is
+      shared by every edge/endpoint query at that instant.
+    - any other provider: every public query is delegated to the inner
+      provider and its exact result is memoized.
+    """
+
+    #: how many distinct recent instants each query family retains; the
+    #: entries under one instant are bounded by the constellation/endpoint
+    #: counts, so memory stays small while a burst of certified next-change
+    #: bisection samples (unique times) cannot evict the current event time.
+    _TIME_CAPACITY = 128
+
+    def __init__(self, inner, capacity: int = 4096):
+        self._inner = inner
+        self._capacity = capacity
+        self._caches: dict[str, "OrderedDict"] = {}
+        self._compose = (
+            hasattr(inner, "ecef")
+            and hasattr(inner, "min_elevation_deg")
+            and hasattr(inner, "max_isl_km")
+        )
+        self.certifies_change_times = bool(
+            getattr(inner, "certifies_change_times", False))
+        self.num_satellites = inner.num_satellites
+
+    def __getattr__(self, name):
+        # only reached for attributes not defined here; forwards provider
+        # surface (e.g. legacy helpers on scripted geometries)
+        return getattr(self._inner, name)
+
+    def _slot(self, name: str, t: float) -> dict:
+        """Exact-``t`` slot for a query family; evicts oldest instants."""
+        cache = self._caches.get(name)
+        if cache is None:
+            cache = OrderedDict()
+            self._caches[name] = cache
+        slot = cache.get(t)
+        if slot is None:
+            slot = {}
+            cache[t] = slot
+            if len(cache) > self._TIME_CAPACITY:
+                cache.popitem(last=False)
+        return slot
+
+    def _lookup(self, name: str, t: float, args, compute):
+        """Memoize by exact ``t`` slot then exact ``args`` (cold paths)."""
+        slot = self._slot(name, t)
+        hit = slot.get(args, _MISS)
+        if hit is not _MISS:
+            return hit
+        value = compute()
+        slot[args] = value
+        return value
+
+    def _lookup_result(self, name: str, key, compute):
+        """Plain bounded-LRU memoization for results that repeat across
+        different instants (e.g. certified next-change answers for the same
+        interval)."""
+        cache = self._caches.get(name)
+        if cache is None:
+            cache = OrderedDict()
+            self._caches[name] = cache
+        hit = cache.get(key, _MISS)
+        if hit is not _MISS:
+            cache.move_to_end(key)
+            return hit
+        value = compute()
+        cache[key] = value
+        if len(cache) > self._capacity:
+            cache.popitem(last=False)
+        return value
+
+    # ---- pure queries, memoized by exact arguments -----------------------
+
+    def subpoint(self, sat_id: int, t: float):
+        return self._lookup(
+            "subpoint", t, (sat_id,),
+            lambda: self._inner.subpoint(sat_id, t))
+
+    def positions(self, t: float):
+        return self._lookup(
+            "positions", t, (), lambda: self._inner.positions(t))
+
+    def neighbors(self, sat_id: int, dirs):
+        key_dirs = dirs if isinstance(dirs, str) else tuple(dirs)
+        return self._lookup_result(
+            "neighbors", (sat_id, key_dirs),
+            lambda: self._inner.neighbors(sat_id, dirs))
+
+    def ecef(self, sat_id: int, t: float):
+        slot = self._slot("ecef", t)
+        hit = slot.get(sat_id, _MISS)
+        if hit is not _MISS:
+            return hit
+        value = self._inner.ecef(sat_id, t)
+        slot[sat_id] = value
+        return value
+
+    # ---- composite queries: constellation-mode derivation ----------------
+
+    def elevation_deg(self, sat_id: int, lat: float, lon: float, t: float):
+        if self._compose:
+            slot = self._slot("elevation_deg", t)
+            key = (sat_id, lat, lon)
+            hit = slot.get(key, _MISS)
+            if hit is not _MISS:
+                return hit
+            sat = self.ecef(sat_id, t)
+            gs = _sph_to_ecef(lat, lon, EARTH_RADIUS_KM)
+            dx, dy, dz = sat[0] - gs[0], sat[1] - gs[1], sat[2] - gs[2]
+            rng = math.sqrt(dx * dx + dy * dy + dz * dz)
+            if rng == 0:
+                value = 90.0
+            else:
+                up = (gs[0] / EARTH_RADIUS_KM,
+                      gs[1] / EARTH_RADIUS_KM,
+                      gs[2] / EARTH_RADIUS_KM)
+                cos_z = (dx * up[0] + dy * up[1] + dz * up[2]) / rng
+                value = math.degrees(
+                    math.asin(max(-1.0, min(1.0, cos_z))))
+            slot[key] = value
+            return value
+        return self._lookup(
+            "elevation_deg", t, (sat_id, lat, lon),
+            lambda: self._inner.elevation_deg(sat_id, lat, lon, t))
+
+    def ground_visible(self, sat_id: int, lat: float, lon: float, t: float) -> bool:
+        if self._compose:
+            slot = self._slot("ground_visible", t)
+            key = (sat_id, lat, lon)
+            hit = slot.get(key, _MISS)
+            if hit is not _MISS:
+                return hit
+            value = self.elevation_deg(sat_id, lat, lon, t) > \
+                self._inner.min_elevation_deg
+            slot[key] = value
+            return value
+        return self._lookup(
+            "ground_visible", t, (sat_id, lat, lon),
+            lambda: self._inner.ground_visible(sat_id, lat, lon, t))
+
+    def gsl_available(self, sat_id: int, lat: float, lon: float, t: float) -> bool:
+        # both model.Constellation and test helpers implement this as
+        # ground_visible; keeping the identity here preserves bit-equivalence.
+        return self.ground_visible(sat_id, lat, lon, t)
+
+    def slant_range_km(self, sat_id: int, lat: float, lon: float, t: float):
+        if self._compose:
+            slot = self._slot("slant_range_km", t)
+            key = (sat_id, lat, lon)
+            hit = slot.get(key, _MISS)
+            if hit is not _MISS:
+                return hit
+            value = math.dist(
+                self.ecef(sat_id, t),
+                _sph_to_ecef(lat, lon, EARTH_RADIUS_KM))
+            slot[key] = value
+            return value
+        return self._lookup(
+            "slant_range_km", t, (sat_id, lat, lon),
+            lambda: self._inner.slant_range_km(sat_id, lat, lon, t))
+
+    def isl_range_km(self, a: int, b: int, t: float):
+        if self._compose:
+            slot = self._slot("isl_range_km", t)
+            key = (a, b)
+            hit = slot.get(key, _MISS)
+            if hit is not _MISS:
+                return hit
+            value = math.dist(self.ecef(a, t), self.ecef(b, t))
+            slot[key] = value
+            return value
+        return self._lookup(
+            "isl_range_km", t, (a, b),
+            lambda: self._inner.isl_range_km(a, b, t))
+
+    def isl_available(self, a: int, b: int, t: float) -> bool:
+        if self._compose:
+            slot = self._slot("isl_available", t)
+            key = (a, b)
+            hit = slot.get(key, _MISS)
+            if hit is not _MISS:
+                return hit
+            pa = self.ecef(a, t)
+            pb = self.ecef(b, t)
+            dx, dy, dz = pb[0] - pa[0], pb[1] - pa[1], pb[2] - pa[2]
+            rng = math.sqrt(dx * dx + dy * dy + dz * dz)
+            if rng >= self._inner.max_isl_km or rng == 0:
+                value = False
+            else:
+                dot = pa[0] * dx + pa[1] * dy + pa[2] * dz
+                s = max(0.0, min(1.0, -dot / (rng * rng)))
+                cx, cy, cz = pa[0] + s * dx, pa[1] + s * dy, pa[2] + s * dz
+                closest = math.sqrt(cx * cx + cy * cy + cz * cz)
+                value = closest > EARTH_RADIUS_KM
+            slot[key] = value
+            return value
+        return self._lookup(
+            "isl_available", t, (a, b),
+            lambda: self._inner.isl_available(a, b, t))
+
+    def next_gsl_change(self, sat_id: int, lat: float, lon: float, t: float,
+                        limit: float):
+        key = (sat_id, lat, lon, t, limit)
+        if self._compose:
+            def compute():
+                def margin(x):
+                    return self.elevation_deg(sat_id, lat, lon, x) \
+                        - self._inner.min_elevation_deg
+                return _next_change_adaptive(margin, t, limit, ELEV_RATE_DEG_S)
+            return self._lookup_result("next_gsl_change", key, compute)
+        return self._lookup_result(
+            "next_gsl_change", key,
+            lambda: self._inner.next_gsl_change(sat_id, lat, lon, t, limit))
+
+    def next_isl_change(self, a: int, b: int, t: float, limit: float):
+        key = (a, b, t, limit)
+        if self._compose:
+            def compute():
+                def margin(x):
+                    pa = self.ecef(a, x)
+                    pb = self.ecef(b, x)
+                    dx, dy, dz = pb[0] - pa[0], pb[1] - pa[1], pb[2] - pa[2]
+                    rng = math.sqrt(dx * dx + dy * dy + dz * dz)
+                    if rng == 0:
+                        return -1.0
+                    dot = pa[0] * dx + pa[1] * dy + pa[2] * dz
+                    s = max(0.0, min(1.0, -dot / (rng * rng)))
+                    cx, cy, cz = pa[0] + s * dx, pa[1] + s * dy, pa[2] + s * dz
+                    closest = math.sqrt(cx * cx + cy * cy + cz * cz)
+                    return min(self._inner.max_isl_km - rng,
+                               closest - EARTH_RADIUS_KM)
+                return _next_change_adaptive(margin, t, limit, RANGE_RATE_KM_S)
+            return self._lookup_result("next_isl_change", key, compute)
+        return self._lookup_result(
+            "next_isl_change", key,
+            lambda: self._inner.next_isl_change(a, b, t, limit))
 
 
 def _next_change_adaptive(margin, t0: float, t1: float, rate_bound: float,
