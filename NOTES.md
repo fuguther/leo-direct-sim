@@ -1,5 +1,17 @@
 # NOTES.md
 
+## 2026-08-19 凌晨（第 1 阶段启动：R5-G2 修复 + 第 5/6 轮本地审计）
+
+- R5-G2（governance 不绑定 checkpoint 文件）已修复并合并 #47：seal 时校验
+  checkpoint 存在/非 symlink/项目根内/SHA 一致 + metadata pin；glm 子代理
+  第 1 轮 BLOCK（resolve 前 is_symlink 死代码 + metadata 路径错位）→ 修复
+  （resolve 前逐级 symlink 扫描 + 未解析父目录语义 + 对抗测试）→ 第 2 轮
+  PASS（1 minor：macOS 绝对路径 /var symlink 假阳性，记 R6-G2b）。
+- 第 5/6 轮本地审计：routing/control/outage/model/rng/fates/grid/acceptance/
+  comparison/population/trace/experiment_platform 全过，未新增隐藏 bug；
+  台账 R5-G1/G2 fixed、G3 dismissed、R6-G2b open(follow-up)。
+- #48 台账状态更新 PR（R5-G2 fixed + R6-G2b）。
+
 ## 2026-08-18 夜 → 08-19 晨（第 0 阶段工作流优化 + 第 4/5 轮收口）
 
 - 工作流优化（0.1–0.5）全部落地：
