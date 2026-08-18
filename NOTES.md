@@ -1,5 +1,12 @@
 # NOTES.md
 
+## 2026-08-19 凌晨（P0-2 hop BFS 完成 + 第 5/6 轮审计收口）
+
+- P0-2（hop 策略多源 BFS 替代 Dijkstra）合并 #49：等价验收=acceptance 5 场景
+  ledgers 逐字节一致 + 显式多跳 hop 双端一致（921e51d4…，delivered 均 301）；
+  deepseek 独立复核 APPROVE（50k 随机图差分等价）；全量 400 pytest。
+- R6-P02b（sorted_adj 未预传时仍构建）记 minor follow-up。
+
 ## 2026-08-19 凌晨（第 1 阶段启动：R5-G2 修复 + 第 5/6 轮本地审计）
 
 - R5-G2（governance 不绑定 checkpoint 文件）已修复并合并 #47：seal 时校验
