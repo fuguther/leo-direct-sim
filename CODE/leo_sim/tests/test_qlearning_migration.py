@@ -367,6 +367,111 @@ def test_qlearning_payload_schema_and_structure_are_fail_closed(tmp_path):
                  checkpoint_path=str(table), checkpoint_sha256=sha)
 
 
+def test_qlearning_canonical_table_metadata_pin_is_verified(tmp_path):
+    """N1/R1 regression: a canonical (payload-contract) table with an explicit
+    checkpoint_metadata_sha256 must verify the sibling metadata and record
+    the actual SHA; a wrong pin must fail at load time."""
+    ql = _learner()
+    dim = learning.CONTRACT_DIMS["C3"]
+    ql.remember(np.zeros(dim), "E", 1.5, np.ones(dim), FULL_MASK, False)
+    meta = ql.save_and_verify(tmp_path)
+    table_path = tmp_path / "q_table.json"
+    meta_sha = meta["metadata_sha256"]
+    loaded = _learner(mode="eval", checkpoint_path=str(table_path),
+                      checkpoint_sha256=meta["checkpoint_sha256"],
+                      checkpoint_metadata_sha256=meta_sha)
+    assert loaded.loaded_checkpoint_metadata_sha256 == meta_sha
+    with pytest.raises(learning.LearningUnavailable,
+                       match="metadata.json SHA-256 differs"):
+        _learner(mode="eval", checkpoint_path=str(table_path),
+                 checkpoint_sha256=meta["checkpoint_sha256"],
+                 checkpoint_metadata_sha256="ab" * 32)
+
+
+def test_qlearning_payload_invalid_utf8_is_fail_closed(tmp_path):
+    """A q_table.json with invalid UTF-8 must raise LearningUnavailable."""
+    table = tmp_path / "q_table.json"
+    table.write_bytes(b"\xff\xfe {\"schema\":")
+    sha = hashlib.sha256(table.read_bytes()).hexdigest()
+    with pytest.raises(learning.LearningUnavailable,
+                       match="checkpoint unreadable"):
+        _learner(mode="eval", contract="C3",
+                 checkpoint_path=str(table), checkpoint_sha256=sha)
+
+
+def test_qlearning_state_key_representation_must_be_finite(tmp_path):
+    """F2-STATE-KEY regression: a correct-width key whose float64 payload is
+    NaN/Inf can never be produced by _key() and would silently degrade every
+    lookup to the zero-row fallback; it must be rejected."""
+    dim = learning.CONTRACT_DIMS["C3"]
+    nan_key = b"\xff" * 8 + b"\x00" * (dim * 8 - 8)
+    payload = {"schema": "leo-sim-qlearning-table/v1", "contract": "C3",
+               "entries": [[nan_key.hex(), [0.1] * len(learning.ACTIONS)]]}
+    table = tmp_path / "q_table.json"
+    table.write_text(json.dumps(payload, sort_keys=True) + "\n")
+    sha = hashlib.sha256(table.read_bytes()).hexdigest()
+    with pytest.raises(learning.LearningUnavailable,
+                       match="not a finite"):
+        _learner(mode="eval", contract="C3",
+                 checkpoint_path=str(table), checkpoint_sha256=sha)
+
+
+def test_qlearning_eval_receipt_with_metadata_pin_e2e(tmp_path):
+    """Full kernel->learning ledger->receipt chain for qlearning eval with a
+    pinned metadata SHA: loader records the verified SHA and the receipt
+    accepts the run."""
+    cfg = make_cfg({
+        "endpoints": {"sites": [
+            {"name": "a", "lat": 0.0, "lon": 0.0},
+            {"name": "b", "lat": 0.0, "lon": 10.0},
+        ]},
+        "control_plane": {"enabled": True},
+        "routing": {"policy": "hop", "learning_enabled": True},
+        "learning": {"algorithm": "qlearning"},
+    })
+    tdir = tmp_path / "compiled"
+    manifest = trace.compile_trace(cfg, str(tdir))
+    tbytes = (tdir / "trace.csv").read_bytes()
+    manifest["__trace_sha256"] = hashlib.sha256(tbytes).hexdigest()
+    manifest["__sha256"] = hashlib.sha256(
+        (tdir / "manifest.json").read_bytes()).hexdigest()
+    rows = trace.load_trace(
+        str(tdir / "trace.csv"),
+        horizon_s=cfg["config"]["scenario"]["duration_s"],
+        max_packets=cfg["config"]["execution"]["max_packets"])
+    train_out = tmp_path / "train"
+    result = kernel.run_simulation(cfg, rows, geometry=_two_sat_geo(),
+                                   learning_out_dir=train_out / "qlearning")
+    assert result["natural_end"] is True
+    table_path = train_out / "qlearning" / "q_table.json"
+    meta = json.loads((train_out / "qlearning" / "metadata.json")
+                      .read_text(encoding="utf-8"))
+    meta_sha = hashlib.sha256(
+        (train_out / "qlearning" / "metadata.json").read_bytes()).hexdigest()
+    cfg_eval = make_cfg({
+        "endpoints": {"sites": [
+            {"name": "a", "lat": 0.0, "lon": 0.0},
+            {"name": "b", "lat": 0.0, "lon": 10.0},
+        ]},
+        "control_plane": {"enabled": True},
+        "routing": {"policy": "hop", "learning_enabled": True},
+        "learning": {
+            "algorithm": "qlearning", "mode": "eval",
+            "checkpoint_path": str(table_path),
+            "checkpoint_sha256": meta["checkpoint_sha256"],
+            "checkpoint_metadata_sha256": meta_sha,
+        },
+    })
+    eval_out = tmp_path / "eval"
+    res = kernel.run_simulation(cfg_eval, rows, geometry=_two_sat_geo(),
+                                learning_out_dir=eval_out / "qlearning")
+    assert res["natural_end"] is True
+    assert res["learning"]["loaded_checkpoint_metadata_sha256"] == meta_sha
+    assert res["learning"]["train_steps"] == 0
+    receipt.write_run(str(eval_out), cfg_eval, tbytes, manifest, res, rows)
+    assert receipt.verify_receipt_dir(str(eval_out)) == []
+
+
 def test_metadata_verifier_fail_closed_on_every_field():
     """DDQN metadata provenance gate: any missing/mismatched field rejects."""
     good = {"schema": "leo-sim-ddqn/v1", "algorithm": "ddqn",
