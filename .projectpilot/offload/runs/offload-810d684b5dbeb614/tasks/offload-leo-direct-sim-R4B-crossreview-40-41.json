@@ -1,0 +1,57 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R4B-crossreview-40-41",
+    "title": "二审 PR #40（Q0 快照）+ #41（transmit 退休）",
+    "goal": "你是资深 RL/网络仿真验证工程师。独立二审两个已合审修复（不受此前 Kimi 结论影响，凭代码自己判断）。\nA. commit be0520b（PR #40 Q0 快照）：snapshot_global() 只读性、_state_version 每事件步语义、_in_flight 生命周期、剩余服务时长口径、GSL GE 惰性通道、与 P1 分支（#25/#26/#28 未合并）合并兼容。\nB. commit 9454b4f（PR #41 _transmit down-wait）：竞速退休中断、取消提前判死、_svc 重盖戳——重点查：expiry 与中断同刻优先级、取消 fail-fast 后无 deadline 长阻塞的头阻塞影响、restamp 与 hard-retire 段计费交互、ISL link=None 路径不变性。\nA、B 单独判定，不要混在一起；每个给 APPROVE / REQUEST_CHANGES + 行级证据。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "9454b4f8827867917f0a5ae5eac1689d1527967b",
+      "paths": [
+        "CODE/leo_sim/learning.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/tests",
+        "ANALYSIS/EXPERT-REVIEW-20260816.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "A 独立判定（行级证据）",
+      "B 独立判定（行级证据）",
+      "Kimi 结论之外的新问题"
+    ],
+    "requiredEvidence": [
+      "GitHub 或原始来源证据"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "558e5f99797aa18b3233e57187cadd769ed8fc890e2fc4345782636fd3084d1f"
+}
