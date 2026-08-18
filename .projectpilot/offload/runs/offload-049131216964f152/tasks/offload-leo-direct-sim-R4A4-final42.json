@@ -1,0 +1,62 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R4A4-final42",
+    "title": "PR #42 R4A3 整改终审（commit af4b115）",
+    "goal": "逐条核验 R4A3 发现是否被真正修复：F1=JSON 工件 hash-then-reopen TOCTOU 是否通过单次读取闭合，DDQN keras 重开路径是否显式声明威胁模型排除；N1/R1=canonical TabularQ eval 配置 metadata pin 时是否强制校验并记录实际 SHA，loader/receipt 是否一致；F2-STATE-KEY=key 是否校验 float64 表示/有限性/维度；N2/F3=顶层 key set 严格性与 legacy 判定是否修正。同时独立寻找本次整改引入的回归或遗漏。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "af4b1159665d541837421e906ce0974fca706276",
+      "paths": [
+        "CODE/leo_sim/learning.py",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/tests/test_qlearning_migration.py",
+        "CODE/leo_sim/tests/test_config.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "每条结论给出 FACT/INFERENCE/未验证 标记与精确行号证据，禁止无证据断言",
+      "显式声明 open_items；无法在本环境验证的项（TF 主机动态复现）不得伪证为已验证",
+      "给出 APPROVE / REQUEST_CHANGES / BLOCK 三选一终判及理由",
+      "克制冷静：禁止奉承，直接指出不确定处"
+    ],
+    "requiredEvidence": [
+      "F1：确认 _read_json_bytes 与 metadata/payload 调用均为同一 bytes 哈希+解析；DDQN 模型 load 的剩余 TOCTOU 是否有明确威胁模型声明（非静默）；此声明是否可接受",
+      "N1/R1：canonical+pin 是否读取并校验 metadata、记录 sha；无 pin 是否明确跳过；receipt 是否只在配置 pin 非空时要求一致",
+      "F2-STATE-KEY：frombuffer 维度与有限性校验是否存在且错误信息明确",
+      "N2/F3：顶层 key set 是否严格；legacy 是否按 contract 字段缺失判定而非 null；显式 contract:null 是否被拒绝",
+      "检查新增测试是否真实覆盖以上负例（canonical pin 正/负、非法 UTF-8 payload、NaN key、config 负例、receipt E2E）"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "7c90d613b457386b27e65a74667ea55490a5d53183b2b207ca85e0ee19849439"
+}
