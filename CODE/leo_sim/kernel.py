@@ -893,6 +893,10 @@ class Kernel:
                 return (bits / rate_bps) - (now - srv._tx_started_at)
             return None
         isl_links = {}
+        # NOTE: ge.is_down() lazily advances each GE's internal trajectory,
+        # but GilbertElliott trajectories are query-pattern independent, so
+        # the read-only promise holds at the observable-state level (the
+        # snapshot never mutates the world state it reports).
         for s in range(self.num_sats):
             isl_links[s] = {}
             for d, lnk in self.isls[s].items():

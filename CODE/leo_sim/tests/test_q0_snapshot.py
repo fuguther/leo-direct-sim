@@ -167,3 +167,49 @@ def test_snapshot_service_phase_distinguishes_waiting_from_transmitting():
     dl_snap2 = snap2["downlinks"][0]
     assert dl_snap2["svc"]["phase"] == "transmitting"
     assert dl_snap2["remaining_service_s"] == pytest.approx(expected_full)
+
+
+class _SnapshotSink(list):
+    """Decision sink that snapshots the kernel on every decision append."""
+
+    def __init__(self, kernel):
+        super().__init__()
+        self.kernel = kernel
+        self.snapshots = []
+
+    def append(self, rec):
+        super().append(rec)
+        self.snapshots.append(self.kernel.snapshot_global())
+
+
+def test_snapshot_real_propagation_exposes_full_packet():
+    """R6-A2 regression: while a packet is genuinely propagating between
+    satellites, snapshot_global() must report it with the full current packet
+    state (not just kind/sat/arrival_at) through the real ingress/isl path."""
+    geo = StaticGeometry(
+        2,
+        neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+        visible=lambda s, lat, lon, t: True,
+    )
+    cfg = make_cfg({
+        "scenario": {"num_satellites": 2, "num_planes": 1, "duration_s": 2.0},
+        "access": {"uplink_rate_mbps": 4000.0},
+        "links": {"isl_rate_mbps": 1600.0},
+    })
+    src, dst = cell(0.0, 0.0), cell(0.0, 10.0)
+    # A: uplink 0-2ms, prop 2-4ms, ISL service 4-9ms, ISL prop 9-~12.3ms.
+    # C decides at sat0 at ~10ms, while A is genuinely in ISL propagation.
+    rows = [row(1, 0.0, src, dst),
+            row(2, 0.002, src, dst),
+            row(3, 0.006, src, dst)]
+    k = kernel.Kernel(cfg, rows, geometry=geo)
+    sink = _SnapshotSink(k)
+    k.decision_sink = sink
+    res = k.run()
+    assert res["natural_end"] is True
+    in_flight_snaps = [s for s in sink.snapshots if s["in_flight"]]
+    assert in_flight_snaps, "no snapshot observed a genuinely propagating packet"
+    entry = next(iter(in_flight_snaps[0]["in_flight"].values()))
+    for key in ("pid", "kind", "sat", "arrival_at", "src", "dst", "bits",
+                "deadline", "emitted_at", "path", "assigned_sat"):
+        assert key in entry, f"in-flight entry missing {key}"
