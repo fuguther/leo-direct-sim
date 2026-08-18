@@ -39,14 +39,21 @@
 | R4C-F1 | learning | major | FACT | fixed | 同宽 learning contract checkpoint 可跨合同加载并被重标 | #42 前 main | #42（根因同 R4A2-F1，去重引用） |
 | R4C-F2 | kernel (reward) | major | FACT | fixed(待拍板) | ISL 服务开始后失败，_fail 把已实现 M1 奖励覆盖为 0 | kernel._fail + 复现测试 | #43（行为改变，留用户拍板） |
 | R4C-F3 | learning | major | FACT | fixed | 结构无效 TabularQ checkpoint 被洗成 checkpoint_verified=true | #42 前 main | #42（与 R4A2-F2i/F3 同根，去重引用） |
-| R4C-F4 | learning | minor | FACT | fixed(待并入) | 畸形 JSON/entry/hex 与部分 DDQN load_model 失败未统一包装 | #42 前 main | #42 分支未提交改动：load_model 异常统一 LearningUnavailable |
-| R4C-i-F4 | receipt | minor | FACT | fixed(待并入) | field_authority 把 learning 标为 recomputed，实为 ledger_consistency | receipt.py FIELD_AUTHORITY | #42 分支未提交改动：改 label |
-| R5-G1 | trace | minor | FACT | open | csv 模式 deadline_at_s="0" 被 `or ""` 当空处理，静默丢失 deadline | trace.py csv 分支 | 分支 codex/20260818-fix-trace-deadline-zero（修复中） |
+| R4C-F4 | learning | minor | FACT | fixed | 畸形 JSON/entry/hex 与部分 DDQN load_model 失败未统一包装 | #42 前 main | #42 2eabd72：load_model 异常统一 LearningUnavailable |
+| R4C-i-F4 | receipt | minor | FACT | fixed | field_authority 把 learning 标为 recomputed，实为 ledger_consistency | receipt.py FIELD_AUTHORITY | #42 2eabd72：改 ledger_consistency |
+| R5-G1 | trace | minor | FACT | fixed | csv 模式 deadline_at_s="0" 被 `or ""` 当空处理，静默丢失 deadline | trace.py csv 分支 | #44（已合并）：strip 后判空串 |
 | R5-G2 | governance | major | INFERENCE | open(follow-up) | 正式实验身份不绑定 learning.checkpoint 文件本体（仅绑定声明哈希），授权可先绿、加载时才失败 | governance.build_run_intent | 建议：seal 时校验文件存在+哈希 |
 | R5-G3 | comparison | minor | INFERENCE | dismissed | legacy/direct 资源参数不等价（H2-13） | comparison.py 声明 | 工程对比范围明确声明 scientific_effect_claim=False，非隐藏缺陷 |
 | R6-F1 | Q0 设计 | blocking | INFERENCE | open | 必须区分 Q0-I（在线最优）/Q0-J（联合调度）/Q0-F（clairvoyant 离线最优），否则未来信息优势被错误归因为当前信息优势 | Q0 研究 op 13934832 | 设计合同，§5 冻结后实现 |
 | R6-F3 | Q0 设计 | blocking | INFERENCE | open | M1 逐跳 queue reward 与物理按时交付/时延目标不序等价，不能作 Q0 最优性判据 | 同上 | 冻结 lexicographic 物理目标 |
 | R6-M1 | Q0 设计 | major | INFERENCE | open | 普通时间扩展网络流/min-cost flow 仅松弛/候选路径，不精确表达不可分/非抢占/deadline/中断 | 同上 | tiny 用 CP-SAT/event DP 交叉验证 |
+| R4A4-F1RESIDUAL | learning | major | FACT/INFERENCE | fixed | save 侧仍 hash-parse 分离；DDQN save/reload 重开 pathname（威胁模型外） | R4A4 终审 | #42 2eabd72：save 单次读取；DDQN 重开按威胁模型声明 |
+| R4A4-F4RUNTIME | learning | major | INFERENCE | fixed | save 不校验表状态可产出 verified 但 loader 拒收的 artifact | R4A4 终审 | #42 2eabd72：save 前复用 loader 语义校验 |
+| R4A4-N3ENDIAN | learning | minor | INFERENCE | fixed | state-key 用 native-endian，跨主机可能静默 miss | R4A4 终审 | #42 2eabd72：统一 little-endian float64 |
+| R6-A1 | kernel (snapshot) | minor | INFERENCE | open(follow-up) | state_version 粒度（事件级）与设计文档“任何写递增”口径不一致 | review40 子代理 | 第 3 步前统一文档口径 |
+| R6-A2 | kernel (snapshot) | minor | INFERENCE | open(follow-up) | 真实传播中 in_flight 快照缺端到端回归（现为手工注入） | review40 子代理 | 补真实传播路径 E2E |
+| R6-A3 | kernel (snapshot) | minor | INFERENCE | open(follow-up) | snapshot_global 对 GE 查询会推进内部状态（query-pattern 独立故安全） | review40 子代理 | 加一行注释说明只读语义层级 |
+| R6-B2 | kernel (transmit) | minor | INFERENCE | open(follow-up) | down-wait 独占 server 与等待统计真空（Q0 holding-queue 同根） | #41 R4B 二审 | 设计缺口，Q0 holding-queue 一并处理 |
 
 ## Open / Follow-up 清单
 

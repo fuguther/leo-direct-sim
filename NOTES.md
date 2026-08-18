@@ -1,5 +1,24 @@
 # NOTES.md
 
+## 2026-08-18 夜 → 08-19 晨（第 0 阶段工作流优化 + 第 4/5 轮收口）
+
+- 工作流优化（0.1–0.5）全部落地：
+  - 0.1 问题台账 `ANALYSIS/FINDINGS-REGISTRY.md`（#45，含 R4A2/R4A3/R4B2/R4C/R5/R6）。
+  - 0.2 审阅轮次上限 3 + 增量审阅 + minor 收敛规则（台账 + 僚机 prompt playbook）。
+  - 0.3 独立审阅改不同模型子代理/Codex 冷启动自审：deepseek 终审 #40 APPROVE（3 minor follow-up）；
+    glm 子代理未交付终稿 → #42 以 R4A4 网页终审 + Codex 自审收敛。
+  - 0.4 僚机调度恢复（ProjectPilot feature/web-agent-offload-backend 9ed0f3e）：死租约 DISPATCHING
+    自动回收为 FAILED + retry 放行；桌面测试 550/550；实测 R4B3/R4A4 重试成功。
+  - 0.5 VM/TF 验证前置清单 `ANALYSIS/VM-TF-VERIFICATION-20260818.md`（#45）。
+- 合并：#40 Q0 快照（A1/A2/A3）、#41 _transmit 退休、#42 checkpoint 契约（R4A2→R4A4 全闭合，
+  384 pytest）、#44 trace deadline=0、#45 工作流 docs。main=4ff7987。
+- Q0 算法选型双路终稿 `ANALYSIS/Q0-ALGO-RESEARCH-20260818.md`：Q0-I=SMDP/DP（tiny）、
+  Q0-F=事件时间 MILP/CP-SAT、min-cost flow 仅松弛、M1 奖励不可作最优性判据。
+- 第 5 轮 Codex 本地挖：R5-G1（csv deadline=0，已修 #44）、R5-G2（governance 不绑定
+  checkpoint 文件，open follow-up）、R5-G3（comparison 资源不等价=已声明范围，dismissed）。
+- 待拍板：PR #43（奖励保留 vs 失败=0）、#25/#26/#28（P1 行为修正）、Q0 合同 §5 五问、
+  R5-G2 与 R6-A1/A2/A3/B2 follow-up、VM/TF 清单实跑。
+
 ## 当前状态
 - 2026-08-17 自主合并留痕（AGENTS.md 授权，全部 CI pytest 绿）：PR #29
   （occupied 停表口径 + expiry 超 horizon 走 stalled）、#34（GE bool 拒绝 +
