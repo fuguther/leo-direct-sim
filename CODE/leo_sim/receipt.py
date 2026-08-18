@@ -93,7 +93,7 @@ FIELD_AUTHORITY = {
     "events_processed": "diagnostic",
     "stop_time_s": "recomputed",
     "deliveries": "recomputed",
-    "learning": "recomputed",
+    "learning": "ledger_consistency",
 }
 
 
@@ -431,6 +431,9 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
         if not isinstance(learning, dict):
             errors.append("DDQN run must have a learning ledger")
         else:
+            expected_contract = ((resolved_cfg or {}).get("routing", {}).get("contract"))
+            if expected_contract is not None and learning.get("contract") != expected_contract:
+                errors.append("learning.contract != resolved routing.contract")
             for key in ("decisions", "transitions", "train_steps", "replay_size"):
                 if not _is_nonneg_int(learning.get(key)):
                     errors.append(f"learning.{key} must be a non-negative integer")
@@ -475,10 +478,19 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
                 if expected is not None and learning.get(
                         "loaded_checkpoint_sha256") != expected:
                     errors.append("loaded checkpoint SHA != resolved eval config")
+                expected_meta = (resolved_cfg or {}).get(
+                    "learning", {}).get("checkpoint_metadata_sha256")
+                if expected_meta is not None and learning.get(
+                        "loaded_checkpoint_metadata_sha256") != expected_meta:
+                    errors.append(
+                        "loaded checkpoint metadata SHA != resolved eval config")
     elif requested_learning == "qlearning":
         if not isinstance(learning, dict):
             errors.append("Q-learning run must have a learning ledger")
         else:
+            expected_contract = ((resolved_cfg or {}).get("routing", {}).get("contract"))
+            if expected_contract is not None and learning.get("contract") != expected_contract:
+                errors.append("learning.contract != resolved routing.contract")
             for key in ("decisions", "transitions", "train_steps",
                         "table_size"):
                 if not _is_nonneg_int(learning.get(key)):
@@ -515,6 +527,12 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
                 if expected is not None and learning.get(
                         "loaded_checkpoint_sha256") != expected:
                     errors.append("loaded checkpoint SHA != resolved eval config")
+                expected_meta = (resolved_cfg or {}).get(
+                    "learning", {}).get("checkpoint_metadata_sha256")
+                if expected_meta is not None and learning.get(
+                        "loaded_checkpoint_metadata_sha256") != expected_meta:
+                    errors.append(
+                        "loaded checkpoint metadata SHA != resolved eval config")
     elif requested_learning is not None:
         errors.append(f"unknown requested learning algorithm "
                       f"{requested_learning!r}")
