@@ -1,5 +1,12 @@
 # NOTES.md
 
+## 2026-08-19 凌晨（R6-G2b 修复合并 #51）
+
+- #51（symlink 扫描用词法根做边界）：deepseek 两轮复核——第 1 轮 REQUEST_CHANGES
+  （绝对路径假阳性未消除+测试非有效回归）→ 修复（lexical_base 扫描 + resolved
+  containment + symlink 根绝对路径回归）→ 第 2 轮 APPROVE。全量 402 pytest。
+- 台账 R6-G2b 置 fixed。
+
 ## 2026-08-19 凌晨（P0-2 hop BFS 完成 + 第 5/6 轮审计收口）
 
 - P0-2（hop 策略多源 BFS 替代 Dijkstra）合并 #49：等价验收=acceptance 5 场景
