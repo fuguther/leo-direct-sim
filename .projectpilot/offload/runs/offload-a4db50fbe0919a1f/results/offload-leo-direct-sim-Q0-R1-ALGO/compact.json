@@ -1,0 +1,118 @@
+{
+  "taskId": "offload:leo-direct-sim:Q0-R1-ALGO",
+  "status": "EVIDENCE_READY",
+  "summary": "结论：当前状态全可见但未来未知的 Q0-I 不存在对任意未来样本路径均 clairvoyant 最优的在线算法；理论最优对象是完整 Markov 状态上的 SMDP/DP，但状态爆炸，只适合极小实例。数值最优上界应单独定义 Q0-F，用包粒度非抢占连续时间 MILP/CP-SAT，在固定未来 trace 上求解；实际可扩展 Q0-I 建议 rolling-horizon MILP/MPC。普通时间扩展/min-cost flow 因允许流体化/抢占/分流，不能精确表达当前 packet、deadline、非抢占、中断模型，只适合松弛上界或候选路径。最优性主指标建议按 deadline 交付包数做 lexicographic primary，再最小化 E2E delay 与 queue-area；M1 shaped return 仅作对照诊断。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "必须区分 Q0-I 当前信息在线最优、Q0-J 联合调度能力与 Q0-F clairvoyant 离线最优；否则 MILP 的未来信息优势会被错误归因为完全当前信息优势。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L104-L113",
+        "https://iumj.org/article/1116/",
+        "https://www.sciencedirect.com/science/article/pii/S0005109899002149"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "普通 min-cost/time-expanded dynamic flow 不能作为本平台精确 oracle；原子包、非抢占链路服务和逐包 deadline 使问题进入整数多商品流/调度的 NP-hard 区域，精确 Q0-F 应采用 packet-level MILP/CP-SAT。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1-L39",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L800-L913",
+        "https://epubs.siam.org/doi/10.1137/0205048",
+        "https://pubsonline.informs.org/doi/10.1287/moor.6.1.153",
+        "https://pubsonline.informs.org/doi/10.1287/opre.44.4.617"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "当前 M1+到达 shaped return 不应作为 Q0 最优性的主目标：逐 hop 正队列奖励存在绕路激励，且不覆盖传播/接入/下行物理时延；应以 deadline 内完成数为一级目标，delay 与 queue-area 为后续 lexicographic 目标。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L11-L13",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L33-L39",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/REWARD-DIFF-20260816.md#L11-L20",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L85-L105"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "数十星、千包级不适合全时域精确 MILP/DP；1000 包自身已有约 5e5 个 packet pair，非抢占资源排序进一步乘以共享资源数。大规模应改 rolling horizon，并以 MIP relaxation bound/gap 作为证书。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "https://ieeexplore.ieee.org/abstract/document/10937133",
+        "https://epubs.siam.org/doi/10.1137/0205048",
+        "https://pubsonline.informs.org/doi/10.1287/moor.6.1.153"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "summary": "绑定 commit 尚无统一 global snapshot、joint-plan 注入与显式 WAIT，因此 Q0-J MILP 当前不能作为原生可执行控制器；第一版应为只读 sidecar oracle，Kernel 继续承担物理裁决。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L90-L102",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1516-L1626"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "major",
+      "summary": "裁掉不可重建的远端 queue 或 topology 后，观测通常不再 Markov-sufficient，应重分类为 POMDP/分散控制；删 AoI 只有在真 Q0 当前值直读时无影响，在 C1-C7 stale-cache 语义下可能造成状态混叠。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/PLATFORM-DOCUMENTATION/02-kimi-platform-spec.md",
+        "https://pubsonline.informs.org/doi/10.1287/opre.1040.0170",
+        "https://iumj.org/article/1116/"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "冻结名称合同：Q0-I=当前全局信息+原逐包动作；Q0-J=增加 WAIT/联合调度；Q0-F=完整未来 clairvoyant oracle，禁止互换标签。",
+    "先做 2-3 星、3-6 包的 sidecar exact MILP/CP-SAT；所有候选路径穷举，并用 brute-force 路径×服务顺序做独立 golden 校验。",
+    "oracle 一级目标固定为 deadline 内交付包数，另报 deadline delivered bits；二级最小化 E2E delay，三级最小化 queue-area；M1 return 仅报告不作为主最优性。",
+    "大规模 Q0-I 实现 rolling-horizon MILP：只读取当前已存在 packet/state，执行首动作后重算；记录每次 solve 的 incumbent、best bound 与 MIP gap。",
+    "若要声称 Q0-I 理论最优，在极小实例上另实现事件驱动 SMDP exhaustive DP，与 rolling policy 和 Q0-F oracle 三方交叉验证。",
+    "在接入正式 oracle 前统一 deadline equality 语义，并确保未来实现的 global snapshot 含 association/access wait、DRR deficit/cursor、remaining service、propagation、GE mode 等 Markov 所需内部状态。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1-L39",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L800-L913",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/REWARD-DIFF-20260816.md#L11-L20",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L90-L113",
+    "https://pubsonline.informs.org/doi/10.1287/opre.6.3.419",
+    "https://www.sciencedirect.com/science/article/pii/S0167637798000376",
+    "https://pubsonline.informs.org/doi/10.1287/moor.25.1.36.15211",
+    "https://epubs.siam.org/doi/10.1137/S0097539703427215",
+    "https://epubs.siam.org/doi/10.1137/0205048",
+    "https://pubsonline.informs.org/doi/10.1287/moor.6.1.153",
+    "https://iumj.org/article/1116/",
+    "https://www.sciencedirect.com/science/article/pii/S0005109899002149",
+    "https://pubsonline.informs.org/doi/10.1287/moor.1040.0144",
+    "https://pubsonline.informs.org/doi/10.1287/opre.1040.0170",
+    "https://ieeexplore.ieee.org/abstract/document/10937133"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "Q0 合同需本地最终拍板：是否允许控制器利用已知轨道动力学主动计算未来 geometry/topology。绑定 commit 的候选关联逻辑明确写 current geometry only / no future ephemeris；若允许确定性预测，rolling-horizon 可使用未来几何窗口，否则不得使用。",
+    "deadline 同时刻语义仍需本地统一：当前主要传输/交付路径倾向 service_end==deadline 成功，但专家审阅已记录 >= 与 > 混用。精确 oracle 建模前必须冻结唯一比较规则。"
+  ]
+}
