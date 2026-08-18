@@ -1,0 +1,87 @@
+{
+  "taskId": "offload:leo-direct-sim:R4B-crossreview-40-41:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "独立二审结论：A=REQUEST_CHANGES，Q0 快照遗漏未实例化 GSL GE 通道，且 pre-service down-wait 时 remaining_service_s 误把等待当服务；B=REQUEST_CHANGES，K1/K2/K3 修复本身成立，但发现新的 shared-GSL 头阻塞：active endpoint 链路 down 时可在未发送任何 bit 的情况下独占整星 uplink/downlink server 至 deadline/horizon，阻塞其它健康 endpoint。expiry/retire 同刻为 expiry 优先，restamp/hard-retire 计费与 ISL 路径未见新增错误。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "A：GSL GE 通道按 (sat,cell) 惰性实例化；仅导出已实例化通道会使 Q0 全局快照依赖历史服务轨迹，无法表示尚未使用但当前可候选 GSL 的 GE 状态。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L686-L691",
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L810-L822"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "A：server 在进入 _transmit 前已经设置 _svc，而真正传输可能要先经历 down-wait；因此以 _svc 时间戳推导 remaining_service_s 在等待窗口内错误。B 的 restamp 只在真正开始发送时发生，不能修复等待期间的实时快照。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L288-L310",
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L918-L927"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "B：shared GSL server 存在未修复的 pre-service 头阻塞。Uplink 选包不检查 geometry/GE，Downlink 选包不检查 per-cell GE；被选中的 active down-link packet 会在 _transmit 内等待恢复/deadline/horizon，期间整个共享 server 无法调度其它健康 endpoint。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L260-L330",
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L350-L430",
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L870-L918"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "B：expiry 与 retirement 同刻时当前实现稳定选择 expiry；真实 transmission 的 _svc restamp、分段 occupied 与 hard-retire 返回链未见新的重复计费。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L918-L969"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "B：新增 K1/K2/K3 回归未覆盖同一 shared GSL server 上一个 endpoint down、另一个 endpoint up 的跨 endpoint 头阻塞场景，因此现有绿测不能排除 F3。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/tests/test_transmit_retirement.py#L1-L130"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "A：不要仅遍历已实例化 gsl_ge；先冻结 dormant GSL GE channel 的 Q0 状态合同，并保证 snapshot 读取不会为了补状态而隐式初始化/改变 kernel。",
+    "A：把 selected/down-wait 与 transmitting 分离；remaining_service_s 只能在真实 service_started_at 已存在时计算，否则显式返回 waiting 状态。",
+    "A：正式 planner/apply_joint_plan 接入前，规定 snapshot/plan 只能发生在 env.step 的 quiescent boundary，或将 state_version 升级为真正 mutation epoch。",
+    "B：增加 GSL can-start-now/schedulable 层；当前 down 的 endpoint 不得在尚未开始发送时占住 shared uplink/downlink server，应允许 DRR 继续选择其它健康 endpoint。",
+    "B：增加 deterministic 双 endpoint HOL 回归，至少覆盖 uplink 与 downlink，并保留现有 K1/K2/K3 retirement/deadline/occupied 测试。",
+    "本地 Agent：在实际合并 #25/#26/#28 与 A/B 后重跑组合回归，重点检查 #25 Downlink wake 与 B 的 GE HOL 调度交互。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L260-L430",
+    "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L810-L969",
+    "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/tests/test_transmit_retirement.py#L1-L130",
+    "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/ANALYSIS/EXPERT-REVIEW-20260816.md#L70-L105"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "证据合同存在不可同时满足的 SHA 约束：A 的被审代码位于 be0520ba037db8df8e931abd3cb85f6e64c1c9df，而强制证据 URI 必须绑定 9454b4f8827867917f0a5ae5eac1689d1527967b；两者是独立分支，9454 中不存在 A 的 snapshot_global。为避免伪造，A 新增代码的 branch-specific 行号需要本地 Agent 在 be0520ba 上重新绑定，或验收器允许 A 使用其自身 commit SHA。",
+    "snapshot_global 的严格无副作用性仍未完全证明：其调用到的 GE/cache 查询实现位于本任务读取白名单之外，无法核查 is_down/valid_entries 是否会推进或清理内部状态。",
+    "A 中 control packet 在 ISL propagation 阶段是否必须进入 Q0 in_flight 状态，取决于 Q0-I 正式状态合同；当前授权材料不足以判定该字段是否要求覆盖控制包在途。"
+  ]
+}
