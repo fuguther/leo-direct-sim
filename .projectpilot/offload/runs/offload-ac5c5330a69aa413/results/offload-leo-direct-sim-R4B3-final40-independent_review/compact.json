@@ -1,0 +1,113 @@
+{
+  "taskId": "offload:leo-direct-sim:R4B3-final40:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "终判 REQUEST_CHANGES。A1 已基本闭合：association 主动物化 GSL GE，snapshot 对 current/materialized universe 显式输出状态。A2 主体 phase 机制已修，但 transmitting 盖章早于 deadline/TTL race，仍存在假“已开始传输”边界，且 residual 未机械 clamp 非负。A3 仅 DataPacket 闭合；ControlPacket 的队列/在服信息只有 iid，传播阶段完全不在 snapshot，且未显式列为 follow-up，与 global-current-state 合同不符。",
+  "findings": [
+    {
+      "id": "A1",
+      "severity": "info",
+      "summary": "FACT：GSL GE 当前 association 物化与 snapshot 显式 fallback 已实现；INFERENCE：keyed link stream 与 query-pattern-independent 测试支持 RNG 确定性未被破坏。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L970-L989",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1023-L1032",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1480-L1490",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_fates_outage.py#L83-L112",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_q0_snapshot.py#L83-L116"
+      ]
+    },
+    {
+      "id": "F1-A2-PHASE-STAMP",
+      "severity": "major",
+      "summary": "FACT+INFERENCE：_transmit 在 deadline/TTL race 判定前先把 owner 标成 transmitting；Uplink/Downlink 又不在每次 dequeue 前同步淘汰 deadline，因此已到期 packet 可进入零时失败路径并短暂暴露假 transmitting 状态。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1125-L1155",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1219-L1246",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1459-L1469",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_q0_snapshot.py#L143-L170"
+      ]
+    },
+    {
+      "id": "F2-A2-RESIDUAL",
+      "severity": "minor",
+      "summary": "FACT+INFERENCE：remaining_service_s transmitting 分支未 clamp 到零；通常非负，但 exact-completion 浮点边界并未由实现机械保证，且新增测试没有覆盖 elapsed>0 或完成边界。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L879-L894",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_q0_snapshot.py#L143-L170"
+      ]
+    },
+    {
+      "id": "F3-A3-CONTROL-IN-FLIGHT",
+      "severity": "major",
+      "summary": "FACT：DataPacket 三条 propagation producer 已保留 pkt 并完整投影；但 ControlPacket 成功离开 ISL 后直接进入 _ctrl_arrive_after_prop，没有进入任何 snapshot propagation tracker，因此 global current state 仍缺控制包在途状态。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L344-L352",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L451-L459",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L578-L590",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1008-L1014",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1418-L1445",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_q0_snapshot.py#L117-L140"
+      ]
+    },
+    {
+      "id": "F4-A3-CONTROL-PROJECTION",
+      "severity": "major",
+      "summary": "FACT：queued/in-service ControlPacket 在 snapshot 中只有 iid，缺 origin/seq/generated_at/ttl/remaining_hops 等预测控制面未来状态所需字段；现有 control snapshot 测试只断言不 crash，没有验证这些契约。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L835-L848",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L899-L919",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_q0_snapshot.py#L60-L82"
+      ]
+    },
+    {
+      "id": "F5-READONLY-EVIDENCE-GAP",
+      "severity": "minor",
+      "summary": "未验证：snapshot 返回值本身未发现可变内核对象泄漏，但 ge.is_down/valid_entries 的严格无副作用性因其实现不在授权路径内无法证明；已有测试仅证明 GE 查询模式不改变可观察轨迹。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L914-L919",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L995-L1020",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_fates_outage.py#L93-L112"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "在 _transmit 中先处理已到期 deadline/TTL 和完整 race，再在存在真实正长度服务区间时设置 transmitting/_tx_started_at。",
+    "若 remaining_service_s 非负是接口 invariant，对 transmitting residual 做 max(0.0, value)，并补 exact-completion 测试。",
+    "把 ControlPacket propagation 纳入独立或 namespaced in-flight tracker，并投影 iid/origin/seq/generated_at/ttl_s/remaining_hops/payload_bits/from/to/arrival_at。",
+    "补全 queued/in-service ControlPacket 的 Q0 所需字段；若本版不做，修改 snapshot_global 合同并明确列为 design follow-up。",
+    "明确声明 snapshot_global 不是 full checkpoint/resume；若未来需要 resume，另行定义包含事件/process/RNG continuation 的契约。",
+    "增加真实事件驱动的 Q0 snapshot 测试，覆盖 uplink/downlink/ISL wait→tx、fail/retired/stalled、expired-before-start、control propagation 与调用后状态隔离。",
+    "本地 Agent 在最终拍板前运行允许范围测试；网页 Worker 本轮未执行本地 Shell，结论保持 RESULT_CANDIDATE。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L835-L1032",
+    "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1125-L1155",
+    "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1480-L1490",
+    "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_q0_snapshot.py#L60-L170",
+    "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_fates_outage.py#L83-L112"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "未执行 pytest 或任何本地 Shell；动态测试结果必须由本地 Agent 最终验证。",
+    "outage.GilbertElliott.is_down 与 control cache valid_entries 的实现不在授权读取路径内，因此 snapshot 调用的严格内部无 mutation 性无法静态证明。",
+    "现有允许测试验证了 keyed GE 的确定性和创建顺序独立性，但没有直接比较 GSL GE 在 lazy-first-query 与 association-time materialization 两种时序下的完整轨迹等价性。"
+  ]
+}
