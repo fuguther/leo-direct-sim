@@ -137,7 +137,13 @@ def build_run_intent(request: dict, *, project_root: Path | None = None) -> dict
         if not isinstance(ckpt_raw, str) or not ckpt_raw.strip():
             raise IntentError("learning.eval requires checkpoint_path")
         ckpt = Path(ckpt_raw)
-        base = Path(project_root).resolve() if project_root is not None else Path.cwd()
+        # LEXICAL root decides the symlink-scan boundary: an unresolved
+        # absolute checkpoint path under a symlinked root (e.g. /var vs the
+        # resolved /private/var) must not be false-rejected by scanning
+        # ancestors above the root.  RESOLVED root decides containment.
+        lexical_base = (Path(project_root)
+                        if project_root is not None else Path.cwd())
+        base = lexical_base.resolve()
 
         def _reject_symlink_path(candidate: Path, what: str) -> None:
             # Reject BEFORE resolve(): resolve() would erase the symlink and
@@ -146,7 +152,7 @@ def build_run_intent(request: dict, *, project_root: Path | None = None) -> dict
             # scanning ancestors would false-positive on system symlinks
             # (macOS /var -> /private/var) above the root (R6-G2b).
             try:
-                rel = candidate.relative_to(base)
+                rel = candidate.relative_to(lexical_base)
             except ValueError:
                 # outside the project root: containment rejects later, but
                 # still scan everything so an outside symlink is never trusted
@@ -159,7 +165,7 @@ def build_run_intent(request: dict, *, project_root: Path | None = None) -> dict
                     probe = probe.parent
                 return
             for i in range(1, len(rel.parts) + 1):
-                probe = base.joinpath(*rel.parts[:i])
+                probe = lexical_base.joinpath(*rel.parts[:i])
                 if probe.is_symlink():
                     raise IntentError(
                         f"{what} path contains a symbolic link: {candidate}")

@@ -361,3 +361,38 @@ def test_symlink_scan_scoped_to_project_suffix(tmp_path):
         b"outside-bytes").hexdigest()
     with pytest.raises(governance.IntentError, match="symbolic link"):
         governance.build_run_intent(request, project_root=tmp_path)
+
+
+def test_absolute_checkpoint_under_symlink_root_not_false_rejected(tmp_path):
+    """R6-G2b regression: an absolute checkpoint path whose only symlink is
+    the project root itself must not be false-rejected (old full-ancestor scan
+    did reject it; the lexical-root scoped scan must pass it)."""
+    real = tmp_path / "real"
+    real.mkdir()
+    exp = real / "EXPERIMENTS" / "ckpt"
+    exp.mkdir(parents=True)
+    (exp / "online.keras").write_bytes(b"keras-bytes")
+    meta = exp / "metadata.json"
+    meta.write_text('{"schema": "leo-sim-ddqn/v1", "contract": "C3"}')
+    meta_sha = hashlib.sha256(meta.read_bytes()).hexdigest()
+    ckpt_sha = hashlib.sha256(b"keras-bytes").hexdigest()
+    proj = tmp_path / "proj"
+    os.symlink(real, proj)
+    request = {
+        "runtime_kind": "leo_sim_v2",
+        "config": {
+            "endpoints": {"sites": [
+                {"name": "a", "lat": 0.0, "lon": 0.0},
+                {"name": "b", "lat": 0.0, "lon": 10.0},
+            ]},
+            "routing": {"policy": "hop", "learning_enabled": True},
+            "learning": {
+                "algorithm": "ddqn", "mode": "eval",
+                "checkpoint_path": str(proj / "EXPERIMENTS" / "ckpt"
+                                       / "online.keras"),
+                "checkpoint_sha256": ckpt_sha,
+                "checkpoint_metadata_sha256": meta_sha,
+            },
+        },
+    }
+    governance.build_run_intent(request, project_root=proj)
