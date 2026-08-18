@@ -115,6 +115,28 @@ def _multi_source_dist(adj, sources, edge_cost,
     return dist
 
 
+def _multi_source_bfs(adj, sources) -> dict[int, int]:
+    """Multi-source BFS over unit-cost edges (hop policy).
+
+    hop policy uses a constant edge cost of 1.0, so Dijkstra and BFS produce
+    identical minimum hop counts; BFS avoids the heap and the float tolerance
+    entirely.  Reachable nodes map to their nearest-source hop count; missing
+    nodes are treated as unreachable (inf) by the caller."""
+    dist: dict[int, int] = {}
+    frontier = deque()
+    for s in sources:
+        if s in adj and s not in dist:
+            dist[s] = 0
+            frontier.append(s)
+    while frontier:
+        u = frontier.popleft()
+        for v in adj.get(u, ()):
+            if v not in dist:
+                dist[v] = dist[u] + 1
+                frontier.append(v)
+    return dist
+
+
 def destinations_in_cache(cache, dst_cell: str, now: float) -> list[int]:
     """Origins whose valid, actually-arrived advertisement reports CURRENT
     service capability (serve_cells) for dst_cell — visibility alone does
@@ -182,7 +204,11 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
         return float(value)
 
     if policy == "hop":
-        fwd_cost = lambda a, b: 1.0  # noqa: E731
+        # unit-cost policy: multi-source BFS over the reverse adjacency is
+        # exactly Dijkstra with weight 1.0, with no heap/tolerance overhead
+        bfs_dist = _multi_source_bfs(adj, targets)
+        dist = {s: float("inf") for s in adj}
+        dist.update({s: float(d) for s, d in bfs_dist.items()})
     elif policy == "oracle":
         # The explicitly labeled oracle uses perfect global current knowledge.
         def fwd_cost(a, b):
@@ -211,15 +237,17 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
                 return float("inf")  # unknown queue state is not assumed free
             return c + qb / isl_rate_bps
 
-    # dist[x] = forward cost from x to the nearest target; the search expands
-    # backward from targets, so the forward edge cost is evaluated reversed.
-    dist = _multi_source_dist(
-        adj, targets, lambda u, v: fwd_cost(v, u), sorted_adj=sorted_adj)
+    if policy != "hop":
+        # dist[x] = forward cost from x to the nearest target; the search
+        # expands backward from targets, so the forward edge cost is evaluated
+        # reversed.
+        dist = _multi_source_dist(
+            adj, targets, lambda u, v: fwd_cost(v, u), sorted_adj=sorted_adj)
     if dist.get(sat, float("inf")) == float("inf"):
         return [], "unreachable"
     scored = []
     for d, n in sorted(topo.get(sat, {}).items()):
-        w = fwd_cost(sat, n)
+        w = 1.0 if policy == "hop" else fwd_cost(sat, n)
         total = w + dist.get(n, float("inf"))
         if total < float("inf"):
             scored.append((total, d))
