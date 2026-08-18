@@ -142,12 +142,27 @@ def build_run_intent(request: dict, *, project_root: Path | None = None) -> dict
         def _reject_symlink_path(candidate: Path, what: str) -> None:
             # Reject BEFORE resolve(): resolve() would erase the symlink and
             # make is_symlink() dead code (R5-G2 review finding).
-            probe = candidate
-            while probe != probe.parent:
+            # Only components at/under the project root are user-controlled;
+            # scanning ancestors would false-positive on system symlinks
+            # (macOS /var -> /private/var) above the root (R6-G2b).
+            try:
+                rel = candidate.relative_to(base)
+            except ValueError:
+                # outside the project root: containment rejects later, but
+                # still scan everything so an outside symlink is never trusted
+                probe = candidate
+                while probe != probe.parent:
+                    if probe.is_symlink():
+                        raise IntentError(
+                            f"{what} path contains a symbolic link: "
+                            f"{candidate}")
+                    probe = probe.parent
+                return
+            for i in range(1, len(rel.parts) + 1):
+                probe = base.joinpath(*rel.parts[:i])
                 if probe.is_symlink():
                     raise IntentError(
                         f"{what} path contains a symbolic link: {candidate}")
-                probe = probe.parent
 
         raw_source = ckpt if ckpt.is_absolute() else base / ckpt
         _reject_symlink_path(raw_source, "learning checkpoint")

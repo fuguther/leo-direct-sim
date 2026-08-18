@@ -321,11 +321,40 @@ def test_eval_intent_rejects_symlink_checkpoint_before_resolve(tmp_path):
     with pytest.raises(governance.IntentError, match="symbolic link"):
         governance.build_run_intent(request, project_root=tmp_path)
 
-    # symlink escaping the project root must also be rejected by the scan
+
+def test_symlink_scan_scoped_to_project_suffix(tmp_path):
+    """R6-G2b: the symlink scan must only police components at/under the
+    project root (unrelated root-internal symlinks pass; an outside symlink
+    used as the checkpoint path is still rejected)."""
+    exp = tmp_path / "EXPERIMENTS" / "ckpt"
+    exp.mkdir(parents=True)
+    (exp / "online.keras").write_bytes(b"keras-bytes")
+    meta = exp / "metadata.json"
+    meta.write_text('{"schema": "leo-sim-ddqn/v1", "contract": "C3"}')
+    meta_sha = hashlib.sha256(meta.read_bytes()).hexdigest()
+    ckpt_sha = hashlib.sha256(b"keras-bytes").hexdigest()
+    os.symlink(tmp_path, tmp_path / "unrelated-link")
+    request = {
+        "runtime_kind": "leo_sim_v2",
+        "config": {
+            "endpoints": {"sites": [
+                {"name": "a", "lat": 0.0, "lon": 0.0},
+                {"name": "b", "lat": 0.0, "lon": 10.0},
+            ]},
+            "routing": {"policy": "hop", "learning_enabled": True},
+            "learning": {
+                "algorithm": "ddqn", "mode": "eval",
+                "checkpoint_path": "EXPERIMENTS/ckpt/online.keras",
+                "checkpoint_sha256": ckpt_sha,
+                "checkpoint_metadata_sha256": meta_sha,
+            },
+        },
+    }
+    governance.build_run_intent(request, project_root=tmp_path)
+
     outside = tmp_path.parent / "outside.keras"
     outside.write_bytes(b"outside-bytes")
-    link2 = exp / "escape.keras"
-    os.symlink(outside, link2)
+    os.symlink(outside, exp / "escape.keras")
     request["config"]["learning"]["checkpoint_path"] = (
         "EXPERIMENTS/ckpt/escape.keras")
     request["config"]["learning"]["checkpoint_sha256"] = hashlib.sha256(
