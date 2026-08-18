@@ -1,0 +1,213 @@
+第 4 轮未知问题挖掘结果
+
+结论：RESULT_CANDIDATE。 在精确 commit 1599d3e3c7d5d74f22ddb497969f28fe8b90b73c、且严格限定白名单路径的静态审计中，确认 3 个此前审阅文档未列出的 major 级候选问题。核心集中在 learning checkpoint/eval 证据链与失败路径奖励语义。
+
+其中 F1/F3 会使“checkpoint 已校验”并不等价于“正在评估正确的学习合同/有效策略”；F2 会使存在链路故障的训练轨迹偏离当前明确声明的 M1 realized queue reward 语义。因此，当前 main 的学习臂尚不适合直接作为 Q0 正式科研证据链，应先做本地定向复现并修复。
+
+绑定审阅文档中已经明确记录的 comparison 资源不等价、experiment_platform NaN、CSV 微秒量化、future-endpoint 侧信道、TabularQ unseen-state tie 等问题均未重复计数。证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L133-L154
+
+F1 — 同宽 learning contract 的 checkpoint 可跨合同加载，并被重新标记为当前 contract
+
+严重度：major
+判定：FACT（静态控制流可证；DDQN 需 TF 主机做动态确认）
+
+C3 与 C4 虽然表示语义不同——C3 是普通 mean aggregate，C4 是 AoI-weighted aggregate——但二者具有完全相同的输入宽度。
+证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L50-L64
+
+DDQN checkpoint 加载时只验证：
+
+文件 SHA；
+
+input shape；
+
+output shape。
+
+没有验证产生 checkpoint 时的 contract。因此 C3 模型在 C4 下形状检查天然能够通过。
+证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L331-L351
+
+TabularQ 更直接：checkpoint 中甚至没有 contract 字段，加载仅检查 SHA、entries 是否 list、以及每行是否恰有 5 个 action Q 值。
+证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L610-L630
+
+运行结束时又使用当前 learner 的 contract生成 diagnostics，并可重新保存 checkpoint，因此错误来源的 checkpoint 会得到当前合同标签。Kernel 正是通过 diagnostics()/save_and_verify() 生成最终 learning ledger。
+证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1760-L1778
+
+最后一道 receipt 门也没有检查 learning.contract == resolved_cfg.routing.contract，只检查 algorithm、mode 合法值、计数、checkpoint SHA、eval 是否训练等，因此不能发现跨合同来源。
+证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L418-L519
+
+最小复现：
+
+训练并保存 C3 checkpoint；
+
+用其精确 SHA 配置 C4 eval；
+
+DDQN：C3/C4 同 input/output shape，加载门不会拒绝；
+
+Q-learning：当前 checkpoint 根本没有来源 contract；
+
+C4 observation 随后被送给 C3 学到的策略；
+
+输出 diagnostics/metadata 却会报告当前 "contract": "C4"。
+
+影响： 表征消融、学习臂比较和正式 eval 可以在文件 SHA 完全正确的情况下评估错误表示语义的模型；最终 artifact 还可能看起来已经完成 save/load verification。这属于科学归因级错误，而非单纯 metadata 缺失。
+
+F2 — Forward 的 realized M1 queue reward 在终态失败路径被统一覆盖成 0
+
+严重度：major
+判定：FACT（控制流可证）；未在本任务执行环境动态实跑
+
+当前代码明确在 ISL 真正开始 service 的瞬间计算并写入 realized M1 queue reward：
+
+pkt.learning_reward = queue_reward(realized_queue_wait, ...)
+
+证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L899-L910
+
+现有永久回归测试也把该语义写得很明确：forward action 应取得由实际 queue wait 决定的 M1 reward；零等待时就是 w1=20。
+证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/tests/test_reward_migration.py#L148-L166
+
+但如果 service 开始后发生 geometry loss、GE outage 或 deadline 等失败，_transmit() 随后调用 _fail(pkt, fail_kind)：
+证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L930-L942
+
+而 _fail() 对所有 DataPacket 均强制：
+
+terminal_reward=0.0
+
+_finish_learning_transition() 又规定显式 terminal_reward 优先于已经存在的 pkt.learning_reward，因此刚刚实现的 M1 reward 被覆盖掉。
+证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1639-L1668
+以及：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1409-L1434
+
+最小复现建议：
+
+构造 2 星单 ISL 场景，学习器用现有 _StubLearner：
+
+forward E；
+
+queue wait = 0，所以 service start 时应结算 M1 reward = 20；
+
+令 ISL 在 service 中途发生 geometry loss；
+
+当前控制流最终 remember("E", 0.0, done=True)，而不是保存已经实现的 20。
+
+同样应覆盖 GE failure、ISL propagation 阶段 deadline、到达下一星后 NO_ROUTE 等终态。
+
+影响： 成功 forward 得 M1 queue reward，失败 forward 在同样已经支付过排队成本后却被改写为 0。高故障/高 deadline 压力训练下，reward distribution 会系统性改变，训练结果、策略选择和不同故障设置之间的归因均受影响。
+
+如果产品设计确实希望“任何失败 forward 的最终 reward=0”，那也应把它明确写成 terminal-loss reward 合同并增加回归测试；以当前注释和现有 M1 测试定义看，它属于语义漂移。
+
+F3 — TabularQ 可接受结构无效的 pinned checkpoint，并将其“洗”为 checkpoint_verified=true
+
+严重度：major
+判定：FACT（静态控制流可证）
+
+TabularQ loader 对 checkpoint 的语义结构检查不足。它没有检查：
+
+checkpoint schema；
+
+state-key 的字节长度是否等于当前 contract observation 的 float64 宽度；
+
+重复 state key；
+
+Q 值的有限性等更强约束。
+
+只要 entries 是 list，且每个 value row 有 5 个元素，就会插入 table。
+证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L610-L630
+
+但运行时真实 state key 是整个 observation 的 float64 原始字节。
+证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L637-L656
+
+因此类似以下语义无效但 SHA 完全正确的输入即可进入 loader：
+
+schema="bogus"，state key 仅 "00"，Q row 为 5 个普通数值。
+
+该 1-byte key 永远不可能等于正常 C3/C4 observation 的完整 float64 key。eval 因而把全部实际状态视为 unseen，并进入已经存在的 deterministic zero-row fallback。
+
+更严重的是，save_and_verify() 随后会：
+
+用当前 canonical schema重新输出这张 table；
+
+仅重新 JSON load 并比较相等；
+
+设置 checkpoint_verified=True。
+
+证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L690-L735
+
+receipt 对最终 Q-learning artifact 也只重新计算文件 SHA，没有检查内部 state key/schema 与 contract 的一致性。
+证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L471-L519
+
+影响： “文件完整性正确”被错误提升为“checkpoint 语义有效”。错误/旧格式/第三方生成的 q_table 可以被当前系统重新序列化为 canonical schema，并获得 verified 标志；真实 eval 则可能全部退化到 unseen-state fallback。H2-19 已知的是 fallback 的首合法动作 tie 偏置；本项新增问题是无效 checkpoint 能静默触发并通过 artifact verification，两者不是同一缺陷。
+
+其余重点审计面的结论
+审计面	本轮结论
+comparison legacy 资源等价	未重复报告；绑定审阅文档已明确 H2-13“direct/legacy 两臂资源不等价”。允许读取的 test_comparison.py 目前可见 permanent test 只额外锁定 physical-time 与 Walker-delta，未提供资源参数等价的完整证明。comparison.py 本体不在白名单。证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/tests/test_comparison.py#L35-L66
+experiment_platform 授权链	test_governance.py 已有 rebound-request 负例；绑定审阅文档也给出 authorize/deployment_guard 干净背书。但 CODE/experiment_platform 不在本任务读取白名单，无法独立逐行复核实现。
+population / trace	白名单测试覆盖 population mass、真实 GPW、byte reproducibility、population-gravity source/destination 分布等；未在允许表面发现新的确定性反例。population.py、trace.py 本体不允许读取，因此不能把此结论升级为实现层干净背书。
+learning eval 全链	不干净：F1 + F3。 文件 SHA/checkpoint_verified 当前不足以证明“正确 contract 的有效策略”被评估。
+merged-main kernel 交互	不干净：F2。 reward settlement 与 terminal-failure 交互存在语义覆盖。
+本地 Agent 建议优先验证
+
+优先先做 F1/F2 的最小回归。F1 应把 checkpoint identity 升级为至少 {algorithm, contract, input_dim, actions, schema}，DDQN metadata 必须与 model 一起 SHA 绑定并 fail-closed；receipt 再显式校验 learning.contract == routing.contract。F3 对 TabularQ 增加 schema、key 长度、唯一性、finite Q 校验，旧 checkpoint 是否迁移应作为显式兼容策略，而非静默接收。
+
+F2 则应先拍板语义：如果 forward reward 按当前测试定义在 service start 已经实现，_fail() 不应覆盖非空 pkt.learning_reward；如果业务希望失败动作统一 reward=0，则必须修改 reward contract 和 golden tests，使其成为显式设计而非偶然控制流。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:R4C-hunt-round4",
+  "status": "EVIDENCE_READY",
+  "summary": "绑定 commit 的白名单静态审计发现 3 个新增 major 候选：同宽 learning contract checkpoint 可跨合同加载并被当前 contract 重新标记；已在 ISL service start 实现的 M1 forward queue reward 会在后续终态失败时被 _fail 强制覆盖为 0；TabularQ 对 schema/state-key 等语义结构不校验，可把无效 pinned checkpoint 重新输出为 checkpoint_verified=true。comparison 等旧项未重复计数。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "FACT：DDQN/TabularQ checkpoint 未绑定来源 learning contract；C3/C4 同输入宽度使跨合同 checkpoint 可静默加载，运行结束又以当前 contract 生成 diagnostics，receipt 亦未核对 learning.contract 与 routing.contract。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L50-L64",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L331-L351",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L610-L630",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L418-L519",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1760-L1778"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "FACT（控制流可证，未实跑）：forward 的 realized M1 queue reward 在 ISL service start 已写入，但 geometry/GE/deadline 等后续终态失败进入 _fail 后以 terminal_reward=0.0 覆盖，导致失败 forward 丢失已实现的 queue reward。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L899-L910",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L930-L942",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1639-L1668",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/tests/test_reward_migration.py#L148-L166"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "FACT：TabularQ checkpoint loader 不校验 schema/state-key contract 宽度等语义结构；任意长度 key 配合法定 5-action row 可被接受，eval 中真实状态永远 miss 后退化为 unseen fallback，save_and_verify 又可将该表重新序列化为 canonical schema 并标记 checkpoint_verified=true。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L610-L656",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L690-L735",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L471-L519"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "为 DDQN 与 TabularQ checkpoint 增加并强校验 algorithm/contract/input_dim/actions/schema 身份；DDQN 将 metadata 与 model 一并哈希绑定，缺失或不匹配 fail-closed。",
+    "receipt 增加 learning.contract == resolved routing.contract，并对 learning mode、checkpoint 来源语义做 config 交叉验证。",
+    "新增 C3 checkpoint 作为 C4 eval 输入的负例；DDQN 与 TabularQ 均必须拒绝，尤其覆盖 C3/C4 同宽反例。",
+    "为 TabularQ 增加错误 schema、错误 key byte width、重复 key、非有限 Q 值的 checkpoint 负例。",
+    "增加 forward 后 ISL geometry loss、GE outage、deadline/no-route 的 reward 回归；若 realized queue reward 应保留，则 _fail 仅在尚无已实现 reward 时使用 terminal 0；若失败奖励设计为 0，则显式修改 reward contract/golden tests。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L133-L154",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L331-L351",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L899-L942",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L418-L519"
+  ],
+  "open_items": [
+    "顶层白名单未授权读取 comparison.py；因此 H2-13 legacy/direct 资源等价问题只能确认仍属既有问题，无法在本任务独立复核其当前实现。",
+    "顶层白名单未授权读取 CODE/experiment_platform 实现；只能检查允许路径内的 governance/platform tests，无法逐行重证 authorization/deployment_guard 全链。",
+    "顶层白名单未授权读取 population.py 与 trace.py；population/trace 本轮仅完成测试面审计，不能给实现层无新问题背书。",
+    "绑定 commit 中 ANALYSIS/EXPERT-REVIEW-20260816.md 检索到的正文止于 §H，未见任务描述所称 §I；因此对第 3 轮全部历史发现的去重只能依据本 commit 可见文档，无法读取未授权来源补齐。",
+    "任务禁止本地 Shell/真实环境执行，因此 F2 尚需本地 Agent 用定向 StubLearner 场景做动态复现；F1 的 DDQN 分支亦需 TensorFlow 主机负例确认。"
+  ]
+}
+===END_OFFLOAD_RESULT===
