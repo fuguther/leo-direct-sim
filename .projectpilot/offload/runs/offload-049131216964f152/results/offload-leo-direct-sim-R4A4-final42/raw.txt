@@ -1,0 +1,321 @@
+编辑
+PR #42 R4A4 整改终审
+结论
+
+终判：REQUEST_CHANGES。
+
+R4A3 的主体整改大部分已经落到实现中：
+
+F1 加载路径：基本闭合。 TabularQ payload 与 sibling metadata 都已经采用单次 read_bytes()，对同一份 bytes 做 SHA-256 与 JSON 解析；非法 UTF-8 统一转为 LearningUnavailable。DDQN eval 的 Keras pathname reopen 仍存在 TOCTOU，但代码已明确声明其威胁模型排除条件。
+
+N1/R1：已闭合。 canonical TabularQ 在配置提供 metadata pin 时强制读取、校验，并记录实际 metadata SHA；没有 pin 时 canonical 路径明确跳过；receipt 也仅在 resolved config 的 pin 非空时要求一致。
+
+F2-STATE-KEY：主体已闭合。 key 长度、float64 解码维度、NaN/Inf 都会 fail-closed。
+
+N2/F3：实现已闭合。 payload 顶层 key set 严格限制为 canonical/legacy 两种精确集合；legacy 判定使用字段是否缺失，而非值是否为 null，因此显式 contract: null 会走 canonical mismatch 并被拒绝。
+
+但仍有一个直接落在 F1 合同范围内的残余问题：TabularQLearning.save_and_verify() 仍然先读取文件计算 hash，再第二次重新打开同一 JSON 文件进行解析验证。 因而“JSON 工件的 hash 与 parse 必须来自同一 bytes”并没有对所有 JSON checkpoint 路径成立。DDQN 的 save_and_verify() 同样存在 hash 后由 Keras reopen 的窗口，而明确的威胁模型说明只出现在 eval checkpoint 加载位置。基于本轮明确的 F1 验收措辞，我不建议 APPROVE。
+
+逐项核验
+F1 — JSON hash/parse TOCTOU
+
+[FACT] eval/load 侧的 JSON 修复成立。
+
+_read_json_bytes() 接受已经读取的 bytes，直接在该 bytes 上 UTF-8 decode + json.loads()，并把 UnicodeError / JSONDecodeError 统一封装为 LearningUnavailable。_read_checkpoint_metadata() 则执行：
+
+data = path.read_bytes()
+
+actual_sha = sha256(data)
+
+校验 pin
+
+_read_json_bytes(data, what)
+
+因此 metadata 的 hash 与 parse 确实绑定同一份 bytes。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L70-L139
+
+TabularQ checkpoint payload 也先进行一次 data = path.read_bytes()，随后同时用该 data 计算 SHA 和传入 _read_json_bytes()，load 路径不存在原来的 hash-then-reopen。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L690-L724
+
+[FACT] DDQN eval/load 的剩余 pathname reopen 已显式声明。
+
+代码先对 path.read_bytes() 求 hash，再由 keras.models.load_model(path) 重开 pathname；紧邻代码明确写明 concurrent replacement 位于当前 artifact threat model 之外，并把模型限定为“single-user local research artifacts, no adversarial writer”。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L390-L424
+
+[INFERENCE] 对 eval/load 这一处而言，该声明可以接受，但只能在它自己声明的威胁模型成立时接受。 它没有技术上消除 TOCTOU，只是明确缩窄安全声明；这比静默保留窗口正确。
+
+F1-RESIDUAL — JSON save/verify 仍是两次读取
+
+[FACT] TabularQLearning.save_and_verify() 没有使用上述 single-read 模式。
+
+当前顺序仍为：
+
+checkpoint_sha = sha256(table_path.read_bytes())
+
+随后 json.loads(table_path.read_text(...))
+
+再据第二次读取内容决定 checkpoint_verified
+
+即 hash 和“reload verification”观察的不是同一个 read snapshot。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L875-L914
+
+[INFERENCE] 这意味着并发替换者可以让 checkpoint_sha256 与决定 checkpoint_verified=True 的实际 JSON bytes 分离。 这正是本轮 F1 要消除的 JSON hash-then-reopen 类窗口，因此属于未完全整改，而非纯测试缺口。
+
+最小修复应直接改为一次：
+
+data = table_path.read_bytes() → checkpoint_sha = sha256(data) → _read_json_bytes(data, ...)。
+
+DDQN save/reload 同类窗口
+
+[FACT] DDQN save_and_verify() 同样先 read_bytes() 求 hash，之后调用 load_model(model_path) 重开 pathname。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L607-L637
+
+[INFERENCE] constructor/eval 处的 threat-model 注释从语义上可以解释为整个 artifact threat model，但 save/reload 位置本身没有声明该 reopen 同样属于排除项。 如果本轮设计决策就是“所有 Keras reopen 均接受 single-user/no-adversarial-writer 假设”，建议至少将该声明提升为 DDQN checkpoint 级公共注释，或在两个 reopen 点都明确引用，避免只解释了其中一条路径。
+
+N1 / R1 — canonical TabularQ metadata pin
+
+[FACT] 已修复。
+
+canonical payload 的 contract 匹配后：
+
+若 checkpoint_metadata_sha256 is not None，强制读取 sibling metadata.json；
+
+_read_checkpoint_metadata() 验证实际 metadata SHA；
+
+_verify_checkpoint_metadata() 继续验证 schema、algorithm、contract、checkpoint filename、checkpoint SHA、checkpoint_verified;
+
+返回的实际 metadata SHA 被保存到 loaded_checkpoint_metadata_sha256。
+
+若 canonical payload 没有 metadata pin，则该分支明确不执行，最终记录 None。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L712-L814
+
+[FACT] config 语义与此一致。 eval 总是要求 checkpoint path + checkpoint SHA；只有 DDQN 强制 metadata pin。Q-learning canonical eval 可以合法不提供 metadata pin，而 legacy 是否可迁移由 loader 自己 fail-closed 判断。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/config.py#L510-L571
+
+[FACT] receipt 也只在 resolved config 中 checkpoint_metadata_sha256 非 None 时检查 loaded_checkpoint_metadata_sha256。DDQN 与 Q-learning 两条 eval 分支保持同一条件语义。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/receipt.py#L430-L523
+
+因此 loader/config/receipt 三者在 N1/R1 上一致。
+
+F2-STATE-KEY
+
+[FACT] 宽度、float64 解码、维度和有限性检查均存在。
+
+loader：
+
+先要求 byte 长度严格为 CONTRACT_DIMS[contract] * 8；
+
+使用 np.frombuffer(key, dtype=np.float64)；
+
+要求 shape 精确为 (expected_key_dims,)；
+
+要求 np.all(np.isfinite(key_view))；
+
+失败信息明确指出必须是 finite float64 N-dimensional observation。
+
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L760-L832
+
+错误信息已经足够定位“state key width”或“finite float64 N-dim observation”，本项主体整改成立。
+
+独立发现：native-endian 隐含假设
+
+[INFERENCE][minor] key encoding 仍是 native-endian np.float64，checkpoint schema 没有显式 byte order。
+
+保存/runtime _key() 与加载 frombuffer(..., np.float64) 都依赖执行主机的 native byte order。跨大小端主机迁移时，一组在源主机合法的 bytes 在目标主机上可能仍可解码为“有限 float64”，从而通过当前检查，却永远与目标主机 _key() 产生的 bytes 不相同，造成 silent lookup miss。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L760-L832
+
+当前主流部署几乎都是 little-endian，因此不建议把它升为 blocking/major；但若 checkpoint 被声明为跨主机可移植工件，建议后续固定为显式 <f8 或把 state-key encoding/byte-order 写入新 schema。
+
+N2 / F3 — 顶层 schema 与 legacy 判定
+
+[FACT] 实现已正确修复。
+
+代码定义两个精确集合：
+
+canonical：{"schema", "contract", "entries"}
+
+legacy：{"schema", "entries"}
+
+set(payload) 必须精确等于其中之一，多字段和缺字段均拒绝。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L712-L741
+
+legacy 判定使用：
+
+if "contract" not in payload
+
+而不是 payload.get("contract") is None。因此：
+
+真正缺失 contract → legacy migration；
+
+显式 "contract": null → canonical；
+
+None != self.contract → contract mismatch，fail-closed。
+
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L724-L763
+
+本项生产代码语义正确。
+
+新增测试覆盖审计
+已真实覆盖
+
+[FACT] wrong-width state key 有负例。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L280-L309
+
+[FACT] metadata relabel + metadata 非法 UTF-8 有负例。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L310-L338
+
+[FACT] canonical metadata pin 有正/负测试： 正确 pin 成功并断言实际 SHA 被记录，错误 pin 失败。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L367-L396
+
+[FACT] payload 非法 UTF-8 有 LearningUnavailable 负例。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L397-L409
+
+[FACT] correct-width NaN state key 有专门负例。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L410-L429
+
+[FACT] canonical+metadata-pin 的 kernel → learning ledger → receipt E2E 存在，并断言 loader 记录的 metadata SHA 与 pin 相同、eval 不训练且 verify_receipt_dir() 无错误。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L420-L468
+
+[FACT] DDQN metadata 字段 gate 逐字段缺失/不匹配负例 存在。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L470-L500
+
+[FACT] config 测试覆盖了 eval 缺 checkpoint/SHA、错误 checkpoint SHA 格式以及 DDQN eval 缺 metadata pin。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_config.py#L55-L89
+
+测试缺口
+
+[INFERENCE][minor] N2/F3 的关键分支没有被直接锁死。
+
+允许读取的整个 test_qlearning_migration.py 中，没有看到专门测试：
+
+canonical payload 多一个未知顶层字段；
+
+canonical payload 缺 entries；
+
+显式 "contract": null 必须被当作 canonical mismatch，而不能进入 legacy；
+
+一个合法 canonical checkpoint 不配置 metadata pin 时成功加载且 loaded_checkpoint_metadata_sha256 is None。
+
+现有结构负例主要覆盖 bogus schema、duplicate state key、non-finite Q row、non-mapping payload。
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L335-L419
+证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L490-L500
+
+[INFERENCE][minor] config 对 checkpoint_metadata_sha256 的格式校验存在生产代码，但 test_config.py 没有显式 malformed metadata-SHA 负例。 当前测试只锁定“DDQN eval 缺 pin”而不是“pin 非 64 位小写 hex”。
+生产代码证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/config.py#L510-L540
+测试证据：github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_config.py#L55-L89
+
+这些目前属于回归测试完整性问题，不是生产逻辑错误。
+
+处置建议
+
+合并前修 F1 residual。 TabularQLearning.save_and_verify() 对 q_table.json 只读一次 bytes，同时完成 hash 与 reload parse/verification。
+
+对 DDQN 的两个 Keras pathname reopen 路径统一声明威胁模型；最好把声明提升为 checkpoint artifact 级说明，避免只覆盖 constructor/eval。
+
+加四个直接回归测试：extra top-level key、missing entries、contract:null、canonical no-metadata-pin 正例。
+
+给 checkpoint_metadata_sha256 加 malformed pin config 负例。
+
+endian 编码作为 minor follow-up：固定 state-key byte order 或在下一版 schema 显式记录 encoding。
+
+本地 Agent 必须实际运行允许范围相关测试，并在 TensorFlow 主机执行 DDQN load/save-reload 动态验证；本网页审阅没有执行本地 shell，因此不能把静态代码审阅当成测试通过证据。
+
+最终判定
+
+REQUEST_CHANGES
+
+理由不是 N1/F2/N2 主体仍有逻辑漏洞，而是 F1 的“JSON hash 与 parse 同一 bytes”合同只修到了 checkpoint 加载端，TabularQ save-and-verify 仍保留明确的 hash-then-reopen。 该点直接属于本轮指定的整改目标，宜在终审放行前闭合。
+
+TensorFlow/Keras 动态行为及测试套件实际执行状态属于未验证项，不能据静态代码宣称通过。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:R4A4-final42",
+  "status": "EVIDENCE_READY",
+  "summary": "终判 REQUEST_CHANGES。N1/R1、N2/F3 与 F2-STATE-KEY 主体实现已闭合；eval/load 侧 JSON 已改为同一 bytes 哈希+解析，DDQN eval Keras reopen 也明确声明 single-user/no-adversarial-writer 威胁模型排除。但 TabularQLearning.save_and_verify 仍先 hash(read_bytes) 再 read_text/json.loads 重开 JSON，F1 未完全闭合；DDQN save/reload 也保留 pathname reopen。另有 native-endian key 编码与 N2/config 负例测试覆盖缺口。",
+  "findings": [
+    {
+      "id": "F1-RESIDUAL",
+      "severity": "major",
+      "summary": "FACT/INFERENCE：load 侧 JSON TOCTOU 已闭合，但 TabularQ save_and_verify 仍对 q_table.json 分别 read_bytes 哈希和 read_text 解析，未满足同一 bytes hash+parse；DDQN save/reload 同样重开 pathname。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L70-L139",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L390-L424",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L607-L637",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L690-L724",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L875-L914"
+      ]
+    },
+    {
+      "id": "N1-R1",
+      "severity": "info",
+      "summary": "FACT：canonical TabularQ 在 metadata pin 非空时强制验证 sibling metadata 并记录实际 SHA；无 pin 时跳过；receipt 仅在配置 pin 非空时要求 loaded metadata SHA 一致，三者语义一致。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L712-L814",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/config.py#L510-L571",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/receipt.py#L430-L523",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L367-L468"
+      ]
+    },
+    {
+      "id": "F2-STATE-KEY",
+      "severity": "info",
+      "summary": "FACT：loader 已严格校验 state key byte 宽度、np.float64 解码维度以及 NaN/Inf，并提供明确 LearningUnavailable 错误；wrong-width 与 NaN 负例均存在。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L760-L832",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L280-L309",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L410-L429"
+      ]
+    },
+    {
+      "id": "N3-STATE-KEY-ENDIAN",
+      "severity": "minor",
+      "summary": "INFERENCE：state-key 序列化和反序列化仍使用 native-endian np.float64，schema 未绑定 byte order；跨大小端主机迁移可能通过有限性检查但静默 lookup miss。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L760-L832"
+      ]
+    },
+    {
+      "id": "N2-F3",
+      "severity": "info",
+      "summary": "FACT：payload 顶层 key set 已严格限制为 canonical/legacy 两种精确集合；legacy 仅以 contract 字段缺失判定，因此显式 contract:null 会被 canonical contract mismatch 拒绝。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L712-L763"
+      ]
+    },
+    {
+      "id": "TEST-COVERAGE",
+      "severity": "minor",
+      "summary": "INFERENCE：新增测试已覆盖 canonical pin 正负、非法 UTF-8、NaN/wrong-width key 与 receipt E2E，但未直接覆盖 extra/missing 顶层 key、contract:null、canonical 无 metadata pin 正例，以及 malformed checkpoint_metadata_sha256 配置。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L310-L468",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L490-L500",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_config.py#L55-L89"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "将 TabularQLearning.save_and_verify 改成单次 read_bytes，并用同一 data 同时计算 checkpoint SHA 与 JSON reload verification。",
+    "把 DDQN Keras pathname reopen 的 single-user/no-adversarial-writer 威胁模型声明统一覆盖 eval load 与 save/reload 两条路径，或进一步技术闭合。",
+    "新增 extra top-level、missing entries、contract:null、canonical 无 metadata pin 正例和 malformed metadata SHA config 负例。",
+    "将 state-key byte order 固定为显式编码或在下一版 checkpoint schema 中绑定 representation。",
+    "本地 Agent 运行相关 pytest，并在真实 TensorFlow 主机动态验证 DDQN checkpoint load/save-reload。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L70-L139",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L390-L424",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L607-L637",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L690-L832",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L875-L914",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/config.py#L510-L571",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/receipt.py#L430-L523",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L280-L500",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_config.py#L55-L89"
+  ],
+  "open_items": [
+    "未执行本地 pytest；当前结论仅基于绑定 commit 的静态代码与测试内容审阅。",
+    "未在真实 TensorFlow/Keras 主机动态复现 DDQN load_model、save/reload、模型 shape/probe verification 与 op-determinism 行为；按任务合同不得伪证为已验证。"
+  ]
+}
+===END_OFFLOAD_RESULT===
