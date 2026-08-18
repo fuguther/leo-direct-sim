@@ -1,0 +1,308 @@
+二审结论
+对象	判定	核心原因
+A. PR #40 / Q0 快照	REQUEST_CHANGES	快照仍有全局状态完备性/服务阶段语义缺口；且本任务强制证据 commit 9454b4f 与 A 的实现 commit be0520b 是两条 sibling 分支，无法合法给 A 伪造 9454b4f 行证据。
+B. PR #41 / _transmit down-wait	REQUEST_CHANGES	修复 K1/K2/K3 主路径基本成立，但发现两个未被现有回归覆盖的问题：expiry 与 hard-retire 同刻会吞掉退休生命周期动作；以及 down-wait 会独占共享 GSL server，并把等待时间同时移出 queue-area 与 occupied。
+A. PR #40：REQUEST_CHANGES
+A0. 先说明证据合同冲突【blocking，FACT】
+
+任务要求审 be0520b，但所有正式仓库引用又被强制绑定到 9454b4f882...。这两个 PR 都从 main 1599d3e 分叉；在强制绑定的 9454b4f 树里，Kernel.__init__ 后直接进入 util / _gsl_ge()，没有 PR #40 添加的 _state_version、_in_flight 和 snapshot_global()。因此我不能把 be0520b 的代码行伪装成 9454b4f 的证据。证据：
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L700-L825
+
+以下 A1–A3 是我实际读取 be0520b 后得到的代码审查候选结论，但需本地 Agent 以 be0520b 或包含它的 merge SHA 重新绑定正式行证据。
+
+A1. GSL GE 全局状态并不完整【major，FACT】
+
+be0520b 的 snapshot_global() 只遍历已经存在于 self.gsl_ge 的对象；而 GSL GE 通道本身仍是 _gsl_ge(sat, cell) 首次传输查询时才惰性创建。
+
+这意味着：
+
+endpoint 已激活甚至已经关联，但尚未实际走过 GSL _transmit 时，该 (sat, cell) 的 GE 状态不会出现在快照；
+
+对 Q0 而言，“不存在于 gsl_ge”与“channel 当前 good/bad”并不是同一状态；
+
+与 #28 的 endpoint 惰性激活合并后不能简单通过“预建所有 trace cell 的 GE”解决，否则又会重新引入未来端点因果泄漏。
+
+9454b4f 可确认当前底层 GE 的确是按 (sat, cell) 惰性创建：
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L788-L806
+
+建议快照显式表达当前已激活/已关联 GSL 的 initialized / uninitialized channel state，而不是静默遗漏。
+
+A2. remaining_service_s 在 pre-service down-wait 阶段会失真【major，FACT】
+
+PR #40 用 server 的 current、_svc 起点和 bits/rate 推剩余服务时长。但当前 GSL server 的顺序是：
+
+先从队列拿掉 packet；
+
+立即写 current；
+
+立即写 _svc=(now, ...)；
+
+才进入 _transmit()；
+
+_transmit() 发现 GE/geometry down 时实际上尚未开始传输。
+
+这个阶段 PR #40 快照却会显示 packet “in service”，并让：
+
+remaining=
+rate
+bits
+	​
+
+−(now−t
+svc
+	​
+
+)
+
+持续下降，等待足够久甚至可变成负数。
+
+PR #41 的 restamp 只能在链路真正恢复、准备开传时纠正 _svc；down-wait 正在发生的快照仍然是错的。现有精确树上的调用顺序可核：
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L270-L335
+
+以及真正开传才 restamp：
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L850-L970
+
+建议把服务相位显式建模成 waiting_for_link / transmitting，remaining_service_s 只在后者定义。
+
+A3. _in_flight 仍不足以构成“完整全局网络状态”【major，FACT】
+
+be0520b 确实修复了 data packet 在 env.process(...) 初始化事件之间不可见的窗口：在创建传播 process 之前同步注册，arrival handler 再 pop。这个生命周期修改方向正确。
+
+但还有两个完备性问题：
+
+控制包传播没有进入 _in_flight：控制包 ISL 服务完成到 _ctrl_arrive_after_prop() 之间仍是正在影响未来 cache 的真实网络状态；
+
+data packet 一旦进入 service / propagation，就从 queue/pending 的完整 _packet_info 中消失，而 in_service / _in_flight 只留下 pid/iid 和少量传播字段，动态 path、deadline、dst、assigned_sat 等不能从快照本身完整恢复。
+
+因此我不会把目前接口认定为 Q0 所需的完整 S
+t
+global
+	​
+
+。
+
+A4. _state_version 本身基本合理【info】
+
+按“每个 SimPy event step 增 1”这个合同，run() 在每次 env.step() 后自增的设计是合理的；它不是 mutation counter，也不应该被宣传为“每次字段变化都增”。
+
+要注意其 stale-proof 只对 event-step 边界成立：同一 event callback 内的多次同步状态变化共享一个 version。这不是当前 blocker，但未来 apply_joint_plan() 必须明确原子应用边界。
+
+A 与 #25/#26/#28/#41 的合并判断
+
+#25：主要增加 Downlink recovery wake，与 snapshot 本身没有根本架构冲突。
+
+#26：FIFO grant 修复与 snapshot 主要是字段内容更新，不构成概念冲突。
+
+#28：需要重点回归。endpoint 生命周期由“启动时全建”变为动态 _ensure_endpoint()，snapshot 必须明确只表示当前已激活实体，且不能因补全 GE 状态重新实例化未来 endpoint。
+
+#41：会修改同一批 GSL/ISL service 调用；概念上可合，但 A2 的 down-wait 快照失真仍存在，#41 的 restamp 并没有解决等待阶段。
+
+因此 A 不是单纯 merge-conflict 问题，而是合并后仍有状态语义缺口。
+
+B. PR #41：REQUEST_CHANGES
+
+K1/K2/K3 三个既有目标的主修复思路是对的，尤其：
+
+down-wait 已 race retirement interrupt；
+
+不再在 t0 提前判 deadline fate；
+
+开始实际 transmission 时重新盖 _svc；
+
+ISL 的 link=None 仍没有引入 GSL retirement 行为。
+
+但发现两个需要修复的新问题。
+
+B1. expiry == retire_at 时，expiry 会吞掉 hard-retire 生命周期动作【major，FACT】
+
+down-wait 当前逻辑：
+
+创建 deadline/recovery 的 wait；
+
+yield wait | interrupt；
+
+醒来后第一件事是判断 env.now >= expiry 并 _fail(...); return "fail"；
+
+没有先处理“hard retirement 已经同时到期”。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L850-L930
+
+而 _fire_interrupt() 自己只 succeed 一个事件，并不会释放 link：
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L808-L825
+
+真正“link dies NOW”的动作在 _on_link_retired()：
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L1300-L1335
+
+而 caller 只有收到 "retired" 才调用它；收到 "fail" 会直接跳过：
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L300-L335
+
+所以构造
+
+deadline=retire_at
+
+且 packet 正处于 down-wait 时，同刻 wake 后会记录 DATA_DEADLINE_EXPIRED，但 retiring link 的释放可能只能等下一次 endpoint ticker。也就是说，packet fate 的 tie-break 同时意外决定了 link lifecycle。
+
+这与仓库里已经明确列出的 deadline 同刻语义未统一问题也一致：
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/ANALYSIS/EXPERT-REVIEW-20260816.md#L45-L55
+
+修法不应只是改成“RETIRE 必胜”。更稳妥的是把两件事解耦：
+
+packet fate 可以按冻结后的 tie policy 决定；
+
+只要 env.now >= retire_at，link retirement side effect 必须立即执行一次。
+
+现有 K1/K3 测试没有覆盖 exact tie；它们让 retire 和 deadline 错开：
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/tests/test_transmit_retirement.py#L40-L85
+
+应新增 deadline == retire_at，同时断言 packet fate、release timestamp、slot 回收。
+
+B2. pre-service down-wait 会形成共享 GSL 头阻塞，而且这段时间没有进入任何占用/队列积分【major，FACT】
+
+Uplink server 的 _pick() 不检查 geometry/GE。它会先：
+
+从 endpoint queue 删除 packet；
+
+area.remove()；
+
+设置 current;
+
+设置 _svc;
+
+然后才调用 _transmit()。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L270-L315
+
+Downlink 虽然 _servable() 查了 geometry，但没有查每个 (sat,cell) 的 GE，所以 GE-down 仍可进入同一状态：
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L360-L430
+
+随后 _transmit() 对没有 deadline、且 horizon 内不恢复的情况可以一直等到 horizon；有限 deadline 则可以一直占住 server 到 deadline/recovery：
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L865-L930
+
+问题有两层：
+
+调度语义：一个 endpoint 的 GSL channel down，会把整个卫星共享 Uplink/Downlink server 卡住，其他 endpoint 即使自己的 GSL channel healthy 也不能获得 DRR 服务。
+
+账本语义：代码明确认为这段时间“service 尚未开始”，所以 K2 restamp 后它不计入 occupied；但 packet 已经从 queue area.remove()，因此它也不算 queue residence。该等待时间落入统计真空。
+
+取消 K3 的 premature fail 后，有限 deadline packet 的这一阻塞窗口也会真实存在更久；无 deadline 长阻塞则是此前就存在、此次修复后仍未处理的邻域问题。
+
+现有 K2 测试只验证 occupied 没把 down-wait 算进去，没有检查：
+
+第二个 endpoint 是否被饿死；
+
+queue-area 是否少算；
+
+一个 GSL GE bad 是否错误冻结整个共享 server。
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/tests/test_transmit_retirement.py#L86-L122
+
+建议不要让 server 在“channel 尚不可传”时把 packet 正式 dequeue 成 current。更合理的是在调度层对该 endpoint 暂时不可服务，继续让 DRR 考虑其他 endpoint，并为恢复/expiry/retire 建 wake。
+
+B3. _svc restamp × hard-retire 的正常非 tie 路径：通过【info】
+
+真正开始 transmission 时重盖 _svc，随后实际 segment 才累加：
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L925-L970
+
+因此正常的：
+
+down-wait → recovery → transmission → hard-retire mid-service
+
+路径下，等待时间不会进入 occupied，实际发送到 retire 的部分会计费，没有发现 double-count。这里的问题是 B2 的“等待应该记在哪里”，而不是 K2 restamp 自身重复计费。
+
+B4. ISL link=None 路径：未见生产语义回归【info】
+
+ISL 自己在 dequeue 前已经检查 available_now()，包括 GE 和 geometry；PR #41 给 _transmit() 新增 owner=self，但 link_ref[0] == "isl" 时 link 仍是 None，不会进入 GSL retirement interrupt 路径。
+
+github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L470-L555
+
+因此我没有发现 ISL retirement 语义被 PR #41 意外改变。
+
+建议本地 Agent 的最小返工集
+
+PR #40：先重新绑定 be0520b 的合法 evidence commit；补 lazy-GSL、pre-service phase、service/in-flight packet completeness 三类回归。
+
+PR #41：补 deadline == retire_at 精确同刻测试，并让 hard-retire 生命周期与 packet fate tie-break 解耦。
+
+增加双 endpoint GSL 测试：A channel 长时间 bad、B channel good，验证 B 仍可获得 shared server；同时断言 A 的 pre-service 等待进入明确的 queue/wait accounting。
+
+PR #40 与 #41、#28 合并后再测一次 down-wait 中的 snapshot_global()，这是当前两个 PR 最明显的交互盲区。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:R4B-crossreview-40-41",
+  "status": "EVIDENCE_READY",
+  "summary": "A=REQUEST_CHANGES：Q0 snapshot 仍有 lazy GSL GE、pre-service remaining_service、在服/在途状态完备性缺口；且 A 的实现 commit be0520b 与强制证据 commit 9454b4f 是 sibling 分支，正式 A 行证据需重新绑定。B=REQUEST_CHANGES：发现 expiry==retire_at 会吞掉立即退休生命周期动作，以及 down-wait 独占共享 GSL server 并造成等待时间统计真空。ISL link=None 与正常 restamp/retire 计费路径未见回归。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "A 的审查对象 be0520b 不存在于强制 evidence tree 9454b4f，无法诚实生成满足当前校验器的 PR #40 行级证据。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L700-L825"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "PR #41 在 expiry 与 hard-retire 同刻的 down-wait 中先执行 expiry fail；interrupt 本身不释放 link，导致 hard-retire 的立即生命周期动作可能被吞掉。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L850-L930",
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L1300-L1335",
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/tests/test_transmit_retirement.py#L40-L85"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "GSL packet 在确认 channel 可传之前已从队列移除并独占 shared server；down-wait 可阻塞其他 endpoint，同时该等待既不计 queue-area 也不计 occupied。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L270-L315",
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L360-L430",
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L865-L970",
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/tests/test_transmit_retirement.py#L86-L122"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "ISL link=None 路径仍在 dequeue 前检查 GE/geometry，PR #41 的 owner restamp 未引入 GSL hard-retire 语义。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L470-L555"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "为 PR #40 将证据合同重新绑定到 be0520b 或包含 be0520b 的 merge commit，再正式核验 lazy GSL GE、pre-service remaining_service、控制/数据在途状态完备性。",
+    "PR #41 将 hard-retire 生命周期副作用与 packet fate tie-break 解耦，并增加 deadline==retire_at 的精确同刻回归。",
+    "增加两个 endpoint 共享 GSL server 的 HOL 回归：坏 channel 不得阻塞健康 channel，并明确 pre-service down-wait 的 queue/wait accounting。",
+    "合并 #28、#40、#41 后专门回归 down-wait 中 snapshot_global 的状态相位与 endpoint 惰性生命周期。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L850-L970",
+    "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/tests/test_transmit_retirement.py#L40-L122",
+    "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/ANALYSIS/EXPERT-REVIEW-20260816.md#L45-L55"
+  ],
+  "open_items": [
+    "PR #40 的实现 commit be0520b 不属于当前强制 evidence commit 9454b4f；在不违反引用校验器的前提下无法为 A1-A3 输出合法 be0520b 行级 URI，需要本地 Agent 重绑证据合同。",
+    "snapshot_global 调用 GE is_down/缓存 valid_entries 是否严格无语义副作用，需要读取 outage/control 实现才能证明；这两个路径不在本任务允许读取范围，因此未越权检查。",
+    "#25/#26/#28 为未合并 sibling 分支；已检查其 kernel 改动的交互方向，但最终三方/四方 merge 后的动态行为仍需本地 Agent 在实际合并树验证。"
+  ]
+}
+===END_OFFLOAD_RESULT===
