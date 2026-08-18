@@ -1,6 +1,9 @@
 # NOTES.md
 
 ## 当前状态
+- 2026-08-18 工作模式切换（用户指令）：Kimi API 额度紧张，基本停用；重活交网页端多路并行（deep 档优先、互相审阅），Codex 隔三差五抽查终判。僚机升级已了解（任务分型/深度档位/网页优先路由/信封可靠性/`wing wait`）。
+- 2026-08-18 PR #42：checkpoint 绑定观测合同（GPT H3 F1，C3/C4 同维度可静默错载）——TabularQ payload 写 contract+加载校验、DDQN 读 metadata 校验、receipt 校验 learning.contract==routing.contract；回归+369 passed；待网页端二审。
+- 2026-08-18 第 4 轮网页端 3 路并行已派发：R4A 审 #42（op 4aa5d109…）、R4B 二审 #40/#41（op 51759c0c…）、R4C 第 4 轮挖问题（op cca4968a…，均 deep/REMOTE）。
 - 2026-08-17 Q0 接口第一步：`Kernel.snapshot_global()` 只读全局快照 +
   `_state_version` 事件版本（写入决策快照）+ `_in_flight` 在途包跟踪，
   PR #40（kernel 承重，待 Kimi 复核）。GPT 第 3 轮挖问题已派发
