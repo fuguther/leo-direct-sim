@@ -786,7 +786,7 @@ class TabularQLearning:
                         "Q-learning checkpoint state key width "
                         f"{len(key)} bytes != contract {self.contract} "
                         f"observation width {expected_key_bytes}")
-                key_view = np.frombuffer(key, dtype=np.float64)
+                key_view = np.frombuffer(key, dtype="<f8")
                 if key_view.shape != (expected_key_dims,) \
                         or not np.all(np.isfinite(key_view)):
                     # _key() always serializes a finite observation vector;
@@ -824,8 +824,12 @@ class TabularQLearning:
 
     @staticmethod
     def _key(observation) -> bytes:
+        # Canonical little-endian float64 bytes: identical on LE hosts and
+        # portable across endianness, so a checkpoint's key representation is
+        # schema-bound (N3-STATE-KEY-ENDIAN).
         return np.ascontiguousarray(
-            np.asarray(observation, dtype=np.float64)).tobytes()
+            np.asarray(observation, dtype=np.float64).astype("<f8"),
+        ).tobytes()
 
     def _row(self, observation) -> np.ndarray:
         key = self._key(observation)
@@ -889,6 +893,29 @@ class TabularQLearning:
         out = Path(directory)
         out.mkdir(parents=True, exist_ok=True)
         table_path = out / "q_table.json"
+        # F4-RUNTIME-STATE-KEY: save must never produce an artifact that the
+        # eval loader would reject.  Reuse the loader's exact semantic
+        # contract: canonical key width, finite little-endian float64 keys,
+        # and finite 5-action rows.
+        expected_key_bytes = CONTRACT_DIMS[self.contract] * 8
+        expected_key_dims = CONTRACT_DIMS[self.contract]
+        for key, row in self.table.items():
+            if len(key) != expected_key_bytes:
+                raise LearningUnavailable(
+                    "cannot save Q-learning checkpoint: state key width "
+                    f"{len(key)} != contract observation width "
+                    f"{expected_key_bytes}")
+            key_view = np.frombuffer(key, dtype="<f8")
+            if key_view.shape != (expected_key_dims,) \
+                    or not np.all(np.isfinite(key_view)):
+                raise LearningUnavailable(
+                    "cannot save Q-learning checkpoint: state key is not a "
+                    f"finite float64 {expected_key_dims}-dim observation")
+            if row.shape != (len(ACTIONS),) \
+                    or not np.all(np.isfinite(row)):
+                raise LearningUnavailable(
+                    "cannot save Q-learning checkpoint: Q row width or "
+                    "finiteness mismatch")
         payload = {
             "schema": "leo-sim-qlearning-table/v1",
             "contract": self.contract,
@@ -897,8 +924,11 @@ class TabularQLearning:
         }
         table_path.write_text(json.dumps(payload, sort_keys=True) + "\n",
                               encoding="utf-8")
-        checkpoint_sha = hashlib.sha256(table_path.read_bytes()).hexdigest()
-        loaded = json.loads(table_path.read_text(encoding="utf-8"))
+        # F1-RESIDUAL: hash and parse the SAME bytes (single read) so the
+        # verification step has no hash-then-reopen window on the save side.
+        data = table_path.read_bytes()
+        checkpoint_sha = hashlib.sha256(data).hexdigest()
+        loaded = _read_json_bytes(data, "Q-learning checkpoint")
         verified = loaded == payload
         metadata = self.diagnostics()
         metadata.update({

@@ -367,6 +367,59 @@ def test_qlearning_payload_schema_and_structure_are_fail_closed(tmp_path):
                  checkpoint_path=str(table), checkpoint_sha256=sha)
 
 
+def test_qlearning_top_level_key_set_and_contract_null_are_strict(tmp_path):
+    """N2/F3 coverage: extra top-level key, missing required key and explicit
+    contract:null must all be rejected."""
+    dim = learning.CONTRACT_DIMS["C3"]
+    key = "00" * (dim * 8)
+    payloads = [
+        {"schema": "leo-sim-qlearning-table/v1", "contract": "C3",
+         "entries": [[key, [0.1] * len(learning.ACTIONS)]], "extra": 1},
+        {"schema": "leo-sim-qlearning-table/v1", "contract": "C3"},
+        {"schema": "leo-sim-qlearning-table/v1", "contract": None,
+         "entries": [[key, [0.1] * len(learning.ACTIONS)]]},
+    ]
+    for i, payload in enumerate(payloads):
+        table = tmp_path / f"strict_{i}.json"
+        table.write_text(json.dumps(payload, sort_keys=True) + "\n")
+        sha = hashlib.sha256(table.read_bytes()).hexdigest()
+        with pytest.raises(learning.LearningUnavailable):
+            _learner(mode="eval", contract="C3",
+                     checkpoint_path=str(table), checkpoint_sha256=sha)
+
+
+def test_qlearning_canonical_without_pin_loads_and_records_none(tmp_path):
+    """Canonical table with no metadata pin: loader skips metadata and records
+    None (no-pin positive path)."""
+    ql = _learner()
+    dim = learning.CONTRACT_DIMS["C3"]
+    ql.remember(np.zeros(dim), "E", 1.5, np.ones(dim), FULL_MASK, False)
+    meta = ql.save_and_verify(tmp_path)
+    table_path = tmp_path / "q_table.json"
+    loaded = _learner(mode="eval", checkpoint_path=str(table_path),
+                      checkpoint_sha256=meta["checkpoint_sha256"])
+    assert loaded.loaded_checkpoint_metadata_sha256 is None
+
+
+def test_save_rejects_invalid_table_state(tmp_path):
+    """F4-RUNTIME-STATE-KEY: save_and_verify must fail closed on wrong-width
+    keys or non-finite Q rows so verified always implies loadable."""
+    ql = _learner()
+    dim = learning.CONTRACT_DIMS["C3"]
+    ql.remember(np.zeros(dim), "E", 1.5, np.ones(dim), FULL_MASK, False)
+    bad_key = b"\x00" * 16
+    ql.table[bad_key] = np.zeros(len(learning.ACTIONS))
+    with pytest.raises(learning.LearningUnavailable,
+                       match="state key width"):
+        ql.save_and_verify(tmp_path / "bad_width")
+    del ql.table[bad_key]
+    good_key = next(iter(ql.table))
+    ql.table[good_key] = np.array([1.0, 2.0, 3.0, 4.0, float("nan")])
+    with pytest.raises(learning.LearningUnavailable,
+                       match="finiteness"):
+        ql.save_and_verify(tmp_path / "bad_row")
+
+
 def test_qlearning_canonical_table_metadata_pin_is_verified(tmp_path):
     """N1/R1 regression: a canonical (payload-contract) table with an explicit
     checkpoint_metadata_sha256 must verify the sibling metadata and record
