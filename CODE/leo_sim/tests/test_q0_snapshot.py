@@ -79,3 +79,91 @@ def test_snapshot_handles_control_packet_in_service():
     assert res["natural_end"]
     snap = k.snapshot_global()  # must not raise on control in-service data
     assert "isl_links" in snap
+
+
+def test_snapshot_gsl_ge_covers_associated_pairs_explicitly():
+    """A1 regression: GSL GE pairs must be materialized at association and
+    every current endpoint-satellite pair must appear with an explicit
+    materialized/bad/next_flip triple (no silent key absence)."""
+    geo = StaticGeometry(1, neighbors_map={0: {}},
+                         visible=lambda *_: True, gsl_changes=[])
+    cfg = _cfg(**{"links": {"ge_enabled": True}})
+    k = kernel.Kernel(cfg, [row(1, 0.0, A, B)], geometry=geo)
+    res = k.run()
+    assert res["natural_end"]
+    snap = k.snapshot_global()
+    # the single endpoint should be associated with sat 0 during the run
+    assert "0:0" in snap["gsl_ge"] or any(
+        key.startswith("0:") for key in snap["gsl_ge"])
+    for key, ge in snap["gsl_ge"].items():
+        assert "materialized" in ge
+        assert ge["materialized"] is True
+        assert "bad" in ge and "next_flip" in ge
+
+
+def test_snapshot_unmaterialized_gsl_pair_is_explicit_not_missing():
+    """A1 fallback: a current endpoint link whose GE was never materialized
+    must show as materialized=False, never as an absent key."""
+    geo = StaticGeometry(1, neighbors_map={0: {}},
+                         visible=lambda *_: True, gsl_changes=[])
+    k = kernel.Kernel(_cfg(), [row(1, 0.0, A, B)], geometry=geo)
+    ep = k.endpoints[A]
+    # inject a link without going through _associate (which materializes)
+    ep.links[0] = kernel.Link(0, "active", 0.0)
+    snap = k.snapshot_global()
+    assert snap["gsl_ge"][f"0:{A}"] == {
+        "materialized": False, "bad": None, "next_flip": None}
+
+
+def test_snapshot_in_flight_exposes_full_packet_state():
+    """A3 regression: _in_flight entries must expose the full current packet
+    state (pid/src/dst/bits/deadline/emitted_at/path/assigned_sat), not just
+    kind/sat/arrival_at."""
+    geo = StaticGeometry(1, neighbors_map={0: {}},
+                         visible=lambda *_: True, gsl_changes=[])
+    k = kernel.Kernel(_cfg(), [row(1, 0.0, A, B)], geometry=geo)
+    pkt = kernel.DataPacket(42, A, B, 1000, 5.0, 0.0)
+    pkt.path.append(0)
+    pkt.assigned_sat = 0
+    k._in_flight[42] = {"kind": "isl", "sat": 0, "arrival_at": 3.0,
+                        "pkt": pkt}
+    snap = k.snapshot_global()
+    entry = snap["in_flight"][42]
+    assert entry["kind"] == "isl" and entry["sat"] == 0
+    assert entry["arrival_at"] == pytest.approx(3.0)
+    assert entry["pid"] == 42
+    assert entry["src"] == A and entry["dst"] == B
+    assert entry["bits"] == 1000
+    assert entry["deadline"] == 5.0
+    assert entry["emitted_at"] == 0.0
+    assert entry["path"] == [0]
+    assert entry["assigned_sat"] == 0
+
+
+def test_snapshot_service_phase_distinguishes_waiting_from_transmitting():
+    """A2 regression: pre-service down-wait must not be reported as consumed
+    service time; remaining_service_s is the full duration while waiting and
+    non-negative while transmitting."""
+    geo = StaticGeometry(1, neighbors_map={0: {}},
+                         visible=lambda *_: True, gsl_changes=[])
+    k = kernel.Kernel(_cfg(), [row(1, 0.0, A, B)], geometry=geo)
+    pkt = kernel.DataPacket(7, A, B, 1000, 5.0, 0.0)
+    dl = k.downlinks[0]
+    dl.current = pkt
+    dl._svc = (0.0, "gsl_downlink_s")
+    dl._svc_phase = "waiting_for_link"
+    dl._tx_started_at = None
+    snap = k.snapshot_global()
+    dl_snap = snap["downlinks"][0]
+    expected_full = pkt.bits / k.dl_rate_bps
+    assert dl_snap["remaining_service_s"] == pytest.approx(expected_full)
+    assert dl_snap["svc"]["phase"] == "waiting_for_link"
+    assert dl_snap["svc"]["tx_started_at"] is None
+    # after real transmission starts, elapsed time is measured from the
+    # transmission start, and remaining is never negative by construction
+    dl._svc_phase = "transmitting"
+    dl._tx_started_at = 0.0
+    snap2 = k.snapshot_global()
+    dl_snap2 = snap2["downlinks"][0]
+    assert dl_snap2["svc"]["phase"] == "transmitting"
+    assert dl_snap2["remaining_service_s"] == pytest.approx(expected_full)
