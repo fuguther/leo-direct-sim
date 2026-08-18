@@ -1,0 +1,322 @@
+第 4 轮独立未知问题挖掘 — RESULT_CANDIDATE
+
+结论：发现 2 个新的 major、2 个新的 minor。未发现新的 blocking。
+
+其中两个 major 都集中在学习臂 eval checkpoint 的身份/语义绑定。这不是既有 H2-19“TabularQ 未见状态 first-legal tie 偏置”的重复：这里的新问题是加载器会接受本应拒绝的 checkpoint，进而主动制造“全是未见状态”或“按错误合同解释模型”的条件。对正式 learning eval / Q0 scientific claim，我建议将 F1、F2 视为合入前置。
+
+另外，绑定 commit 中 ANALYSIS/EXPERT-REVIEW-20260816.md 实际止于 §H，没有任务描述所称的 §I；因此本轮去重只能以该 commit 中可见的 §G-H 为准。文件末尾证据：github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L158-L164
+
+F1 — DDQN checkpoint 只绑定 SHA/shape，不绑定原始 learning contract，可把 C3 checkpoint 静默重标为 C4
+
+严重度：major
+状态：FACT（代码路径）；完整 CLI/receipt E2E 未执行。
+
+证据
+
+C3 与 C4 的 observation 维度完全相同，但语义不同：
+
+C3_DIM = OWN_FEATURES + ORIGIN_FEATURES
+
+C4_DIM = OWN_FEATURES + ORIGIN_FEATURES
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L33-L52
+
+实际构造时，C3 对来源状态做普通均值，而 C4 用 AoI 指数权重平均，因此同一坐标位置代表不同的状态映射：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L985-L1023
+
+但 DDQN 加载 checkpoint 时只做：
+
+文件存在；
+
+checkpoint SHA 与 resolved config 一致；
+
+Keras input/output shape 与当前 contract 尺寸一致。
+
+没有读取 checkpoint 的 sibling metadata.json，也没有校验 checkpoint 原始 schema / algorithm / contract：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L315-L355
+
+Kernel 又直接把当前 routing.contract 传进 learner：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L590-L628
+
+更关键的是，运行结束重新保存时，metadata 中的 contract 来自 self.contract，即当前配置，而非 checkpoint 原始 provenance。因此一份 C3 checkpoint 在 C4 eval 中通过 shape 检查后，会被输出 metadata 重新标成 C4：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L530-L566
+
+receipt verifier 检查 algorithm、mode、输出 checkpoint SHA、loaded input SHA、TF determinism 等，却没有检查 learning.contract == resolved routing.contract，更没有原 checkpoint contract 可交叉验证：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L422-L523
+
+复现条件
+
+训练并保存一个 C3 DDQN checkpoint；把其 SHA 正确写入一个 C4 eval resolved config。由于 C3/C4 都是相同输入宽度、相同 Dense DDQN 架构，现有加载检查没有合同来源差异可拒绝。
+
+影响
+
+INFERENCE：正式实验可能声称“C4 eval”，实际执行的权重却是在 C3 状态语义下训练的。checkpoint 文件和 SHA 都是真的，所以这是比普通文件篡改更危险的语义身份假绿；模型比较、泛化结论和 contract attribution 均不可可靠解释。
+
+F2 — TabularQ checkpoint 不校验 state-key 宽度；仓库现有测试已经把 4 维 key 当 C3 checkpoint 验证成功
+
+严重度：major
+状态：FACT；完整正式 receipt E2E 为 INFERENCE。
+
+证据
+
+C3 的真实 observation 宽度为：
+
+7 (OWN)+4 (ORIGIN)+3 (DEST)=14
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L29-L52
+
+但 Tabular loader 只校验每个 Q row 有 5 个 action value；它把 key_hex 直接 bytes.fromhex() 塞入 table，完全没有验证 key 的字节长度是否等于 8 * CONTRACT_DIMS[contract]，也没有在 table payload 内绑定 contract：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L600-L638
+
+eval 未命中 table 时不会报错，而是返回全零行，并 deterministic 地选择第一个合法 action：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L640-L683
+
+独立证据来自仓库自己的 migration test。测试 helper 明确构造的是 C3 learner：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/tests/test_qlearning_migration.py#L25-L43
+
+但 test_save_load_roundtrip_verified 用 np.zeros(4)/np.ones(4) 训练 table，然后：
+
+save_and_verify()
+
+断言 checkpoint_verified is True
+
+重新以 C3 eval 加载
+
+断言 table 完整 roundtrip
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/tests/test_qlearning_migration.py#L128-L145
+
+即当前测试实际上证明了：一个不满足 C3 observation contract 的 Q table 能被项目自己的 verification 认定为有效。
+
+复现条件
+
+给 C3 checkpoint 放入任意 4-double key（32 bytes），保持 row 为 5 个 Q 值并提供正确文件 SHA；加载可以成功。Kernel 真正产生的 C3 state 是 14-double（112 bytes），因此该 key 不可能命中。
+
+影响
+
+eval 会持续走 _row() 的“未见状态→全零行”路径，最终表现为 first-legal heuristic，而不是已训练 Q policy。
+
+因此可能出现：
+
+checkpoint SHA 正确 → checkpoint_verified=True → eval 有 decisions → 实际几乎/完全没有使用 checkpoint 中训练过的 Q 值。
+
+这会直接污染学习臂有效性和 baseline 比较。
+
+这与已知 H2-19 不重复：H2-19 已知的是“真正未见状态如何 tie-break”；F2 是 checkpoint 校验漏洞导致本该拒绝的模型被装载，从而人为制造所有状态未见。既有 H2-19 记录见：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L143-L156
+
+F3 — receipt 把 learning 标记为 recomputed，实际主要只是 artifact/ledger consistency，权威等级过高
+
+严重度：minor
+状态：FACT；下游误用影响为 INFERENCE。
+
+receipt 自己定义：
+
+recomputed = verifier 从 trace.csv / resolved_config.json 重建。
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L1-L20
+
+但 FIELD_AUTHORITY 将整个 learning 字段标成：
+
+"learning": "recomputed"
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L80-L96
+
+实际 _validate_ledgers() 对 learning 做的是：
+
+类型/range；
+
+algorithm；
+
+output checkpoint SHA；
+
+learning counters 与同一个 mechanism_counters ledger 交叉；
+
+部分 resolved config 字段；
+
+eval input checkpoint SHA。
+
+它并不能从 trace/config 独立重放 learner decisions/transitions，也没有重建 contract provenance：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L395-L523
+
+影响
+
+若 Q0/后续 governance 根据 field_authority 判断“哪些字段可直接作为科学证据”，会高估 learning ledger 的独立验证强度。建议拆成：
+
+checkpoint artifact/config binding：recomputed
+
+decisions/transitions/train counters：ledger_consistency
+
+loss/table_size 等：diagnostic 或单独定义
+
+而不是整个 learning 一刀切 recomputed。
+
+F4 — 畸形 learning checkpoint 的若干解析失败绕过 LearningUnavailable，直接泄漏底层异常
+
+严重度：minor
+状态：FACT；CLI/remote 最外层表现未验证。
+
+TabularQ 对“not found / SHA mismatch / entries 不为 list / row width”显式转成 LearningUnavailable，但同一加载路径中的以下错误没有统一包装：
+
+malformed JSON → JSONDecodeError
+
+entry 不是二元 iterable → ValueError
+
+非法 hex key → ValueError
+
+非数值 Q 值 → numpy conversion error
+
+代码路径：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L600-L630
+
+DDQN 的 keras.models.load_model() 失败同样没有在本层转换：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L329-L350
+
+它们仍然是 fail-closed，不会产生科学假绿，因此定 minor；但 remote orchestration 无法稳定按 LearningUnavailable 分类/处置损坏 checkpoint。
+
+已审计但未新增 finding 的面
+comparison / legacy 资源等价
+
+没有重复上报 H2-13。 精确 commit 已明确记录“direct/legacy 两臂资源参数未绑定”为 major：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L143-L151
+
+允许读取的 comparison regression test 目前可看到的物理等价检查主要固定：
+
+SIM_MOVEMENT_SPEEDUP=1
+
+SIM_WALKER_PATTERN=delta
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/tests/test_comparison.py#L35-L68
+
+production comparison.py 不在本任务白名单，因此无法诚实声称 H2-13 已闭环。
+
+experiment_platform / 授权链
+
+允许范围的 governance regression 明确覆盖“重绑 request + 同步修改外围 hashes 仍必须被 authorization 拒绝”：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/tests/test_governance.py#L153-L215
+
+population formal intent 也绑定输入 SHA 并拒绝 project 外路径：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/tests/test_governance.py#L217-L246
+
+未发现新的授权链问题；但 production experiment_platform 不在可读范围，故不能直接重审实现。
+
+population / trace 编译边界
+
+允许范围内测试覆盖：
+
+相同 seed/config → trace/manifest byte-identical；
+
+编译 trace 的 identity/ledger；
+
+population gravity source + destination 均使用 population；
+
+population trace byte reproducibility。
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/tests/test_trace.py#L29-L58
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/tests/test_trace.py#L125-L200
+
+没有在允许证据中发现新的 compiler 假绿；生产 trace.py/population.py 被合同排除，因此保持未验证。
+
+建议本地 Agent 的最小验证/修复序列
+
+先修 F1。 所有 eval checkpoint 必须带不可选的 metadata，并交叉校验至少 schema / algorithm / contract / checkpoint filename / checkpoint_sha256 / checkpoint_verified；任何缺失、损坏或不一致都拒绝。
+
+receipt 增加 learning.contract == resolved.routing.contract，以及 learning.mode == resolved.learning.mode。
+
+修 F2。 Q table payload 本身绑定 contract/state dimension；加载每个 key 时要求 len(key) == 8 * CONTRACT_DIMS[contract]，同时拒绝 duplicate keys 和非有限 Q 值。
+
+新增负例：C3 DDQN checkpoint 作为 C4 eval 输入必须 fail；C3 Q table 含 4-dim key 必须 fail。
+
+新增损坏 checkpoint 负例，要求统一转成 LearningUnavailable，不能泄漏 JSON/Keras/hex 底层异常。
+
+把 FIELD_AUTHORITY["learning"] 拆分或降为真实能够证明的 authority class。
+
+对 production comparison.py / experiment_platform / trace.py / population.py 做本地补审；本 Worker 不越过路径白名单替本地 Agent 猜测。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:R4C-hunt-round4:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "精确 commit 1599d3e 上发现 2 个新 major、2 个新 minor。核心缺口是 learning checkpoint 只绑定 SHA/shape 而不绑定原始 contract：C3/C4 同维可被静默跨绑；TabularQ 更不校验 state-key 宽度，仓库自身测试已将 4 维 key 的 C3 table 标记 verified，真实 14 维 eval 会退化为未见状态 first-legal。另有 learning authority 标注过强、畸形 checkpoint 异常未统一 LearningUnavailable。未重复 H2-13/H2-19。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "DDQN checkpoint 未绑定原始 learning contract；同维但语义不同的 C3/C4 checkpoint 可通过 SHA/shape 检查并被当前配置重新标注，receipt 也不校验 learning.contract。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L33-L70",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L315-L355",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L530-L566",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L422-L523"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "TabularQ loader 不校验 checkpoint state-key 宽度；现有测试把 4 维 key 的 C3 table 标记 checkpoint_verified 并成功 reload，而真实 C3 observation 为 14 维，eval 会静默落入未见状态全零行。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L29-L70",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L600-L683",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/tests/test_qlearning_migration.py#L25-L43",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/tests/test_qlearning_migration.py#L128-L145"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "summary": "receipt 将整个 learning ledger 标成 recomputed，但验证器并未从 trace/config 独立重建 learner decisions、transitions 或 contract provenance，authority 分类高于实际证据强度。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L1-L20",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L80-L96",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L395-L523"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "summary": "畸形 Q-learning JSON/entry/hex 以及部分 DDQN load_model 失败未统一包装为 LearningUnavailable，虽然 fail-closed，但 remote/CLI 可能得到未分类底层异常。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L315-L350",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L600-L630"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "将 F1/F2 作为正式 learning eval/Q0 前置：checkpoint metadata 必选并交叉绑定 schema、algorithm、contract、filename、SHA、verified。",
+    "receipt 增加 learning.contract==resolved routing.contract 与 learning.mode==resolved learning.mode 的验证。",
+    "TabularQ checkpoint 绑定 contract/state_dim，并逐 key 校验字节宽度、唯一性及 Q 值有限性。",
+    "新增 C3 checkpoint→C4 eval、4维 C3 Q-key、损坏 JSON/非法 hex 的 fail-closed 回归。",
+    "重新拆分 learning 的 field_authority，避免将 ledger-only counters 宣称为 recomputed。",
+    "本地 Agent 在合同外生产源码上继续复核 comparison 资源映射、experiment_platform 授权实现及 trace/population compiler。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L315-L355",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/tests/test_qlearning_migration.py#L128-L145",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L422-L523",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L125-L164"
+  ],
+  "open_items": [
+    "任务要求先读 §G-I，但绑定 commit 的 EXPERT-REVIEW-20260816.md 实际止于 §H；不存在可读取的 §I，因此无法对所谓 §I 做去重。",
+    "REMOTE 合同禁止本地 Shell/真实环境执行；F1 的 C3→C4 DDQN 完整 eval+receipt 负例与 F2 的正式 kernel+receipt 假绿链仍需本地 Agent 动态确认。",
+    "production comparison.py 不在允许读取路径；本轮只能确认 H2-13 仍是既有未决项并审查 test_comparison 覆盖，无法直接判断资源等价实现是否已有未记录变化。",
+    "production experiment_platform、trace.py、population.py 不在允许读取路径；本轮只审计了允许范围内的治理/trace/population tests，源码实现级边界仍需本地 Agent 补审。"
+  ]
+}
+===END_OFFLOAD_RESULT===
