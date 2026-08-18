@@ -1,0 +1,61 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:Q0-R1-ALGO:independent_review",
+    "title": "Q0 完全信息下最优上界算法选型（文献/数学/复杂度/平台映射）",
+    "goal": "平台背景：逐跳路由仿真，每个数据包有 src/dst/bits/deadline，卫星间 ISL 有容量/队列/传播时延，GSL 上行/下行与 ISL 服务共享链路、可能发生几何/GE 中断；动作集 {deliver,N,S,E,W}；观测为局部控制缓存（C1-C7 信息契约）；Q0 指决策者能瞬间读取全局当前状态（全部队列、链路占用/剩余服务时间、传播中包、GE 状态、拓扑）但看不到未来。请回答：(1) 全局瞬时信息下，哪个算法族能实现最优上界——时间扩展网络流/MILP、连续时间调度模型、动态规划、滚动时域优化、最小费用流，还是其他？给出代表性文献（作者/年份/标题/核心结论）、数学表述（目标函数与约束）、最坏情形复杂度、以及在本平台（包粒度、non-preemptive 链路、deadline、中断）的映射建议；(2) 对最优性的判定标准给出明确建议（总交付率/加权完成/队列成本等，需与平台 M1 排队奖励 + 到达奖励基线可对照）；(3) 小规模可运行原型（≤2-3 星、少量包）用什么算法最稳妥（可精确求解），避免过度工程。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "1599d3e3c7d5d74f22ddb497969f28fe8b90b73c",
+      "paths": [
+        "ANALYSIS/PLATFORM-DOCUMENTATION",
+        "ANALYSIS/EXPERT-REVIEW-20260816.md",
+        "ANALYSIS/REWARD-DIFF-20260816.md",
+        "CODE/leo_sim/kernel.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result",
+      "web_research"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "每条结论给出文献（作者/年份/标题）+ 数学 + 复杂度 + 平台映射四层证据",
+      "明确标注 FACT（文献/数学可证）/INFERENCE/未验证",
+      "给出可执行的小规模原型建议与复杂度预算",
+      "克制冷静：禁止奉承，直接指出不确定处；显式声明 open_items"
+    ],
+    "requiredEvidence": [
+      "至少 5 篇代表性文献（时间扩展网络流、LEO 路由调度、deadline-aware 网络调度、DP/滚动优化）",
+      "最优性判定标准与平台 M1 排队奖励基线可对照的数学说明",
+      "候选算法在包粒度下最坏复杂度与平台规模（数十星、千包级）匹配性",
+      "信息裁剪（去掉远端队列/远端拓扑/AoI 之一或之二）后：原最优算法是否仍适用，还是应切换分散 RL/局部贪心/其他算法——给出判定逻辑"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "4d5b47e12d03ec000e3683f29b17b0d46bbce6eb47308fb81eab9e007537433c"
+}
