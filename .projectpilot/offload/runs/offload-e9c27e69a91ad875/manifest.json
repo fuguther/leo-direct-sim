@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "planId": "offload-e9c27e69a91ad875",
+  "relayManifest": {
+    "planId": "offload-e9c27e69a91ad875",
+    "projectId": "leo-direct-sim",
+    "backend": "web_chat",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:R4B2-final40",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "be0520ba037db8df8e931abd3cb85f6e64c1c9df",
+        "paths": [
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/tests",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md"
+        ],
+        "promptHash": "8e7b2ba439328ceb78e74a44f46229c49d9da1cf99df2f489429ec378f6817d2"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:R4B2-final40:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "be0520ba037db8df8e931abd3cb85f6e64c1c9df",
+        "paths": [
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/tests",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md"
+        ],
+        "promptHash": "2fe42bcca71627ef0c915d98b39a4387eba07c5562bd30c8c3a6a8d7b06a4dcb"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "e9c27e69a91ad875ec8804e85bf6f3115ea6d43c676a8924b9cf53b560f514b1"
+  },
+  "sourceBaseCommit": "be0520ba037db8df8e931abd3cb85f6e64c1c9df",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:R4B2-final40",
+      "promptHash": "8e7b2ba439328ceb78e74a44f46229c49d9da1cf99df2f489429ec378f6817d2",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "be0520ba037db8df8e931abd3cb85f6e64c1c9df",
+        "paths": [
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/tests",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:R4B2-final40:independent_review",
+      "promptHash": "2fe42bcca71627ef0c915d98b39a4387eba07c5562bd30c8c3a6a8d7b06a4dcb",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "be0520ba037db8df8e931abd3cb85f6e64c1c9df",
+        "paths": [
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/tests",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
