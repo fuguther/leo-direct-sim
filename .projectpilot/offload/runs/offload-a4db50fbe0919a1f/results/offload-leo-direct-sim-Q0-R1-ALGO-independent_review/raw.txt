@@ -1,0 +1,1487 @@
+Q0 完全信息下最优上界算法选型：独立复核结论
+0. 结论先行
+
+核心结论：严格按当前任务定义的 Q0——“能瞬时读取全部当前全局状态，但看不到未来”——不存在一个 time-expanded MILP / min-cost-flow 能直接被称为 Q0 的普适精确最优算法。
+
+应区分三个问题：
+
+Q0-I：当前全局状态完全可见，仍保持现有逐包逐跳动作和现有 DRR/priority/物理执行语义。
+若未来到达、GE、拓扑演化等的转移概率模型已知，理论上的精确算法族应是 事件驱动 SMDP / PDMP 动态规划（Dynamic Programming）。本平台有确定性服务轨迹和随机/确定性中断事件，PDMP/SMDP 比固定时间步 MDP 更自然。Almudevar 给出了受控 piecewise-deterministic Markov process 转成离散决策过程并做 DP 的形式。
+工业与应用数学学会
+
+Q0-F：连未来到达、未来几何/中断轨迹也已知，即 clairvoyant offline oracle。
+这时最合适的是 continuous/event-time MILP 或 CP-SAT；time-expanded MILP 是次选。Boland 等的 continuous-time service network design / dynamic discretization discovery 说明，可通过部分时间展开保持连续时间精确性，而无需预先把全部时间点离散化。
+PubsOnline
++1
+
+但它不是任务定义的 Q0。
+
+实际大规模在线 Q0：数十星、千包级。
+精确 DP 和包级 MILP 都会组合爆炸；工程上只能用 rolling-horizon MILP/MPC、MaxWeight/backpressure、启发式或 RL 等近似策略。Rolling horizon 本身有最优性损失，文献给的是误差界而非一般全局最优保证。
+PubsOnline
++1
+
+因此我的算法排序是：
+
+严格 Q0 精确理论基准：event-driven SMDP/PDMP DP
+clairvoyant 上界：continuous-time/event-based MILP/CP-SAT
+大规模可运行 Q0：rolling-horizon optimization / queue-based online control
+普通 time-expanded min-cost flow：只能作为 relaxation，不是本平台精确上界。
+
+这一分类也与仓库已有 Q0-I / Q0-J / Q0-F 划分一致：
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L102-L113
+
+1. 为什么“当前完全信息”仍不能直接做 clairvoyant MILP
+1.1 一个足以否定“样本路径全局最优”的反例
+
+FACT（数学反例）
+
+考虑一条单服务器、non-preemptive 链路。
+
+当前 t=0：
+
+包 A：服务时间 2，deadline 2；
+
+决策只有“现在开始 A”或“暂不使用链路”。
+
+两个未来世界在 t=0 的全局状态完全相同：
+
+W
+1
+	​
+
+：以后没有新包；
+
+W
+2
+	​
+
+：在 t=ε 到达两个服务时间 0.5、deadline 1+ε 的包 B,C。
+
+则：
+
+W
+1
+	​
+
+：立即服务 A 最优，交付 1 个；等待后 A 会错过 deadline。
+
+W
+2
+	​
+
+：若立即服务 A，由于 non-preemptive，B,C 均失约，只交付 A，共 1 个；若等到 ε，依次服务 B,C，可交付 2 个。
+
+因此同一个 S
+0
+	​
+
+ 在两个不可区分的未来下要求相反的最优动作。
+
+结论：任何只看当前状态、看不到未来 realization 的 causal policy，都不可能对所有未来样本路径与 clairvoyant oracle 同时等价。
+
+所以若任务没有进一步规定未来随机过程的概率律，甚至连
+
+π
+max
+	​
+
+E
+π
+	​
+
+[J]
+
+中的期望都无法定义。
+
+此时必须在以下三种“最优”中选一种：
+
+已知概率律：expected-optimal stochastic control；
+
+只知道不确定集：robust/minimax control；
+
+完整未来轨迹已知：offline clairvoyant optimum。
+
+把第三种直接叫 Q0，会高估 Q0。
+
+仓库本身已经要求拆开 Q0-I / Q0-J / Q0-F，而不是混为一个上界：
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L102-L113
+
+2. 平台为什么不是普通网络流问题
+
+当前 kernel 的关键物理语义包括：
+
+包有独立 bits/deadline/path；
+
+GSL/ISL 服务是有限资源；
+
+ISL 数据和控制共享队列，控制是 non-preemptive priority；
+
+服务与 geometry loss、GE outage、deadline、hard-retirement 竞速；
+
+链路服务开始后不能暂停再恢复；
+
+propagation 也是实际时间；
+
+GSL 有 acquisition、K-slot、BBM/MBB/DRR；
+
+当前 action 仍是逐包的 {deliver,N,S,E,W}。
+
+仓库锚点：
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/PLATFORM-DOCUMENTATION/02-v2-platform.md#L45-L119
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L811-L940
+
+因此本问题本质上是：
+
+online multihop routing+non-preemptive scheduling+deadlines+finite buffers+stochastic/deterministic interruptions
+	​
+
+
+而不是简单 shortest path。
+
+3. 各候选算法族逐项判定
+算法族	能否作为严格 Q0 精确最优	最坏复杂度	本平台判定
+Event-driven SMDP/PDMP DP	可以，条件是未来转移律已知	显式有限状态约 (O(K	S
+Time-expanded min-cost flow	否，除非做强 relaxation	展开图上多项式	packet/non-preemptive/deadline 后失去精确性
+Time-expanded packet MILP	若未来完整已知则可以	NP-hard；exact B&B/CP 最坏枚举级	Q0-F
+Continuous-time/event MILP	若未来完整已知则可以	同样 NP-hard	Q0-F 比固定时间展开更合适
+Rolling-horizon MILP/MPC	一般不可以	每次重复 NP-hard 子问题	大规模 Q0 实用近似
+Backpressure / MaxWeight	不针对 deadline completion 最优	依赖每时刻 feasible-schedule oracle	吞吐/稳定性强基线
+局部 greedy / shortest path	否	低	仅 baseline
+3.1 时间扩展网络流 / min-cost flow
+
+Ford–Fulkerson 的动态流模型在带 transit time 和 capacity 的标准动态网络流下可以有效求解；Orlin 对 capacitated min-cost flow 给出强多项式
+
+O(mlogn(m+nlogn)).
+
+PubsOnline
++1
+
+若离散时间展开为 T 个时刻：
+
+n
+′
+=O(∣V∣T),m
+′
+=O((∣E∣+∣V∣)T).
+
+问题在于这不是本平台的精确模型。
+
+一旦每个 packet：
+
+不能拆流；
+
+有不同 deadline；
+
+必须沿一条实际 route；
+
+占用整个 non-preemptive service interval；
+
+多包不能同时占同一服务器；
+
+就需要 binary path/service/order variables。经典带资源、precedence、deadline 的 non-preemptive scheduling 已经是 NP-complete；job-shop 的多个基本形式也已被证明 NP-complete。
+工业与应用数学学会
++1
+
+因此：
+
+普通 min-cost flow = 很好的 fractional relaxation / lower-level baseline，但不能称平台精确 optimum。
+
+3.2 Continuous-time MILP / DDD
+
+Boland, Hewitt, Marshall, Savelsbergh（2017）提出 continuous-time service network design，使用逐步细化的 partially time-expanded networks，仍可得到其模型的 continuous-time optimum；Marshall 等随后进一步发展 interval-based dynamic discretization。
+PubsOnline
++1
+
+它对本项目有两个优点：
+
+不必人为选 1 ms / 10 ms / 100 ms 这样的时间格；
+
+很适合 service completion、deadline、link-change 这些事件时刻。
+
+但它不会消除 route/schedule 的组合复杂度。
+
+**INFERENCE：**本平台若做 exact offline oracle，优先选 event/continuous-time formulation，而不是完整均匀 time expansion。
+
+3.3 严格 Q0：SMDP / PDMP Dynamic Programming
+
+当前系统的大量状态在事件之间确定性演化，而 GE outage / arrivals 等造成随机 jump。这与 piecewise-deterministic Markov process 的结构高度吻合；Almudevar（2001）证明可把受控 PDMP 表成离散决策过程并通过动态规划求 value function。
+工业与应用数学学会
+
+令完整状态：
+
+S
+t
+	​
+
+=(t,Q
+t
+	​
+
+,O
+t
+	​
+
+,R
+t
+	​
+
+,P
+t
+	​
+
+,A
+t
+	​
+
+,G
+t
+	​
+
+,T
+t
+	​
+
+,D
+t
+	​
+
+),
+
+其中分别包括：
+
+所有队列及 FIFO 顺序 Q
+t
+	​
+
+；
+
+当前 in-service 包和 remaining service O
+t
+	​
+
+；
+
+propagation 中的包及 remaining propagation R
+t
+	​
+
+；
+
+pending/in-flight packet attributes P
+t
+	​
+
+；
+
+GSL association / retirement / access-slot 状态 A
+t
+	​
+
+；
+
+GE states G
+t
+	​
+
+；
+
+当前 topology T
+t
+	​
+
+；
+
+packet deadlines 等 D
+t
+	​
+
+。
+
+在下一事件距离当前 τ 时，Bellman 方程可写成：
+
+V(s)=
+a∈A(s)
+max
+	​
+
+E[r(s,a,S
+′
+,τ)+V(S
+′
+)∣S=s,a].
+
+终止于 horizon：
+
+V(s
+H
+	​
+
+)=g(s
+H
+	​
+
+).
+重要限制
+
+这只在 S
+t
+	​
+
+ 确实是 Markov sufficient state、且
+
+P(S
+′
+,τ∣S,a)
+
+已知时成立。
+
+本任务的“看不到未来”尚未明确：
+
+是否允许知道 GE transition rates；
+
+是否允许知道未来 traffic arrival 分布；
+
+是否允许通过 orbital dynamics 精确预测未来 geometry。
+
+这个问题必须冻结，否则“Q0 optimal”仍没有唯一数学定义。
+
+4. Q0-F 的精确 packet-level MILP 应如何写
+
+如果明确改为 Q0-F / offline clairvoyant oracle，推荐 route-selection + interval-scheduling formulation。
+
+定义：
+
+p：packet；
+
+r∈R
+p
+	​
+
+：packet p 的候选简单 route；
+
+e
+prk
+	​
+
+：route 的第 k 个 service resource；
+
+b
+p
+	​
+
+：bits；
+
+C
+e
+	​
+
+：链路 bit rate；
+
+q
+pe
+	​
+
+=b
+p
+	​
+
+/C
+e
+	​
+
+：non-preemptive service time；
+
+y
+p
+	​
+
+∈{0,1}：deadline 内成功；
+
+z
+pr
+	​
+
+∈{0,1}：选 route；
+
+s
+prk
+	​
+
+：hop 开始时间。
+
+Route
+r∈R
+p
+	​
+
+∑
+	​
+
+z
+pr
+	​
+
+=y
+p
+	​
+
+.
+Hop precedence
+s
+pr,k+1
+	​
+
+≥s
+prk
+	​
+
++q
+p,e
+prk
+	​
+
+	​
+
++δ
+e
+prk
+	​
+
+	​
+
+−M(1−z
+pr
+	​
+
+).
+
+其中 δ
+e
+	​
+
+ 是 propagation delay。
+
+Non-preemptive resource exclusivity
+
+对共享同一 resource 的两个 operation i,j，引入顺序变量 u
+ij
+	​
+
+：
+
+s
+j
+	​
+
+≥s
+i
+	​
+
++q
+i
+	​
+
+−M(1−u
+ij
+	​
+
+),
+s
+i
+	​
+
+≥s
+j
+	​
+
++q
+j
+	​
+
+−Mu
+ij
+	​
+
+.
+
+这是典型 job-shop 的 NoOverlap 结构；OR-Tools 官方 CP-SAT job-shop 示例正是通过 interval、precedence 和 AddNoOverlap 建模 non-preemptive machine service。
+Google for Developers
+
+Deadline
+C
+p
+	​
+
+≤d
+p
+	​
+
++M(1−y
+p
+	​
+
+).
+Link-up windows
+
+若未来 outage/geometry 已知，可要求一次 service 完整落入某个 up interval：
+
+l
+w
+	​
+
+≤s
+pe
+	​
+
+,s
+pe
+	​
+
++q
+pe
+	​
+
+≤u
+w
+	​
+
+.
+Finite buffer
+
+还不能只约束服务器，需要约束等待阶段占 buffer：
+
+p:a
+pe
+	​
+
+≤t<s
+pe
+	​
+
+∑
+	​
+
+b
+p
+	​
+
+≤B
+e
+	​
+
+,∀t∈T
+event
+	​
+
+.
+
+CP-SAT 可把等待区间建成 cumulative-resource interval。
+
+当前已经在服/传播的 packet
+
+不能重新优化掉：
+
+in-service residual → fixed blocking interval；
+
+propagation packet → fixed future-arrival event；
+
+already-consumed service → sunk state。
+
+这才能真正从 snapshot continuation，而不是“从头重排”。
+
+5. Q0-I 与 Q0-J 必须分开
+
+这是本次独立复核中我认为最重要的工程边界之一。
+
+仓库当前已经发现：
+
+无 apply_joint_plan；
+
+无显式 WAIT；
+
+planner 只能逐包逐跳；
+
+scheduler 仍由 Kernel 控制；
+
+pending 甚至还不是有限、记 queue-area 的正式 holding resource。
+
+证据：
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L90-L101
+
+所以：
+
+Q0-I
+
+只放开信息。
+
+a
+t
+	​
+
+∈{deliver,N,S,E,W}
+
+DRR、control priority、自动 service start、access scheduler 都保持原样。
+
+这是最适合与 C1-C7 做“纯信息价值”比较的 Q0。
+
+Q0-J
+
+再允许：
+
+WAIT；
+
+packet service ordering；
+
+link reservation；
+
+joint route/schedule；
+
+可能的 association planning。
+
+这是更大的 policy class：
+
+Π
+Q0−I
+	​
+
+⊊Π
+Q0−J
+	​
+
+.
+
+因此：
+
+J
+Q0−J
+⋆
+	​
+
+≥J
+Q0−I
+⋆
+	​
+
+
+并不能把差距解释成“全局信息的价值”。
+
+仓库已有同样的实验设计警告：
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L102-L113
+
+6. 最优性的目标函数：不要直接优化 M1 shaped return
+推荐：lexicographic physical objective
+一级目标：deadline 内成功交付
+
+默认：
+
+J
+1
+	​
+
+=max
+p
+∑
+	​
+
+y
+p
+	​
+
+.
+
+这和平台“每成功 delivery 固定 arrival reward=50”在 packet weighting 上最接近。
+
+同时必须报告 bit-weighted：
+
+η
+bits
+	​
+
+=
+∑
+p
+	​
+
+b
+p
+	​
+
+∑
+p
+	​
+
+b
+p
+	​
+
+y
+p
+	​
+
+	​
+
+.
+
+如果论文最终把 throughput 作为首要业务目标，则反过来把 delivered bits 作为一级目标即可，但要跨臂固定。
+
+二级目标：排队成本
+
+推荐：
+
+J
+2
+	​
+
+=min
+p,h
+∑
+	​
+
+W
+ph
+	​
+
+
+或平台已有 queued-bit-seconds：
+
+A
+Q
+	​
+
+=∫
+0
+H
+	​
+
+q
+∑
+	​
+
+B
+q
+	​
+
+(t)dt.
+
+kernel 已分别结算 uplink/downlink/ISL-data/ISL-control queue-area：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1698-L1721
+
+注意：仓库已知 pending 不计 queue-area，因此目前 queue_area 还不能代表“系统所有等待成本”。
+
+三级目标：真实 E2E latency
+J
+3
+	​
+
+=min
+p:y
+p
+	​
+
+=1
+∑
+	​
+
+(C
+p
+	​
+
+−r
+p
+	​
+
+).
+
+P95/P99 建议作为最终报告指标，而不是第一版 solver objective；后者会明显增加精确建模复杂度。
+
+最终用：
+
+lexmax(
+p
+∑
+	​
+
+y
+p
+	​
+
+,−A
+Q
+	​
+
+,−
+p
+∑
+	​
+
+y
+p
+	​
+
+(C
+p
+	​
+
+−r
+p
+	​
+
+)).
+
+比手工调一个
+
+50⋅delivery−αqueue−βdelay
+
+稳定得多。
+
+7. 与 M1 奖励的数学关系
+
+当前基线为：
+
+r
+Q
+	​
+
+(W)=20e
+−200W
+,
+
+真实 delivery：
+
+r
+arrive
+	​
+
+=50,
+
+fail：
+
+r
+fail
+	​
+
+=0.
+
+证据：
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/REWARD-DIFF-20260816.md#L8-L20
+
+小等待下：
+
+20e
+−200W
+=20−4000W+O(W
+2
+).
+
+因此在 hop 数已经固定、等待很小时，它局部上与“减小排队等待”方向一致。
+
+但它不能作为物理最优性定义。
+
+因为每增加一个 forward transition，就新增一个正的 queue reward；仓库已有独立审查确认“额外走低拥塞 hop 可以提高 shaped return”，且奖励没有传播、接入、下行时延成本：
+
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L7-L52
+
+所以可能出现：
+
+R
+M1
+	​
+
+(π
+A
+	​
+
+)>R
+M1
+	​
+
+(π
+B
+	​
+
+),delivery(π
+A
+	​
+
+)<delivery(π
+B
+	​
+
+)
+
+或时延反而更差。
+
+仓库也已经要求 Q0 比较冻结 delivered bits / deadline success / E2E latency tail，不要跨目标拿 shaped return 直接比较：
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L102-L113
+
+建议：M1 raw return 只作为辅助诊断列，不作为 Q0 optimum 定义。
+
+8. 最坏复杂度与“数十星 × 千包”匹配
+8.1 SMDP/DP
+
+显式 finite-state DP 若有 K 个决策 stage：
+
+O(K∣S∣∣A∣
+d
+ˉ
+)
+
+其中 
+d
+ˉ
+ 是 next-state support。
+
+问题是 ∣S∣：
+
+P 个有身份 packet 的位置/queue assignment 组合随 P 指数增长；
+
+FIFO order 再引入排列；
+
+L 个两状态 GE channel 自身就有最多 2
+L
+ 组合；
+
+residual service/deadline/propagation 又进一步扩大状态。
+
+结论：数十星、千包不可能显式精确 DP。
+
+8.2 完整 time-expanded packet MILP
+
+变量规模典型为：
+
+Θ(P∣E∣T).
+
+仅作量级示例（INFERENCE，不是仓库配置事实）：
+
+P=1000
+
+V=60
+
+每星约 4 个有向邻接，E≈240
+
+T=1000 个时间槽
+
+则已有约：
+
+1000×240×1000=2.4×10
+8
+
+个 packet-edge-time 量级变量。
+
+尚未计 order、GSL、buffer、association。
+
+不合适。
+
+8.3 Event-based MILP
+
+能消掉大部分 T 维，但资源 pairwise sequencing 最坏会出现：
+
+O(P
+2
+∣E∣)
+
+级潜在冲突关系。
+
+调度问题本身已经 NP-hard/NP-complete，因此 branch-and-bound / CP-SAT 不存在一般多项式 exact 保证，除非 P=NP。
+工业与应用数学学会
++1
+
+8.4 Rolling horizon
+
+每隔若干事件解：
+
+min/maxMILP(P
+window
+	​
+
+,E,H
+plan
+	​
+
+)
+
+只执行第一步，再滚动。
+
+总体成本约：
+
+K
+replans
+	​
+
+×C
+exact
+	​
+
+(P
+window
+	​
+
+,E,H
+plan
+	​
+
+).
+
+White 与 Alden–Smith 的工作证明 rolling-horizon 可以分析最优性损失，但本身不自动等于无限/全 horizon optimum。
+PubsOnline
++1
+
+因此它最适合 full-scale practical Q0 policy，而不是 exact benchmark。
+
+9. 小规模原型怎么做最稳妥
+推荐两个很小、角色明确的 oracle
+A. 真正对应 Q0-I：event-state memoized DP
+
+范围：
+
+2–3 satellites；
+
+2–5 packets；
+
+每包少数 legal actions；
+
+固定现有 DRR/control/non-preemptive 执行；
+
+planner 只控制 {deliver,N,S,E,W}；
+
+明确给定 arrival/GE/topology transition law。
+
+递推：
+
+V(s)=
+a∈A(s)
+max
+	​
+
+s
+′
+,τ
+∑
+	​
+
+P(s
+′
+,τ∣s,a)[r+V(s
+′
+)].
+
+只 memoize 实际 reachable event states。
+
+这是最干净的 Q0 correctness oracle。
+
+不要一开始做完整 60 星 CTMDP。
+
+B. 独立交叉验证：CP-SAT micro-oracle
+
+用于 Q0-J/Q0-F。
+
+范围建议：
+
+2–3 星；
+
+3–8 packets；
+
+枚举少量 simple candidate routes；
+
+optional IntervalVar；
+
+每条 ISL/GSL NoOverlap；
+
+precedence；
+
+propagation；
+
+deadline；
+
+fixed current in-service intervals；
+
+必要时 finite-buffer cumulative。
+
+Google 官方 CP-SAT 支持 integer interval scheduling、precedence、NoOverlap；只有 solver 返回 OPTIMAL 才能声明已证最优，FEASIBLE 不行。CP-SAT 只使用整数，因此连续秒数必须先选择不改变 micro-instance 顺序/可行性的精确时间 scaling。
+Google for Developers
++1
+
+不建议第一版自己实现 Boland-style DDD。
+对 2–3 星属于明显过度工程。
+
+10. 信息裁剪后，原“最优 DP”是否还成立
+
+判定标准只有一个：
+
+裁剪后的观测是否仍是 Markov sufficient statistic
+	​
+
+
+即是否满足：
+
+P(S
+t+1
+	​
+
+,R
+t
+	​
+
+∣O
+0:t
+	​
+
+,A
+0:t
+	​
+
+)=P(S
+t+1
+	​
+
+,R
+t
+	​
+
+∣O
+t
+	​
+
+,A
+t
+	​
+
+).
+去掉远端队列
+
+一般 不成立。
+
+两个真实状态可以具有相同剩余观测，但远端排队完全不同，因此：
+
+route completion probability 不同；
+
+deadline success 不同；
+
+optimal action 不同。
+
+这时在 O
+t
+	​
+
+ 上直接继续做原 MDP-DP 已不再精确。
+
+小规模且模型已知，可转 belief-state POMDP；Smallwood–Sondik 给出了有限 horizon POMDP 的精确 belief-state optimal control 形式。
+PubsOnline
+
+大规模则现实选择是：
+
+recurrent centralized RL；
+
+decentralized/MARL；
+
+邻居 queue 可见时用 backpressure 类基线。
+
+Tassiulas–Ephremides 的经典结果说明 MaxWeight/backpressure 类方法可以在其 constrained multihop queueing model 中达到最大 stability region，但这是 throughput/stability 最优，并非 hard-deadline timely-completion 最优。
+DRUM
+
+去掉远端 topology
+
+同样通常破坏 Markov sufficiency。
+
+当前相同 local neighborhood 可能对应完全不同的远端连通性，因此短期同一动作的 downstream value 不同。
+
+建议：
+
+tiny + known model → POMDP；
+
+full scale → local/recurrent RL；
+
+local greedy 只作下界 baseline，不能叫 upper bound。
+
+去掉 AoI
+
+要区分两种情况。
+
+真正 Q0 instantaneous truth
+
+若字段本身是直接读取当前全局真值，则信息年龄为 0：
+
+AoI=0.
+
+这时去掉 AoI 标签本身可以是 lossless。
+
+C1–C7 cache observation
+
+若远端状态来自已到达 control cache，则同一 cached value：
+
+“刚收到 1 ms”
+
+“已经陈旧 1 s”
+
+对真实远端状态的 posterior 显然可能不同。
+
+因此删除 AoI 会产生 observation aliasing，通常应按 POMDP/历史状态处理。
+
+仓库平台说明明确 local cache 是学习侧远程信息来源，而 Q0 当前真值是不同的信息机制：
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/PLATFORM-DOCUMENTATION/02-v2-platform.md#L105-L119
+
+11. 信息裁剪后的算法选择逻辑
+
+可以直接冻结成实验判定规则：
+
+观测仍 Markov sufficient
+→ 原 SMDP/DP 仍理论适用。
+
+非 Markov，但 hidden-state transition/observation model 已知，规模极小
+→ belief-state POMDP DP。
+
+非 Markov，规模大，但 centralized history 可用
+→ recurrent RL / approximate belief policy。
+
+每星只能拿自身 + 邻居状态
+→ decentralized RL / MARL；若目标偏长期 throughput，可加入 backpressure baseline。
+
+只用 instant local metric
+→ greedy / shortest-path / queue heuristic，仅作低成本 baseline。
+
+不能因为“删了一些信息”就继续把 full-state optimizer 喂一个残缺向量，并仍称其最优。
+
+12. 代表性文献
+
+Ford, L. R. Jr.; Fulkerson, D. R. (1958). Constructing Maximal Dynamic Flows from Static Flows. Operations Research 6(3):419–433.
+动态网络流经典结果：arc capacity + transit time 下求 finite-horizon maximal dynamic flow。说明 time-dependent flow 在可分流模型中可以高效求解。
+PubsOnline
+
+web://pubsonline.informs.org/doi/10.1287/opre.6.3.419
+
+Orlin, J. B. (1993). A Faster Strongly Polynomial Minimum Cost Flow Algorithm. Operations Research 41(2):338–350.
+Capacitated min-cost flow 强多项式复杂度 O(mlogn(m+nlogn))。
+PubsOnline
+
+web://pubsonline.informs.org/doi/10.1287/opre.41.2.338
+
+Boland, N.; Hewitt, M.; Marshall, L.; Savelsbergh, M. (2017). The Continuous-Time Service Network Design Problem. Operations Research 65(5):1303–1321.
+通过动态细化 partially time-expanded network，精确求连续时间 SND，而不显式枚举所有时间点。
+PubsOnline
+
+web://pubsonline.informs.org/doi/10.1287/opre.2017.1624
+
+Marshall, L.; Boland, N.; Savelsbergh, M.; Hewitt, M. (2020/2021). Interval-Based Dynamic Discretization Discovery for Solving the Continuous-Time Service Network Design Problem. Transportation Science 55(1):29–51.
+继续改进 continuous-time exact dynamic discretization。
+PubsOnline
+
+web://pubsonline.informs.org/doi/10.1287/trsc.2020.0994
+
+Almudevar, A. (2001). A Dynamic Programming Algorithm for the Optimal Control of Piecewise Deterministic Markov Processes. SIAM Journal on Control and Optimization 40(2):525–539.
+受控 PDMP 可化成离散决策过程并由 DP 求 expected optimum；与本平台“确定性服务轨迹 + 随机 jump”结构高度相关。
+工业与应用数学学会
+
+web://epubs.siam.org/doi/10.1137/S0363012999364474
+
+White, D. J. (1996). Decision Roll and Horizon Roll Processes in Infinite Horizon Discounted Markov Decision Processes. Management Science 42(1):37–50.
+研究 rolling finite-horizon recomputation，并给出 optimality-loss bounds；支持“rolling horizon 是近似而非一般精确 optimum”的判定。
+PubsOnline
+
+web://pubsonline.informs.org/doi/10.1287/mnsc.42.1.37
+
+Hou, I.-H.; Kumar, P. R. (2009). Scheduling Heterogeneous Real-Time Traffic over Fading Wireless Channels.
+对 heterogeneous deadlines、time-varying channels 建立 feasibility-optimal scheduling 条件；说明 deadline-aware online scheduling 需要专门建模，普通 throughput scheduler 不够。
+arXiv
+
+https://arxiv.org/abs/0908.0587
+
+Tassiulas, L.; Ephremides, A. (1992). Stability Properties of Constrained Queueing Systems and Scheduling Policies for Maximum Throughput in Multihop Radio Networks.
+给出最大 stability-region 意义的 throughput-optimal scheduling；适合作为 scalable queue-based baseline，但目标不同于 deadline completion。
+DRUM
+
+web://drum.lib.umd.edu/items/571fda52-aefb-4497-9a2d-69d8c7c907b9
+
+Guo, B.; Zhang, Z.; Atapattu, S.; Pan, M.; Yan, Y.; Xiong, Z.; Li, H. (2025). Enabling Real-Time Computing and Transmission Services in Large-Scale LEO Satellite Networks. IEEE Transactions on Vehicular Technology 74(8):12813–12828.
+对 time-varying LEO 实时计算/传输做 ILP；一般数学优化的复杂度快速增长，再利用其特定问题结构构造 polynomial graph algorithm。该 special structure 不能直接迁移到本平台的 packet-level non-preemptive/GE/queue 模型。
+IEEE Xplore
++1
+
+web://ieeexplore.ieee.org/abstract/document/10937133
+
+Garey, M. R.; Johnson, D. S.; Sethi, R. (1976). The Complexity of Flowshop and Jobshop Scheduling. Mathematics of Operations Research 1(2):117–129.
+多种 non-preemptive flowshop/jobshop scheduling 问题 NP-complete，为 packet-level joint scheduling 的最坏复杂度判断提供基础。
+PubsOnline
+
+web://pubsonline.informs.org/doi/10.1287/moor.1.2.117
+
+补充 LEO 路由背景：Handley（2018）直接研究高速动态 LEO constellation 的低时延 routing；Bhattacherjee & Singla（2019）研究高速变化下的 LEO topology design。
+UCL Discovery
++1
+
+13. 最终建议
+第一阶段：只做 Q0-I tiny exact
+
+2–3 星；
+
+≤5 packets；
+
+保持 Kernel 原调度语义；
+
+event-state SMDP/DP；
+
+primary objective = timely delivery；
+
+secondary = queue wait / queue area；
+
+M1 raw return 只输出，不优化。
+
+第二阶段：做独立 Q0-F micro oracle
+
+CP-SAT；
+
+3–8 packets；
+
+route enumeration + optional intervals + NoOverlap；
+
+仅 OPTIMAL 接受；
+
+用于交叉检查 DP 和测量 clairvoyance gap。
+
+第三阶段：full-scale
+
+rolling-horizon optimizer；
+
+backpressure/deadline-aware heuristic；
+
+Q0 centralized RL。
+
+不要试图对千包全 horizon 直接求 exact MILP。
+
+14. 独立复核发现
+
+F1 — blocking — Q0 与 clairvoyant upper bound 目前存在概念混淆风险。
+严格 current-state-only Q0 的 exact family 是 stochastic event DP（有已知 transition law 时）；未来轨迹 MILP 必须标 Q0-F。仓库本身已经要求 Q0-I/J/F 分离。
+
+F2 — major — plain time-expanded/min-cost flow 不是本平台 packet-level exact optimizer。
+核心缺口是 packet indivisibility、non-preemptive resource conflict、deadline、buffer 与 interruption，而不是单纯 dynamic graph。
+
+F3 — blocking — M1 shaped return 不得成为 Q0 最优性指标。
+正 forward reward 会造成 route-length incentive；仓库已记录为 blocking reward flaw。应固定 physical objective。
+
+F4 — major — 允许 WAIT/joint scheduling 会改变 action/control class。
+它应命名 Q0-J，不能拿其增益归因为信息可见性。
+
+F5 — major — 数十星/千包 full exact 没有现实复杂度预算。
+精确 solver 应限 tiny canonical instances；full scale 改 rolling horizon/online control。
+
+F6 — major — 信息裁剪后若 observation 不再 Markov，不能继续宣称 full-state DP optimal。
+应转 POMDP/approximate belief/recurrent/decentralized policy；local greedy 只能作 baseline。
+
+Open items
+
+Q0 是否知道未来 stochastic transition law？ 当前只明确“看不到未来 realization”。若 transition law 也未知，则 expected-optimal SMDP 的定义不完整。
+
+预测 deterministic orbital ephemeris 是否算“看未来”？ 当前平台说明强调 kernel 只读当前几何；若 planner 可由 orbital model 推出未来 topology，则实际上获得了确定性 future information。
+
+主 Q0 是否严格冻结 Q0-I 的 DRR / control priority / forced-deliver / 无 WAIT？ 建议答案为是；否则必须另列 Q0-J。
+
+deadline 等时刻语义尚未完全冻结。 仓库 D6 仍记录 >= / > 以及 service_end==deadline 差异；exact oracle 与 kernel 比较前必须统一。
+github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L43-L52
+
+若保留 control-plane traffic 做公平信息归因，需要明确 tiny optimizer 如何处理未来 control generation：未知未来 arrivals，还是固定为 kernel 外生 schedule。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:Q0-R1-ALGO:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "严格 Q0 仅知当前全局状态而不知未来，因此不能把 clairvoyant time-expanded MILP 直接称为 Q0 最优。若未来转移律已知，Q0-I 的理论精确族应为事件驱动 SMDP/PDMP 动态规划；完整未来已知时 continuous/event-time MILP/CP-SAT 才是 Q0-F 精确上界。普通 min-cost flow 不能精确表达包不可分、non-preemptive、deadline、中断和有限队列。最优性建议按 timely delivery→queue cost→E2E latency 做 lexicographic physical objective，M1 shaped return 仅作诊断。tiny Q0-I 用 memoized event DP，Q0-F 用 CP-SAT 交叉验证；千包级改 rolling horizon/online control。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "当前状态完全可见不等于未来样本路径已知；clairvoyant MILP 必须标记 Q0-F，严格 Q0-I 在已知转移律下对应 event-driven SMDP/PDMP DP。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L102-L113",
+        "web://epubs.siam.org/doi/10.1137/S0363012999364474",
+        "web://pubsonline.informs.org/doi/10.1287/mnsc.42.1.37"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "普通 time-expanded/min-cost flow 只能作为 relaxation；平台 packet-level non-preemptive routing-scheduling 的 exact 版本需要整数/调度变量并继承 NP-hard 组合复杂度。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L811-L940",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/PLATFORM-DOCUMENTATION/02-v2-platform.md#L45-L119",
+        "web://pubsonline.informs.org/doi/10.1287/opre.6.3.419",
+        "web://pubsonline.informs.org/doi/10.1287/opre.41.2.338",
+        "web://epubs.siam.org/doi/10.1137/0204035",
+        "web://pubsonline.informs.org/doi/10.1287/moor.1.2.117"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "blocking",
+      "summary": "M1 正的逐跳 queue reward 与 physical timely-delivery/latency objective 不序等价，不能作为 Q0 optimality criterion。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/REWARD-DIFF-20260816.md#L8-L20",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L7-L52",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L102-L113"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "WAIT 和 joint resource scheduling 会扩大控制能力，必须与仅解除信息传播限制的 Q0-I 分成 Q0-J，不能把收益归因于信息。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L90-L113",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1545-L1645"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "summary": "数十星、千包级不适合作全 horizon exact DP/MILP；精确 oracle 应限制在 tiny canonical instances，full scale 使用 rolling horizon 或 online queue-based control。",
+      "evidence": [
+        "web://epubs.siam.org/doi/10.1137/0204035",
+        "web://pubsonline.informs.org/doi/10.1287/moor.1.2.117",
+        "web://pubsonline.informs.org/doi/10.1287/mnsc.42.1.37",
+        "web://ieeexplore.ieee.org/abstract/document/10937133"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "major",
+      "summary": "删除远端队列/远端拓扑/缓存 AoI 后若观测不再是 Markov sufficient statistic，原 full-state DP 的 optimality 声明失效，应转 belief-POMDP 或近似/分散策略。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/PLATFORM-DOCUMENTATION/02-v2-platform.md#L105-L119",
+        "web://pubsonline.informs.org/doi/10.1287/opre.21.5.1071",
+        "web://drum.lib.umd.edu/items/571fda52-aefb-4497-9a2d-69d8c7c907b9"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "冻结定义：主信息上界命名 Q0-I，只开放当前全局状态，不新增 WAIT、joint scheduling 或未来轨迹。",
+    "明确 Q0 是否允许已知 traffic/GE/topology transition law，以及 orbital ephemeris prediction 是否属于禁止的未来信息。",
+    "第一版 exact 原型采用 2-3 星、2-5 包的 memoized event-state SMDP/PDMP DP，仅控制现有逐跳动作并保持 Kernel scheduler。",
+    "另建 2-3 星、3-8 包的 CP-SAT Q0-F/Q0-J micro-oracle，route enumeration + optional intervals + NoOverlap + precedence + deadline；只有 OPTIMAL 状态接受为精确证据。",
+    "冻结跨臂 lexicographic objective：timely delivered packets或bits为一级，queue cost为二级，E2E latency为三级；raw M1 return只作辅助诊断。",
+    "在 exact oracle 与 kernel 对照前统一 deadline equality、forced-deliver、control traffic、DRR、access-slot 与 pending waiting 的语义。",
+    "full-scale 千包 Q0 不追求全 horizon exact；使用 rolling-horizon optimization，并与 backpressure/deadline-aware heuristic 和学习臂并列。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L90-L118",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L7-L52",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/REWARD-DIFF-20260816.md#L8-L20",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/PLATFORM-DOCUMENTATION/02-v2-platform.md#L45-L119",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L811-L940",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1545-L1645",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1698-L1721",
+    "web://pubsonline.informs.org/doi/10.1287/opre.6.3.419",
+    "web://pubsonline.informs.org/doi/10.1287/opre.2017.1624",
+    "web://epubs.siam.org/doi/10.1137/S0363012999364474",
+    "web://pubsonline.informs.org/doi/10.1287/mnsc.42.1.37",
+    "web://ieeexplore.ieee.org/abstract/document/10937133"
+  ],
+  "open_items": [
+    "Q0 是否知道未来 traffic arrival、GE 和 topology 的转移概率律尚未冻结；这决定 expected-optimal SMDP 是否有完整定义。",
+    "是否允许根据确定性轨道模型预测未来 topology/geometry 尚未冻结；若允许，则 Q0 的未来信息边界会显著改变。",
+    "主 Q0 是否严格冻结现有 DRR、control priority、forced-deliver 和无显式 WAIT 的 Q0-I 控制能力需正式确认。",
+    "deadline 等时刻的 >= / > 与 service_end==deadline 语义仍需统一，否则 exact oracle 与 kernel 可能在边界实例产生不同 optimum。",
+    "tiny Q0 原型中未来 control advertisement/generation 应作为未知随机过程、固定外生过程还是关闭，需在实验合同中明确。"
+  ]
+}
+===END_OFFLOAD_RESULT===
