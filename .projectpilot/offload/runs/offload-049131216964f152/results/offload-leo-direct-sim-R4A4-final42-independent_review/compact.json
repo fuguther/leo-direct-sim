@@ -1,0 +1,107 @@
+{
+  "taskId": "offload:leo-direct-sim:R4A4-final42:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "终判 REQUEST_CHANGES。R4A3 的 F1 加载端单读 JSON、N1/R1 canonical metadata pin、F2 checkpoint key 校验、N2/F3 严格键集合/legacy 判定均已静态闭合；DDQN Keras reopen 也已明确声明并发 adversarial writer 不在当前威胁模型。但发现新的 major：TabularQLearning._key 运行时不校验 contract 维度/有限性，save_and_verify 又只做 JSON 等值回读，可生成 checkpoint_verified=True、随后却被自身 loader 拒绝的 checkpoint。另有 N2 直接负例测试覆盖不足。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "JSON checkpoint 加载端已改为同一 bytes 计算 SHA 并解析；DDQN Keras pathname reopen 的剩余 TOCTOU 被显式声明为当前非对抗本地工件威胁模型之外。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L75-L145",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L400-L430",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L700-L710",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/receipt.py#L1-L10"
+      ]
+    },
+    {
+      "id": "N1-R1",
+      "severity": "info",
+      "summary": "canonical Q-learning 配置 metadata pin 时强制校验 sibling metadata 并记录实际 SHA；无 pin 时明确跳过；receipt 只在 resolved config pin 非空时要求 loaded metadata SHA 一致。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L718-L765",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/config.py#L525-L566",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/receipt.py#L525-L535",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L369-L390",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L426-L476"
+      ]
+    },
+    {
+      "id": "F2-STATE-KEY",
+      "severity": "info",
+      "summary": "checkpoint loader 已对 state key 执行 exact byte width、np.frombuffer(float64)、维度和 finiteness 校验，并给出明确错误。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L765-L800",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L405-L425"
+      ]
+    },
+    {
+      "id": "F4-RUNTIME-STATE-KEY",
+      "severity": "major",
+      "summary": "运行时 _key/_row 不校验 contract 维度或有限性，而 save_and_verify 不复用 loader validator；因此可产生被标记 checkpoint_verified=True、随后却被自身 eval loader 拒绝的非法宽度或 NaN/Inf state-key checkpoint。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L35-L70",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L813-L830",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L850-L914",
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L35-L90"
+      ]
+    },
+    {
+      "id": "N2-F3",
+      "severity": "info",
+      "summary": "Q-table 顶层键集合只接受 canonical/legacy 两个精确集合；legacy 仅以 contract 字段缺失判定，显式 contract:null 会进入 canonical mismatch 并被拒绝。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L713-L750"
+      ]
+    },
+    {
+      "id": "T1-N2-COVERAGE",
+      "severity": "minor",
+      "summary": "结构负例测试未直接覆盖 unknown extra top-level key、missing required key、显式 contract:null；实现静态上正确，但 N2 regression coverage 不完整。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L339-L368"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "在 TabularQLearning 的运行时 state-key 入口统一校验 observation contract 维度和有限性，使 choose/remember/save/load 使用同一契约。",
+    "让 save_and_verify 复用 loader 的 payload/state-key validator，并优先改成单次 read_bytes 后同一 bytes 做 SHA 与 JSON 解析。",
+    "新增 wrong-dimension/NaN runtime observation 到 save->load 的回归测试，并修正现有 C3 测试使用 4D/8D state 的合同漂移。",
+    "补 unknown top-level、missing required top-level、contract:null 的直接负例。",
+    "本地 Agent 运行允许路径相关测试，并在真实 TensorFlow host 验证 DDQN eval metadata pin 与 Keras load_model 动态路径。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L75-L145",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L400-L430",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L700-L800",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/learning.py#L813-L914",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/config.py#L525-L566",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/receipt.py#L455-L535",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_qlearning_migration.py#L270-L500",
+    "github://fuguther/leo-direct-sim/blob/af4b1159665d541837421e906ce0974fca706276/CODE/leo_sim/tests/test_config.py#L45-L91"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "受 REMOTE 合同和禁止本地 Shell 约束，本轮未实际执行 pytest；上述测试仅完成静态覆盖审计，不能声称测试已通过。",
+    "真实 TensorFlow host 上的 DDQN metadata-pin 成功加载、模型 shape 校验及 Keras pathname reopen 动态行为未在本环境复现；并发 adversarial writer 明确属于当前代码声明的威胁模型之外。"
+  ]
+}
