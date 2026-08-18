@@ -1,0 +1,60 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R4B3-final40:independent_review",
+    "title": "PR #40 Q0 snapshot 整改终审（commit f64024c）",
+    "goal": "逐条核验 R4B2 的 A1/A2/A3 是否被真正修复：A1=惰性 GSL GE 未实例化导致 gsl_ge 静默缺项；A2=pre-service down-wait 被伪装成已消耗服务时长（remaining_service_s 可为负）；A3=_in_flight 仅存 kind/sat/arrival_at 三标量，planner 无法读完整当前包状态。同时独立寻找本次整改引入的回归、快照只读合同破坏或语义不一致。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "f64024c4cffa83a3e5b2fe09d5335e84498c1b46",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/tests/test_q0_snapshot.py",
+        "CODE/leo_sim/tests/test_kernel.py",
+        "CODE/leo_sim/tests/test_fates_outage.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "每条结论给出 FACT/INFERENCE/未验证 标记与精确行号证据，禁止无证据断言",
+      "显式声明 open_items；无法在本环境验证的项不得伪证为已验证",
+      "给出 APPROVE / REQUEST_CHANGES / BLOCK 三选一终判及理由",
+      "克制冷静：禁止奉承，直接指出不确定处"
+    ],
+    "requiredEvidence": [
+      "对 A1：确认 _associate 物化 GSL GE 是否覆盖所有当前 endpoint-satellite 对；快照 gsl_ge 是否对 universe 内每一对显式输出 materialized/bad/next_flip；未物化 fallback 是否正确；物化是否破坏确定性或 RNG 流",
+      "对 A2：确认 _svc_phase/_tx_started_at 在所有 server/ISL 路径（成功/失败/retired/stalled/唤醒重算）下正确设置与复位；_transmit 盖章位置是否为真实传输开始；waiting_for_link 的 remaining_service_s 语义是否清晰；是否存在仍可能为负的路径",
+      "对 A3：确认 _in_flight 写入口（ingress/isl/deliver）都保留 pkt 引用且快照投影完整；快照是否仍不向调用方暴露内核对象引用（只读合同）；控制包在途与完整 checkpoint/resume 是否被明确列为设计 follow-up 而非假装已修",
+      "检查新测试是否真实覆盖上述契约且未弱化；检查 _svc_phase 复位是否在任何 early-return 路径遗漏导致脏状态"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "ae1e173306beb2a416d46a599f75ce04e7872e9a98ffbc4fddbb214f57a7a97a"
+}
