@@ -186,17 +186,23 @@ def test_snapshot_real_propagation_exposes_full_packet():
     """R6-A2 regression: while a packet is genuinely propagating between
     satellites, snapshot_global() must report it with the full current packet
     state (not just kind/sat/arrival_at) through the real ingress/isl path."""
+    # src cell is visible only to sat0, dst only to sat1, so oracle routing
+    # must forward via the ISL (the snapshot can only capture ISL
+    # propagation when the packet is on that link, not delivered directly).
     geo = StaticGeometry(
         2,
         neighbors_map={0: {"E": 1}, 1: {"W": 0}},
-        visible=lambda s, lat, lon, t: True,
+        visible=lambda s, lat, lon, t: (s == 0 and abs(lat - 0.0) < 1.0) or (
+            s == 1 and abs(lat - 10.0) < 1.0),
     )
     cfg = make_cfg({
         "scenario": {"num_satellites": 2, "num_planes": 1, "duration_s": 2.0},
         "access": {"uplink_rate_mbps": 4000.0},
         "links": {"isl_rate_mbps": 1600.0},
     })
-    src, dst = cell(0.0, 0.0), cell(0.0, 10.0)
+    # src cell center lat ~0.5 (visible only from sat0); dst cell center lat
+    # ~10.5 (visible only from sat1), so oracle must forward via the ISL.
+    src, dst = cell(0.0, 0.0), cell(10.0, 0.0)
     # A: uplink 0-2ms, prop 2-4ms, ISL service 4-9ms, ISL prop 9-~12.3ms.
     # C decides at sat0 at ~10ms, while A is genuinely in ISL propagation.
     rows = [row(1, 0.0, src, dst),
@@ -207,9 +213,13 @@ def test_snapshot_real_propagation_exposes_full_packet():
     k.decision_sink = sink
     res = k.run()
     assert res["natural_end"] is True
-    in_flight_snaps = [s for s in sink.snapshots if s["in_flight"]]
-    assert in_flight_snaps, "no snapshot observed a genuinely propagating packet"
-    entry = next(iter(in_flight_snaps[0]["in_flight"].values()))
+    isl_snaps = [
+        s for s in sink.snapshots
+        if any(v["kind"] == "isl" for v in s["in_flight"].values())]
+    assert isl_snaps, "no snapshot observed a genuinely ISL-propagating packet"
+    entry = next(v for v in isl_snaps[0]["in_flight"].values()
+                 if v["kind"] == "isl")
+    assert entry["pid"] == 1
     for key in ("pid", "kind", "sat", "arrival_at", "src", "dst", "bits",
                 "deadline", "emitted_at", "path", "assigned_sat"):
         assert key in entry, f"in-flight entry missing {key}"
