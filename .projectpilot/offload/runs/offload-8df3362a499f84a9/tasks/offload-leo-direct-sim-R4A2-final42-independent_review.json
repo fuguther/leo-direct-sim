@@ -1,0 +1,57 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R4A2-final42:independent_review",
+    "title": "终审 PR #42（整改后）",
+    "goal": "你是资深 RL/网络仿真验证工程师。审阅分支 codex/20260817-fix-checkpoint-contract（commit c1aefab，相对 main 1599d3e）。此前两轮审阅（R4A 主路+独立复核）已要求并落实：DDQN metadata 必选+全字段交叉校验（schema/algorithm/contract/checkpoint/checkpoint_sha256/checkpoint_verified）、TabularQ 旧 v1 表仅当 sibling metadata 独立绑定 contract+filename+SHA 才迁移、receipt 校验 learning.contract==routing.contract。你的任务：1) 逐行核对上述整改是否真正闭合（尤其 DDQN metadata 缺失/symlink/字段不符/损坏 JSON 是否全部 fail-closed 为受控 LearningUnavailable；TabularQ 迁移路径是否可被伪造 metadata 绕过）；2) 找本轮整改引入的任何新问题（如 _verify_checkpoint_metadata 的字段枚举遗漏、旧表迁移对 metadata checkpoint_sha256 的核对是否足够）；3) 给 APPROVE / REQUEST_CHANGES。\n## 工作方式：按 60 分钟深度工作量展开（阶段化，禁止摘要式收尾）\n\n你的输出必须按以下五个工作阶段组织，每个阶段都要有实质内容，不许一句话带过：\n\n1. 侦察：确认任务边界、可读范围、已知约束；给出你将系统覆盖的清单（文件/函数/问题维度），\n   并说明你如何证明\"覆盖完整\"（逐文件清单、搜索词清单、交叉引用清单）。\n2. 深挖：逐项深入。对每条发现必须同时给出：文件:行号证据（deep 档必须带 #L 锚点）、\n   从代码事实到后果的完整推理链、复现条件、影响与严重度、与既有清单\n   （ANALYSIS/EXPERT-REVIEW-20260816.md §A-I）的交叉引用（新增/确认/证伪/已修）。\n3. 对抗：主动攻击你自己的结论——对每条 major+ 发现至少构造一个反例或替代解释，\n   说明为何排除；把你未验证的假设单独列出。FACT / INFERENCE / 未验证 三态必须逐一标注，\n   禁止把推测写成事实。\n4. 修订：根据对抗阶段修订结论，输出最终判定；修订前后不一致时必须说明变化原因。\n5. 收尾：输出 open_items（未覆盖的角落、需本地验证的项）、下一步建议、审计面清单\n   （你实际读过哪些文件/函数）。\n\n硬性质量门（不满足视为未完成，不得提前结束）：\n- 全文不少于 3000 字；每条 major+ 发现不少于 200 字展开。\n- 每个结论必须有\"证据→推导→影响\"完整链，禁止只给要点。\n- 禁止：只列标题不给内容；结论先行无推导；引用无行号；用\"等等/类似\"带过；\n  把推测写成事实；用\"我检查了但没问题\"代替具体审计面。\n- 结束前逐条自查本清单，任何一条不满足就继续补充，不要输出半成品。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "c1aefab5827250a6157b83be45fb13f9c75d0dbf",
+      "paths": [
+        "CODE/leo_sim/learning.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/tests",
+        "ANALYSIS/EXPERT-REVIEW-20260816.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "整改是否真正闭合（逐条核对）",
+      "新问题",
+      "APPROVE/REQUEST_CHANGES+行级证据"
+    ],
+    "requiredEvidence": [
+      "GitHub 或原始来源证据"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "7b018087d531132ed689ccc3437620b715fb92fc6da9546ab43708a7d17a90b4"
+}
