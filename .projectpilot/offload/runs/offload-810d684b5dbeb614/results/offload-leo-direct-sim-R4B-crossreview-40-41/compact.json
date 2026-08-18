@@ -1,0 +1,74 @@
+{
+  "taskId": "offload:leo-direct-sim:R4B-crossreview-40-41",
+  "status": "EVIDENCE_READY",
+  "summary": "A=REQUEST_CHANGES：Q0 snapshot 仍有 lazy GSL GE、pre-service remaining_service、在服/在途状态完备性缺口；且 A 的实现 commit be0520b 与强制证据 commit 9454b4f 是 sibling 分支，正式 A 行证据需重新绑定。B=REQUEST_CHANGES：发现 expiry==retire_at 会吞掉立即退休生命周期动作，以及 down-wait 独占共享 GSL server 并造成等待时间统计真空。ISL link=None 与正常 restamp/retire 计费路径未见回归。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "A 的审查对象 be0520b 不存在于强制 evidence tree 9454b4f，无法诚实生成满足当前校验器的 PR #40 行级证据。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L700-L825"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "PR #41 在 expiry 与 hard-retire 同刻的 down-wait 中先执行 expiry fail；interrupt 本身不释放 link，导致 hard-retire 的立即生命周期动作可能被吞掉。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L850-L930",
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L1300-L1335",
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/tests/test_transmit_retirement.py#L40-L85"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "GSL packet 在确认 channel 可传之前已从队列移除并独占 shared server；down-wait 可阻塞其他 endpoint，同时该等待既不计 queue-area 也不计 occupied。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L270-L315",
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L360-L430",
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L865-L970",
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/tests/test_transmit_retirement.py#L86-L122"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "ISL link=None 路径仍在 dequeue 前检查 GE/geometry，PR #41 的 owner restamp 未引入 GSL hard-retire 语义。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L470-L555"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "为 PR #40 将证据合同重新绑定到 be0520b 或包含 be0520b 的 merge commit，再正式核验 lazy GSL GE、pre-service remaining_service、控制/数据在途状态完备性。",
+    "PR #41 将 hard-retire 生命周期副作用与 packet fate tie-break 解耦，并增加 deadline==retire_at 的精确同刻回归。",
+    "增加两个 endpoint 共享 GSL server 的 HOL 回归：坏 channel 不得阻塞健康 channel，并明确 pre-service down-wait 的 queue/wait accounting。",
+    "合并 #28、#40、#41 后专门回归 down-wait 中 snapshot_global 的状态相位与 endpoint 惰性生命周期。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/kernel.py#L850-L970",
+    "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/CODE/leo_sim/tests/test_transmit_retirement.py#L40-L122",
+    "github://fuguther/leo-direct-sim/blob/9454b4f8827867917f0a5ae5eac1689d1527967b/ANALYSIS/EXPERT-REVIEW-20260816.md#L45-L55"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "PR #40 的实现 commit be0520b 不属于当前强制 evidence commit 9454b4f；在不违反引用校验器的前提下无法为 A1-A3 输出合法 be0520b 行级 URI，需要本地 Agent 重绑证据合同。",
+    "snapshot_global 调用 GE is_down/缓存 valid_entries 是否严格无语义副作用，需要读取 outage/control 实现才能证明；这两个路径不在本任务允许读取范围，因此未越权检查。",
+    "#25/#26/#28 为未合并 sibling 分支；已检查其 kernel 改动的交互方向，但最终三方/四方 merge 后的动态行为仍需本地 Agent 在实际合并树验证。"
+  ]
+}
