@@ -1,0 +1,136 @@
+{
+  "taskId": "offload:leo-direct-sim:R4A3-final42",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。R4A2 的静态 metadata 重标、非法 UTF-8、TabularQ key 宽度/唯一性/Q finite、payload mapping/schema 等核心缺口已基本修复；但发现 major：现代 TabularQ payload 已含正确 contract 时，即使 config 显式提供 checkpoint_metadata_sha256，loader 也不读取/验证并记录该 pin，而 receipt 又会要求其匹配，形成 config 接受→loader 忽略→receipt 事后拒绝的分裂语义。另有测试覆盖缺口及条件性 hash-then-reopen TOCTOU 风险。",
+  "findings": [
+    {
+      "id": "N1",
+      "severity": "major",
+      "summary": "现代 TabularQ eval 忽略显式 checkpoint_metadata_sha256；metadata 只在 legacy contract 缺失迁移分支验证，导致 loader 与 receipt 的 provenance 语义不一致。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/config.py#L526-L560",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L690-L768",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/receipt.py#L490-L537",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/tests/test_qlearning_migration.py#L101-L149"
+      ]
+    },
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "原 F1 的静态 sibling-metadata 重标路径已闭合：metadata 自身 SHA 有独立 config pin，DDQN 和 legacy TabularQ 均验证完整 metadata 字段，receipt 重新绑定 loaded metadata SHA 与 routing contract。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L72-L133",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L397-L425",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L708-L727",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/tests/test_qlearning_migration.py#L310-L323",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/receipt.py#L420-L537"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "非法 UTF-8 修复成立：metadata 和 Q-learning payload 共用 _read_json_utf8，UnicodeError/JSONDecodeError/OSError 均转换为 LearningUnavailable；metadata 有真实非法 UTF-8 回归测试。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L105-L133",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L695-L703",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/tests/test_qlearning_migration.py#L326-L337"
+      ]
+    },
+    {
+      "id": "F2-independent",
+      "severity": "info",
+      "summary": "legacy TabularQ 已强制 key=CONTRACT_DIMS[contract]*8 bytes、hex 可解码、key 唯一、Q row shape 正确且 finite；错误宽度、重复 key、NaN 有负例覆盖。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L699-L763",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/tests/test_qlearning_migration.py#L286-L307",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/tests/test_qlearning_migration.py#L340-L368"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "F3 核心已修复：payload 非 mapping、schema discriminator 错误、entries 非 list、malformed entry、重复 state key、非有限 Q 值均 fail-closed。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L699-L763",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/tests/test_qlearning_migration.py#L340-L368"
+      ]
+    },
+    {
+      "id": "N2",
+      "severity": "minor",
+      "summary": "payload 只校验 schema discriminator 和必要字段，没有拒绝未知顶层字段；若“精确 schema”要求 exact key set，则仍缺严格 unknown-field rejection。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L699-L729",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L840-L871"
+      ]
+    },
+    {
+      "id": "N3",
+      "severity": "minor",
+      "summary": "条件性完整性风险：metadata、Q-learning payload 和 DDQN model 均存在先按 pathname 哈希、随后重新打开 pathname 解析/加载的 hash-then-reopen 模式；若 threat model 包含并发文件替换，则存在 TOCTOU 窗口。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L117-L133",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L397-L414",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L690-L703"
+      ]
+    },
+    {
+      "id": "T1",
+      "severity": "minor",
+      "summary": "允许测试中没有直接锁住 DDQN eval 在已有合法 checkpoint_path+checkpoint_sha256 但缺 metadata pin 时的 config 分支；也没有独立 payload 非法 UTF-8 用例。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/config.py#L548-L560",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/tests/test_config.py#L62-L77",
+        "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/tests/test_qlearning_migration.py#L326-L368"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "修复 N1：Q-learning eval 只要 checkpoint_metadata_sha256 非空，就验证 sibling metadata 并记录实际验证 SHA；legacy contract 缺失路径继续强制要求 metadata pin。",
+    "增加 modern Q-learning 错误 metadata pin 必须在 loader 阶段失败的测试，并断言正确 pin 后 loaded_checkpoint_metadata_sha256 等于配置值且 eval receipt 通过。",
+    "在 test_config.py 增加 DDQN eval 已给合法 checkpoint_path+checkpoint_sha256、唯独缺 checkpoint_metadata_sha256 的直接负例。",
+    "增加 q_table payload 非法 UTF-8 负例；若 payload schema 定义为严格 schema，再增加 unknown top-level field 拒绝测试。",
+    "本地 Agent 明确 checkpoint 并发修改是否属于 threat model；若属于，改成对同一份 bytes 完成 hash+parse，DDQN 也应避免 hash 后按可变 pathname 再加载。",
+    "在本地运行允许测试集，并在真实 TensorFlow 主机执行 DDQN eval 的 metadata-pin/损坏 UTF-8/contract mismatch 动态负例。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L72-L133",
+    "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L397-L425",
+    "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/learning.py#L690-L768",
+    "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/config.py#L526-L560",
+    "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/receipt.py#L420-L537",
+    "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/tests/test_qlearning_migration.py#L280-L390",
+    "github://fuguther/leo-direct-sim/blob/44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53/CODE/leo_sim/tests/test_config.py#L62-L77"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "未在本 REMOTE 环境执行 pytest；以上测试结论为精确 commit 的静态代码/测试审阅，不冒充运行结果。",
+    "真实 TensorFlow 主机上的 DDQN metadata pin、非法 UTF-8 metadata、contract mismatch 动态复现未验证。",
+    "允许文件没有明确规定并发修改 checkpoint/metadata 是否属于正式 threat model；若属于，N3 的 hash-then-reopen TOCTOU 必须进一步动态验证并整改。"
+  ]
+}
