@@ -222,3 +222,67 @@ def test_formal_population_gravity_intent_binds_input_sha(tmp_path):
     request["config"]["demand"]["population_path"] = "../outside.tif"
     with pytest.raises(governance.IntentError, match="inside the project"):
         governance.build_run_intent(request, project_root=tmp_path)
+
+
+def _eval_request(tmp_path, checkpoint_bytes, metadata_bytes=None,
+                  metadata_sha_override=None, algorithm="ddqn"):
+    exp = tmp_path / "EXPERIMENTS" / "ckpt"
+    exp.mkdir(parents=True, exist_ok=True)
+    ckpt = exp / "online.keras"
+    ckpt.write_bytes(checkpoint_bytes)
+    sha = hashlib.sha256(checkpoint_bytes).hexdigest()
+    learning = {
+        "algorithm": algorithm, "mode": "eval",
+        "checkpoint_path": "EXPERIMENTS/ckpt/online.keras",
+        "checkpoint_sha256": sha,
+    }
+    if metadata_bytes is not None:
+        meta = exp / "metadata.json"
+        meta.write_bytes(metadata_bytes)
+        meta_sha = metadata_sha_override or hashlib.sha256(
+            metadata_bytes).hexdigest()
+        learning["checkpoint_metadata_sha256"] = meta_sha
+    return {
+        "runtime_kind": "leo_sim_v2",
+        "config": {
+            "endpoints": {"sites": [
+                {"name": "a", "lat": 0.0, "lon": 0.0},
+                {"name": "b", "lat": 0.0, "lon": 10.0},
+            ]},
+            "routing": {"policy": "hop", "learning_enabled": True},
+            "learning": learning,
+        },
+    }
+
+
+def test_eval_intent_seals_real_checkpoint_file(tmp_path):
+    """R5-G2: eval intent must verify the checkpoint file exists and its
+    SHA matches the resolved config at seal time (not only at kernel load)."""
+    meta = b'{"schema": "leo-sim-ddqn/v1", "contract": "C3"}'
+    good = _eval_request(tmp_path, b"keras-bytes", metadata_bytes=meta)
+    intent = governance.build_run_intent(good, project_root=tmp_path)
+    assert intent["config_sha256"]
+    missing = _eval_request(tmp_path, b"keras-bytes", metadata_bytes=meta)
+    (tmp_path / "EXPERIMENTS" / "ckpt" / "online.keras").unlink()
+    with pytest.raises(governance.IntentError, match="regular file"):
+        governance.build_run_intent(missing, project_root=tmp_path)
+    wrong = _eval_request(tmp_path, b"keras-bytes", metadata_bytes=meta)
+    wrong["config"]["learning"]["checkpoint_sha256"] = "ab" * 32
+    with pytest.raises(governance.IntentError, match="does not match"):
+        governance.build_run_intent(wrong, project_root=tmp_path)
+
+
+def test_eval_intent_verifies_metadata_pin_at_seal_time(tmp_path):
+    meta = b'{"schema": "leo-sim-ddqn/v1", "contract": "C3"}'
+    good = _eval_request(tmp_path, b"keras-bytes", metadata_bytes=meta)
+    governance.build_run_intent(good, project_root=tmp_path)
+    bad_meta = _eval_request(
+        tmp_path, b"keras-bytes", metadata_bytes=meta,
+        metadata_sha_override="ab" * 32)
+    with pytest.raises(governance.IntentError, match="metadata SHA"):
+        governance.build_run_intent(bad_meta, project_root=tmp_path)
+    no_meta = _eval_request(tmp_path, b"keras-bytes", algorithm="qlearning")
+    no_meta["config"]["learning"]["checkpoint_metadata_sha256"] = "ab" * 32
+    (tmp_path / "EXPERIMENTS" / "ckpt" / "metadata.json").unlink()
+    with pytest.raises(governance.IntentError, match="metadata.json"):
+        governance.build_run_intent(no_meta, project_root=tmp_path)
