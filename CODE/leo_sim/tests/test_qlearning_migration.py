@@ -33,12 +33,12 @@ BC = cell_center(B)
 FULL_MASK = {a: True for a in learning.ACTIONS}
 
 
-def _learner(mode="train", **cfg_over):
+def _learner(mode="train", contract="C3", **cfg_over):
     cfg = config.resolve_config({
         "routing": {"learning_enabled": True, "policy": "hop"},
         "learning": {"algorithm": "qlearning", "mode": mode, **cfg_over},
     })
-    return learning.TabularQLearning("C3", cfg["config"]["learning"], seed=7)
+    return learning.TabularQLearning(contract, cfg["config"]["learning"], seed=7)
 
 
 def test_update_rule_golden():
@@ -145,6 +145,21 @@ def test_save_load_roundtrip_verified(tmp_path):
     with pytest.raises(learning.LearningUnavailable):
         _learner(mode="eval", checkpoint_path=str(table_path),
                  checkpoint_sha256="0" * 64)
+
+
+def test_checkpoint_contract_mismatch_rejected(tmp_path):
+    """A checkpoint trained under one observation contract must not load
+    under a different contract with the same input width (C3/C4 both have
+    dimension 14 but different semantics)."""
+    train = _learner(contract="C3")
+    train.remember(np.zeros(4), "E", 1.5, np.ones(4), FULL_MASK, False)
+    meta = train.save_and_verify(tmp_path)
+    table_path = tmp_path / "q_table.json"
+    with pytest.raises(learning.LearningUnavailable,
+                       match="contract mismatch"):
+        _learner(mode="eval", contract="C4",
+                 checkpoint_path=str(table_path),
+                 checkpoint_sha256=meta["checkpoint_sha256"])
 
 
 def test_config_accepts_qlearning_and_validates_alpha():

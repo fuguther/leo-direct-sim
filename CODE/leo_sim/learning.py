@@ -337,6 +337,14 @@ class TensorflowDDQN:
             if actual_sha != cfg.get("checkpoint_sha256"):
                 raise LearningUnavailable(
                     "DDQN checkpoint SHA-256 differs from resolved config")
+            meta_path = path.parent / "metadata.json"
+            if meta_path.is_file() and not meta_path.is_symlink():
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                if meta.get("contract") != self.contract:
+                    raise LearningUnavailable(
+                        "DDQN checkpoint contract mismatch: metadata says "
+                        f"{meta.get('contract')!r}, resolved config wants "
+                        f"{self.contract!r}")
             self.online = self.tf.keras.models.load_model(
                 path, compile=False, custom_objects=_graph_custom_objects())
             if tuple(self.online.input_shape) != (None, self.input_dim) \
@@ -616,6 +624,11 @@ class TabularQLearning:
                 raise LearningUnavailable(
                     "Q-learning checkpoint SHA-256 differs from resolved config")
             payload = json.loads(path.read_text(encoding="utf-8"))
+            if payload.get("contract") != self.contract:
+                raise LearningUnavailable(
+                    "Q-learning checkpoint contract mismatch: payload says "
+                    f"{payload.get('contract')!r}, resolved config wants "
+                    f"{self.contract!r}")
             entries = payload.get("entries")
             if not isinstance(entries, list):
                 raise LearningUnavailable("Q-learning checkpoint lacks entries")
@@ -703,6 +716,7 @@ class TabularQLearning:
         table_path = out / "q_table.json"
         payload = {
             "schema": "leo-sim-qlearning-table/v1",
+            "contract": self.contract,
             "entries": [[key.hex(), [float(v) for v in row]]
                         for key, row in sorted(self.table.items())],
         }

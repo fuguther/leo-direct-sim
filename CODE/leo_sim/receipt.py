@@ -431,6 +431,9 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
         if not isinstance(learning, dict):
             errors.append("DDQN run must have a learning ledger")
         else:
+            expected_contract = ((resolved_cfg or {}).get("routing", {}).get("contract"))
+            if expected_contract is not None and learning.get("contract") != expected_contract:
+                errors.append("learning.contract != resolved routing.contract")
             for key in ("decisions", "transitions", "train_steps", "replay_size"):
                 if not _is_nonneg_int(learning.get(key)):
                     errors.append(f"learning.{key} must be a non-negative integer")
@@ -479,6 +482,9 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
         if not isinstance(learning, dict):
             errors.append("Q-learning run must have a learning ledger")
         else:
+            expected_contract = ((resolved_cfg or {}).get("routing", {}).get("contract"))
+            if expected_contract is not None and learning.get("contract") != expected_contract:
+                errors.append("learning.contract != resolved routing.contract")
             for key in ("decisions", "transitions", "train_steps",
                         "table_size"):
                 if not _is_nonneg_int(learning.get(key)):
