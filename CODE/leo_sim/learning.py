@@ -69,6 +69,36 @@ CONTRACT_DIMS = {
 }
 ACTIONS = ("deliver", "N", "S", "E", "W")
 
+def _verify_checkpoint_metadata(meta, expected_contract, checkpoint_name,
+                                checkpoint_sha, schema, algorithm):
+    """Fail-closed provenance gate for sibling checkpoint metadata.
+
+    The metadata file must be a regular, non-symlink artifact whose fields
+    bind it to the exact checkpoint artifact being loaded: schema, algorithm,
+    contract, filename and the artifact SHA.  Any mismatch or missing field
+    is a LearningUnavailable (never a silent skip)."""
+    if not isinstance(meta, dict):
+        raise LearningUnavailable("checkpoint metadata is not a mapping")
+    if meta.get("schema") != schema:
+        raise LearningUnavailable(
+            f"checkpoint metadata schema {meta.get('schema')!r} != {schema!r}")
+    if meta.get("algorithm") != algorithm:
+        raise LearningUnavailable(
+            f"checkpoint metadata algorithm {meta.get('algorithm')!r} "
+            f"!= {algorithm!r}")
+    if meta.get("contract") != expected_contract:
+        raise LearningUnavailable(
+            "checkpoint contract mismatch: metadata says "
+            f"{meta.get('contract')!r}, resolved config wants "
+            f"{expected_contract!r}")
+    if meta.get("checkpoint") != checkpoint_name:
+        raise LearningUnavailable(
+            f"checkpoint metadata filename {meta.get('checkpoint')!r} "
+            f"!= {checkpoint_name!r}")
+    if meta.get("checkpoint_sha256") != checkpoint_sha:
+        raise LearningUnavailable(
+            "checkpoint metadata SHA does not match the artifact")
+
 # Graph-state contracts: real GAT / MPNN encoders consume a k-hop local
 # subgraph, not a hand-rolled fixed aggregate.  These names are new: they do
 # NOT reuse the V1 C4/C5 semantics (V2's C4/C5 are cache-aggregation rules).
@@ -338,13 +368,17 @@ class TensorflowDDQN:
                 raise LearningUnavailable(
                     "DDQN checkpoint SHA-256 differs from resolved config")
             meta_path = path.parent / "metadata.json"
-            if meta_path.is_file() and not meta_path.is_symlink():
+            if not meta_path.is_file() or meta_path.is_symlink():
+                raise LearningUnavailable(
+                    "DDQN checkpoint metadata.json missing or symbolic")
+            try:
                 meta = json.loads(meta_path.read_text(encoding="utf-8"))
-                if meta.get("contract") != self.contract:
-                    raise LearningUnavailable(
-                        "DDQN checkpoint contract mismatch: metadata says "
-                        f"{meta.get('contract')!r}, resolved config wants "
-                        f"{self.contract!r}")
+            except (OSError, json.JSONDecodeError) as exc:
+                raise LearningUnavailable(
+                    f"DDQN checkpoint metadata unreadable: {exc}") from exc
+            _verify_checkpoint_metadata(
+                meta, self.contract, path.name, actual_sha,
+                "leo-sim-ddqn/v1", "ddqn")
             self.online = self.tf.keras.models.load_model(
                 path, compile=False, custom_objects=_graph_custom_objects())
             if tuple(self.online.input_shape) != (None, self.input_dim) \
@@ -623,12 +657,31 @@ class TabularQLearning:
             if actual_sha != cfg.get("checkpoint_sha256"):
                 raise LearningUnavailable(
                     "Q-learning checkpoint SHA-256 differs from resolved config")
-            payload = json.loads(path.read_text(encoding="utf-8"))
-            if payload.get("contract") != self.contract:
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
                 raise LearningUnavailable(
-                    "Q-learning checkpoint contract mismatch: payload says "
-                    f"{payload.get('contract')!r}, resolved config wants "
-                    f"{self.contract!r}")
+                    f"Q-learning checkpoint unreadable: {exc}") from exc
+            if payload.get("contract") != self.contract:
+                # Legacy v1 tables have no contract field in the payload.
+                # Migrate only when the sibling metadata.json independently
+                # binds contract + filename + SHA; otherwise fail closed
+                # (never accept an unverifiable provenance).
+                meta_path = path.parent / "metadata.json"
+                if payload.get("contract") is not None or                         not meta_path.is_file() or meta_path.is_symlink():
+                    raise LearningUnavailable(
+                        "Q-learning checkpoint contract mismatch: payload "
+                        f"says {payload.get('contract')!r}, resolved config "
+                        f"wants {self.contract!r}")
+                try:
+                    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError) as exc:
+                    raise LearningUnavailable(
+                        "Q-learning checkpoint metadata unreadable: "
+                        f"{exc}") from exc
+                _verify_checkpoint_metadata(
+                    meta, self.contract, path.name, actual_sha,
+                    "leo-sim-qlearning/v1", "qlearning")
             entries = payload.get("entries")
             if not isinstance(entries, list):
                 raise LearningUnavailable("Q-learning checkpoint lacks entries")

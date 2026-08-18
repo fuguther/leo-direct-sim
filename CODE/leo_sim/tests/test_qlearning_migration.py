@@ -222,3 +222,74 @@ def test_kernel_end_to_end_qlearning_without_tensorflow(tmp_path):
     # receipt chain: write + verify with the qlearning artifact
     receipt.write_run(str(out), cfg, tbytes, manifest, result, rows)
     assert receipt.verify_receipt_dir(str(out)) == []
+
+
+def _legacy_v1_table(path, contract="C3", with_metadata=True):
+    """Write a legacy v1 q_table.json (no contract field) plus the sibling
+    metadata.json that old save_and_verify produced."""
+    payload = {"schema": "leo-sim-qlearning-table/v1",
+               "entries": [["00" * 16, [0.1] * len(learning.ACTIONS)]]}
+    table = path / "q_table.json"
+    table.write_text(json.dumps(payload, sort_keys=True) + "\n")
+    sha = hashlib.sha256(table.read_bytes()).hexdigest()
+    if with_metadata:
+        meta = {"schema": "leo-sim-qlearning/v1", "algorithm": "qlearning",
+                "contract": contract, "checkpoint": "q_table.json",
+                "checkpoint_sha256": sha, "mode": "eval"}
+        (path / "metadata.json").write_text(
+            json.dumps(meta, sort_keys=True) + "\n")
+    return str(table), sha
+
+
+def test_legacy_v1_table_migrates_via_sibling_metadata(tmp_path):
+    """A v1 table without payload contract loads when the sibling metadata
+    independently binds contract+filename+SHA."""
+    table_path, sha = _legacy_v1_table(tmp_path)
+    q = _learner(mode="eval", contract="C3",
+                 checkpoint_path=table_path, checkpoint_sha256=sha)
+    assert len(q.table) == 1
+
+
+def test_legacy_v1_table_rejected_without_verifiable_metadata(tmp_path):
+    """No payload contract and no usable sibling metadata -> fail closed."""
+    table_path, sha = _legacy_v1_table(tmp_path, with_metadata=False)
+    with pytest.raises(learning.LearningUnavailable,
+                       match="contract mismatch"):
+        _learner(mode="eval", contract="C3",
+                 checkpoint_path=table_path, checkpoint_sha256=sha)
+
+
+def test_legacy_v1_table_rejected_on_metadata_contract_mismatch(tmp_path):
+    table_path, sha = _legacy_v1_table(tmp_path, contract="C4")
+    with pytest.raises(learning.LearningUnavailable,
+                       match="contract mismatch"):
+        _learner(mode="eval", contract="C3",
+                 checkpoint_path=table_path, checkpoint_sha256=sha)
+
+
+def test_metadata_verifier_fail_closed_on_every_field():
+    """DDQN metadata provenance gate: any missing/mismatched field rejects."""
+    good = {"schema": "leo-sim-ddqn/v1", "algorithm": "ddqn",
+            "contract": "C3", "checkpoint": "online.keras",
+            "checkpoint_sha256": "ab" * 32}
+    assert learning._verify_checkpoint_metadata(
+        good, "C3", "online.keras", "ab" * 32,
+        "leo-sim-ddqn/v1", "ddqn") is None
+    for mutate in (
+            lambda m: m.update({"contract": "C4"}),
+            lambda m: m.update({"checkpoint_sha256": "00" * 32}),
+            lambda m: m.update({"checkpoint": "other.keras"}),
+            lambda m: m.update({"schema": "other"}),
+            lambda m: m.update({"algorithm": "qlearning"}),
+            lambda m: m.pop("contract")):
+        m = dict(good)
+        mutate(m)
+        with pytest.raises(learning.LearningUnavailable):
+            learning._verify_checkpoint_metadata(
+                m, "C3", "online.keras", "ab" * 32,
+                "leo-sim-ddqn/v1", "ddqn")
+    with pytest.raises(learning.LearningUnavailable):
+        learning._verify_checkpoint_metadata(
+            "not-a-dict", "C3", "online.keras", "ab" * 32,
+            "leo-sim-ddqn/v1", "ddqn")
+
