@@ -1,0 +1,80 @@
+{
+  "taskId": "offload:leo-direct-sim:R4A2-final42",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。六个 metadata 字段、DDQN metadata 必选/非 symlink、receipt learning.contract==routing.contract 均已落实，但 checkpoint-contract provenance 仍未闭合：metadata 本身无独立哈希/授权锚，legacy 同一 q_table 字节与 SHA 可仅靠重写 sibling metadata 改变 contract；DDQN C3/C4 同维，shape guard 也无法兜底。另有非法 UTF-8 metadata 不会被包装成受控 LearningUnavailable，以及 TabularQ payload schema 未校验。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "Sibling metadata 自身未被独立信任锚绑定，可在 checkpoint 字节/SHA 不变时重标 contract；legacy TabularQ 明确可达，DDQN C3/C4 同维亦可越过 shape guard。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/learning.py#L72-L103",
+        "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/learning.py#L51-L52",
+        "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/learning.py#L364-L395",
+        "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/learning.py#L654-L692",
+        "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/tests/test_qlearning_migration.py#L227-L267",
+        "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/kernel.py#L600-L621"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "DDQN 与 legacy TabularQ metadata 读取只捕获 OSError/JSONDecodeError；非法 UTF-8 在 read_text 解码阶段产生的错误不会转成 LearningUnavailable，不满足受控 fail-closed 验收。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/learning.py#L373-L384",
+        "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/learning.py#L673-L688"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "summary": "TabularQ 保存端写 leo-sim-qlearning-table/v1 schema，但加载端未验证 payload schema，reader 的格式边界仍为 fail-open。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/learning.py#L663-L697",
+        "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/learning.py#L770-L781"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "此前要求的六字段 metadata 交叉校验与 receipt 的 learning.contract==routing.contract 已在 DDQN/Q-learning 两路落实；这些整改本身确认有效。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/learning.py#L72-L103",
+        "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/receipt.py#L430-L515"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "在 resolved/authorized identity 中独立绑定 metadata.json 的实际 SHA，或使用同时绑定 checkpoint SHA、metadata SHA、contract、algorithm 的外部授权 manifest；禁止依赖可自由重写的 sibling metadata 单独证明 legacy contract。",
+    "新增固定 checkpoint 字节/SHA、仅替换 metadata contract 的负例；legacy 与 DDQN C3→C4 两路都必须 fail closed。",
+    "DDQN 与 TabularQ metadata 读取捕获 UnicodeError，并增加非法 UTF-8 回归，确保统一抛 LearningUnavailable。",
+    "TabularQ loader 校验 payload 必须为 mapping 且 schema 精确等于 leo-sim-qlearning-table/v1。",
+    "本地 TensorFlow 主机完成 DDQN forged-metadata 动态复现与全测试回归后再决定合并。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/learning.py#L72-L103",
+    "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/learning.py#L654-L692",
+    "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/tests/test_qlearning_migration.py#L227-L302",
+    "github://fuguther/leo-direct-sim/blob/c1aefab5827250a6157b83be45fb13f9c75d0dbf/CODE/leo_sim/receipt.py#L430-L515"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "合同外 governance/authorization 是否已独立绑定 metadata.json digest，当前读取范围无法验证；若存在强制的外部 metadata hash anchor，需要本地 Agent 提供证据后重新评估 F1。",
+    "需 TensorFlow 主机动态验证 DDQN C3 checkpoint 仅重写 C4 metadata 的重标路径。",
+    "需本地执行非法 UTF-8 metadata 负例及完整测试套件；本 Worker 未执行 Shell/真实环境验收。",
+    "建议进一步决定 checkpoint 文件本体 symlink 与 keras load_model 原生异常是否也纳入统一 LearningUnavailable 合同。"
+  ]
+}
