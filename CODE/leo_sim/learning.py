@@ -420,8 +420,15 @@ class TensorflowDDQN:
             # reads is explicitly OUT of scope for this artifact threat model
             # (single-user local research artifacts, no adversarial writer);
             # closing it fully would require loading from the verified bytes.
-            self.online = self.tf.keras.models.load_model(
-                path, compile=False, custom_objects=_graph_custom_objects())
+            try:
+                self.online = self.tf.keras.models.load_model(
+                    path, compile=False, custom_objects=_graph_custom_objects())
+            except Exception as exc:
+                # Any loader failure (corrupt file, bad custom objects,
+                # version mismatch) is a controlled learning failure, never
+                # an unclassified crash escaping the learning contract.
+                raise LearningUnavailable(
+                    f"DDQN checkpoint could not be loaded: {exc}") from exc
             if tuple(self.online.input_shape) != (None, self.input_dim) \
                     or tuple(self.online.output_shape) != (None, len(ACTIONS)):
                 # fail closed: graph checkpoints predate the 15->18 node

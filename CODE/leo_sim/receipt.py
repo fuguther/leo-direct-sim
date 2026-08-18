@@ -93,7 +93,7 @@ FIELD_AUTHORITY = {
     "events_processed": "diagnostic",
     "stop_time_s": "recomputed",
     "deliveries": "recomputed",
-    "learning": "recomputed",
+    "learning": "ledger_consistency",
 }
 
 
