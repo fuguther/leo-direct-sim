@@ -1,0 +1,115 @@
+{
+  "taskId": "offload:leo-direct-sim:R4B3-final40",
+  "status": "EVIDENCE_READY",
+  "summary": "终判 REQUEST_CHANGES。A1 已闭合：_associate 主动物化 GSL GE，snapshot 对 materialized+current association universe 逐项显式输出，keyed RNG 与已有测试支持确定性。A2 的 phase/真实 tx start/residual 主缺陷已修，三类 server 正常 outcome 均先 reset；但 run() 的 horizon stop settlement 仍按 _svc 取包时间补 occupied，wait→recover→transmit→horizon 会重新把 pre-service down-wait 算入占用。A3 的三个 data propagation 写入口均保存 pkt，snapshot 纯值投影且无对象引用泄漏；但 control propagation 未进入 in_flight，control queue/service 仅暴露 iid，DataPacket learning 状态亦未投影，允许路径内没有将完整 checkpoint/resume 明确列为 follow-up。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "horizon 停表仍从 _svc 取包时刻补记 occupied；若先 down-wait、后恢复开传且 transmission 跨 horizon，会把 pre-service 等待错误计入链路占用，与新 tx_started_at/phase 语义冲突。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L296-L305",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1124-L1137",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1929-L1943",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_kernel.py#L123-L148"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "A3 只闭合 data in-flight；control packet 完成 ISL service 后的 propagation 不进入 _in_flight，queued/in-service control 也只投影 iid，完整 checkpoint/resume 所需状态未包含且允许路径内未明确声明为 design follow-up。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L115-L150",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L580-L593",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L897-L919",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L66-L86",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_q0_snapshot.py#L58-L82"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "summary": "新增 A2/A3 测试主要人工注入内部状态，没有走真实 recovery/transmit/reset 和 ingress/ISL/deliver 生产路径，因此不足以保护本次整改的完整契约。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_q0_snapshot.py#L118-L169"
+      ]
+    },
+    {
+      "id": "A1",
+      "severity": "info",
+      "summary": "A1 已修：真实 association 主动物化 GSL GE；snapshot 的 universe 为所有已物化 pair 与所有当前 association 的并集，未物化当前 pair 也会显式输出 materialized=False/bad=None/next_flip=None。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L968-L1028",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1480-L1497",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_q0_snapshot.py#L84-L116",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_fates_outage.py#L84-L109"
+      ]
+    },
+    {
+      "id": "A2",
+      "severity": "info",
+      "summary": "A2 snapshot 主修复成立：三类 server 使用 waiting_for_link/transmitting，_transmit 仅在链路真实可发送后设置 tx_started_at，正常 outcome 返回后统一 reset，waiting residual 为完整 service duration。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L259-L340",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L398-L452",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L543-L580",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L875-L896",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1082-L1137"
+      ]
+    },
+    {
+      "id": "A3",
+      "severity": "info",
+      "summary": "A3 的 data-plane 部分已修：ingress/ISL/deliver 三个 propagation 写入口均保留 pkt，三个 arrival 路径均清除 tracker；snapshot 重建 packet dict 并复制 path，不向调用方暴露 pkt 对象引用。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L345-L353",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L456-L464",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L583-L593",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L861-L875",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L994-L1010",
+        "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1860-L1889"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "修正 run() horizon still-in-service occupation settlement：waiting_for_link 不计占用；transmitting 只结算真实 transmission 尚未入账的时间，避免再次使用 _svc pick-time。",
+    "增加真实 event-driven regression：链路先 down、horizon 前恢复、随后 transmission 跨 horizon，断言 occupied 不包含 down-wait。",
+    "明确 snapshot_global v1 的边界：若仅为 Q0 planner/data-plane view，显式声明 control propagation、完整 control packet 状态、learning transition internals 与 full checkpoint/resume 不在 v1，并列为 design follow-up；若目标是完整 global simulator state，则需实际补齐。",
+    "增加 ingress、ISL、deliver 三个真实 propagation 路径的 in_flight 测试，并测试返回 snapshot 的 path/list/dict 修改不会回写 kernel。",
+    "本地 Agent 在精确 commit 上执行允许的相关测试；网页端依据合同未执行本地 Shell 或测试。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L835-L1028",
+    "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1082-L1168",
+    "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1480-L1497",
+    "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/kernel.py#L1929-L1943",
+    "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_q0_snapshot.py#L58-L169",
+    "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_kernel.py#L123-L148",
+    "github://fuguther/leo-direct-sim/blob/f64024c4cffa83a3e5b2fe09d5335e84498c1b46/CODE/leo_sim/tests/test_fates_outage.py#L84-L109"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "未执行本地测试：任务合同禁止本地 Shell/真实环境验收，因此精确 commit 的 pytest 运行结果需由本地 Agent 验证。",
+    "snapshot_global() 调用 GilbertElliott.is_down() 与 LocalCache.valid_entries()；其实现文件不在允许读取路径内。本轮只能确认没有内核对象引用泄露，并由允许测试支持 GE query-pattern independence，不能证明这些 helper 在内部绝对零 mutation。",
+    "允许读取路径内未看到 full checkpoint/resume 或 control-in-flight 缺口被明确登记为 design follow-up；若另有设计文档，因本任务路径限制未读取，需本地 Agent 在其授权范围内核实。"
+  ]
+}
