@@ -909,6 +909,14 @@ class Kernel:
                     yield wait | interrupt
                 else:
                     yield wait
+                if retire_t is not None and self.env.now >= retire_t:
+                    # hard retirement is due NOW: return "retired" so the
+                    # caller performs the retirement side effect (release +
+                    # requeue).  The packet is re-decided afterwards and, if
+                    # the deadline has also been reached, fails there with
+                    # the expiry fate -- the tie is resolved in favour of
+                    # running the link lifecycle, not swallowed by the fate.
+                    return "retired"
                 if expiry is not None and expiry <= self.horizon \
                         and self.env.now >= expiry:
                     # the deadline has actually been reached while the link
@@ -947,7 +955,7 @@ class Kernel:
                     fail_t, fail_kind = gd, "RANDOM_OUTAGE_IN_FLIGHT"
             if expiry is not None and expiry < fail_t:
                 fail_t, fail_kind = expiry, expiry_fate
-            if retire_t is not None and retire_t < fail_t:
+            if retire_t is not None and retire_t <= fail_t:
                 fail_t, fail_kind = retire_t, "RETIRE"
             # race the wait against a possibly later-scheduled retirement
             # interrupt: on ANY wake the whole race is recomputed from now.

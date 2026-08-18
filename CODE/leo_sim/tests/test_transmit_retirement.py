@@ -112,3 +112,25 @@ def test_stop_settle_excludes_preservice_downwait():
     expected = horizon - r
     # the replay scan is quantized to 5e-4 s, so allow that tolerance
     assert res["occupied"]["gsl_uplink_s"] == pytest.approx(expected, abs=1e-3)
+
+
+def test_deadline_equals_retire_at_does_not_swallow_retirement():
+    """R4B B1: when the packet deadline equals the hard retirement instant,
+    the retirement side effect (release + requeue) must still run; the packet
+    is re-decided and then fails at the deadline on the new association."""
+    # deadline = 2.0 aligns with the lease retirement deadline (~1.5+0.5);
+    # use monitor to read the fate time and the release event
+    rows = [row(1, 0.6, A, B, deadline=2.0), row(2, 0.0, B, A)]
+    res = kernel.run_simulation(_contention_cfg(monitor=True), rows,
+                                geometry=_two_sat_geo())
+    assert res["fates"][1] == "DATA_DEADLINE_EXPIRED"
+    # the retiring link must actually be released (side effect not swallowed)
+    release = [e for e in res["handover"]["events"]
+               if e["type"] == "release"
+               and str(e["reason"]).startswith("lease_retire")]
+    assert release, "retirement side effect was swallowed by the deadline fate"
+    assert release[0]["t"] <= 2.0 + 1e-9
+    # the packet must not be failed before the deadline
+    fate_t = [t for t, kind, kv in res["monitor_log"]
+              if kind == "fate" and dict(kv).get("pid") == 1]
+    assert fate_t and fate_t[0] >= 2.0 - 1e-9
