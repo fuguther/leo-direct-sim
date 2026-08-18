@@ -1,0 +1,71 @@
+{
+  "taskId": "offload:leo-direct-sim:R4C-hunt-round4",
+  "status": "EVIDENCE_READY",
+  "summary": "绑定 commit 的白名单静态审计发现 3 个新增 major 候选：同宽 learning contract checkpoint 可跨合同加载并被当前 contract 重新标记；已在 ISL service start 实现的 M1 forward queue reward 会在后续终态失败时被 _fail 强制覆盖为 0；TabularQ 对 schema/state-key 等语义结构不校验，可把无效 pinned checkpoint 重新输出为 checkpoint_verified=true。comparison 等旧项未重复计数。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "FACT：DDQN/TabularQ checkpoint 未绑定来源 learning contract；C3/C4 同输入宽度使跨合同 checkpoint 可静默加载，运行结束又以当前 contract 生成 diagnostics，receipt 亦未核对 learning.contract 与 routing.contract。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L50-L64",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L331-L351",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L610-L630",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L418-L519",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1760-L1778"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "FACT（控制流可证，未实跑）：forward 的 realized M1 queue reward 在 ISL service start 已写入，但 geometry/GE/deadline 等后续终态失败进入 _fail 后以 terminal_reward=0.0 覆盖，导致失败 forward 丢失已实现的 queue reward。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L899-L910",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L930-L942",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1639-L1668",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/tests/test_reward_migration.py#L148-L166"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "FACT：TabularQ checkpoint loader 不校验 schema/state-key contract 宽度等语义结构；任意长度 key 配合法定 5-action row 可被接受，eval 中真实状态永远 miss 后退化为 unseen fallback，save_and_verify 又可将该表重新序列化为 canonical schema 并标记 checkpoint_verified=true。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L610-L656",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L690-L735",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L471-L519"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "为 DDQN 与 TabularQ checkpoint 增加并强校验 algorithm/contract/input_dim/actions/schema 身份；DDQN 将 metadata 与 model 一并哈希绑定，缺失或不匹配 fail-closed。",
+    "receipt 增加 learning.contract == resolved routing.contract，并对 learning mode、checkpoint 来源语义做 config 交叉验证。",
+    "新增 C3 checkpoint 作为 C4 eval 输入的负例；DDQN 与 TabularQ 均必须拒绝，尤其覆盖 C3/C4 同宽反例。",
+    "为 TabularQ 增加错误 schema、错误 key byte width、重复 key、非有限 Q 值的 checkpoint 负例。",
+    "增加 forward 后 ISL geometry loss、GE outage、deadline/no-route 的 reward 回归；若 realized queue reward 应保留，则 _fail 仅在尚无已实现 reward 时使用 terminal 0；若失败奖励设计为 0，则显式修改 reward contract/golden tests。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L133-L154",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/learning.py#L331-L351",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L899-L942",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/receipt.py#L418-L519"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "顶层白名单未授权读取 comparison.py；因此 H2-13 legacy/direct 资源等价问题只能确认仍属既有问题，无法在本任务独立复核其当前实现。",
+    "顶层白名单未授权读取 CODE/experiment_platform 实现；只能检查允许路径内的 governance/platform tests，无法逐行重证 authorization/deployment_guard 全链。",
+    "顶层白名单未授权读取 population.py 与 trace.py；population/trace 本轮仅完成测试面审计，不能给实现层无新问题背书。",
+    "绑定 commit 中 ANALYSIS/EXPERT-REVIEW-20260816.md 检索到的正文止于 §H，未见任务描述所称 §I；因此对第 3 轮全部历史发现的去重只能依据本 commit 可见文档，无法读取未授权来源补齐。",
+    "任务禁止本地 Shell/真实环境执行，因此 F2 尚需本地 Agent 用定向 StubLearner 场景做动态复现；F1 的 DDQN 分支亦需 TensorFlow 主机负例确认。"
+  ]
+}
