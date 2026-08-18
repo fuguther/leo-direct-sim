@@ -1,0 +1,57 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R4C-hunt-round4:independent_review",
+    "title": "第 4 轮未知问题挖掘（合并后 main）",
+    "goal": "你是资深 RL/网络仿真验证工程师。第 4 轮独立未知问题挖掘（main 1599d3e；前 3 轮已闭环 20+ 项，见 ANALYSIS/EXPERT-REVIEW-20260816.md §G-I，先读）。注意 main 尚不含 PR #25/#26/#28（开放分支）。\n1. 在全部修复合入后的 main 上找新问题（代码正确性、假绿、信息边界、训练语义、可复现性、Q0 就绪度）。\n2. 特别关注未覆盖区域：comparison.py legacy 臂资源等价、experiment_platform 授权链、population/trace 编译边界、学习臂 eval 全链、合并后 main 的交互。\n3. 无新问题则明确声明并列出审计面；不确定列 INFERENCE 给验证方案。\n每条：文件:行号、严重度、复现条件、影响，FACT/INFERENCE/未验证。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "1599d3e3c7d5d74f22ddb497969f28fe8b90b73c",
+      "paths": [
+        "CODE/leo_sim/learning.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/tests",
+        "ANALYSIS/EXPERT-REVIEW-20260816.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "新问题清单或明确的无新问题声明+审计面",
+      "每条文件:行号+严重度+复现+影响",
+      "FACT/INFERENCE/未验证 区分"
+    ],
+    "requiredEvidence": [
+      "GitHub 或原始来源证据"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "0e58a83619fa3f7269ba6aee5fa49a02e73768723fc4ec5b1f95d24f4fae53e5"
+}
