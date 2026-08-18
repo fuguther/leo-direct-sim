@@ -306,7 +306,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                     raise TraceError(
                         f"csv row {src_id}: bits must be a positive integer: "
                         f"{raw_bits!r}")
-                dl_raw = row.get("deadline_at_s") or ""
+                dl_raw = (row.get("deadline_at_s") or "").strip()
                 if dl_raw != "":
                     try:
                         dl_val = float(dl_raw)

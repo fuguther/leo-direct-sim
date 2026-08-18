@@ -86,6 +86,26 @@ def test_trace_csv_mode(tmp_path):
     assert rows[1]["deadline_at_s"] == ""
 
 
+def test_trace_csv_mode_preserves_zero_deadline(tmp_path):
+    """R5-G1 regression: deadline_at_s='0' is a valid instant deadline and
+    must not be treated as 'no deadline' by a falsy-string check."""
+    src_csv = tmp_path / "in.csv"
+    src_csv.write_text(
+        "packet_id,emit_time_s,src_lat,src_lon,dst_lat,dst_lon,bits,deadline_at_s\n"
+        "1,0.0,31.0,121.0,40.0,116.0,8000000,0\n"
+        "2,0.1,31.0,121.0,40.0,116.0,8000000,\n"
+    )
+    cfg = _cfg()
+    cfg["config"]["demand"]["mode"] = "csv"
+    cfg["config"]["demand"]["csv_path"] = str(src_csv)
+    m = trace.compile_trace(cfg, str(tmp_path / "t"))
+    assert m["offered_packets"] == 2
+    with open(tmp_path / "t" / "trace.csv") as fh:
+        rows = list(csv.DictReader(fh))
+    assert rows[0]["deadline_at_s"] == "0"
+    assert rows[1]["deadline_at_s"] == ""
+
+
 def test_mlab_adapter_labels_measurement_proxy(tmp_path):
     # Sites sit on a real measured OD pair of the repository M-Lab snapshot
     # (Amagasaki <-> Tokyo). Sites without measurement coverage now fail
