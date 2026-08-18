@@ -235,7 +235,8 @@ def _legacy_v1_table(path, contract="C3", with_metadata=True):
     if with_metadata:
         meta = {"schema": "leo-sim-qlearning/v1", "algorithm": "qlearning",
                 "contract": contract, "checkpoint": "q_table.json",
-                "checkpoint_sha256": sha, "mode": "eval"}
+                "checkpoint_sha256": sha, "checkpoint_verified": True,
+                "mode": "eval"}
         (path / "metadata.json").write_text(
             json.dumps(meta, sort_keys=True) + "\n")
     return str(table), sha
@@ -271,7 +272,7 @@ def test_metadata_verifier_fail_closed_on_every_field():
     """DDQN metadata provenance gate: any missing/mismatched field rejects."""
     good = {"schema": "leo-sim-ddqn/v1", "algorithm": "ddqn",
             "contract": "C3", "checkpoint": "online.keras",
-            "checkpoint_sha256": "ab" * 32}
+            "checkpoint_sha256": "ab" * 32, "checkpoint_verified": True}
     assert learning._verify_checkpoint_metadata(
         good, "C3", "online.keras", "ab" * 32,
         "leo-sim-ddqn/v1", "ddqn") is None
@@ -281,6 +282,7 @@ def test_metadata_verifier_fail_closed_on_every_field():
             lambda m: m.update({"checkpoint": "other.keras"}),
             lambda m: m.update({"schema": "other"}),
             lambda m: m.update({"algorithm": "qlearning"}),
+            lambda m: m.update({"checkpoint_verified": False}),
             lambda m: m.pop("contract")):
         m = dict(good)
         mutate(m)

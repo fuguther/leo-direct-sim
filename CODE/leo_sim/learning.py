@@ -98,6 +98,9 @@ def _verify_checkpoint_metadata(meta, expected_contract, checkpoint_name,
     if meta.get("checkpoint_sha256") != checkpoint_sha:
         raise LearningUnavailable(
             "checkpoint metadata SHA does not match the artifact")
+    if meta.get("checkpoint_verified") is not True:
+        raise LearningUnavailable(
+            "checkpoint metadata was not verified at save time")
 
 # Graph-state contracts: real GAT / MPNN encoders consume a k-hop local
 # subgraph, not a hand-rolled fixed aggregate.  These names are new: they do
