@@ -42,7 +42,7 @@
 | R4C-F4 | learning | minor | FACT | fixed | 畸形 JSON/entry/hex 与部分 DDQN load_model 失败未统一包装 | #42 前 main | #42 2eabd72：load_model 异常统一 LearningUnavailable |
 | R4C-i-F4 | receipt | minor | FACT | fixed | field_authority 把 learning 标为 recomputed，实为 ledger_consistency | receipt.py FIELD_AUTHORITY | #42 2eabd72：改 ledger_consistency |
 | R5-G1 | trace | minor | FACT | fixed | csv 模式 deadline_at_s="0" 被 `or ""` 当空处理，静默丢失 deadline | trace.py csv 分支 | #44（已合并）：strip 后判空串 |
-| R5-G2 | governance | major | INFERENCE | open(follow-up) | 正式实验身份不绑定 learning.checkpoint 文件本体（仅绑定声明哈希），授权可先绿、加载时才失败 | governance.build_run_intent | 建议：seal 时校验文件存在+哈希 |
+| R5-G2 | governance | major | INFERENCE | fixed | 正式实验身份不绑定 learning.checkpoint 文件本体（仅绑定声明哈希），授权可先绿、加载时才失败 | governance.build_run_intent | #47（已合并）：seal 时校验文件存在+哈希+symlink（resolve 前逐级扫描）+metadata 未解析父目录语义 |
 | R5-G3 | comparison | minor | INFERENCE | dismissed | legacy/direct 资源参数不等价（H2-13） | comparison.py 声明 | 工程对比范围明确声明 scientific_effect_claim=False，非隐藏缺陷 |
 | R6-F1 | Q0 设计 | blocking | INFERENCE | open | 必须区分 Q0-I（在线最优）/Q0-J（联合调度）/Q0-F（clairvoyant 离线最优），否则未来信息优势被错误归因为当前信息优势 | Q0 研究 op 13934832 | 设计合同，§5 冻结后实现 |
 | R6-F3 | Q0 设计 | blocking | INFERENCE | open | M1 逐跳 queue reward 与物理按时交付/时延目标不序等价，不能作 Q0 最优性判据 | 同上 | 冻结 lexicographic 物理目标 |
@@ -54,6 +54,7 @@
 | R6-A2 | kernel (snapshot) | minor | INFERENCE | open(follow-up) | 真实传播中 in_flight 快照缺端到端回归（现为手工注入） | review40 子代理 | 补真实传播路径 E2E |
 | R6-A3 | kernel (snapshot) | minor | INFERENCE | open(follow-up) | snapshot_global 对 GE 查询会推进内部状态（query-pattern 独立故安全） | review40 子代理 | 加一行注释说明只读语义层级 |
 | R6-B2 | kernel (transmit) | minor | INFERENCE | open(follow-up) | down-wait 独占 server 与等待统计真空（Q0 holding-queue 同根） | #41 R4B 二审 | 设计缺口，Q0 holding-queue 一并处理 |
+| R6-G2b | governance | minor | INFERENCE | open(follow-up) | 绝对路径下 macOS 系统级 symlink（/var→/private/var）会被误拒；正式流程用相对路径不受影响 | review47 复审 | 后续：只扫描 project_root 内用户可控后缀分量，或明确只收相对路径 |
 
 ## Open / Follow-up 清单
 
