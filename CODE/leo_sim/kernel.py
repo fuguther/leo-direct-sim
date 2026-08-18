@@ -265,6 +265,8 @@ class UplinkServer(_DRRMixin):
         self.wake = kern.env.event()
         self.current: tuple[TrafficEndpoint, DataPacket] | None = None
         self._svc = None
+        self._svc_phase = None  # None | waiting_for_link | transmitting
+        self._tx_started_at = None
         self._drr_init(kern.cfg_access["drr_quantum_bits"])
         kern.env.process(self._run())
 
@@ -304,11 +306,15 @@ class UplinkServer(_DRRMixin):
             k.service_log["uplink"].append((cell, pkt.pid))
             dur = pkt.bits / k.ul_rate_bps
             self._svc = (k.env.now, "gsl_uplink_s")
+            self._svc_phase = "waiting_for_link"
+            self._tx_started_at = None
             outcome = yield k.env.process(
                 k._transmit(dur, pkt, ("gsl", self.sat, ep, ep.links.get(self.sat)),
                             "gsl_uplink_s", owner=self))
             k.service_log["uplink_bits"].append((k.env.now, cell, pkt.bits))
             self._svc = None
+            self._svc_phase = None
+            self._tx_started_at = None
             self.current = None
             if outcome == "retired":
                 # hard retirement mid-service: the partial transmission never
@@ -341,6 +347,9 @@ class UplinkServer(_DRRMixin):
             now = k.env.now
             prop = model.propagation_delay_s(
                 k.geometry.slant_range_km(self.sat, ep.lat, ep.lon, now))
+            k._in_flight[pkt.pid] = {
+                "kind": "ingress", "sat": self.sat,
+                "arrival_at": k.env.now + prop, "pkt": pkt}
             k.env.process(k._ingress_after_prop(pkt, self.sat, prop))
 
 
@@ -356,6 +365,8 @@ class DownlinkServer(_DRRMixin):
         self.wake = kern.env.event()
         self.current: DataPacket | None = None
         self._svc = None
+        self._svc_phase = None  # None | waiting_for_link | transmitting
+        self._tx_started_at = None
         self._drr_init(kern.cfg_access["drr_quantum_bits"])
         kern.env.process(self._run())
 
@@ -412,10 +423,14 @@ class DownlinkServer(_DRRMixin):
             k.service_log["downlink"].append((cell, pkt.pid))
             dur = pkt.bits / k.dl_rate_bps
             self._svc = (k.env.now, "gsl_downlink_s")
+            self._svc_phase = "waiting_for_link"
+            self._tx_started_at = None
             outcome = yield k.env.process(
                 k._transmit(dur, pkt, ("gsl", self.sat, ep, ep.links.get(self.sat)),
                             "gsl_downlink_s", owner=self))
             self._svc = None
+            self._svc_phase = None
+            self._tx_started_at = None
             self.current = None
             if outcome == "retired":
                 # partial downlink never reached the endpoint: re-decide at
@@ -437,6 +452,9 @@ class DownlinkServer(_DRRMixin):
             now = k.env.now
             prop = model.propagation_delay_s(
                 k.geometry.slant_range_km(self.sat, ep.lat, ep.lon, now))
+            k._in_flight[pkt.pid] = {
+                "kind": "deliver", "sat": self.sat,
+                "arrival_at": k.env.now + prop, "pkt": pkt}
             k.env.process(k._deliver_after_prop(pkt, self.sat, prop))
 
 
@@ -458,7 +476,10 @@ class ISLLink:
         self.data_area = QueueArea()
         self.ctrl_area = QueueArea()
         self.wake = kern.env.event()
+        self.current: DataPacket | ControlPacket | None = None
         self._svc = None
+        self._svc_phase = None  # None | waiting_for_link | transmitting
+        self._tx_started_at = None
         ge_cfg = kern.cfg_links["ge_isl"]
         self.ge = outage.GilbertElliott(
             ge_cfg["mean_good_s"], ge_cfg["mean_bad_s"],
@@ -522,6 +543,7 @@ class ISLLink:
                 continue
             is_ctrl = bool(self.ctrl_q)
             pkt = self.ctrl_q.popleft() if is_ctrl else self.data_q.popleft()
+            self.current = pkt
             if is_ctrl:
                 self.ctrl_bits -= pkt.bits
                 self.ctrl_area.remove(pkt.bits, k.env.now)
@@ -534,10 +556,15 @@ class ISLLink:
             dur = pkt.bits / k.isl_rate_bps
             occ = "ctrl_isl_s" if is_ctrl else "isl_s"
             self._svc = (k.env.now, occ)
+            self._svc_phase = "waiting_for_link"
+            self._tx_started_at = None
             outcome = yield k.env.process(
                 k._transmit(dur, pkt, ("isl", self.sat, self.peer, self.ge),
                             occ, owner=self))
             self._svc = None
+            self._svc_phase = None
+            self._tx_started_at = None
+            self.current = None
             if outcome == "stalled":
                 if is_ctrl:
                     self.ctrl_q.appendleft(pkt)
@@ -562,6 +589,9 @@ class ISLLink:
             if is_ctrl:
                 k.env.process(k._ctrl_arrive_after_prop(pkt, self.sat, self.peer, prop))
             else:
+                k._in_flight[pkt.pid] = {
+                    "kind": "isl", "sat": self.peer,
+                    "arrival_at": k.env.now + prop, "pkt": pkt}
                 k.env.process(k._isl_arrive_after_prop(pkt, self.peer, prop))
 
     def _expire_waiting(self) -> None:
@@ -723,6 +753,12 @@ class Kernel:
         self.monitor_log: list[tuple] = []
         self.monitor = bool(self.cfg_ex["monitor"])
         self.data_packet_count = 0
+        # Q0 readiness: monotonic state version (bumped once per event step)
+        # and the set of data packets currently propagating between nodes
+        # (scheduled timeout arrivals), so a global snapshot can include the
+        # in-flight component of the network state.
+        self._state_version = 0
+        self._in_flight: dict[int, dict] = {}
         self.ctrl_seq = 0
         self.ctrl_iid = 0
         self.mech = {
@@ -794,6 +830,194 @@ class Kernel:
         self.data_packet_count += 1
         if self.data_packet_count > self.cfg_ex["max_packets"]:
             raise CapExceeded("max_packets exceeded")
+
+    # ------------------------------------------------------- Q0 snapshot
+    def snapshot_global(self) -> dict:
+        """Read-only global state snapshot for a centralized Q0 planner.
+
+        Bound to the current simulation time and the monotonic
+        ``_state_version`` (bumped once per event step), so a plan computed
+        from this snapshot is provably stale after any intervening event.
+        All nested containers are freshly constructed per call: the caller
+        may not reach into kernel objects through this view.  The snapshot is
+        CURRENT-state only: Q0-A (global current information) may use it;
+        future information (Q0-B) needs a separate, explicitly labelled
+        future view.  Physical constraints remain enforced by the kernel at
+        execution time; this interface never writes.
+        """
+        now = self.env.now
+
+        def _drr_state(srv) -> dict:
+            return {"deficit": dict(srv.deficit),
+                    "rr_cursor": srv.rr_cursor}
+
+        def _svc_state(srv) -> dict | None:
+            if srv._svc is None:
+                return None
+            t0, occ = srv._svc
+            # remaining service time is derivable from the in-service packet
+            # and its link rate (uplink/downlink only; ISL rate depends on
+            # data-vs-control, resolved by the caller)
+            return {
+                "started_at": t0,
+                "occ_key": occ,
+                "phase": getattr(srv, "_svc_phase", None),
+                "tx_started_at": getattr(srv, "_tx_started_at", None),
+            }
+
+        def _packet_info(pkt) -> dict:
+            return {
+                "src": pkt.src,
+                "bits": pkt.bits,
+                "deadline": pkt.deadline,
+                "dst": pkt.dst,
+                "emitted_at": pkt.emitted_at,
+                "path": list(pkt.path),
+                "assigned_sat": getattr(pkt, "assigned_sat", None),
+            }
+
+        def _remaining_service(bits, rate_bps, srv) -> float | None:
+            """Phase-aware residual service time.
+
+            waiting_for_link: no bit has been transmitted yet; report the
+            full duration (what the server will need once the link is up).
+            transmitting: duration - elapsed since the real transmission
+            started (never negative by construction).
+            """
+            if srv._svc is None:
+                return None
+            if srv._svc_phase == "waiting_for_link":
+                return bits / rate_bps
+            if srv._svc_phase == "transmitting" \
+                    and srv._tx_started_at is not None:
+                return (bits / rate_bps) - (now - srv._tx_started_at)
+            return None
+        isl_links = {}
+        for s in range(self.num_sats):
+            isl_links[s] = {}
+            for d, lnk in self.isls[s].items():
+                in_service = None
+                if lnk.current is not None:
+                    if isinstance(lnk.current, ControlPacket):
+                        in_service = {"iid": lnk.current.iid}
+                    else:
+                        in_service = {"pid": lnk.current.pid}
+                remaining = None
+                if lnk._svc is not None and lnk.current is not None:
+                    remaining = _remaining_service(
+                        lnk.current.bits, self.isl_rate_bps, lnk)
+                isl_links[s][d] = {
+                    "peer": lnk.peer,
+                    "data_bits": lnk.data_bits,
+                    "ctrl_bits": lnk.ctrl_bits,
+                    "data_q": [{"pid": p.pid, **_packet_info(p)}
+                               for p in lnk.data_q],
+                    "ctrl_q": [c.iid for c in lnk.ctrl_q],
+                    "in_service": in_service,
+                    "svc": _svc_state(lnk),
+                    "remaining_service_s": remaining,
+                    "ge_bad": bool(lnk.ge.is_down(now)) if self.ge_enabled
+                    else False,
+                    "ge_next_flip": (float(lnk.ge._next_flip)
+                                     if self.ge_enabled else math.inf),
+                }
+
+        endpoints = {}
+        for cell, ep in self.endpoints.items():
+            endpoints[cell] = {
+                "queue": [{"pid": p.pid, **_packet_info(p)}
+                          for p in ep.queue],
+                "queued_bits": ep.queued_bits,
+                "links": {
+                    sat: {"state": lk.state, "since": lk.since,
+                          "ready_at": lk.ready_at,
+                          "retire_at": lk.retire_at, "cause": lk.cause}
+                    for sat, lk in ep.links.items()
+                },
+            }
+
+        downlinks = {}
+        for s in range(self.num_sats):
+            dl = self.downlinks[s]
+            downlinks[s] = {
+                "queues": {cell: [{"pid": p.pid, **_packet_info(p)}
+                                  for p in q]
+                           for cell, q in dl.queues.items()},
+                "queued_bits": dl.queued_bits,
+                "in_service": ({"pid": dl.current.pid}
+                               if dl.current is not None else None),
+                "svc": _svc_state(dl),
+                "remaining_service_s": (
+                    _remaining_service(dl.current.bits, self.dl_rate_bps, dl)
+                    if dl.current is not None else None),
+                "drr": _drr_state(dl),
+            }
+
+        uplinks = {}
+        for s in range(self.num_sats):
+            up = self.uplinks[s]
+            uplinks[s] = {
+                "in_service": ({"pid": up.current[1].pid}
+                               if up.current is not None else None),
+                "svc": _svc_state(up),
+                "remaining_service_s": (
+                    _remaining_service(up.current[1].bits, self.ul_rate_bps,
+                                       up)
+                    if up.current is not None else None),
+                "drr": _drr_state(up),
+            }
+
+        gsl_ge = {}
+        # Universe = every materialized GSL GE pair plus every current
+        # endpoint-satellite association.  A pair must never be implied by
+        # key absence: un-materialized pairs are explicit with bad=None.
+        gsl_pairs = set(self.gsl_ge)
+        for cell, ep in self.endpoints.items():
+            for sat in ep.links:
+                gsl_pairs.add((sat, cell))
+        for sat, cell in sorted(gsl_pairs, key=lambda p: (p[0], p[1])):
+            ge = self.gsl_ge.get((sat, cell))
+            if ge is None:
+                gsl_ge[f"{sat}:{cell}"] = {
+                    "materialized": False, "bad": None, "next_flip": None,
+                }
+            else:
+                gsl_ge[f"{sat}:{cell}"] = {
+                    "materialized": True,
+                    "bad": bool(ge.is_down(now)),
+                    "next_flip": float(ge._next_flip),
+                }
+
+        return {
+            "now": now,
+            "state_version": self._state_version,
+            "topology": {s: dict(nb) for s, nb in self.topo.items()},
+            "slots": {s: sorted(v) for s, v in enumerate(self.slots)},
+            "access_wait": {
+                s: {cell: req_t for cell, req_t in self.access_wait[s].items()}
+                for s in range(self.num_sats)},
+            "access_last_busy": dict(self.access_last_busy),
+            "endpoints": endpoints,
+            "pending": {s: [{"pid": p.pid, **_packet_info(p)}
+                            for p in self.pending[s]]
+                        for s in range(self.num_sats)},
+            "uplinks": uplinks,
+            "downlinks": downlinks,
+            "isl_links": isl_links,
+            "gsl_ge": gsl_ge,
+            "in_flight": {
+                pid: {"pid": pid, "kind": v["kind"], "sat": v["sat"],
+                      "arrival_at": v["arrival_at"],
+                      **_packet_info(v["pkt"])}
+                for pid, v in self._in_flight.items()},
+            "caches": {
+                s: {origin: {"serve_cells": sorted(entry.payload.get(
+                        "serve_cells", ())),
+                             "generated_at": entry.generated_at}
+                    for origin, entry in self.caches[s].valid_entries(now).items()}
+                for s in range(self.num_sats)
+            },
+        }
 
     def _gsl_ge(self, sat: int, cell: str) -> outage.GilbertElliott:
         key = (sat, cell)
@@ -933,6 +1157,13 @@ class Kernel:
                 # down-wait as occupied (K2)
                 owner._svc = (t0, occ_key)
             end = t0 + dur
+            if owner is not None and owner._svc_phase == "waiting_for_link":
+                # Real transmission starts only after every availability
+                # check passed (geometry up, GE up, no retirement deadline).
+                # Down-wait before this point must not be reported as
+                # service progress: stamp the phase and start time here.
+                owner._svc_phase = "transmitting"
+                owner._tx_started_at = t0
             if (link_ref[0] == "isl" and isinstance(pkt, DataPacket)
                     and pkt.learning_state is not None
                     and pkt.isl_enqueued_at is not None):
@@ -1284,6 +1515,11 @@ class Kernel:
         link = Link(sat, "acquiring", now, ready_at=now + acq,
                     interrupt=self.env.event())
         ep.links[sat] = link
+        # GSL GE is part of the Q0 global-state universe: materialize it at
+        # association so snapshot_global() can report every current
+        # endpoint-satellite pair explicitly instead of silently omitting
+        # not-yet-queried pairs (keyed RNG stream keeps this deterministic).
+        self._gsl_ge(sat, ep.cell)
         self.slots[sat].add(ep.cell)
         self.handover_events.append({"t": now, "endpoint": ep.cell,
                                      "type": "associate", "sat": sat})
@@ -1543,6 +1779,7 @@ class Kernel:
             }
         self.decision_sink.append({
             "t": float(self.env.now),
+            "state_version": self._state_version,
             "pid": pkt.pid,
             "src": pkt.src,
             "dst": pkt.dst,
@@ -1655,6 +1892,7 @@ class Kernel:
 
     def _ingress_after_prop(self, pkt: DataPacket, sat: int, prop: float):
         yield self.env.timeout(prop)
+        self._in_flight.pop(pkt.pid, None)
         if pkt.deadline is not None and self.env.now > pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             return
@@ -1664,6 +1902,7 @@ class Kernel:
 
     def _isl_arrive_after_prop(self, pkt: DataPacket, sat: int, prop: float):
         yield self.env.timeout(prop)
+        self._in_flight.pop(pkt.pid, None)
         if pkt.deadline is not None and self.env.now > pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             return
@@ -1673,6 +1912,7 @@ class Kernel:
 
     def _deliver_after_prop(self, pkt: DataPacket, sat: int, prop: float):
         yield self.env.timeout(prop)
+        self._in_flight.pop(pkt.pid, None)
         now = self.env.now
         if pkt.deadline is not None and now > pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
@@ -1717,6 +1957,7 @@ class Kernel:
                 if t_next > self.horizon or t_next == math.inf:
                     break
                 self.env.step()
+                self._state_version += 1
                 events += 1
                 if events > self.cfg_ex["max_events"]:
                     raise CapExceeded("max_events exceeded")
