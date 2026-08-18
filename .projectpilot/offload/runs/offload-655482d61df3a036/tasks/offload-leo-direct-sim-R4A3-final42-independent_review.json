@@ -1,0 +1,62 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R4A3-final42:independent_review",
+    "title": "PR #42 checkpoint 契约整改终审（commit 44f6963）",
+    "goal": "逐条核验 R4A2 发现是否被真正修复：F1 blocking=sibling metadata 可重标 contract；F2 major=metadata 非法 UTF-8 未统一转 LearningUnavailable；F2(独立)=legacy TabularQ 不校验 state-key 宽度/representation；F3 minor=TabularQ 加载端不校验 payload schema。同时独立寻找本次整改引入的回归或遗漏。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "44f6963f0a1f0a63f6c9d02cb67d074ee1b52f53",
+      "paths": [
+        "CODE/leo_sim/learning.py",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/tests/test_qlearning_migration.py",
+        "CODE/leo_sim/tests/test_config.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "每条结论给出 FACT/INFERENCE/未验证 标记与精确行号证据，禁止无证据断言",
+      "显式声明 open_items；无法在本环境验证的项（如 TensorFlow 主机上的 DDQN 动态复现）不得伪证为已验证",
+      "给出 APPROVE / REQUEST_CHANGES / BLOCK 三选一终判及理由",
+      "克制冷静：禁止奉承，直接指出不确定处"
+    ],
+    "requiredEvidence": [
+      "对 F1：确认 checkpoint_metadata_sha256 是否在 config 解析、DDQN/TabularQ 加载、receipt 校验三处强制生效；检查是否仍有路径可仅靠可改写 sibling metadata 通过",
+      "对 F2：确认 metadata/payload 读取是否统一捕获 UnicodeDecodeError 并转 LearningUnavailable",
+      "对 F2(独立)：确认 TabularQ 是否强制校验 key 字节宽度=CONTRACT_DIMS[contract]*8、key 唯一、Q 值有限、schema 精确；错误宽度是否 fail-closed",
+      "对 F3：确认 payload 非 mapping / schema 错误 / 重复 key / NaN 是否全部拒绝",
+      "检查新测试是否真实覆盖上述负例且未被弱化；检查 config 校验顺序是否导致 ddqn eval 漏检 metadata pin"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "7d7abf132e2a99c6bc80a28a0be5e42fca4999daa3476c2fb5686b5dfc094343"
+}
