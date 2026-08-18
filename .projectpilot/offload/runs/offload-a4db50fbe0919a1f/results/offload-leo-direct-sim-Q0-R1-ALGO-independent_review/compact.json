@@ -1,0 +1,120 @@
+{
+  "taskId": "offload:leo-direct-sim:Q0-R1-ALGO:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "严格 Q0 仅知当前全局状态而不知未来，因此不能把 clairvoyant time-expanded MILP 直接称为 Q0 最优。若未来转移律已知，Q0-I 的理论精确族应为事件驱动 SMDP/PDMP 动态规划；完整未来已知时 continuous/event-time MILP/CP-SAT 才是 Q0-F 精确上界。普通 min-cost flow 不能精确表达包不可分、non-preemptive、deadline、中断和有限队列。最优性建议按 timely delivery→queue cost→E2E latency 做 lexicographic physical objective，M1 shaped return 仅作诊断。tiny Q0-I 用 memoized event DP，Q0-F 用 CP-SAT 交叉验证；千包级改 rolling horizon/online control。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "当前状态完全可见不等于未来样本路径已知；clairvoyant MILP 必须标记 Q0-F，严格 Q0-I 在已知转移律下对应 event-driven SMDP/PDMP DP。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L102-L113",
+        "web://epubs.siam.org/doi/10.1137/S0363012999364474",
+        "web://pubsonline.informs.org/doi/10.1287/mnsc.42.1.37"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "普通 time-expanded/min-cost flow 只能作为 relaxation；平台 packet-level non-preemptive routing-scheduling 的 exact 版本需要整数/调度变量并继承 NP-hard 组合复杂度。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L811-L940",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/PLATFORM-DOCUMENTATION/02-v2-platform.md#L45-L119",
+        "web://pubsonline.informs.org/doi/10.1287/opre.6.3.419",
+        "web://pubsonline.informs.org/doi/10.1287/opre.41.2.338",
+        "web://epubs.siam.org/doi/10.1137/0204035",
+        "web://pubsonline.informs.org/doi/10.1287/moor.1.2.117"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "blocking",
+      "summary": "M1 正的逐跳 queue reward 与 physical timely-delivery/latency objective 不序等价，不能作为 Q0 optimality criterion。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/REWARD-DIFF-20260816.md#L8-L20",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L7-L52",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L102-L113"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "WAIT 和 joint resource scheduling 会扩大控制能力，必须与仅解除信息传播限制的 Q0-I 分成 Q0-J，不能把收益归因于信息。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L90-L113",
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1545-L1645"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "summary": "数十星、千包级不适合作全 horizon exact DP/MILP；精确 oracle 应限制在 tiny canonical instances，full scale 使用 rolling horizon 或 online queue-based control。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "web://epubs.siam.org/doi/10.1137/0204035",
+        "web://pubsonline.informs.org/doi/10.1287/moor.1.2.117",
+        "web://pubsonline.informs.org/doi/10.1287/mnsc.42.1.37",
+        "web://ieeexplore.ieee.org/abstract/document/10937133"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "major",
+      "summary": "删除远端队列/远端拓扑/缓存 AoI 后若观测不再是 Markov sufficient statistic，原 full-state DP 的 optimality 声明失效，应转 belief-POMDP 或近似/分散策略。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/PLATFORM-DOCUMENTATION/02-v2-platform.md#L105-L119",
+        "web://pubsonline.informs.org/doi/10.1287/opre.21.5.1071",
+        "web://drum.lib.umd.edu/items/571fda52-aefb-4497-9a2d-69d8c7c907b9"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "冻结定义：主信息上界命名 Q0-I，只开放当前全局状态，不新增 WAIT、joint scheduling 或未来轨迹。",
+    "明确 Q0 是否允许已知 traffic/GE/topology transition law，以及 orbital ephemeris prediction 是否属于禁止的未来信息。",
+    "第一版 exact 原型采用 2-3 星、2-5 包的 memoized event-state SMDP/PDMP DP，仅控制现有逐跳动作并保持 Kernel scheduler。",
+    "另建 2-3 星、3-8 包的 CP-SAT Q0-F/Q0-J micro-oracle，route enumeration + optional intervals + NoOverlap + precedence + deadline；只有 OPTIMAL 状态接受为精确证据。",
+    "冻结跨臂 lexicographic objective：timely delivered packets或bits为一级，queue cost为二级，E2E latency为三级；raw M1 return只作辅助诊断。",
+    "在 exact oracle 与 kernel 对照前统一 deadline equality、forced-deliver、control traffic、DRR、access-slot 与 pending waiting 的语义。",
+    "full-scale 千包 Q0 不追求全 horizon exact；使用 rolling-horizon optimization，并与 backpressure/deadline-aware heuristic 和学习臂并列。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L90-L118",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/EXPERT-REVIEW-20260816.md#L7-L52",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/REWARD-DIFF-20260816.md#L8-L20",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/ANALYSIS/PLATFORM-DOCUMENTATION/02-v2-platform.md#L45-L119",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L811-L940",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1545-L1645",
+    "github://fuguther/leo-direct-sim/blob/1599d3e3c7d5d74f22ddb497969f28fe8b90b73c/CODE/leo_sim/kernel.py#L1698-L1721",
+    "web://pubsonline.informs.org/doi/10.1287/opre.6.3.419",
+    "web://pubsonline.informs.org/doi/10.1287/opre.2017.1624",
+    "web://epubs.siam.org/doi/10.1137/S0363012999364474",
+    "web://pubsonline.informs.org/doi/10.1287/mnsc.42.1.37",
+    "web://ieeexplore.ieee.org/abstract/document/10937133"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "Q0 是否知道未来 traffic arrival、GE 和 topology 的转移概率律尚未冻结；这决定 expected-optimal SMDP 是否有完整定义。",
+    "是否允许根据确定性轨道模型预测未来 topology/geometry 尚未冻结；若允许，则 Q0 的未来信息边界会显著改变。",
+    "主 Q0 是否严格冻结现有 DRR、control priority、forced-deliver 和无显式 WAIT 的 Q0-I 控制能力需正式确认。",
+    "deadline 等时刻的 >= / > 与 service_end==deadline 语义仍需统一，否则 exact oracle 与 kernel 可能在边界实例产生不同 optimum。",
+    "tiny Q0 原型中未来 control advertisement/generation 应作为未知随机过程、固定外生过程还是关闭，需在实验合同中明确。"
+  ]
+}
