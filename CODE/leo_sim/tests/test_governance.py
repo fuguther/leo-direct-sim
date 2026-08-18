@@ -1,5 +1,6 @@
 """Tests for the V2 governance integration surface."""
 import json
+import os
 
 import hashlib
 import pytest
@@ -286,3 +287,48 @@ def test_eval_intent_verifies_metadata_pin_at_seal_time(tmp_path):
     (tmp_path / "EXPERIMENTS" / "ckpt" / "metadata.json").unlink()
     with pytest.raises(governance.IntentError, match="metadata.json"):
         governance.build_run_intent(no_meta, project_root=tmp_path)
+
+
+def test_eval_intent_rejects_symlink_checkpoint_before_resolve(tmp_path):
+    """R5-G2 regression: symlink must be rejected BEFORE resolve(), and the
+    kernel-side sibling metadata path must be the one governance checks."""
+    exp = tmp_path / "EXPERIMENTS" / "ckpt"
+    exp.mkdir(parents=True)
+    real = exp / "real.keras"
+    real.write_bytes(b"keras-bytes")
+    link = exp / "online.keras"
+    os.symlink(real, link)
+    sha = hashlib.sha256(b"keras-bytes").hexdigest()
+    meta = exp / "metadata.json"
+    meta.write_text('{"schema": "leo-sim-ddqn/v1", "contract": "C3"}')
+    meta_sha = hashlib.sha256(meta.read_bytes()).hexdigest()
+    request = {
+        "runtime_kind": "leo_sim_v2",
+        "config": {
+            "endpoints": {"sites": [
+                {"name": "a", "lat": 0.0, "lon": 0.0},
+                {"name": "b", "lat": 0.0, "lon": 10.0},
+            ]},
+            "routing": {"policy": "hop", "learning_enabled": True},
+            "learning": {
+                "algorithm": "ddqn", "mode": "eval",
+                "checkpoint_path": "EXPERIMENTS/ckpt/online.keras",
+                "checkpoint_sha256": sha,
+                "checkpoint_metadata_sha256": meta_sha,
+            },
+        },
+    }
+    with pytest.raises(governance.IntentError, match="symbolic link"):
+        governance.build_run_intent(request, project_root=tmp_path)
+
+    # symlink escaping the project root must also be rejected by the scan
+    outside = tmp_path.parent / "outside.keras"
+    outside.write_bytes(b"outside-bytes")
+    link2 = exp / "escape.keras"
+    os.symlink(outside, link2)
+    request["config"]["learning"]["checkpoint_path"] = (
+        "EXPERIMENTS/ckpt/escape.keras")
+    request["config"]["learning"]["checkpoint_sha256"] = hashlib.sha256(
+        b"outside-bytes").hexdigest()
+    with pytest.raises(governance.IntentError, match="symbolic link"):
+        governance.build_run_intent(request, project_root=tmp_path)

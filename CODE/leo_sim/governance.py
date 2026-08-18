@@ -138,8 +138,20 @@ def build_run_intent(request: dict, *, project_root: Path | None = None) -> dict
             raise IntentError("learning.eval requires checkpoint_path")
         ckpt = Path(ckpt_raw)
         base = Path(project_root).resolve() if project_root is not None else Path.cwd()
-        source = ckpt if ckpt.is_absolute() else base / ckpt
-        source = source.resolve()
+
+        def _reject_symlink_path(candidate: Path, what: str) -> None:
+            # Reject BEFORE resolve(): resolve() would erase the symlink and
+            # make is_symlink() dead code (R5-G2 review finding).
+            probe = candidate
+            while probe != probe.parent:
+                if probe.is_symlink():
+                    raise IntentError(
+                        f"{what} path contains a symbolic link: {candidate}")
+                probe = probe.parent
+
+        raw_source = ckpt if ckpt.is_absolute() else base / ckpt
+        _reject_symlink_path(raw_source, "learning checkpoint")
+        source = raw_source.resolve()
         if project_root is not None:
             try:
                 source.relative_to(base)
@@ -157,7 +169,21 @@ def build_run_intent(request: dict, *, project_root: Path | None = None) -> dict
                 "learning checkpoint SHA-256 does not match resolved config")
         meta_sha = learning_cfg.get("checkpoint_metadata_sha256")
         if meta_sha is not None:
-            meta = source.parent / "metadata.json"
+            # learning.py loads the sibling metadata from the UNRESOLVED
+            # checkpoint parent; governance must check the same path so a
+            # symlinked checkpoint cannot point governance at one metadata
+            # file while the kernel reads another.
+            raw_meta = ckpt.parent / "metadata.json"
+            meta_candidate = raw_meta if raw_meta.is_absolute() else base / raw_meta
+            _reject_symlink_path(meta_candidate, "learning checkpoint metadata")
+            meta = meta_candidate.resolve()
+            if project_root is not None:
+                try:
+                    meta.relative_to(base)
+                except ValueError as exc:
+                    raise IntentError(
+                        "formal learning checkpoint metadata must remain "
+                        "inside the project root") from exc
             if not meta.is_file() or meta.is_symlink():
                 raise IntentError(
                     "learning checkpoint metadata.json missing or symbolic")
