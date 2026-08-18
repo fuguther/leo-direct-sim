@@ -136,6 +136,7 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "obs_hops": (int, type(None)),  # observation aggregation hops; None -> control_plane.vis_k
         "checkpoint_path": (str, type(None)),
         "checkpoint_sha256": (str, type(None)),
+        "checkpoint_metadata_sha256": (str, type(None)),
         "gamma": (int, float),
         "lr": (int, float),
         "batch_size": int,
@@ -256,6 +257,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "obs_hops": None,
         "checkpoint_path": None,
         "checkpoint_sha256": None,
+        "checkpoint_metadata_sha256": None,
         "gamma": 0.99,
         "lr": 0.001,
         "batch_size": 64,
@@ -528,18 +530,38 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
             or len(lr["checkpoint_sha256"]) != 64
             or any(c not in "0123456789abcdef" for c in lr["checkpoint_sha256"])):
         raise ConfigError("learning.checkpoint_sha256 must be null or lowercase SHA-256")
+    if lr["checkpoint_metadata_sha256"] is not None and (
+            not isinstance(lr["checkpoint_metadata_sha256"], str)
+            or len(lr["checkpoint_metadata_sha256"]) != 64
+            or any(c not in "0123456789abcdef"
+                   for c in lr["checkpoint_metadata_sha256"])):
+        raise ConfigError(
+            "learning.checkpoint_metadata_sha256 must be null or lowercase SHA-256")
     if lr["algorithm"] == "none" and lr["mode"] != "train":
         raise ConfigError("learning.mode=eval requires a learning algorithm")
     if lr["algorithm"] == "none" and lr["checkpoint_path"] is not None:
         raise ConfigError("learning.checkpoint_path requires a learning algorithm")
     if lr["algorithm"] == "none" and lr["checkpoint_sha256"] is not None:
         raise ConfigError("learning.checkpoint_sha256 requires a learning algorithm")
+    if lr["algorithm"] == "none" and lr["checkpoint_metadata_sha256"] is not None:
+        raise ConfigError(
+            "learning.checkpoint_metadata_sha256 requires a learning algorithm")
     if lr["algorithm"] != "none" and lr["mode"] == "eval" \
             and (lr["checkpoint_path"] is None or lr["checkpoint_sha256"] is None):
         raise ConfigError(
             "learning.mode=eval requires checkpoint_path and checkpoint_sha256")
+    if lr["algorithm"] == "ddqn" and lr["mode"] == "eval" \
+            and lr["checkpoint_metadata_sha256"] is None:
+        # DDQN artifacts are opaque model files whose observation contract
+        # lives only in the sibling metadata.json; that metadata must itself
+        # be pinned, otherwise a C3/C4-same-width checkpoint can be relabeled
+        # and silently loaded (learning provenance gate).
+        raise ConfigError(
+            "learning.mode=eval with algorithm=ddqn requires "
+            "checkpoint_metadata_sha256 (sibling metadata trust anchor)")
     if lr["mode"] == "train" and (lr["checkpoint_path"] is not None
-                                    or lr["checkpoint_sha256"] is not None):
+                                    or lr["checkpoint_sha256"] is not None
+                                    or lr["checkpoint_metadata_sha256"] is not None):
         raise ConfigError("learning.mode=train does not load a checkpoint")
     if lr["reward"] != "queue":
         # v1 keeps exactly one reward: the corrected queue reward (M1/M2

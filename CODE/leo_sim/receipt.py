@@ -478,6 +478,12 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
                 if expected is not None and learning.get(
                         "loaded_checkpoint_sha256") != expected:
                     errors.append("loaded checkpoint SHA != resolved eval config")
+                expected_meta = (resolved_cfg or {}).get(
+                    "learning", {}).get("checkpoint_metadata_sha256")
+                if expected_meta is not None and learning.get(
+                        "loaded_checkpoint_metadata_sha256") != expected_meta:
+                    errors.append(
+                        "loaded checkpoint metadata SHA != resolved eval config")
     elif requested_learning == "qlearning":
         if not isinstance(learning, dict):
             errors.append("Q-learning run must have a learning ledger")
@@ -521,6 +527,12 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
                 if expected is not None and learning.get(
                         "loaded_checkpoint_sha256") != expected:
                     errors.append("loaded checkpoint SHA != resolved eval config")
+                expected_meta = (resolved_cfg or {}).get(
+                    "learning", {}).get("checkpoint_metadata_sha256")
+                if expected_meta is not None and learning.get(
+                        "loaded_checkpoint_metadata_sha256") != expected_meta:
+                    errors.append(
+                        "loaded checkpoint metadata SHA != resolved eval config")
     elif requested_learning is not None:
         errors.append(f"unknown requested learning algorithm "
                       f"{requested_learning!r}")

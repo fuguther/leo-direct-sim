@@ -100,14 +100,16 @@ def test_exploit_picks_best_legal_and_explore_stays_legal():
 
 def test_eval_mode_does_not_update_table(tmp_path):
     train = _learner()
-    train.remember(np.zeros(4), "E", 1.5, np.ones(4), FULL_MASK, False)
+    dim = learning.CONTRACT_DIMS["C3"]
+    train.remember(np.zeros(dim), "E", 1.5, np.ones(dim), FULL_MASK, False)
     meta = train.save_and_verify(tmp_path)
     table_path = tmp_path / "q_table.json"
     # eval requires a pinned checkpoint (config contract)
     ql = _learner(mode="eval", checkpoint_path=str(table_path),
-                  checkpoint_sha256=meta["checkpoint_sha256"])
+                  checkpoint_sha256=meta["checkpoint_sha256"],
+                  checkpoint_metadata_sha256=meta["metadata_sha256"])
     before = {k: v.copy() for k, v in ql.table.items()}
-    s = np.zeros(4)
+    s = np.zeros(dim)
     ql.remember(s, "E", 50.0, np.ones(4), FULL_MASK, True)
     assert ql.table[ql._key(s)][3] == before[ql._key(s)][3]
     assert ql.train_steps == 0 and ql.transitions == 1
@@ -131,14 +133,16 @@ def test_eval_mode_does_not_consume_rng_or_mutate_table():
 
 def test_save_load_roundtrip_verified(tmp_path):
     ql = _learner()
-    ql.remember(np.zeros(4), "E", 1.5, np.ones(4), FULL_MASK, False)
+    dim = learning.CONTRACT_DIMS["C3"]
+    ql.remember(np.zeros(dim), "E", 1.5, np.ones(dim), FULL_MASK, False)
     meta = ql.save_and_verify(tmp_path)
     assert meta["checkpoint_verified"] is True
     table_path = tmp_path / "q_table.json"
     sha = hashlib.sha256(table_path.read_bytes()).hexdigest()
     assert meta["checkpoint_sha256"] == sha
     ql2 = _learner(mode="eval", checkpoint_path=str(table_path),
-                   checkpoint_sha256=sha)
+                   checkpoint_sha256=sha,
+                   checkpoint_metadata_sha256=meta["metadata_sha256"])
     assert ql2.table.keys() == ql.table.keys()
     for key, row_vals in ql.table.items():
         assert np.array_equal(ql2.table[key], row_vals)
@@ -152,7 +156,8 @@ def test_checkpoint_contract_mismatch_rejected(tmp_path):
     under a different contract with the same input width (C3/C4 both have
     dimension 14 but different semantics)."""
     train = _learner(contract="C3")
-    train.remember(np.zeros(4), "E", 1.5, np.ones(4), FULL_MASK, False)
+    dim = learning.CONTRACT_DIMS["C3"]
+    train.remember(np.zeros(dim), "E", 1.5, np.ones(dim), FULL_MASK, False)
     meta = train.save_and_verify(tmp_path)
     table_path = tmp_path / "q_table.json"
     with pytest.raises(learning.LearningUnavailable,
@@ -226,9 +231,13 @@ def test_kernel_end_to_end_qlearning_without_tensorflow(tmp_path):
 
 def _legacy_v1_table(path, contract="C3", with_metadata=True):
     """Write a legacy v1 q_table.json (no contract field) plus the sibling
-    metadata.json that old save_and_verify produced."""
+    metadata.json that old save_and_verify produced.  Legacy keys are the
+    exact float64 bytes of the contract observation, so a loadable C3 table
+    has keys of CONTRACT_DIMS[C3]*8 = 112 bytes."""
     payload = {"schema": "leo-sim-qlearning-table/v1",
-               "entries": [["00" * 16, [0.1] * len(learning.ACTIONS)]]}
+               "entries": [[
+                   "00" * (learning.CONTRACT_DIMS[contract] * 8),
+                   [0.1] * len(learning.ACTIONS)]]}
     table = path / "q_table.json"
     table.write_text(json.dumps(payload, sort_keys=True) + "\n")
     sha = hashlib.sha256(table.read_bytes()).hexdigest()
@@ -239,21 +248,26 @@ def _legacy_v1_table(path, contract="C3", with_metadata=True):
                 "mode": "eval"}
         (path / "metadata.json").write_text(
             json.dumps(meta, sort_keys=True) + "\n")
-    return str(table), sha
+        meta_sha = hashlib.sha256(
+            (path / "metadata.json").read_bytes()).hexdigest()
+    else:
+        meta_sha = None
+    return str(table), sha, meta_sha
 
 
 def test_legacy_v1_table_migrates_via_sibling_metadata(tmp_path):
     """A v1 table without payload contract loads when the sibling metadata
-    independently binds contract+filename+SHA."""
-    table_path, sha = _legacy_v1_table(tmp_path)
+    independently binds contract+filename+SHA and is itself pinned."""
+    table_path, sha, meta_sha = _legacy_v1_table(tmp_path)
     q = _learner(mode="eval", contract="C3",
-                 checkpoint_path=table_path, checkpoint_sha256=sha)
+                 checkpoint_path=table_path, checkpoint_sha256=sha,
+                 checkpoint_metadata_sha256=meta_sha)
     assert len(q.table) == 1
 
 
 def test_legacy_v1_table_rejected_without_verifiable_metadata(tmp_path):
     """No payload contract and no usable sibling metadata -> fail closed."""
-    table_path, sha = _legacy_v1_table(tmp_path, with_metadata=False)
+    table_path, sha, _ = _legacy_v1_table(tmp_path, with_metadata=False)
     with pytest.raises(learning.LearningUnavailable,
                        match="contract mismatch"):
         _learner(mode="eval", contract="C3",
@@ -261,11 +275,96 @@ def test_legacy_v1_table_rejected_without_verifiable_metadata(tmp_path):
 
 
 def test_legacy_v1_table_rejected_on_metadata_contract_mismatch(tmp_path):
-    table_path, sha = _legacy_v1_table(tmp_path, contract="C4")
+    table_path, sha, meta_sha = _legacy_v1_table(tmp_path, contract="C4")
     with pytest.raises(learning.LearningUnavailable,
                        match="contract mismatch"):
         _learner(mode="eval", contract="C3",
-                 checkpoint_path=table_path, checkpoint_sha256=sha)
+                 checkpoint_path=table_path, checkpoint_sha256=sha,
+                 checkpoint_metadata_sha256=meta_sha)
+
+
+def test_legacy_v1_table_rejected_on_wrong_key_width(tmp_path):
+    """A legacy table whose keys do not match the contract observation width
+    would silently miss every runtime lookup and degrade to the unseen-state
+    fallback; it must fail closed instead."""
+    payload = {"schema": "leo-sim-qlearning-table/v1",
+               "entries": [["00" * 16, [0.1] * len(learning.ACTIONS)]]}
+    table = tmp_path / "q_table.json"
+    table.write_text(json.dumps(payload, sort_keys=True) + "\n")
+    sha = hashlib.sha256(table.read_bytes()).hexdigest()
+    meta = {"schema": "leo-sim-qlearning/v1", "algorithm": "qlearning",
+            "contract": "C3", "checkpoint": "q_table.json",
+            "checkpoint_sha256": sha, "checkpoint_verified": True,
+            "mode": "eval"}
+    (tmp_path / "metadata.json").write_text(
+        json.dumps(meta, sort_keys=True) + "\n")
+    meta_sha = hashlib.sha256(
+        (tmp_path / "metadata.json").read_bytes()).hexdigest()
+    with pytest.raises(learning.LearningUnavailable,
+                       match="state key width"):
+        _learner(mode="eval", contract="C3",
+                 checkpoint_path=str(table), checkpoint_sha256=sha,
+                 checkpoint_metadata_sha256=meta_sha)
+
+
+def test_metadata_relabel_is_rejected_by_sha_pin(tmp_path):
+    """F1 regression: rewriting sibling metadata (C3 -> C4) while keeping the
+    checkpoint SHA must fail because the metadata file itself is pinned."""
+    table_path, sha, meta_sha = _legacy_v1_table(tmp_path)
+    meta_path = tmp_path / "metadata.json"
+    forged = json.loads(meta_path.read_text(encoding="utf-8"))
+    forged["contract"] = "C4"
+    meta_path.write_text(json.dumps(forged, sort_keys=True) + "\n",
+                         encoding="utf-8")
+    with pytest.raises(learning.LearningUnavailable,
+                       match="metadata.json SHA-256 differs"):
+        _learner(mode="eval", contract="C3",
+                 checkpoint_path=table_path, checkpoint_sha256=sha,
+                 checkpoint_metadata_sha256=meta_sha)
+
+
+def test_metadata_invalid_utf8_is_fail_closed(tmp_path):
+    """Invalid UTF-8 metadata must surface as LearningUnavailable (not a raw
+    UnicodeDecodeError escaping the learning contract)."""
+    table_path, sha, _ = _legacy_v1_table(tmp_path)
+    bad = b"\xff\xfe invalid utf8"
+    (tmp_path / "metadata.json").write_bytes(bad)
+    meta_sha = hashlib.sha256(bad).hexdigest()
+    with pytest.raises(learning.LearningUnavailable,
+                       match="metadata.json unreadable"):
+        _learner(mode="eval", contract="C3",
+                 checkpoint_path=table_path, checkpoint_sha256=sha,
+                 checkpoint_metadata_sha256=meta_sha)
+
+
+def test_qlearning_payload_schema_and_structure_are_fail_closed(tmp_path):
+    """R4C F3 regression: bogus schema, non-mapping payload, duplicate keys
+    and non-finite Q values must all be rejected."""
+    dim = learning.CONTRACT_DIMS["C3"]
+    key = "00" * (dim * 8)
+    payloads = [
+        {"schema": "bogus", "contract": "C3",
+         "entries": [[key, [0.1] * len(learning.ACTIONS)]]},
+        {"schema": "leo-sim-qlearning-table/v1", "contract": "C3",
+         "entries": [[key, [0.1] * len(learning.ACTIONS)],
+                     [key, [0.2] * len(learning.ACTIONS)]]},
+        {"schema": "leo-sim-qlearning-table/v1", "contract": "C3",
+         "entries": [[key, [0.1] * 4 + [float("nan")]]]},
+    ]
+    for i, payload in enumerate(payloads):
+        table = tmp_path / f"bad_{i}.json"
+        table.write_text(json.dumps(payload, sort_keys=True) + "\n")
+        sha = hashlib.sha256(table.read_bytes()).hexdigest()
+        with pytest.raises(learning.LearningUnavailable):
+            _learner(mode="eval", contract="C3",
+                     checkpoint_path=str(table), checkpoint_sha256=sha)
+    table = tmp_path / "bad_list.json"
+    table.write_text("[1, 2, 3]\n")
+    sha = hashlib.sha256(table.read_bytes()).hexdigest()
+    with pytest.raises(learning.LearningUnavailable,
+                       match="not a mapping"):
+        _learner(mode="eval", contract="C3",
+                 checkpoint_path=str(table), checkpoint_sha256=sha)
 
 
 def test_metadata_verifier_fail_closed_on_every_field():
@@ -294,4 +393,3 @@ def test_metadata_verifier_fail_closed_on_every_field():
         learning._verify_checkpoint_metadata(
             "not-a-dict", "C3", "online.keras", "ab" * 32,
             "leo-sim-ddqn/v1", "ddqn")
-

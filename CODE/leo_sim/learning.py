@@ -102,6 +102,39 @@ def _verify_checkpoint_metadata(meta, expected_contract, checkpoint_name,
         raise LearningUnavailable(
             "checkpoint metadata was not verified at save time")
 
+
+def _read_json_utf8(path: Path, what: str) -> dict:
+    """Read one UTF-8 JSON artifact with a unified fail-closed exception.
+
+    Decode errors (invalid UTF-8) and parse errors must surface as
+    LearningUnavailable, never as a bare UnicodeError/JSONDecodeError that
+    escapes the learning contract and makes a corrupt artifact look like an
+    unrelated crash."""
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise LearningUnavailable(f"{what} unreadable: {exc}") from exc
+
+
+def _read_checkpoint_metadata(path: Path, expected_sha, what: str) -> dict:
+    """Read and verify a sibling metadata artifact against an external pin.
+
+    The metadata file must be a regular non-symlink file whose own SHA-256 is
+    pinned in the resolved config.  Without this independent anchor, a
+    checkpoint could be relabeled (e.g. C3 -> C4) by rewriting only the
+    sibling metadata while the pinned checkpoint SHA stays valid."""
+    if path.is_symlink() or not path.is_file():
+        raise LearningUnavailable(f"{what} missing or symbolic")
+    if not isinstance(expected_sha, str) or len(expected_sha) != 64:
+        raise LearningUnavailable(
+            f"{what} SHA-256 not pinned in resolved config")
+    actual_sha = hashlib.sha256(path.read_bytes()).hexdigest()
+    if actual_sha != expected_sha:
+        raise LearningUnavailable(
+            f"{what} SHA-256 differs from resolved config")
+    return _read_json_utf8(path, what)
+
+
 # Graph-state contracts: real GAT / MPNN encoders consume a k-hop local
 # subgraph, not a hand-rolled fixed aggregate.  These names are new: they do
 # NOT reuse the V1 C4/C5 semantics (V2's C4/C5 are cache-aggregation rules).
@@ -371,14 +404,9 @@ class TensorflowDDQN:
                 raise LearningUnavailable(
                     "DDQN checkpoint SHA-256 differs from resolved config")
             meta_path = path.parent / "metadata.json"
-            if not meta_path.is_file() or meta_path.is_symlink():
-                raise LearningUnavailable(
-                    "DDQN checkpoint metadata.json missing or symbolic")
-            try:
-                meta = json.loads(meta_path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError) as exc:
-                raise LearningUnavailable(
-                    f"DDQN checkpoint metadata unreadable: {exc}") from exc
+            meta = _read_checkpoint_metadata(
+                meta_path, cfg.get("checkpoint_metadata_sha256"),
+                "DDQN checkpoint metadata.json")
             _verify_checkpoint_metadata(
                 meta, self.contract, path.name, actual_sha,
                 "leo-sim-ddqn/v1", "ddqn")
@@ -393,10 +421,13 @@ class TensorflowDDQN:
                     "DDQN checkpoint shape does not match contract/actions")
             self.loaded_checkpoint = str(path.resolve())
             self.loaded_checkpoint_sha256 = actual_sha
+            self.loaded_checkpoint_metadata_sha256 = hashlib.sha256(
+                meta_path.read_bytes()).hexdigest()
         else:
             self.online = self._network()
             self.loaded_checkpoint = None
             self.loaded_checkpoint_sha256 = None
+            self.loaded_checkpoint_metadata_sha256 = None
         self.target = self._network()
         self.target.set_weights(self.online.get_weights())
         self.optimizer = self.tf.keras.optimizers.Adam(
@@ -590,7 +621,10 @@ class TensorflowDDQN:
         )
         if not verified:
             raise LearningUnavailable("saved DDQN checkpoint failed load/prediction verification")
-        return metadata
+        result = dict(metadata)
+        result["metadata_sha256"] = hashlib.sha256(
+            (out / "metadata.json").read_bytes()).hexdigest()
+        return result
 
     def diagnostics(self) -> dict:
         return {
@@ -599,6 +633,8 @@ class TensorflowDDQN:
             "mode": self.mode,
             "loaded_checkpoint": self.loaded_checkpoint,
             "loaded_checkpoint_sha256": self.loaded_checkpoint_sha256,
+            "loaded_checkpoint_metadata_sha256":
+                self.loaded_checkpoint_metadata_sha256,
             "actions": list(ACTIONS),
             "decisions": self.decisions,
             "transitions": self.transitions,
@@ -660,45 +696,80 @@ class TabularQLearning:
             if actual_sha != cfg.get("checkpoint_sha256"):
                 raise LearningUnavailable(
                     "Q-learning checkpoint SHA-256 differs from resolved config")
-            try:
-                payload = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError) as exc:
+            payload = _read_json_utf8(path, "Q-learning checkpoint")
+            if not isinstance(payload, dict):
                 raise LearningUnavailable(
-                    f"Q-learning checkpoint unreadable: {exc}") from exc
+                    "Q-learning checkpoint payload is not a mapping")
+            if payload.get("schema") != "leo-sim-qlearning-table/v1":
+                raise LearningUnavailable(
+                    "Q-learning checkpoint schema "
+                    f"{payload.get('schema')!r} != "
+                    "'leo-sim-qlearning-table/v1'")
             if payload.get("contract") != self.contract:
                 # Legacy v1 tables have no contract field in the payload.
                 # Migrate only when the sibling metadata.json independently
-                # binds contract + filename + SHA; otherwise fail closed
-                # (never accept an unverifiable provenance).
+                # binds contract + filename + SHA and is itself pinned in the
+                # resolved config; otherwise fail closed (never accept an
+                # unverifiable provenance).
                 meta_path = path.parent / "metadata.json"
-                if payload.get("contract") is not None or                         not meta_path.is_file() or meta_path.is_symlink():
+                if payload.get("contract") is not None \
+                        or not meta_path.is_file() or meta_path.is_symlink():
                     raise LearningUnavailable(
                         "Q-learning checkpoint contract mismatch: payload "
                         f"says {payload.get('contract')!r}, resolved config "
                         f"wants {self.contract!r}")
-                try:
-                    meta = json.loads(meta_path.read_text(encoding="utf-8"))
-                except (OSError, json.JSONDecodeError) as exc:
-                    raise LearningUnavailable(
-                        "Q-learning checkpoint metadata unreadable: "
-                        f"{exc}") from exc
+                meta = _read_checkpoint_metadata(
+                    meta_path, cfg.get("checkpoint_metadata_sha256"),
+                    "Q-learning checkpoint metadata.json")
                 _verify_checkpoint_metadata(
                     meta, self.contract, path.name, actual_sha,
                     "leo-sim-qlearning/v1", "qlearning")
             entries = payload.get("entries")
             if not isinstance(entries, list):
                 raise LearningUnavailable("Q-learning checkpoint lacks entries")
-            for key_hex, values in entries:
-                arr = np.asarray(values, dtype=np.float64)
-                if arr.shape != (len(ACTIONS),):
+            expected_key_bytes = CONTRACT_DIMS[self.contract] * 8
+            seen_keys = set()
+            for entry in entries:
+                if (not isinstance(entry, (list, tuple)) or len(entry) != 2
+                        or not isinstance(entry[0], str)):
                     raise LearningUnavailable(
-                        "Q-learning checkpoint row width mismatch")
-                self.table[bytes.fromhex(key_hex)] = arr
+                        "Q-learning checkpoint entry must be "
+                        "[key_hex, values]")
+                try:
+                    key = bytes.fromhex(entry[0])
+                except ValueError as exc:
+                    raise LearningUnavailable(
+                        "Q-learning checkpoint state key is not valid hex: "
+                        f"{exc}") from exc
+                if len(key) != expected_key_bytes:
+                    raise LearningUnavailable(
+                        "Q-learning checkpoint state key width "
+                        f"{len(key)} bytes != contract {self.contract} "
+                        f"observation width {expected_key_bytes}")
+                if key in seen_keys:
+                    raise LearningUnavailable(
+                        "Q-learning checkpoint contains duplicate state keys")
+                seen_keys.add(key)
+                try:
+                    arr = np.asarray(entry[1], dtype=np.float64)
+                except (TypeError, ValueError) as exc:
+                    raise LearningUnavailable(
+                        f"Q-learning checkpoint row unreadable: {exc}") from exc
+                if arr.shape != (len(ACTIONS),) \
+                        or not np.all(np.isfinite(arr)):
+                    raise LearningUnavailable(
+                        "Q-learning checkpoint row width or finiteness "
+                        "mismatch")
+                self.table[key] = arr
             self.loaded_checkpoint = str(path.resolve())
             self.loaded_checkpoint_sha256 = actual_sha
+            self.loaded_checkpoint_metadata_sha256 = (
+                None if payload.get("contract") == self.contract
+                else hashlib.sha256(meta_path.read_bytes()).hexdigest())
         else:
             self.loaded_checkpoint = None
             self.loaded_checkpoint_sha256 = None
+            self.loaded_checkpoint_metadata_sha256 = None
         self.decisions = 0
         self.transitions = 0
         self.train_steps = 0  # tabular: one Q-table update per train step
@@ -794,7 +865,10 @@ class TabularQLearning:
         if not verified:
             raise LearningUnavailable(
                 "saved Q-learning checkpoint failed reload verification")
-        return metadata
+        result = dict(metadata)
+        result["metadata_sha256"] = hashlib.sha256(
+            (out / "metadata.json").read_bytes()).hexdigest()
+        return result
 
     def diagnostics(self) -> dict:
         return {
@@ -803,6 +877,8 @@ class TabularQLearning:
             "mode": self.mode,
             "loaded_checkpoint": self.loaded_checkpoint,
             "loaded_checkpoint_sha256": self.loaded_checkpoint_sha256,
+            "loaded_checkpoint_metadata_sha256":
+                self.loaded_checkpoint_metadata_sha256,
             "actions": list(ACTIONS),
             "decisions": self.decisions,
             "transitions": self.transitions,
