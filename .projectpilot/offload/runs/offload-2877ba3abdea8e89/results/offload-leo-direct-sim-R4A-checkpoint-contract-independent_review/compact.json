@@ -1,0 +1,78 @@
+{
+  "taskId": "offload:leo-direct-sim:R4A-checkpoint-contract:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。DDQN 的 metadata 缺失/symlink 会跳过 contract 校验，且 metadata 未以 checkpoint_sha256 与实际 online.keras 绑定；C3/C4 同维时仍可错载，并可在 kernel 重新 save 后以运行时 contract 进入 receipt，故核心目标未闭合。TabularQ 新 checkpoint 绑定正确，但旧无-contract q_table 会全部拒绝且 schema 仍为 v1，需显式版本迁移。receipt 的 contract 比对应保持 fail-closed。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "DDQN checkpoint contract 校验仍 fail-open：metadata 缺失或 symlink 时完全跳过；即使存在，也未校验 metadata.checkpoint_sha256 与实际模型 SHA，stale/mismatched sidecar 可令同维异语义模型错载。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/learning.py#L330-L360",
+        "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/learning.py#L525-L585",
+        "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/tests/test_qlearning_migration.py#L148-L164"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "blocking",
+      "summary": "Receipt 不能补救 F1：learning.contract 来自运行时 self.contract，kernel 会把已错载模型重新 save 并生成当前 contract 的 metadata，receipt 只验证该运行态 contract 与 resolved routing.contract 一致，存在 provenance 被重新标记的链路。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/learning.py#L525-L585",
+        "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/kernel.py#L1765-L1825",
+        "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/receipt.py#L425-L500"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "TabularQ 旧无-contract q_table.json 会被无条件拒绝，直接破坏旧 eval checkpoint；拒绝歧义旧文件是正确的 fail-closed 策略，但新增必需 contract 后仍沿用 qlearning-table/v1 且无显式迁移路径，是未版本化的 breaking change。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/learning.py#L618-L730",
+        "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/tests/test_qlearning_migration.py#L130-L164"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "Receipt 对真正缺少 learning.contract 的旧 ledger 会 fail-closed；该方向正确，不应为兼容而放宽。跨源码版本 receipt 本来也受 code_sha256 绑定，因此这里不是需要保留 fail-open 兼容的入口。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/receipt.py#L425-L500",
+        "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/receipt.py#L1-L130",
+        "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/receipt.py#L810-L845"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "DDQN 加载时强制 metadata.json 必须存在、为非 symlink 普通文件；缺失或异常必须 LearningUnavailable。",
+    "DDQN 同时校验 metadata.schema、metadata.checkpoint、metadata.checkpoint_sha256 == actual_sha、metadata.checkpoint_verified 和 metadata.contract；如需更强 provenance，再将 metadata/manifest bundle digest 纳入 resolved config。",
+    "将 malformed metadata 的 JSON/OSError 等统一包装成 LearningUnavailable，避免非受控异常类型。",
+    "TabularQ 将新增 contract 的 checkpoint schema 升级为 v2，并为旧 v1 提供显式 migration；不得从当前 resolved contract 静默推断旧 checkpoint provenance。",
+    "新增 DDQN metadata missing、symlink、stale sidecar、SHA mismatch、malformed JSON、C3->C4 同维错载回归，以及 receipt contract 缺失/mismatch 负例。",
+    "本地 Agent 在 TensorFlow 可用环境执行上述 DDQN 负例和完整测试套件后再做最终合并判定。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/learning.py#L330-L360",
+    "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/learning.py#L618-L730",
+    "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/receipt.py#L425-L500",
+    "github://fuguther/leo-direct-sim/blob/59b95ca1d59b214ed57cabacfb2e57d9de3477bf/CODE/leo_sim/kernel.py#L1765-L1825"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "按任务约束未执行本地 pytest/TensorFlow 动态复现；F1/F2 当前为代码路径静态确证，需本地 Agent 在 TensorFlow 可用环境补动态负例。",
+    "合同允许读取路径不含 config.py，无法确认是否已有可复用的 checkpoint metadata/bundle digest 配置字段；当前 learning.py 的 DDQN 加载路径未使用此类绑定。"
+  ]
+}
