@@ -15,6 +15,15 @@
 - 当前结论：已有基线/机制验收链可以继续做低风险平台验证；D1/D2 未复核版本不能作为
   正式论文实验基线。Q0 调研不再无限扩张，矩阵定稿后进入合同冻结与 tiny 原型。
 
+## 2026-08-19（Q0 合同层与只读计划校验）
+
+- 新增 `CODE/leo_sim/q0.py`：不可变 `PlanAction`/`JointPlan` 合同，版本绑定和未知/重复动作
+  fail-closed；Kernel 新增只读 `validate_joint_plan`，校验当前版本、live packet 位置、
+  拓扑邻接、服务中/在途不可操作和 ISL 容量预留。
+- 回归：`CODE/leo_sim/tests/test_q0_contract.py` 4 passed；平台测试全量 402 passed。
+- 明确未完成：`apply_joint_plan`、有限 holding queue、Q0-I/Q0-F tiny 求解器和
+  planned-vs-executed 回放门禁仍未实现；本次只完成 Q0 实现顺序第 1 步的一部分。
+
 ## 2026-08-19（R6-G2b 收口：台账置 fixed）
 
 - #51（governance symlink 词法根边界）复核两轮收敛（第 1 轮 REQUEST_CHANGES → 修复

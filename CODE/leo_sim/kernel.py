@@ -48,7 +48,7 @@ from collections import deque
 import numpy as np
 import simpy
 
-from . import control, fates, grid as gridmod, learning as _learning, model
+from . import control, fates, grid as gridmod, learning as _learning, model, q0
 from . import outage, rng as rngmod, routing
 from . import trace as tracemod
 
@@ -1035,6 +1035,113 @@ class Kernel:
                 enabled=self.ge_enabled)
             self.gsl_ge[key] = ge
         return ge
+
+    def _data_packet_locations(self) -> dict[int, tuple[str, int | None]]:
+        """Read-only index of live data packets for Q0 plan validation."""
+        found: dict[int, tuple[str, int | None]] = {}
+        for sat, packets in enumerate(self.pending):
+            for pkt in packets:
+                found[pkt.pid] = ("pending", sat)
+        for ep in self.endpoints.values():
+            for pkt in ep.queue:
+                found[pkt.pid] = ("uplink", pkt.assigned_sat)
+        for srv in self.uplinks:
+            if srv.current is not None:
+                found[srv.current[1].pid] = ("in_service", srv.sat)
+        for sat, srv in enumerate(self.downlinks):
+            for packets in srv.queues.values():
+                for pkt in packets:
+                    found[pkt.pid] = ("downlink", sat)
+            if isinstance(srv.current, DataPacket):
+                found[srv.current.pid] = ("in_service", sat)
+        for sat, links in enumerate(self.isls):
+            for link in links.values():
+                for pkt in link.data_q:
+                    found[pkt.pid] = ("isl", sat)
+                if isinstance(link.current, DataPacket):
+                    found[link.current.pid] = ("in_service", sat)
+        for value in self._in_flight.values():
+            pkt = value["pkt"]
+            if isinstance(pkt, DataPacket):
+                found[pkt.pid] = ("in_flight", value.get("sat"))
+        return found
+
+    def _data_packets(self) -> dict[int, DataPacket]:
+        packets: dict[int, DataPacket] = {}
+        for ep in self.endpoints.values():
+            packets.update({p.pid: p for p in ep.queue})
+        for packets_by_cell in (srv.queues for srv in self.downlinks):
+            for queue in packets_by_cell.values():
+                packets.update({p.pid: p for p in queue})
+        for links in self.isls:
+            for link in links.values():
+                packets.update({p.pid: p for p in link.data_q})
+        for packets_at_sat in self.pending:
+            packets.update({p.pid: p for p in packets_at_sat})
+        return packets
+
+    def validate_joint_plan(self, plan: q0.JointPlan) -> tuple[bool, tuple[str, ...]]:
+        """Validate a Q0 plan without mutating kernel state.
+
+        This is intentionally narrower than execution: it proves the plan is
+        current and physically admissible at this instant.  Applying actions
+        remains a separate atomic operation and is not exposed yet.
+        """
+        errors: list[str] = []
+        ok, version_errors = q0.validate_plan_version(plan, self._state_version)
+        errors.extend(version_errors)
+        locations = self._data_packet_locations()
+        packets = self._data_packets()
+        forward_bits: dict[tuple[int, str], int] = {}
+        for action in plan.actions:
+            location = locations.get(action.packet_id)
+            if location is None:
+                errors.append(f"packet {action.packet_id} is not live")
+                continue
+            if location[0] in ("in_service", "in_flight"):
+                errors.append(f"packet {action.packet_id} is not actionable")
+                continue
+            if action.sat >= self.num_sats:
+                errors.append(f"packet {action.packet_id}: sat {action.sat} out of range")
+                continue
+            packet = packets.get(action.packet_id)
+            if packet is None:
+                errors.append(f"packet {action.packet_id}: packet lookup failed")
+                continue
+            if action.kind == "forward":
+                if location[1] is not None and action.sat != location[1] \
+                        and location[0] == "pending":
+                    errors.append(f"packet {action.packet_id}: wrong pending satellite")
+                    continue
+                peer = self.topo.get(action.sat, {}).get(action.direction)
+                if peer is None:
+                    errors.append(f"packet {action.packet_id}: non-adjacent direction")
+                    continue
+                link = self.isls[action.sat].get(action.direction)
+                if link is None:
+                    errors.append(f"packet {action.packet_id}: ISL capacity unavailable")
+                    continue
+                forward_bits[(action.sat, action.direction)] = (
+                    forward_bits.get((action.sat, action.direction), 0) + packet.bits)
+            elif action.kind == "deliver":
+                if action.packet_id not in locations:
+                    continue
+                ep = self.endpoints.get(packet.dst)
+                link = ep.links.get(action.sat) if ep is not None else None
+                if link is None or link.state != "active" \
+                        or not self.geometry.ground_visible(action.sat, ep.lat, ep.lon, self.env.now):
+                    errors.append(f"packet {action.packet_id}: deliver target unavailable")
+                    continue
+            else:
+                if location[0] != "pending":
+                    errors.append(f"packet {action.packet_id}: WAIT requires pending packet")
+                elif action.until is None or action.until <= self.env.now or action.until > self.horizon:
+                    errors.append(f"packet {action.packet_id}: invalid WAIT deadline")
+        for (sat, direction), bits in forward_bits.items():
+            link = self.isls[sat][direction]
+            if link._used() + bits > self.cfg_links["isl_queue_bits"]:
+                errors.append(f"ISL plan capacity overcommitted at {sat}:{direction}")
+        return not errors, tuple(errors)
 
     # --------------------------------------------------------- transmission
     def _fire_interrupt(self, link: Link, at: float):
