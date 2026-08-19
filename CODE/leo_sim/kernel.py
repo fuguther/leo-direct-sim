@@ -1300,6 +1300,7 @@ class Kernel:
             sat = pending_by_pid[action.packet_id]
             self.pending[sat].remove(packets[action.packet_id], self.env.now)
         for action in plan.actions:
+            action_id = len(self.q0_replay_expected)
             pkt = packets[action.packet_id]
             if action.kind == "forward":
                 pkt.assigned_sat = None
@@ -1312,12 +1313,14 @@ class Kernel:
                 self._hold_packet(action.sat, pkt)
                 self.q0_execution_audit.append({
                     "kind": "wait",
+                    "action_id": action_id,
                     "packet_id": pkt.pid,
                     "sat": action.sat,
                     "direction": None,
                     "executed_at": float(self.env.now),
                 })
             self.q0_replay_expected.append({
+                "action_id": action_id,
                 "version": plan.version,
                 "submitted_at": float(self.env.now),
                 "kind": action.kind,
@@ -1337,14 +1340,25 @@ class Kernel:
 
     def _record_q0_execution(self, pkt: DataPacket, kind: str, sat: int,
                              direction: str | None = None) -> None:
-        """Record the first real service start caused by a Q0 action."""
-        self.q0_execution_audit.append({
-            "kind": kind,
-            "packet_id": pkt.pid,
-            "sat": sat,
-            "direction": direction,
-            "executed_at": float(self.env.now),
-        })
+        """Record a real service start only when it matches a plan action."""
+        for expected in self.q0_replay_expected:
+            if expected["action_id"] in {
+                    actual["action_id"] for actual in self.q0_execution_audit}:
+                continue
+            if (expected["kind"] == kind
+                    and expected["packet_id"] == pkt.pid
+                    and expected["sat"] == sat
+                    and expected["direction"] == direction
+                    and expected["submitted_at"] <= self.env.now):
+                self.q0_execution_audit.append({
+                    "action_id": expected["action_id"],
+                    "kind": kind,
+                    "packet_id": pkt.pid,
+                    "sat": sat,
+                    "direction": direction,
+                    "executed_at": float(self.env.now),
+                })
+                return
 
     def verify_q0_replay(self) -> tuple[bool, tuple[str, ...]]:
         """Check that every applied Q0 action reached its real execution point.
@@ -1354,33 +1368,22 @@ class Kernel:
         plans as infeasible instead of treating queue insertion as execution.
         """
         errors: list[str] = []
-        used: set[int] = set()
         for expected in self.q0_replay_expected:
             if expected["kind"] == "wait":
                 if not any(
-                        p["packet_id"] == expected["packet_id"]
+                        p.get("action_id") == expected["action_id"]
                         and p["kind"] == "wait"
-                        and p["sat"] == expected["sat"]
                         and p["executed_at"] == expected["submitted_at"]
                         for p in self.q0_execution_audit):
                     errors.append(
                         f"packet {expected['packet_id']}: no matching wait execution")
                 continue
-            match = None
-            for index, actual in enumerate(self.q0_execution_audit):
-                if index in used or actual["kind"] != expected["kind"]:
-                    continue
-                if (actual["packet_id"] == expected["packet_id"]
-                        and actual["sat"] == expected["sat"]
-                        and actual["direction"] == expected["direction"]):
-                    match = index
-                    break
-            if match is None:
+            actual = next((item for item in self.q0_execution_audit
+                           if item.get("action_id") == expected["action_id"]), None)
+            if actual is None:
                 errors.append(
                     f"packet {expected['packet_id']}: no matching service start")
             else:
-                used.add(match)
-                actual = self.q0_execution_audit[match]
                 if actual["executed_at"] < expected["submitted_at"]:
                     errors.append(
                         f"packet {expected['packet_id']}: execution precedes plan")

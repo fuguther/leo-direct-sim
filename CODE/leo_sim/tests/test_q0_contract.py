@@ -128,6 +128,7 @@ def test_q0_replay_gate_matches_real_forward_service_start():
     ok, errors = k.verify_q0_replay()
     assert ok, errors
     assert k.q0_execution_audit[0]["kind"] == "forward"
+    assert k.q0_execution_audit[0]["action_id"] == k.q0_replay_expected[0]["action_id"]
     assert k.q0_execution_audit[0]["executed_at"] == 0.0
 
 
