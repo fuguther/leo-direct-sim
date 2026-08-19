@@ -1961,6 +1961,16 @@ class Kernel:
         link = ep.links.get(sat)
         if (link is not None and link.state == "active"
                 and self.geometry.gsl_available(sat, ep.lat, ep.lon, now)):
+            if (self.rate_model == "mcs"
+                    and self._link_rate("downlink", now, sat, ep=ep) <= 0):
+                # D1: no feasible MCS rate on the downlink, so "deliver" is
+                # not a legal action now.  Park in pending (re-decided every
+                # time_step) exactly like a temporarily unavailable ISL
+                # direction, instead of enqueueing into a queue that cannot
+                # be served; the deadline check above still applies on every
+                # re-decision.
+                self.pending[sat].append(pkt)
+                return
             dl = self.downlinks[sat]
             if dl.room(pkt.bits):
                 if self.learner is not None:

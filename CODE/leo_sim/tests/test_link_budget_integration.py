@@ -241,6 +241,64 @@ def test_mcs_gsl_ge_down_does_not_dequeue_shared_downlink_head():
     assert k.downlinks[1].current is None
 
 
+def test_mcs_zero_rate_downlink_waits_then_delivers_after_recovery():
+    """Real GSL scenario: destination visible but beyond MCS range.
+
+    The downlink slant range starts at 5900 km (zero feasible MCS rate for
+    the legacy downlink RF, max range ~4482 km) and closes to 600 km at
+    t=1.0.  The packet must wait — never be failed — and only be delivered
+    once a positive rate exists.
+    """
+    assert link_budget.mcs_rate_bps(
+        5900.0, link_budget.LEGACY_DOWNLINK_RF) == 0.0
+
+    def slant(s, lat, lon, t):
+        if (lat, lon) == BC:
+            return 5900.0 if t < 1.0 else 600.0
+        return 600.0
+
+    geo = _Scripted(
+        1, neighbors_map={0: {}},
+        visible=lambda s, lat, lon, t: (lat, lon) in (AC, BC),
+        slant_range_fn=slant)
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "num_satellites": 1},
+        "links": {"rate_model": "mcs"},
+    })
+    res = kernel.run_simulation(cfg, [row(1, 0.0, A, B)], geometry=geo)
+    assert res["fates"][1] == "DELIVERED"
+    assert res["deliveries"][1]["delivered_at"] >= 1.0
+    assert res["mechanism_counters"]["mcs_rate_samples"] > 0
+
+
+def test_mcs_zero_rate_downlink_is_not_a_legal_deliver_action():
+    """Decision-level mask: zero downlink rate must not enqueue for deliver.
+
+    Consistent with the ISL legal mask (zero-rate directions are excluded),
+    a zero-rate downlink must park the packet in ``pending`` for re-decision
+    instead of putting it into a downlink queue that cannot be served.
+    """
+    geo = _Scripted(
+        1, neighbors_map={0: {}},
+        visible=lambda s, lat, lon, t: (lat, lon) in (AC, BC),
+        slant_range_fn=lambda s, lat, lon, t: (
+            5900.0 if (lat, lon) == BC else 600.0))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "num_satellites": 1},
+        "links": {"rate_model": "mcs"},
+    })
+    k = kernel.Kernel(cfg, [row(99, 1.5, A, B)], geometry=geo)
+    # let the association ticker run so B has an active link to sat 0
+    for _ in range(6):
+        k.env.step()
+    assert k.endpoints[B].links[0].state == "active"
+
+    pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    k._decide(pkt, 0)
+    assert k.downlinks[0].queued_bits == 0
+    assert list(k.pending[0]) == [pkt]
+
+
 def test_constant_rate_default_is_unaffected():
     topo = {0: {"E": 1}, 1: {"W": 0}}
     geo = _Scripted(
