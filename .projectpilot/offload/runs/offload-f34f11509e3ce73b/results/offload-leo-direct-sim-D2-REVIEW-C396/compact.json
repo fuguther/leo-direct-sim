@@ -1,0 +1,79 @@
+{
+  "taskId": "offload:leo-direct-sim:D2-REVIEW-C396",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。F2 连续 G0→G1→G2 的 older-generation gate、无 successor prompt reclaim，以及 F3 统一 live-entity 公式和 pre-cap purge 均已静态验证闭合；C5/C7 也已正确传 advertisement origin。但 _peer_bit_value 在当前 topo[origin] 已删除该方向、peer=None 时跳过 peer 校验并接受旧 queue value，导致有效 TTL 内的 stale advertisement fail-open。现有 fresh/mismatched-peer 回归未覆盖 removed-direction 情形。",
+  "findings": [
+    {
+      "id": "F4-EDGE",
+      "severity": "major",
+      "summary": "FACT: peer-bound queue metric 在 rematch 删除整个方向时 fail-open；peer=None 会绕过 identity mismatch 检查，使 C5/C7 接受已不存在链路的旧 isl_queue_bits。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/learning.py#L1005-L1029",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/learning.py#L1228-L1310",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L2029-L2043",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_learning.py#L284-L332"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "FACT: one-transceiver gate applies to retired and current successors alike, waits only for older same-slot generations, avoiding G0/G1 deadlock; drain path promptly purges retired generations. Continuous-rematch regression checks active-service exclusivity after every event step.",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L594-L705",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_dynamic_topology.py#L194-L264"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "FACT: max_entities uses one live-entity formula shared by lazy endpoint creation and topology recompute; drained retired generations are purged before planned-new cap accounting. Cross-term tests cover both creation orders and no-successor reclaim.",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L914-L938",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L1008-L1037",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L1086-L1181",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_dynamic_topology.py#L265-L353"
+      ]
+    },
+    {
+      "id": "ACCOUNTING",
+      "severity": "info",
+      "summary": "INFERENCE: static paths preserve receipt transition accounting, holding capacity/FIFO accounting, and stop-time accounting for reclaimed ISL generations; runtime test execution was not permitted by this remote read-only review.",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/receipt.py#L58-L74",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/receipt.py#L399-L409",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L2580-L2629",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_holding_queue.py#L12-L80"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "将结构化 peer-bound record 的校验改为：当前 peer 缺失或 peer identity 不匹配均返回 0；保留 legacy plain-int compatibility。",
+    "新增 C5/C7 removed-direction regression：旧广告包含某方向，但当前 topo[origin] 已无该方向时 queue feature 必须为 0。",
+    "建议同步覆盖共享 _peer_bit_value 的 graph observation 路径。",
+    "本地运行 test_learning.py、test_dynamic_topology.py、test_holding_queue.py 及完整测试套件，确认 F2/F3 无回归后再复审。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/learning.py#L1005-L1029",
+    "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L594-L705",
+    "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L1086-L1181",
+    "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_dynamic_topology.py#L194-L353",
+    "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_learning.py#L284-L332"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "UNVERIFIED: REMOTE 只读合同禁止本 Worker 执行本地测试；上述 regression 的实际 pytest PASS 状态需由本地 Agent 验证。"
+  ]
+}
