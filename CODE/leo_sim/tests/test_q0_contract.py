@@ -46,3 +46,34 @@ def test_kernel_plan_validation_is_versioned_and_fail_closed():
     assert k.validate_joint_plan(bad_dir)[0] is False
     k._in_flight[1] = {"kind": "isl", "sat": 1, "arrival_at": 1.0, "pkt": pkt}
     assert k.validate_joint_plan(valid)[0] is False
+
+
+def test_kernel_applies_valid_plan_atomically_and_records_audit():
+    geo = StaticGeometry(2, neighbors_map={0: {"E": 1}, 1: {"W": 0}})
+    cfg = make_cfg({"scenario": {"num_satellites": 2, "num_planes": 1}})
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    pkt = kernel.DataPacket(1, cell(0.0, 0.0), cell(0.0, 10.0), 8_000, None, 0.0)
+    k.pending[0].append(pkt)
+    plan = JointPlan(0, (PlanAction("forward", 1, 0, direction="E"),))
+    assert k.apply_joint_plan(plan) == (True, ())
+    assert k.pending[0] == []
+    assert [p.pid for p in k.isls[0]["E"].data_q] == [1]
+    assert k._state_version == 1
+    assert k.q0_plan_audit == [{"version": 0, "applied_at": 0.0, "actions": 1}]
+
+
+def test_kernel_rejects_mixed_plan_without_partial_mutation():
+    geo = StaticGeometry(2, neighbors_map={0: {"E": 1}, 1: {"W": 0}})
+    cfg = make_cfg({"scenario": {"num_satellites": 2, "num_planes": 1}})
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    pkt = kernel.DataPacket(1, cell(0.0, 0.0), cell(0.0, 10.0), 8_000, None, 0.0)
+    k.pending[0].append(pkt)
+    mixed = JointPlan(0, (
+        PlanAction("forward", 1, 0, direction="E"),
+        PlanAction("forward", 2, 0, direction="E"),
+    ))
+    ok, errors = k.apply_joint_plan(mixed)
+    assert not ok and errors
+    assert [p.pid for p in k.pending[0]] == [1]
+    assert not k.isls[0]["E"].data_q
+    assert k._state_version == 0

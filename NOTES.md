@@ -24,6 +24,15 @@
 - 明确未完成：`apply_joint_plan`、有限 holding queue、Q0-I/Q0-F tiny 求解器和
   planned-vs-executed 回放门禁仍未实现；本次只完成 Q0 实现顺序第 1 步的一部分。
 
+## 2026-08-19（Q0 计划原子应用）
+
+- `Kernel.apply_joint_plan()` 已接入：第一版只接受 pending 数据包，整份计划先复核版本、
+  live 位置、拓扑/容量/GSL 条件，再一次性迁移；非法混合计划不会部分修改。
+- 记录 `q0_plan_audit`，成功应用后递增 `state_version`；同一计划内 ISL/downlink 容量按总量校验。
+- Q0 合同测试 6 passed；平台全量测试 404 passed。
+- 明确边界：尚未把所有 pending 路径统一成有限 holding queue，尚未实现 Q0 tiny 求解器和
+  planned-vs-executed 回放门禁；本提交不是正式 Q0 上界结果。
+
 ## 2026-08-19（R6-G2b 收口：台账置 fixed）
 
 - #51（governance symlink 词法根边界）复核两轮收敛（第 1 轮 REQUEST_CHANGES → 修复

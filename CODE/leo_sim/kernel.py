@@ -751,6 +751,7 @@ class Kernel:
                             "uplink_bits": []}
         self.handover_events: list[dict] = []
         self.monitor_log: list[tuple] = []
+        self.q0_plan_audit: list[dict] = []
         self.monitor = bool(self.cfg_ex["monitor"])
         self.data_packet_count = 0
         # Q0 readiness: monotonic state version (bumped once per event step)
@@ -1093,6 +1094,7 @@ class Kernel:
         locations = self._data_packet_locations()
         packets = self._data_packets()
         forward_bits: dict[tuple[int, str], int] = {}
+        deliver_bits: dict[int, int] = {}
         for action in plan.actions:
             location = locations.get(action.packet_id)
             if location is None:
@@ -1107,6 +1109,9 @@ class Kernel:
             packet = packets.get(action.packet_id)
             if packet is None:
                 errors.append(f"packet {action.packet_id}: packet lookup failed")
+                continue
+            if location[0] != "pending":
+                errors.append(f"packet {action.packet_id}: plan requires pending packet")
                 continue
             if action.kind == "forward":
                 if location[1] is not None and action.sat != location[1] \
@@ -1132,6 +1137,9 @@ class Kernel:
                         or not self.geometry.ground_visible(action.sat, ep.lat, ep.lon, self.env.now):
                     errors.append(f"packet {action.packet_id}: deliver target unavailable")
                     continue
+                if not self.downlinks[action.sat].room(packet.bits):
+                    errors.append(f"packet {action.packet_id}: downlink capacity unavailable")
+                deliver_bits[action.sat] = deliver_bits.get(action.sat, 0) + packet.bits
             else:
                 if location[0] != "pending":
                     errors.append(f"packet {action.packet_id}: WAIT requires pending packet")
@@ -1141,7 +1149,48 @@ class Kernel:
             link = self.isls[sat][direction]
             if link._used() + bits > self.cfg_links["isl_queue_bits"]:
                 errors.append(f"ISL plan capacity overcommitted at {sat}:{direction}")
+        for sat, bits in deliver_bits.items():
+            if self.downlinks[sat].queued_bits + bits > self.cfg_access["downlink_queue_bits"]:
+                errors.append(f"downlink plan capacity overcommitted at {sat}")
         return not errors, tuple(errors)
+
+    def apply_joint_plan(self, plan: q0.JointPlan) -> tuple[bool, tuple[str, ...]]:
+        """Atomically apply a validated pending-packet plan.
+
+        The first Q0 execution contract intentionally accepts only packets in
+        finite kernel ``pending`` lists.  All actions are revalidated against
+        the same live version before any mutation, so an invalid action cannot
+        partially consume a plan.
+        """
+        ok, errors = self.validate_joint_plan(plan)
+        if not ok:
+            return False, errors
+        packets = self._data_packets()
+        pending_by_pid = {
+            pkt.pid: sat for sat, queue in enumerate(self.pending)
+            for pkt in queue
+        }
+        for action in plan.actions:
+            sat = pending_by_pid[action.packet_id]
+            self.pending[sat].remove(packets[action.packet_id])
+        for action in plan.actions:
+            pkt = packets[action.packet_id]
+            if action.kind == "forward":
+                pkt.assigned_sat = None
+                self.isls[action.sat][action.direction].put_data(pkt)
+            elif action.kind == "deliver":
+                self.downlinks[action.sat].put(pkt)
+                pkt.assigned_sat = action.sat
+            else:
+                self.pending[action.sat].append(pkt)
+        if plan.actions:
+            self._state_version += 1
+            self.q0_plan_audit.append({
+                "version": plan.version,
+                "applied_at": float(self.env.now),
+                "actions": len(plan.actions),
+            })
+        return True, ()
 
     # --------------------------------------------------------- transmission
     def _fire_interrupt(self, link: Link, at: float):
