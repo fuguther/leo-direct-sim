@@ -60,8 +60,13 @@ def control_broadcast_children(topo, origin: int, max_hops: int) -> dict[int, li
     return children
 
 
-def build_topology(geometry, num_sats: int, dirs) -> dict[int, dict[str, int]]:
-    """Static a-priori neighbor graph; self-links are excluded.
+def build_topology(geometry, num_sats: int, dirs, t: float | None = None) \
+        -> dict[int, dict[str, int]]:
+    """A-priori neighbor graph; self-links are excluded.
+
+    t=None uses the geometry's static neighbor rules (exact current V2
+    behavior).  t given uses dynamic neighbors_at (e.g. legacy Markovian
+    cross-plane rematching at a recompute boundary).
 
     Physical ISLs are bidirectional, and that contract is VERIFIED here (fail
     closed): if a geometry provider hands us a one-way edge we refuse to build
@@ -69,7 +74,8 @@ def build_topology(geometry, num_sats: int, dirs) -> dict[int, dict[str, int]]:
     edge."""
     topo: dict[int, dict[str, int]] = {}
     for s in range(num_sats):
-        nb = geometry.neighbors(s, dirs)
+        nb = geometry.neighbors(s, dirs) if t is None \
+            else geometry.neighbors_at(s, dirs, t)
         topo[s] = {d: n for d, n in nb.items() if n != s}
     for s, nb in topo.items():
         for d, n in nb.items():

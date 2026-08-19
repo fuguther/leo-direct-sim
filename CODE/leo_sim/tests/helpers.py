@@ -88,7 +88,7 @@ class StaticGeometry:
 
     def __init__(self, num_satellites, neighbors_map=None, visible=None,
                  elevation=None, slant_km=600.0, isl_km=1000.0, isl_range_fn=None,
-                 gsl_changes=None, isl_changes=None):
+                 gsl_changes=None, isl_changes=None, neighbors_at_fn=None):
         self.num_satellites = num_satellites
         self._nb = neighbors_map or {}
         self._visible = visible or (lambda s, lat, lon, t: False)
@@ -96,6 +96,7 @@ class StaticGeometry:
         self.slant_km = float(slant_km)
         self.isl_km = float(isl_km)
         self._isl_range_fn = isl_range_fn
+        self._neighbors_at_fn = neighbors_at_fn
         self._gsl_changes = sorted(float(c) for c in (gsl_changes or ()))
         self._isl_changes = sorted(float(c) for c in (isl_changes or ()))
 
@@ -118,6 +119,12 @@ class StaticGeometry:
     def neighbors(self, sat_id, dirs):
         return {d: n for d, n in self._nb.get(sat_id, {}).items() if d in dirs}
 
+    def neighbors_at(self, sat_id, dirs, t):
+        if self._neighbors_at_fn is None:
+            return self.neighbors(sat_id, dirs)
+        return {d: n for d, n in self._neighbors_at_fn(sat_id, dirs, t).items()
+                if d in dirs}
+
     def positions(self, t):
         return tuple((0.0, 0.0, 0.0) for _ in range(self.num_satellites))
 
@@ -137,6 +144,8 @@ class StaticGeometry:
         return None
 
     def isl_available(self, a, b, t):
+        if self._neighbors_at_fn is not None:
+            return b in self._neighbors_at_fn(a, ("N", "S", "E", "W"), t).values()
         return b in self._nb.get(a, {}).values()
 
     def next_isl_change(self, a, b, t, limit):

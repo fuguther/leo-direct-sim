@@ -123,6 +123,43 @@ def test_oracle_is_labeled_analysis_upper_bound():
     assert res["mechanisms"]["requested"]["policy"] == "oracle"
 
 
+def test_dynamic_build_topology_uses_time_specific_neighbors():
+    def at(sat, dirs, t):
+        if t < 1.0:
+            nb = {0: {"E": 1}, 1: {"W": 0}}
+        else:
+            nb = {0: {"E": 2}, 2: {"W": 0}}
+        return {d: n for d, n in nb.get(sat, {}).items() if d in dirs}
+
+    geo = StaticGeometry(3, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+                         neighbors_at_fn=at)
+    assert routing.build_topology(geo, 3, ("E", "W"))[0] == {"E": 1}
+    assert routing.build_topology(geo, 3, ("E", "W"), t=1.0)[0] == {"E": 2}
+
+
+def test_dynamic_topology_recomputes_and_reports_effective_mechanism():
+    def at(sat, dirs, t):
+        if t < 0.5:
+            nb = {0: {"E": 1}, 1: {"W": 0}}
+        else:
+            nb = {0: {"E": 2}, 2: {"W": 0}}
+        return {d: n for d, n in nb.get(sat, {}).items() if d in dirs}
+
+    geo = StaticGeometry(3, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+                         neighbors_at_fn=at)
+    cfg = make_cfg({
+        "scenario": {"num_satellites": 3, "num_planes": 1,
+                      "duration_s": 1.6},
+        "topology": {"recompute_interval_s": 0.5},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    res = k.run()
+    assert res["natural_end"]
+    assert res["mechanism_counters"]["topo_recomputes"] == 3
+    assert res["mechanisms"]["requested"]["topology_recompute_interval_s"] == 0.5
+    assert res["mechanisms"]["effective"]["dynamic_topology"] is True
+
+
 def test_integration_hop_vs_delay_paths_differ():
     ranges = {(0, 1): 100.0, (1, 2): 100.0, (0, 2): 10_000.0}
     fn = lambda a, b, t: ranges.get((a, b), ranges.get((b, a), 100.0))

@@ -48,8 +48,9 @@ DEP_KEYS = {"python", "simpy", "numpy", "pyyaml"}
 # verifying host fails closed).
 TF_DEP_KEY = "tensorflow"
 REQUESTED_KEYS = {"policy", "association", "ge_enabled", "control_enabled", "monitor",
-                  "learning_algorithm", "learning_mode"}
-EFFECTIVE_KEYS = {"control_plane", "ge", "mbb", "learning"}
+                  "learning_algorithm", "learning_mode",
+                  "topology_recompute_interval_s", "topology_matching"}
+EFFECTIVE_KEYS = {"control_plane", "ge", "mbb", "learning", "dynamic_topology"}
 
 LEDGER_KEYS = {
     "packet_fates", "control_instances", "control_counters",
@@ -68,7 +69,7 @@ MECHANISM_COUNTER_KEYS = {
     "control_tx_started", "control_tx_completed", "control_initialized",
     "ge_initialized", "mbb_events", "learning_initialized",
     "learning_decisions", "learning_transitions", "learning_train_steps",
-    "learning_discarded_at_stop", "holding_queue_overflows",
+    "learning_discarded_at_stop", "holding_queue_overflows", "topo_recomputes",
 }
 MECHANISM_COUNTER_BOOLS = {"control_initialized", "ge_initialized",
                            "learning_initialized"}
@@ -135,6 +136,8 @@ def requested_from_config(cfg: dict) -> dict:
         "monitor": bool(cfg["execution"]["monitor"]),
         "learning_algorithm": cfg["learning"]["algorithm"],
         "learning_mode": cfg["learning"]["mode"],
+        "topology_recompute_interval_s": cfg["topology"]["recompute_interval_s"],
+        "topology_matching": cfg["topology"]["matching"],
     }
 
 
@@ -147,6 +150,7 @@ def effective_from_counters(counters: dict, requested: dict) -> dict:
             counters.get("ge_gsl_queries", 0)
             + counters.get("ge_isl_queries", 0) > 0),
         "mbb": counters.get("mbb_events", 0) > 0,
+        "dynamic_topology": counters.get("topo_recomputes", 0) > 0,
         # Evaluation legitimately performs no gradient updates; a learning
         # policy is effective when the real model made at least one routed
         # decision, regardless of train/eval mode.

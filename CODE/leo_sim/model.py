@@ -174,6 +174,12 @@ class MemoizedGeometry:
             "neighbors", (sat_id, key_dirs),
             lambda: self._inner.neighbors(sat_id, dirs))
 
+    def neighbors_at(self, sat_id: int, dirs, t: float):
+        key_dirs = dirs if isinstance(dirs, str) else tuple(dirs)
+        return self._lookup(
+            "neighbors_at", t, (sat_id, key_dirs),
+            lambda: self._inner.neighbors_at(sat_id, dirs, t))
+
     def ecef(self, sat_id: int, t: float):
         slot = self._slot("ecef", t)
         hit = slot.get(sat_id, _MISS)
@@ -514,6 +520,55 @@ class Constellation:
         if "W" in dirs:
             out["W"] = ((plane - 1) % self.num_planes) * self.per_plane + idx
         return out
+
+    def neighbors_at(self, sat_id: int, dirs, t: float) -> dict[str, int]:
+        """Dynamic ISL neighbors at time t (D2: legacy Markovian rematch).
+
+        N/S intra-plane neighbors stay fixed by index (matches the old
+        platform's findIntraNeighbours).  E/W cross-plane neighbors are
+        re-matched greedily by shortest current range with one transceiver per
+        direction per satellite (legacy markovianMatchingTwo semantics,
+        SimulationRL.py:8330-8433); only physically available candidates
+        (max_isl_km + earth clearance) are admitted.
+        """
+        out = self.neighbors(sat_id, [d for d in dirs if d in ("N", "S")])
+        if not any(d in dirs for d in ("E", "W")):
+            return out
+        cross = self._cross_plane_matching(dirs, t)
+        for d in ("E", "W"):
+            if d in dirs and cross.get(sat_id, {}).get(d) is not None:
+                out[d] = cross[sat_id][d]
+        return out
+
+    def _cross_plane_matching(self, dirs, t: float) -> dict[int, dict[str, int]]:
+        """Greedy shortest-range E/W matching across adjacent planes."""
+        used: dict[int, set[str]] = {
+            s: set() for s in range(self.num_satellites)}
+        edges: list[tuple[float, int, int]] = []
+        for p in range(self.num_planes):
+            if "E" not in dirs:
+                break
+            east_plane = (p + 1) % self.num_planes
+            for i in range(self.per_plane):
+                a = p * self.per_plane + i
+                for j in range(self.per_plane):
+                    b = east_plane * self.per_plane + j
+                    if not self.isl_available(a, b, t):
+                        continue
+                    r = self.isl_range_km(a, b, t)
+                    if r >= self.max_isl_km:
+                        continue
+                    edges.append((r, a, b))
+        edges.sort()
+        cross: dict[int, dict[str, int]] = {}
+        for _r, a, b in edges:
+            if "E" in used[a] or "W" in used[b]:
+                continue
+            used[a].add("E")
+            used[b].add("W")
+            cross.setdefault(a, {})["E"] = b
+            cross.setdefault(b, {})["W"] = a
+        return cross
 
     # ---- dynamic availability (checked at every use, never cached) --------
 
