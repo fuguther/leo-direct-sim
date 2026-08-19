@@ -1,5 +1,20 @@
 # NOTES.md
 
+## 2026-08-19（有限 holding queue：容量/面积/WAIT 语义）
+
+- 分支：`codex/20260819-holding-queue`。
+- 实现 `SatelliteHoldingQueue`，替代 kernel 内部无界 `pending` list 的运行时语义：
+  每星 bits 容量、FIFO、`queued_bits`、`QueueArea` 面积、快照占用与 `holding_until`。
+- 所有 pending 回退/重决策/Q0 WAIT 写入统一经 `_hold_packet`；容量不足记录独立
+  `HOLDING_QUEUE_OVERFLOW` fate，进入数据守恒与 receipt；不再静默无界增长。
+- pending ticker 增加 holding deadline sweep；WAIT 只在 `until` 到达后释放，快照可观察等待截止时间。
+- 配置新增 `access.holding_queue_bits`，receipt `queue_area_bits_s` 新增 `holding`，机制计数新增
+  `holding_queue_overflows`。
+- 验证：`pytest -q CODE/leo_sim/tests` = **409 passed**；新增 holding queue/Q0 回归覆盖容量、FIFO、
+  面积、overflow fate、快照、WAIT 和 deadline。
+- 边界：尚未实现 Q0-I/Q0-F tiny 求解器、planned-vs-executed 回放门禁；D1/D2 仍需独立冷启动复核，
+  本分支不得作为论文正式基线。
+
 ## 2026-08-19（D1/D2 靠拢、旧平台账本与实验路线图）
 
 - 用户已决定 D1 动态链路速率、D2 动态拓扑重匹配按旧平台行为继续推进。

@@ -104,6 +104,7 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "dual_connect": bool,
         "slot_lease_s": (int, float),  # max hold time under contention
         "idle_release_s": (int, float),  # idle hold before releasing to waiters
+        "holding_queue_bits": int,  # per-satellite re-decision holding area
     },
     "links": {
         "isl_rate_mbps": (int, float),
@@ -228,6 +229,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "dual_connect": False,
         "slot_lease_s": 10.0,
         "idle_release_s": 1.0,
+        "holding_queue_bits": 64_000_000,
     },
     "links": {
         "isl_rate_mbps": 1000.0,
@@ -455,6 +457,8 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
     for f in ("uplink_queue_bits", "downlink_queue_bits"):
         if ac[f] < 0:
             raise ConfigError(f"access.{f} must be >= 0")
+    if ac["holding_queue_bits"] < 0:
+        raise ConfigError("access.holding_queue_bits must be >= 0")
     if ac["drr_quantum_bits"] < 1:
         raise ConfigError("access.drr_quantum_bits must be >= 1")
     if ac["hysteresis_deg"] < 0 or ac["min_dwell_s"] < 0 or ac["acquisition_delay_s"] < 0:

@@ -66,7 +66,7 @@ class CapExceeded(KernelError):
 class DataPacket:
     __slots__ = ("pid", "src", "dst", "bits", "deadline", "emitted_at", "path",
                  "assigned_sat", "learning_state", "learning_action",
-                 "learning_reward", "isl_enqueued_at")
+                 "learning_reward", "isl_enqueued_at", "holding_until")
 
     def __init__(self, pid, src, dst, bits, deadline, emitted_at):
         self.pid = pid
@@ -83,6 +83,7 @@ class DataPacket:
         # enqueue time on the current ISL egress queue; the realized queue
         # wait (service start minus this) feeds the M1 queue reward
         self.isl_enqueued_at = None
+        self.holding_until = None
 
 
 class QueueArea:
@@ -110,6 +111,102 @@ class QueueArea:
 
     def close(self, t: float):
         self._acc(t)
+
+
+class SatelliteHoldingQueue:
+    """Finite FIFO for packets held by a satellite between decisions.
+
+    Unlike the legacy ``pending`` list, admission is capacity checked and
+    every mutation updates the shared queue-area integral.  The small list
+    compatibility surface is intentional while callers migrate: iteration,
+    indexing, ``append`` and equality remain available to old diagnostics.
+    """
+
+    __slots__ = ("capacity_bits", "area", "_items", "queued_bits", "_now")
+
+    def __init__(self, capacity_bits: int, area: QueueArea, now_fn=None):
+        if capacity_bits < 0:
+            raise ValueError("holding queue capacity must be >= 0")
+        self.capacity_bits = capacity_bits
+        self.area = area
+        self._items: list[DataPacket] = []
+        self.queued_bits = 0
+        self._now = now_fn or (lambda: 0.0)
+
+    def __len__(self):
+        return len(self._items)
+
+    def __iter__(self):
+        return iter(self._items)
+
+    def __getitem__(self, index):
+        return self._items[index]
+
+    def __eq__(self, other):
+        if isinstance(other, SatelliteHoldingQueue):
+            other = other._items
+        return self._items == other
+
+    def room(self, bits: int) -> bool:
+        return self.queued_bits + bits <= self.capacity_bits
+
+    def put(self, pkt: DataPacket, now: float) -> bool:
+        if not self.room(pkt.bits):
+            return False
+        self._items.append(pkt)
+        self.queued_bits += pkt.bits
+        self.area.add(pkt.bits, now)
+        return True
+
+    def append(self, pkt: DataPacket) -> None:
+        """Compatibility append at the kernel's current time.
+
+        New kernel paths use ``put`` so an overflow can receive an explicit
+        fate.  Direct legacy-style callers get a loud error instead of an
+        unaccounted packet.
+        """
+        if not self.put(pkt, self._now()):
+            raise CapExceeded("holding queue capacity exceeded")
+
+    def remove(self, pkt: DataPacket, now: float) -> None:
+        self._items.remove(pkt)
+        self.queued_bits -= pkt.bits
+        self.area.remove(pkt.bits, now)
+
+    def pop(self, index: int = 0, now: float = 0.0):
+        if not self._items:
+            return None
+        pkt = self._items.pop(index)
+        self.queued_bits -= pkt.bits
+        self.area.remove(pkt.bits, now)
+        return pkt
+
+    def clear(self, now: float) -> list[DataPacket]:
+        items = list(self._items)
+        self._items.clear()
+        if self.queued_bits:
+            self.area.remove(self.queued_bits, now)
+        self.queued_bits = 0
+        return items
+
+    def take_ready(self, now: float) -> list[DataPacket]:
+        """Remove packets whose explicit WAIT interval has elapsed."""
+        ready = [p for p in self._items
+                 if p.holding_until is None or now >= p.holding_until]
+        if not ready:
+            return []
+        for pkt in ready:
+            self.remove(pkt, now)
+            pkt.holding_until = None
+        return ready
+
+    def sweep_expired(self, now: float) -> list[DataPacket]:
+        """Remove packets whose data deadline has passed while being held."""
+        expired = [p for p in self._items
+                   if p.deadline is not None and now > p.deadline]
+        for pkt in expired:
+            self.remove(pkt, now)
+        return expired
 
 
 class ControlPacket:
@@ -408,7 +505,7 @@ class DownlinkServer(_DRRMixin):
                         pkt = self.queues[c].popleft()
                         self.queued_bits -= pkt.bits
                         self.area.remove(pkt.bits, k.env.now)
-                        k.pending[self.sat].append(pkt)
+                        k._hold_packet(self.sat, pkt)
             sel = self._drr_select(cells, self._servable)
             if sel is None:
                 yield self.wake
@@ -435,7 +532,7 @@ class DownlinkServer(_DRRMixin):
             if outcome == "retired":
                 # partial downlink never reached the endpoint: re-decide at
                 # this satellite (the destination holds a new association).
-                k.pending[self.sat].append(pkt)
+                k._hold_packet(self.sat, pkt)
                 k._on_link_retired(ep, self.sat)
                 continue
             if outcome == "stalled":
@@ -715,7 +812,12 @@ class Kernel:
         # per-satellite state
         self.slots: list[set[str]] = [set() for _ in range(self.num_sats)]
         self.caches: list[control.LocalCache] = [control.LocalCache() for _ in range(self.num_sats)]
-        self.pending: list[list[DataPacket]] = [[] for _ in range(self.num_sats)]
+        self.holding_areas = [QueueArea() for _ in range(self.num_sats)]
+        self.pending: list[SatelliteHoldingQueue] = [
+            SatelliteHoldingQueue(
+                self.cfg_access["holding_queue_bits"], self.holding_areas[s],
+                now_fn=lambda self=self: self.env.now)
+            for s in range(self.num_sats)]
         self.seen_ctrl: list[set[tuple[int, int]]] = [set() for _ in range(self.num_sats)]
         self.gsl_ge: dict[tuple[int, str], outage.GilbertElliott] = {}
 
@@ -778,6 +880,7 @@ class Kernel:
             "learning_transitions": 0,
             "learning_train_steps": 0,
             "learning_discarded_at_stop": 0,
+            "holding_queue_overflows": 0,
         }
         # packets holding an open (not yet closed) learning transition; the
         # horizon close must account for every one of them, never silently
@@ -816,6 +919,15 @@ class Kernel:
     def _note_busy(self, cell: str):
         """Last-activity stamp for fair-access idle measurement."""
         self.access_last_busy[cell] = self.env.now
+
+    def _hold_packet(self, sat: int, pkt: DataPacket) -> bool:
+        """Admit a packet to finite satellite holding, or assign its fate."""
+        if self.pending[sat].put(pkt, self.env.now):
+            self._note_busy(pkt.dst)
+            return True
+        self.mech["holding_queue_overflows"] += 1
+        self._fail(pkt, "HOLDING_QUEUE_OVERFLOW")
+        return False
 
     def _log(self, kind, **kv):
         if self.monitor:
@@ -880,6 +992,7 @@ class Kernel:
                 "emitted_at": pkt.emitted_at,
                 "path": list(pkt.path),
                 "assigned_sat": getattr(pkt, "assigned_sat", None),
+                "holding_until": getattr(pkt, "holding_until", None),
             }
 
         def _remaining_service(bits, rate_bps, srv) -> float | None:
@@ -1007,6 +1120,9 @@ class Kernel:
             "pending": {s: [{"pid": p.pid, **_packet_info(p)}
                             for p in self.pending[s]]
                         for s in range(self.num_sats)},
+            "holding": {s: {"queued_bits": self.pending[s].queued_bits,
+                             "capacity_bits": self.pending[s].capacity_bits}
+                         for s in range(self.num_sats)},
             "uplinks": uplinks,
             "downlinks": downlinks,
             "isl_links": isl_links,
@@ -1172,7 +1288,7 @@ class Kernel:
         }
         for action in plan.actions:
             sat = pending_by_pid[action.packet_id]
-            self.pending[sat].remove(packets[action.packet_id])
+            self.pending[sat].remove(packets[action.packet_id], self.env.now)
         for action in plan.actions:
             pkt = packets[action.packet_id]
             if action.kind == "forward":
@@ -1182,7 +1298,8 @@ class Kernel:
                 self.downlinks[action.sat].put(pkt)
                 pkt.assigned_sat = action.sat
             else:
-                self.pending[action.sat].append(pkt)
+                pkt.holding_until = action.until
+                self._hold_packet(action.sat, pkt)
         if plan.actions:
             self._state_version += 1
             self.q0_plan_audit.append({
@@ -1424,6 +1541,8 @@ class Kernel:
     def _pending_ticker(self, sat: int):
         while True:
             yield self.env.timeout(self.time_step)
+            for pkt in self.pending[sat].sweep_expired(self.env.now):
+                self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             self._redecide_pending(sat)
             self._sweep_downlink_queues(sat)
             self._access_tick_sat(sat)
@@ -2004,7 +2123,7 @@ class Kernel:
             if not self.cfg_cp["enabled"] and self.cfg_rt["policy"] != "oracle":
                 self._fail(pkt, "NO_ROUTE")
             else:
-                self.pending[sat].append(pkt)  # wait for re-decision
+                self._hold_packet(sat, pkt)  # wait for re-decision
             return
         # loop avoidance: never forward back onto a satellite already visited
         cands = [d for d in cands if self.topo[sat][d] not in pkt.path]
@@ -2036,7 +2155,7 @@ class Kernel:
             self.isls[sat][action].put_data(pkt)
             return
         if unavailable:
-            self.pending[sat].append(pkt)  # temporarily unavailable: wait
+            self._hold_packet(sat, pkt)  # temporarily unavailable: wait
             return
         if cands:
             self._fail(pkt, "ISL_QUEUE_OVERFLOW")
@@ -2046,8 +2165,7 @@ class Kernel:
     def _redecide_pending(self, sat: int):
         if not self.pending[sat]:
             return
-        waiting = self.pending[sat]
-        self.pending[sat] = []
+        waiting = self.pending[sat].take_ready(self.env.now)
         for pkt in waiting:
             self._decide(pkt, sat)
 
@@ -2140,6 +2258,7 @@ class Kernel:
         for ep in self.endpoints.values():
             ep.area.close(stop_time)
         for s in range(self.num_sats):
+            self.holding_areas[s].close(stop_time)
             self.downlinks[s].area.close(stop_time)
             for lnk in self.isls[s].values():
                 lnk.data_area.close(stop_time)
@@ -2147,6 +2266,7 @@ class Kernel:
         queue_area = {
             "uplink": sum(ep.area.area for ep in self.endpoints.values()),
             "downlink": sum(self.downlinks[s].area.area for s in range(self.num_sats)),
+            "holding": sum(area.area for area in self.holding_areas),
             "isl_data": sum(lnk.data_area.area for s in range(self.num_sats)
                             for lnk in self.isls[s].values()),
             "isl_ctrl": sum(lnk.ctrl_area.area for s in range(self.num_sats)

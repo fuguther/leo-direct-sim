@@ -68,12 +68,12 @@ MECHANISM_COUNTER_KEYS = {
     "control_tx_started", "control_tx_completed", "control_initialized",
     "ge_initialized", "mbb_events", "learning_initialized",
     "learning_decisions", "learning_transitions", "learning_train_steps",
-    "learning_discarded_at_stop",
+    "learning_discarded_at_stop", "holding_queue_overflows",
 }
 MECHANISM_COUNTER_BOOLS = {"control_initialized", "ge_initialized",
                            "learning_initialized"}
 OCCUPIED_KEYS = {"gsl_uplink_s", "gsl_downlink_s", "isl_s", "ctrl_isl_s"}
-QUEUE_AREA_KEYS = {"uplink", "downlink", "isl_data", "isl_ctrl"}
+QUEUE_AREA_KEYS = {"uplink", "downlink", "holding", "isl_data", "isl_ctrl"}
 ACCESS_KEYS = {
     "requests", "grants", "preposition_grants", "wait_time_s_total",
     "wait_time_s_max", "slot_hold_s_total", "waiting_at_stop", "releases",
