@@ -844,6 +844,11 @@ class Kernel:
         future information (Q0-B) needs a separate, explicitly labelled
         future view.  Physical constraints remain enforced by the kernel at
         execution time; this interface never writes.
+
+        Read-only holds at the observable-state level: ge.is_down() lazily
+        advances each GE's internal trajectory, but GilbertElliott
+        trajectories are query-pattern independent, so the snapshot never
+        mutates the world state it reports (R6-A3).
         """
         now = self.env.now
 
