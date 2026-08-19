@@ -7,6 +7,7 @@
 - 验证：`pytest -q CODE/leo_sim/tests/test_q0_contract.py` = 10 passed；`pytest -q CODE/leo_sim/tests` = 413 passed；`git diff --check` 通过。
 - 边界：本单元是第一阶段 execution gate，只验证计划动作是否真实进入执行点，不等同于完整 MILP 逐事件轨迹最优性验证；该扩展留在 Q0-F/CP-SAT 回放阶段。
 - 全仓库 `pytest -q` 仍在 PAPER 收集阶段因缺少 `ANALYSIS.paired_analysis` 失败，未归因于本分支；该问题需单独分支处置。
+- 对抗复核后发现并修正潜在误判：原验证器只按包/方向匹配，普通后续传输可能冒充计划执行；commit `9b1b429` 为每个计划动作绑定唯一 `action_id`，真实事件只绑定未执行的同一动作。修复后定向 19 passed、平台 413 passed，并已推送。
 
 ## 2026-08-19（有限 holding queue：容量/面积/WAIT 语义）
 
