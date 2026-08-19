@@ -311,3 +311,139 @@ def test_constant_rate_default_is_unaffected():
     res = kernel.run_simulation(cfg, [row(1, 0.0, A, B)], geometry=geo)
     assert res["fates"][1] == "DELIVERED"
     assert res["mechanisms"]["effective"]["mcs"] is False
+
+
+def test_mcs_zero_rate_uplink_recovers_at_certified_time_not_next_tick():
+    """F1: a zero-rate GSL must wake at the certified recovery instant.
+
+    Uplink slant starts at 12500 km (beyond the uplink MCS max range of
+    ~12068 km, so rate is exactly zero) and closes to 600 km at t=1.0.
+    With time_step=0.7 the blind ticks land at 0.7 and 1.4; polling would
+    start the service at 1.4, the certified recovery is 1.0.
+    """
+    assert link_budget.mcs_rate_bps(
+        12500.0, link_budget.LEGACY_UPLINK_RF) == 0.0
+
+    def slant(s, lat, lon, t):
+        if (lat, lon) == AC:
+            return 12500.0 if t < 1.0 else 600.0
+        return 600.0
+
+    geo = _Scripted(
+        1, neighbors_map={0: {}},
+        visible=lambda s, lat, lon, t: (lat, lon) in (AC, BC),
+        slant_range_fn=slant)
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "time_step_s": 0.7,
+                     "num_satellites": 1},
+        "links": {"rate_model": "mcs"},
+    })
+    res = kernel.run_simulation(cfg, [row(1, 0.0, A, B)], geometry=geo)
+    assert res["fates"][1] == "DELIVERED"
+    # service started at the certified recovery (1.0 + tx + prop), not at
+    # the next blind tick 1.4
+    assert res["deliveries"][1]["delivered_at"] < 1.2
+
+
+def test_mcs_zero_rate_deadline_before_horizon_expires_not_in_system():
+    """F1: a deadline between the last tick and the horizon must still expire.
+
+    The downlink is beyond MCS range for the whole run, so the packet parks
+    behind the zero-rate gate.  Its deadline (0.95) falls after the last
+    ticker pass (0.9) but before the horizon (0.96): stop-close must settle
+    it as DATA_DEADLINE_EXPIRED, not IN_SYSTEM_AT_STOP.
+    """
+    geo = _Scripted(
+        1, neighbors_map={0: {}},
+        visible=lambda s, lat, lon, t: (lat, lon) in (AC, BC),
+        slant_range_fn=lambda s, lat, lon, t: (
+            5900.0 if (lat, lon) == BC else 600.0))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 0.96, "num_satellites": 1},
+        "links": {"rate_model": "mcs"},
+    })
+    res = kernel.run_simulation(
+        cfg, [row(1, 0.0, A, B, deadline=0.95)], geometry=geo)
+    assert res["fates"][1] == "DATA_DEADLINE_EXPIRED"
+
+
+def test_mcs_zero_rate_isl_wait_expires_each_packet_at_its_own_deadline():
+    """F2: the ISL zero-rate wait must race wake and all queued expiries.
+
+    p1 (no deadline) holds the zero-rate ISL probe; p2 arrives at t=0.2
+    with deadline 0.5.  p2 must expire at its own deadline (queue area
+    0.3e6 bit*s), not ride until the horizon (1.8e6 bit*s).
+    """
+    geo = _Scripted(
+        2, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+        isl_range_fn=lambda a, b, t: 5900.0,
+        visible=lambda s, lat, lon, t: (
+            (s == 0 and (lat, lon) == AC)
+            or (s == 1 and (lat, lon) == BC)))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0},
+        "links": {"rate_model": "mcs"},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    p1 = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    k.ledger.register(p1.pid, p1.bits)
+    k.isls[0]["E"].put_data(p1)
+    while k.env.now < 0.2:
+        k.env.step()
+    p2 = kernel.DataPacket(2, A, B, 1_000_000, 0.5, 0.2)
+    k.ledger.register(p2.pid, p2.bits)
+    k.isls[0]["E"].put_data(p2)
+
+    res = k.run()
+    assert res["natural_end"]
+    assert res["fates"][2] == "DATA_DEADLINE_EXPIRED"
+    assert res["fates"][1] == "IN_SYSTEM_AT_STOP"
+    # p1 waits 0->2.0 (2.0e6 bit*s); p2 waits 0.2->0.5 (0.3e6 bit*s)
+    assert res["queue_area_bits_s"]["isl_data"] == pytest.approx(
+        2.3e6, rel=1e-9)
+
+
+def test_mcs_all_zero_rate_run_marks_mechanism_effective():
+    """F5: zero-rate gating IS the MCS mechanism affecting scheduling.
+
+    A run whose links are all beyond MCS range the whole time must report
+    effective.mcs=True (packets were held by the gate) even though no
+    transmission was ever paced (mcs_rate_samples == 0).
+    """
+    geo = _Scripted(
+        1, neighbors_map={0: {}},
+        visible=lambda s, lat, lon, t: (lat, lon) in (AC, BC),
+        slant_range_fn=lambda s, lat, lon, t: (
+            5900.0 if (lat, lon) == BC else 12500.0))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 0.96, "num_satellites": 1},
+        "links": {"rate_model": "mcs"},
+    })
+    res = kernel.run_simulation(
+        cfg, [row(1, 0.0, A, B, deadline=0.95)], geometry=geo)
+    counters = res["mechanism_counters"]
+    assert counters["mcs_rate_samples"] == 0
+    assert counters["mcs_zero_rate_holds"] > 0
+    assert res["mechanisms"]["effective"]["mcs"] is True
+
+
+def test_mcs_receipt_records_sampled_rate_range():
+    """F5: sampled MCS rates are attributed with a min/max range in bps."""
+    topo = {0: {"E": 1}, 1: {"W": 0}}
+    geo = _Scripted(
+        2, neighbors_map=topo,
+        isl_range_fn=lambda a, b, t: 1000.0,
+        visible=lambda s, lat, lon, t: (
+            (s == 0 and (lat, lon) == AC)
+            or (s == 1 and (lat, lon) == BC)),
+        slant_km=600.0)
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0},
+        "links": {"rate_model": "mcs"},
+    })
+    res = kernel.run_simulation(cfg, [row(1, 0.0, A, B)], geometry=geo)
+    assert res["fates"][1] == "DELIVERED"
+    counters = res["mechanism_counters"]
+    # samples: uplink@600km ~2.95e9, isl@1000km ~1.81e9, downlink@600 ~2.10e9
+    assert 1.8e9 < counters["mcs_rate_min_bps"] < 1.82e9
+    assert 2.9e9 < counters["mcs_rate_max_bps"] < 3.0e9

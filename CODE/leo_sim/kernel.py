@@ -302,7 +302,22 @@ class UplinkServer(_DRRMixin):
             sel = self._drr_select(cells, lambda c: self._pick(k.endpoints[c]))
             if sel is None:
                 if k.rate_model == "mcs":
-                    yield self.k.env.timeout(k.time_step) | self.wake
+                    heads = [(ep, p) for ep in k.endpoints.values()
+                             for p in ep.queue
+                             if p.assigned_sat in (None, self.sat)]
+                    until, zero_held = k._gsl_wait_until(
+                        self.sat, "uplink", heads)
+                    if zero_held:
+                        k.mech["mcs_zero_rate_holds"] += 1
+                    # the tick stays as a catch-all for uncertified changes
+                    # (association, handover), but the server never sleeps
+                    # past a certified recovery/deadline instant
+                    tick = k.env.now + k.time_step
+                    until = tick if until is None else min(until, tick)
+                    yield k.env.timeout(max(0.0, until - k.env.now)) | self.wake
+                    if not self.wake.triggered:
+                        for ep in k.endpoints.values():
+                            k._sweep_endpoint_queue(ep)
                 else:
                     yield self.wake
                 self.wake = k.env.event()
@@ -445,7 +460,17 @@ class DownlinkServer(_DRRMixin):
             sel = self._drr_select(cells, self._servable)
             if sel is None:
                 if k.rate_model == "mcs":
-                    yield k.env.timeout(k.time_step) | self.wake
+                    heads = [(k.endpoints[c], q[0])
+                             for c, q in self.queues.items() if q]
+                    until, zero_held = k._gsl_wait_until(
+                        self.sat, "downlink", heads)
+                    if zero_held:
+                        k.mech["mcs_zero_rate_holds"] += 1
+                    tick = k.env.now + k.time_step
+                    until = tick if until is None else min(until, tick)
+                    yield k.env.timeout(max(0.0, until - k.env.now)) | self.wake
+                    if not self.wake.triggered:
+                        k._sweep_downlink_queues(self.sat)
                 else:
                     yield self.wake
                 self.wake = k.env.event()
@@ -593,21 +618,38 @@ class ISLLink:
                 continue
             is_ctrl = bool(self.ctrl_q)
             if k.rate_model == "mcs":
-                probe = self.ctrl_q[0] if is_ctrl else self.data_q[0]
                 rate = k._link_rate("isl", k.env.now, self.sat,
                                     peer=self.peer)
                 if rate <= 0:
+                    k.mech["mcs_zero_rate_holds"] += 1
                     next_rate = k.geometry.next_isl_range_under(
                         self.sat, self.peer, k.rate_max_isl_km,
                         k.env.now, k.horizon)
-                    expiry = (probe.generated_at + probe.ttl_s
-                              if is_ctrl else probe.deadline)
-                    waits = [t for t in (next_rate, expiry)
-                             if t is not None and k.env.now < t <= k.horizon]
-                    if not waits:
-                        yield k.env.timeout(max(0.0, k.horizon - k.env.now))
-                    else:
-                        yield k.env.timeout(min(waits) - k.env.now)
+                    waits = []
+                    if (next_rate is not None
+                            and k.env.now < next_rate <= k.horizon):
+                        waits.append(next_rate)
+                    # every queued packet expires at its OWN deadline/TTL —
+                    # not the probe's — and newly enqueued packets wake the
+                    # wait so their deadlines join the race immediately
+                    waits += [p.generated_at + p.ttl_s for p in self.ctrl_q
+                              if k.env.now < p.generated_at + p.ttl_s
+                              <= k.horizon]
+                    waits += [p.deadline for p in self.data_q
+                              if p.deadline is not None
+                              and k.env.now < p.deadline <= k.horizon]
+                    wait_t = min(waits) if waits else k.horizon
+                    delay = wait_t - k.env.now
+                    if delay <= 0.0:
+                        # at/past the horizon with nothing left to wait for:
+                        # sleep until poked — re-arming a zero timeout here
+                        # would spin the event loop at the stop time
+                        yield self.wake
+                        self.wake = k.env.event()
+                        continue
+                    yield k.env.timeout(delay) | self.wake
+                    if self.wake.triggered:
+                        self.wake = k.env.event()
                     continue
             pkt = self.ctrl_q.popleft() if is_ctrl else self.data_q.popleft()
             self.current = pkt
@@ -876,6 +918,13 @@ class Kernel:
             "learning_train_steps": 0,
             "learning_discarded_at_stop": 0,
             "mcs_rate_samples": 0,
+            # D1 attribution: zero-rate holds count every deferral event
+            # where the MCS gate (not geometry/GE) delayed a scheduling or
+            # decision step; min/max are the sampled transmission-start
+            # rates in integer bps (0 when no sample exists).
+            "mcs_zero_rate_holds": 0,
+            "mcs_rate_min_bps": 0,
+            "mcs_rate_max_bps": 0,
         }
         # packets holding an open (not yet closed) learning transition; the
         # horizon close must account for every one of them, never silently
@@ -932,6 +981,49 @@ class Kernel:
         return link_budget.mcs_rate_bps(
             self.geometry.slant_range_km(sat, ep.lat, ep.lon, t),
             rf, self.mcs_table)
+
+    def _gsl_wait_until(self, sat: int, kind: str,
+                        heads) -> tuple[float | None, bool]:
+        """Earliest certified time a currently unservable GSL head on `sat`
+        may become servable again or expire (D1 precise wait).
+
+        Replaces pure time_step polling for MCS-gated GSL service: geometry
+        recovery, GE recovery, rate recovery and packet deadlines all have
+        certified times from the geometry/outage contracts, so the server
+        wakes at the exact event instead of the next blind tick.  Returns
+        (None, ...) when no finite certified event exists before the horizon;
+        the second element reports whether any head is currently held by a
+        zero MCS rate (receipt attribution).
+        """
+        now = self.env.now
+        rate_max = (self.rate_max_uplink_km if kind == "uplink"
+                    else self.rate_max_downlink_km)
+        ups = []
+        saw_zero_rate = False
+        for ep, pkt in heads:
+            link = ep.links.get(sat)
+            if link is None or link.state not in ("active", "retiring"):
+                continue
+            if not self.geometry.gsl_available(sat, ep.lat, ep.lon, now):
+                nxt = self.geometry.next_gsl_change(sat, ep.lat, ep.lon,
+                                                    now, self.horizon)
+                if nxt is not None:
+                    ups.append(nxt)
+            ge = self._gsl_ge(sat, ep.cell)
+            if self.ge_enabled and ge.is_down(now):
+                nxt_up = ge.next_up(now)
+                if nxt_up <= self.horizon:
+                    ups.append(nxt_up)
+            if self._link_rate(kind, now, sat, ep=ep) <= 0:
+                saw_zero_rate = True
+                nxt = self.geometry.next_slant_range_under(
+                    sat, ep.lat, ep.lon, rate_max, now, self.horizon)
+                if nxt is not None:
+                    ups.append(nxt)
+            if pkt.deadline is not None:
+                ups.append(pkt.deadline)
+        ups = [u for u in ups if now < u <= self.horizon]
+        return (min(ups) if ups else None), saw_zero_rate
 
     def _note_busy(self, cell: str):
         """Last-activity stamp for fair-access idle measurement."""
@@ -1229,6 +1321,7 @@ class Kernel:
                     # certified range-under recovery (plus deadline/retire);
                     # the packet stays queued and is NEVER failed here.
                     rate_up = False
+                    self.mech["mcs_zero_rate_holds"] += 1
                 else:
                     dur = pkt.bits / rate
             retire_t = None
@@ -1317,6 +1410,12 @@ class Kernel:
                     owner._service_rate_bps = rate
             if rate_fn is not None:
                 self.mech["mcs_rate_samples"] += 1
+                rate_bps = int(round(rate))
+                if (self.mech["mcs_rate_min_bps"] == 0
+                        or rate_bps < self.mech["mcs_rate_min_bps"]):
+                    self.mech["mcs_rate_min_bps"] = rate_bps
+                if rate_bps > self.mech["mcs_rate_max_bps"]:
+                    self.mech["mcs_rate_max_bps"] = rate_bps
             if isinstance(pkt, ControlPacket):
                 self.mech["control_tx_started"] += 1
             if (link_ref[0] == "isl" and isinstance(pkt, DataPacket)
@@ -1969,6 +2068,7 @@ class Kernel:
                 # direction, instead of enqueueing into a queue that cannot
                 # be served; the deadline check above still applies on every
                 # re-decision.
+                self.mech["mcs_zero_rate_holds"] += 1
                 self.pending[sat].append(pkt)
                 return
             dl = self.downlinks[sat]
@@ -2013,6 +2113,7 @@ class Kernel:
         # loop avoidance: never forward back onto a satellite already visited
         cands = [d for d in cands if self.topo[sat][d] not in pkt.path]
         unavailable = False
+        rate_blocked = False
         legal = []
         for d in cands:
             link = self.isls[sat][d]
@@ -2023,6 +2124,7 @@ class Kernel:
             if self.rate_model == "mcs" and self._link_rate(
                     "isl", now, sat, peer=link.peer) <= 0:
                 unavailable = True
+                rate_blocked = True
                 continue
             if link.room(pkt.bits):
                 legal.append(d)
@@ -2044,6 +2146,8 @@ class Kernel:
             self.isls[sat][action].put_data(pkt)
             return
         if unavailable:
+            if rate_blocked:
+                self.mech["mcs_zero_rate_holds"] += 1
             self.pending[sat].append(pkt)  # temporarily unavailable: wait
             return
         if cands:
@@ -2144,6 +2248,23 @@ class Kernel:
                     t0, key = lnk._svc
                     self.occupied[key] += self.env.now - t0
         stop_time = self.env.now  # == horizon on a natural end (closer)
+        # Settle deadline fates no sweep reached before the stop: a packet
+        # parked behind an unavailable link (e.g. a D1 zero-rate gate) whose
+        # deadline fell between the last tick and the horizon must expire as
+        # DATA_DEADLINE_EXPIRED, never settle as IN_SYSTEM_AT_STOP.
+        for ep in self.endpoints.values():
+            self._sweep_endpoint_queue(ep)
+        for s in range(self.num_sats):
+            self._sweep_downlink_queues(s)
+            kept = []
+            for pkt in self.pending[s]:
+                if pkt.deadline is not None and stop_time > pkt.deadline:
+                    self._fail(pkt, "DATA_DEADLINE_EXPIRED")
+                else:
+                    kept.append(pkt)
+            self.pending[s] = kept
+            for lnk in self.isls[s].values():
+                lnk._expire_waiting()
         # settle all queue-area integrals at the exact stop time
         for ep in self.endpoints.values():
             ep.area.close(stop_time)
@@ -2205,7 +2326,11 @@ class Kernel:
         # have been consulted on a service path; MBB requires a real event.
         effective = {
             "control_plane": self.mech["control_entered_queue"] > 0,
-            "mcs": self.mech["mcs_rate_samples"] > 0,
+            # MCS is effective when it paced a transmission OR held a packet
+            # behind the zero-rate gate — an all-zero-rate run is precisely
+            # the mechanism changing the outcome.
+            "mcs": (self.mech["mcs_rate_samples"] > 0
+                    or self.mech["mcs_zero_rate_holds"] > 0),
             "ge": self.ge_enabled and (
                 self.mech["ge_gsl_queries"] + self.mech["ge_isl_queries"] > 0),
             "mbb": self.mech["mbb_events"] > 0,

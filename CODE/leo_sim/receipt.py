@@ -70,6 +70,7 @@ MECHANISM_COUNTER_KEYS = {
     "ge_initialized", "mbb_events", "learning_initialized",
     "learning_decisions", "learning_transitions", "learning_train_steps",
     "learning_discarded_at_stop", "mcs_rate_samples",
+    "mcs_zero_rate_holds", "mcs_rate_min_bps", "mcs_rate_max_bps",
 }
 MECHANISM_COUNTER_BOOLS = {"control_initialized", "ge_initialized",
                            "learning_initialized"}
@@ -145,7 +146,8 @@ def effective_from_counters(counters: dict, requested: dict) -> dict:
     is effective only if it really entered the send path."""
     return {
         "control_plane": counters.get("control_entered_queue", 0) > 0,
-        "mcs": counters.get("mcs_rate_samples", 0) > 0,
+        "mcs": (counters.get("mcs_rate_samples", 0) > 0
+                or counters.get("mcs_zero_rate_holds", 0) > 0),
         "ge": requested.get("ge_enabled", False) and (
             counters.get("ge_gsl_queries", 0)
             + counters.get("ge_isl_queries", 0) > 0),
