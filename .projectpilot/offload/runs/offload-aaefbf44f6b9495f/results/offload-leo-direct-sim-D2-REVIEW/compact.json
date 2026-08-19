@@ -1,0 +1,107 @@
+{
+  "taskId": "offload:leo-direct-sim:D2-REVIEW",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。queued-data 迁移、holding overflow fate、双向拓扑校验和 receipt 键接线基本守恒，但存在核心 D2 语义缺陷：动态模式在 t=0 提前匹配且可导致 effective=false 的假回执；退役旧 ISL 与新 ISL 可并发使用同一方向槽；retired link 无回收并绕过 max_entities；退役在服状态从 Q0 snapshot/location 消失；实现仅匹配相邻 plane，与设计的“不同面”候选规则不一致。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "动态模式在 t=0 即调用 neighbors_at，但 topo_recomputes 直到首个 interval 才增加；当 horizon < interval 且动态初始拓扑不同于静态拓扑时，运行已使用动态拓扑而 receipt effective.dynamic_topology 仍为 false。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L58-L63",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L798-L801",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L948-L980",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/receipt.py#L144-L154"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "blocking",
+      "summary": "旧退役 ISL 与新 ISL 是两个独立 server process；旧链路允许继续 service/control drain，同时同一 sat/direction 的新链路可立即接受并发送新流量，缺少方向槽级互斥，可能双倍占用单一 E/W 收发机。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L40-L48",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L64-L74",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L559-L589",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L956-L980",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L2185-L2210"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "max_entities 只校验初始化实体；每次 rematch 均可永久追加 retired ISL 并创建新的带 SimPy process 的 ISLLink，没有动态 entity cap 或回收路径，长时窗可突破资源界限。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L827-L838",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L559-L589",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L942-L980"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "允许继续发送的 retired-link current packet 在 rematch 后不再属于 self.isls；snapshot_global 和 Q0 data-location 索引都只遍历当前 self.isls，因此 service 完成前存在真实但不可见的网络状态。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L64-L70",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L956-L980",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1058-L1085",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1200-L1245"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "summary": "设计候选规则写明所有不同 plane 的合法 E/W 边进入 greedy；实现只枚举 p 与 p+1 的相邻 plane。若设计文字按字面解释，num_planes>3 时会漏掉合法非相邻 plane 候选并改变匹配结果。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L40-L48",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/model.py#L543-L569"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "summary": "snapshot 合同称 state_version 每 event step 增加一次，但 topology recompute 内部先增一次，run() 在同一 env.step 后还会统一再增一次。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L995-L1005",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L974-L982",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L2278-L2295"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "为每个 satellite-direction 建立跨 link generation 的单一发送资源，阻止 retired/new ISL 并发占用同一方向槽。",
+    "明确首次动态匹配应发生在 t=0 还是第一个 interval；同步修正 topo_recomputes 与 effective.dynamic_topology 的证据语义。",
+    "增加 retired ISL 生命周期回收和动态 max_entities 检查，并确保 snapshot/Q0 location 在 retired service 完成前仍表示该状态。",
+    "拍板跨面候选是任意不同 plane 还是仅相邻 plane，并使设计、model.py 和测试一致。",
+    "本地补跑/核实 D2 专项测试：horizon<interval、rematch 计数、队列迁移守恒、old/new 方向资源竞态、retired snapshot 可见性和连续 rematch entity bound。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L948-L980",
+    "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/model.py#L525-L569",
+    "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L58-L101"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "UNVERIFIED: 绑定 commit 上允许路径 CODE/leo_sim/tests/test_dynamic_topology.py 通过 GitHub contents 读取返回 404；本地 Agent 应确认该文件是否确实未提交，并补跑设计要求的 D2 专项测试。",
+    "UNVERIFIED: recompute_interval_s 必须为有限正数、matching 必须仅允许 markovian 的配置 fail-closed 校验若位于 config.py，则超出本任务读取白名单，需本地 Agent 单独核验。",
+    "UNVERIFIED: replacement ISLLink 使用按 sat:direction 构造的 GE stream；outage.py 不在读取白名单，本次无法确认 rematch 后 GE trajectory 是否发生不期望的重启或跨 peer 相关。"
+  ]
+}
