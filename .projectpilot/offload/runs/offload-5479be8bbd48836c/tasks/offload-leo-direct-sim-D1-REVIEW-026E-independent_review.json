@@ -1,0 +1,60 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:D1-REVIEW-026E:independent_review",
+    "title": "D1 dynamic link rate round-3 cold-start review (commit 026eb17)",
+    "goal": "Review exact commit 026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1 on branch codex/20260819-d1-dynamic-rate. Re-check the round-2 REQUEST_CHANGES findings: (F1) retiring-uplink bypass of availability gates must be closed; (F2) GSL exact recovery/deadline race must not degrade to time_step polling and GE receipt counters must not leak; (F5) ISL zero-rate/no-deadline must not loop at horizon. Also confirm legacy RF/MCS equivalence, zero-rate/geometry-loss/GE-down queue and service semantics for shared uplink/downlink/ISL, snapshot residual-service accounting, legal masks, counters/receipt, deadline/retirement/GE-geometry races, and regression test adequacy. Return APPROVE or REQUEST_CHANGES with FACT/INFERENCE/UNVERIFIED, exact path/line evidence, concrete reproduction conditions, severity and open_items. Do not modify code.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/link_budget.py",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/tests/test_link_budget_integration.py",
+        "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Explicit APPROVE or REQUEST_CHANGES",
+      "Explicit re-check of round-2 F1/F2/F5 with line evidence",
+      "Every major finding has exact evidence and reproduction condition",
+      "Open items included"
+    ],
+    "requiredEvidence": [
+      "Exact commit-bound GitHub paths and line references",
+      "Explicit review of the new GSL queue-gating tests"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "1921ee0b42bfd2e0c3708871d5ec014082b1ef20a9b7f92124131374eb09fd3f"
+}
