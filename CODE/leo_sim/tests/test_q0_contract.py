@@ -77,3 +77,37 @@ def test_kernel_rejects_mixed_plan_without_partial_mutation():
     assert [p.pid for p in k.pending[0]] == [1]
     assert not k.isls[0]["E"].data_q
     assert k._state_version == 0
+
+
+def test_kernel_rejects_wait_on_wrong_satellite_without_mutation():
+    geo = StaticGeometry(2, neighbors_map={0: {"E": 1}, 1: {"W": 0}})
+    cfg = make_cfg({"scenario": {"num_satellites": 2, "num_planes": 1}})
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    pkt = kernel.DataPacket(1, cell(0.0, 0.0), cell(0.0, 10.0), 8_000, None, 0.0)
+    k.pending[0].append(pkt)
+    plan = JointPlan(0, (PlanAction("wait", 1, 1, until=1.0),))
+
+    ok, errors = k.apply_joint_plan(plan)
+
+    assert not ok and any("wrong pending satellite" in e for e in errors)
+    assert [p.pid for p in k.pending[0]] == [1]
+    assert k.ledger.fate_of(1) is None
+
+
+def test_kernel_wait_is_atomic_when_holding_queue_is_full():
+    geo = StaticGeometry(1, neighbors_map={0: {}})
+    cfg = make_cfg({
+        "scenario": {"num_satellites": 1},
+        "access": {"holding_queue_bits": 8_000},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    pkt = kernel.DataPacket(1, cell(0.0, 0.0), cell(0.0, 10.0), 8_000, None, 0.0)
+    k.pending[0].append(pkt)
+    plan = JointPlan(0, (PlanAction("wait", 1, 0, until=1.0),))
+
+    ok, errors = k.apply_joint_plan(plan)
+
+    assert ok, errors
+    assert [p.pid for p in k.pending[0]] == [1]
+    assert k.pending[0].queued_bits == 8_000
+    assert k.pending[0][0].holding_until == 1.0

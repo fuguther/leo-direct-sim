@@ -1259,8 +1259,15 @@ class Kernel:
             else:
                 if location[0] != "pending":
                     errors.append(f"packet {action.packet_id}: WAIT requires pending packet")
+                elif action.sat != location[1]:
+                    errors.append(
+                        f"packet {action.packet_id}: wrong pending satellite")
                 elif action.until is None or action.until <= self.env.now or action.until > self.horizon:
                     errors.append(f"packet {action.packet_id}: invalid WAIT deadline")
+                elif (self.pending[action.sat].queued_bits
+                      > self.pending[action.sat].capacity_bits):
+                    errors.append(
+                        f"packet {action.packet_id}: holding capacity already exceeded")
         for (sat, direction), bits in forward_bits.items():
             link = self.isls[sat][direction]
             if link._used() + bits > self.cfg_links["isl_queue_bits"]:
