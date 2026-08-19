@@ -1,0 +1,416 @@
+D1 dynamic link rate cold-start review
+Verdict: REQUEST_CHANGES
+
+结论是 RESULT_CANDIDATE / REQUEST_CHANGES。RF/MCS 数值实现本身与设计稿给出的 legacy 表征基本一致，_transmit 内部的 service/GE/geometry/deadline/retirement 竞态组合也没有发现直接破坏守恒的错误；snapshot 的显式除零路径已有保护。
+
+但当前 commit 仍有至少两个会改变 D1 时序语义的实质问题：GSL 初始零速率绕过精确恢复机制而退化成 time_step 轮询，以及 ISL 零速率等待只看当前优先队头且不响应后续 wake，导致其他包的 deadline/TTL 延迟结算。此外，rate-aware legal mask、snapshot 等待阶段速率状态、receipt 的速率归因证据均存在缺口。因此不建议将 9ae6a71294419dc31cc6b24771aeeb91b14ed285 作为 D1 完成基线。
+
+Findings
+F1 — BLOCKING — Active GSL 的零速率恢复绕过 certified recovery，退化成 time_step 轮询
+
+FACT
+
+设计明确要求零/低速率使用 next_slant_range_under 与 deadline/硬退役竞速，并规定“服务每次真正开始时才按当时斜距采样”，避免直接等到 horizon 或粗粒度轮询：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L45-L72
+
+但 uplink active-link 路径在进入 _transmit 之前就在 _pick() 中用当前 _link_rate() 把零速率 packet 排除；没有可选 packet 时 MCS 模式只执行 time_step timeout。只有已经被选中的 packet 才构造 next_slant_range_under 并进入 _transmit：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L259-L341
+
+Downlink 同样先在 _servable() 中排除当前 rate=0，再以 time_step 重试，因此初始零速率时也无法进入精确 rate_recover_fn 路径：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L393-L459
+
+而 _transmit() 本身已经具备准确的 rate recovery/deadline/retirement wait 机制，说明问题发生在进入它之前：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1160-L1284
+
+INFERENCE
+
+例如：
+
+time_step_s = 0.1
+
+GSL rate 在 t=0.05 从 0 恢复
+
+packet deadline 为 t=0.075
+
+packet 足够小，本可在恢复后于 deadline 前完成
+
+设计语义允许在 0.05 精确唤醒；当前 active GSL 服务器最早约到下一个 polling tick 才重新调度，此时 deadline 已过去。因此这不仅是数值精度问题，可以改变最终 fate。
+
+Endpoint/downlink deadline sweep 本身也以 tick 驱动：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1393-L1420
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1630-L1644
+
+Reproduction condition
+
+构造固定 active GSL association，slant_range_fn 在两个 simulation ticks 之间穿越 max_rate_range_km，并把 deadline 放在 crossing 与下一 tick 之间；分别验证 uplink/downlink 的真实 service-start 时间和 fate。
+
+UNVERIFIED
+
+合同禁止本 Worker 执行本地测试，因此上述最小场景尚未实际执行。
+
+F2 — MAJOR — ISL 零速率等待不能正确响应非 probe packet 的 deadline/TTL 或后续入队
+
+FACT
+
+普通 geometry/GE-down 分支会：
+
+收集 所有 control TTL；
+
+收集 所有 data deadline；
+
+将 timeout 与 self.wake 竞速。
+
+但物理链路 available、仅 MCS rate=0 时采用另一套逻辑，只检查优先队头 probe 的 expiry，并且 timeout 没有与 self.wake 竞速：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L548-L602
+
+虽然 put_ctrl()/put_data() 会 poke wake，零速率分支当前不会消费这个 wake。真正负责逐 packet 清理 deadline/TTL 的 _expire_waiting() 只有服务器循环再次运行时才会执行：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L666-L690
+
+INFERENCE
+
+两个确定性反例：
+
+control queue head TTL=10s，同时 data packet deadline=1s；永久 zero-rate。服务器按 control probe 睡到较晚时间，data packet 不在 1s 被清理。
+
+无 deadline 的 packet 先成为 zero-rate head，服务器直接睡到 horizon；之后入队一个 deadline=1s 的 packet。后者触发的 wake 被当前 sleep 忽略。
+
+最终 packet 可能仍得到正确 fate 名称，但fate 时间、queue residence 和 queue-area accounting 都被拉长。这违反设计中“deadline 到期由 _expire_waiting/_transmit 收 fate”的零速率合同：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L65-L80
+
+Reproduction condition
+
+永久 zero-rate ISL；先放入无 deadline data head，再稍后放入短 deadline data/control packet；运行越过 deadline、未到 horizon，检查该 packet 是否已终结以及 data_bits/ctrl_bits、queue area。
+
+UNVERIFIED
+
+未执行该场景。
+
+F3 — MAJOR — legal mask 对 ISL rate=0 与 downlink rate=0 的定义不一致
+
+FACT
+
+_decide() 在 ISL forwarding 路径中明确把当前 MCS rate<=0 的方向从 legal 集合中移除，learner 只能看到剩余合法方向：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1970-L2005
+
+但 destination GSL 分支只要求：
+
+association active；
+
+GSL geometry available；
+
+downlink queue 有 room。
+
+它没有检查当前 downlink MCS rate，随后直接构造 deliver-only mask 并把 packet 放入 downlink queue：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1937-L1965
+
+INFERENCE
+
+如果“rate=0 等同 link down”也用于动作合法性，那么这里的 deliver-only mask 是错误的：当前不可服务的 GSL 被声明为唯一 legal action，而当前可用 ISL 根本不会参与 mask。
+
+如果设计者的真实意图是“deliver 表示进入持有队列，因此允许 rate=0，而 ISL forward 必须即时可发送”，则这是另一套语义；当前设计稿没有明确声明这种 GSL/ISL 非对称性。D1 legal-mask gate 在此状态下不能视为闭合。
+
+Reproduction condition
+
+目的地在当前 sat 有 active/geometry-up association，但 downlink MCS rate=0，同时至少一条 ISL rate>0 且有 queue room；检查 learner/decision sink 的 candidate set 是否只包含 deliver。
+
+F4 — MAJOR — snapshot 已防除零，但 waiting-for-link 可暴露陈旧的正速率
+
+FACT
+
+snapshot residual helper 明确先检查：
+
+if rate_bps <= 0:
+    return None
+
+因此没有发现直接 bits / 0 路径：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L992-L1018
+
+uplink/downlink/ISL 均通过该 helper 生成 remaining_service_s：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1065-L1088
+
+但 _transmit() 只有在新采样 rate 大于 0 时才更新 owner._service_rate_bps；rate 变为 0 时仅设置 rate_up=False，不会清空之前的值：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1198-L1225
+
+INFERENCE
+
+某 service 已进入 _transmit()，因 GE/geometry 等待；开始等待时 rate>0，因此 owner 留有正的 _service_rate_bps。随后几何变化使当前 MCS rate=0，而其他 outage 尚未恢复。此时 snapshot 的 phase=waiting_for_link 仍可能返回 bits / stale_positive_rate，而不是表示“当前没有可用 service rate”。
+
+所以本轮结论是：
+
+division-by-zero：未发现；
+
+D1 snapshot current-rate fidelity：仍有陈旧值风险。
+
+Reproduction condition
+
+让 service 因 GE/geometry pre-service wait 停住，同时使 MCS rate 从正值降到 0，然后在 wait 中调用 snapshot_global()。
+
+F5 — MAJOR — receipt 能证明“发生过至少一次 MCS service start”，但不能完成设计要求的速率差异归因
+
+FACT
+
+mcs_rate_samples 只在实际 transmission 开始后递增：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1285-L1315
+
+结果中的 effective.mcs 仅依据该计数是否大于 0：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L2149-L2191
+
+Receipt verifier 也固定使用同一规则：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/receipt.py#L128-L160
+
+Receipt/ledger schema 只保留单个 mcs_rate_samples 数量，没有 rate 值分布：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/receipt.py#L45-L73
+
+与此同时 decision sink 记录 candidates/chosen/queue/obs，却没有记录选中链路的 sampled rate：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1898-L1935
+
+设计稿明确提出 rate 样本统计用于归因，并要求 constant vs mcs 的差异能够归因到速率采样记录：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L73-L92
+
+INFERENCE
+
+存在一种特殊但重要的 false-negative：MCS rate=0 已经通过 legal filtering/polling 实际改变调度结果，但如果整个 run 没有任何 MCS transmission 真正开始，则 effective.mcs=false。
+
+即当前 receipt 可回答“至少有 MCS service 开始过吗”，不能可靠回答“D1 rate model 是否实际影响了该 run，以及差异来自哪些采样速率”。
+
+F6 — MINOR — constant 模式并没有按设计“忽略 RF”
+
+FACT
+
+设计稿写明：
+
+rate_model=mcs 时 RF 校验；constant 时忽略 RF。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L45-L46
+
+但 config 对三个 RF mapping 的 exact-key/positive-value 校验位于 rate_model == "mcs" 条件之外，因此 constant 模式同样执行：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/config.py#L510-L552
+
+集成测试甚至明确把这一实现行为固定下来：没有指定 rate_model=mcs 时，非法 rf_isl 仍期望 ConfigError：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/tests/test_link_budget_integration.py#L48-L61
+
+INFERENCE
+
+这不是默认 constant 数值路径的回归，但属于设计、实现、测试三者合同不一致。应明确选择一个权威语义，而不是让测试静默重新定义设计。
+
+已核验通过的部分
+RF/MCS legacy 数值核心：PASS
+
+实现保留了三套 RF 参数、FSPL/SNR/MCS 门限量化以及首档 MCS range inversion：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/link_budget.py#L80-L164
+
+集成测试钉住：
+
+ISL 1000/2000/4000/6000 km golden；
+
+uplink/downlink/ISL 三套 RF 在 1000 km 的不同速率；
+
+三套 RF 的最大可用 range threshold。
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/tests/test_link_budget_integration.py#L15-L45
+
+**FACT：**在白名单材料范围内，没有发现 RF 公式或 MCS table 本身偏离 design characterization 的证据。
+
+_transmit 内部 GE / geometry / deadline / retirement 竞态：代码结构 PASS，运行验证不足
+
+进入 _transmit() 之后：
+
+pre-service geometry / GE / rate-down 等待不计 occupied；
+
+deadline 与 retirement 参与 wait；
+
+real service start 时重新 stamp _svc；
+
+service 中竞速 geometry loss、GE next-down、deadline、retirement；
+
+partial service 只累计实际 elapsed occupied time。
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1160-L1335
+
+**FACT：**没有在这一集中竞态点发现明显的 double-fate、dur=∞ 或 occupied 全等待时间误记。
+
+**UNVERIFIED：**MCS+GE、MCS+geometry-loss、MCS+hard-retirement 的组合测试未出现在允许读取的 integration test 中。
+
+Test adequacy
+
+现有 integration tests 覆盖了 goldens、RF 分级、range threshold、基础 config、ISL recovery、单 deadline、FIFO、zero-rate head 保持 queued、constant 默认行为：
+
+github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/tests/test_link_budget_integration.py#L105-L204
+
+但设计完成标准中的以下关键面未闭合：
+
+GSL uplink 零速率精确 recovery；
+
+GSL downlink 零速率精确 recovery；
+
+recovery crossing 位于两个 ticks 之间；
+
+recovery/deadline 交叉；
+
+zero-rate 队列中多个不同 deadline/TTL；
+
+zero-rate wait 期间后续 enqueue/wake；
+
+downlink deliver legal mask；
+
+MCS snapshot waiting/transmitting 状态；
+
+MCS + GE race；
+
+MCS + geometry-loss race；
+
+MCS + hard-retirement race；
+
+固定几何下完整 propagation + bits/rate 解析时延；
+
+constant-vs-MCS rate sample attribution；
+
+receipt 对“零速率影响了调度但无 service start”的处理。
+
+因此测试集本身不足以支撑 APPROVE。
+
+Recommended disposition
+
+本地 Agent 下一轮至少应：
+
+让 active GSL zero-rate 使用 certified next_slant_range_under 与 deadline/retirement 精确竞速，不能只靠 time_step polling。
+
+将 ISL zero-rate wait 改为考虑所有 queued expiry，并与 self.wake 竞速。
+
+明确 deliver action 在 downlink rate=0 时究竟是否合法，并与 ISL mask 语义统一或正式文档化非对称性。
+
+waiting-for-link 时不要把陈旧 positive rate 暴露为当前 residual service rate。
+
+增加可归因的 rate evidence；至少能区分 zero-rate probes、actual service-start samples，并提供 sample value/range summary。
+
+补齐上述边界/竞态测试后再做本地全套回归。
+
+对 constant 是否真正忽略 RF 做一次设计决议，然后同步 config 与 test。
+
+open_items
+
+UNVERIFIED: 本 Worker 按合同没有执行 shell/pytest；commit 的实际测试运行状态必须由本地 Agent 验证。
+
+UNVERIFIED: next_isl_range_under / next_slant_range_under 的真实实现不在允许读取路径中；其“certified crossing”正确性无法在本任务内审计。
+
+UNVERIFIED: integration test 引用的 tests.helpers.StaticGeometry/make_cfg/row 位于白名单之外，其 fixture 语义未读取。
+
+UNVERIFIED: 因白名单限制，无法检查是否存在其他测试文件已经覆盖上述组合竞态；本结论只评价指定 integration test 的充分性。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:D1-REVIEW",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。RF/MCS legacy 数值核心和 _transmit 内集中竞态结构基本成立，snapshot 也有显式除零保护；但 active GSL 初始零速率被前置过滤后退化为 time_step 轮询，可错过精确 recovery/deadline；ISL 零速率等待只看 probe expiry 且不响应 wake，会延迟其他 packet 的 deadline/TTL 与 queue-area 结算。另有 legal-mask 非对称、snapshot 陈旧速率和 receipt 归因不足。当前测试未覆盖这些关键组合。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "Active GSL 初始 zero-rate 在进入 _transmit 前被过滤，精确 next_slant_range_under recovery 被绕过并退化为 time_step polling，可改变 service-start 时间甚至 deadline fate。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L259-L341",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L393-L459",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1160-L1284",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L45-L72"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "ISL zero-rate wait 只使用当前 probe 的 expiry 且 timeout 不与 self.wake 竞速，其他已排队或后续入队 packet 的 deadline/TTL 可被延迟到 probe expiry、recovery 或 horizon。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L548-L602",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L666-L690"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "Legal action semantics 对 rate=0 不一致：ISL MCS-zero 方向会从 legal mask 删除，而 active geometry-up 的 destination GSL 即使 downlink MCS rate=0 仍被强制设为 deliver-only。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1937-L2005"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "Snapshot 无直接除零，但 waiting_for_link 阶段可能保留旧的 positive _service_rate_bps；当前 rate 后续变为 0 时 _transmit 不清空该值，remaining_service_s 可基于陈旧速率。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L992-L1018",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1198-L1225"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "summary": "D1 receipt/provenance 仅记录 mcs_rate_samples 数量且只在真实 transmission start 计数，没有 sampled rate 值；无法满足设计要求的 constant-vs-MCS 速率差异归因，且全 zero-rate 影响调度时 effective.mcs 可为 false。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1285-L1315",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1898-L1935",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/receipt.py#L45-L73",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/receipt.py#L128-L160",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L73-L92"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "summary": "设计称 constant 模式忽略 RF，但 config 与测试仍在 constant 模式严格校验 RF，设计、实现和测试合同不一致。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L45-L46",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/config.py#L510-L552",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/tests/test_link_budget_integration.py#L48-L61"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "将 active GSL zero-rate recovery 接到 certified next_slant_range_under，并与 deadline/retirement 精确竞速。",
+    "让 ISL zero-rate wait 考虑全部 queued deadline/TTL 且与 self.wake 竞速。",
+    "明确并测试 downlink rate=0 时 deliver action 的合法性，消除与 ISL mask 的未声明非对称。",
+    "修正 waiting_for_link snapshot 的陈旧 service_rate_bps 表征。",
+    "扩充 MCS rate evidence，记录实际 sample 或可核验摘要，并区分 probe 与真实 service-start。",
+    "增加 GSL recovery、multi-expiry、snapshot、legal mask、GE/geometry/retirement race 和解析时延测试。",
+    "统一 constant 模式 RF 校验的设计、实现与测试合同。",
+    "在本地授权环境运行完整测试并复现 F1/F2 最小场景后再决定 D1 gate。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L548-L602",
+    "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1160-L1335",
+    "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/link_budget.py#L80-L164",
+    "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/tests/test_link_budget_integration.py#L105-L204",
+    "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L45-L92"
+  ],
+  "open_items": [
+    "UNVERIFIED: 按任务合同未执行 shell/pytest；commit 的实际测试运行结果需本地 Agent 验证。",
+    "UNVERIFIED: next_isl_range_under / next_slant_range_under 的真实 geometry 实现位于允许读取路径之外，其 certified crossing 正确性未审计。",
+    "UNVERIFIED: test_link_budget_integration.py 依赖的 tests.helpers.StaticGeometry/make_cfg/row 位于白名单之外，fixture 语义未独立审计。",
+    "UNVERIFIED: 白名单之外是否另有测试覆盖 MCS+GE/geometry/retirement 等组合竞态，本 Worker 无权读取确认。"
+  ]
+}
+===END_OFFLOAD_RESULT===
