@@ -59,7 +59,9 @@ def test_kernel_holding_overflow_is_a_terminal_fate_and_snapshot_is_bounded():
         "access": {"holding_queue_bits": 8_000},
     })
     k = kernel.Kernel(cfg, [row(99, 0.0, "G1:90:0", "G1:90:10")], geometry=geo)
-    src, dst = sorted(k.endpoints)
+    # lazy activation (#28): endpoints are not pre-built from the trace, so
+    # use the row's cell ids directly
+    src, dst = "G1:90:0", "G1:90:10"
     first = kernel.DataPacket(1, src, dst, 8_000, None, 0.0)
     second = kernel.DataPacket(2, src, dst, 8_000, None, 0.0)
     k.ledger.register(first.pid, first.bits)

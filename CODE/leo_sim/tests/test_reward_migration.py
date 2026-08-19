@@ -163,6 +163,67 @@ def test_forward_reward_is_realized_m1_queue_wait():
     assert not forward[0][2] and not forward[1][2]
 
 
+def test_forward_m1_reward_survives_mid_service_deadline_failure():
+    """R4C F2 regression: a forward whose ISL service already started has
+    settled its realized M1 queue reward; a later mid-service failure must
+    not overwrite that realized reward with 0."""
+    src, dst = cell(31.0, 121.0), cell(40.0, 116.0)
+    geo = _TwoSatGeometry(
+        2,
+        neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+        visible=lambda s, lat, lon, t: (s == 0 and abs(lat - 31.0) < 1.0
+                                        ) or (s == 1 and abs(lat - 40.0) < 1.0),
+    )
+    cfg = make_cfg({
+        "access": {"uplink_rate_mbps": 4000.0},
+        "links": {"isl_rate_mbps": 1600.0},
+    })
+    # uplink ~2 ms + propagation ~2 ms -> ISL service starts ~4 ms and runs
+    # 5 ms; a 6 ms deadline expires inside the ISL transmission, after the
+    # M1 queue reward was realized at service start.
+    rows = [row(1, 0.0, src, dst, bits=8_000_000, deadline=0.006)]
+    k = kernel.Kernel(cfg, rows, geometry=geo)
+    k.learner = _StubLearner()
+    result = k.run()
+    assert result["fates"][1] == "DATA_DEADLINE_EXPIRED"
+    forward = [r for r in k.learner.records if r[0] == "E"]
+    assert len(forward) == 1
+    assert forward[0][1] == pytest.approx(W1, rel=1e-6)
+    assert forward[0][2] is True
+    assert not [r for r in k.learner.records if r[0] == "deliver"]
+
+
+def test_fail_preserves_realized_reward_for_any_fate():
+    """Unit-level lock on _fail: a packet with an already-realized learning
+    reward (ISL service started) keeps it under every terminal failure fate;
+    only a packet with no realized reward settles at 0."""
+    src, dst = cell(31.0, 121.0), cell(40.0, 116.0)
+    geo = _TwoSatGeometry(
+        2,
+        neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+        visible=lambda s, lat, lon, t: (s == 0 and abs(lat - 31.0) < 1.0
+                                        ) or (s == 1 and abs(lat - 40.0) < 1.0),
+    )
+    cfg = make_cfg({
+        "access": {"uplink_rate_mbps": 4000.0},
+        "links": {"isl_rate_mbps": 1600.0},
+    })
+    k = kernel.Kernel(cfg, [row(1, 0.0, src, dst)], geometry=geo)
+    k.learner = _StubLearner()
+    pkt = kernel.DataPacket(1, src, dst, 8_000_000, None, 0.0)
+    pkt.learning_state = np.zeros(
+        learning.CONTRACT_DIMS["C3"], dtype=np.float32)
+    pkt.learning_action = "E"
+    pkt.learning_reward = 12.5  # realized at ISL service start
+    k.ledger.register(pkt.pid, pkt.bits)
+    k._learning_open.add(pkt)
+    k._fail(pkt, "GEOMETRY_LOSS_IN_FLIGHT")
+    rec = [r for r in k.learner.records if r[0] == "E"]
+    assert len(rec) == 1
+    assert rec[0][1] == pytest.approx(12.5)
+    assert rec[0][2] is True
+
+
 def test_deliver_reward_is_arrive_reward():
     k = _two_sat_kernel()
     k.run()

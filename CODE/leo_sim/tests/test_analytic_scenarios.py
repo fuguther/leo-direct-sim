@@ -82,17 +82,19 @@ def test_access_slots_full_waiting_counts():
     """接入槽满：slots=1 被长服务占死时，第二端点的等待/在系统计数可解析推出。
 
     Derivation (slots_per_satellite=1, uplink 1 Mbps, horizon 5 s):
-      - ep A emits 8 Mbit at t=0 -> holds the only slot (granted at the t=0
-        access tick by free-slot pre-positioning, kernel.py:1082-1083, before
-        any demand exists), uplink service
+      - ep A emits 8 Mbit at t=0 -> lazy endpoint activation makes the first
+        emission demand-driven: A is granted the only slot at emission
+        (kernel.py _request_or_grant/_try_grant, grants=1, no preposition),
+        uplink service
         = 8e6/1e6 = 8 s > 5 s horizon -> still in service at stop
         => A's packet is IN_SYSTEM_AT_STOP (no fate before stop).
       - ep B emits 8 Mbit at t=0 -> satellite visible but no free slot
         => joins the FIFO wait queue (kernel.py:1031-1043) and is NEVER
         granted: A's link never goes idle (8 s service) and lease rotation
         (slot_lease_s=10 s) fires past the 5 s horizon.
-      => access: requests=1 (B's demand request), grants=0,
-         preposition_grants=1 (A at t=0), waiting_at_stop=1 (B);
+      => access: requests=1 (B's demand request), grants=1 (A at t=0),
+         preposition_grants=0 (no pre-arming without pre-built endpoints),
+         waiting_at_stop=1 (B);
       => fates: both packets IN_SYSTEM_AT_STOP (in_system count = 2),
          offered = 2*8 Mbit = in_system bits; conservation holds.
     """
@@ -105,8 +107,8 @@ def test_access_slots_full_waiting_counts():
     res = kernel.run_simulation(cfg, rows, geometry=geo)
     assert res["natural_end"] is True
     assert res["access"]["requests"] == 1
-    assert res["access"]["grants"] == 0
-    assert res["access"]["preposition_grants"] == 1
+    assert res["access"]["grants"] == 1
+    assert res["access"]["preposition_grants"] == 0
     assert res["access"]["waiting_at_stop"] == 1
     assert res["fates"][1] == "IN_SYSTEM_AT_STOP"
     assert res["fates"][2] == "IN_SYSTEM_AT_STOP"

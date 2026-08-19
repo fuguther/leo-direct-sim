@@ -107,7 +107,9 @@ def test_snapshot_unmaterialized_gsl_pair_is_explicit_not_missing():
     geo = StaticGeometry(1, neighbors_map={0: {}},
                          visible=lambda *_: True, gsl_changes=[])
     k = kernel.Kernel(_cfg(), [row(1, 0.0, A, B)], geometry=geo)
-    ep = k.endpoints[A]
+    # lazy endpoint activation: a cell only materializes when it becomes
+    # active, so activate A explicitly before inspecting its link state
+    ep = k._ensure_endpoint(A)
     # inject a link without going through _associate (which materializes)
     ep.links[0] = kernel.Link(0, "active", 0.0)
     snap = k.snapshot_global()

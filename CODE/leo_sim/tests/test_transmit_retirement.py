@@ -53,22 +53,25 @@ def test_downwait_races_retirement_interrupt():
     """K1: with slot contention forcing a lease retirement at ~1.5 s while
     the GSL is down, the packet must be retired (and re-associated) at the
     retirement deadline, not pinned until the outage recovers at ~5 s."""
-    rows = [row(1, 0.6, A, B), row(2, 0.0, B, A)]  # B waits -> contention
+    # lazy endpoint activation: A takes sat0 when its first packet emits at
+    # 0.5; B's later demand (0.7) contends on sat0, forcing A's lease to
+    # retire at 1.5 (deadline 2.0) while pkt1 down-waits on the down GSL
+    rows = [row(1, 0.5, A, B), row(2, 0.7, B, A)]
     res = kernel.run_simulation(_contention_cfg(), rows, geometry=_two_sat_geo())
     assert res["fates"][1] == "DELIVERED"
     retire = [e for e in res["handover"]["events"]
               if e["type"] == "release"
               and str(e["reason"]).startswith("lease_retire")]
-    assert retire and retire[0]["t"] < 2.0, (
+    assert retire and retire[0]["t"] <= 2.0, (
         "retirement was not raced: link pinned until the outage recovered")
 
 
 def test_no_premature_deadline_fail_while_retirement_pending():
     """K3: with a 2.0 s deadline and a retirement pending at ~1.5 s, the
-    packet must not be failed with DATA_DEADLINE_EXPIRED at t0=0.6; the
+    packet must not be failed with DATA_DEADLINE_EXPIRED at t0=0.5; the
     expiry fate may only be recorded once the deadline is actually reached
     (or the packet is rescued)."""
-    rows = [row(1, 0.6, A, B, deadline=2.0), row(2, 0.0, B, A)]
+    rows = [row(1, 0.5, A, B, deadline=2.0), row(2, 0.7, B, A)]
     res = kernel.run_simulation(_contention_cfg(monitor=True), rows,
                                 geometry=_two_sat_geo())
     fate_events = [t for t, kind, kv in res["monitor_log"]
@@ -118,9 +121,11 @@ def test_deadline_equals_retire_at_does_not_swallow_retirement():
     """R4B B1: when the packet deadline equals the hard retirement instant,
     the retirement side effect (release + requeue) must still run; the packet
     is re-decided and then fails at the deadline on the new association."""
-    # deadline = 2.0 aligns with the lease retirement deadline (~1.5+0.5);
-    # use monitor to read the fate time and the release event
-    rows = [row(1, 0.6, A, B, deadline=2.0), row(2, 0.0, B, A)]
+    # A takes sat0 at 0.5; its lease retires at 1.5 with hard deadline 2.0,
+    # exactly equal to the packet deadline -- the tie must resolve in favour
+    # of running the link lifecycle.  Use monitor to read the fate time and
+    # the release event.
+    rows = [row(1, 0.5, A, B, deadline=2.0), row(2, 0.7, B, A)]
     res = kernel.run_simulation(_contention_cfg(monitor=True), rows,
                                 geometry=_two_sat_geo())
     assert res["fates"][1] == "DATA_DEADLINE_EXPIRED"
