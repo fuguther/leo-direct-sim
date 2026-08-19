@@ -1,0 +1,63 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:D1-REVIEW-5D9A:independent_review",
+    "title": "D1 dynamic link rate round-5 cold-start review (commit 5d9ad9b)",
+    "goal": "Review exact commit 5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0 on branch codex/20260819-d1-dynamic-rate. Round-4 (commit 2e88099) REQUEST_CHANGES findings to re-verify, all claimed fixed: (F2-RACE) the GSL MCS wait must run the deadline sweep unconditionally after yield timeout|wake, so a same-timestamp poke can no longer skip an exact-deadline expiry -- verify unconditional sweeps in UplinkServer._run and DownlinkServer._run plus the adversarial same-time-wake regression. (F3) stop-time pending settlement must use stop_time >= pkt.deadline (inclusive) -- verify the comparator and the deadline==horizon regression. (F4) mcs_zero_rate_holds must only count when geometry AND GE are up (MCS is the actual blocker): verify _gsl_wait_until and _transmit attribution plus the GE+zero-rate overlap regression. (F5) constant-rate shared GSL must pre-gate geometry/GE before dequeue (uplink geometry+GE, downlink GE), with recovery timers in the constant wait paths, so a gated head cannot pin the shared server; verify the constant uplink/downlink shared-server regressions and the updated test_transmit_retirement.py invariants (queue-level retirement race). (F1-R, independent) _fire_interrupt must immediately release a queue-gated retiring head at the hard retirement deadline instead of waiting for the next _evaluate_handover tick; verify the interrupt-side cleanup and the non-tick retire_at regression. Also confirm no regression in legacy RF/MCS equivalence, receipt counters, and overall test adequacy. Return APPROVE or REQUEST_CHANGES with FACT/INFERENCE/UNVERIFIED, exact path/line evidence, concrete reproduction conditions, severity and open_items. Do not modify code.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/tests/test_link_budget_integration.py",
+        "CODE/leo_sim/tests/test_link_budget_characterization.py",
+        "CODE/leo_sim/tests/test_transmit_retirement.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Explicit APPROVE or REQUEST_CHANGES",
+      "Explicit re-check of F2-RACE/F3/F4/F5/F1-R with line evidence",
+      "Every major finding has exact evidence and reproduction condition",
+      "Open items included"
+    ],
+    "requiredEvidence": [
+      "Exact commit-bound GitHub paths and line references",
+      "Explicit verdict on unconditional deadline sweep and same-time-wake regression",
+      "Explicit verdict on inclusive pending settlement and deadline==horizon regression",
+      "Explicit verdict on MCS attribution excluding geometry/GE",
+      "Explicit verdict on constant-rate GSL pre-dequeue gating and shared-server regressions",
+      "Explicit verdict on _fire_interrupt queue-level retirement cleanup"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "9d352c409a8d64e8e350174740f50c7a5a50d7cb00d6d8d4233cf763469c19c8"
+}
