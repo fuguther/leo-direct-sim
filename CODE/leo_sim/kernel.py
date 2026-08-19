@@ -329,7 +329,7 @@ class UplinkServer(_DRRMixin):
             else:
                 rate_fn = rate_recover_fn = None
                 dur = pkt.bits / k.ul_rate_bps
-            self._service_rate_bps = (rate if rate is not None
+            self._service_rate_bps = (None if rate is not None
                                       else k.ul_rate_bps)
             self._svc = (k.env.now, "gsl_uplink_s")
             self._svc_phase = "waiting_for_link"
@@ -469,7 +469,7 @@ class DownlinkServer(_DRRMixin):
             else:
                 rate_fn = rate_recover_fn = None
                 dur = pkt.bits / k.dl_rate_bps
-            self._service_rate_bps = (rate if rate is not None
+            self._service_rate_bps = (None if rate is not None
                                       else k.dl_rate_bps)
             self._svc = (k.env.now, "gsl_downlink_s")
             self._svc_phase = "waiting_for_link"
@@ -632,7 +632,7 @@ class ISLLink:
             else:
                 rate_fn = rate_recover_fn = None
                 dur = pkt.bits / k.isl_rate_bps
-            self._service_rate_bps = (rate if rate is not None
+            self._service_rate_bps = (None if rate is not None
                                       else k.isl_rate_bps)
             occ = "ctrl_isl_s" if is_ctrl else "isl_s"
             self._svc = (k.env.now, occ)
@@ -1011,6 +1011,11 @@ class Kernel:
             if srv._svc is None:
                 return None
             sampled = getattr(srv, "_service_rate_bps", None)
+            if self.rate_model == "mcs" and sampled is None:
+                # No positive MCS sample exists yet.  Falling back to the
+                # constant-rate argument would fabricate residual service
+                # progress while the server is still waiting for recovery.
+                return None
             if sampled is not None:
                 rate_bps = sampled
             if rate_bps <= 0:
@@ -1226,8 +1231,6 @@ class Kernel:
                     rate_up = False
                 else:
                     dur = pkt.bits / rate
-                    if owner is not None:
-                        owner._service_rate_bps = rate
             retire_t = None
             if (link is not None and link.state == "retiring"
                     and link.retire_at is not None):
@@ -1310,6 +1313,8 @@ class Kernel:
                 # service progress: stamp the phase and start time here.
                 owner._svc_phase = "transmitting"
                 owner._tx_started_at = t0
+                if rate_fn is not None:
+                    owner._service_rate_bps = rate
             if rate_fn is not None:
                 self.mech["mcs_rate_samples"] += 1
             if isinstance(pkt, ControlPacket):
