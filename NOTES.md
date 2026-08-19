@@ -1,5 +1,13 @@
 # NOTES.md
 
+## 2026-08-19（R6-G2b 收口：台账置 fixed）
+
+- #51（governance symlink 词法根边界）复核两轮收敛（第 1 轮 REQUEST_CHANGES → 修复
+  → 第 2 轮 APPROVE），全量 402 pytest；本次把台账 R6-G2b 由 open(follow-up) 收口为 fixed。
+- 口径：#48 记的 follow-up「只扫描 project_root 内用户可控后缀分量」由 #51 实现（lexical
+  project_root 边界 + containment 用解析根）；「或只收相对路径」为备选方案未采纳，正式流程
+  仍可用绝对路径（不被系统级 symlink 误拒）。
+
 ## 2026-08-19（旧平台设计深审：新平台「忘记/想不到/做得不如」）
 
 - 产出：`ANALYSIS/LEGACY-DESIGN-AUDIT-20260819.md`（只读审计，未改平台代码）。
