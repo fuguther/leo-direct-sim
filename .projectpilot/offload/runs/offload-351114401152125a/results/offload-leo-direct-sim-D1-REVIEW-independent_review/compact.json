@@ -1,0 +1,85 @@
+{
+  "taskId": "offload:leo-direct-sim:D1-REVIEW:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。D1 的 RF/MCS 公式、snapshot 除零保护、receipt 接线及 transmission-start 后的 GE/geometry/deadline/retirement race 静态上基本成立；但 active GSL 零 MCS 速率在进入 _transmit 前即被过滤，退化为 time_step 轮询，可在 deadline 位于下一 tick 前且 horizon 更早结束时漏掉应有 deadline fate。授权 D1 tests 未实际覆盖 GSL 零速率，因此该缺陷未被捕获。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "FACT: active GSL 零 MCS rate 在 Uplink._pick/Downlink._servable 阶段即被过滤，绕过 _transmit 的 certified rate-recovery/deadline/retirement 精确竞速并退化为 time_step polling。INFERENCE: 当 deadline 位于当前时刻与下一 tick 之间且 horizon 早于该 tick，可进入 stop-close 而未获得 DATA_DEADLINE_EXPIRED。该问题阻塞 D1 gate。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L270-L325",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L395-L455",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L515-L650",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1170-L1345",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1365-L1450",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L2075-L2145",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L45-L90"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "FACT: 授权 D1 integration tests 的 zero-rate/recovery 场景实际都通过 isl_range_fn 制造，所谓 endpoint FIFO zero-rate 测试没有让 GSL slant 进入零速率区间。INFERENCE: 当前测试无法捕获 F1，也未覆盖 GSL deadline-before-next-tick、retirement、snapshot、legal-mask 或 combined race。该测试缺口随 F1 一并阻塞放行。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/tests/test_link_budget_integration.py#L1-L105",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/tests/test_link_budget_integration.py#L100-L210",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L45-L90"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "summary": "FACT: 设计稿称 constant 模式忽略 RF，但 config 无条件验证 mcs_table/三套 RF，Kernel 也无条件解析 RF 并计算 MCS range；现有测试明确接受这种严格行为。INFERENCE: constant 的服务时序未见改变，但 D1 已扩大 legacy constant arm 的配置影响面。非阻塞。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L45-L90",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/config.py#L520-L565",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L740-L780",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/tests/test_link_budget_integration.py#L1-L105"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "FACT: snapshot residual-service helper guards rate_bps<=0 before division；receipt requested/effective/counter verification 已包含 rate_model、mcs 和 mcs_rate_samples；_transmit 在真实 service start 后完整竞争 geometry、GE、deadline 与 retirement。UNVERIFIED: 授权 D1 test file 未动态覆盖这些组合边界。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L930-L1125",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1170-L1345",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/receipt.py#L35-L85",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/receipt.py#L120-L180",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/receipt.py#L1000-L1075"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "将 active GSL zero-rate 的等待从 time_step polling 改成保持 packet queued 的精确 recovery/deadline/retirement 事件调度，同时不得阻塞同一 shared GSL server 上其他可服务 endpoint。",
+    "新增 GSL zero-rate deadline<horizon<next_tick 的回归测试，并分别覆盖 uplink/downlink recovery、deadline、hard-retirement 与 MCS×GE/geometry races。",
+    "新增 snapshot zero-rate 与 downlink deliver legal-mask 测试。",
+    "明确 constant 模式 RF 参数究竟应忽略还是严格校验，并统一 design/config/tests。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L270-L325",
+    "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1170-L1345",
+    "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/tests/test_link_budget_integration.py#L100-L210"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "UNVERIFIED: 原 legacy SimulationRL.py 与设计稿引用的 test_link_budget_characterization.py 不在允许读取路径，因此只能确认当前实现与授权 design/goldens 一致，不能独立证明对原 legacy 源码的完整等价。",
+    "UNVERIFIED: 合同禁止本地 Shell/真实环境执行，本结果为静态 GitHub connector review；未实际运行测试。",
+    "UNVERIFIED: 允许读取范围仅包含 test_link_budget_integration.py，因此无法声明 repository-wide 其他测试是否另有 GSL zero-rate/race 覆盖。",
+    "UNVERIFIED/contract ambiguity: _decide 的 ISL legal mask 排除 MCS=0，但 terminal deliver 分支不检查 downlink MCS 即进入 deliver-only mask；若 deliver 定义为 enqueue-to-downlink 则可成立，若定义为当前物理可发送 action 则需修正。允许路径中的合同不足以唯一判定。"
+  ]
+}
