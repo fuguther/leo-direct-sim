@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "planId": "offload-aaefbf44f6b9495f",
+  "relayManifest": {
+    "planId": "offload-aaefbf44f6b9495f",
+    "projectId": "leo-direct-sim",
+    "backend": "web_chat",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:D2-REVIEW",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "0cff2547c59ca2d8f66d690f6b922d6bf71588b9",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/tests/test_dynamic_topology.py",
+          "CODE/leo_sim/tests/test_holding_queue.py",
+          "ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md"
+        ],
+        "promptHash": "faa34a29d131c51be0dbd4132df769c30c0400c95a28c306c8722706e493acfb"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:D2-REVIEW:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "0cff2547c59ca2d8f66d690f6b922d6bf71588b9",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/tests/test_dynamic_topology.py",
+          "CODE/leo_sim/tests/test_holding_queue.py",
+          "ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md"
+        ],
+        "promptHash": "3e4a48f32e5eaff5ab8343985040ba1614dafd89efa82b3031e634880ea413f6"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "aaefbf44f6b9495f02f6d442673927358a7d56dff3b58c4457b8e1215be341e9"
+  },
+  "sourceBaseCommit": "0cff2547c59ca2d8f66d690f6b922d6bf71588b9",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:D2-REVIEW",
+      "promptHash": "faa34a29d131c51be0dbd4132df769c30c0400c95a28c306c8722706e493acfb",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "0cff2547c59ca2d8f66d690f6b922d6bf71588b9",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/tests/test_dynamic_topology.py",
+          "CODE/leo_sim/tests/test_holding_queue.py",
+          "ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:D2-REVIEW:independent_review",
+      "promptHash": "3e4a48f32e5eaff5ab8343985040ba1614dafd89efa82b3031e634880ea413f6",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "0cff2547c59ca2d8f66d690f6b922d6bf71588b9",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/routing.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/tests/test_dynamic_topology.py",
+          "CODE/leo_sim/tests/test_holding_queue.py",
+          "ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
