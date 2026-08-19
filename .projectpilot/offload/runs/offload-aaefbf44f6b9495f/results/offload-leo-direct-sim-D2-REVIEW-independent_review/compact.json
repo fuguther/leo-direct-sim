@@ -1,0 +1,109 @@
+{
+  "taskId": "offload:leo-direct-sim:D2-REVIEW:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。动态重匹配主骨架、holding 迁移账目和 receipt counter 已接通，但发现 1 个 blocking 与 4 个 major：旧/新同方向 ISL 可并发突破单方向资源约束；旧 cache 的方向指标会错绑新 peer；旧控制包会切换到新广播树；global snapshot 隐藏 retired-link live state；retired link/process 永不回收且绕过 max_entities。专用 dynamic-topology test 在绑定 commit 无法读取，需本地核验。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "Rematch 后旧、新同方向 ISLLink 是可并行运行的独立 server/queue，可突破单方向 transceiver 与 queue-capacity 约束。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L558-L690",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L942-L980",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L38-L70"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "旧 control cache 的 direction-keyed propagation/queue 指标在 peer 重匹配后会被当前 topology 解释成新边指标。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L956-L980",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1747-L1763",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/routing.py#L196-L244"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "Rematch 前生成的控制包到达后使用当前 control_children/current ISL 继续转发，导致单个 snapshot 跨 topology epoch 拼接广播树。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L211-L230",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L976-L980",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1783-L1825",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L55-L70"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "snapshot_global 与 Q0 packet-location index 只遍历当前 self.isls，rematch 后仍服务/排队于 retired ISL 的状态不可见。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L956-L976",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1045-L1090",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1158-L1195",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1202-L1233"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "summary": "每次 peer 变化都会保留旧 ISLLink/process 并创建新对象，未见回收且动态创建不经过初始化 max_entities 检查。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L565-L588",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L827-L839",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L942-L976"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "info",
+      "summary": "Interval horizon 边界、queued-data 到有限 holding 的账目迁移以及 topology receipt requested/effective/counter 基本闭合。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L918-L925",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L948-L968",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/receipt.py#L35-L72",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/receipt.py#L122-L157"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "把 per-direction physical ISL resource 与 peer identity 分离，禁止 retired/new 同方向 server 并行占用；随后补并发与容量回归测试。",
+    "给 control snapshot/cache 的链路指标绑定 peer 或 topology epoch，禁止 rematch 后把旧 direction metric 套到新边。",
+    "给控制包绑定生成时 broadcast-tree/topology epoch，或设计明确的 epoch transition，避免 old packet 按 current tree 转发。",
+    "让 global snapshot/Q0 location 显式覆盖 retired/draining link state，或消除 snapshot 外仍存活的 link state。",
+    "在 retired link drain 后终止并回收 server；动态 topology 创建必须继续遵守 max_entities。",
+    "本地核验缺失的 test_dynamic_topology.py、配置 fail-loud，并将上述五个反例做成 deterministic tests 后运行完整 suite。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L942-L980",
+    "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/routing.py#L196-L244",
+    "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L55-L92"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "UNVERIFIED: CODE/leo_sim/tests/test_dynamic_topology.py 在绑定 commit 通过 GitHub connector 精确读取两次均为 Not Found；本地 Agent 需核验该 commit tree 及设计稿所述 D2 tests 是否实际提交。",
+    "UNVERIFIED: config.py 不在授权路径，无法确认 recompute_interval_s 的 finite/>0/zero rejection、matching enum 与 num_planes/isl_dirs 边界验证。",
+    "UNVERIFIED: model 动态匹配只枚举相邻 east plane，而设计文字写不同面候选；旧 legacy source 未授权，需确认这是否与目标 markovianMatchingTwo 完全等价。",
+    "UNVERIFIED: 本任务禁止本地执行，所有静态反例需由本地 Agent 转成 scripted-geometry regression tests 并实际运行。"
+  ]
+}
