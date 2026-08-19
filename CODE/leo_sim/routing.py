@@ -204,7 +204,12 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
         direction = _dir_of(topo, a, b)
         if direction is None:
             return None
-        value = entry.payload.get("isl_propagation_s", {}).get(direction)
+        rec = entry.payload.get("isl_propagation_s", {}).get(direction)
+        # the advertised metric is valid only for the peer it was measured
+        # on; after a rematch the direction may point at a different peer
+        if not isinstance(rec, dict) or rec.get("peer") != b:
+            return None
+        value = rec.get("value")
         if not isinstance(value, (int, float)) or value < 0:
             return None
         return float(value)
@@ -238,7 +243,11 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
                     qb = None
                 else:
                     dir_ab = _dir_of(topo, a, b)
-                    qb = entry.payload.get("isl_queue_bits", {}).get(dir_ab) if dir_ab else None
+                    rec = (entry.payload.get("isl_queue_bits", {})
+                           .get(dir_ab) if dir_ab else None)
+                    qb = (rec.get("value")
+                          if isinstance(rec, dict) and rec.get("peer") == b
+                          else None)
             if qb is None:
                 return float("inf")  # unknown queue state is not assumed free
             return c + qb / isl_rate_bps

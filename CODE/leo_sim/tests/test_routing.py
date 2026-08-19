@@ -74,11 +74,14 @@ def test_delay_policy_uses_propagation_not_hops():
     topo = _topo(geo)
     cache = _cache_with([
         (1, {"visible_cells": [], "isl_queue_bits": {},
-             "isl_propagation_s": {"E": 100.0 / 299_792.458}},
+             "isl_propagation_s": {"E": {"peer": 2,
+                                         "value": 100.0 / 299_792.458}}},
          0.0, 0.01, 10.0),
         (2, {"visible_cells": [B], "isl_queue_bits": {},
-             "isl_propagation_s": {"W": 100.0 / 299_792.458,
-                                     "S": 10_000.0 / 299_792.458}},
+             "isl_propagation_s": {"W": {"peer": 1,
+                                         "value": 100.0 / 299_792.458},
+                                   "S": {"peer": 0,
+                                         "value": 10_000.0 / 299_792.458}}},
          0.0, 0.01, 10.0),
     ])
     d_hop, _ = routing.choose_next_hop(
@@ -94,11 +97,17 @@ def test_capacity_policy_avoids_advertised_congestion():
     topo = _topo(geo)
     cache = _cache_with([
         (3, {"visible_cells": [B], "isl_queue_bits": {},
-             "isl_propagation_s": {"W": 0.001, "S": 0.001}}, 0.0, 0.01, 10.0),
-        (1, {"visible_cells": [], "isl_queue_bits": {"E": 900_000_000},
-             "isl_propagation_s": {"E": 0.001}}, 0.0, 0.01, 10.0),
-        (2, {"visible_cells": [], "isl_queue_bits": {"E": 0},
-             "isl_propagation_s": {"E": 0.001}}, 0.0, 0.01, 10.0),
+             "isl_propagation_s": {"W": {"peer": 1, "value": 0.001},
+                                   "S": {"peer": 2, "value": 0.001}}},
+         0.0, 0.01, 10.0),
+        (1, {"visible_cells": [],
+             "isl_queue_bits": {"E": {"peer": 3, "value": 900_000_000}},
+             "isl_propagation_s": {"E": {"peer": 3, "value": 0.001}}},
+         0.0, 0.01, 10.0),
+        (2, {"visible_cells": [],
+             "isl_queue_bits": {"E": {"peer": 3, "value": 0}},
+             "isl_propagation_s": {"E": {"peer": 3, "value": 0.001}}},
+         0.0, 0.01, 10.0),
     ])
     dirs, status = routing.choose_next_hop(
         "capacity", 0, B, 1.0, geo, topo, cache, {}, 1e9, lambda km: km / 299_792.458)
@@ -186,7 +195,8 @@ def test_dynamic_topology_requeues_data_from_retired_isl_before_rebuild():
 
     assert k.pending[0] == [pkt]
     assert k.pending[0].queued_bits == pkt.bits
-    assert old_link in k._retired_isls
+    assert old_link not in k._retired_isls
+    assert old_link in k._retired_isls_done
     assert k.isls[0]["E"].peer == 2
 
 

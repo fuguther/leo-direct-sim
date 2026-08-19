@@ -577,6 +577,11 @@ class ISLLink:
         self._svc = None
         self._svc_phase = None  # None | waiting_for_link | transmitting
         self._tx_started_at = None
+        # D2 rematch lifecycle: a replaced link keeps draining its control
+        # queue/in-service packet (retired) and signals `drained` once the
+        # direction slot is physically free again.
+        self.retired = False
+        self.drained = kern.env.event()
         ge_cfg = kern.cfg_links["ge_isl"]
         self.ge = outage.GilbertElliott(
             ge_cfg["mean_good_s"], ge_cfg["mean_bad_s"],
@@ -609,14 +614,50 @@ class ISLLink:
         self.ctrl_area.add(pkt.bits, self.k.env.now)
         self.k._poke(self.wake)
 
+    def _is_drained(self) -> bool:
+        """Nothing left to serve: queues empty and no transmission active."""
+        return (not self.data_q and not self.ctrl_q and self.current is None)
+
     def _run(self):
         k = self.k
         while True:
             self._expire_waiting()
             if not self.ctrl_q and not self.data_q:
+                if self.retired:
+                    # fully drained: release the (sat, direction) slot and
+                    # end this server process — the link object stays alive
+                    # only for stop-time accounting
+                    if not self.drained.triggered:
+                        self.drained.succeed()
+                    return
                 yield self.wake
                 self.wake = k.env.event()
                 continue
+            if not self.retired:
+                busy = [l for l in k._retired_isls
+                        if l.sat == self.sat and l.dir == self.dir
+                        and not l._is_drained()]
+                if busy:
+                    # ONE transceiver per (sat, direction): the new link
+                    # generation must not serve while a retired predecessor
+                    # is still draining on the same physical slot
+                    wait_ev = (simpy.events.AllOf(k.env, [l.drained for l in busy])
+                               | self.wake)
+                    # our own queued packets still expire at their own
+                    # deadlines while we wait for the slot
+                    expiries = [p.generated_at + p.ttl_s for p in self.ctrl_q]
+                    expiries.extend(p.deadline for p in self.data_q
+                                    if p.deadline is not None)
+                    waits = [u for u in expiries
+                             if k.env.now < u <= k.horizon]
+                    if waits:
+                        wait_ev = wait_ev | k.env.timeout(
+                            min(waits) - k.env.now)
+                    yield wait_ev
+                    if self.wake.triggered:
+                        self.wake = k.env.event()
+                    k._purge_drained_retired()
+                    continue
             if not self.available_now():
                 # link down right now: wait for the earliest recovery
                 ups = [k.geometry.next_isl_change(self.sat, self.peer,
@@ -829,12 +870,18 @@ class Kernel:
         self.downlinks = [DownlinkServer(self, s) for s in range(self.num_sats)]
         self.isls: list[dict[str, ISLLink]] = [{} for _ in range(self.num_sats)]
         self._retired_isls: list[ISLLink] = []
+        # drained generations are kept for stop-time area/occupied accounting
+        # only — no queue, no process, no live state
+        self._retired_isls_done: list[ISLLink] = []
         for s in range(self.num_sats):
             for d, n in self.topo[s].items():
                 self.isls[s][d] = ISLLink(self, s, d, n)
                 n_entities += 1
         if n_entities > self.cfg_ex["max_entities"]:
             raise CapExceeded(f"entities {n_entities} > max_entities")
+        self._n_entities_base = n_entities
+        self._isl_dyn_created = 0
+        self._isl_dyn_drained = 0
 
         self.ledger = fates.DataFateLedger()
         self.ctrl_ledger = fates.ControlFateLedger()
@@ -872,9 +919,18 @@ class Kernel:
             "learning_transitions": 0,
             "learning_train_steps": 0,
             "learning_discarded_at_stop": 0,
+            "learning_discarded_at_rematch": 0,
             "holding_queue_overflows": 0,
             "topo_recomputes": 0,
+            # D2 receipt truthfulness: True when the dynamic t=0 matching
+            # already differed from the static topology, even if no interval
+            # recompute happened before the horizon.
+            "topo_dynamic_init": False,
         }
+        if self.cfg_topo["recompute_interval_s"] is not None:
+            static_topo = routing.build_topology(
+                self.geometry, self.num_sats, self.cfg_links["isl_dirs"])
+            self.mech["topo_dynamic_init"] = self.topo != static_topo
         # packets holding an open (not yet closed) learning transition; the
         # horizon close must account for every one of them, never silently
         self._learning_open: set[DataPacket] = set()
@@ -942,7 +998,25 @@ class Kernel:
     def _all_isls(self):
         """Current plus retired links, including queues draining after rematch."""
         return [link for links in self.isls for link in links.values()] + list(
-            self._retired_isls)
+            self._retired_isls) + list(self._retired_isls_done)
+
+    def _purge_drained_retired(self):
+        """Reclaim fully drained retired generations (M5).
+
+        A drained link has no queue, no in-service packet and (once its
+        server notices) no process; it moves to the accounting-only list so
+        long horizons cannot accumulate live entities without bound.
+        """
+        still = []
+        for link in self._retired_isls:
+            if link._is_drained():
+                if not link.drained.triggered:
+                    link.drained.succeed()
+                self._isl_dyn_drained += 1
+                self._retired_isls_done.append(link)
+            else:
+                still.append(link)
+        self._retired_isls = still
 
     def _topology_ticker(self):
         interval = self.cfg_topo["recompute_interval_s"]
@@ -956,6 +1030,19 @@ class Kernel:
         new_topo = routing.build_topology(
             self.geometry, self.num_sats, self.cfg_links["isl_dirs"], t=now)
         old_links = self.isls
+        planned_new = 0
+        for s in range(self.num_sats):
+            for direction, peer in new_topo[s].items():
+                old = old_links[s].get(direction)
+                if old is None or old.peer != peer:
+                    planned_new += 1
+        live = (self._n_entities_base + self._isl_dyn_created
+                - self._isl_dyn_drained)
+        if live + planned_new > self.cfg_ex["max_entities"]:
+            raise CapExceeded(
+                f"dynamic topology would create {planned_new} ISL links "
+                f"({live + planned_new} entities > max_entities "
+                f"{self.cfg_ex['max_entities']})")
         for s in range(self.num_sats):
             for link in old_links[s].values():
                 if new_topo[s].get(link.dir) == link.peer:
@@ -964,7 +1051,22 @@ class Kernel:
                     pkt = link.data_q.popleft()
                     link.data_bits -= pkt.bits
                     link.data_area.remove(pkt.bits, now)
+                    if pkt in self._learning_open:
+                        # the queued forward action was superseded by the
+                        # rematch before any service started; re-deciding it
+                        # with a stale open transition would fail loud, and
+                        # remembering it would fabricate a next state for an
+                        # action that never happened
+                        self._learning_open.discard(pkt)
+                        pkt.learning_state = None
+                        pkt.learning_action = None
+                        pkt.learning_reward = None
+                        self.mech["learning_discarded_at_rematch"] += 1
                     self._hold_packet(s, pkt)
+                link.retired = True
+                # wake a sleeping server so a fully drained link releases
+                # its direction slot immediately instead of dozing forever
+                self._poke(link.wake)
                 self._retired_isls.append(link)
             new_links = {}
             for direction, peer in new_topo[s].items():
@@ -973,11 +1075,13 @@ class Kernel:
                     new_links[direction] = old
                 else:
                     new_links[direction] = ISLLink(self, s, direction, peer)
+                    self._isl_dyn_created += 1
             self.isls[s] = new_links
         self.topo = new_topo
         self._build_routing_structures()
         self._state_version += 1
         self.mech["topo_recomputes"] += 1
+        self._purge_drained_retired()
 
     def _count_data_packet(self):
         """Enforce the trace/data-packet cap.
@@ -1172,6 +1276,22 @@ class Kernel:
             "uplinks": uplinks,
             "downlinks": downlinks,
             "isl_links": isl_links,
+            # live draining generations replaced by a rematch: still real
+            # network state (queued control, in-service packet) until drained
+            "retired_isls": [{
+                "sat": lnk.sat,
+                "dir": lnk.dir,
+                "peer": lnk.peer,
+                "data_bits": lnk.data_bits,
+                "ctrl_bits": lnk.ctrl_bits,
+                "ctrl_q": [c.iid for c in lnk.ctrl_q],
+                "in_service": (
+                    {"pid": lnk.current.pid}
+                    if isinstance(lnk.current, DataPacket)
+                    else {"iid": lnk.current.iid}
+                    if lnk.current is not None else None),
+                "svc": _svc_state(lnk),
+            } for lnk in self._retired_isls],
             "gsl_ge": gsl_ge,
             "in_flight": {
                 pid: {"pid": pid, "kind": v["kind"], "sat": v["sat"],
@@ -1217,12 +1337,13 @@ class Kernel:
                     found[pkt.pid] = ("downlink", sat)
             if isinstance(srv.current, DataPacket):
                 found[srv.current.pid] = ("in_service", sat)
-        for sat, links in enumerate(self.isls):
-            for link in links.values():
-                for pkt in link.data_q:
-                    found[pkt.pid] = ("isl", sat)
-                if isinstance(link.current, DataPacket):
-                    found[link.current.pid] = ("in_service", sat)
+        for link in self._all_isls():
+            # current AND draining retired generations: a packet in service
+            # on a replaced link is still real network state
+            for pkt in link.data_q:
+                found[pkt.pid] = ("isl", link.sat)
+            if isinstance(link.current, DataPacket):
+                found[link.current.pid] = ("in_service", link.sat)
         for value in self._in_flight.values():
             pkt = value["pkt"]
             if isinstance(pkt, DataPacket):
@@ -1236,9 +1357,8 @@ class Kernel:
         for packets_by_cell in (srv.queues for srv in self.downlinks):
             for queue in packets_by_cell.values():
                 packets.update({p.pid: p for p in queue})
-        for links in self.isls:
-            for link in links.values():
-                packets.update({p.pid: p for p in link.data_q})
+        for link in self._all_isls():
+            packets.update({p.pid: p for p in link.data_q})
         for packets_at_sat in self.pending:
             packets.update({p.pid: p for p in packets_at_sat})
         return packets
@@ -1746,11 +1866,16 @@ class Kernel:
     # --------------------------------------------------------------- control
     def _advertise(self, sat: int):
         self.ctrl_seq += 1
-        isl_bits = {d: link.data_bits + link.ctrl_bits
+        # metrics are bound to the CURRENT peer identity: after a rematch an
+        # old advertisement must read as "unknown" for the new edge, never be
+        # reinterpreted as the new peer's metric (D2 review M2)
+        isl_bits = {d: {"peer": link.peer,
+                        "value": link.data_bits + link.ctrl_bits}
                     for d, link in self.isls[sat].items()}
         isl_prop = {
-            d: model.propagation_delay_s(
-                self.geometry.isl_range_km(sat, link.peer, self.env.now))
+            d: {"peer": link.peer,
+                "value": model.propagation_delay_s(
+                    self.geometry.isl_range_km(sat, link.peer, self.env.now))}
             for d, link in self.isls[sat].items()
         }
         serve = sorted(c for c, ep in self.endpoints.items()
@@ -2288,8 +2413,13 @@ class Kernel:
                 t_next = self.env.peek()
                 if t_next > self.horizon or t_next == math.inf:
                     break
+                v_before = self._state_version
                 self.env.step()
-                self._state_version += 1
+                # exactly one version bump per event step: handlers that
+                # already bumped (topology recompute, plan application)
+                # count as this step's bump
+                if self._state_version == v_before:
+                    self._state_version += 1
                 events += 1
                 if events > self.cfg_ex["max_events"]:
                     raise CapExceeded("max_events exceeded")
@@ -2372,7 +2502,9 @@ class Kernel:
             "ge": self.ge_enabled and (
                 self.mech["ge_gsl_queries"] + self.mech["ge_isl_queries"] > 0),
             "mbb": self.mech["mbb_events"] > 0,
-            "dynamic_topology": self.mech["topo_recomputes"] > 0,
+            "dynamic_topology": (
+                self.mech["topo_recomputes"] > 0
+                or self.mech["topo_dynamic_init"]),
             "learning": False,
             "ge_gsl_queries": self.mech["ge_gsl_queries"],
             "ge_isl_queries": self.mech["ge_isl_queries"],
