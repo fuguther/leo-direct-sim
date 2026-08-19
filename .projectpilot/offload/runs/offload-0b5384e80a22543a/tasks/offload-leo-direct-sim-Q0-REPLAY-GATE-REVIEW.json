@@ -1,0 +1,57 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:Q0-REPLAY-GATE-REVIEW",
+    "title": "Q0 execution replay gate cold-start review",
+    "goal": "Review commit a81a16563758890115a258556edf6d8c87884e02 read-only. Determine whether q0_replay_expected/q0_execution_audit and verify_q0_replay correctly distinguish plan insertion from real service start, preserve atomicity, avoid false positives across repeated packet actions, and export sufficient evidence. Check actual code paths in CODE/leo_sim/kernel.py and CODE/leo_sim/tests/test_q0_contract.py. Return APPROVE or REQUEST_CHANGES. Every finding must cite path and line range, distinguish FACT/INFERENCE/UNVERIFIED, and state whether it blocks using this gate as a first-stage Q0 execution check. Do not modify code.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "a81a16563758890115a258556edf6d8c87884e02",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/q0.py",
+        "CODE/leo_sim/tests/test_q0_contract.py",
+        "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Explicit APPROVE or REQUEST_CHANGES",
+      "Concrete path/line findings",
+      "Open items and scope boundary"
+    ],
+    "requiredEvidence": [
+      "Exact file paths and line references",
+      "Reasoning from code to replay-gate consequence"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "581abfe002bc9865075ef31078a9763570b5561f82719bbc7bdd6d7606ede476"
+}
