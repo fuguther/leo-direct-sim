@@ -591,11 +591,15 @@ class ISLLink:
     queued data when the link next goes idle; a packet in service is never
     interrupted). Availability is re-checked at every use."""
 
-    def __init__(self, kern, sat, direction, peer):
+    def __init__(self, kern, sat, direction, peer, gen=0):
         self.k = kern
         self.sat = sat
         self.dir = direction
         self.peer = peer
+        # monotone per-satellite-link generation id: rematch ordering.  The
+        # one-transceiver gate must wait only for OLDER generations, never
+        # for younger retired ones (that would deadlock G0 against G1).
+        self.gen = gen
         self.data_q: deque[DataPacket] = deque()
         self.ctrl_q: deque[ControlPacket] = deque()
         self.data_bits = 0
@@ -659,35 +663,46 @@ class ISLLink:
                     # only for stop-time accounting
                     if not self.drained.triggered:
                         self.drained.succeed()
+                    # Reclaim immediately so a later rematch sees the
+                    # released slot in its entity-cap accounting even when
+                    # no successor generation is waiting on this slot.
+                    k._purge_drained_retired()
                     return
                 yield self.wake
                 self.wake = k.env.event()
                 continue
-            if not self.retired:
-                busy = [l for l in k._retired_isls
-                        if l.sat == self.sat and l.dir == self.dir
-                        and not l._is_drained()]
-                if busy:
-                    # ONE transceiver per (sat, direction): the new link
-                    # generation must not serve while a retired predecessor
-                    # is still draining on the same physical slot
-                    wait_ev = (simpy.events.AllOf(k.env, [l.drained for l in busy])
-                               | self.wake)
-                    # our own queued packets still expire at their own
-                    # deadlines while we wait for the slot
-                    expiries = [p.generated_at + p.ttl_s for p in self.ctrl_q]
-                    expiries.extend(p.deadline for p in self.data_q
-                                    if p.deadline is not None)
-                    waits = [u for u in expiries
-                             if k.env.now < u <= k.horizon]
-                    if waits:
-                        wait_ev = wait_ev | k.env.timeout(
-                            min(waits) - k.env.now)
-                    yield wait_ev
-                    if self.wake.triggered:
-                        self.wake = k.env.event()
-                    k._purge_drained_retired()
-                    continue
+            busy = [l for l in k._retired_isls
+                    if l.sat == self.sat and l.dir == self.dir
+                    and l.gen < self.gen and not l._is_drained()]
+            if busy:
+                # ONE transceiver per (sat, direction): every generation —
+                # retired or not — must wait for all OLDER generations on
+                # the same physical slot to drain before it transmits its
+                # own queued packets.  Without this, a second rematch that
+                # retires an already-gated successor lets that successor
+                # skip the gate (it now sees retired=True) and transmit
+                # concurrently with an even older generation still in
+                # service; gating on `not self.retired` alone would also
+                # deadlock two retired generations waiting on each other,
+                # so the wait list is ordered by generation id.
+                wait_ev = (simpy.events.AllOf(k.env, [l.drained for l in busy])
+                           | self.wake)
+                # our own queued packets still expire at their own
+                # deadlines while we wait for the slot
+                expiries = [p.generated_at + p.ttl_s for p in self.ctrl_q]
+                expiries.extend(p.deadline for p in self.data_q
+                                if p.deadline is not None)
+                waits = [u for u in expiries
+                         if k.env.now < u <= k.horizon]
+                if waits:
+                    wait_ev = wait_ev | k.env.timeout(
+                        min(waits) - k.env.now)
+                yield wait_ev
+                if self.wake.triggered:
+                    self.wake = k.env.event()
+                k._purge_drained_retired()
+                continue
+
             if not self.available_now():
                 # link down right now: wait for the earliest recovery
                 ups = [k.geometry.next_isl_change(self.sat, self.peer,
@@ -904,9 +919,12 @@ class Kernel:
         # drained generations are kept for stop-time area/occupied accounting
         # only — no queue, no process, no live state
         self._retired_isls_done: list[ISLLink] = []
+        self._isl_gen_seq = 0
         for s in range(self.num_sats):
             for d, n in self.topo[s].items():
-                self.isls[s][d] = ISLLink(self, s, d, n)
+                self.isls[s][d] = ISLLink(
+                    self, s, d, n, gen=self._isl_gen_seq)
+                self._isl_gen_seq += 1
                 n_entities += 1
         if n_entities > self.cfg_ex["max_entities"]:
             raise CapExceeded(f"entities {n_entities} > max_entities")
@@ -988,6 +1006,18 @@ class Kernel:
             self.env.process(self._pending_ticker(s))
         self.env.process(self._horizon_closer())
 
+    def _live_entity_count(self) -> int:
+        """Total live entities for the max_entities fail-closed gate.
+
+        Base entities (satellite servers + initial ISL links) plus lazy
+        endpoints plus live dynamic ISL generations.  Every runtime creator
+        — lazy endpoint activation and dynamic topology rematch — must use
+        this single formula, or the two can each pass their own check while
+        the combined live count exceeds the configured cap.
+        """
+        return (self._entity_base + len(self.endpoints)
+                + self._isl_dyn_created - self._isl_dyn_drained)
+
     def _ensure_endpoint(self, cell: str) -> TrafficEndpoint:
         """Create a trace cell's endpoint the first time it becomes active.
 
@@ -999,10 +1029,9 @@ class Kernel:
         ep = self.endpoints.get(cell)
         if ep is not None:
             return ep
-        if len(self.endpoints) + self._entity_base >= self.cfg_ex["max_entities"]:
+        if self._live_entity_count() >= self.cfg_ex["max_entities"]:
             raise CapExceeded(
-                f"entities {len(self.endpoints) + self._entity_base + 1} "
-                f"> max_entities")
+                f"entities {self._live_entity_count() + 1} > max_entities")
         ep = TrafficEndpoint(cell)
         self.endpoints[cell] = ep
         self.env.process(self._endpoint_ticker(ep))
@@ -1084,14 +1113,18 @@ class Kernel:
         new_topo = routing.build_topology(
             self.geometry, self.num_sats, self.cfg_links["isl_dirs"], t=now)
         old_links = self.isls
+        # Reclaim drained generations before the cap check: a direction that
+        # was removed may already have fully drained with no successor
+        # waiting, and counting it as live here would spuriously fail a
+        # later re-add at the cap boundary.
+        self._purge_drained_retired()
         planned_new = 0
         for s in range(self.num_sats):
             for direction, peer in new_topo[s].items():
                 old = old_links[s].get(direction)
                 if old is None or old.peer != peer:
                     planned_new += 1
-        live = (self._n_entities_base + self._isl_dyn_created
-                - self._isl_dyn_drained)
+        live = self._live_entity_count()
         if live + planned_new > self.cfg_ex["max_entities"]:
             raise CapExceeded(
                 f"dynamic topology would create {planned_new} ISL links "
@@ -1128,7 +1161,9 @@ class Kernel:
                 if old is not None and old.peer == peer:
                     new_links[direction] = old
                 else:
-                    new_links[direction] = ISLLink(self, s, direction, peer)
+                    new_links[direction] = ISLLink(
+                        self, s, direction, peer, gen=self._isl_gen_seq)
+                    self._isl_gen_seq += 1
                     self._isl_dyn_created += 1
             self.isls[s] = new_links
         self.topo = new_topo

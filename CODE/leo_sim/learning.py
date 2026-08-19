@@ -1271,9 +1271,11 @@ def build_observation(contract: str, sat: int, cache, now: float, topo,
         if not entries:
             return _finish(np.concatenate(
                 [own, np.zeros(ORIGIN_FEATURES), [0.0]]))
-        freshest = min(entries.values(), key=lambda e: e.aoi(now))
+        freshest_o, freshest = min(
+            entries.items(), key=lambda oe: oe[1].aoi(now))
         return _finish(np.concatenate(
-            [own, _origin_features(freshest, now, isl_queue_cap, topo, sat),
+            [own, _origin_features(freshest, now, isl_queue_cap, topo,
+                                   freshest_o),
              [1.0]]))
 
     if contract == "C6":
@@ -1286,11 +1288,14 @@ def build_observation(contract: str, sat: int, cache, now: float, topo,
         return _finish(np.concatenate([own] + blocks))
 
     if contract == "C7":
-        ordered = sorted(entries.values(), key=lambda e: e.aoi(now))
+        ordered = sorted(entries.items(), key=lambda oe: oe[1].aoi(now))
         blocks = []
-        for e in ordered[:C7_MAX_ENTRIES]:
+        for o, e in ordered[:C7_MAX_ENTRIES]:
+            # keep each entry's advertisement origin: peer-bound queue bits
+            # must be validated against the peer the entry was measured on
+            # (topo[origin]), never against the root satellite's own edges
             blocks.append(np.concatenate(
-                [_origin_features(e, now, isl_queue_cap, topo, sat), [1.0]]))
+                [_origin_features(e, now, isl_queue_cap, topo, o), [1.0]]))
         while len(blocks) < C7_MAX_ENTRIES:
             blocks.append(np.zeros(ORIGIN_FEATURES + 1))
         return _finish(np.concatenate([own] + blocks))

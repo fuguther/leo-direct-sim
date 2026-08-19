@@ -6,6 +6,7 @@ control draining and Q0 state-version staleness on recompute.
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from CODE.leo_sim import kernel, learning, receipt
 from CODE.leo_sim.tests.helpers import StaticGeometry, cell, make_cfg, row
@@ -165,3 +166,181 @@ def test_dynamic_t0_matching_counts_as_effective_without_recompute():
     assert mc["topo_dynamic_init"] is True
     assert mc["topo_recomputes"] == 1
     assert res["mechanisms"]["effective"]["dynamic_topology"] is True
+
+
+class _AlwaysAvailGeo(_DrainGeo):
+    """Every rematch generation is physically available, so lifecycle tests
+    focus purely on the transceiver/drain/reclaim ordering."""
+
+    def isl_available(self, a, b, t):
+        return True
+
+
+def _triple_rematch_geometry():
+    """0:E passes 1 -> 2 -> 3 at t=0.5 / t=1.0 (three generations)."""
+
+    def at(sat, dirs, t):
+        if t < 0.5:
+            nb = {0: {"E": 1}, 1: {"W": 0}}
+        elif t < 1.0:
+            nb = {0: {"E": 2}, 2: {"W": 0}}
+        else:
+            nb = {0: {"E": 3}, 3: {"W": 0}}
+        return {d: n for d, n in nb.get(sat, {}).items() if d in dirs}
+
+    return _AlwaysAvailGeo(4, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+                           neighbors_at_fn=at)
+
+
+def _step_run_checking_transceiver(k):
+    """Step the environment to the horizon, asserting after every step that
+    at most one generation holds a (sat, direction) transceiver in service."""
+    import math
+    while True:
+        t_next = k.env.peek()
+        if t_next > k.horizon or t_next == math.inf:
+            break
+        k.env.step()
+        active = []
+        for s in range(k.num_sats):
+            for d, link in k.isls[s].items():
+                if link._svc is not None:
+                    active.append((s, d))
+        for link in k._retired_isls:
+            if link._svc is not None:
+                active.append((link.sat, link.dir))
+        assert len(active) == len(set(active)), \
+            f"transceiver overlap on (sat,dir) at t={k.env.now}: {active}"
+
+
+def test_continuous_rematch_never_overlaps_transceiver():
+    """G0 -> G1 -> G2: a second rematch retires an already-gated successor;
+    it must still wait for the older generation instead of starting to
+    transmit while G0 is in service (one transceiver per (sat, direction))."""
+    geo = _triple_rematch_geometry()
+    cfg = make_cfg({
+        "scenario": {"num_satellites": 4, "num_planes": 1,
+                     "duration_s": 8.0},
+        "topology": {"recompute_interval_s": 0.5},
+        # 8000 bits / 4000 bps = 2s per control service, long enough for the
+        # rematches at t=0.5 and t=1.0 to overlap the older generation's
+        # in-service transmission.
+        "links": {"isl_rate_mbps": 0.004},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    cps = [kernel.ControlPacket(i + 1, 0, 1, 0.0, 10.0, 1, 8_000, {})
+           for i in range(3)]
+    for cp in cps:
+        k.ctrl_ledger.register(cp.iid, cp.bits)
+    # G0 is queued now; G1/G2 are injected right after their rematch tick at
+    # t=0.5 / t=1.0 (the ticker was created before these injectors, so it
+    # recomputes first at the shared instant and isls[0]["E"] is the new gen).
+    k.isls[0]["E"].put_ctrl(cps[0])
+
+    def injector(at_t, cp):
+        def proc():
+            yield k.env.timeout(max(0.0, at_t - k.env.now))
+            k.isls[0]["E"].put_ctrl(cp)
+        return k.env.process(proc())
+
+    injector(0.5, cps[1])
+    injector(1.0, cps[2])
+
+    _step_run_checking_transceiver(k)
+
+    # every generation eventually transmitted on the single physical slot
+    assert all(cp.received_at is not None for cp in cps)
+    # two rematches retire four generations (0:E plus each reverse 1:W/2:W);
+    # every one drained and must be reclaimed
+    assert k._isl_dyn_drained == 4
+    assert k._retired_isls == []
+
+
+def test_entity_cap_counts_lazy_endpoint_and_dynamic_isl_together():
+    """A rematch that would exceed max_entities must fail closed even when
+    the over-cap entity is a lazy endpoint, not an ISL."""
+    def at(sat, dirs, t):
+        if t < 0.5:
+            nb = {0: {"E": 1}, 1: {"W": 0}}
+        else:
+            nb = {0: {"E": 2}, 2: {"W": 0}}
+        return {d: n for d, n in nb.get(sat, {}).items() if d in dirs}
+
+    geo = _DrainGeo(3, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+                    neighbors_at_fn=at)
+    cfg = make_cfg({
+        "scenario": {"num_satellites": 3, "num_planes": 1,
+                     "duration_s": 1.0},
+        "topology": {"recompute_interval_s": 0.5},
+        # base = 3 sats + 2 directed ISLs = 5; one runtime creation (endpoint
+        # or a 2-link replacement) fits, both together must fail closed
+        "execution": {"max_entities": 7},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    assert k._entity_base == 5
+    k._ensure_endpoint(cell(0.0, 0.0))
+    assert k._live_entity_count() == 6
+    with pytest.raises(kernel.CapExceeded):
+        k._recompute_topology(0.5)
+
+
+def test_entity_cap_counts_dynamic_isl_before_lazy_endpoint():
+    """A lazy endpoint must fail closed when the live count is already at
+    max_entities because dynamic ISL additions consumed the budget."""
+    def at(sat, dirs, t):
+        if t < 0.5:
+            nb = {0: {"E": 1}, 1: {"W": 0}}
+        else:
+            nb = {0: {"E": 1, "N": 3}, 1: {"W": 0}, 3: {"S": 0}}
+        return {d: n for d, n in nb.get(sat, {}).items() if d in dirs}
+
+    geo = _DrainGeo(4, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+                    neighbors_at_fn=at)
+    cfg = make_cfg({
+        "scenario": {"num_satellites": 4, "num_planes": 1,
+                     "duration_s": 1.0},
+        "topology": {"recompute_interval_s": 0.5},
+        # base = 4 sats + 2 directed ISLs = 6; two new ISLs fit, an endpoint
+        # on top does not
+        "execution": {"max_entities": 8},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    assert k._entity_base == 6
+    k._recompute_topology(0.5)  # adds 0:N->3 and 3:S->0: live 6 -> 8
+    assert k._live_entity_count() == 8
+    with pytest.raises(kernel.CapExceeded):
+        k._ensure_endpoint(cell(0.0, 0.0))
+
+
+def test_removed_direction_reclaims_drained_generation_without_successor():
+    """A direction removed entirely retires its generation with no successor
+    waiting; when it finishes draining it must be reclaimed promptly instead
+    of lingering as live-counted until a later recompute."""
+    def at(sat, dirs, t):
+        if t < 0.5:
+            nb = {0: {"E": 1}, 1: {"W": 0}}
+        else:
+            nb = {0: {}}
+        return {d: n for d, n in nb.get(sat, {}).items() if d in dirs}
+
+    geo = _DrainGeo(3, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+                    neighbors_at_fn=at)
+    cfg = make_cfg({
+        "scenario": {"num_satellites": 3, "num_planes": 1,
+                     "duration_s": 1.0},
+        "topology": {"recompute_interval_s": 0.5},
+        "execution": {"max_entities": 5},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    old = k.isls[0]["E"]
+    cp = kernel.ControlPacket(1, 0, 1, 0.0, 10.0, 1, 8_000, {})
+    k.ctrl_ledger.register(cp.iid, cp.bits)
+    old.put_ctrl(cp)  # not drained at the rematch instant
+
+    res = k.run()
+    assert res["natural_end"]
+    assert cp.received_at is not None
+    # both the 0:E generation and its reverse 1:W generation were retired;
+    # both drained with no successor and must be reclaimed promptly
+    assert k._isl_dyn_drained == 2
+    assert k._retired_isls == []
