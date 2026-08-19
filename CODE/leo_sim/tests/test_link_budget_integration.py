@@ -648,6 +648,85 @@ def test_mcs_ge_gated_head_zero_rate_not_attributed_to_mcs():
     assert k.uplinks[0].current is None
 
 
+def test_mcs_ge_gated_deliver_decision_not_attributed_to_mcs():
+    """D1 round-5 F4-DECIDE: the _decide() deliver branch must not attribute
+    a zero MCS rate as an MCS hold when the GSL GE is the actual blocker.
+    The GE-gated uplink regression covers the queue/server path only; this
+    covers the decision-level path (GE down + beyond-MCS-range downlink)."""
+    geo = _Scripted(
+        1, neighbors_map={0: {}},
+        visible=lambda s, lat, lon, t: (lat, lon) == BC,
+        slant_range_fn=lambda s, lat, lon, t: (
+            12500.0 if (lat, lon) == BC else 600.0))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "num_satellites": 1},
+        "links": {"rate_model": "mcs", "ge_enabled": True,
+                   "ge_gsl": {"mean_good_s": 0.001,
+                               "mean_bad_s": 1000.0}},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    ep = k._ensure_endpoint(B)
+    ep.links[0] = kernel.Link(0, "active", k.env.now,
+                              interrupt=k.env.event())
+    ge = k._gsl_ge(0, B)
+    ge._bad = True
+    ge._last_t = 0.0
+    ge._next_flip = float("inf")
+    pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    k.ledger.register(pkt.pid, pkt.bits)
+    k._decide(pkt, 0)
+    assert k.mech["mcs_zero_rate_holds"] == 0
+    assert k.pending[0] == [pkt]
+
+
+def test_mcs_downlink_tail_deadline_wakes_server_at_exact_time():
+    """D1 round-5 independent finding 2: the downlink MCS wait must include
+    EVERY queued packet's deadline, not just the head's.  A tail packet with
+    an earlier deadline must expire at the exact deadline, not at the next
+    blind time_step tick."""
+    import math
+    from collections import deque
+
+    geo = _Scripted(
+        1, neighbors_map={0: {}},
+        visible=lambda s, lat, lon, t: (lat, lon) == BC,
+        slant_range_fn=lambda s, lat, lon, t: (
+            12500.0 if (lat, lon) == BC else 600.0))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 1.0, "num_satellites": 1,
+                     "time_step_s": 0.7},
+        "links": {"rate_model": "mcs"},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    ep = k._ensure_endpoint(B)
+    ep.links[0] = kernel.Link(0, "active", k.env.now,
+                              interrupt=k.env.event())
+    p_head = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    p_tail = kernel.DataPacket(2, A, B, 1_000_000, 0.5, 0.0)
+    for p in (p_head, p_tail):
+        k.ledger.register(p.pid, p.bits)
+        p.assigned_sat = 0
+    dl = k.downlinks[0]
+    dl.queues.setdefault(B, deque([p_head, p_tail]))
+    dl.queued_bits += p_head.bits + p_tail.bits
+    dl.area.add(p_head.bits, 0.0)
+    dl.area.add(p_tail.bits, 0.0)
+    k._poke(dl.wake)  # bypassed put(); wake the sleeping server
+
+    expiry_t = None
+    while True:
+        t_next = k.env.peek()
+        if t_next > k.horizon or t_next == math.inf:
+            break
+        k.env.step()
+        if k.ledger._fates.get(2) == "DATA_DEADLINE_EXPIRED":
+            expiry_t = k.env.now
+            break
+    assert expiry_t == pytest.approx(0.5, abs=1e-9)
+    # the no-deadline head stays queued behind the zero MCS rate
+    assert [p.pid for p in dl.queues.get(B, ())] == [1]
+
+
 def test_constant_rate_uplink_ge_gated_head_does_not_pin_shared_server():
     """D1 round-4 F5: constant-rate shared GSL must pre-gate a GE-down head
     exactly like MCS, so the shared server can serve another endpoint.  A is

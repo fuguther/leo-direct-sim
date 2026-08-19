@@ -516,8 +516,13 @@ class DownlinkServer(_DRRMixin):
                     # D1 precise wait: geometry/GE/rate recovery and packet
                     # deadlines all have certified times, so the server wakes
                     # at the exact event instead of blind time_step polling.
-                    heads = [(k.endpoints[c], q[0])
-                             for c, q in self.queues.items() if q]
+                    # all queued packets, not just the head: a tail packet's
+                    # earlier deadline must also create a certified wake, or
+                    # the server would degrade to blind time_step polling and
+                    # expire it late (D1 round-5 independent finding 2)
+                    heads = [(k.endpoints[c], pkt)
+                             for c, q in self.queues.items()
+                             for pkt in q]
                     until, zero_held = k._gsl_wait_until(
                         self.sat, "downlink", heads)
                     if zero_held:
@@ -2281,7 +2286,14 @@ class Kernel:
                 # direction, instead of enqueueing into a queue that cannot
                 # be served; the deadline check above still applies on every
                 # re-decision.
-                self.mech["mcs_zero_rate_holds"] += 1
+                # D1 F4 attribution: only a zero MCS rate with geometry AND
+                # GE up counts as an MCS hold; if the GSL GE is down the
+                # deferral belongs to the outage, not to MCS (receipt
+                # effective.mcs recomputes from this counter).
+                ge_up = (not self.ge_enabled
+                         or not self._gsl_ge(sat, ep.cell).is_down(now))
+                if ge_up:
+                    self.mech["mcs_zero_rate_holds"] += 1
                 self.pending[sat].append(pkt)
                 return
             dl = self.downlinks[sat]
@@ -2330,14 +2342,20 @@ class Kernel:
         legal = []
         for d in cands:
             link = self.isls[sat][d]
-            if self.cfg_links["geometry_loss"] and not self.geometry.isl_available(
-                    sat, link.peer, now):
+            geom_up = (not self.cfg_links["geometry_loss"]
+                       or self.geometry.isl_available(sat, link.peer, now))
+            if not geom_up:
                 unavailable = True
                 continue
             if self.rate_model == "mcs" and self._link_rate(
                     "isl", now, sat, peer=link.peer) <= 0:
                 unavailable = True
-                rate_blocked = True
+                # D1 F4 attribution: an ISL GE outage is the actual blocker
+                # when it overlaps a zero rate; only geometry-up AND GE-up
+                # zero-rate counts as an MCS hold.
+                ge_up = (not self.ge_enabled) or not link.ge.is_down(now)
+                if ge_up:
+                    rate_blocked = True
                 continue
             if link.room(pkt.bits):
                 legal.append(d)
