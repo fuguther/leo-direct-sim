@@ -1,0 +1,61 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:D2-REVIEW-4BFC:rerun:rerun-1ae47eaa-b42",
+    "title": "D2 dynamic topology rework cold-start review (commit 4bfcf80)",
+    "goal": "Review exact commit 4bfcf80 on branch codex/20260819-d2-holding-integration (merged with latest main incl. #28 lazy activation). Re-check the round-1 REQUEST_CHANGES findings: (F1) queued learning-forward packet on rematch must not raise KernelError and its open learning transition must be explicitly discarded; (F2) a replaced link must keep draining control queue/in-service packet with exactly one transceiver per (sat, direction), the new generation must not serve while the retired predecessor is still draining, and fully drained generations must be reclaimed. Also verify: deterministic interval matching + geometry legality; queued data to holding vs control drain consistency and fail-closed accounting; holding queue conservation/FIFO/area; state-version and routing structure rebuilds; entity cap accounting for dynamically created links; learning feature peer binding (isl_queue_bits/isl_propagation_s {peer,value}); receipt counters incl. topo_dynamic_init and learning_discarded_at_rematch; and regression test adequacy. Return APPROVE or REQUEST_CHANGES with FACT/INFERENCE/UNVERIFIED, exact path/line evidence, concrete reproduction conditions, severity and open_items. Do not modify code.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "4bfcf8040317d2bcaa8bb14201087fdbd5d269c5",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/learning.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/routing.py",
+        "CODE/leo_sim/model.py",
+        "CODE/leo_sim/tests/test_dynamic_topology.py",
+        "CODE/leo_sim/tests/test_holding_queue.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Explicit APPROVE or REQUEST_CHANGES",
+      "Explicit re-check of round-1 F1/F2 with line evidence",
+      "Every major finding has exact evidence and reproduction condition",
+      "Open items included"
+    ],
+    "requiredEvidence": [
+      "Exact commit-bound GitHub paths and line references",
+      "Explicit review of drain/reclaim lifecycle and single-transceiver gating"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "c4953828f6f2329aa8c0aa00bf61b49fa997f104f3077609a309a404df126c5f"
+}
