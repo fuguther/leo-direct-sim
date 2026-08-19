@@ -1,0 +1,385 @@
+结论：REQUEST_CHANGES
+
+精确 commit 5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0 的 F2-RACE、F3、F5、F1-R 生产代码修复均可静态确认；F4 指定的 _gsl_wait_until 与 _transmit 两处也已按“geometry + GE 均 up 才归因 MCS”修正。
+
+但是出现一个新的 major 问题：mcs_zero_rate_holds 的同一归因不变量没有覆盖 _decide() 中另外两个增量点。尤其 GSL deliver 决策在 GE-down + MCS-zero 时仍无条件增加 mcs_zero_rate_holds，从而可把 effective.mcs 错误置为 true。现有 GE+zero-rate 回归只覆盖 uplink queue/server 路径，没有覆盖这个 decision-level 路径。因此本轮不能 APPROVE。
+
+1. F2-RACE — PASS
+FACT：UplinkServer 已改为 yield 后无条件 sweep
+
+MCS 无可服务包时先计算精确恢复/截止时间，yield timeout | wake 之后无条件遍历 endpoint queues 执行 _sweep_endpoint_queue()；不再依赖 self.wake.triggered 判断。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L310-L336
+
+因此同时间戳 wake 与 deadline 同时触发时，不会再因为 wake 分支跳过 deadline sweep。
+
+FACT：DownlinkServer 同样无条件 sweep
+
+Downlink MCS wait 后直接执行 _sweep_downlink_queues(self.sat)：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L512-L528
+
+FACT：存在对抗性的 same-timestamp wake 回归
+
+测试使用 time_step=0.7、deadline=1.0，另一个 endpoint 恰在 t=1.0 poke 同一个 shared uplink server，并断言 fate 时间精确为 1.0：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L548-L592
+
+复现条件： zero-MCS uplink head deadline=1.0；blind ticks 为 0.7/1.4；另一个 endpoint 在 1.0 poke shared server。旧条件式 sweep 会可能拖到 1.4；当前实现应在 1.0 清除。
+
+结论：F2-RACE 静态 PASS。
+
+2. F3 — PASS
+FACT：stop-time pending settlement 已使用 inclusive comparator
+
+现在是：
+
+stop_time >= pkt.deadline
+
+而非严格 >：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L2480-L2485
+
+FACT：deadline == horizon 回归存在
+
+测试将 duration/horizon 与 deadline 都设为 1.0，并要求最终 fate 为 DATA_DEADLINE_EXPIRED：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L595-L610
+
+复现条件： packet 因 zero-rate downlink 停留在 pending，deadline=horizon=1.0。若 stop settlement 仍为 >，会落成 IN_SYSTEM_AT_STOP；当前 >= 应正确过期。
+
+结论：F3 静态 PASS。
+
+3. F4 指定修复点 — PASS；但全局归因不变量仍 FAIL
+FACT：_gsl_wait_until 已正确排除 geometry/GE blocker
+
+只有：
+
+geom_up and ge_up and rate <= 0
+
+才将 saw_zero_rate=True。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L1115-L1145
+
+FACT：_transmit 同样正确
+
+先计算 geom_up、ge_up，rate<=0 时只有两者均 true 才增加 mcs_zero_rate_holds：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L1440-L1468
+
+FACT：现有 GE + zero-rate regression 覆盖 uplink queue/server 路径
+
+测试强制 uplink GE bad + rate zero，断言：
+
+mcs_zero_rate_holds == 0
+
+packet 仍在 endpoint queue
+
+uplink server 无 current packet
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L613-L648
+
+4. BLOCKING FINDING F4-DECIDE — _decide() 仍可错误归因 MCS
+FACT
+
+代码自己定义 mcs_zero_rate_holds 的语义是：只有 MCS 而非 geometry/GE 导致 scheduling 或 decision deferral 才计数：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L1013-L1018
+
+但 _decide() 的 GSL deliver 分支只检查：
+
+destination link active；
+
+GSL geometry available；
+
+MCS rate <= 0；
+
+随后直接：
+
+self.mech["mcs_zero_rate_holds"] += 1
+
+没有检查 GSL GE 是否 up。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L2264-L2286
+
+同样，ISL candidate decision 路径检查 geometry 与 MCS rate，但没有检查该 ISL 的 GE 状态；只要 rate_blocked=True，最终也增加 mcs_zero_rate_holds：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L2328-L2365
+
+INFERENCE：这可以直接污染 receipt effective.mcs
+
+receipt 重新计算 effective flag 时，只要：
+
+mcs_rate_samples > 0
+OR mcs_zero_rate_holds > 0
+
+即认定 MCS effective：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/receipt.py#L144-L154
+
+所以以下情况可以产生 false-positive：
+
+具体复现条件：
+
+destination endpoint 与 sat 有 active GSL；
+
+geometry up；
+
+ge_enabled=True 且对应 GSL GE 当前为 down；
+
+slant range 超出 downlink MCS 可行范围，因此 _link_rate("downlink",...) == 0；
+
+packet 进入 _decide(pkt, sat)；
+
+没有其他成功 MCS transmission。
+
+此时 _decide() 仍增加 mcs_zero_rate_holds；随后 receipt 可以报告 effective.mcs=True，尽管 F4 明确要求 GE-down 情况不得归因 MCS。
+
+现有 F4 regression 是直接把 packet 放进 ep.queue 后 poke uplink server，没有覆盖 _decide()：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L630-L648
+
+Severity：major。
+
+这是本轮 REQUEST_CHANGES 的原因。
+
+5. F5 — PASS
+FACT：constant uplink 在 dequeue 前统一检查 geometry + GE
+
+_pick() 的 gating 位于 packet 返回/dequeue 之前，而且不受 rate_model 限制：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L290-L307
+
+FACT：constant downlink 同样 pre-gate
+
+_servable() 在返回 queue head 前检查 geometry 与 GE：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L470-L490
+
+FACT：constant wait paths 均有 recovery timer
+
+Uplink constant branch计算 geometry next-change + GE next-up：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L337-L365
+
+Downlink constant branch亦如此：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L529-L560
+
+FACT：shared-server regressions 存在
+
+Constant uplink：A GE-down 保持 queued，B 必须被同一 shared server 服务：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L651-L695
+
+Constant downlink 对称测试：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L699-L734
+
+FACT：test_transmit_retirement.py 已更新为 queue-level retirement invariants
+
+K1 明确描述 constant pre-dequeue gate 后由 queue-level handover 完成 retirement：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_transmit_retirement.py#L52-L73
+
+K3 验证 retirement pending 时不得提前 deadline-fail：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_transmit_retirement.py#L76-L96
+
+deadline==retire_at 的 queue-level tie regression 仍要求 retirement side-effect 不被吞掉：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_transmit_retirement.py#L137-L180
+
+结论：F5 静态 PASS。
+
+6. F1-R — PASS
+FACT：hard-retirement interrupt 现在直接做 queue-level cleanup
+
+_fire_interrupt 到达 retire_at 后：
+
+succeed interrupt；
+
+找到对应 endpoint/link；
+
+若没有 in-service transmission；
+
+清除所有 assigned_sat == retiring sat；
+
+立即 _release(...)。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L1380-L1405
+
+这关闭了 pre-dequeue gated head 从未进入 _transmit、因而以前只能等 _evaluate_handover 下一 tick 的漏洞。
+
+FACT：非 tick retire_at regression 存在
+
+测试设置：
+
+time_step=0.7
+
+retire_at=1.0
+
+packet 被 GE gate 留在 queue
+
+hard interrupt at 1.0
+
+最终要求 release timestamp 精确等于 1.0，且 packet assigned_sat is None：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L737-L784
+
+结论：F1-R 静态 PASS。
+
+7. Legacy RF/MCS 与 receipt 回归检查
+FACT：legacy RF/MCS characterization goldens 仍保留
+
+包括 1000/2000/4000/6000 km 的离散 MCS golden、单调性及 zero-rate boundary：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_characterization.py#L100-L121
+
+FACT：constant-rate default unaffected regression 仍存在
+
+默认 constant path 要求 packet delivered 且 effective.mcs=False：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L313-L325
+
+FACT / INFERENCE：receipt schema/derivation本身没有看到本轮结构性回归，但上面的 _decide 错误增量会污染 receipt 输入
+
+MCS effective 直接依赖 mcs_zero_rate_holds：
+
+github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/receipt.py#L144-L154
+
+所以 receipt 代码本身未坏，但生产计数的语义仍未满足 F4 全局不变量。
+
+8. Test adequacy / verification status
+
+UNVERIFIED： 按任务合同不得执行 local shell，因此本 Worker 没有实际运行 pytest；以上为精确 commit 的静态代码与回归测试审查。最终动态验证仍应由本地 Agent 执行。
+
+现有测试对 F2/F3/F5/F1-R 的针对性明显增强；主要缺口是：
+
+没有 GE-down + MCS-zero + _decide(deliver) 的 attribution regression；
+
+没有对应 ISL decision-level overlap regression；
+
+F2-RACE 的对抗 same-time-poke regression 是 uplink 版本；Downlink 生产代码已作同样无条件 sweep，但可再补对称测试增强防回归。
+
+建议修复
+
+统一 mcs_zero_rate_holds 的归因条件，而不是只修 _gsl_wait_until / _transmit。至少审计 _decide() 的 GSL deliver 与 ISL forward 两个增量点，确保每次增加时都真正满足本 commit 自己定义的“not geometry/GE”条件，并新增 decision-level GE+zero overlap regression。修复后本地 Agent 应运行目标三个允许测试文件，再做全套允许范围回归。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:D1-REVIEW-5D9A",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。F2-RACE、F3、F5、F1-R 及 F4 的 _gsl_wait_until/_transmit 修复均可静态确认；但 _decide() 的 GSL deliver 和 ISL decision 路径仍可在 GE-down 时增加 mcs_zero_rate_holds，违反“仅 geometry+GE 均 up 时归因 MCS”的全局不变量，并可错误驱动 receipt effective.mcs=True。现有 GE+zero regression 未覆盖该路径。",
+  "findings": [
+    {
+      "id": "F2-RACE",
+      "severity": "info",
+      "summary": "PASS：uplink/downlink MCS wait 后均无条件执行 deadline sweep；存在 uplink 同时间戳 poke 对抗回归。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L310-L336",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L512-L528",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L548-L592"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "PASS：stop-time pending settlement 已使用 stop_time >= pkt.deadline，并有 deadline==horizon 回归。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L2480-L2485",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L595-L610"
+      ]
+    },
+    {
+      "id": "F4-PATCHED-SITES",
+      "severity": "info",
+      "summary": "PASS：_gsl_wait_until 和 _transmit 均只在 geometry 与 GE 同时 up 时归因 zero-rate MCS hold；现有 uplink GE+zero overlap 回归通过静态审查。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L1115-L1145",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L1440-L1468",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L613-L648"
+      ]
+    },
+    {
+      "id": "F4-DECIDE",
+      "severity": "major",
+      "summary": "mcs_zero_rate_holds 全局归因仍不成立：_decide 的 GSL deliver 与 ISL forward rate-blocked 分支增加计数时未检查 GE；GE-down+zero-rate 可被错误归因 MCS，并进一步令 receipt effective.mcs 为 true。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L1013-L1018",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L2264-L2286",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L2328-L2365",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/receipt.py#L144-L154",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L613-L648"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "PASS：constant uplink/downlink 在 dequeue 前执行 availability gates，constant wait paths 有 geometry/GE recovery timer，且 shared-server 与 queue-level retirement regressions 已更新。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L290-L307",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L337-L365",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L470-L490",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L529-L560",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L651-L734",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_transmit_retirement.py#L52-L96",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_transmit_retirement.py#L137-L180"
+      ]
+    },
+    {
+      "id": "F1-R",
+      "severity": "info",
+      "summary": "PASS：_fire_interrupt 在 hard retire instant 对非 in-service retiring link 清除 queue assignment 并立即 release；非 tick retire_at regression 要求精确 t=1.0。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L1380-L1405",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L737-L784"
+      ]
+    },
+    {
+      "id": "LEGACY-RECEIPT",
+      "severity": "info",
+      "summary": "Legacy RF/MCS goldens与 constant-default regression 仍在；receipt 派生逻辑本身未见结构性回归，但其 effective.mcs 会受 F4-DECIDE 的错误 raw counter 污染。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_characterization.py#L100-L121",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L313-L325",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/receipt.py#L144-L154"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "修复并统一所有 mcs_zero_rate_holds 增量点的 attribution contract；重点审计 _decide 的 GSL deliver 与 ISL forward rate-blocked 分支。",
+    "新增 GE-down + MCS-zero 的 decision-level GSL regression，断言 mcs_zero_rate_holds 不增加且 receipt effective.mcs 不被误置 true。",
+    "新增对应 ISL decision-level GE+zero overlap regression；可同时补一个 downlink same-timestamp-wake 对称回归。",
+    "本地 Agent 在修复后运行合同允许范围内的目标测试，并保留动态验证作为最终放行依据。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L290-L365",
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L470-L560",
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L1115-L1145",
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L1380-L1468",
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L2264-L2365",
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L2480-L2485",
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/receipt.py#L144-L154",
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L548-L784",
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_transmit_retirement.py#L52-L180",
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_characterization.py#L100-L121"
+  ],
+  "open_items": [
+    "UNVERIFIED：受任务合同限制，本网页 Worker 未执行 pytest；需本地 Agent 动态运行目标测试。",
+    "F4-DECIDE 必须关闭：确认并修复 _decide 中 GE-down+zero-rate 仍增加 mcs_zero_rate_holds 的归因错误。",
+    "现有 F4 overlap regression 未覆盖 decision-level GSL/ISL 增量路径。"
+  ]
+}
+===END_OFFLOAD_RESULT===
