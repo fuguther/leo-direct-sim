@@ -314,10 +314,21 @@ def test_entity_cap_counts_dynamic_isl_before_lazy_endpoint():
 
 def test_removed_direction_reclaims_drained_generation_without_successor():
     """A direction removed entirely retires its generation with no successor
-    waiting; when it finishes draining it must be reclaimed promptly instead
-    of lingering as live-counted until a later recompute."""
+    waiting; when it finishes draining it must be reclaimed promptly by the
+    ISL server itself (ISLLink._run prompt purge), instead of lingering as
+    live-counted until a later topology recompute.
+
+    The drain is made deterministic: the 8,000-bit control service at 0.004
+    Mbps lasts 2.0 s, the rematch happens at t=1.5 and the next recompute
+    tick is at t=3.0, so the generation drains strictly between two
+    recomputes.  We assert immediately after the rematch that the old
+    generation is still live/retired, then right after the t=2.0 drain step
+    that it was already removed from _retired_isls with _isl_dyn_drained
+    incremented and the live entity count back down -- proof the prompt purge
+    ran, not the recompute-time purge.
+    """
     def at(sat, dirs, t):
-        if t < 0.5:
+        if t < 1.5:
             nb = {0: {"E": 1}, 1: {"W": 0}}
         else:
             nb = {0: {}}
@@ -327,20 +338,52 @@ def test_removed_direction_reclaims_drained_generation_without_successor():
                     neighbors_at_fn=at)
     cfg = make_cfg({
         "scenario": {"num_satellites": 3, "num_planes": 1,
-                     "duration_s": 1.0},
-        "topology": {"recompute_interval_s": 0.5},
+                     "duration_s": 4.0},
+        "topology": {"recompute_interval_s": 1.5},
+        # 8,000 bits / 4,000 bps = 2.0 s of ISL service: the generation is
+        # still mid-service at the t=1.5 rematch and completes at t=2.0,
+        # strictly between the t=1.5 and t=3.0 recompute ticks.
+        "links": {"isl_rate_mbps": 0.004},
         "execution": {"max_entities": 5},
     })
     k = kernel.Kernel(cfg, [], geometry=geo)
     old = k.isls[0]["E"]
     cp = kernel.ControlPacket(1, 0, 1, 0.0, 10.0, 1, 8_000, {})
     k.ctrl_ledger.register(cp.iid, cp.bits)
-    old.put_ctrl(cp)  # not drained at the rematch instant
+    old.put_ctrl(cp)  # in service from t=0 until t=2.0
 
-    res = k.run()
-    assert res["natural_end"]
+    import math
+    prompt_reclaim_seen = False
+    while True:
+        t_next = k.env.peek()
+        if t_next > k.horizon or t_next == math.inf:
+            break
+        k.env.step()
+        now = k.env.now
+        if now == 1.5 and k.env.peek() > 1.5:
+            # last event at the rematch instant: the old generation is still
+            # live/retired and mid-service; only the empty reverse 1:W has
+            # been reclaimed by the rematch purge so far (live = 3 sats +
+            # the still-draining 0:E = 4)
+            assert old in k._retired_isls
+            assert not old._is_drained()
+            assert k._isl_dyn_drained == 1
+            live_at_rematch = k._live_entity_count()
+        if now == 2.0 and k.env.peek() > 2.0:
+            # t=2.0 fires twice: first the transmit completes, then the ISL
+            # server resumes and prompt-purges.  This is the last event at
+            # t=2.0, strictly before the next recompute at t=3.0 -- only the
+            # ISL server's prompt purge could have reclaimed the drained
+            # generation this early.
+            assert old not in k._retired_isls
+            assert k._isl_dyn_drained == 2
+            # live count dropped by exactly the drained 0:E: 3 satellites,
+            # no ISLs, no endpoints
+            assert k._live_entity_count() == live_at_rematch - 1
+            assert k._live_entity_count() == 3
+            prompt_reclaim_seen = True
+
+    assert prompt_reclaim_seen
     assert cp.received_at is not None
-    # both the 0:E generation and its reverse 1:W generation were retired;
-    # both drained with no successor and must be reclaimed promptly
     assert k._isl_dyn_drained == 2
     assert k._retired_isls == []

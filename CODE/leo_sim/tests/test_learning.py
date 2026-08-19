@@ -323,3 +323,19 @@ def test_c5_c7_reject_queue_bits_matching_only_root_edge():
         o = learning.build_observation(contract, 0, c, 6.0, topo, own)
         q = o[learning.OWN_FEATURES]
         assert q == 0.0, f"{contract} must reject a stale-peer record"
+def test_c5_c7_reject_queue_bits_after_direction_removed():
+    """A record whose origin no longer has the advertised direction at all
+    (a rematch deleted it, so topo[origin] has no such key) must read as 0:
+    the stale metric must not be accepted just because no peer is left to
+    mismatch against."""
+    # origin 1 advertised E->{peer 2, value 1000}; after the rematch topo[1]
+    # has no "E" direction at all (peer=None)
+    topo = {0: {"E": 2, "N": 1}, 1: {"W": 0}, 2: {"W": 0}, 3: {"W": 0}}
+    c = _origin_entry_cache(origin=1, peer_claim=2, value=1000)
+    own = _own()
+    for contract in ("C5", "C7"):
+        o = learning.build_observation(contract, 0, c, 6.0, topo, own)
+        q = o[learning.OWN_FEATURES]
+        assert q == 0.0, f"{contract} must reject a removed-direction record"
+
+

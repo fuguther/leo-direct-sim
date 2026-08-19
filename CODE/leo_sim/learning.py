@@ -1007,11 +1007,14 @@ def _peer_bit_value(record, peer: int | None):
 
     New payloads bind each direction to the peer it was measured on
     (``{"peer": p, "value": bits}``); after a rematch the direction may point
-    at a different peer and must read as 0. Legacy plain-int payloads are
-    accepted for backwards-compatible direct test callers.
+    at a different peer, or be removed from the origin's topology entirely
+    (peer is None).  Either way the metric must read as 0: an entry for a
+    direction that no longer exists is stale even though there is no peer
+    left to mismatch against.  Legacy plain-int payloads are accepted for
+    backwards-compatible direct test callers.
     """
     if isinstance(record, dict):
-        if peer is not None and record.get("peer") != peer:
+        if peer is None or record.get("peer") != peer:
             return 0
         value = record.get("value")
         return value if isinstance(value, (int, float)) else 0
