@@ -1,0 +1,103 @@
+{
+  "taskId": "offload:leo-direct-sim:D1-INDEPENDENT-REVIEW:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "最终判定 REQUEST_CHANGES。link-budget 数学、三套 RF、MCS golden 与 5826.78 km ISL 阈值在授权材料内自洽；receipt requested/effective/counter 的结构验证也闭合。但发现 3 个主要语义问题：MCS=0 等待时 Q0 snapshot 会除零且等待态速率可能陈旧；zero-rate packet 在真正开传前已出队，导致 queue_area/queue-state 低估并可阻塞共享 GSL DRR；mcs_rate_samples/control_tx_started 的事件边界早于真实 transmission，使 effective.mcs 可 false-positive/false-negative。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "MCS=0 pre-service wait 时 _service_rate_bps=0，而 snapshot_global 的 waiting_for_link remaining_service_s 直接 bits/rate，存在除零；geometry/GE down 时 positive rate 又可能是未来开传前的陈旧试探值。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L918-L980",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L1160-L1275",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/tests/test_link_budget_integration.py#L131-L150"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "三类 server 均在 MCS zero-rate gate 前先出队并扣除 queue area/bits；服务未开始的等待期因此从队列统计和 ISL control advertisement 消失，共享 GSL server 还可能被 rate-dead endpoint 持有，偏离设计的“排队等待恢复”语义。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L86-L108",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L285-L335",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L397-L455",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L535-L620",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L1520-L1535",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L80-L89"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "mcs_rate_samples 在 geometry/GE availability gate 前对 positive rate 增加，而 zero-rate treatment 不增加；ISL control_tx_started 也在 MCS gate 前增加。receipt 虽能严格重算并拒绝局部伪造，却可能自洽地把未开传 probe 标为 MCS effective，或漏报实际 zero-rate treatment。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L570-L620",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L1160-L1275",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L2135-L2165",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/receipt.py#L35-L78",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/receipt.py#L1032-L1064"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "授权材料内 FSPL/SNR/MCS 量化、三套 RF 参数、golden 和 max_rate_range_km 逆推相互一致；默认 ISL 存在约 5826.78–6000 km 的 geometry-up/MCS-zero 区间，这是预期需要处理的 D1 状态而非公式错误。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/link_budget.py#L86-L175",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/tests/test_link_budget_integration.py#L15-L46",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/model.py#L552-L570"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "geometry provider 的 certifies_change_times 强制门只绑定 geometry_loss；rate_model=mcs 在 geometry_loss=false 时仍可能依赖 next_*_range_under。内建 Constellation 有认证搜索，但非 compose 自定义 provider 会被直接委托，缺少统一 rate-recovery certification gate。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L699-L748",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/model.py#L330-L365",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/model.py#L365-L445"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "合并前修 F1：动态 MCS waiting_for_link 时不要把未承诺或 zero rate 暴露为可除的 service_rate；只在真实 transmitting 开始时固定 rate，并为 snapshot pin 明确的 None/等待态语义。",
+    "合并前修 F2：zero-rate eligibility 应在 dequeue/queue-area remove 前处理；ISL 保持 backlog accounting，GSL rate-dead flow 不应阻塞共享 DRR 对其他 endpoint 的服务。",
+    "合并前修 F3：拆分 MCS probe 与真实 service-start counter；effective.mcs 应绑定真正 treatment 事件；control_tx_started 移到真实 transmit start。",
+    "新增 snapshot-zero-rate、queue-area、two-endpoint GSL DRR、control-only zero-rate、deadline/retirement tie、interrupted pre-service accounting 回归测试。",
+    "本地 Agent 在有权限范围内核对旧 SimulationRL.py/characterization 原始三套 RF provenance，并实际运行 D1 测试集。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/link_budget.py#L110-L175",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/config.py#L510-L556",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L918-L980",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L1129-L1310",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/receipt.py#L1032-L1064",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/tests/test_link_budget_integration.py#L15-L170",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L58-L107"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "合同禁止读取旧 SimulationRL.py 与 characterization test，本轮未独立核验三套 RF 的原始 legacy provenance。",
+    "REMOTE 模式禁止本地 Shell，本轮未实际执行 pytest；需本地 Agent 跑 D1 及相关 snapshot/accounting 回归。",
+    "需用真实 Constellation 或确定性 geometry 量化 downlink zero-rate 在支持配置域中的出现范围，以及 two-endpoint GSL HOL 的实际影响。",
+    "需补 max_rate_range_km 精确阈值点而非仅 ±0.001 km 的浮点边界测试。",
+    "需决定并 pin rate_model=mcs 对自定义 geometry provider 的 certification capability 合同。",
+    "需本地验证 max_events/interrupted 恰发生在 waiting_for_link 时 occupied 是否被错误补记。"
+  ]
+}
