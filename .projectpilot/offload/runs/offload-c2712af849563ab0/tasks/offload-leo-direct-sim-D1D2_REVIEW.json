@@ -1,0 +1,63 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:D1D2_REVIEW",
+    "title": "D1/D2 independent cold-start review",
+    "goal": "Review the read-only semantics of the combined baseline at commit 2bf3858. Verify D1 distance-dependent MCS rates and D2 dynamic topology rematching against the repository contracts, with emphasis on packet conservation, FIFO/zero-rate handling, queue/holding-area accounting, topology retirement, receipt mechanism keys, config validation, and test adequacy. Produce APPROVE or REQUEST_CHANGES; every finding must cite a concrete repo path and line range from the pinned commit and must distinguish FACT, INFERENCE, or UNVERIFIED. Do not modify code.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "2bf385870a06c2aa710cca93b528809b10f9c05e",
+      "paths": [
+        "CODE/leo_sim/link_budget.py",
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/model.py",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/routing.py",
+        "CODE/leo_sim/tests/test_link_budget_integration.py",
+        "CODE/leo_sim/tests/test_routing.py",
+        "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md",
+        "ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Return an explicit verdict APPROVE or REQUEST_CHANGES.",
+      "Each finding is a concrete code path with line anchor and a falsifiable explanation.",
+      "No blocking or major issue is omitted from the open_items section."
+    ],
+    "requiredEvidence": [
+      "Exact file paths and line references from the pinned commit",
+      "Specific tests or code paths that reproduce or rule out each suspected defect"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "05601944f0cabd074478e430c098a8c01d33e85705d5ce856c6a9ddf036dc98c"
+}
