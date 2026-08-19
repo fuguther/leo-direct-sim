@@ -1,5 +1,63 @@
 # NOTES.md
 
+## 2026-08-19（R6-G2b 收口：台账置 fixed）
+
+- #51（governance symlink 词法根边界）复核两轮收敛（第 1 轮 REQUEST_CHANGES → 修复
+  → 第 2 轮 APPROVE），全量 402 pytest；本次把台账 R6-G2b 由 open(follow-up) 收口为 fixed。
+- 口径：#48 记的 follow-up「只扫描 project_root 内用户可控后缀分量」由 #51 实现（lexical
+  project_root 边界 + containment 用解析根）；「或只收相对路径」为备选方案未采纳，正式流程
+  仍可用绝对路径（不被系统级 symlink 误拒）。
+
+## 2026-08-19（旧平台设计深审：新平台「忘记/想不到/做得不如」）
+
+- 产出：`ANALYSIS/LEGACY-DESIGN-AUDIT-20260819.md`（只读审计，未改平台代码）。
+- 方法：先读比对/迁移文档（02-kimi-platform-spec、MIGRATION-BACKLOG、REWARD-DIFF、LINK-BUDGET、
+  TEMPORAL-MULTISTEP），再逐行读旧库 SimulationRL.py（12556 行）+ routing_*/temporal_encoder/link_outage，
+  对照本库 leo_sim kernel/learning/routing/model/config。
+- 结论速览（FACT 已核实）：D1 动态链路速率（B5，未实现）、D3 多步/TD-λ/temporal（M2，只设计稿）、
+  D4 path-credit（M3，未迁）均为既有清单项；**新发现**：D2 动态 ISL 拓扑重匹配、D5 每星模型+FL+CKA、
+  D7 M3 队列动态特征、D10 步进 vs 时间 ε 调度 / stopLoss；D8 per-block 时延三分量为未验证项。
+- 待办：D1 落地、D5 出设计稿、D9 回放持久化升级、D2/D6/D7/D8/D10 记 follow-up（详见报告 §8/§9）。
+- 未动平台；文档在分支 codex/20260819-legacy-design-audit（worktree /tmp/audit-wt-20260819）。
+
+## 2026-08-19 凌晨（P0-2 hop BFS 完成 + 第 5/6 轮审计收口）
+
+- P0-2（hop 策略多源 BFS 替代 Dijkstra）合并 #49：等价验收=acceptance 5 场景
+  ledgers 逐字节一致 + 显式多跳 hop 双端一致（921e51d4…，delivered 均 301）；
+  deepseek 独立复核 APPROVE（50k 随机图差分等价）；全量 400 pytest。
+- R6-P02b（sorted_adj 未预传时仍构建）记 minor follow-up。
+
+## 2026-08-19 凌晨（第 1 阶段启动：R5-G2 修复 + 第 5/6 轮本地审计）
+
+- R5-G2（governance 不绑定 checkpoint 文件）已修复并合并 #47：seal 时校验
+  checkpoint 存在/非 symlink/项目根内/SHA 一致 + metadata pin；glm 子代理
+  第 1 轮 BLOCK（resolve 前 is_symlink 死代码 + metadata 路径错位）→ 修复
+  （resolve 前逐级 symlink 扫描 + 未解析父目录语义 + 对抗测试）→ 第 2 轮
+  PASS（1 minor：macOS 绝对路径 /var symlink 假阳性，记 R6-G2b）。
+- 第 5/6 轮本地审计：routing/control/outage/model/rng/fates/grid/acceptance/
+  comparison/population/trace/experiment_platform 全过，未新增隐藏 bug；
+  台账 R5-G1/G2 fixed、G3 dismissed、R6-G2b open(follow-up)。
+- #48 台账状态更新 PR（R5-G2 fixed + R6-G2b）。
+
+## 2026-08-18 夜 → 08-19 晨（第 0 阶段工作流优化 + 第 4/5 轮收口）
+
+- 工作流优化（0.1–0.5）全部落地：
+  - 0.1 问题台账 `ANALYSIS/FINDINGS-REGISTRY.md`（#45，含 R4A2/R4A3/R4B2/R4C/R5/R6）。
+  - 0.2 审阅轮次上限 3 + 增量审阅 + minor 收敛规则（台账 + 僚机 prompt playbook）。
+  - 0.3 独立审阅改不同模型子代理/Codex 冷启动自审：deepseek 终审 #40 APPROVE（3 minor follow-up）；
+    glm 子代理未交付终稿 → #42 以 R4A4 网页终审 + Codex 自审收敛。
+  - 0.4 僚机调度恢复（ProjectPilot feature/web-agent-offload-backend 9ed0f3e）：死租约 DISPATCHING
+    自动回收为 FAILED + retry 放行；桌面测试 550/550；实测 R4B3/R4A4 重试成功。
+  - 0.5 VM/TF 验证前置清单 `ANALYSIS/VM-TF-VERIFICATION-20260818.md`（#45）。
+- 合并：#40 Q0 快照（A1/A2/A3）、#41 _transmit 退休、#42 checkpoint 契约（R4A2→R4A4 全闭合，
+  384 pytest）、#44 trace deadline=0、#45 工作流 docs。main=4ff7987。
+- Q0 算法选型双路终稿 `ANALYSIS/Q0-ALGO-RESEARCH-20260818.md`：Q0-I=SMDP/DP（tiny）、
+  Q0-F=事件时间 MILP/CP-SAT、min-cost flow 仅松弛、M1 奖励不可作最优性判据。
+- 第 5 轮 Codex 本地挖：R5-G1（csv deadline=0，已修 #44）、R5-G2（governance 不绑定
+  checkpoint 文件，open follow-up）、R5-G3（comparison 资源不等价=已声明范围，dismissed）。
+- 待拍板：PR #43（奖励保留 vs 失败=0）、#25/#26/#28（P1 行为修正）、Q0 合同 §5 五问、
+  R5-G2 与 R6-A1/A2/A3/B2 follow-up、VM/TF 清单实跑。
+
 ## 当前状态
 - 2026-08-17 自主合并留痕（AGENTS.md 授权，全部 CI pytest 绿）：PR #29
   （occupied 停表口径 + expiry 超 horizon 走 stalled）、#34（GE bool 拒绝 +
@@ -12,7 +70,6 @@
 - 2026-08-17 P0-1 几何记忆化缓存：实现 `model.MemoizedGeometry`（精确 t 分槽 LRU，位级等价；组合查询由缓存 ecef 重算；非 Constellation 委托+缓存），kernel 接入。验收：smoke/geometry_loss 两组改前改后 ledgers 逐字节一致；全量 357 passed（+3 测试）；性能：acceptance 3.42→2.97s、dense-oracle 1.07→0.80s、140 星 hop 6.36→5.91s。分支 codex/20260816-geom-cache（commit a34d2d3）已推送，待 Kimi 复核后开 PR。
 - 2026-08-17 夜第 1 轮三方挖问题：GPT 两路（H1 primary/review）完整回收（各 12 条发现，网页抓取留痕 /tmp/gpt_h1_*.txt）；Kimi 独立挖出 49 条观察（输出截断，核心候选已纳入清单）；Codex 本地复现验证确认两条新 bug 并修复（PR #25 downlink 恢复唤醒、PR #26 接入 FIFO 插队，均 355 passed + acceptance PASS，待 Kimi 冷启动复核）。第 1 轮汇总已并入 `ANALYSIS/EXPERT-REVIEW-20260816.md` §G（新发现 G1-1..8、Q0 就绪度 G2、Q0 实验设计 G3、已知清单重分类 G4）。Q0 算法选型调研已派发 GPT（op 8fde67c8…，webResearch）。
 - 2026-08-17 P0-1 几何记忆化缓存：实现 `model.MemoizedGeometry`（精确 t 分槽 LRU，位级等价；组合查询由缓存 ecef 重算；非 Constellation 委托+缓存），kernel 接入。验收：smoke/geometry_loss 两组改前改后 ledgers 逐字节一致；全量 357 passed（+3 测试）；性能：acceptance 3.42→2.97s、dense-oracle 1.07→0.80s、140 星 hop 6.36→5.91s。分支 codex/20260816-geom-cache（commit a34d2d3）已推送，待 Kimi 复核后开 PR。
-- 2026-08-16 夜：夜间自主工作启动。起点 main c8c84f56（#24 已合并），工作区干净，全量 354 passed。队列：P0-1 几何记忆化缓存 → P0-2 hop BFS → P1-3 未来端点泄漏 → P1-4 MBB 积压 → P2 设计稿/分析。
 - 2026-08-16 夜：夜间自主工作启动。起点 main c8c84f56（#24 已合并），工作区干净，全量 354 passed。队列：P0-1 几何记忆化缓存 → P0-2 hop BFS → P1-3 未来端点泄漏 → P1-4 MBB 积压 → P2 设计稿/分析。
 - 2026-08-16 等价优化第一批（PR 待合并）：①oracle_targets 仅 oracle 策略时计算（学习/非 oracle 路径不再每次白扫服务星）；②决策快照 policy 标签改用真实 algorithm（qlearning 不再误标 ddqn）；③路由反向邻接/排序邻接表初始化时预计算（不再每次决策重建）。验收：改前/改后同配置 smoke 的 ledgers_sha256 逐字节一致（fee84a04…），全量 350 passed。下一步：几何记忆化缓存（P0-1）、hop 用 BFS（B-2）、VM 学习臂 profile。
 - 2026-08-16 学习动作空间去预裁剪（用户拍板问题7选A，PR 待合并）：kernel 学习路径 best_only 恒 False，DDQN 动作空间=全部本地合法方向（不再被启发式最优预裁剪）；新增回归测试（E 最优/W 合法更远场景断言掩码同时含 E、W），修复前失败/修复后通过；Kimi 独立复核通过（无 blocking/major）。顺带修正 test_routing 因本次改动而过时的命名/注释（best_only 现为 routing 库参数，kernel 学习路径不再使用）。本地 350 passed。

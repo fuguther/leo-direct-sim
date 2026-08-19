@@ -75,6 +75,18 @@ def test_learning_eval_requires_sha_bound_checkpoint():
                          "checkpoint_path": "/tmp/model.keras",
                          "checkpoint_sha256": "bad"},
         })
+    # DDQN eval with valid checkpoint SHA but no metadata SHA pin must fail
+    # closed (the metadata file is the only contract anchor for opaque
+    # model artifacts).
+    with pytest.raises(config.ConfigError,
+                       match="checkpoint_metadata_sha256"):
+        config.resolve_config({
+            "routing": {"policy": "hop", "learning_enabled": True},
+            "control_plane": {"enabled": True},
+            "learning": {"algorithm": "ddqn", "mode": "eval",
+                         "checkpoint_path": "/tmp/model.keras",
+                         "checkpoint_sha256": "ab" * 32},
+        })
 
 
 def test_bool_rejected_for_numeric():

@@ -139,6 +139,33 @@ def test_future_endpoints_not_prebuilt_and_no_preposition_leak():
     assoc = [e for e in res["handover"]["events"] if e["type"] == "associate"]
     assert assoc[0]["endpoint"] == a
     assert res["access"]["preposition_grants"] == 0
+
+
+def test_downlink_wakes_on_geometry_recovery_after_temporary_outage():
+    """A downlink packet queued during a temporary GSL outage must be served
+    when the satellite becomes visible again, even with a coarse time step
+    and no further put() poking the server."""
+    a, b = cell(0.0, 0.0), cell(0.0, 10.0)
+    # sat0 visible on [0, 0.15) and [0.6, inf); GSL down in [0.15, 0.6)
+    geo = StaticGeometry(
+        2,
+        neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+        visible=lambda s, lat, lon, t: t < 0.15 or t >= 0.6,
+        isl_km=1000.0,
+        gsl_changes=[0.15, 0.6],
+    )
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "num_satellites": 2,
+                     "num_planes": 1, "time_step_s": 1.0},
+        "access": {"uplink_rate_mbps": 200.0, "downlink_rate_mbps": 50.0},
+        "links": {"geometry_loss": False},
+    })
+    res = kernel.run_simulation(
+        cfg, [row(1, 0.0, a, b), row(2, 0.0, a, b)], geometry=geo)
+    assert res["natural_end"] is True
+    # pkt1 completes service before the outage; pkt2 waits through it and is
+    # delivered after recovery (regression: it used to sleep until horizon
+    # because no geometry-recovery timer/wake existed)
     assert res["fates"][1] == "DELIVERED"
     assert res["fates"][2] == "DELIVERED"
 

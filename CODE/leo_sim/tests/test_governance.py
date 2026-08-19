@@ -1,5 +1,6 @@
 """Tests for the V2 governance integration surface."""
 import json
+import os
 
 import hashlib
 import pytest
@@ -222,3 +223,176 @@ def test_formal_population_gravity_intent_binds_input_sha(tmp_path):
     request["config"]["demand"]["population_path"] = "../outside.tif"
     with pytest.raises(governance.IntentError, match="inside the project"):
         governance.build_run_intent(request, project_root=tmp_path)
+
+
+def _eval_request(tmp_path, checkpoint_bytes, metadata_bytes=None,
+                  metadata_sha_override=None, algorithm="ddqn"):
+    exp = tmp_path / "EXPERIMENTS" / "ckpt"
+    exp.mkdir(parents=True, exist_ok=True)
+    ckpt = exp / "online.keras"
+    ckpt.write_bytes(checkpoint_bytes)
+    sha = hashlib.sha256(checkpoint_bytes).hexdigest()
+    learning = {
+        "algorithm": algorithm, "mode": "eval",
+        "checkpoint_path": "EXPERIMENTS/ckpt/online.keras",
+        "checkpoint_sha256": sha,
+    }
+    if metadata_bytes is not None:
+        meta = exp / "metadata.json"
+        meta.write_bytes(metadata_bytes)
+        meta_sha = metadata_sha_override or hashlib.sha256(
+            metadata_bytes).hexdigest()
+        learning["checkpoint_metadata_sha256"] = meta_sha
+    return {
+        "runtime_kind": "leo_sim_v2",
+        "config": {
+            "endpoints": {"sites": [
+                {"name": "a", "lat": 0.0, "lon": 0.0},
+                {"name": "b", "lat": 0.0, "lon": 10.0},
+            ]},
+            "routing": {"policy": "hop", "learning_enabled": True},
+            "learning": learning,
+        },
+    }
+
+
+def test_eval_intent_seals_real_checkpoint_file(tmp_path):
+    """R5-G2: eval intent must verify the checkpoint file exists and its
+    SHA matches the resolved config at seal time (not only at kernel load)."""
+    meta = b'{"schema": "leo-sim-ddqn/v1", "contract": "C3"}'
+    good = _eval_request(tmp_path, b"keras-bytes", metadata_bytes=meta)
+    intent = governance.build_run_intent(good, project_root=tmp_path)
+    assert intent["config_sha256"]
+    missing = _eval_request(tmp_path, b"keras-bytes", metadata_bytes=meta)
+    (tmp_path / "EXPERIMENTS" / "ckpt" / "online.keras").unlink()
+    with pytest.raises(governance.IntentError, match="regular file"):
+        governance.build_run_intent(missing, project_root=tmp_path)
+    wrong = _eval_request(tmp_path, b"keras-bytes", metadata_bytes=meta)
+    wrong["config"]["learning"]["checkpoint_sha256"] = "ab" * 32
+    with pytest.raises(governance.IntentError, match="does not match"):
+        governance.build_run_intent(wrong, project_root=tmp_path)
+
+
+def test_eval_intent_verifies_metadata_pin_at_seal_time(tmp_path):
+    meta = b'{"schema": "leo-sim-ddqn/v1", "contract": "C3"}'
+    good = _eval_request(tmp_path, b"keras-bytes", metadata_bytes=meta)
+    governance.build_run_intent(good, project_root=tmp_path)
+    bad_meta = _eval_request(
+        tmp_path, b"keras-bytes", metadata_bytes=meta,
+        metadata_sha_override="ab" * 32)
+    with pytest.raises(governance.IntentError, match="metadata SHA"):
+        governance.build_run_intent(bad_meta, project_root=tmp_path)
+    no_meta = _eval_request(tmp_path, b"keras-bytes", algorithm="qlearning")
+    no_meta["config"]["learning"]["checkpoint_metadata_sha256"] = "ab" * 32
+    (tmp_path / "EXPERIMENTS" / "ckpt" / "metadata.json").unlink()
+    with pytest.raises(governance.IntentError, match="metadata.json"):
+        governance.build_run_intent(no_meta, project_root=tmp_path)
+
+
+def test_eval_intent_rejects_symlink_checkpoint_before_resolve(tmp_path):
+    """R5-G2 regression: symlink must be rejected BEFORE resolve(), and the
+    kernel-side sibling metadata path must be the one governance checks."""
+    exp = tmp_path / "EXPERIMENTS" / "ckpt"
+    exp.mkdir(parents=True)
+    real = exp / "real.keras"
+    real.write_bytes(b"keras-bytes")
+    link = exp / "online.keras"
+    os.symlink(real, link)
+    sha = hashlib.sha256(b"keras-bytes").hexdigest()
+    meta = exp / "metadata.json"
+    meta.write_text('{"schema": "leo-sim-ddqn/v1", "contract": "C3"}')
+    meta_sha = hashlib.sha256(meta.read_bytes()).hexdigest()
+    request = {
+        "runtime_kind": "leo_sim_v2",
+        "config": {
+            "endpoints": {"sites": [
+                {"name": "a", "lat": 0.0, "lon": 0.0},
+                {"name": "b", "lat": 0.0, "lon": 10.0},
+            ]},
+            "routing": {"policy": "hop", "learning_enabled": True},
+            "learning": {
+                "algorithm": "ddqn", "mode": "eval",
+                "checkpoint_path": "EXPERIMENTS/ckpt/online.keras",
+                "checkpoint_sha256": sha,
+                "checkpoint_metadata_sha256": meta_sha,
+            },
+        },
+    }
+    with pytest.raises(governance.IntentError, match="symbolic link"):
+        governance.build_run_intent(request, project_root=tmp_path)
+
+
+def test_symlink_scan_scoped_to_project_suffix(tmp_path):
+    """R6-G2b: the symlink scan must only police components at/under the
+    project root (unrelated root-internal symlinks pass; an outside symlink
+    used as the checkpoint path is still rejected)."""
+    exp = tmp_path / "EXPERIMENTS" / "ckpt"
+    exp.mkdir(parents=True)
+    (exp / "online.keras").write_bytes(b"keras-bytes")
+    meta = exp / "metadata.json"
+    meta.write_text('{"schema": "leo-sim-ddqn/v1", "contract": "C3"}')
+    meta_sha = hashlib.sha256(meta.read_bytes()).hexdigest()
+    ckpt_sha = hashlib.sha256(b"keras-bytes").hexdigest()
+    os.symlink(tmp_path, tmp_path / "unrelated-link")
+    request = {
+        "runtime_kind": "leo_sim_v2",
+        "config": {
+            "endpoints": {"sites": [
+                {"name": "a", "lat": 0.0, "lon": 0.0},
+                {"name": "b", "lat": 0.0, "lon": 10.0},
+            ]},
+            "routing": {"policy": "hop", "learning_enabled": True},
+            "learning": {
+                "algorithm": "ddqn", "mode": "eval",
+                "checkpoint_path": "EXPERIMENTS/ckpt/online.keras",
+                "checkpoint_sha256": ckpt_sha,
+                "checkpoint_metadata_sha256": meta_sha,
+            },
+        },
+    }
+    governance.build_run_intent(request, project_root=tmp_path)
+
+    outside = tmp_path.parent / "outside.keras"
+    outside.write_bytes(b"outside-bytes")
+    os.symlink(outside, exp / "escape.keras")
+    request["config"]["learning"]["checkpoint_path"] = (
+        "EXPERIMENTS/ckpt/escape.keras")
+    request["config"]["learning"]["checkpoint_sha256"] = hashlib.sha256(
+        b"outside-bytes").hexdigest()
+    with pytest.raises(governance.IntentError, match="symbolic link"):
+        governance.build_run_intent(request, project_root=tmp_path)
+
+
+def test_absolute_checkpoint_under_symlink_root_not_false_rejected(tmp_path):
+    """R6-G2b regression: an absolute checkpoint path whose only symlink is
+    the project root itself must not be false-rejected (old full-ancestor scan
+    did reject it; the lexical-root scoped scan must pass it)."""
+    real = tmp_path / "real"
+    real.mkdir()
+    exp = real / "EXPERIMENTS" / "ckpt"
+    exp.mkdir(parents=True)
+    (exp / "online.keras").write_bytes(b"keras-bytes")
+    meta = exp / "metadata.json"
+    meta.write_text('{"schema": "leo-sim-ddqn/v1", "contract": "C3"}')
+    meta_sha = hashlib.sha256(meta.read_bytes()).hexdigest()
+    ckpt_sha = hashlib.sha256(b"keras-bytes").hexdigest()
+    proj = tmp_path / "proj"
+    os.symlink(real, proj)
+    request = {
+        "runtime_kind": "leo_sim_v2",
+        "config": {
+            "endpoints": {"sites": [
+                {"name": "a", "lat": 0.0, "lon": 0.0},
+                {"name": "b", "lat": 0.0, "lon": 10.0},
+            ]},
+            "routing": {"policy": "hop", "learning_enabled": True},
+            "learning": {
+                "algorithm": "ddqn", "mode": "eval",
+                "checkpoint_path": str(proj / "EXPERIMENTS" / "ckpt"
+                                       / "online.keras"),
+                "checkpoint_sha256": ckpt_sha,
+                "checkpoint_metadata_sha256": meta_sha,
+            },
+        },
+    }
+    governance.build_run_intent(request, project_root=proj)

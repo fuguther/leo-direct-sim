@@ -123,6 +123,95 @@ def build_run_intent(request: dict, *, project_root: Path | None = None) -> dict
                 "population_gravity demand input is not a regular file: "
                 f"{source}")
         input_sha256 = hashlib.sha256(source.read_bytes()).hexdigest()
+
+    # R5-G2: seal-time binding of external learning artifacts. The resolved
+    # config declares checkpoint_sha256 (and optionally
+    # checkpoint_metadata_sha256); authorization must verify the actual files
+    # NOW, so a green intent can never refer to a missing or mismatched
+    # checkpoint that only fails at kernel load time.
+    learning_cfg = resolved["config"]["learning"]
+    if learning_cfg.get("algorithm") not in (None, "none") \
+            and learning_cfg.get("mode") == "eval":
+        ckpt_raw = learning_cfg.get("checkpoint_path")
+        ckpt_sha = learning_cfg.get("checkpoint_sha256")
+        if not isinstance(ckpt_raw, str) or not ckpt_raw.strip():
+            raise IntentError("learning.eval requires checkpoint_path")
+        ckpt = Path(ckpt_raw)
+        # LEXICAL root decides the symlink-scan boundary: an unresolved
+        # absolute checkpoint path under a symlinked root (e.g. /var vs the
+        # resolved /private/var) must not be false-rejected by scanning
+        # ancestors above the root.  RESOLVED root decides containment.
+        lexical_base = (Path(project_root)
+                        if project_root is not None else Path.cwd())
+        base = lexical_base.resolve()
+
+        def _reject_symlink_path(candidate: Path, what: str) -> None:
+            # Reject BEFORE resolve(): resolve() would erase the symlink and
+            # make is_symlink() dead code (R5-G2 review finding).
+            # Only components at/under the project root are user-controlled;
+            # scanning ancestors would false-positive on system symlinks
+            # (macOS /var -> /private/var) above the root (R6-G2b).
+            try:
+                rel = candidate.relative_to(lexical_base)
+            except ValueError:
+                # outside the project root: containment rejects later, but
+                # still scan everything so an outside symlink is never trusted
+                probe = candidate
+                while probe != probe.parent:
+                    if probe.is_symlink():
+                        raise IntentError(
+                            f"{what} path contains a symbolic link: "
+                            f"{candidate}")
+                    probe = probe.parent
+                return
+            for i in range(1, len(rel.parts) + 1):
+                probe = lexical_base.joinpath(*rel.parts[:i])
+                if probe.is_symlink():
+                    raise IntentError(
+                        f"{what} path contains a symbolic link: {candidate}")
+
+        raw_source = ckpt if ckpt.is_absolute() else base / ckpt
+        _reject_symlink_path(raw_source, "learning checkpoint")
+        source = raw_source.resolve()
+        if project_root is not None:
+            try:
+                source.relative_to(base)
+            except ValueError as exc:
+                raise IntentError(
+                    "formal learning checkpoint must remain inside the "
+                    "project root") from exc
+        if not source.is_file() or source.is_symlink():
+            raise IntentError(
+                f"learning checkpoint is not a regular file: {source}")
+        if not isinstance(ckpt_sha, str) or len(ckpt_sha) != 64:
+            raise IntentError("learning.eval requires checkpoint_sha256")
+        if hashlib.sha256(source.read_bytes()).hexdigest() != ckpt_sha:
+            raise IntentError(
+                "learning checkpoint SHA-256 does not match resolved config")
+        meta_sha = learning_cfg.get("checkpoint_metadata_sha256")
+        if meta_sha is not None:
+            # learning.py loads the sibling metadata from the UNRESOLVED
+            # checkpoint parent; governance must check the same path so a
+            # symlinked checkpoint cannot point governance at one metadata
+            # file while the kernel reads another.
+            raw_meta = ckpt.parent / "metadata.json"
+            meta_candidate = raw_meta if raw_meta.is_absolute() else base / raw_meta
+            _reject_symlink_path(meta_candidate, "learning checkpoint metadata")
+            meta = meta_candidate.resolve()
+            if project_root is not None:
+                try:
+                    meta.relative_to(base)
+                except ValueError as exc:
+                    raise IntentError(
+                        "formal learning checkpoint metadata must remain "
+                        "inside the project root") from exc
+            if not meta.is_file() or meta.is_symlink():
+                raise IntentError(
+                    "learning checkpoint metadata.json missing or symbolic")
+            if hashlib.sha256(meta.read_bytes()).hexdigest() != meta_sha:
+                raise IntentError(
+                    "learning checkpoint metadata SHA-256 does not match "
+                    "resolved config")
     return {
         "schema": INTENT_SCHEMA,
         "runtime_kind": RUNTIME_KIND,

@@ -265,6 +265,8 @@ class UplinkServer(_DRRMixin):
         self.wake = kern.env.event()
         self.current: tuple[TrafficEndpoint, DataPacket] | None = None
         self._svc = None
+        self._svc_phase = None  # None | waiting_for_link | transmitting
+        self._tx_started_at = None
         self._drr_init(kern.cfg_access["drr_quantum_bits"])
         kern.env.process(self._run())
 
@@ -304,11 +306,15 @@ class UplinkServer(_DRRMixin):
             k.service_log["uplink"].append((cell, pkt.pid))
             dur = pkt.bits / k.ul_rate_bps
             self._svc = (k.env.now, "gsl_uplink_s")
+            self._svc_phase = "waiting_for_link"
+            self._tx_started_at = None
             outcome = yield k.env.process(
                 k._transmit(dur, pkt, ("gsl", self.sat, ep, ep.links.get(self.sat)),
-                            "gsl_uplink_s"))
+                            "gsl_uplink_s", owner=self))
             k.service_log["uplink_bits"].append((k.env.now, cell, pkt.bits))
             self._svc = None
+            self._svc_phase = None
+            self._tx_started_at = None
             self.current = None
             if outcome == "retired":
                 # hard retirement mid-service: the partial transmission never
@@ -341,6 +347,9 @@ class UplinkServer(_DRRMixin):
             now = k.env.now
             prop = model.propagation_delay_s(
                 k.geometry.slant_range_km(self.sat, ep.lat, ep.lon, now))
+            k._in_flight[pkt.pid] = {
+                "kind": "ingress", "sat": self.sat,
+                "arrival_at": k.env.now + prop, "pkt": pkt}
             k.env.process(k._ingress_after_prop(pkt, self.sat, prop))
 
 
@@ -356,6 +365,8 @@ class DownlinkServer(_DRRMixin):
         self.wake = kern.env.event()
         self.current: DataPacket | None = None
         self._svc = None
+        self._svc_phase = None  # None | waiting_for_link | transmitting
+        self._tx_started_at = None
         self._drr_init(kern.cfg_access["drr_quantum_bits"])
         kern.env.process(self._run())
 
@@ -394,14 +405,44 @@ class DownlinkServer(_DRRMixin):
                     ep = k.endpoints[c]
                     link = ep.links.get(self.sat)
                     if link is None or link.state not in ("active", "retiring"):
-                        pkt = self.queues[c].popleft()
-                        self.queued_bits -= pkt.bits
-                        self.area.remove(pkt.bits, k.env.now)
-                        k.pending[self.sat].append(pkt)
+                        # drain the WHOLE queue: every packet whose endpoint
+                        # lost this association goes back to pending in FIFO
+                        # order in one wake.  Draining one packet per wake
+                        # would strand the tail of a backlogged queue until
+                        # the next poke (and with no further traffic it could
+                        # sit until the horizon).
+                        while self.queues[c]:
+                            pkt = self.queues[c].popleft()
+                            self.queued_bits -= pkt.bits
+                            self.area.remove(pkt.bits, k.env.now)
+                            k.pending[self.sat].append(pkt)
             sel = self._drr_select(cells, self._servable)
             if sel is None:
-                yield self.wake
-                self.wake = k.env.event()
+                # Sleep until poked or until GSL geometry recovers for any
+                # queued cell.  Without this timer a temporary GSL outage
+                # strands queued packets until a new put() pokes the server,
+                # even after the satellite is visible again (the ISL server
+                # already schedules geometry recovery this way).  Wake events
+                # are also poked by kernel association changes (_release /
+                # _associate / _activate_after_delay), so a released or
+                # re-associated endpoint's packets move back to pending
+                # promptly instead of waiting for the next put().
+                recovery = None
+                now = k.env.now
+                for c in cells:
+                    ep = k.endpoints[c]
+                    nxt = k.geometry.next_gsl_change(
+                        self.sat, ep.lat, ep.lon, now, k.horizon)
+                    if nxt is not None:
+                        recovery = nxt if recovery is None else min(recovery, nxt)
+                if recovery is not None:
+                    yield self.wake | k.env.timeout(
+                        max(0.0, recovery - k.env.now))
+                    if self.wake.triggered:
+                        self.wake = k.env.event()
+                else:
+                    yield self.wake
+                    self.wake = k.env.event()
                 continue
             cell, pkt = sel
             self.queues[cell].popleft()
@@ -412,10 +453,14 @@ class DownlinkServer(_DRRMixin):
             k.service_log["downlink"].append((cell, pkt.pid))
             dur = pkt.bits / k.dl_rate_bps
             self._svc = (k.env.now, "gsl_downlink_s")
+            self._svc_phase = "waiting_for_link"
+            self._tx_started_at = None
             outcome = yield k.env.process(
                 k._transmit(dur, pkt, ("gsl", self.sat, ep, ep.links.get(self.sat)),
-                            "gsl_downlink_s"))
+                            "gsl_downlink_s", owner=self))
             self._svc = None
+            self._svc_phase = None
+            self._tx_started_at = None
             self.current = None
             if outcome == "retired":
                 # partial downlink never reached the endpoint: re-decide at
@@ -437,6 +482,9 @@ class DownlinkServer(_DRRMixin):
             now = k.env.now
             prop = model.propagation_delay_s(
                 k.geometry.slant_range_km(self.sat, ep.lat, ep.lon, now))
+            k._in_flight[pkt.pid] = {
+                "kind": "deliver", "sat": self.sat,
+                "arrival_at": k.env.now + prop, "pkt": pkt}
             k.env.process(k._deliver_after_prop(pkt, self.sat, prop))
 
 
@@ -458,7 +506,10 @@ class ISLLink:
         self.data_area = QueueArea()
         self.ctrl_area = QueueArea()
         self.wake = kern.env.event()
+        self.current: DataPacket | ControlPacket | None = None
         self._svc = None
+        self._svc_phase = None  # None | waiting_for_link | transmitting
+        self._tx_started_at = None
         ge_cfg = kern.cfg_links["ge_isl"]
         self.ge = outage.GilbertElliott(
             ge_cfg["mean_good_s"], ge_cfg["mean_bad_s"],
@@ -522,6 +573,7 @@ class ISLLink:
                 continue
             is_ctrl = bool(self.ctrl_q)
             pkt = self.ctrl_q.popleft() if is_ctrl else self.data_q.popleft()
+            self.current = pkt
             if is_ctrl:
                 self.ctrl_bits -= pkt.bits
                 self.ctrl_area.remove(pkt.bits, k.env.now)
@@ -534,9 +586,15 @@ class ISLLink:
             dur = pkt.bits / k.isl_rate_bps
             occ = "ctrl_isl_s" if is_ctrl else "isl_s"
             self._svc = (k.env.now, occ)
+            self._svc_phase = "waiting_for_link"
+            self._tx_started_at = None
             outcome = yield k.env.process(
-                k._transmit(dur, pkt, ("isl", self.sat, self.peer, self.ge), occ))
+                k._transmit(dur, pkt, ("isl", self.sat, self.peer, self.ge),
+                            occ, owner=self))
             self._svc = None
+            self._svc_phase = None
+            self._tx_started_at = None
+            self.current = None
             if outcome == "stalled":
                 if is_ctrl:
                     self.ctrl_q.appendleft(pkt)
@@ -561,6 +619,9 @@ class ISLLink:
             if is_ctrl:
                 k.env.process(k._ctrl_arrive_after_prop(pkt, self.sat, self.peer, prop))
             else:
+                k._in_flight[pkt.pid] = {
+                    "kind": "isl", "sat": self.peer,
+                    "arrival_at": k.env.now + prop, "pkt": pkt}
                 k.env.process(k._isl_arrive_after_prop(pkt, self.peer, prop))
 
     def _expire_waiting(self) -> None:
@@ -726,6 +787,12 @@ class Kernel:
         self.monitor_log: list[tuple] = []
         self.monitor = bool(self.cfg_ex["monitor"])
         self.data_packet_count = 0
+        # Q0 readiness: monotonic state version (bumped once per event step)
+        # and the set of data packets currently propagating between nodes
+        # (scheduled timeout arrivals), so a global snapshot can include the
+        # in-flight component of the network state.
+        self._state_version = 0
+        self._in_flight: dict[int, dict] = {}
         self.ctrl_seq = 0
         self.ctrl_iid = 0
         self.mech = {
@@ -818,6 +885,199 @@ class Kernel:
         if self.data_packet_count > self.cfg_ex["max_packets"]:
             raise CapExceeded("max_packets exceeded")
 
+    # ------------------------------------------------------- Q0 snapshot
+    def snapshot_global(self) -> dict:
+        """Read-only global state snapshot for a centralized Q0 planner.
+
+        Bound to the current simulation time and the monotonic
+        ``_state_version`` (bumped once per event step), so a plan computed
+        from this snapshot is provably stale after any intervening event.
+        All nested containers are freshly constructed per call: the caller
+        may not reach into kernel objects through this view.  The snapshot is
+        CURRENT-state only: Q0-A (global current information) may use it;
+        future information (Q0-B) needs a separate, explicitly labelled
+        future view.  Physical constraints remain enforced by the kernel at
+        execution time; this interface never writes.
+
+        Read-only holds at the observable-state level: ge.is_down() lazily
+        advances each GE's internal trajectory, but GilbertElliott
+        trajectories are query-pattern independent, so the snapshot never
+        mutates the world state it reports (R6-A3).
+        """
+        now = self.env.now
+
+        def _drr_state(srv) -> dict:
+            return {"deficit": dict(srv.deficit),
+                    "rr_cursor": srv.rr_cursor}
+
+        def _svc_state(srv) -> dict | None:
+            if srv._svc is None:
+                return None
+            t0, occ = srv._svc
+            # remaining service time is derivable from the in-service packet
+            # and its link rate (uplink/downlink only; ISL rate depends on
+            # data-vs-control, resolved by the caller)
+            return {
+                "started_at": t0,
+                "occ_key": occ,
+                "phase": getattr(srv, "_svc_phase", None),
+                "tx_started_at": getattr(srv, "_tx_started_at", None),
+            }
+
+        def _packet_info(pkt) -> dict:
+            return {
+                "src": pkt.src,
+                "bits": pkt.bits,
+                "deadline": pkt.deadline,
+                "dst": pkt.dst,
+                "emitted_at": pkt.emitted_at,
+                "path": list(pkt.path),
+                "assigned_sat": getattr(pkt, "assigned_sat", None),
+            }
+
+        def _remaining_service(bits, rate_bps, srv) -> float | None:
+            """Phase-aware residual service time.
+
+            waiting_for_link: no bit has been transmitted yet; report the
+            full duration (what the server will need once the link is up).
+            transmitting: duration - elapsed since the real transmission
+            started (never negative by construction).
+            """
+            if srv._svc is None:
+                return None
+            if srv._svc_phase == "waiting_for_link":
+                return bits / rate_bps
+            if srv._svc_phase == "transmitting" \
+                    and srv._tx_started_at is not None:
+                return (bits / rate_bps) - (now - srv._tx_started_at)
+            return None
+        isl_links = {}
+        for s in range(self.num_sats):
+            isl_links[s] = {}
+            for d, lnk in self.isls[s].items():
+                in_service = None
+                if lnk.current is not None:
+                    if isinstance(lnk.current, ControlPacket):
+                        in_service = {"iid": lnk.current.iid}
+                    else:
+                        in_service = {"pid": lnk.current.pid}
+                remaining = None
+                if lnk._svc is not None and lnk.current is not None:
+                    remaining = _remaining_service(
+                        lnk.current.bits, self.isl_rate_bps, lnk)
+                isl_links[s][d] = {
+                    "peer": lnk.peer,
+                    "data_bits": lnk.data_bits,
+                    "ctrl_bits": lnk.ctrl_bits,
+                    "data_q": [{"pid": p.pid, **_packet_info(p)}
+                               for p in lnk.data_q],
+                    "ctrl_q": [c.iid for c in lnk.ctrl_q],
+                    "in_service": in_service,
+                    "svc": _svc_state(lnk),
+                    "remaining_service_s": remaining,
+                    "ge_bad": bool(lnk.ge.is_down(now)) if self.ge_enabled
+                    else False,
+                    "ge_next_flip": (float(lnk.ge._next_flip)
+                                     if self.ge_enabled else math.inf),
+                }
+
+        endpoints = {}
+        for cell, ep in self.endpoints.items():
+            endpoints[cell] = {
+                "queue": [{"pid": p.pid, **_packet_info(p)}
+                          for p in ep.queue],
+                "queued_bits": ep.queued_bits,
+                "links": {
+                    sat: {"state": lk.state, "since": lk.since,
+                          "ready_at": lk.ready_at,
+                          "retire_at": lk.retire_at, "cause": lk.cause}
+                    for sat, lk in ep.links.items()
+                },
+            }
+
+        downlinks = {}
+        for s in range(self.num_sats):
+            dl = self.downlinks[s]
+            downlinks[s] = {
+                "queues": {cell: [{"pid": p.pid, **_packet_info(p)}
+                                  for p in q]
+                           for cell, q in dl.queues.items()},
+                "queued_bits": dl.queued_bits,
+                "in_service": ({"pid": dl.current.pid}
+                               if dl.current is not None else None),
+                "svc": _svc_state(dl),
+                "remaining_service_s": (
+                    _remaining_service(dl.current.bits, self.dl_rate_bps, dl)
+                    if dl.current is not None else None),
+                "drr": _drr_state(dl),
+            }
+
+        uplinks = {}
+        for s in range(self.num_sats):
+            up = self.uplinks[s]
+            uplinks[s] = {
+                "in_service": ({"pid": up.current[1].pid}
+                               if up.current is not None else None),
+                "svc": _svc_state(up),
+                "remaining_service_s": (
+                    _remaining_service(up.current[1].bits, self.ul_rate_bps,
+                                       up)
+                    if up.current is not None else None),
+                "drr": _drr_state(up),
+            }
+
+        gsl_ge = {}
+        # Universe = every materialized GSL GE pair plus every current
+        # endpoint-satellite association.  A pair must never be implied by
+        # key absence: un-materialized pairs are explicit with bad=None.
+        gsl_pairs = set(self.gsl_ge)
+        for cell, ep in self.endpoints.items():
+            for sat in ep.links:
+                gsl_pairs.add((sat, cell))
+        for sat, cell in sorted(gsl_pairs, key=lambda p: (p[0], p[1])):
+            ge = self.gsl_ge.get((sat, cell))
+            if ge is None:
+                gsl_ge[f"{sat}:{cell}"] = {
+                    "materialized": False, "bad": None, "next_flip": None,
+                }
+            else:
+                gsl_ge[f"{sat}:{cell}"] = {
+                    "materialized": True,
+                    "bad": bool(ge.is_down(now)),
+                    "next_flip": float(ge._next_flip),
+                }
+
+        return {
+            "now": now,
+            "state_version": self._state_version,
+            "topology": {s: dict(nb) for s, nb in self.topo.items()},
+            "slots": {s: sorted(v) for s, v in enumerate(self.slots)},
+            "access_wait": {
+                s: {cell: req_t for cell, req_t in self.access_wait[s].items()}
+                for s in range(self.num_sats)},
+            "access_last_busy": dict(self.access_last_busy),
+            "endpoints": endpoints,
+            "pending": {s: [{"pid": p.pid, **_packet_info(p)}
+                            for p in self.pending[s]]
+                        for s in range(self.num_sats)},
+            "uplinks": uplinks,
+            "downlinks": downlinks,
+            "isl_links": isl_links,
+            "gsl_ge": gsl_ge,
+            "in_flight": {
+                pid: {"pid": pid, "kind": v["kind"], "sat": v["sat"],
+                      "arrival_at": v["arrival_at"],
+                      **_packet_info(v["pkt"])}
+                for pid, v in self._in_flight.items()},
+            "caches": {
+                s: {origin: {"serve_cells": sorted(entry.payload.get(
+                        "serve_cells", ())),
+                             "generated_at": entry.generated_at}
+                    for origin, entry in self.caches[s].valid_entries(now).items()}
+                for s in range(self.num_sats)
+            },
+        }
+
     def _gsl_ge(self, sat: int, cell: str) -> outage.GilbertElliott:
         key = (sat, cell)
         ge = self.gsl_ge.get(key)
@@ -836,7 +1096,8 @@ class Kernel:
         if not link.interrupt.triggered:
             link.interrupt.succeed()
 
-    def _transmit(self, dur: float, pkt, link_ref, occ_key: str):
+    def _transmit(self, dur: float, pkt, link_ref, occ_key: str,
+                  owner=None):
         """Race service completion vs geometry loss vs GE outage vs deadline
         vs (GSL only) hard link retirement.
 
@@ -879,6 +1140,7 @@ class Kernel:
             expiry_fate = "DATA_DEADLINE_EXPIRED"
         while True:
             t0 = self.env.now
+            interrupt = link.interrupt if link is not None else None
             if self.ge_enabled:
                 self.mech[ge_q_key] += 1
             geom_up = (not self.cfg_links["geometry_loss"]) or avail(t0)
@@ -900,27 +1162,77 @@ class Kernel:
                     if nxt_up <= self.horizon:
                         ups.append(nxt_up)
                     self.mech["ge_waits"] += 1
-                # Only fail with the expiry fate when the deadline actually
-                # lies within the horizon: a deadline beyond the horizon is
-                # never reached by the run, so an unrecoverable-within-horizon
-                # link must settle as IN_SYSTEM_AT_STOP (stalled), not be
-                # mislabelled DATA_DEADLINE_EXPIRED at t0.
-                if expiry is not None and expiry <= self.horizon \
-                        and (not ups or min(ups) >= expiry):
-                    self._fail(pkt, expiry_fate)
-                    return "fail"
-                if not ups:
-                    # never available again within the horizon: settle the
-                    # packet back in its queue at the exact horizon
+                # Wait for the earliest of: link recovery, the actual
+                # deadline, or the hard retirement interrupt.  The packet is
+                # NEVER failed at t0 before its deadline: retirement may free
+                # it for re-association, and the expiry fate may only be
+                # assigned once the deadline is actually reached (or, with no
+                # deadline, settle as IN_SYSTEM_AT_STOP at the horizon).
+                wake_at = None
+                for u in ups:
+                    wake_at = u if wake_at is None else min(wake_at, u)
+                if expiry is not None and expiry <= self.horizon:
+                    wake_at = (expiry if wake_at is None
+                               else min(wake_at, expiry))
+                if wake_at is None:
+                    # never available again within the horizon and no
+                    # deadline: settle the packet at the exact horizon
                     if t0 >= self.horizon:
                         return "stalled"
-                    yield self.env.timeout(max(0.0, self.horizon - t0))
-                    if self.env.now >= self.horizon:
-                        return "stalled"
-                    continue
-                yield self.env.timeout(max(0.0, min(ups) - t0))
+                    wait = self.env.timeout(max(0.0, self.horizon - t0))
+                else:
+                    wait = self.env.timeout(max(0.0, wake_at - t0))
+                # the down-wait MUST race the link retirement interrupt: a
+                # retiring link's hard deadline applies to the waiting
+                # service too ("retirement deadline races any in-flight
+                # service").  Without the race the link stays pinned until
+                # the outage recovers, blocking the whole server and every
+                # endpoint on it.
+                if interrupt is not None and not interrupt.triggered:
+                    yield wait | interrupt
+                else:
+                    yield wait
+                # The link may have entered the retiring state while we were
+                # waiting (retire_t was captured at loop top while it was
+                # still active).  The hard retirement deadline races this
+                # down-wait just the same: when it is due, return "retired"
+                # so the caller runs the retirement side effect (release +
+                # requeue) instead of letting the expiry fate swallow it.
+                if (link is not None and link.state == "retiring"
+                        and link.retire_at is not None
+                        and self.env.now >= link.retire_at):
+                    return "retired"
+                if retire_t is not None and self.env.now >= retire_t:
+                    # hard retirement is due NOW: return "retired" so the
+                    # caller performs the retirement side effect (release +
+                    # requeue).  The packet is re-decided afterwards and, if
+                    # the deadline has also been reached, fails there with
+                    # the expiry fate -- the tie is resolved in favour of
+                    # running the link lifecycle, not swallowed by the fate.
+                    return "retired"
+                if expiry is not None and expiry <= self.horizon \
+                        and self.env.now >= expiry:
+                    # the deadline has actually been reached while the link
+                    # is still not usable: fail at the deadline
+                    self._fail(pkt, expiry_fate)
+                    return "fail"
+                if wake_at is None and self.env.now >= self.horizon:
+                    return "stalled"
                 continue
+            if owner is not None and owner._svc is not None \
+                    and owner._svc[0] != t0:
+                # service is about to actually start: restamp the caller's
+                # _svc so the stop-time settle does not book the pre-service
+                # down-wait as occupied (K2)
+                owner._svc = (t0, occ_key)
             end = t0 + dur
+            if owner is not None and owner._svc_phase == "waiting_for_link":
+                # Real transmission starts only after every availability
+                # check passed (geometry up, GE up, no retirement deadline).
+                # Down-wait before this point must not be reported as
+                # service progress: stamp the phase and start time here.
+                owner._svc_phase = "transmitting"
+                owner._tx_started_at = t0
             if (link_ref[0] == "isl" and isinstance(pkt, DataPacket)
                     and pkt.learning_state is not None
                     and pkt.isl_enqueued_at is not None):
@@ -943,11 +1255,10 @@ class Kernel:
                     fail_t, fail_kind = gd, "RANDOM_OUTAGE_IN_FLIGHT"
             if expiry is not None and expiry < fail_t:
                 fail_t, fail_kind = expiry, expiry_fate
-            if retire_t is not None and retire_t < fail_t:
+            if retire_t is not None and retire_t <= fail_t:
                 fail_t, fail_kind = retire_t, "RETIRE"
             # race the wait against a possibly later-scheduled retirement
             # interrupt: on ANY wake the whole race is recomputed from now.
-            interrupt = link.interrupt if link is not None else None
             wait = self.env.timeout(max(0.0, fail_t - t0))
             if interrupt is not None and not interrupt.triggered:
                 yield wait | interrupt
@@ -1077,7 +1388,37 @@ class Kernel:
     def _try_grant(self, ep: TrafficEndpoint, now: float, preposition: bool = False) -> bool:
         for _elev, s in self._candidates(ep, now):
             if len(self.slots[s]) < self.cfg_access["slots_per_satellite"]:
-                req_t = self.access_wait[s].pop(ep.cell, None)
+                waiters = self.access_wait[s]
+                if waiters:
+                    # FIFO contract: a free slot on a contended satellite goes
+                    # to the earliest request.  An endpoint that has not
+                    # queued here (or is not the oldest waiter) must join the
+                    # queue via _request_or_grant and wait its turn, instead
+                    # of jumping ahead because its endpoint ticker happens to
+                    # run first.
+                    req_t = waiters.get(ep.cell)
+                    if req_t is None:
+                        continue
+                    oldest_cell, _oldest_t = min(
+                        waiters.items(), key=lambda kv: (kv[1], kv[0]))
+                    if ep.cell != oldest_cell:
+                        continue
+                    del waiters[ep.cell]  # grant consumes this request
+                else:
+                    req_t = None
+                # a successful grant anywhere ends this endpoint's presence
+                # on every satellite's wait queue; stale entries on other
+                # satellites must not linger and create phantom contention
+                # (or silently drop their accumulated wait from the stats)
+                for s2 in range(self.num_sats):
+                    if s2 == s:
+                        continue  # the granting satellite is settled below
+                    stale_t = self.access_wait[s2].pop(ep.cell, None)
+                    if stale_t is not None:
+                        wt = now - stale_t
+                        self.access_stats["wait_time_s_total"] += wt
+                        self.access_stats["wait_time_s_max"] = max(
+                            self.access_stats["wait_time_s_max"], wt)
                 self._associate(ep, s, now)
                 if preposition:
                     self.access_stats["preposition_grants"] += 1
@@ -1300,7 +1641,13 @@ class Kernel:
         link = Link(sat, "acquiring", now, ready_at=now + acq,
                     interrupt=self.env.event())
         ep.links[sat] = link
+        # GSL GE is part of the Q0 global-state universe: materialize it at
+        # association so snapshot_global() can report every current
+        # endpoint-satellite pair explicitly instead of silently omitting
+        # not-yet-queried pairs (keyed RNG stream keeps this deterministic).
+        self._gsl_ge(sat, ep.cell)
         self.slots[sat].add(ep.cell)
+        self._poke(self.downlinks[sat].wake)
         self.handover_events.append({"t": now, "endpoint": ep.cell,
                                      "type": "associate", "sat": sat})
         if acq <= 0:
@@ -1314,12 +1661,14 @@ class Kernel:
         if ep.links.get(link.sat) is link and link.state == "acquiring":
             link.state = "active"
             self._poke(self.uplinks[link.sat].wake)
+            self._poke(self.downlinks[link.sat].wake)
 
     def _release(self, ep: TrafficEndpoint, sat: int, now: float, reason: str):
         link = ep.links.pop(sat, None)
         if link is None:
             return
         self.slots[sat].discard(ep.cell)
+        self._poke(self.downlinks[sat].wake)
         self.access_stats["slot_hold_s_total"] += now - link.since
         rel = self.access_stats["releases"]
         rel[reason] = rel.get(reason, 0) + 1
@@ -1559,6 +1908,7 @@ class Kernel:
             }
         self.decision_sink.append({
             "t": float(self.env.now),
+            "state_version": self._state_version,
             "pid": pkt.pid,
             "src": pkt.src,
             "dst": pkt.dst,
@@ -1671,6 +2021,7 @@ class Kernel:
 
     def _ingress_after_prop(self, pkt: DataPacket, sat: int, prop: float):
         yield self.env.timeout(prop)
+        self._in_flight.pop(pkt.pid, None)
         if pkt.deadline is not None and self.env.now > pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             return
@@ -1680,6 +2031,7 @@ class Kernel:
 
     def _isl_arrive_after_prop(self, pkt: DataPacket, sat: int, prop: float):
         yield self.env.timeout(prop)
+        self._in_flight.pop(pkt.pid, None)
         if pkt.deadline is not None and self.env.now > pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             return
@@ -1689,6 +2041,7 @@ class Kernel:
 
     def _deliver_after_prop(self, pkt: DataPacket, sat: int, prop: float):
         yield self.env.timeout(prop)
+        self._in_flight.pop(pkt.pid, None)
         now = self.env.now
         if pkt.deadline is not None and now > pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
@@ -1710,11 +2063,18 @@ class Kernel:
         if isinstance(pkt, ControlPacket):
             self.ctrl_ledger.record(pkt.iid, fate, pkt.bits)
         else:
+            # A forward whose ISL service already started has settled its
+            # realized M1 queue reward at service start (_transmit). A later
+            # mid-service failure (geometry/GE/deadline/retire) must not
+            # erase that realized reward: keep it, and settle 0 only when no
+            # reward was realized yet (failure before service start).
             self._finish_learning_transition(
                 pkt,
                 np.zeros(_learning.CONTRACT_DIMS[self.cfg_rt["contract"]]),
                 {a: False for a in _learning.ACTIONS}, True,
-                terminal_reward=0.0,
+                terminal_reward=(None
+                                 if pkt.learning_reward is not None
+                                 else 0.0),
             )
             self.ledger.record(pkt.pid, fate, pkt.bits)
             self._log("fate", pid=pkt.pid, fate=fate)
@@ -1733,6 +2093,7 @@ class Kernel:
                 if t_next > self.horizon or t_next == math.inf:
                     break
                 self.env.step()
+                self._state_version += 1
                 events += 1
                 if events > self.cfg_ex["max_events"]:
                     raise CapExceeded("max_events exceeded")
