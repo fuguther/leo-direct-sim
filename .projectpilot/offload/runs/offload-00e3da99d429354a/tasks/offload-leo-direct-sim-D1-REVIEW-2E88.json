@@ -1,0 +1,60 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:D1-REVIEW-2E88",
+    "title": "D1 dynamic link rate round-4 cold-start review (commit 2e88099)",
+    "goal": "Review exact commit 2e88099 on branch codex/20260819-d1-dynamic-rate (merged with latest main incl. #28 lazy activation). Re-check the round-3 REQUEST_CHANGES findings: (F1) UplinkServer._pick retiring branch must NOT bypass geometry/GE/MCS-rate availability gates -- a gated head must stay queued and the shared server must serve other endpoints; verify the fix and its regression test (retiring gated head stays queued while B is served). (F2-A) deadline sweeps (_sweep_endpoint_queue, _sweep_downlink_queues) must use now>=deadline so a packet whose deadline equals the certified GSL wake time expires exactly at the deadline, not one time_step later; pre-dequeue GE gates in _pick/_servable must count toward ge_gsl_queries so receipt effective.ge is not falsely false. Verify the two queue-gating tests no longer have false positives (active link established before the gate). Also confirm legacy RF/MCS equivalence, zero-rate/geometry-loss/GE-down queue and service semantics for shared uplink/downlink/ISL, snapshot residual-service accounting, legal masks, counters/receipt, deadline/retirement/GE-geometry races, and regression test adequacy. Return APPROVE or REQUEST_CHANGES with FACT/INFERENCE/UNVERIFIED, exact path/line evidence, concrete reproduction conditions, severity and open_items. Do not modify code.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "2e88099e8692e1e0ec7bca875ec2e006dec528fb",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/link_budget.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/tests/test_link_budget_integration.py",
+        "CODE/leo_sim/tests/test_link_budget_characterization.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Explicit APPROVE or REQUEST_CHANGES",
+      "Explicit re-check of round-3 F1/F2-A with line evidence",
+      "Every major finding has exact evidence and reproduction condition",
+      "Open items included"
+    ],
+    "requiredEvidence": [
+      "Exact commit-bound GitHub paths and line references",
+      "Explicit verdict that retiring uplink gates match active gates",
+      "Explicit verdict on deadline inclusive sweep and ge_gsl_queries accounting"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "ada7445cdc4e2fdb9a27790688b269e7f6317f7f79531fa08602e5cc6a0adabb"
+}
