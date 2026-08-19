@@ -1,5 +1,17 @@
 # NOTES.md
 
+## 2026-08-19（旧平台设计深审：新平台「忘记/想不到/做得不如」）
+
+- 产出：`ANALYSIS/LEGACY-DESIGN-AUDIT-20260819.md`（只读审计，未改平台代码）。
+- 方法：先读比对/迁移文档（02-kimi-platform-spec、MIGRATION-BACKLOG、REWARD-DIFF、LINK-BUDGET、
+  TEMPORAL-MULTISTEP），再逐行读旧库 SimulationRL.py（12556 行）+ routing_*/temporal_encoder/link_outage，
+  对照本库 leo_sim kernel/learning/routing/model/config。
+- 结论速览（FACT 已核实）：D1 动态链路速率（B5，未实现）、D3 多步/TD-λ/temporal（M2，只设计稿）、
+  D4 path-credit（M3，未迁）均为既有清单项；**新发现**：D2 动态 ISL 拓扑重匹配、D5 每星模型+FL+CKA、
+  D7 M3 队列动态特征、D10 步进 vs 时间 ε 调度 / stopLoss；D8 per-block 时延三分量为未验证项。
+- 待办：D1 落地、D5 出设计稿、D9 回放持久化升级、D2/D6/D7/D8/D10 记 follow-up（详见报告 §8/§9）。
+- 未动平台；文档在分支 codex/20260819-legacy-design-audit（worktree /tmp/audit-wt-20260819）。
+
 ## 2026-08-19 凌晨（P0-2 hop BFS 完成 + 第 5/6 轮审计收口）
 
 - P0-2（hop 策略多源 BFS 替代 Dijkstra）合并 #49：等价验收=acceptance 5 场景
