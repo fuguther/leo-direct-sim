@@ -453,13 +453,23 @@ class DownlinkServer(_DRRMixin):
                     ep = k.endpoints[c]
                     link = ep.links.get(self.sat)
                     if link is None or link.state not in ("active", "retiring"):
-                        pkt = self.queues[c].popleft()
-                        self.queued_bits -= pkt.bits
-                        self.area.remove(pkt.bits, k.env.now)
-                        k.pending[self.sat].append(pkt)
+                        # drain the WHOLE queue: every packet whose endpoint
+                        # lost this association goes back to pending in FIFO
+                        # order in one wake.  Draining one packet per wake
+                        # would strand the tail of a backlogged queue until
+                        # the next poke (and with no further traffic it could
+                        # sit until the horizon).
+                        while self.queues[c]:
+                            pkt = self.queues[c].popleft()
+                            self.queued_bits -= pkt.bits
+                            self.area.remove(pkt.bits, k.env.now)
+                            k.pending[self.sat].append(pkt)
             sel = self._drr_select(cells, self._servable)
             if sel is None:
                 if k.rate_model == "mcs":
+                    # D1 precise wait: geometry/GE/rate recovery and packet
+                    # deadlines all have certified times, so the server wakes
+                    # at the exact event instead of blind time_step polling.
                     heads = [(k.endpoints[c], q[0])
                              for c, q in self.queues.items() if q]
                     until, zero_held = k._gsl_wait_until(
@@ -472,7 +482,31 @@ class DownlinkServer(_DRRMixin):
                     if not self.wake.triggered:
                         k._sweep_downlink_queues(self.sat)
                 else:
-                    yield self.wake
+                    # Sleep until poked or until GSL geometry recovers for any
+                    # queued cell.  Without this timer a temporary GSL outage
+                    # strands queued packets until a new put() pokes the server,
+                    # even after the satellite is visible again (the ISL server
+                    # already schedules geometry recovery this way).  Wake
+                    # events are also poked by kernel association changes
+                    # (_release / _associate / _activate_after_delay), so a
+                    # released or re-associated endpoint's packets move back to
+                    # pending promptly instead of waiting for the next put().
+                    recovery = None
+                    now = k.env.now
+                    for c in cells:
+                        ep = k.endpoints[c]
+                        nxt = k.geometry.next_gsl_change(
+                            self.sat, ep.lat, ep.lon, now, k.horizon)
+                        if nxt is not None:
+                            recovery = nxt if recovery is None else min(recovery, nxt)
+                    if recovery is not None:
+                        yield self.wake | k.env.timeout(
+                            max(0.0, recovery - k.env.now))
+                        if self.wake.triggered:
+                            self.wake = k.env.event()
+                    else:
+                        yield self.wake
+                        self.wake = k.env.event()
                 self.wake = k.env.event()
                 continue
             cell, pkt = sel
@@ -823,8 +857,12 @@ class Kernel:
         self.rate_max_downlink_km = link_budget.max_rate_range_km(
             self.rf_downlink, self.mcs_table)
 
-        # sparse activation: only trace-active cells become endpoints; every
-        # row passes the unified packet-row contract regardless of its origin
+        # Sparse activation: endpoints are created lazily the first time a
+        # cell becomes active (first emission from it, or first packet routed
+        # to it).  Pre-building every trace cell at t=0 would leak the full
+        # future trace into the present: future endpoints pre-position K
+        # slots, appear in control advertisements (visible/serve cells) and
+        # inflate observation denominators before any demand exists.
         rows = sorted(rows, key=lambda r: (r["emit_time_s"], r["packet_id"]))
         tracemod.validate_packet_rows(
             rows, horizon_s=self.horizon,
@@ -832,9 +870,6 @@ class Kernel:
         self.endpoints: dict[str, TrafficEndpoint] = {}
         per_ep_rows: dict[str, list[dict]] = {}
         for r in rows:
-            for c in (r["src_grid_id"], r["dst_grid_id"]):
-                if c not in self.endpoints:
-                    self.endpoints[c] = TrafficEndpoint(c)
             per_ep_rows.setdefault(r["src_grid_id"], []).append(r)
 
         self.topo = routing.build_topology(
@@ -881,6 +916,9 @@ class Kernel:
                 n_entities += 1
         if n_entities > self.cfg_ex["max_entities"]:
             raise CapExceeded(f"entities {n_entities} > max_entities")
+        # base entity count (sat servers + ISL links) for the lazy-endpoint
+        # cap check; endpoints created at runtime must respect the same bound
+        self._entity_base = n_entities
 
         self.ledger = fates.DataFateLedger()
         self.ctrl_ledger = fates.ControlFateLedger()
@@ -931,21 +969,41 @@ class Kernel:
         self._learning_open: set[DataPacket] = set()
         self.closed_at: float | None = None
 
-        # process creation order fixes same-time ordering: handover ticks and
-        # control advertisers at t=0 precede emissions at t=0. The horizon
-        # closer is created last; events AT the horizon are still processed
-        # (closed interval [0, horizon]) and final accounting settles at the
-        # exact horizon, never at an incidental last-event time.
-        for cell in sorted(self.endpoints):
-            self.env.process(self._endpoint_ticker(self.endpoints[cell]))
+        # process creation order fixes same-time ordering: control
+        # advertisers at t=0 precede emissions at t=0. Endpoint tickers are
+        # created by _ensure_endpoint when a cell first becomes active. The
+        # horizon closer is created last; events AT the horizon are still
+        # processed (closed interval [0, horizon]) and final accounting
+        # settles at the exact horizon, never at an incidental last-event
+        # time.
         if self.cfg_cp["enabled"] and self.cfg_cp["vis_k"] > 0:
             for s in range(self.num_sats):
                 self.env.process(self._control_advertiser(s))
         for cell in sorted(per_ep_rows):
-            self.env.process(self._emitter(self.endpoints[cell], per_ep_rows[cell]))
+            self.env.process(self._emitter(cell, per_ep_rows[cell]))
         for s in range(self.num_sats):
             self.env.process(self._pending_ticker(s))
         self.env.process(self._horizon_closer())
+
+    def _ensure_endpoint(self, cell: str) -> TrafficEndpoint:
+        """Create a trace cell's endpoint the first time it becomes active.
+
+        Future-only endpoints must not pre-exist: they would pre-position K
+        slots, appear in control advertisements and inflate observation
+        denominators before any demand exists (causal leak from the full
+        trace into the present).
+        """
+        ep = self.endpoints.get(cell)
+        if ep is not None:
+            return ep
+        if len(self.endpoints) + self._entity_base >= self.cfg_ex["max_entities"]:
+            raise CapExceeded(
+                f"entities {len(self.endpoints) + self._entity_base + 1} "
+                f"> max_entities")
+        ep = TrafficEndpoint(cell)
+        self.endpoints[cell] = ep
+        self.env.process(self._endpoint_ticker(ep))
+        return ep
 
     # ------------------------------------------------------------------ util
     @staticmethod
@@ -1375,6 +1433,16 @@ class Kernel:
                     yield wait | interrupt
                 else:
                     yield wait
+                # The link may have entered the retiring state while we were
+                # waiting (retire_t was captured at loop top while it was
+                # still active).  The hard retirement deadline races this
+                # down-wait just the same: when it is due, return "retired"
+                # so the caller runs the retirement side effect (release +
+                # requeue) instead of letting the expiry fate swallow it.
+                if (link is not None and link.state == "retiring"
+                        and link.retire_at is not None
+                        and self.env.now >= link.retire_at):
+                    return "retired"
                 if retire_t is not None and self.env.now >= retire_t:
                     # hard retirement is due NOW: return "retired" so the
                     # caller performs the retirement side effect (release +
@@ -1469,11 +1537,15 @@ class Kernel:
         yield self.env.timeout(self.horizon)
         self.closed_at = self.env.now
 
-    def _emitter(self, ep: TrafficEndpoint, rows):
+    def _emitter(self, cell: str, rows):
         for r in rows:
             delay = r["emit_time_s"] - self.env.now
             if delay > 0:
                 yield self.env.timeout(delay)
+            # activate at the actual emission instant, never earlier: an
+            # emitter for a future row must not create its endpoint at t=0
+            # (that would re-open the A3 preposition/ads/obs leak)
+            ep = self._ensure_endpoint(cell)
             self._count_data_packet()
             pkt = DataPacket(r["packet_id"], r["src_grid_id"], r["dst_grid_id"],
                              r["bits"], r["deadline_at_s"], self.env.now)
@@ -1569,7 +1641,37 @@ class Kernel:
     def _try_grant(self, ep: TrafficEndpoint, now: float, preposition: bool = False) -> bool:
         for _elev, s in self._candidates(ep, now):
             if len(self.slots[s]) < self.cfg_access["slots_per_satellite"]:
-                req_t = self.access_wait[s].pop(ep.cell, None)
+                waiters = self.access_wait[s]
+                if waiters:
+                    # FIFO contract: a free slot on a contended satellite goes
+                    # to the earliest request.  An endpoint that has not
+                    # queued here (or is not the oldest waiter) must join the
+                    # queue via _request_or_grant and wait its turn, instead
+                    # of jumping ahead because its endpoint ticker happens to
+                    # run first.
+                    req_t = waiters.get(ep.cell)
+                    if req_t is None:
+                        continue
+                    oldest_cell, _oldest_t = min(
+                        waiters.items(), key=lambda kv: (kv[1], kv[0]))
+                    if ep.cell != oldest_cell:
+                        continue
+                    del waiters[ep.cell]  # grant consumes this request
+                else:
+                    req_t = None
+                # a successful grant anywhere ends this endpoint's presence
+                # on every satellite's wait queue; stale entries on other
+                # satellites must not linger and create phantom contention
+                # (or silently drop their accumulated wait from the stats)
+                for s2 in range(self.num_sats):
+                    if s2 == s:
+                        continue  # the granting satellite is settled below
+                    stale_t = self.access_wait[s2].pop(ep.cell, None)
+                    if stale_t is not None:
+                        wt = now - stale_t
+                        self.access_stats["wait_time_s_total"] += wt
+                        self.access_stats["wait_time_s_max"] = max(
+                            self.access_stats["wait_time_s_max"], wt)
                 self._associate(ep, s, now)
                 if preposition:
                     self.access_stats["preposition_grants"] += 1
@@ -1634,6 +1736,12 @@ class Kernel:
             return  # wait for the retiring link to clear first
         if self._endpoint_demand(ep):
             self._request_or_grant(ep, now)
+            if ep.primary_link() is not None:
+                # fresh grant for an endpoint with pending/downlink demand:
+                # re-decide its pending packets now instead of waiting for the
+                # next tick (lazy endpoint activation must not add one
+                # time_step of latency to first delivery)
+                self._redecide_cell_pending(ep.cell)
         elif not any(self.access_wait[s] for s in range(self.num_sats)):
             self._try_grant(ep, now, preposition=True)
 
@@ -1657,6 +1765,23 @@ class Kernel:
             self.access_stats["wait_time_s_total"] += wt
             self.access_stats["wait_time_s_max"] = max(
                 self.access_stats["wait_time_s_max"], wt)
+            self._redecide_cell_pending(cell)
+
+    def _redecide_cell_pending(self, cell: str) -> None:
+        """Re-decide pending packets destined to ``cell`` on every satellite.
+
+        A fresh destination grant can happen on a different satellite than the
+        one currently holding the packet in its pending list (e.g. the egress
+        grant fires while the packet still waits on the previous hop), so the
+        scan is global.
+        """
+        for s in range(self.num_sats):
+            waiting = [p for p in self.pending[s] if p.dst == cell]
+            if not waiting:
+                continue
+            self.pending[s] = [p for p in self.pending[s] if p.dst != cell]
+            for pkt in waiting:
+                self._decide(pkt, s)
 
     def _control_advertiser(self, sat: int):
         interval = self.cfg_cp["advertise_interval_s"]
@@ -1775,6 +1900,7 @@ class Kernel:
         # not-yet-queried pairs (keyed RNG stream keeps this deterministic).
         self._gsl_ge(sat, ep.cell)
         self.slots[sat].add(ep.cell)
+        self._poke(self.downlinks[sat].wake)
         self.handover_events.append({"t": now, "endpoint": ep.cell,
                                      "type": "associate", "sat": sat})
         if acq <= 0:
@@ -1788,12 +1914,14 @@ class Kernel:
         if ep.links.get(link.sat) is link and link.state == "acquiring":
             link.state = "active"
             self._poke(self.uplinks[link.sat].wake)
+            self._poke(self.downlinks[link.sat].wake)
 
     def _release(self, ep: TrafficEndpoint, sat: int, now: float, reason: str):
         link = ep.links.pop(sat, None)
         if link is None:
             return
         self.slots[sat].discard(ep.cell)
+        self._poke(self.downlinks[sat].wake)
         self.access_stats["slot_hold_s_total"] += now - link.since
         rel = self.access_stats["releases"]
         rel[reason] = rel.get(reason, 0) + 1
@@ -2056,7 +2184,7 @@ class Kernel:
         if len(pkt.path) > self.cfg_rt["max_hops"]:
             self._fail(pkt, "NO_ROUTE")
             return
-        ep = self.endpoints[pkt.dst]
+        ep = self._ensure_endpoint(pkt.dst)
         link = ep.links.get(sat)
         if (link is not None and link.state == "active"
                 and self.geometry.gsl_available(sat, ep.lat, ep.lon, now)):
@@ -2207,11 +2335,18 @@ class Kernel:
         if isinstance(pkt, ControlPacket):
             self.ctrl_ledger.record(pkt.iid, fate, pkt.bits)
         else:
+            # A forward whose ISL service already started has settled its
+            # realized M1 queue reward at service start (_transmit). A later
+            # mid-service failure (geometry/GE/deadline/retire) must not
+            # erase that realized reward: keep it, and settle 0 only when no
+            # reward was realized yet (failure before service start).
             self._finish_learning_transition(
                 pkt,
                 np.zeros(_learning.CONTRACT_DIMS[self.cfg_rt["contract"]]),
                 {a: False for a in _learning.ACTIONS}, True,
-                terminal_reward=0.0,
+                terminal_reward=(None
+                                 if pkt.learning_reward is not None
+                                 else 0.0),
             )
             self.ledger.record(pkt.pid, fate, pkt.bits)
             self._log("fate", pid=pkt.pid, fate=fate)

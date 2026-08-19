@@ -204,7 +204,9 @@ def test_mcs_gsl_down_does_not_dequeue_shared_uplink_head():
         "links": {"rate_model": "mcs"},
     })
     k = kernel.Kernel(cfg, [row(99, 2.0, A, B)], geometry=geo)
-    ep = k.endpoints[A]
+    # lazy endpoint activation (#28): materialize A before inspecting its
+    # queue
+    ep = k._ensure_endpoint(A)
     pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
     ep.queue.append(pkt)
     ep.queued_bits += pkt.bits
@@ -230,6 +232,9 @@ def test_mcs_gsl_ge_down_does_not_dequeue_shared_downlink_head():
                                "mean_bad_s": 1000.0}},
     })
     k = kernel.Kernel(cfg, [row(99, 2.0, A, B)], geometry=geo)
+    # lazy endpoint activation (#28): _servable resolves the destination
+    # endpoint, so materialize B first
+    k._ensure_endpoint(B)
     pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
     k.downlinks[1].put(pkt)
     ge = k._gsl_ge(1, B)
@@ -288,7 +293,9 @@ def test_mcs_zero_rate_downlink_is_not_a_legal_deliver_action():
         "links": {"rate_model": "mcs"},
     })
     k = kernel.Kernel(cfg, [row(99, 1.5, A, B)], geometry=geo)
-    # let the association ticker run so B has an active link to sat 0
+    # lazy endpoint activation (#28): materialize B up front so its
+    # association ticker can run and give it an active link to sat 0
+    k._ensure_endpoint(B)
     for _ in range(6):
         k.env.step()
     assert k.endpoints[B].links[0].state == "active"
