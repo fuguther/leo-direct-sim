@@ -18,6 +18,16 @@
   增加原子性回归。随后静态盘点确认生产路径均经 `_hold_packet`，Q0 位置索引、面积结算和 deadline
   sweep 无遗漏；复核后平台测试为 **411 passed**。
 
+## 2026-08-19（D2 重放到 holding queue 基线）
+
+- D2 原分支 `7cb11e8` 仍基于裸 `pending`，不能直接合并 holding queue；已在独立工作树
+  `/private/tmp/leo-d2-holding` 基于 `f2687c4` 重放，冲突处将拓扑退役回退统一改为 `_hold_packet`，
+  并合并 receipt 的 `holding_queue_overflows` 与 `topo_recomputes` 键。
+- 集成提交：`c962104`（D2 实现重放）、`0cff254`（退役 ISL queued-data 回退测试）。
+- 新回归证明：重匹配时旧 ISL 队列数据进入 holding，`queued_bits` 保持一致，旧链路进入 retired 集合，
+  新邻居生效；集成分支全量 **414 passed**。
+- 审计边界：在途数据/控制包仍按旧链路继续排空，尚未完成独立模型冷启动复核；D2 不得作为论文基线。
+
 ## 2026-08-19（D1/D2 靠拢、旧平台账本与实验路线图）
 
 - 用户已决定 D1 动态链路速率、D2 动态拓扑重匹配按旧平台行为继续推进。
