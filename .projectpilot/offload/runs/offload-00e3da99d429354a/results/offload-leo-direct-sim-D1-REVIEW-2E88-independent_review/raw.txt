@@ -1,0 +1,467 @@
+RESULT_CANDIDATE — REQUEST_CHANGES
+
+审查对象严格绑定 commit 2e88099e8692e1e0ec7bca875ec2e006dec528fb，仅检查合同允许的 5 个路径，未执行本地 Shell、未修改代码。
+
+结论
+
+Round-3 的两个明确修复点中，F1 的窄义问题已经修复，F2-A 的两个窄义改动也已落地：
+
+[FACT] F1：PASS。 UplinkServer._pick 中 retiring link 与 active link 现在走相同的 MCS geometry → GE → rate gate；gated retiring head 不会出队，DRR 可以继续服务同一 satellite 上的 B endpoint。对应对抗测试也确实建立了 A-retiring/B-active 场景。
+
+[FACT] F2-A inclusive sweep：PASS。 _sweep_endpoint_queue 和 _sweep_downlink_queues 均已改成 now >= deadline。
+
+[FACT] F2-A GSL GE attribution：PASS。 uplink _pick 和 downlink _servable 在 pre-dequeue GE 查询前均增加 ge_gsl_queries。此前两个 queue-gating 测试也不再依赖 lazy activation 的“缺 link”假阳性：测试先显式 materialize endpoint 并建立 active link，再施加 geometry/GE gate。
+
+但是本轮要求还包含 retirement/deadline/GE race 与 receipt accounting。这里仍有 3 个 major 问题，因此不能 APPROVE。
+
+Findings
+F1 — round-3 retiring uplink gate 本身已关闭
+
+Severity: info — [FACT]
+
+_pick 先区分 packet 是否属于 retiring link，但进入 availability 部分后不再区分 active/retiring：两者共同检查 GSL geometry、GE、MCS rate。也就是说 retiring branch 已不再绕过任何一项 gate。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L260-L350
+
+新回归测试构造：
+
+A→sat0 为 retiring，A packet 已 assigned_sat=0；
+
+A-sat0 geometry 不可用；
+
+B→sat0 为 active 且可用；
+
+唤醒 shared uplink；
+
+验证 A packet 仍在队列、A 从未进入 service log，同时 B 已进入服务或正在服务。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_integration.py#L455-L515
+
+明确判定：retiring uplink 的 MCS availability gates 现在与 active uplink 一致；round-3 F1 的“gated A pin 住 shared server，B 无法服务”问题已修复。
+
+F1-R — gated retiring packet 的 hard-retirement deadline 仍可能拖到下一个 ticker
+
+Severity: major — [INFERENCE]
+
+F1 修复后产生一个重要边界：packet 在 pre-dequeue gate 前就被挡住，因此根本不会进入 _transmit。
+
+hard-retirement timer _fire_interrupt() 到点只会 link.interrupt.succeed()，本身不会：
+
+_on_link_retired()；
+
+unassign queued packets；
+
+release slot；
+
+poke uplink/downlink server。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1328-L1342
+
+而 _on_link_retired() 的立即清理路径主要由已经进入 _transmit、收到 "retired" 的 service caller 触发；对于仍在 queue 的 gated head，没有这样的 listener。
+
+最终 queued retiring packet 只能等周期性的 _endpoint_ticker → _evaluate_handover 看见 now >= retire_at 后才 unassign/release。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1540-L1615
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1940-L2015
+
+Concrete reproduction condition：
+
+time_step_s = 0.7
+
+retiring link retire_at = 1.0
+
+assigned head 因 geometry/GE/MCS=0 一直无法通过 _pick
+
+endpoint ticker 落在 0.0, 0.7, 1.4, ...
+
+则 t=1.0 interrupt 会触发，但 packet 没有 _transmit 等待该 interrupt。到 1.4 ticker 之前，旧 link/assignment/slot 均可能继续存在；若 packet 已有可用 successor association，它也仍因 assigned_sat 指向旧 sat 而不能立即由 successor 服务。
+
+现有 F1 regression 特意使用 retire_at=100.0，因此没有覆盖这个 hard-deadline 分支。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_integration.py#L470-L515
+
+这与代码自身所声明的 hard-retirement backstop / retirement race 语义不完全一致，需修。
+
+F2-A — inclusive endpoint/downlink sweeps 与 GSL GE counting 已修复
+
+Severity: info — [FACT]
+
+_sweep_endpoint_queue：
+
+deadline is not None and now >= deadline
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1840-L1915
+
+_sweep_downlink_queues 同样为 inclusive comparison：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1600-L1665
+
+GSL pre-dequeue GE accounting：
+
+uplink _pick：查询 GE 前增加 ge_gsl_queries；
+
+downlink _servable：同样增加。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L260-L350
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L430-L535
+
+receipt 则确实以 ge_gsl_queries + ge_isl_queries > 0 重算 effective.ge：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/receipt.py#L120-L185
+
+两个 queue-gating regression 也已经先建立 ACTIVE association，再制造 gate，因而不是 “link missing” 导致的假阳性：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_integration.py#L185-L255
+
+明确判定：round-3 所要求的 now >= deadline 与 GSL ge_gsl_queries pre-dequeue accounting 都已进入此 commit。
+
+F2-A-PENDING — deadline == horizon 时，pending packet 仍使用 strict >
+
+Severity: major — [FACT + INFERENCE]
+
+自然停止时，endpoint queue 与 downlink queue 都调用了修复后的 inclusive sweep；但 pending[s] 的最终清理仍然是：
+
+if pkt.deadline is not None and stop_time > pkt.deadline:
+
+而不是 >=。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L2385-L2435
+
+FACT：strict comparator 仍存在。
+
+INFERENCE reproduction：
+
+horizon = 1.0
+
+data deadline = 1.0
+
+destination downlink 保持 zero-MCS-rate
+
+_decide 因 zero-rate 把 packet 放到 pending
+
+该 legal-mask 行为本身可见于：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L2160-L2365
+
+到 horizon 时 stop_time > deadline 为 false，因此该 packet 不会由这里记为 DATA_DEADLINE_EXPIRED。随后执行 stop-close。由于 fates 实现不在授权路径内，我不能把最终 fate 标成直接 FACT，但该路径明显允许 deadline equality 绕过本轮所要求的 inclusive expiry。
+
+现有 regression 只检查 deadline=0.95, horizon=0.96，即严格小于 horizon，没有覆盖 equality：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_integration.py#L330-L390
+
+F2-A-WAKE — exact-deadline 与另一个 wake 同时发生时仍可能跳过 sweep
+
+Severity: major — [INFERENCE]
+
+GSL server 等待逻辑为：
+
+yield timeout | self.wake
+if not self.wake.triggered:
+    sweep(...)
+
+因此只有“纯 timeout”才进行 deadline sweep；如果同一时刻 association/handover 等另外一个事件也触发 self.wake，就跳过 sweep。
+
+uplink：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L260-L350
+
+downlink：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L430-L535
+
+之后 _gsl_wait_until() 只保留：
+
+now < u <= horizon
+
+所以一旦重新进入 loop 时 now == deadline，这个 deadline 不再成为下一次 certified wake。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1040-L1105
+
+Concrete reproduction condition：
+
+time_step=0.7
+
+deadline 1.0
+
+acquisition/activation 同样恰在 1.0
+
+activation poke uplink/downlink wake
+
+packet 在 t=1.0 仍受 MCS/geometry gate
+
+则 exact deadline timeout 与 self.wake 相撞时，代码可能跳过 sweep；重新计算时 deadline 已因 now < u 条件消失，packet 只能等后续 ticker 才 expire。
+
+现有 test_mcs_deadline_wake_expires_exactly_at_deadline 只验证单纯 certified timeout 路径能在 1.0 expiry，没有制造“另一个 wake 同时触发”的 race，因此不能关闭该反例。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_integration.py#L515-L545
+
+GE-ISL-ACCOUNT — ISL pre-dequeue GE gate 没有增加 ge_isl_queries
+
+Severity: major — [FACT]
+
+这是当前最明确的 receipt attribution 漏洞。
+
+ISL 在 dequeue 前调用：
+
+available_now()
+
+其中：
+
+if ge_enabled and self.ge.is_down(now):
+    return False
+
+但没有增加 mech["ge_isl_queries"]。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L590-L670
+
+ge_isl_queries 的实际加一发生在 _transmit() 内；也就是说只有 packet 已经越过 pre-dequeue gate、进入 transmission path 后才计数。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1320-L1395
+
+但如果 ISL 从第一次 scheduling attempt 起 GE 就一直 down：
+
+available_now() 查询 GE；
+
+GE 实际阻止 packet dequeue/service；
+
+_transmit() 永远不会被调用；
+
+ge_isl_queries == 0。
+
+最后 kernel 和 receipt 都以查询计数之和决定 effective.ge：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L2470-L2515
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/receipt.py#L120-L185
+
+因此可以构造 GE 实际决定了 ISL packet 一直无法发送，但 receipt effective.ge=false 的运行。这与本轮 F2-A 修复 GSL pre-dequeue attribution 的理由完全同构，只是 ISL 漏掉了。
+
+其余 D1 检查
+Legacy RF/MCS equivalence
+
+[FACT] 内部 characterization 一致；[UNVERIFIED] 原始 legacy 源独立比对。
+
+实现包含三套独立 RF 参数及同一 DVB-S2X threshold table，并按 distance/SNR 取最大 feasible spectral efficiency：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/link_budget.py#L20-L190
+
+允许范围内的 characterization 固定了 ISL legacy 公式的 derived values、1/2/4/6 Mm goldens 和 monotonicity：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_characterization.py#L90-L145
+
+integration test 又把 production module 对到这些 goldens，并分别固定 uplink/downlink/ISL RF 数值：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_integration.py#L1-L60
+
+由于原 legacy SimulationRL.py/Gateway/Satellite 不在授权读取路径中，不能独立声明已重新验证原始 legacy 源逐项等价。
+
+Zero-rate / geometry / GE queue semantics
+
+[FACT] 大部分 D1 semantics 正确。
+
+ISL zero MCS rate 在 dequeue 前 hold，按 rate recovery + 每个 packet 自身 deadline/TTL 等待。
+
+ISL _expire_waiting() 使用 >=。
+
+Downlink zero-rate 不作为 legal deliver action，而是 park 到 pending。
+
+ISL zero-rate directions 被排除出 legal mask。
+
+GSL MCS geometry/GE/rate gate 均在 dequeue 前执行，防止 shared server 被 unavailable head pin 住。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L540-L735
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L700-L930
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L2160-L2365
+
+In-service GE / geometry / deadline / retirement races
+
+[FACT] _transmit 路径本身是显式 race。
+
+实际 transmission 开始后，代码重新检查 geometry、GE、rate，并与 geometry loss、GE down、deadline、retirement deadline 竞争；waiting-for-link 阶段不会虚构 service progress。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1320-L1510
+
+问题主要在于前述 F1-R：现在 gated retiring packet 根本不进入这个 race。
+
+Snapshot residual-service accounting
+
+[FACT] 代码设计合理；[UNVERIFIED] 本轮允许测试里没有专门 regression。
+
+snapshot 区分：
+
+waiting_for_link：尚未真正传输；
+
+transmitting：按真实 tx_started_at 扣 elapsed；
+
+MCS 尚未取得正 rate sample 时返回 None，不会拿 constant rate 伪造 residual progress。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1110-L1245
+
+Regression adequacy
+
+当前 regression 对 round-3 已知问题的窄义修复明显增强，但还不够作为 round-4 closure：
+
+retiring gated A / available B：已覆盖；
+
+endpoint/downlink inclusive sweep：代码已修，exact timeout test 有覆盖；
+
+lazy-activation queue-gating false positive：已修测试 setup；
+
+ge_gsl_queries：代码已修，但现有 GE downlink test没有直接断言 counter/effective；
+
+gated retiring head 到达 hard retire_at：未覆盖；
+
+pending.deadline == horizon：未覆盖；
+
+exact deadline 与 self.wake 同时发生：未覆盖；
+
+ISL 从第一次尝试起 GE-down、从未进入 _transmit 时的 ge_isl_queries/effective.ge：未覆盖。
+
+因此 REQUEST_CHANGES。
+
+建议本地 Agent 修复后至少增加上述 4 个对抗 regression，并执行目标测试集与完整 D1 suite。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:D1-REVIEW-2E88:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。Round-3 F1 的 retiring/active MCS gates 已一致，gated A 不再阻塞 shared uplink 的 B；F2-A 的 endpoint/downlink >=deadline 以及 GSL pre-dequeue ge_gsl_queries 也已修复，两个 queue-gating 测试已消除 lazy-activation 假阳性。但仍有三类 major：gated retiring packet 未进入 _transmit 时 hard-retire interrupt 无立即清理路径；pending 在 stop-time 仍用 strict > deadline；ISL pre-dequeue GE 查询未计 ge_isl_queries，可导致实际 GE 生效而 effective.ge=false。另有 simultaneous wake/deadline race 未覆盖。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "FACT: round-3 F1 窄义问题已修复；retiring uplink 与 active uplink 共享 geometry/GE/MCS-rate gates，回归测试验证 gated A 留队且 shared server 可服务 B。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L260-L350",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_integration.py#L455-L515"
+      ]
+    },
+    {
+      "id": "F1-R",
+      "severity": "major",
+      "summary": "INFERENCE: gated retiring head 不再进入 _transmit 后，hard-retire interrupt 没有 service listener；_fire_interrupt 本身不 unassign/release/poke，旧 assignment/link/slot 可一直保留到下一次 endpoint ticker，最多额外延迟一个 time_step。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1328-L1342",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1540-L1615",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1940-L2015",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_integration.py#L470-L515"
+      ]
+    },
+    {
+      "id": "F2-A",
+      "severity": "info",
+      "summary": "FACT: _sweep_endpoint_queue 与 _sweep_downlink_queues 均已使用 now>=deadline；uplink _pick 与 downlink _servable 的 pre-dequeue GE 查询均增加 ge_gsl_queries。两个 queue-gating 测试先建立 ACTIVE link，再施加 gate，不再是 lazy-activation 假阳性。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1840-L1915",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1600-L1665",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L260-L350",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L430-L535",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_integration.py#L185-L255"
+      ]
+    },
+    {
+      "id": "F2-A-PENDING",
+      "severity": "major",
+      "summary": "FACT/INFERENCE: stop-time pending cleanup 仍使用 stop_time > deadline；deadline==horizon 的 zero-rate/unavailable pending packet 会绕过显式 DATA_DEADLINE_EXPIRED 清理。现有回归仅覆盖 deadline<horizon。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L2385-L2435",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L2160-L2365",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_integration.py#L330-L390"
+      ]
+    },
+    {
+      "id": "F2-A-WAKE",
+      "severity": "major",
+      "summary": "INFERENCE: GSL wait 在 self.wake 与 deadline timeout 同时触发时会因 wake.triggered 跳过 sweep；重新计算时 _gsl_wait_until 又以 now<u 排除 deadline==now，仍受 gate 的 packet 可能延迟至下一 ticker 才过期。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L260-L350",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L430-L535",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1040-L1105",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_integration.py#L515-L545"
+      ]
+    },
+    {
+      "id": "GE-ISL-ACCOUNT",
+      "severity": "major",
+      "summary": "FACT: ISL available_now() 的 pre-dequeue GE query 不增加 ge_isl_queries；若 GE 从首次调度起持续 down，packet 被 GE 实际阻塞但从不进入 _transmit，因此 counters 可保持 0，kernel/receipt 随后可重算出 effective.ge=false。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L590-L670",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1320-L1395",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L2470-L2515",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/receipt.py#L120-L185"
+      ]
+    },
+    {
+      "id": "D1-OTHER",
+      "severity": "info",
+      "summary": "FACT: allowed-path evidence supports internal RF/MCS goldens, zero-rate UL/DL/ISL holding semantics, MCS legal masks, in-service GE/geometry/deadline race logic, MCS counters, and phase-aware snapshot residual-service accounting. Direct comparison against original legacy source remains outside authorized scope.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/link_budget.py#L20-L190",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_characterization.py#L90-L145",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_integration.py#L1-L60",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1110-L1245",
+        "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L2160-L2365"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "让 hard-retirement timer 在没有 _transmit listener 的 gated queued case 也能于 retire_at 立即 unassign/release 并 poke 相关 server；增加 retire_at 与 time_step 非对齐的 retiring-gated regression。",
+    "将 stop-time pending deadline cleanup 与其它 queued-data semantics 对齐为 >=，增加 deadline==horizon 的 zero-rate pending regression。",
+    "消除 GSL simultaneous wake/deadline race：例如 wake 后无条件进行 inclusive deadline sweep，或在 _pick/_servable 前直接拒绝 deadline<=now；增加 activation/handover wake 恰等于 deadline 的 regression。",
+    "在 ISL pre-dequeue GE consultation 上增加 ge_isl_queries attribution，并增加 GE 从首次 scheduling attempt 起持续 down、从未进入 _transmit 时仍 effective.ge=true 的 receipt regression。",
+    "现有 GSL GE queue-gating regression 额外断言 ge_gsl_queries>0 以及 effective.ge=true。",
+    "本地 Agent 在修复后运行 targeted D1 regressions 与完整允许测试集，作为最终验收。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L260-L350",
+    "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L590-L670",
+    "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1040-L1105",
+    "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1320-L1395",
+    "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1840-L1915",
+    "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L1940-L2015",
+    "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/kernel.py#L2385-L2435",
+    "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/receipt.py#L120-L185",
+    "github://fuguther/leo-direct-sim/blob/2e88099e8692e1e0ec7bca875ec2e006dec528fb/CODE/leo_sim/tests/test_link_budget_integration.py#L455-L545"
+  ],
+  "open_items": [
+    "UNVERIFIED: 按任务合同未执行本地 Shell/pytest，因此所有 regression 的实际运行结果需由本地 Agent 最终验证。",
+    "UNVERIFIED: 原始 legacy SimulationRL.py/Gateway/Satellite 不属于授权读取路径；本次只能确认 link_budget.py 与授权 characterization/integration goldens 内部一致，不能独立重新核验原始 legacy 源等价性。",
+    "UNVERIFIED: F2-A-WAKE 的最终可观测 expiry 时间依赖 SimPy 同时事件调度路径；静态代码路径显示风险成立，但应以新增 deterministic regression 最终确认。"
+  ]
+}
+===END_OFFLOAD_RESULT===
