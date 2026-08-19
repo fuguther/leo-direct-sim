@@ -1,0 +1,455 @@
+Q0 replay gate + DELIVER fix cold-start review
+
+Verdict: REQUEST_CHANGES
+
+审查对象严格绑定 commit bfa08982e30924cb913ac4a23f5de26f7a0a6668，仅阅读合同允许的 7 个路径。未修改代码，未执行本地 Shell/真实环境测试。
+
+1. F1 — BLOCKING：action_id 已存在，但执行 provenance 仍未做到一一绑定
+FACT
+
+apply_joint_plan() 确实给每个已应用 action 分配唯一、递增的 action_id，并写入 q0_replay_expected；WAIT 的即时执行审计也携带同一 ID。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1286-L1345
+
+但是，真正的 forward/deliver 服务开始时，执行路径没有携带该 action_id。_record_q0_execution() 的签名只有 (pkt, kind, sat, direction)，随后遍历全部历史 expected，用：
+
+kind
+
+packet_id
+
+sat
+
+direction
+
+submitted_at
+
+寻找第一个尚未执行的记录，再把那个记录的 action_id 写进 audit。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1347-L1364
+
+而 _transmit() 对所有实际启动的 DataPacket forward/downlink 服务都会调用 _record_q0_execution()，并不知道当前服务究竟来自哪个 Q0 enqueue。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1520-L1534
+
+因此 action_id 当前只是“匹配完成后贴上的编号”，不是从 plan application 一直传到实际 service start 的 provenance token。
+
+INFERENCE / concrete reproduction
+
+可构造：
+
+Q0 DELIVER action A 在 sat0 被接受，expected 得到 action_id=0；
+
+真正 service start 前 endpoint association 丢失；
+
+DownlinkServer 会把该 packet 从 downlink queue 放回 sat0 holding；
+
+后续普通 _redecide_pending() / _decide() 在恢复 association 后再次将同一 packet 普通投递到 sat0 downlink；
+
+第二次这个非原 Q0 action A 所产生的 service启动时，_record_q0_execution() 仍能按相同 (deliver,pid,sat0,None) 找到旧 expected 0，并将其标为执行。
+
+Downlink 丢 association 后回 holding 的实际路径：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L492-L508
+
+这也意味着 repeated same-signature actions 虽然拥有不同 action_id，但service 到 action 的 provenance 映射并不可靠；aborted/redecided attempt 仍可被后续同签名服务 back-fill。
+
+F1 未关闭。
+
+2. F2 — BLOCKING：verifier 本身返回 verdict/errors，但离线 replay evidence 仍不完整
+已修部分
+
+verify_q0_replay() 返回 (bool, errors)，并按 action_id 查找实际执行记录。
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1366-L1394
+
+expected/audit 也确实包含 action_id。
+
+未修部分
+
+运行结果只输出：
+
+q0_replay:
+    expected: [...]
+    executed: [...]
+
+没有：
+
+verifier verdict；
+
+verifier errors；
+
+每个 expected action 上明确的 executed: bool。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L2449-L2453
+
+而 expected record 自身也只有 action_id/version/submitted_at/kind/packet_id/sat/direction/until，没有 executed。
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1320-L1337
+
+另外，receipt/ledgers schema 完全不保存 q0_replay：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/receipt.py#L36-L61
+
+build_ledgers() 同样没有写入 Q0 verifier/replay evidence：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/receipt.py#L274-L307
+
+还有一个次级缺口：对于非-WAIT action，verify_q0_replay() 找到相同 action_id 后只验证 execution time，没有重新比较 kind/pid/sat/direction。
+
+reproduction
+
+令 Q0 forward 被应用但在 horizon 内没有实际 service。内存中的 verify_q0_replay() 会正确返回 False；但是只保存 run() 的 q0_replay 或标准 receipt 后，没有 authoritative verdict/errors，receipt 甚至丢失整套 Q0 replay 数据。
+
+F2 仅部分修复。
+
+3. DELIVER teleport fix — PASS
+
+这是本 commit 新修复，代码与 regression 都正确命中问题。
+
+validate_joint_plan() 已要求：
+
+action.sat == location[1]
+
+即 DELIVER 的 satellite 必须正是 holding packet 的 satellite。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1250-L1264
+
+回归测试特意让 sat0、sat1 都拥有到 destination 的 active association，同时 packet 只在 sat0 holding，再尝试从 sat1 DELIVER；这排除了“因为 sat1 本身不可投递所以误打误撞失败”的弱测试。测试同时确认 packet 仍留在 sat0、没有 fate mutation。
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/tests/test_q0_contract.py#L150-L174
+
+DELIVER no-teleport fix 通过静态复核。
+
+4. WAIT ownership + F4 atomicity — PASS
+
+WAIT 明确检查 pending satellite ownership、future until 范围和 holding capacity invariant：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1265-L1276
+
+错误 satellite regression 验证 packet 不发生 mutation：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/tests/test_q0_contract.py#L81-L99
+
+F4 原子性实现顺序正确：apply_joint_plan() 首先完整调用 validate_joint_plan()；任何 error 都在第一个 queue removal 之前返回。
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1286-L1305
+
+mixed valid+invalid plan regression 同时检查 pending、ISL queue 和 state_version 均未被部分修改：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/tests/test_q0_contract.py#L65-L79
+
+5. Holding queue — MAJOR：conservation/area 正确，但 Q0 可以绕过声明的 FIFO
+PASS：bits / area
+
+SatelliteHoldingQueue.put/remove/clear/take_ready 均同步维护 queued_bits 与 QueueArea。
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L90-L204
+
+stop-time 也显式 close 每个 holding_area 并汇总到 queue_area_bits_s["holding"]：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L2335-L2363
+
+WAIT 的 remove→put 发生在相同 env.now，所以 area 不会凭空增加时间，queued bits 恢复原值。
+
+FAIL：FIFO
+
+类的合同明确写的是 Finite FIFO，但 Q0 apply 对 action 指定的 packet 使用：
+
+self.pending[sat].remove(packets[action.packet_id], ...)
+
+即可以随机移除队列任意位置的 packet，没有验证 action 必须命中 queue head 或一个合法 FIFO prefix。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L109-L166
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1297-L1305
+
+reproduction
+
+令：
+
+pending[0] = [p1, p2]
+
+两者均 ready，Q0 plan 只包含合法的 forward(p2, sat=0, E)。
+
+当前 validator 不检查 FIFO position，因此 plan 可通过；apply 直接 remove(p2) 并把 p2 放进 ISL，p1 留在 holding。于是 p2 overtakes p1。
+
+如果“holding queue FIFO”属于必须保留的物理约束，这会使 Q0 上界非法变松。
+
+6. F5 — MAJOR：要求的 adversarial replay regression 仍未补齐
+
+当前 test_q0_contract.py 有：
+
+单个 forward happy-path replay；
+
+queued-but-no-service negative case；
+
+WAIT wrong-sat；
+
+WAIT capacity；
+
+新 DELIVER teleport rejection。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/tests/test_q0_contract.py#L65-L174
+
+该文件到 teleport regression 即结束，仍没有 prior review 明确要求的：
+
+same packet across multiple plans；
+
+repeated same-signature actions；
+
+ordinary non-Q0 service must not satisfy Q0 expected；
+
+aborted/redecided attempt cannot back-fill；
+
+successful DELIVER replay；
+
+successful WAIT replay / verifier evidence。
+
+这不是单纯测试覆盖率问题：F1 当前实现确实仍存在这些测试本应捕获的 provenance 缺陷。
+
+7. q0_tiny.py — MAJOR：DP 的 -wait-slots 递推符号错误；多时刻 JointPlan export 也不能直接顺序应用
+7.1 FACT：wait score 符号错误
+
+函数声明第三目标是：
+
+-wait-slots
+
+但递推为：
+
+Python
+运行
+waits = value[2] - (1 if action is None else 0)
+value = (value[0], value[1], -waits)
+
+它在每一层再次取负。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/q0_tiny.py#L57-L127
+
+concrete reproduction
+
+使用：
+
+packet: 0 -> 2, deadline=10
+adjacency:
+  0: (1,)
+  1: (0,)
+  2: ()
+horizon=1
+
+节点 2 不可达。
+
+终端 value 第三项为 0：
+
+WAIT：waits = 0 - 1 = -1，随后得到第三项 +1
+
+FORWARD：第三项得到 0
+
+lexicographic max 因此反而优先 WAIT；文档定义的 -wait-slots 应分别是 -1 和 0，应该优先 FORWARD。
+
+现有 tiny tests 全部是最优路径无需 WAIT 的场景，因此没有覆盖该错误：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/tests/test_q0_tiny.py#L5-L56
+
+7.2 FACT：跨多个 action time 的 export 全部使用同一 state version
+
+TinyPlan.to_joint_plans(version) 对每一个 action time 都生成相同 version：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/q0_tiny.py#L32-L47
+
+测试甚至明确要求三份计划都是 [7, 7, 7]：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/tests/test_q0_tiny.py#L18-L21
+
+但 kernel 每成功应用一个非空 plan 都执行 _state_version += 1：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1338-L1345
+
+而 Q0 contract 要求 exact version equality：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/q0.py#L63-L68
+
+因此第一份 plan 执行后，第二份原样 exported JointPlan 已 stale。这个 tiny export 最多只能被视作计划描述，不能宣称是可直接连续 replay 的 kernel JointPlan 序列。
+
+8. snapshot_global / state_version
+state_version — PASS
+
+在所审 kernel.py 中：
+
+初始化为 0；
+
+每成功应用非空 Q0 plan 只增加；
+
+每个 SimPy event step 后只增加。
+
+run-loop 证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L2311-L2327
+
+snapshot 直接公开该版本，同时所有主要队列、拓扑、packet 字段均重新构造为 dict/list/scalar representation：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L950-L1160
+
+测试也覆盖了 run 后版本增长和其测试场景中的 decision version 严格递增：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/tests/test_q0_snapshot.py#L20-L48
+
+snapshot strict read-only — UNVERIFIED
+
+kernel 自己明确注明 ge.is_down() 会 lazy advance GE 内部 trajectory：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L950-L969
+
+它依赖“query-pattern independent”来论证 observable-world read-only。GilbertElliott 与 LocalCache.valid_entries() 的实现均在本任务 allowlist 之外，所以不能在本合同下独立证明“调用 snapshot 前后所有 kernel-semantic state 完全等价”。
+
+因此这里只能确认返回结构无直接 kernel-object 暴露 + state_version 单调，不能把严格 GE/cache read-only 标为完全 VERIFIED。
+
+推荐返工顺序
+
+先修 F1：Q0 action application 时创建真正随 queue/service entry 传播的 action token；service start 只能消费该 token。普通 _decide() 产生的 service 必须没有 Q0 token；abort/redecision 必须显式 retire 旧 token，禁止 signature back-fill。
+
+修 F2：run completion 生成一次 verifier result，至少落盘 {verdict, errors, actions:[{action_id,...,executed:boolean}]}；若 offline evidence 属于正式 receipt，更新 ledger/receipt schema 与 verifier。
+
+加入 prior F5 全部 adversarial tests，尤其 ordinary-service/back-fill 与 repeated-signature。
+
+明确 Q0 是否必须遵守 holding FIFO；若是，validator 应拒绝非 head/prefix action。
+
+修 tiny DP 第三目标递推，并明确 multi-time plan 的 version rebinding 机制；增加至少一个“WAIT 与 non-WAIT 得分相同前两项”的 regression。
+
+本地 Agent 完成测试执行与 broader-scope GE/cache read-only 验证后再进入下一轮。
+
+Open items
+
+UNVERIFIED: 未执行测试，符合本任务禁止本地 Shell/真实环境验收的约束；需要本地 Agent 运行对应 Q0 test modules。
+
+UNVERIFIED: snapshot_global() 对 GE/cache 的严格无副作用性需要检查 allowlist 外的 outage.GilbertElliott 与 control.LocalCache 实现。
+
+UNVERIFIED: Q0 DELIVER validator 使用 ground_visible()，而真正 DownlinkServer _servable() 使用 gsl_available()；两者是否严格等价需要 allowlist 外 geometry/model 实现才能证明。相关 kernel 调用分别见 kernel.py#L1256-L1260 与 kernel.py#L480-L490。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:Q0-REPLAY-GATE-REVIEW-BFA0",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。DELIVER teleport、WAIT ownership 与 invalid-plan atomicity 已修复；但 F1 provenance 仍未关闭：action_id 未随实际 queue/service 传播，真实服务仍按动作签名回扫 expected，可被普通后续服务或 aborted/redecided 同签名路径回填。F2 的离线 verdict/errors/executed boolean 及 receipt 持久化仍缺失。另发现 Q0 可绕过 holding FIFO，q0_tiny 的 wait-score 符号递推及 multi-time version export 存在 correctness defect。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "action_id 仅在 expected/audit 中生成；实际 service start 不携带 plan action identity，而是按 kind/pid/sat/direction 回扫历史 expected，因此 ordinary service、redecision 或 repeated same-signature 仍可能回填旧 Q0 action。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1286-L1364",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1520-L1534",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L492-L508"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "blocking",
+      "summary": "verify_q0_replay 内存 API 有 bool/errors 和 action_id，但 run evidence 无 verifier verdict/errors、expected 无 executed boolean，receipt/ledgers 又完全丢弃 q0_replay，因此离线 replay evidence 合同未满足。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1366-L1394",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1320-L1337",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L2449-L2453",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/receipt.py#L36-L61",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/receipt.py#L274-L307"
+      ]
+    },
+    {
+      "id": "DELIVER-TELEPORT",
+      "severity": "info",
+      "summary": "PASS：DELIVER 必须由实际 holding packet 的 satellite 执行；新 regression 同时给错误 satellite 有效 downlink 条件，确认拒绝确由 ownership check 触发，且拒绝无 packet mutation。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1250-L1264",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/tests/test_q0_contract.py#L150-L174"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "PASS：apply_joint_plan 在任何 queue removal 前先完整 validate；mixed invalid-plan、WAIT wrong-sat 与 DELIVER wrong-sat 均保持无部分 mutation。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1265-L1305",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/tests/test_q0_contract.py#L65-L99",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/tests/test_q0_contract.py#L150-L174"
+      ]
+    },
+    {
+      "id": "HOLDING-FIFO",
+      "severity": "major",
+      "summary": "Holding bits/area accounting is integrated, but Q0 apply can remove any planned packet by identity from the documented FIFO rather than enforcing head/prefix order, allowing a tail packet to overtake earlier pending packets.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L109-L204",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1297-L1305",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L2335-L2363"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "summary": "Prior-required adversarial replay coverage仍缺失：没有 same-packet-across-plans、repeated-signature、ordinary-service provenance、aborted/redecided back-fill、successful DELIVER replay 或 successful WAIT replay regression。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/tests/test_q0_contract.py#L65-L174"
+      ]
+    },
+    {
+      "id": "Q0-TINY",
+      "severity": "major",
+      "summary": "q0_tiny 的第三目标声明为 -wait-slots，但 Bellman 回溯重复取负，使 WAIT 可获得正奖励；另外 to_joint_plans 给不同 action times 同一 version，而 kernel 成功应用首个 plan 后即递增 state_version，后续 exported plan 会 stale。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/q0_tiny.py#L32-L47",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/q0_tiny.py#L57-L127",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/tests/test_q0_tiny.py#L5-L56",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1338-L1345",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/q0.py#L63-L68"
+      ]
+    },
+    {
+      "id": "SNAPSHOT-VERSION",
+      "severity": "info",
+      "summary": "PASS/PARTIAL：snapshot 返回重新构造的结构，state_version 在已审 kernel 中只初始化为 0 后递增；严格 GE/cache read-only 因相关实现不在 allowlist 内仍属 UNVERIFIED。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L950-L1160",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L2311-L2327",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/tests/test_q0_snapshot.py#L20-L48"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "将 Q0 action_id/token 在 apply 时绑定到具体 queue/service entry，并在真实 service start 直接消费该 token；普通决策产生的 service 不得匹配历史 expected，abort/redecision 必须 retire 原 token。",
+    "将 q0 replay verifier verdict、errors、完整 action identity 与逐 action executed boolean 固化到离线 evidence；若 receipt 是正式证据载体，则同步扩展 ledger/receipt schema 和 verifier。",
+    "补齐 same packet across plans、repeated same-signature、ordinary non-Q0 service、aborted/redecided back-fill、DELIVER replay、WAIT replay 对抗测试。",
+    "若 holding FIFO 是物理合同，validate_joint_plan 必须限制 Q0 只能消费合法 queue head/prefix；否则需显式修改合同而不是由 Q0 静默随机访问。",
+    "修复 q0_tiny 的 wait-score 递推，并避免把不同 action time 导出为可直接顺序应用但 version 相同的 JointPlan。",
+    "由本地 Agent 执行 Q0 回归测试，并在允许更大读取范围时验证 GE/cache strict read-only 与 ground_visible/gsl_available 等价性。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1230-L1394",
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L1520-L1534",
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/kernel.py#L2449-L2453",
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/receipt.py#L36-L61",
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/tests/test_q0_contract.py#L65-L174",
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/CODE/leo_sim/q0_tiny.py#L32-L127"
+  ],
+  "open_items": [
+    "UNVERIFIED：按任务约束未执行本地测试；本地 Agent 仍需运行允许范围内的 Q0 regression suite。",
+    "UNVERIFIED：snapshot_global 对 GilbertElliott.is_down 与 LocalCache.valid_entries 的严格无副作用性无法在当前 allowlist 下独立验证；kernel 自身说明 GE 查询会 lazy advance 内部 trajectory。",
+    "UNVERIFIED：Q0 DELIVER validation 使用 ground_visible，而实际 DownlinkServer 使用 gsl_available；两者严格等价性需要 allowlist 外 geometry/model 实现才能判定。"
+  ]
+}
+===END_OFFLOAD_RESULT===
