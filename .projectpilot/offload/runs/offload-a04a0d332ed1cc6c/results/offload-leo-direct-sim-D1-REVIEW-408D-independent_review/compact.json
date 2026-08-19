@@ -1,0 +1,79 @@
+{
+  "taskId": "offload:leo-direct-sim:D1-REVIEW-408D:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "APPROVE。静态复核显示 round-6 两个 major finding 均已修复：pending zero-rate 路径具备 deadline/MCS/GE certified wake 与 stale-wake guard；_decide GSL/ISL 及 ISLLink.available_now 的 GE 查询均正确计数。_transmit 的额外计数表示另一真实 GE query，receipt 仅以总查询数>0判定 effective.ge，不构成布尔语义 double-count。旧 F2-RACE/F3/F4/F5/F1-R 与 downlink tail-deadline 修复未见回退。测试执行仍需本地 Agent 验证。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "Round-6 finding 1 appears fixed: _decide uses inclusive deadline checks and zero-rate pending packets receive certified deadline/MCS/GE wakes with earliest-wake and stale-timeout guards.",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/kernel.py#L2268-L2460",
+        "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/tests/test_link_budget_integration.py#L700-L810"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "Round-6 finding 2 appears fixed: GSL/ISL decision attribution and ISL pre-gate GE reads increment their query counters; _transmit's separate query accounting does not break receipt effective.ge semantics.",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/kernel.py#L2280-L2430",
+        "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/kernel.py#L658-L690",
+        "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/kernel.py#L1450-L1515",
+        "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/receipt.py#L135-L175",
+        "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/tests/test_link_budget_integration.py#L780-L870"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "No static regression found in prior D1 fixes: unconditional deadline sweeps, inclusive stop settlement, blocker-correct MCS attribution, constant-rate GSL pre-gates, immediate hard retirement, and downlink non-head deadline waits remain present.",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/kernel.py#L300-L650",
+        "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/kernel.py#L1390-L1515",
+        "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/kernel.py#L2550-L2565",
+        "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/tests/test_link_budget_integration.py#L840-L1120"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "The existing GSL-only outage regression still requires ge_isl_queries == 0, and ISLLink does not query GE while both queues are empty, so the new pre-gate counter is not statically unconditional.",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/kernel.py#L658-L720",
+        "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/tests/test_outage_trace_gaps.py#L20-L58"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "本地 Agent 在精确 commit 408d368cd31f0990d39480eff962dd53f49bb95b 上实际运行本轮四个新增 regression 以及 test_outage_trace_gaps 的 GSL-only GE counter regression。",
+    "运行完整 test_link_budget_integration.py、test_outage_trace_gaps.py 和相关 test_kernel.py 作为最终回归 gate。",
+    "可选加强：增加 ISL pending exact next_isl_range_under wake 与 GSL/ISL exact GE next_up wake 的独立时间戳回归。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/kernel.py#L2268-L2460",
+    "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/kernel.py#L658-L720",
+    "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/kernel.py#L1390-L1515",
+    "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/receipt.py#L135-L175",
+    "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/tests/test_link_budget_integration.py#L700-L1120",
+    "github://fuguther/leo-direct-sim/blob/408d368cd31f0990d39480eff962dd53f49bb95b/CODE/leo_sim/tests/test_outage_trace_gaps.py#L20-L58"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "UNVERIFIED: 本 Worker 受合同约束未执行本地测试；上述 APPROVE 是精确 commit 白名单代码的静态审查结论，测试运行结果须由本地 Agent 最终确认。",
+    "覆盖缺口：现有新增 regressions 直接证明 GSL pending 的 exact deadline/range wake 和 GE counter，但白名单测试中未看到专门锁定 ISL pending exact MCS recovery 或 pending exact GE next_up 时间戳的对抗测试。"
+  ]
+}
