@@ -1,0 +1,339 @@
+D1/D2 independent cold-start review
+
+Verdict: REQUEST_CHANGES
+
+结论为 RESULT_CANDIDATE。基于 commit 2bf385870a06c2aa710cca93b528809b10f9c05e 的只读静态审阅，我认为该 combined baseline 目前不满足 D1/D2 合同级验收。发现 4 个 major：D1 零速率恢复被 time_step 轮询量化；D2 真实 Markovian matcher 在合法方向/单平面边界上违反设计；D2 rematch 与 learning forward transition 不兼容；constant rate mode 仍强制依赖 RF/MCS 配置，违反“constant 忽略 RF”的合同。另有明显测试覆盖缺口。
+
+受任务约束，我没有执行本地测试或 Shell；下面的 FACT 来自 pinned commit 的允许路径，运行时后果在未执行时明确标为 INFERENCE。
+
+Findings
+F1 — major — D1 零速率恢复没有统一使用认证 crossing，GSL/新 ISL 决策可能延迟到下一 time_step
+
+FACT。 D1 设计明确要求：低于 MCS 门限时应当像链路 down 一样，通过 next_slant_range_under / next_isl_range_under 找到认证恢复时刻，并与 deadline/硬退役竞速；服务应在真正可用时开始，而不是用 dur=∞ 或粗粒度等待。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L47-L78
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L1470-L1645
+
+_transmit 本身实现了这一精确恢复机制；但调用链在进入 _transmit 之前又增加了零速率过滤：
+
+Uplink _pick() 在 MCS rate <=0 时直接返回 None；整个 uplink server 随后只按 time_step 轮询。认证 next_slant_range_under 只有包已经成功被挑出后才会传给 _transmit。
+
+Downlink _servable() 同样先拒绝零速率包，再以 time_step 轮询。
+
+新到 satellite 的 ISL 数据包在 _decide() 中遇到 MCS rate <=0 会被放入 pending；而 pending 只由 _pending_ticker() 每个 time_step 重决策。只有已经进入 ISL 队列的包才由 ISLLink._run() 使用 next_isl_range_under 精确等待。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L371-L430
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L500-L570
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L650-L710
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L1727-L1735
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L2320-L2355
+
+INFERENCE。 可构造确定性反例：令 time_step_s=1.0，链路在 t=0.4 穿过 MCS 可用门限，packet deadline 为 0.8，服务本身足够短。合同语义允许约 t=0.4 开始服务；当前 GSL/新 ISL 决策路径可能直到 t=1.0 才重新检查，从而把本应完成的包变成 deadline loss。即使没有 deadline，也会给 latency 和 queue-area 引入最高约一个 time_step 的人为偏差。
+
+现有测试没有排除这个反例。test_mcs_service_waits_for_rate_recovery_then_delivers 把 crossing 设在 1.0，恰好与默认 tick 对齐；零速率 ISL head 测试又是直接 put_data()，绕过了 _decide -> pending 路径。也没有 GSL 零速率 crossing 的精确时间断言。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_link_budget_integration.py#L99-L178
+
+Blocks baseline: YES. D1 的零速率/deadline 语义会影响 fate、latency 和 queue accounting，不只是性能优化问题。
+
+Required reproduction: 增加 uplink、downlink、fresh-ISL-decision 三个 crossing=0.4, time_step=1.0 的解析测试，分别断言真实 transmission start、deadline fate 和 queue area。
+
+F2 — major — D2 真实 _cross_plane_matching 不满足允许配置下的 E/W matching 合同
+
+FACT。 配置接受任意非空 isl_dirs ⊆ {N,S,E,W}；设计要求动态 rematch 对“跨面 E/W 候选”进行贪心匹配，候选必须来自不同 plane。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/config.py#L528-L555
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L25-L55
+
+实际 matcher 有两个边界缺陷：
+
+_cross_plane_matching() 的 plane 循环开头是 if "E" not in dirs: break。因此合法的 isl_dirs=["W"] 会直接产生空 cross-plane matching，尽管 neighbors_at() 明确在 W 被请求时调用 matcher。
+
+east_plane = (p + 1) % num_planes 没有检查 east_plane != p。因此 num_planes=1 时会在同一 plane 内生成所谓 E/W “cross-plane”候选，违反设计的“不同面”前提。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/model.py#L557-L608
+
+routing.build_topology() 的双向验证不能发现 “W 被静默省略” 的情况，因为空 edge set 会 vacuously pass。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/routing.py#L55-L82
+
+INFERENCE。 对 W-only dynamic configuration，启用 recompute 会把预期的 W 跨面连接静默消失；对单 plane built-in geometry，可能生成错误类别的同面 E/W link。两者都会改变 reachability、控制树与后续 packet fate。
+
+现有 D2 测试并未调用真实 Constellation._cross_plane_matching；它们全部通过 StaticGeometry(..., neighbors_at_fn=at) 注入预制 topology，因此无法捕获 matcher 本体错误。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_routing.py#L130-L200
+
+Blocks baseline: YES. 这是 D2 核心拓扑生成语义本身的错误。
+
+Required reproduction: 对真实 Constellation 增加 W-only、E/W、num_planes=1、num_planes>=2 的 matcher 测试；若 W-only/E-only 不应被支持，应在 config 层 fail-loud，而不能运行后静默改变 topology。
+
+F3 — major — D2 rematch 回退 queued data 会留下未结算 learning forward transition，后续重决策可 fail-loud
+
+FACT。 一个 learning forward action 被选中时，_learning_action() 将：
+
+learning_state 设置为当前 state；
+
+learning_action 设置为 forward direction；
+
+learning_reward=None；
+
+加入 _learning_open。
+
+forward queue reward 只有等到 ISL 真正开始 transmission 时，_transmit() 才结算。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L1600-L1645
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L2199-L2235
+
+D2 rematch 则会把旧 ISL data_q 中尚未开始 service 的数据包直接：
+
+old data_q -> remove bits/area -> _hold_packet(s,pkt)
+
+但没有关闭、取消或重新定义这个尚未实现 reward 的 forward transition。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L1054-L1094
+
+而包下一次真正需要 learning redecision 时，_learning_action() 对任何
+
+learning_state != None && learning_reward == None && learning_action != "deliver"
+
+显式抛出 KernelError("unsettled non-deliver learning transition at re-decision")。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L2199-L2220
+
+INFERENCE。 因而可构造：Q-learning 做出 forward → packet 尚在旧 ISL data_q → topology ticker 换 peer → packet 回 pending → 下一次出现合法 forward/deliver decision。此时会触发上述 KernelError，而不是正常继续 packet lifecycle。配置层没有禁止 dynamic topology + learning。
+
+当前 D2 requeue 测试使用手工构造、无 learning state 的 DataPacket，并且只直接调用 _recompute_topology() 后检查 container，不继续运行至 redecision，因此完全绕开这一组合路径。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_routing.py#L160-L200
+
+Blocks baseline: YES for any supported D2+learning experiment. 这也是 combined baseline 的组合回归，不应作为单独 future feature 忽略。
+
+Required reproduction: 用纯 NumPy qlearning 构造 packet 已选 forward 但尚未 service 的场景，在 rematch 后继续到下一 decision；要求 natural end、无 KernelError，并验证 decisions == transitions + discarded_at_stop。
+
+F4 — major — rate_model=constant 仍强制验证并初始化 MCS/RF，违反“constant 时忽略 RF”合同
+
+FACT。 D1 design 明确写明：
+
+rate_model=mcs 时 RF 缺失/非法 fail-loud；constant 时忽略 RF。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L30-L49
+
+实际 config 无条件：
+
+校验 mcs_table；
+
+要求三个 rf_* mapping 都精确具有完整 key set；
+
+要求所有 RF 数值为正。
+
+只有 min_rate_bps <= first-MCS-step 这一附加条件才被包在 rate_model=="mcs" 中。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/config.py#L540-L579
+
+Kernel 也无条件构造三个 RFParams 并计算三个 max_rate_range_km，即使 rate_model=="constant"。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L855-L875
+
+测试甚至把这种合同偏离固定成预期行为：在未设置 rate_model=mcs、即默认 constant 的配置下，给 rf_isl 一个未知字段，测试要求 ConfigError。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_link_budget_integration.py#L40-L62
+
+INFERENCE。 constant arm 的运行资格和 resolved-config identity 会依赖物理上完全未使用的 MCS/RF 配置；这与“default constant 完全保持既有行为”的 migration contract 不一致。
+
+Blocks baseline: YES as a contract/configuration compatibility issue. 若项目决定改变原设计、要求 constant 也严格验证 RF，则必须先修改正式设计合同并补充理由，不能让测试静默重新定义合同。
+
+F5 — minor — 当前测试集不足以证明 D1/D2 acceptance plan
+
+FACT。 D1 design 要求解析的单跳 service time、constant-vs-MCS differential、零速率 fate；D2 design 要求真实动态 topology、队列迁移后 conservation。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L82-L96
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L86-L105
+
+但目前：
+
+D1 没有断言 propagation + bits/rate(slant) 的解析完成时刻；
+
+没有 GSL zero-rate crossing 精确恢复测试；
+
+dynamic D2 tests 全部通过 scripted neighbors_at_fn，没有覆盖真正 matcher；
+
+data requeue test 未注册 packet ledger、未跑到 stop，也没有调用 end-to-end conservation；
+
+没有 dynamic topology + learning 组合测试。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_link_budget_integration.py#L99-L178
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_routing.py#L130-L200
+
+Blocks baseline by itself: NO, but它解释了上述 major 为什么能够通过现有测试。
+
+Verified portions
+
+有几部分从静态代码看是正确的，不需要返工方向：
+
+D1 MCS 数值核心基本闭合。 三套 RF 参数、FSPL/SNR/MCS 阶梯和 max_rate_range_km() 均与 integration goldens 对应。
+Evidence: github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/link_budget.py#L70-L169
+Evidence: github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_link_budget_integration.py#L1-L47
+
+D2 非 learning 的 queued-data 转移账目本身合理。 旧 ISL queue 先扣 data_bits/data_area，再经有限 holding queue 的 put() 增加 queued_bits/holding area；overflow 有明确 HOLDING_QUEUE_OVERFLOW fate。
+Evidence: github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L120-L215
+Evidence: github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L1018-L1094
+
+Topology retirement 基本符合设计。 queued data 被移出；current 未被 rematch 打断；旧 link 被放入 _retired_isls，控制队列继续由旧 link process drain；最终 queue-area/occupied accounting 遍历 current + retired links。
+Evidence: github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L1044-L1094
+Evidence: github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L2392-L2465
+
+Receipt mechanism key 闭合正确。 requested 含 rate_model、topology interval/matching；effective 含 mcs 和 dynamic_topology；ledger schema 包含 mcs_rate_samples/topo_recomputes，verifier 会从 resolved config/counters 重建并比较。
+Evidence: github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/receipt.py#L49-L146
+Evidence: github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/receipt.py#L1030-L1110
+
+Important UNVERIFIED item
+
+UNVERIFIED — dynamic rematch + GE channel continuity. 每创建一个替换 ISLLink，constructor 都重新创建 GilbertElliott，RNG stream key 仅为 isl:{sat}:{direction}，没有 peer 或 topology epoch。是否因此在每次 rematch 时把同一方向的 GE trajectory 从头初始化，取决于未授权读取的 outage/RNG 实现，当前合同不能继续核实。
+
+Evidence:
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L599-L628
+
+github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L1070-L1090
+
+本地 Agent 应在更高权限审阅中确认：rematch 是应保留 per-direction GE state、按 physical peer 重建连续 trajectory，还是有意 reset，并用确定性测试固定。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:D1D2_REVIEW:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。D1 的零速率前置过滤使 GSL/新 ISL 决策按 time_step 轮询而非认证 crossing 恢复，可改变 deadline fate；D2 真正 matcher 对 W-only/单平面违反 E/W 跨面合同；rematch 会把未开始服务的 learning forward 包回退 pending，却保留未结算 transition，后续重决策可 KernelError；constant 模式仍强制验证/初始化 RF，违反设计。receipt、基础队列账目和 retired-link 结算路径基本闭合。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "FACT: D1 zero-rate 在 uplink/downlink preselection 和 fresh ISL decision 被 time_step polling 截获，绕过 _transmit 的 certified rate-recovery race；INFERENCE: crossing 位于 tick 之间时可改变 latency、queue area 乃至 deadline fate。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L47-L78",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L371-L430",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L500-L570",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L1727-L1735",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L2320-L2355",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_link_budget_integration.py#L99-L178"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "FACT: D2 built-in cross-plane matcher immediately returns no cross edges when E is absent, so legal W-only config silently loses W links; num_planes=1 also permits same-plane E/W candidates despite the different-plane contract. Existing tests bypass this matcher with scripted neighbors_at.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L25-L55",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/config.py#L528-L555",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/model.py#L557-L608",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/routing.py#L55-L82",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_routing.py#L130-L200"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "FACT: rematch 把 old ISL data_q 包移入 pending 时不处理尚未结算的 learning forward transition；_learning_action 明确拒绝 non-deliver action 的 state!=None/reward=None。INFERENCE: dynamic topology + learning 在后续合法重决策时可抛 KernelError。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L1054-L1094",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L1600-L1645",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L2199-L2235",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_routing.py#L160-L200"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "FACT: design 要求 constant 模式忽略 RF，但 config 无条件验证 mcs_table/三套 RF，Kernel 也无条件构造 RF 与 recovery ranges；现有测试甚至把 constant+非法 RF 应失败固定下来，正式设计与实现/测试相冲突。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L30-L49",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/config.py#L540-L579",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L855-L875",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_link_budget_integration.py#L40-L62"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "FACT: tests do not implement several stated acceptance checks: no exact analytic one-hop MCS timing, no off-tick GSL recovery race, no real Constellation rematcher boundary tests, and rematch migration test does not continue through ledger conservation or learning redecision.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L82-L96",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L86-L105",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_link_budget_integration.py#L99-L178",
+        "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_routing.py#L130-L200"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "F1: 统一 zero-rate scheduling：使 uplink/downlink/fresh-ISL 路径使用 certified next_*_range_under crossing，并增加 crossing 位于两个 time_step 之间且 deadline 位于下一 tick 之前的解析测试。",
+    "F2: 修正或收紧 E/W dynamic matching 合同；对真实 Constellation 添加 W-only、E-only、E+W、单平面和多平面测试，非法组合应 config fail-loud。",
+    "F3: 明确定义 queued forward action 因 topology retirement 未实现时的 learning transition fate/reward；用 qlearning 做 rematch-before-service 端到端测试并验证 transition accounting。",
+    "F4: 在代码和正式设计之间二选一并统一：若 constant 真正忽略 RF，则仅 mcs 模式验证/初始化 RF；若要改变合同，先修改设计再修改测试预期。",
+    "补充 end-to-end D2 registered-packet rematch 测试，至少验证 packet conservation、holding/ISL queue-area 迁移、control drain 和 retired-link stop accounting。",
+    "本地 Agent 在允许扩大路径后核查 dynamic rematch 是否会重置同一 sat:direction 的 Gilbert-Elliott trajectory。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/link_budget.py#L70-L169",
+    "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L371-L430",
+    "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L1054-L1094",
+    "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/kernel.py#L1470-L1645",
+    "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/model.py#L557-L608",
+    "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/config.py#L540-L579",
+    "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/receipt.py#L49-L146",
+    "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_link_budget_integration.py#L99-L178",
+    "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/CODE/leo_sim/tests/test_routing.py#L130-L200",
+    "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L47-L96",
+    "github://fuguther/leo-direct-sim/blob/2bf385870a06c2aa710cca93b528809b10f9c05e/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L25-L105"
+  ],
+  "open_items": [
+    "F1 major remains open: locally reproduce an off-tick rate crossing and deadline race for uplink/downlink/fresh ISL decisions, then fix or formally redefine recovery scheduling.",
+    "F2 major remains open: repair or reject W-only/E-only and num_planes=1 dynamic cross-plane configurations; verify with the real Constellation matcher rather than scripted neighbors_at.",
+    "F3 major remains open: define and test learning-transition handling when a queued forward is retired by topology rematch before service starts.",
+    "F4 major remains open: reconcile the formal constant-mode RF-ignore contract with unconditional config validation and Kernel RF initialization.",
+    "UNVERIFIED: new ISLLink objects recreate GilbertElliott using the same isl:{sat}:{direction} stream key; continuity/reset semantics cannot be established without reading the currently unauthorized outage/RNG implementation."
+  ]
+}
+===END_OFFLOAD_RESULT===
