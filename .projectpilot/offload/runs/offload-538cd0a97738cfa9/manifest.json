@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "planId": "offload-538cd0a97738cfa9",
+  "relayManifest": {
+    "planId": "offload-538cd0a97738cfa9",
+    "projectId": "leo-direct-sim",
+    "backend": "web_chat",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:D1-INDEPENDENT-REVIEW",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42",
+        "paths": [
+          "CODE/leo_sim/link_budget.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/__main__.py",
+          "CODE/leo_sim/tests/test_link_budget_integration.py",
+          "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md"
+        ],
+        "promptHash": "06f3cc36ac29a6140ea669dc9998dbcdf625266175a84573326e230a0d5b183a"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:D1-INDEPENDENT-REVIEW:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42",
+        "paths": [
+          "CODE/leo_sim/link_budget.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/__main__.py",
+          "CODE/leo_sim/tests/test_link_budget_integration.py",
+          "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md"
+        ],
+        "promptHash": "c8daa5dc8568934868162a11857f37a69e41c3adef4ae7f9c1d0d6e9343e3c34"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "538cd0a97738cfa9f8feefd494423a685a9921c62c3636bbe9b1e87608778321"
+  },
+  "sourceBaseCommit": "c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:D1-INDEPENDENT-REVIEW",
+      "promptHash": "06f3cc36ac29a6140ea669dc9998dbcdf625266175a84573326e230a0d5b183a",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42",
+        "paths": [
+          "CODE/leo_sim/link_budget.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/__main__.py",
+          "CODE/leo_sim/tests/test_link_budget_integration.py",
+          "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:D1-INDEPENDENT-REVIEW:independent_review",
+      "promptHash": "c8daa5dc8568934868162a11857f37a69e41c3adef4ae7f9c1d0d6e9343e3c34",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42",
+        "paths": [
+          "CODE/leo_sim/link_budget.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/__main__.py",
+          "CODE/leo_sim/tests/test_link_budget_integration.py",
+          "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
