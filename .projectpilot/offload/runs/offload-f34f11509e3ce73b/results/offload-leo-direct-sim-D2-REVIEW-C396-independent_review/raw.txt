@@ -1,0 +1,253 @@
+结论：REQUEST_CHANGES
+
+精确绑定 commit c3965ae8a03d64db4c01a05ed59d5e53d184959d 后的独立静态复核结果：
+
+F2/F3/F4 的生产实现本身均已修正，未发现新的 blocking 语义错误。
+但本轮明确要求的 “no-successor drain reclaim 回归必须实际覆盖 purge-at-drain”仍存在测试证据缺口：当前测试没有自行保证旧 generation 在 t=0.5 rematch 时仍未 drain。因此无法证明它真的执行了 ISLLink._run() 中的 prompt-reclaim 分支，而不是在 rematch 时就被 _recompute_topology() 的 purge 清掉。
+
+由于“新增回归实际覆盖该场景”属于本轮显式验收项，我不建议在这个证据缺口下给 APPROVE。
+
+Findings
+F1 — major — no-successor prompt-reclaim 回归并未确定性锁住目标路径
+
+FACT
+
+test_removed_direction_reclaims_drained_generation_without_successor()：
+
+在 t=0 向旧 0:E 放入一个 8,000-bit control packet；
+
+rematch 由 ticker 在 t=0.5 执行；
+
+该测试没有显式降低 isl_rate_mbps，也没有在 t=0.5 后断言 old 仍处于 _retired_isls 且 _is_drained()==False；
+
+最后只在整个 k.run() 返回后检查 _isl_dyn_drained == 2 和 _retired_isls == []。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_dynamic_topology.py#L300-L347
+
+与之形成明显对照的是 G0→G1→G2 测试：为了保证 rematch 与 service 重叠，它明确把 isl_rate_mbps 设置为 0.004，使 8,000 bit service 固定持续 2 s。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_dynamic_topology.py#L208-L258
+
+INFERENCE
+
+如果 make_cfg() 的默认 ISL 速率使该 8,000-bit control packet 在 t=0.5 前完成，那么旧 generation 在真正 rematch 时已经 _is_drained()。它随后会直接被 _recompute_topology() 尾部 purge，因此即使删除真正要求保护的 ISLLink._run() prompt-purge，测试仍可能通过。
+
+生产代码当前确实包含正确的 prompt reclaim：retired generation 队列清空后 signal drained，立即调用 _purge_drained_retired() 并结束进程。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L651-L670
+
+同时 _recompute_topology() 自己也会在 cap check 前以及重算结束后 purge，这正是导致上述测试可能“走错路径仍然通过”的原因。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L1118-L1166
+
+UNVERIFIED
+
+make_cfg() 位于本任务白名单之外，因此不能读取其默认 isl_rate_mbps 来判断当前测试运行时是否事实上跨过了 t=0.5。但测试本身没有把这一关键前提固定下来，所以作为防回归证据不充分。
+
+建议修复
+
+让测试自行制造确定性条件，例如明确使用长于 0.5 s 的 service；在 rematch 后先断言旧 generation 确实仍 live/retired，再运行到其 drain 时刻但早于下一次 topology recompute，此时立即断言：
+
+old not in k._retired_isls
+
+_isl_dyn_drained 已增加
+
+_live_entity_count() 已同步下降
+
+最好再做一个局部 mutation check：临时移除 ISLLink._run() 中的 prompt _purge_drained_retired()，确认该回归必然失败。
+
+F2 — info — G0→G1→G2 one-transceiver gate 的生产修复正确
+
+FACT
+
+每个 ISL generation 都拥有单调 gen。发送前的 busy 集合：
+
+仅限定相同 (sat, direction)；
+
+只纳入 l.gen < self.gen 的全部更老 generation；
+
+没有 not self.retired 豁免，因此 G1 在第二次 rematch 后即使自己已经 retired，仍必须等待 G0；
+
+不等待 younger generation，因此不存在 G0/G1 双向等待造成的代际死锁。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L651-L709
+
+测试构造真实的 1→2→3 三代连续 rematch，并在每一次 SimPy event step 后联合检查 current ISLs 和 _retired_isls，确保同一 (sat,direction) 最多只有一个 _svc 非空。这比只检查最终 service log 更强，能够捕获同时间戳下的服务重叠。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_dynamic_topology.py#L170-L258
+
+结论： F2 blocking 的生产语义已关闭；连续 rematch 的 no-overlap 回归覆盖充分。
+
+F3 — info — unified live-entity accounting 与 cap-check ordering 已修正
+
+FACT
+
+lazy activation 后 self.endpoints 从空集合开始；base 计数由 satellites 加初始 directed ISLs 构成，初始 ISL 创建时逐一增加 n_entities。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L860-L939
+
+统一公式为：
+
+_entity_base + len(endpoints) + _isl_dyn_created - _isl_dyn_drained
+
+_ensure_endpoint() 使用同一 _live_entity_count() 做 fail-closed gate。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L1009-L1038
+
+_recompute_topology() 在 planned_new 与 cap 检查之前先执行 _purge_drained_retired()；随后使用同一 live count 加全部 planned directed generations 判定是否超过 max_entities。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L1118-L1134
+
+两个 cross-term 方向均有测试：
+
+先 lazy endpoint，再 dynamic ISL → rematch 必须 fail closed。
+
+先 dynamic ISL 消耗 cap，再 lazy endpoint → endpoint activation 必须 fail closed。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_dynamic_topology.py#L260-L315
+
+结论： F3 实现和双向 cross-term 回归均成立。
+
+F4 — info — C5/C7 已保留 CacheEntry advertisement origin
+
+FACT
+
+_origin_features() 根据传入 origin 获取 topo[origin] 的 peer binding，再通过 _peer_bit_value() 将 advertisement 中的 {peer,value} 与该 origin 的当前方向 peer 校验。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/learning.py#L980-L1050
+
+build_observation() 中：
+
+C5 保存 freshest_o，调用 _origin_features(..., freshest_o)；
+
+C7 对每个 (o,e) 调用 _origin_features(..., o)；
+
+不再误用 root sat。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/learning.py#L1228-L1299
+
+新增测试同时覆盖：
+
+origin peer 真正匹配而 root peer 不匹配 → C5/C7 queue feature 必须非零；
+
+advertisement peer 只匹配 root、但不匹配 advertisement origin → C5/C7 必须读 0。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_learning.py#L280-L331
+
+结论： F4 已关闭，测试能够杀掉“重新错误使用 root sat”的回归。
+
+F5 — info — holding/receipt 静态检查未发现新增守恒冲突
+
+rematch 对 queued data 的处理仍是：从旧 ISL data queue 移除、同步减少 queue-area，然后通过统一 _hold_packet() 进入有限 holding queue；holding overflow 会得到显式 terminal fate，而不是丢失 packet。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L1040-L1060
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L1134-L1154
+
+holding queue 自身仍有 capacity、FIFO、bits/area 更新、overflow fate 与 deadline sweep 回归。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_holding_queue.py#L1-L108
+
+retired ISL 使用与正常 ISL 相同的 control service 路径，control_tx_started / control_tx_completed 仍按实际 dequeue/completion 更新；receipt verifier继续要求 control lifecycle 单调关系及 control fate sum == registered。
+
+证据：
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L720-L775
+github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/receipt.py#L650-L699
+
+INFERENCE： 当前白名单内静态状态没有发现 receipt counter 或 holding conservation 新回归。
+
+风险与本地下一步
+
+当前风险集中在测试证明力，而非已观察到的生产语义错误。本地 Agent 应首先把 no-successor reclaim 测试改成完全自包含、确定性地“rematch 时仍在 drain”，并做 prompt-purge mutation check。之后再运行 test_dynamic_topology.py、test_learning.py、test_holding_queue.py 以及本地完整验收；若该加强回归通过，我当前没有其他阻止 APPROVE 的生产级问题。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:D2-REVIEW-C396:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。F2/F3/F4 生产实现均已正确修复：代际门禁等待全部更老 generation、实体 cap 使用统一 live formula 且 cap 前 purge、C5/C7 按 advertisement origin 校验 peer。唯一主要问题是 no-successor prompt-reclaim 回归没有自行保证 rematch 时旧 generation 仍未 drain，可能只覆盖 recompute purge，未确定性锁住 purge-at-drain 路径。holding/receipt 静态未见新守恒冲突。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "no-successor drain reclaim 回归未确定性保证旧 generation 在 rematch 后才 drain，因此不足以证明 prompt purge-at-drain 路径被实际覆盖。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_dynamic_topology.py#L300-L347",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_dynamic_topology.py#L208-L258",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L651-L670",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L1118-L1166"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "G0->G1->G2 one-transceiver gate 已正确按 generation 只等待同槽位全部更老 generation，retired successor 无豁免且无双向代际等待。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L651-L709",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_dynamic_topology.py#L170-L258"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "max_entities 已统一统计 base satellites+initial ISLs、lazy endpoints、live dynamic generations；endpoint 与 topology creator 共用公式且 cap 检查前 purge drained generations。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L860-L939",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L1009-L1038",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L1118-L1134",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_dynamic_topology.py#L260-L315"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "C5/C7 已按每个 CacheEntry 的 advertisement origin 调用 _origin_features，fresh-peer 接受与 stale-peer 拒绝均有针对性回归。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/learning.py#L980-L1050",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/learning.py#L1228-L1299",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_learning.py#L280-L331"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "白名单内静态复核未发现 holding queue 或 receipt/control counter 守恒的新回归。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L1134-L1154",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_holding_queue.py#L1-L108",
+        "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/receipt.py#L650-L699"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "把 no-successor reclaim 回归改成自包含：显式设置足够慢的 ISL rate 或手动在 queued/in-service 状态执行 rematch，先证明 generation 在 rematch 后仍 live。",
+    "在旧 generation drain 后、下一次 topology recompute 之前立即断言其已离开 _retired_isls，且 _isl_dyn_drained/_live_entity_count 已同步更新。",
+    "本地做 mutation check：临时删除 ISLLink._run 中 drain 后的 _purge_drained_retired()，确认加强后的 no-successor 回归必然失败。",
+    "本地运行 test_dynamic_topology.py、test_learning.py、test_holding_queue.py 及完整验收后再作最终 APPROVE 决定。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L651-L709",
+    "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/kernel.py#L1009-L1038",
+    "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/learning.py#L1228-L1299",
+    "github://fuguther/leo-direct-sim/blob/c3965ae8a03d64db4c01a05ed59d5e53d184959d/CODE/leo_sim/tests/test_dynamic_topology.py#L170-L347"
+  ],
+  "open_items": [
+    "UNVERIFIED: make_cfg 的默认 ISL rate 位于本任务读取白名单之外，因此网页 Worker 无法确认当前 no-successor 测试在实际默认配置下是否确实跨越 t=0.5 rematch；这也是要求测试显式固定 service duration 的原因。",
+    "UNVERIFIED: 按 REMOTE/no-local-shell 合同未实际执行测试；最终 runtime PASS 由本地 Agent 验证。"
+  ]
+}
+===END_OFFLOAD_RESULT===
