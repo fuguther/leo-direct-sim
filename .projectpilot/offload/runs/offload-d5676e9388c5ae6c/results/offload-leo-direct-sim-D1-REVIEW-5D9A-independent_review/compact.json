@@ -1,0 +1,123 @@
+{
+  "taskId": "offload:leo-direct-sim:D1-REVIEW-5D9A:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。F2-RACE、F3、F5、F1-R 的指定整改代码已到位，F4 在 _gsl_wait_until/_transmit 两处也正确；但 F4 未全局闭环：_decide 在 GE-down+zero-MCS 时仍可增加 mcs_zero_rate_holds，并使 receipt 错报 effective.mcs。另发现 downlink MCS wait 只观察 q[0] deadline，队尾更早 deadline 可退化到 time_step 扫描。",
+  "findings": [
+    {
+      "id": "F4-DECISION-ATTRIBUTION",
+      "severity": "major",
+      "summary": "F4 仍未闭环：_decide 的 direct-downlink/ISL 决策路径没有在 mcs_zero_rate_holds 归因前要求 GE up；GE-down 与 zero-MCS 重叠时仍可能错误增加 MCS hold，并污染 effective.mcs。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L2272-L2286",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L2319-L2351",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L613-L645",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/receipt.py#L144-L155"
+      ]
+    },
+    {
+      "id": "N1-DOWNLINK-TAIL-DEADLINE",
+      "severity": "major",
+      "summary": "Downlink MCS precise wait only supplies each destination queue's q[0] to _gsl_wait_until；非 head packet 的更早 deadline 不会成为 certified wake，因此可能直到下一 time_step 才过期。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L513-L529",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L1142-L1145",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L547-L590"
+      ]
+    },
+    {
+      "id": "F2-RACE",
+      "severity": "info",
+      "summary": "原 same-timestamp wake 竞态已修：uplink/downlink MCS wait 恢复后均无条件执行 deadline sweep；uplink 有同时间戳 poke 的对抗 regression。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L325-L336",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L513-L529",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L547-L590"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "Stop-time pending settlement 已使用 stop_time >= deadline，且 deadline==horizon regression 存在。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L2470-L2487",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L592-L610"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "Constant-rate uplink/downlink 已在 dequeue 前执行 geometry/GE gates，并有 recovery timer；shared-server regressions 和 queue-level retirement invariants 均存在。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L273-L304",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L338-L365",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L468-L490",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L530-L565",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L648-L735",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_transmit_retirement.py#L52-L190"
+      ]
+    },
+    {
+      "id": "F1-R",
+      "severity": "info",
+      "summary": "_fire_interrupt 已在 hard retire_at 直接清理未 in-service 的 retiring queue assignment 并 release；non-tick regression 要求 release 精确发生在 1.0。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L1380-L1403",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L2004-L2037",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L737-L784"
+      ]
+    },
+    {
+      "id": "LEGACY-RECEIPT",
+      "severity": "info",
+      "summary": "允许范围内的 legacy RF/MCS golden tests 和 receipt counter schema/effective recomputation 均保持一致；但本 Worker 未获准读取 link_budget.py，也未执行测试。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_characterization.py#L92-L123",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L15-L48",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/receipt.py#L63-L75",
+        "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/receipt.py#L144-L155"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "修复 _decide 中 mcs_zero_rate_holds 的所有归因路径，使计数前同样要求对应 geometry 和 GE 均 up；至少补 direct-downlink GE-down+zero-MCS regression，并核 ISL decision path。",
+    "让 DownlinkServer 的 certified MCS wait 纳入 queue 中所有 packet deadline，或独立计算整个 downlink queue 的最早 deadline；增加 head 无 deadline、tail deadline=0.5、time_step=0.7 的精确过期 regression。",
+    "增加 constant-rate 单一 gated head 在无额外 poke 情况下依赖 GE/geometry recovery timer 恢复服务的回归。",
+    "本地 Agent 在精确 commit 上执行允许测试集，并重点动态复现上述两个 major finding；网页 Worker 不替代最终本地验收。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L1115-L1145",
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L1380-L1403",
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L2272-L2286",
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/kernel.py#L2470-L2487",
+    "github://fuguther/leo-direct-sim/blob/5d9ad9b3a4e3ce349e39dc5dbabf02a4fe5aa6d0/CODE/leo_sim/tests/test_link_budget_integration.py#L547-L784"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "UNVERIFIED：受任务合同限制，本 Worker 未执行 pytest；两个 major reproduction 需由本地 Agent 在精确 commit 上动态确认。",
+    "UNVERIFIED：link_budget.py 不在允许读取路径中，因此 legacy RF/MCS 的底层实现只能通过允许范围内的 characterization/integration contract 间接核验，不能声称完成源码级独立复核。",
+    "需要确认修复后的 DownlinkServer 对非 head deadline 能在 certified deadline instant 唤醒，而不是依赖 pending ticker/time_step。",
+    "需要确认修复后的 decision-stage MCS attribution 不再让 GE-down+zero-MCS 场景把 receipt effective.mcs 置为 true。"
+  ]
+}
