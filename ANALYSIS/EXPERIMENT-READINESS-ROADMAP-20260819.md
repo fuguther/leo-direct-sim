@@ -66,9 +66,22 @@ Q0 线当前只有算法选型和接口设计，规划注入与 tiny 原型尚�
 
 ## 2026-08-19 当前执行状态
 
-- D1 分支 `c0a1f18`：原始实现的 405 个平台测试通过；两份独立复核均为
-  `REQUEST_CHANGES`。已修复快照零速率除零、MCS 计数时机和 ISL 合法掩码，
-  但零速率 GSL 队列恢复唤醒仍需专门回归测试和复核，暂不合入。
-- D2 分支 `7cb11e8`：动态重匹配、退役链路与 receipt 已实现，400 个平台测试通过；
-  尚未完成不同模型冷启动复核，暂不宣称正式可用。
-- 当前可跑的是已有 V2 基线/机制验收链；不能把 D1/D2 未复核版本产生的数据当正式论文结论。
+- D1 当前候选分支 `codex/20260819-d1-dynamic-rate`，最新提交
+  `9ae6a71294419dc31cc6b24771aeeb91b14ed285`；本地 `CODE/leo_sim/tests` 全量
+  `407 passed`。该数字只证明测试通过，不等于独立复核通过；独立复核 operation
+  `offload-operation:8115689838821c1d7a5994fbb0a18d77` 在本次记录时仍为
+  `DISPATCHING`，因此 D1 仍不得合并、部署或用于论文结论。
+- D2 当前候选分支 `codex/20260819-d2-holding-integration`，最新提交
+  `0cff2547c59ca2d8f66d690f6b922d6bf71588b9`；本地 `CODE/leo_sim/tests` 全量
+  `414 passed`。该数字只证明测试通过，不等于独立复核通过；独立复核 operation
+  `offload-operation:f854226eae8ed24762dbc893ce51d16e` 在本次记录时仍为
+  `DISPATCHING`，因此 D2 仍不得合并、部署或用于论文结论。
+- Q0 当前分支已包含 Q0-I tiny DP 和第一阶段 planned-vs-executed 门禁，平台全量
+  `417 passed`；复核 operation `offload-operation:dbd05d1ac037396821a4c375e70242c1`
+  在本次记录时仍为 `DISPATCHING`。Q0-F 未来时间线、CP-SAT/MILP 交叉验证和完整
+  逐事件轨迹门禁仍未完成。
+- 实验矩阵是**设计冻结稿**，不是运行结果：E0 选档 → 全臂工程 pilot → 跳数 →
+  聚合 → 特征消融 → 信息年龄；各实验的正式 seed、配对单位、主指标和统计规则已
+  记录，但 E0 尚未在当前候选代码上重跑，实验合同仍未达到正式授权门。
+- 当前可跑的是已有 V2 基线/机制验收链；不能把 D1/D2 未复核版本或未完成 Q0
+  参照产生的数据当正式论文结论。

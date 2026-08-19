@@ -14,6 +14,12 @@
 - D2 动态拓扑复核绑定 commit `0cff2547c59ca2d8f66d690f6b922d6bf71588b9`，operation `offload-operation:f854226eae8ed24762dbc893ce51d16e`；截至记录时仍为 `DISPATCHING`。
 - 三项均是只读独立审阅；在返回明确 APPROVE 前，D1/D2 不得合并、部署或用于论文实验。
 
+## 2026-08-19（实验合同状态核对）
+
+- 已核对实验矩阵：执行顺序为 E0 选档 → 全臂工程 pilot → 跳数 → 聚合 → 特征消融 → 信息年龄；矩阵已写明配对单位、seed 分池、主指标、统计门槛和 Q0 参照边界。
+- 这些内容属于设计冻结稿，不是已运行结果；当前候选 D1/D2 代码尚未取得独立 APPROVE，E0 也尚未在候选代码上重跑，因此未进入正式授权门。
+- D1 候选分支本地全量 `407 passed`，D2 候选分支本地全量 `414 passed`；Q0 当前分支本地全量 `417 passed`。测试通过与科研可用不是同一证据。
+
 ## 2026-08-19（Q0 第一阶段 planned-vs-executed 回放门禁）
 
 - 分支 `codex/20260819-q0-replay-gate`：Q0 原子计划提交后记录期望动作；真实 ISL/GSL 服务进入 transmitting 阶段时记录执行动作，WAIT 在有限 holding queue 原子落地时记录执行。
