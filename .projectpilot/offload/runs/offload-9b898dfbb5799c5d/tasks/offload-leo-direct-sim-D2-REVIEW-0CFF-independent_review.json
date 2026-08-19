@@ -1,0 +1,60 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:D2-REVIEW-0CFF:independent_review",
+    "title": "D2 dynamic topology post-integration cold-start review",
+    "goal": "Review exact commit 0cff2547c59ca2d8f66d690f6b922d6bf71588b9. Check rematching interval and deterministic matching, geometry legality, link retirement, queued data/control and in-flight service semantics, holding queue conservation/FIFO/area, state-version and routing structure rebuilds, receipt counters, and test adequacy. Explicitly determine whether queued control/data are intentionally drained on retired links while queued data is moved to holding, and whether this is consistent and fail-closed. Return APPROVE or REQUEST_CHANGES with FACT/INFERENCE/UNVERIFIED, exact path/line evidence, reproduction conditions, severity and open_items. Do not modify code.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "0cff2547c59ca2d8f66d690f6b922d6bf71588b9",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/model.py",
+        "CODE/leo_sim/routing.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/tests/test_dynamic_topology.py",
+        "CODE/leo_sim/tests/test_holding_queue.py",
+        "ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Explicit APPROVE or REQUEST_CHANGES",
+      "Every major finding has exact evidence and reproduction condition",
+      "Open items included"
+    ],
+    "requiredEvidence": [
+      "Exact commit-bound GitHub paths and line references",
+      "Explicit analysis of retired-link queued data/control and in-flight behavior"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "3dd2c4574fc346bf35864d8d3234f7f5e1ede00c693471a47a5afe15d635cec9"
+}
