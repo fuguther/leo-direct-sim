@@ -1,0 +1,57 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:D2-REVIEW-6BE1:independent_review",
+    "title": "D2 dynamic topology round-4 cold-start review (commit 6be16cd)",
+    "goal": "Review exact commit 6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d on branch codex/20260819-d2-holding-integration. Round-3 (commit c3965ae) REQUEST_CHANGES findings, both claimed fixed, to re-verify with fresh adversarial reading: (F4-EDGE, main lane) _peer_bit_value must fail closed for structured peer-bound isl_queue_bits records when the current topo[origin] no longer has that direction at all (peer is None): the value must read 0 in that state too, not just when the peer mismatches; verify learning.py _peer_bit_value and the new C5/C7 removed-direction stale-advertisement regression in tests/test_learning.py. (no-successor prompt-reclaim, independent lane) the regression test_removed_direction_reclaims_drained_generation_without_successor must DETERMINISTICALLY cover the ISLLink._run() prompt purge-at-drain path: 8000-bit control service at 0.004 Mbps lasts 2.0s, rematch at t=1.5, next recompute at t=3.0, drain at t=2.0 strictly between recomputes; the test asserts after rematch the old generation is still live/retired (not drained), then after the last t=2.0 step that it was already removed from _retired_isls with _isl_dyn_drained incremented and live entity count decreased -- proof the prompt purge ran, not the recompute-time purge. Verify the test would fail if ISLLink._run()'s prompt _purge_drained_retired() were removed (mutation sensitivity by inspection). Also re-confirm round-2/3 items remain closed: unified live-entity formula + pre-cap purge, G0->G1->G2 one-transceiver gate, C5/C7 advertisement-origin peer binding, receipt/holding conservation. Return APPROVE or REQUEST_CHANGES with FACT/INFERENCE/UNVERIFIED, exact path/line evidence, concrete reproduction conditions, severity and open_items. Do not modify code.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/learning.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/tests/test_dynamic_topology.py",
+        "CODE/leo_sim/tests/test_learning.py",
+        "CODE/leo_sim/tests/test_holding_queue.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "结论可复核",
+      "返回本地下一步动作"
+    ],
+    "requiredEvidence": [
+      "GitHub 或原始来源证据"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "21f8e48ee265cd7060431512a64a9aab9e729e4e15159f66ff3b8bd61d6ab6a9"
+}
