@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "planId": "offload-9320ca71cb5eea98",
+  "relayManifest": {
+    "planId": "offload-9320ca71cb5eea98",
+    "projectId": "leo-direct-sim",
+    "backend": "web_chat",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:D2-REVIEW-6BE1",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/tests/test_dynamic_topology.py",
+          "CODE/leo_sim/tests/test_learning.py",
+          "CODE/leo_sim/tests/test_holding_queue.py"
+        ],
+        "promptHash": "f990bbe6db4c3c1f61b33a0aa950f1204ff5e8d100e5473f0eec90e1faaae2ef"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:D2-REVIEW-6BE1:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/tests/test_dynamic_topology.py",
+          "CODE/leo_sim/tests/test_learning.py",
+          "CODE/leo_sim/tests/test_holding_queue.py"
+        ],
+        "promptHash": "21f8e48ee265cd7060431512a64a9aab9e729e4e15159f66ff3b8bd61d6ab6a9"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "9320ca71cb5eea989f13086d697d07ceafe6c7449b45fea24e5f90e27e8dc5c2"
+  },
+  "sourceBaseCommit": "6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:D2-REVIEW-6BE1",
+      "promptHash": "f990bbe6db4c3c1f61b33a0aa950f1204ff5e8d100e5473f0eec90e1faaae2ef",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/tests/test_dynamic_topology.py",
+          "CODE/leo_sim/tests/test_learning.py",
+          "CODE/leo_sim/tests/test_holding_queue.py"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:D2-REVIEW-6BE1:independent_review",
+      "promptHash": "21f8e48ee265cd7060431512a64a9aab9e729e4e15159f66ff3b8bd61d6ab6a9",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/learning.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/tests/test_dynamic_topology.py",
+          "CODE/leo_sim/tests/test_learning.py",
+          "CODE/leo_sim/tests/test_holding_queue.py"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
