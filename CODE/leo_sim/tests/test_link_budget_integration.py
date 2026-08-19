@@ -496,6 +496,7 @@ def test_mcs_retiring_uplink_gated_head_stays_queued_and_server_free():
                                interrupt=k.env.event())
     pktB = kernel.DataPacket(2, B, A, 1_000_000, None, 0.0)
     pktB.assigned_sat = 0
+    k.ledger.register(pktB.pid, pktB.bits)
     epB.queue.append(pktB)
     epB.queued_bits += pktB.bits
     epB.area.add(pktB.bits, k.env.now)
@@ -541,3 +542,193 @@ def test_mcs_deadline_wake_expires_exactly_at_deadline():
     assert fate_t, "missing fate monitor event"
     assert fate_t[0] == pytest.approx(1.0, abs=1e-9), (
         "packet expired at %s, not exactly at its deadline 1.0" % fate_t[0])
+
+
+def test_mcs_uplink_deadline_sweep_not_skipped_by_same_time_wake():
+    """D1 round-4 F2-RACE: a poke landing on the same timestamp as a
+    certified deadline must not skip the deadline sweep.  The zero-rate
+    uplink head with deadline 1.0 must expire at exactly 1.0 even though
+    another endpoint pokes the shared server at t=1.0."""
+    geo = _Scripted(
+        2, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+        visible=lambda s, lat, lon, t: (
+            (s == 0 and (lat, lon) == AC)
+            or (s == 1 and (lat, lon) == BC)),
+        slant_range_fn=lambda s, lat, lon, t: (
+            12500.0 if (lat, lon) == AC else 600.0))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "time_step_s": 0.7},
+        "links": {"rate_model": "mcs"},
+        "execution": {"monitor": True},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    epA = k._ensure_endpoint(A)
+    epA.links[0] = kernel.Link(0, "active", k.env.now,
+                               interrupt=k.env.event())
+    pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    pkt.deadline = 1.0
+    pkt.assigned_sat = 0
+    k.ledger.register(pkt.pid, pkt.bits)
+    epA.queue.append(pkt)
+    epA.queued_bits += pkt.bits
+    epA.area.add(pkt.bits, k.env.now)
+    # a second endpoint on the SAME shared server whose only role here is to
+    # poke the server at exactly the deadline instant
+    epB = k._ensure_endpoint(B)
+    epB.links[0] = kernel.Link(0, "active", k.env.now,
+                               interrupt=k.env.event())
+
+    def _poke_at_deadline():
+        yield k.env.timeout(1.0)
+        k._poke(k.uplinks[0].wake)
+    k.env.process(_poke_at_deadline())
+    k._poke(k.uplinks[0].wake)
+    k.env.run(until=2.0)
+
+    fates = [t for t, kind, kv in k.monitor_log
+             if kind == "fate" and dict(kv).get("pid") == 1]
+    assert fates, "missing fate monitor event"
+    assert fates[0] == pytest.approx(1.0, abs=1e-9), (
+        "packet expired at %s, not exactly at its deadline 1.0" % fates[0])
+
+
+def test_mcs_pending_deadline_equal_horizon_expires():
+    """D1 round-4 F3: a packet parked in pending whose deadline EQUALS the
+    horizon must expire (inclusive), consistent with the endpoint/downlink/
+    ISL inclusive deadline semantics, not settle as IN_SYSTEM_AT_STOP."""
+    geo = _Scripted(
+        1, neighbors_map={0: {}},
+        visible=lambda s, lat, lon, t: (lat, lon) in (AC, BC),
+        slant_range_fn=lambda s, lat, lon, t: (
+            5900.0 if (lat, lon) == BC else 600.0))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 1.0, "num_satellites": 1},
+        "links": {"rate_model": "mcs"},
+    })
+    res = kernel.run_simulation(
+        cfg, [row(1, 0.0, A, B, deadline=1.0)], geometry=geo)
+    assert res["fates"][1] == "DATA_DEADLINE_EXPIRED"
+
+
+def test_mcs_ge_gated_head_zero_rate_not_attributed_to_mcs():
+    """D1 round-4 F4: when GE (not MCS) is the actual blocking gate, a
+    coincident zero MCS rate must not be counted as an MCS hold.  The head
+    is GE-down for the whole run AND beyond MCS range: the deferral belongs
+    to GE, so mcs_zero_rate_holds must stay 0 and the head must stay
+    queued."""
+    geo = _Scripted(
+        1, neighbors_map={0: {}},
+        visible=lambda s, lat, lon, t: (lat, lon) == AC,
+        slant_range_fn=lambda s, lat, lon, t: (
+            12500.0 if (lat, lon) == AC else 600.0))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "num_satellites": 1},
+        "links": {"rate_model": "mcs", "ge_enabled": True,
+                   "ge_gsl": {"mean_good_s": 0.001,
+                               "mean_bad_s": 1000.0}},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    ep = k._ensure_endpoint(A)
+    ep.links[0] = kernel.Link(0, "active", k.env.now,
+                              interrupt=k.env.event())
+    pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    pkt.assigned_sat = 0
+    k.ledger.register(pkt.pid, pkt.bits)
+    ep.queue.append(pkt)
+    ep.queued_bits += pkt.bits
+    ep.area.add(pkt.bits, k.env.now)
+    ge = k._gsl_ge(0, A)
+    ge._bad = True
+    ge._last_t = 0.0
+    ge._next_flip = float("inf")
+    k._poke(k.uplinks[0].wake)
+    k.env.run(until=2.0)
+    assert k.mech["mcs_zero_rate_holds"] == 0
+    assert [p.pid for p in ep.queue] == [1]
+    assert k.uplinks[0].current is None
+
+
+def test_constant_rate_uplink_ge_gated_head_does_not_pin_shared_server():
+    """D1 round-4 F5: constant-rate shared GSL must pre-gate a GE-down head
+    exactly like MCS, so the shared server can serve another endpoint.  A is
+    GE-down, B is servable on the same satellite: B must be served while A
+    stays queued."""
+    geo = _Scripted(
+        1, neighbors_map={0: {}},
+        visible=lambda s, lat, lon, t: (lat, lon) in (AC, BC),
+        slant_km=600.0)
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "num_satellites": 1},
+        "access": {"acquisition_delay_s": 0.0},
+        "links": {"rate_model": "constant", "ge_enabled": True,
+                   "ge_gsl": {"mean_good_s": 1000.0,
+                               "mean_bad_s": 1000.0}},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    epA = k._ensure_endpoint(A)
+    epA.links[0] = kernel.Link(0, "active", k.env.now,
+                               interrupt=k.env.event())
+    pktA = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    pktA.assigned_sat = 0
+    k.ledger.register(pktA.pid, pktA.bits)
+    epA.queue.append(pktA)
+    epA.queued_bits += pktA.bits
+    epA.area.add(pktA.bits, k.env.now)
+    geA = k._gsl_ge(0, A)
+    geA._bad = True
+    geA._last_t = 0.0
+    geA._next_flip = float("inf")
+
+    epB = k._ensure_endpoint(B)
+    epB.links[0] = kernel.Link(0, "active", k.env.now,
+                               interrupt=k.env.event())
+    pktB = kernel.DataPacket(2, B, A, 1_000_000, None, 0.0)
+    pktB.assigned_sat = 0
+    epB.queue.append(pktB)
+    epB.queued_bits += pktB.bits
+    epB.area.add(pktB.bits, k.env.now)
+
+    k._poke(k.uplinks[0].wake)
+    k.env.run(until=2.0)
+    assert [p.pid for p in epA.queue] == [1]
+    served = [pid for _cell, pid in k.service_log["uplink"]]
+    assert 2 in served, "servable endpoint B was never served"
+    assert 1 not in served, "GE-gated head A was dequeued"
+
+
+def test_constant_rate_downlink_ge_gated_head_does_not_pin_shared_server():
+    """D1 round-4 F5: constant-rate downlink must also pre-gate a GE-down
+    head so the shared server can serve another endpoint."""
+    geo = _Scripted(
+        1, neighbors_map={0: {}},
+        visible=lambda s, lat, lon, t: (lat, lon) in (AC, BC),
+        slant_km=600.0)
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "num_satellites": 1},
+        "access": {"acquisition_delay_s": 0.0},
+        "links": {"rate_model": "constant", "ge_enabled": True,
+                   "ge_gsl": {"mean_good_s": 1000.0,
+                               "mean_bad_s": 1000.0}},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    epA = k._ensure_endpoint(A)
+    epA.links[0] = kernel.Link(0, "active", k.env.now,
+                               interrupt=k.env.event())
+    epB = k._ensure_endpoint(B)
+    epB.links[0] = kernel.Link(0, "active", k.env.now,
+                               interrupt=k.env.event())
+    pktA = kernel.DataPacket(1, B, A, 1_000_000, None, 0.0)
+    pktB = kernel.DataPacket(2, A, B, 1_000_000, None, 0.0)
+    k.ledger.register(pktA.pid, pktA.bits)
+    k.ledger.register(pktB.pid, pktB.bits)
+    k.downlinks[0].put(pktA)
+    k.downlinks[0].put(pktB)
+    geA = k._gsl_ge(0, A)
+    geA._bad = True
+    geA._last_t = 0.0
+    geA._next_flip = float("inf")
+    k.env.run(until=2.0)
+    assert [p.pid for p in k.downlinks[0].queues[A]] == [1]
+    served = [pid for _cell, pid in k.service_log["downlink"]]
+    assert 2 in served, "servable endpoint B was never served"
+    assert 1 not in served, "GE-gated head A was dequeued"
