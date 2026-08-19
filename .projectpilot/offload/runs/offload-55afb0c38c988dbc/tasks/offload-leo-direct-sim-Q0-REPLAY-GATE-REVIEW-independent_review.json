@@ -1,0 +1,60 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:Q0-REPLAY-GATE-REVIEW:independent_review",
+    "title": "Q0 execution replay gate cold-start review",
+    "goal": "Review commit ffb1d5d17e9078e206228268e080102d5140eb25 read-only. Determine whether q0_replay_expected/q0_execution_audit and verify_q0_replay correctly distinguish plan insertion from real service start, preserve atomicity, avoid false positives across repeated packet actions, and export sufficient evidence. Also check that the Q0-I tiny DP remains explicitly bounded and does not masquerade as Q0-F. Return APPROVE or REQUEST_CHANGES. Every finding must cite path and line range, distinguish FACT/INFERENCE/UNVERIFIED, and state whether it blocks using this gate as a first-stage Q0 execution check. Do not modify code.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "ffb1d5d17e9078e206228268e080102d5140eb25",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/q0.py",
+        "CODE/leo_sim/q0_tiny.py",
+        "CODE/leo_sim/tests/test_q0_contract.py",
+        "CODE/leo_sim/tests/test_q0_tiny.py",
+        "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md",
+        "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Explicit APPROVE or REQUEST_CHANGES",
+      "Concrete path/line findings",
+      "Open items and scope boundary"
+    ],
+    "requiredEvidence": [
+      "Exact file paths and line references",
+      "Reasoning from code to replay-gate consequence"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "c59a718e05dad6813925a1bebea09f4f79cbc535d902831225df4eaded4087a2"
+}
