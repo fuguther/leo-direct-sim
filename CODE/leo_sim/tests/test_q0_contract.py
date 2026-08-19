@@ -111,3 +111,36 @@ def test_kernel_wait_is_atomic_when_holding_queue_is_full():
     assert [p.pid for p in k.pending[0]] == [1]
     assert k.pending[0].queued_bits == 8_000
     assert k.pending[0][0].holding_until == 1.0
+
+
+def test_q0_replay_gate_matches_real_forward_service_start():
+    """A valid plan must be matched to a real kernel service event."""
+    geo = StaticGeometry(2, neighbors_map={0: {"E": 1}, 1: {"W": 0}})
+    cfg = make_cfg({"scenario": {"num_satellites": 2, "duration_s": 2.0}})
+    k = kernel.Kernel(cfg, [row(99, 0.0, cell(0.0, 0.0), cell(0.0, 10.0))], geometry=geo)
+    pkt = kernel.DataPacket(1, cell(0.0, 0.0), cell(0.0, 10.0), 8_000, None, 0.0)
+    k.pending[0].append(pkt)
+    plan = JointPlan(0, (PlanAction("forward", 1, 0, direction="E"),))
+
+    assert k.apply_joint_plan(plan) == (True, ())
+    k.run()
+
+    ok, errors = k.verify_q0_replay()
+    assert ok, errors
+    assert k.q0_execution_audit[0]["kind"] == "forward"
+    assert k.q0_execution_audit[0]["executed_at"] == 0.0
+
+
+def test_q0_replay_gate_rejects_plan_without_matching_service_event():
+    """A queued plan that never starts service must fail the replay gate."""
+    geo = StaticGeometry(2, neighbors_map={0: {"E": 1}, 1: {"W": 0}})
+    cfg = make_cfg({"scenario": {"num_satellites": 2, "duration_s": 0.5}})
+    k = kernel.Kernel(cfg, [row(99, 0.0, cell(0.0, 0.0), cell(0.0, 10.0))], geometry=geo)
+    pkt = kernel.DataPacket(1, cell(0.0, 0.0), cell(0.0, 10.0), 8_000_000, None, 0.0)
+    k.pending[0].append(pkt)
+    plan = JointPlan(0, (PlanAction("forward", 1, 0, direction="E"),))
+
+    assert k.apply_joint_plan(plan) == (True, ())
+    ok, errors = k.verify_q0_replay()
+    assert not ok
+    assert any("no matching service start" in error for error in errors)

@@ -1,5 +1,13 @@
 # NOTES.md
 
+## 2026-08-19（Q0 第一阶段 planned-vs-executed 回放门禁）
+
+- 分支 `codex/20260819-q0-replay-gate`：Q0 原子计划提交后记录期望动作；真实 ISL/GSL 服务进入 transmitting 阶段时记录执行动作，WAIT 在有限 holding queue 原子落地时记录执行。
+- 新增 `Kernel.verify_q0_replay()`，对每个已提交动作检查真实执行事件；未真正开始服务的计划明确返回错误，不把“进入队列”冒充“已执行”。运行结果新增 `q0_replay.expected/executed`，便于 receipt/分析追溯。
+- 验证：`pytest -q CODE/leo_sim/tests/test_q0_contract.py` = 10 passed；`pytest -q CODE/leo_sim/tests` = 413 passed；`git diff --check` 通过。
+- 边界：本单元是第一阶段 execution gate，只验证计划动作是否真实进入执行点，不等同于完整 MILP 逐事件轨迹最优性验证；该扩展留在 Q0-F/CP-SAT 回放阶段。
+- 全仓库 `pytest -q` 仍在 PAPER 收集阶段因缺少 `ANALYSIS.paired_analysis` 失败，未归因于本分支；该问题需单独分支处置。
+
 ## 2026-08-19（有限 holding queue：容量/面积/WAIT 语义）
 
 - 分支：`codex/20260819-holding-queue`。

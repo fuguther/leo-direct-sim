@@ -854,6 +854,8 @@ class Kernel:
         self.handover_events: list[dict] = []
         self.monitor_log: list[tuple] = []
         self.q0_plan_audit: list[dict] = []
+        self.q0_replay_expected: list[dict] = []
+        self.q0_execution_audit: list[dict] = []
         self.monitor = bool(self.cfg_ex["monitor"])
         self.data_packet_count = 0
         # Q0 readiness: monotonic state version (bumped once per event step)
@@ -1202,7 +1204,8 @@ class Kernel:
 
         This is intentionally narrower than execution: it proves the plan is
         current and physically admissible at this instant.  Applying actions
-        remains a separate atomic operation and is not exposed yet.
+        remains a separate atomic operation; post-run execution is checked by
+        ``verify_q0_replay``.
         """
         errors: list[str] = []
         ok, version_errors = q0.validate_plan_version(plan, self._state_version)
@@ -1307,6 +1310,22 @@ class Kernel:
             else:
                 pkt.holding_until = action.until
                 self._hold_packet(action.sat, pkt)
+                self.q0_execution_audit.append({
+                    "kind": "wait",
+                    "packet_id": pkt.pid,
+                    "sat": action.sat,
+                    "direction": None,
+                    "executed_at": float(self.env.now),
+                })
+            self.q0_replay_expected.append({
+                "version": plan.version,
+                "submitted_at": float(self.env.now),
+                "kind": action.kind,
+                "packet_id": action.packet_id,
+                "sat": action.sat,
+                "direction": action.direction,
+                "until": action.until,
+            })
         if plan.actions:
             self._state_version += 1
             self.q0_plan_audit.append({
@@ -1315,6 +1334,57 @@ class Kernel:
                 "actions": len(plan.actions),
             })
         return True, ()
+
+    def _record_q0_execution(self, pkt: DataPacket, kind: str, sat: int,
+                             direction: str | None = None) -> None:
+        """Record the first real service start caused by a Q0 action."""
+        self.q0_execution_audit.append({
+            "kind": kind,
+            "packet_id": pkt.pid,
+            "sat": sat,
+            "direction": direction,
+            "executed_at": float(self.env.now),
+        })
+
+    def verify_q0_replay(self) -> tuple[bool, tuple[str, ...]]:
+        """Check that every applied Q0 action reached its real execution point.
+
+        This is deliberately a post-run gate.  It does not claim that a plan
+        can force service through outages or deadlines; it reports those
+        plans as infeasible instead of treating queue insertion as execution.
+        """
+        errors: list[str] = []
+        used: set[int] = set()
+        for expected in self.q0_replay_expected:
+            if expected["kind"] == "wait":
+                if not any(
+                        p["packet_id"] == expected["packet_id"]
+                        and p["kind"] == "wait"
+                        and p["sat"] == expected["sat"]
+                        and p["executed_at"] == expected["submitted_at"]
+                        for p in self.q0_execution_audit):
+                    errors.append(
+                        f"packet {expected['packet_id']}: no matching wait execution")
+                continue
+            match = None
+            for index, actual in enumerate(self.q0_execution_audit):
+                if index in used or actual["kind"] != expected["kind"]:
+                    continue
+                if (actual["packet_id"] == expected["packet_id"]
+                        and actual["sat"] == expected["sat"]
+                        and actual["direction"] == expected["direction"]):
+                    match = index
+                    break
+            if match is None:
+                errors.append(
+                    f"packet {expected['packet_id']}: no matching service start")
+            else:
+                used.add(match)
+                actual = self.q0_execution_audit[match]
+                if actual["executed_at"] < expected["submitted_at"]:
+                    errors.append(
+                        f"packet {expected['packet_id']}: execution precedes plan")
+        return not errors, tuple(errors)
 
     # --------------------------------------------------------- transmission
     def _fire_interrupt(self, link: Link, at: float):
@@ -1449,6 +1519,12 @@ class Kernel:
                 # service progress: stamp the phase and start time here.
                 owner._svc_phase = "transmitting"
                 owner._tx_started_at = t0
+                if isinstance(pkt, DataPacket):
+                    if link_ref[0] == "isl":
+                        self._record_q0_execution(
+                            pkt, "forward", owner.sat, owner.dir)
+                    elif link_ref[0] == "gsl" and owner in self.downlinks:
+                        self._record_q0_execution(pkt, "deliver", owner.sat)
             if (link_ref[0] == "isl" and isinstance(pkt, DataPacket)
                     and pkt.learning_state is not None
                     and pkt.isl_enqueued_at is not None):
@@ -2366,6 +2442,10 @@ class Kernel:
             "queue_area_bits_s": queue_area,
             "access": dict(self.access_stats),
             "service_log": self.service_log,
+            "q0_replay": {
+                "expected": list(self.q0_replay_expected),
+                "executed": list(self.q0_execution_audit),
+            },
             "handover": {"events": self.handover_events},
             "control": {
                 "counters": control_counters,
