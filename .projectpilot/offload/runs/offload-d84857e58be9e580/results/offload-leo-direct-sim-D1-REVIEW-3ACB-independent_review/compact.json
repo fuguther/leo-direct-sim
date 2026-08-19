@@ -1,0 +1,84 @@
+{
+  "taskId": "offload:leo-direct-sim:D1-REVIEW-3ACB:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。Round-5 两项指定修复静态代码已落实：F4-DECIDE 的 GSL/ISL MCS 归因加入 GE 条件，downlink precise wait 已遍历全部 queued packet deadlines。但独立发现两项 major：正常 zero-rate _decide 仍进入仅按 time_step 重判的 pending，deadline/recovery 可继续 0.5→0.7、1.0→1.4；decision/ISL pre-gate 的 GE 查询未统一增长 ge_*_queries，可使 receipt effective.ge 假阴性。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "正常 zero-rate downlink/ISL decision 仍绕过 certified wait 落入 time_step-polled pending；deadline 和 rate recovery 可被延迟，且 _decide 使用严格 now > deadline 会进一步放大 exact-tick 情况。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/kernel.py#L2270-L2310",
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/kernel.py#L2345-L2405",
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/kernel.py#L1680-L1692",
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/tests/test_link_budget_integration.py#L280-L318",
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/tests/test_link_budget_integration.py#L680-L725"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "GE 在 _decide 或 ISL pre-gate 实际阻塞时存在未计入 ge_gsl_queries/ge_isl_queries 的路径，而 kernel/receipt 均仅依赖这些计数判定 effective.ge，可能产生机制归因假阴性。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/kernel.py#L2270-L2310",
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/kernel.py#L2345-L2405",
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/kernel.py#L662-L710",
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/receipt.py#L132-L149",
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/tests/test_link_budget_integration.py#L650-L678"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "summary": "测试覆盖仍有缺口：新增 GE-down decision regression 只覆盖 GSL 且未断言 GE counters/effective.ge；新 tail-deadline regression 手动注入 DownlinkServer queue，没有覆盖正常 _decide→pending 的精确 deadline 路径。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/tests/test_link_budget_integration.py#L650-L725",
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/tests/test_link_budget_integration.py#L280-L318"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "本轮指定修复静态复核成立：GSL/ISL F4-DECIDE 均加入 GE 条件；downlink precise wait 遍历全部 queued packets；F2-RACE、F3 inclusive stop settlement、_gsl_wait_until/_transmit attribution、constant-rate pre-gate 与 F1-R immediate cleanup 均仍存在。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/kernel.py#L515-L535",
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/kernel.py#L1125-L1155",
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/kernel.py#L1425-L1495",
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/kernel.py#L2460-L2510",
+        "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/kernel.py#L1384-L1411"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "修复 zero-rate normal decision 的 pending polling：为其提供 certified deadline/rate/GE/geometry wake，并统一 decision deadline inclusive 语义。",
+    "新增 time_step=0.7、deadline=0.5 的真实 _decide→pending regression，以及 recovery=1.0 不得拖到 1.4 的 regression；GSL 与 ISL 均覆盖。",
+    "统一所有影响调度的 GE 状态查询与 ge_gsl_queries/ge_isl_queries 计数，至少覆盖 _decide GSL、_decide ISL 和 ISLLink.available_now。",
+    "扩展 GE-down regressions，断言 ge_*_queries 与最终 effective.ge，补 ISL decision-level 用例。",
+    "本地 Agent 在精确 commit 上 fresh-run 授权的三个测试文件后再决定最终验收。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/kernel.py#L2270-L2310",
+    "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/kernel.py#L1680-L1692",
+    "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/kernel.py#L662-L710",
+    "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/receipt.py#L132-L149",
+    "github://fuguther/leo-direct-sim/blob/3acb6cea21247fd6af28f0c17af84eae53aea2c6/CODE/leo_sim/tests/test_link_budget_integration.py#L650-L725"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "UNVERIFIED：REMOTE 合同禁止本 Worker 执行本地测试，因此未获得 commit 3acb6ce 的 fresh test-run 结果，不能声称 regression suite PASS。",
+    "UNVERIFIED：生产 link_budget.py 不在本任务允许读取路径内；legacy RF/MCS equivalence 仅能确认授权 characterization/integration regression definitions 存在，不能直接审阅该生产实现。"
+  ]
+}
