@@ -145,12 +145,18 @@ def test_open_learning_transitions_are_discarded_visibly_at_stop():
     # distinct-latitude cells (test_reward_migration convention): sat0 sees
     # only SRC, sat1 sees only DST, so every packet must cross the ISL
     src, dst = cell(31.0, 121.0), cell(40.0, 116.0)
+    # lazy endpoint activation: the destination cell is only advertised after
+    # it becomes active (first routed packet creates it), so the first control
+    # snapshot cannot contain it.  horizon must therefore be long enough for a
+    # post-activation advertisement (advertise_interval_s=2) to arrive and
+    # the packets to be decided forward, while staying inside the 8 s ISL
+    # service so both transitions remain open at the stop.
     geo = _HandoverGeometry(
         2, neighbors_map=LINE,
         visible=lambda s, lat, lon, t: (s == 0 and abs(lat - 31.0) < 1.0
                                         ) or (s == 1 and abs(lat - 40.0) < 1.0))
     cfg = make_cfg({
-        "scenario": {"duration_s": 1.0},
+        "scenario": {"duration_s": 3.0},
         "access": {"uplink_rate_mbps": 4000.0},
         "links": {"isl_rate_mbps": 1.0},  # 8 s per 8 Mbit packet
         "control_plane": {"enabled": True},

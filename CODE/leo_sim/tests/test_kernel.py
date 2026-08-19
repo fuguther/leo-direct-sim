@@ -111,6 +111,36 @@ def test_geometry_loss_in_flight_accounts_occupied_time():
     assert abs(res["occupied"]["gsl_uplink_s"] - 0.05) < 1e-6
 
 
+def test_future_endpoints_not_prebuilt_and_no_preposition_leak():
+    """A cell whose first traffic is in the future must not pre-exist: it
+    must not pre-position a K slot, appear in advertisements or inflate
+    observation denominators before any demand.  Regression: the kernel used
+    to build every trace cell at t=0, so a future-only endpoint could grab
+    the only slot before the present traffic arrived."""
+    a, b = cell(0.0, 10.0), cell(0.0, 0.0)  # b sorts first (would preposition)
+    geo = StaticGeometry(1, neighbors_map={0: {}}, visible=lambda *_: True,
+                         gsl_changes=[])
+    cfg = make_cfg({
+        "scenario": {"duration_s": 8.0, "num_satellites": 1,
+                     "num_planes": 1, "time_step_s": 0.1},
+        "access": {"slots_per_satellite": 1, "uplink_rate_mbps": 200.0,
+                   "downlink_rate_mbps": 200.0, "idle_release_s": 0.2,
+                   "min_dwell_s": 0.0, "hysteresis_deg": 0.0,
+                   "acquisition_delay_s": 0.0},
+    })
+    rows = [row(1, 0.0, a, b), row(2, 5.0, b, a)]
+    k = kernel.Kernel(cfg, rows, geometry=geo)
+    assert len(k.endpoints) == 0  # nothing pre-built from the full trace
+    res = k.run()
+    # the future cell never pre-positioned the single slot: the present
+    # traffic (A) wins the first grant, and the future cell B is only
+    # associated after the slot frees (regression: pre-built B grabbed the
+    # slot at t=0 and starved A)
+    assoc = [e for e in res["handover"]["events"] if e["type"] == "associate"]
+    assert assoc[0]["endpoint"] == a
+    assert res["access"]["preposition_grants"] == 0
+
+
 def test_downlink_wakes_on_geometry_recovery_after_temporary_outage():
     """A downlink packet queued during a temporary GSL outage must be served
     when the satellite becomes visible again, even with a coarse time step
@@ -137,6 +167,64 @@ def test_downlink_wakes_on_geometry_recovery_after_temporary_outage():
     # delivered after recovery (regression: it used to sleep until horizon
     # because no geometry-recovery timer/wake existed)
     assert res["fates"][1] == "DELIVERED"
+    assert res["fates"][2] == "DELIVERED"
+
+
+def test_endpoint_activated_at_first_emission_not_at_t0():
+    """A src cell whose first emission is in the future must not be created
+    at t=0: activation happens at the actual emission instant.  Regression:
+    the emitter used to call _ensure_endpoint before its delay yield, so a
+    future src cell was created at t=0 (and could pre-position a slot)."""
+    a, b, c = cell(0.0, 10.0), cell(0.0, 0.0), cell(0.0, 20.0)
+    geo = StaticGeometry(1, neighbors_map={0: {}}, visible=lambda *_: True,
+                         gsl_changes=[])
+    cfg = make_cfg({
+        "scenario": {"duration_s": 8.0, "num_satellites": 1,
+                     "num_planes": 1, "time_step_s": 0.1},
+        "access": {"slots_per_satellite": 2, "uplink_rate_mbps": 200.0,
+                   "downlink_rate_mbps": 200.0, "idle_release_s": 0.2,
+                   "min_dwell_s": 0.0, "hysteresis_deg": 0.0,
+                   "acquisition_delay_s": 0.0},
+    })
+    # c appears only as a src at t=5.0 (never a dst), so it must not exist
+    # before its first emission
+    rows = [row(1, 0.0, a, b), row(2, 5.0, c, a)]
+    k = kernel.Kernel(cfg, rows, geometry=geo)
+    k.env.run(until=4.9)
+    assert a in k.endpoints  # present traffic activated
+    assert c not in k.endpoints  # future src cell not yet created
+    k.env.run(until=5.6)
+    assert c in k.endpoints  # created at its first emission
+
+
+def test_future_src_does_not_preposition_when_present_cell_cannot_grant():
+    """Kimi probe-2 counterexample: even when the present-demand cell cannot
+    win the t=0 race (not yet visible), a future src cell must not
+    pre-position the slot at t=0.  Regression: the emitter created future src
+    endpoints at t=0, so B could preposition the only slot and hold it idle."""
+    a, b = cell(0.0, 10.0), cell(0.0, 0.0)
+    ac, bc = cell_center(a), cell_center(b)
+
+    def vis(s, lat, lon, t):
+        if (lat, lon) == ac:
+            return t >= 1.0  # present cell A visible only from t=1
+        return True          # future src cell B always visible
+
+    geo = StaticGeometry(1, neighbors_map={0: {}}, visible=vis, gsl_changes=[])
+    cfg = make_cfg({
+        "scenario": {"duration_s": 8.0, "num_satellites": 1,
+                     "num_planes": 1, "time_step_s": 0.1},
+        "access": {"slots_per_satellite": 1, "uplink_rate_mbps": 200.0,
+                   "downlink_rate_mbps": 200.0, "idle_release_s": 0.2,
+                   "min_dwell_s": 0.0, "hysteresis_deg": 0.0,
+                   "acquisition_delay_s": 0.0},
+    })
+    rows = [row(1, 0.0, a, b), row(2, 5.0, b, a)]
+    res = kernel.run_simulation(cfg, rows, geometry=geo)
+    # B (future src) must not be associated before its first emission at t=5
+    assoc_b = [e["t"] for e in res["handover"]["events"]
+               if e["type"] == "associate" and e["endpoint"] == b]
+    assert assoc_b and min(assoc_b) >= 5.0
     assert res["fates"][2] == "DELIVERED"
 
 
