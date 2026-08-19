@@ -1,0 +1,295 @@
+Q0 execution replay gate 冷启动独立审阅
+结论：REQUEST_CHANGES
+
+当前实现已经完成两个重要基础：计划插入与真实 service start 在简单单次动作路径上确实被分开记录，且 apply_joint_plan() 的正常校验路径具备整计划先验证、再提交的原子性。
+
+但 replay gate 仍存在一个阻塞级归因缺口：q0_execution_audit 并不是“Q0 动作执行日志”，而是会记录普通 kernel 路径产生的同类 data service start；verify_q0_replay() 又没有 action instance / plan provenance，只按 (kind, packet_id, sat, direction) 和时间做事后匹配。因此对于同一 packet 的重复动作、重新 pending 后普通重决策、历史同签名 service，无法证明匹配到的 service start 真的是对应 Q0 plan insertion 导致的。
+
+这使它目前不能可靠作为第一阶段 Q0 execution gate。
+
+F1 — blocking：execution audit 无 Q0 provenance，重复 packet action 可被错误归因
+
+FACT
+
+apply_joint_plan() 给 expected 写入的是 version / submitted_at / kind / packet_id / sat / direction / until，但没有生成唯一的 plan_id/action_id/enqueue_generation。
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1320-L1328
+
+实际 execution audit 更弱，只保存：
+
+kind
+
+packet_id
+
+sat
+
+direction
+
+executed_at
+
+没有 expected/version/action 的绑定。
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1338-L1347
+
+更关键的是，_transmit() 在任何 DataPacket 的 ISL 或 downlink 真正开始传输时都会调用 _record_q0_execution()，调用条件里没有“该 packet 当前由 Q0 action 驱动”判断。因此这个 audit stream 实际包含普通 kernel 决策产生的 service starts。
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1516-L1528
+
+而普通 kernel 路径确实会持续处理 pending packet：ticker 定期调用 _redecide_pending()。
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1624-L1631
+
+重新决策之后，普通 _decide() 可以再次执行 dl.put(pkt) 或 ISL.put_data(pkt)，完全不经过 apply_joint_plan()。
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L2160-L2247
+
+verify_q0_replay() 对 non-WAIT 只扫描 execution audit，寻找第一个未使用、签名相同的记录；找到以后才检查 executed_at < submitted_at。不存在 plan/action provenance 校验。
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1356-L1387
+
+INFERENCE
+
+因此至少存在两类错误归因：
+
+一个 Q0 enqueue 没有真正产生 service start，packet 后续回到 pending 后由普通 _decide() 再次选择了相同动作；这个后来的 ordinary service start 可以满足旧 Q0 expected，形成 false positive。
+
+若同一 packet 之前已经存在普通路径产生的同签名 audit，而之后新的 Q0 action 确实产生了合法 service，matcher 会先选较早旧记录，然后报 execution precedes plan，而不会继续寻找后面的合法记录，形成 false negative。
+
+这不是单纯测试覆盖不足，而是当前日志 schema 无法表达因果关系。
+
+是否阻塞第一阶段 Q0 execution gate：是。
+
+第一阶段 gate 至少必须回答“这个 service start 是否由这个 Q0 action 实际触发”。当前只能回答“后来出现过一个签名相同的 service start”。
+
+F2 — major：导出的 replay evidence 不足以独立证明 gate 结果
+
+FACT
+
+run() 只导出：
+
+q0_replay.expected
+
+q0_replay.executed
+
+没有导出：
+
+verify_q0_replay() 的 pass/fail；
+
+verifier errors；
+
+q0_plan_audit；
+
+plan hash；
+
+action instance identifier；
+
+expected↔executed 显式对应关系。
+
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L2445-L2448
+
+内部 q0_plan_audit 本身也只有 version / applied_at / actions，没有设计稿要求的计划 hash 或首个 divergence。
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1329-L1335
+
+而冻结的 Q0 设计明确要求审计包含“计划哈希、版本、首个分歧事件”。
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md#L72-L76
+
+设计的验收门禁也要求 planned-vs-executed 至少检查服务时刻、队列顺序、K 槽占用，并把 replay feasibility 当硬指标。当前 verifier 只检查签名是否出现和 execution 不早于 submission。
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md#L118-L124
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1349-L1387
+
+INFERENCE
+
+对于人工调试一个简单单动作 case，raw expected/executed 有诊断价值；但它不能作为一个自包含、可独立验证的 Q0 execution evidence envelope，尤其 F1 已证明 executed 记录存在来源歧义。
+
+是否阻塞第一阶段 Q0 execution gate：阻塞“导出结果作为独立 gate evidence”的用法。
+
+若本地 Agent直接持有 Kernel 对象并另外调用 verifier，缺少布尔字段本身不是唯一 blocker；真正不可绕过的 blocker 仍是 F1 provenance。
+
+F3 — info：简单路径已经正确区分 plan insertion 与真实 service start
+
+FACT
+
+apply_joint_plan() 的 forward/deliver 分支只将 packet 放入 ISL/downlink queue；并不会在那里写 forward/deliver execution audit。expected 在提交阶段单独追加。
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1302-L1328
+
+真正的 audit 发生在 _transmit() 已通过当前 availability 检查，并把 service phase 从 waiting_for_link 切为 transmitting、设置真实 _tx_started_at 时。
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1516-L1528
+
+所以一个只被 enqueue、还没有真实开始 service 的 non-WAIT action，不会因为 queue insertion 本身获得 execution audit。
+
+对应测试同时覆盖了：
+
+run 后真实 forward service start 能通过；
+
+只 apply、不运行 service 时 verifier 必须失败。
+
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/tests/test_q0_contract.py#L116-L150
+
+INFERENCE
+
+单个 packet、单次 forward、无历史同签名 audit 的最小 happy-path 语义是正确的。这说明问题不是“仍把 enqueue 当 execution”，而是execution 发生以后无法可靠证明属于哪个 enqueue。
+
+是否阻塞第一阶段 Q0 execution gate：否；这是已通过的子项。
+
+F4 — info：正常 validated-plan 路径的提交原子性基本成立
+
+FACT
+
+JointPlan 是 frozen dataclass，并禁止同一 plan 内出现重复 packet_id。
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/q0.py#L53-L68
+
+apply_joint_plan() 首先重新调用 validate_joint_plan()；验证失败立即返回。在成功情况下，它先确定全部 packet，并统一从 pending 移除，然后再逐动作提交，最后只进行一次 _state_version += 1。整个函数内没有 SimPy yield。
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1283-L1336
+
+测试也明确构造“一项合法 + 一项不存在”的 mixed plan，并断言：
+
+合法 packet 仍在 pending；
+
+ISL queue 未被修改；
+
+state version 未增加。
+
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/tests/test_q0_contract.py#L63-L81
+
+INFERENCE
+
+在正常、已验证的 kernel 状态下，现有两阶段提交满足此次审阅要求的“无 invalid-plan partial mutation”。
+
+UNVERIFIED
+
+本次合同禁止执行本地测试，因此没有做异常注入来验证第二阶段某个 mutation primitive 意外抛异常时是否有 rollback；代码本身没有事务回滚机制。
+
+是否阻塞第一阶段 Q0 execution gate：否。
+
+F5 — minor：测试没有覆盖本次最危险的重复动作/污染场景
+
+FACT
+
+当前 replay 专项测试只有两个：
+
+单次 forward 的 happy path；
+
+apply 后没有任何 service start 的 fail path。
+
+证据：github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/tests/test_q0_contract.py#L116-L150
+
+没有看到以下用例：
+
+同一 packet_id 跨多个计划重复执行；
+
+historical/non-Q0 q0_execution_audit 污染；
+
+同一个 packet 再次使用相同 (kind,sat,direction)；
+
+Q0 action 被重新 pending 后 ordinary _decide() 产生同签名 service；
+
+deliver replay；
+
+WAIT replay 的重复匹配；
+
+run() 导出的 q0_replay 是否足以离线重建 verdict。
+
+INFERENCE
+
+现有测试会稳定证明最简单语义，但无法防止 F1 类型的 provenance regression。
+
+是否阻塞第一阶段 Q0 execution gate：测试缺口自身不是独立 blocker；F1 的生产逻辑缺陷才是 blocker。
+
+建议整改顺序
+
+第一优先级是给每个 applied action 创建不可混淆的 execution identity，例如 (plan_version, action_seq) 或独立 execution_token。这个 token 必须随着 packet 的该次 queue admission/service attempt 传播，并且 _record_q0_execution() 只在 token 存在时记录；ordinary _decide() 不能生成或继承旧 Q0 token。
+
+随后让 verify_q0_replay() 按 token 做一对一 matching，而不是按 packet/action signature 猜测。若一次 Q0 attempt 被撤销并回 pending，应显式记录 aborted/redecided/...，不能让后续普通 service 补齐旧 expected。
+
+最后补 repeated-action adversarial tests，并把 verifier verdict/errors、action identity、plan audit/hash 至少一起导出到 run() result。
+
+Scope boundary
+
+仅静态读取并审阅了合同允许的：
+
+CODE/leo_sim/kernel.py
+
+CODE/leo_sim/q0.py
+
+CODE/leo_sim/tests/test_q0_contract.py
+
+ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md
+
+全部绑定 commit a81a16563758890115a258556edf6d8c87884e02。未读取其他仓库路径，未执行 Shell、仿真或测试。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:Q0-REPLAY-GATE-REVIEW:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。简单单次 forward 已正确区分 queue insertion 与真实 service start，validated-plan 正常路径也具备整计划先验证再提交的原子性；但 q0_execution_audit 会记录所有普通 DataPacket 的 ISL/downlink service start，且 expected/executed 没有 plan/action provenance，verify 仅按 packet/action 签名和时间匹配。重复 packet 动作或普通 re-decision 可导致错误归因，阻塞其作为第一阶段 Q0 execution gate。导出结果也缺 verifier verdict、action identity、plan hash/分歧证据。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "FACT: execution audit 无 Q0 action provenance，且普通 data service start 也进入同一日志；verify 仅按签名匹配。INFERENCE: 重复 packet action/普通 re-decision 可产生 false positive 或 false negative。阻塞第一阶段 Q0 execution gate。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1320-L1328",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1338-L1387",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1516-L1528",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1624-L1631",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L2160-L2247"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "FACT: run() 仅导出 raw expected/executed，不导出 verifier verdict/errors 或足以证明 provenance 的 action identity；plan audit 也没有设计要求的 plan hash/首个分歧。INFERENCE: 导出物不能作为独立、可核验的第一阶段 replay gate evidence。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1329-L1335",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L2445-L2448",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md#L72-L76",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md#L118-L124"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "FACT: forward/deliver plan insertion本身不写 execution audit；真实可用性检查通过并进入 transmitting 相位后才记录 service start，且无 service 的测试会 fail replay。该子项通过，不阻塞。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1302-L1328",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1516-L1528",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/tests/test_q0_contract.py#L116-L150"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "FACT: JointPlan 禁止同计划重复 packet，apply 在任何 mutation 前整体验证，成功后统一提交并单次 bump version；mixed invalid-plan 测试验证无部分 mutation。INFERENCE: 正常 validated-state 路径的原子性成立，不阻塞。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/q0.py#L53-L68",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1283-L1336",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/tests/test_q0_contract.py#L63-L81"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "FACT: replay tests只覆盖单次 forward happy path和完全无 service 的失败路径；未覆盖重复 packet action、ordinary audit污染、deliver/wait replay及导出证据。INFERENCE: 测试无法捕获 F1 provenance 错配；该测试缺口本身非独立 blocker。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/tests/test_q0_contract.py#L116-L150"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "为每次 applied Q0 action 分配唯一 plan/action execution identity，并让该 identity 随本次 queue admission/service attempt 传播；ordinary _decide 不得产生或继承旧 Q0 identity。",
+    "让 _record_q0_execution 只记录具有有效 Q0 execution identity 的 service start，并让 verify_q0_replay 按 identity 一对一匹配，而不是按 packet/action signature 猜测。",
+    "Q0 attempt 被撤销、重新 pending 或普通 re-decision 接管时，显式记录 aborted/redecided outcome，禁止后续普通 service 补齐旧 expected。",
+    "增加 repeated same-packet、historical ordinary audit、redecision、deliver、WAIT、stale-first matching 的对抗测试。",
+    "在 run() evidence 中导出 verifier verdict/errors、action identity、plan audit/hash；若继续遵循设计稿，再补首个 divergence 信息。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1283-L1387",
+    "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1516-L1528",
+    "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1624-L1631",
+    "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L2160-L2247",
+    "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L2445-L2448",
+    "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/tests/test_q0_contract.py#L116-L150",
+    "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md#L72-L76",
+    "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md#L118-L124"
+  ],
+  "open_items": [
+    "UNVERIFIED: 按任务合同未执行本地测试或仿真，因此 F1 的具体运行时反例应由本地 Agent 在允许环境中增加定向测试复现。",
+    "UNVERIFIED: 未读取合同允许路径之外的 helper/config/其他测试文件，因此不对这些路径是否存在额外外部防护作推断；当前结论基于允许路径内 execution provenance 本身缺失。"
+  ]
+}
+===END_OFFLOAD_RESULT===
