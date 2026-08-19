@@ -232,13 +232,15 @@ def test_graph_learning_fails_closed_without_tensorflow():
         else:
             # On TF hosts the run must at least construct without raising at
             # import time (network training itself is exercised on VM).
-            learning.TensorflowDDQN(
-                contract, make_cfg({
-                    "routing": {"policy": "hop", "learning_enabled": True,
-                                "contract": contract},
-                    "control_plane": {"enabled": True},
-                    "learning": {"algorithm": "ddqn", "mode": "train"}}),
-                seed=1)
+            # TensorflowDDQN takes the learning config section, not the
+            # resolved wrapper dict (the kernel passes cfg["learning"]).
+            cfg = make_cfg({
+                "routing": {"policy": "hop", "learning_enabled": True,
+                            "contract": contract},
+                "control_plane": {"enabled": True},
+                "learning": {"algorithm": "ddqn", "mode": "train"}})
+            learning.TensorflowDDQN(contract, cfg["config"]["learning"],
+                                    seed=1)
 
 
 def test_learning_rejects_oracle_information():
