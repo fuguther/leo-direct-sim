@@ -1,0 +1,59 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:D2-REVIEW",
+    "title": "D2 dynamic topology cold-start review",
+    "goal": "Review exact commit 0cff2547c59ca2d8f66d690f6b922d6bf71588b9. Check rematching interval, geometry legality, link retirement, queued-data/control in-flight semantics, holding queue conservation, state-version/topology structures, receipt counters and tests. Return APPROVE or REQUEST_CHANGES with FACT/INFERENCE/UNVERIFIED, exact path/line evidence, and open_items. Do not modify code.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "0cff2547c59ca2d8f66d690f6b922d6bf71588b9",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/model.py",
+        "CODE/leo_sim/routing.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/tests/test_dynamic_topology.py",
+        "CODE/leo_sim/tests/test_holding_queue.py",
+        "ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Explicit APPROVE or REQUEST_CHANGES",
+      "Every major finding has exact evidence and reproduction condition",
+      "Open items included"
+    ],
+    "requiredEvidence": [
+      "GitHub 或原始来源证据"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "faa34a29d131c51be0dbd4132df769c30c0400c95a28c306c8722706e493acfb"
+}
