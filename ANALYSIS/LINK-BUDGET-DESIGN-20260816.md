@@ -45,6 +45,25 @@ links:
 
 校验（fail-loud）：`rate_model=mcs` 时 rf 字段缺/非正 → ConfigError；`constant` 时忽略 rf。
 
+### 2.5 实现调整（2026-08-19，D1 PR）
+
+- **三套 RF 参数（分级速率）**：旧平台实际是三套 RFlink 而不是一套：
+  `rf_isl`（26 GHz/500 MHz/10 W/0.26 m 收发，markovianMatchingTwo
+  SimulationRL.py:8353）、`rf_uplink`（30 GHz/500 MHz/20 W/0.33 m Tx/
+  0.26 m Rx，Gateway.gs2ngeo :2617）、`rf_downlink`（20 GHz/500 MHz/10 W/
+  0.26 m 收发，Satellite.ngeo2gt 全局参数 :297-310/:1935）。配置默认值即
+  这三套 legacy 参数；`mcs_table` 仅支持 `legacy-dvbs2x`。
+- **零速率/低速率恢复**：`rate < min_rate_bps` 视为链路 down。为不把包
+  干等到地平线，几何层新增两个调度专用查询 `next_isl_range_under` /
+  `next_slant_range_under`（限制 `RANGE_RATE_KM_S` 的认证穿越搜索），
+  恢复阈值由 `link_budget.max_rate_range_km(rf)` 解析（达到首个 MCS
+  线性门限的距离）。`_transmit` 增加 rate_fn/rate_recover_fn 两个参数：
+  服务每次真正开始时才按当时斜距采样速率，速率不足则与 deadline/硬退役
+  竞速等待，绝不直接 `dur=∞`。
+- **receipt**：`mechanisms.requested` 增 `rate_model`；`effective` 增
+  `mcs`（`mcs_rate_samples>0` 才生效）；mechanism counter 增
+  `mcs_rate_samples`。
+
 ### 2.3 零速率/低速率的语义（必须先拍板再实现）
 
 旧平台速率 0 的边在选路权重里天然不可用；新平台服务模型里「速率 0」没有对应物（dur=∞）。方案：**速率 < min_rate_bps 的链路在服务开始点视为不可用**（等同链路 down：排队等待恢复，deadline 到期由 `_expire_waiting`/`_transmit` 既有路径收 fate）。这保持守恒与 fail-loud，且与 los_clamp 置 inf 的旧语义对应。选路层（routing.choose_next_hop 的 capacity 策略）若要用速率，同源读取，不另开信息通道。
