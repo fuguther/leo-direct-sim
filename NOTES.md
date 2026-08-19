@@ -1,5 +1,12 @@
 # NOTES.md
 
+## 2026-08-19（Q0-I tiny 原型并入回放分支）
+
+- 将已在独立分支验证过的 `q0_tiny.py`、专项测试和设计边界并入 `codex/20260819-q0-replay-gate`，提交 `f0eee81`。
+- Q0-I 是有限固定双向图、离散时隙、t=0 已知包、无未来到达/GE/动态拓扑的精确当前信息 DP；输出只转换为现有 `JointPlan`，不绕过 kernel 校验。
+- 验证：Q0 专项（合同、回放、快照、tiny）`23 passed`；`CODE/leo_sim/tests` 全量 `417 passed`。
+- 边界：tiny 的 `N` 方向是合成 wire contract，不能直接当作真实星座方向；Q0-F 未来时间线、CP-SAT/MILP 交叉验证和真实 kernel 轨迹回放仍未完成。
+
 ## 2026-08-19（Q0 第一阶段 planned-vs-executed 回放门禁）
 
 - 分支 `codex/20260819-q0-replay-gate`：Q0 原子计划提交后记录期望动作；真实 ISL/GSL 服务进入 transmitting 阶段时记录执行动作，WAIT 在有限 holding queue 原子落地时记录执行。
