@@ -190,6 +190,57 @@ def test_mcs_zero_rate_isl_head_stays_queued_until_recovery():
     assert link._svc is None
 
 
+def test_mcs_gsl_down_does_not_dequeue_shared_uplink_head():
+    """A GSL outage must not pin the shared server on a dequeued packet."""
+    geo = _Scripted(
+        2, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+        visible=lambda s, lat, lon, t: t >= 1.0 and (
+            (s == 0 and (lat, lon) == AC)
+            or (s == 1 and (lat, lon) == BC)),
+        slant_km=600.0)
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0},
+        "access": {"acquisition_delay_s": 0.0},
+        "links": {"rate_model": "mcs"},
+    })
+    k = kernel.Kernel(cfg, [row(99, 2.0, A, B)], geometry=geo)
+    ep = k.endpoints[A]
+    pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    ep.queue.append(pkt)
+    ep.queued_bits += pkt.bits
+    ep.area.add(pkt.bits, k.env.now)
+    k._poke(k.uplinks[0].wake)
+    k.env.step()
+    assert [p.pid for p in ep.queue] == [1]
+    assert ep.queued_bits > 0
+    assert k.uplinks[0].current is None
+
+
+def test_mcs_gsl_ge_down_does_not_dequeue_shared_downlink_head():
+    """A GSL GE outage must be handled before downlink dequeue as well."""
+    geo = _Scripted(
+        2, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+        visible=lambda s, lat, lon, t: True,
+        slant_km=600.0)
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0},
+        "access": {"acquisition_delay_s": 0.0},
+        "links": {"rate_model": "mcs", "ge_enabled": True,
+                   "ge_gsl": {"mean_good_s": 0.001,
+                               "mean_bad_s": 1000.0}},
+    })
+    k = kernel.Kernel(cfg, [row(99, 2.0, A, B)], geometry=geo)
+    pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    k.downlinks[1].put(pkt)
+    ge = k._gsl_ge(1, B)
+    ge._bad = True
+    ge._last_t = 0.0
+    ge._next_flip = float("inf")
+    assert k.downlinks[1]._servable(B) is None
+    assert [p.pid for p in k.downlinks[1].queues[B] ] == [1]
+    assert k.downlinks[1].current is None
+
+
 def test_constant_rate_default_is_unaffected():
     topo = {0: {"E": 1}, 1: {"W": 0}}
     geo = _Scripted(

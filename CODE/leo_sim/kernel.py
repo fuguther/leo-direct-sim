@@ -282,9 +282,16 @@ class UplinkServer(_DRRMixin):
                 if p.assigned_sat == self.sat:
                     return p
             elif p.assigned_sat in (None, self.sat):
-                if (self.k.rate_model == "mcs" and self.k._link_rate(
-                        "uplink", self.k.env.now, self.sat, ep=ep) <= 0):
-                    return None
+                if self.k.rate_model == "mcs":
+                    now = self.k.env.now
+                    if not self.k.geometry.gsl_available(
+                            self.sat, ep.lat, ep.lon, now):
+                        return None
+                    if self.k._gsl_ge(self.sat, ep.cell).is_down(now):
+                        return None
+                    if self.k._link_rate(
+                            "uplink", now, self.sat, ep=ep) <= 0:
+                        return None
                 return p
         return None
 
@@ -412,6 +419,9 @@ class DownlinkServer(_DRRMixin):
         if link.state == "retiring" and self.k.env.now >= link.retire_at:
             return None
         if not self.k.geometry.gsl_available(self.sat, ep.lat, ep.lon, self.k.env.now):
+            return None
+        if (self.k.rate_model == "mcs"
+                and self.k._gsl_ge(self.sat, cell).is_down(self.k.env.now)):
             return None
         if (self.k.rate_model == "mcs" and self.k._link_rate(
                 "downlink", self.k.env.now, self.sat, ep=ep) <= 0):
