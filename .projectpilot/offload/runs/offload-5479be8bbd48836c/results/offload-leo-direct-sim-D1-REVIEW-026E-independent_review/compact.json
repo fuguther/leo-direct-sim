@@ -1,0 +1,98 @@
+{
+  "taskId": "offload:leo-direct-sim:D1-REVIEW-026E:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。F1 仍未关闭：retiring uplink assigned packet 直接返回，绕过 geometry/GE/MCS gate。F2 仅部分修复：certified recovery 已实现，但 GSL queue 在 deadline 恰好到达时因严格 > sweep 可退化到后续 time_step；pre-dequeue GSL GE gate 又不增加 ge_gsl_queries，可使 effective.ge 错报 false。新增两个 GSL gating 测试未建立目标 association，存在假阳性。F5 ISL horizon 自旋修复静态成立。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "Retiring uplink 仍绕过 geometry、GE 和 zero-MCS availability gates；不可用 old link 可提前 dequeue 并 pin 住 shared uplink server。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L273-L296",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L298-L339",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L1270-L1365"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "blocking",
+      "summary": "GSL certified recovery 已加入，但 exact deadline 仍可因 strict-gt sweep 延迟到下一 tick；同时 pre-dequeue GSL GE gate 不进入 ge_gsl_queries，receipt 可漏报 GE effective。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L982-L1030",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L298-L322",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L1524-L1538",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L1746-L1758",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L1298-L1314",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L2325-L2342",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/receipt.py#L138-L156"
+      ]
+    },
+    {
+      "id": "T1",
+      "severity": "major",
+      "summary": "新增 GSL uplink/downlink queue-gating tests 没有先证明目标 association 为 active/retiring，可在 link-is-None 早退处通过，未覆盖其声称的 geometry/GE gate。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/tests/test_link_budget_integration.py#L193-L244",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L205-L218",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L273-L280",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L430-L440"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "ISL zero-rate/no-deadline horizon spin 静态已修复；zero-rate wait 纳入所有 queued packet 自己的 deadline/TTL，并在 horizon 避免 zero-timeout 重排。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L618-L660",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L719-L745",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/tests/test_link_budget_integration.py#L375-L417"
+      ]
+    },
+    {
+      "id": "I1",
+      "severity": "info",
+      "summary": "当前 MCS 实现与合同允许读取的 legacy-characterized RF 参数、golden 数值及 config recovery-threshold 前提一致；直接旧源码逐行等价性因路径合同限制未验证。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/link_budget.py#L86-L165",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/tests/test_link_budget_integration.py#L15-L59",
+        "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/config.py#L512-L566"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "让 retiring uplink assigned packet 通过与 active uplink 相同的 geometry/GE/MCS availability gate，再允许 dequeue。",
+    "使 certified GSL deadline 在到达瞬间完成 queue expiry，并增加不对齐 time_step 的 fate-time 与 queue-area regression。",
+    "把 pre-dequeue GSL GE gating 纳入可验证的 mechanism attribution，确保 GE-only hold 不会得到 effective.ge=false。",
+    "重写新增 GSL gating tests：显式建立并断言 active/retiring association，并覆盖 retiring geometry-down、GE-down、zero-rate。",
+    "本地 Agent 在精确 commit 上执行 integration/full suite，并独立验证上述复现条件。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L273-L296",
+    "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L982-L1030",
+    "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/kernel.py#L618-L660",
+    "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/tests/test_link_budget_integration.py#L193-L244",
+    "github://fuguther/leo-direct-sim/blob/026eb17cd41a2645ab58ae1b8fd0e256f1f19cb1/CODE/leo_sim/receipt.py#L138-L156"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "UNVERIFIED: 按任务合同未执行本地 Shell/pytest；上述判断为精确 commit 的静态 GitHub 审查，需本地 Agent 最终复现。",
+    "UNVERIFIED: legacy 原始实现不在允许读取路径中，因此无法独立逐行验证旧源码 equivalence；这里只验证允许范围内的 characterization/design 与当前实现。",
+    "UNVERIFIED: snapshot residual-service 实现静态一致，但允许读取的 integration test 中未见针对该行为的直接回归覆盖。"
+  ]
+}
