@@ -279,20 +279,29 @@ class UplinkServer(_DRRMixin):
             return None
         for p in ep.queue:
             if link.state == "retiring":
-                if p.assigned_sat == self.sat:
-                    return p
-            elif p.assigned_sat in (None, self.sat):
-                if self.k.rate_model == "mcs":
-                    now = self.k.env.now
-                    if not self.k.geometry.gsl_available(
-                            self.sat, ep.lat, ep.lon, now):
-                        return None
-                    if self.k._gsl_ge(self.sat, ep.cell).is_down(now):
-                        return None
-                    if self.k._link_rate(
-                            "uplink", now, self.sat, ep=ep) <= 0:
-                        return None
-                return p
+                # a retiring link drains only packets already assigned to it;
+                # unassigned packets belong to the successor association.  The
+                # availability gates apply to retiring links exactly as they
+                # do to active ones: a gated head stays queued (the shared
+                # server can serve other endpoints) instead of being dequeued
+                # and pinning the server in _transmit.
+                if p.assigned_sat != self.sat:
+                    continue
+            elif p.assigned_sat not in (None, self.sat):
+                continue
+            if self.k.rate_model == "mcs":
+                now = self.k.env.now
+                if not self.k.geometry.gsl_available(
+                        self.sat, ep.lat, ep.lon, now):
+                    return None
+                if self.k.ge_enabled:
+                    self.k.mech["ge_gsl_queries"] += 1
+                if self.k._gsl_ge(self.sat, ep.cell).is_down(now):
+                    return None
+                if self.k._link_rate(
+                        "uplink", now, self.sat, ep=ep) <= 0:
+                    return None
+            return p
         return None
 
     def _run(self):
@@ -435,12 +444,14 @@ class DownlinkServer(_DRRMixin):
             return None
         if not self.k.geometry.gsl_available(self.sat, ep.lat, ep.lon, self.k.env.now):
             return None
-        if (self.k.rate_model == "mcs"
-                and self.k._gsl_ge(self.sat, cell).is_down(self.k.env.now)):
-            return None
-        if (self.k.rate_model == "mcs" and self.k._link_rate(
-                "downlink", self.k.env.now, self.sat, ep=ep) <= 0):
-            return None
+        if self.k.rate_model == "mcs":
+            if self.k.ge_enabled:
+                self.k.mech["ge_gsl_queries"] += 1
+            if self.k._gsl_ge(self.sat, cell).is_down(self.k.env.now):
+                return None
+            if self.k._link_rate(
+                    "downlink", self.k.env.now, self.sat, ep=ep) <= 0:
+                return None
         return q[0]
 
     def _run(self):
@@ -1599,7 +1610,7 @@ class Kernel:
         for cell, q in list(dl.queues.items()):
             kept = deque()
             for pkt in q:
-                if pkt.deadline is not None and now > pkt.deadline:
+                if pkt.deadline is not None and now >= pkt.deadline:
                     dl.queued_bits -= pkt.bits
                     dl.area.remove(pkt.bits, now)
                     self._fail(pkt, "DATA_DEADLINE_EXPIRED")
@@ -1872,7 +1883,7 @@ class Kernel:
         now = self.env.now
         kept = deque()
         for pkt in ep.queue:
-            if pkt.deadline is not None and now > pkt.deadline:
+            if pkt.deadline is not None and now >= pkt.deadline:
                 ep.queued_bits -= pkt.bits
                 ep.area.remove(pkt.bits, now)
                 self._fail(pkt, "DATA_DEADLINE_EXPIRED")

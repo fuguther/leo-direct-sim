@@ -204,9 +204,11 @@ def test_mcs_gsl_down_does_not_dequeue_shared_uplink_head():
         "links": {"rate_model": "mcs"},
     })
     k = kernel.Kernel(cfg, [row(99, 2.0, A, B)], geometry=geo)
-    # lazy endpoint activation (#28): materialize A before inspecting its
-    # queue
+    # lazy endpoint activation (#28): materialize A and give it an ACTIVE
+    # association with sat 0 before the geometry drops, so the outage gate
+    # (not a missing link) is the only reason _pick may refuse the head
     ep = k._ensure_endpoint(A)
+    ep.links[0] = kernel.Link(0, "active", k.env.now, interrupt=k.env.event())
     pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
     ep.queue.append(pkt)
     ep.queued_bits += pkt.bits
@@ -233,8 +235,11 @@ def test_mcs_gsl_ge_down_does_not_dequeue_shared_downlink_head():
     })
     k = kernel.Kernel(cfg, [row(99, 2.0, A, B)], geometry=geo)
     # lazy endpoint activation (#28): _servable resolves the destination
-    # endpoint, so materialize B first
-    k._ensure_endpoint(B)
+    # endpoint, so materialize B and give it an ACTIVE association with sat 1
+    # before flipping GE bad -- the GE gate (not a missing link) must be the
+    # reason _servable refuses the head
+    ep = k._ensure_endpoint(B)
+    ep.links[1] = kernel.Link(1, "active", k.env.now, interrupt=k.env.event())
     pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
     k.downlinks[1].put(pkt)
     ge = k._gsl_ge(1, B)
@@ -454,3 +459,85 @@ def test_mcs_receipt_records_sampled_rate_range():
     # samples: uplink@600km ~2.95e9, isl@1000km ~1.81e9, downlink@600 ~2.10e9
     assert 1.8e9 < counters["mcs_rate_min_bps"] < 1.82e9
     assert 2.9e9 < counters["mcs_rate_max_bps"] < 3.0e9
+
+
+def test_mcs_retiring_uplink_gated_head_stays_queued_and_server_free():
+    """D1 round-3 F1: a retiring uplink must NOT bypass the availability
+    gates.  A head assigned to the retiring sat stays queued while its GSL
+    is geometrically unavailable, and the shared server is free to serve a
+    second endpoint whose link to the same sat is available."""
+    geo = _Scripted(
+        2, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+        # A-sat0 geometry is DOWN until t=1.0; B-sat0 and B-sat1 stay up
+        visible=lambda s, lat, lon, t: (
+            (s == 0 and (lat, lon) == AC and t >= 1.0)
+            or (s == 0 and (lat, lon) == BC)
+            or (s == 1 and (lat, lon) == BC)),
+        slant_km=600.0)
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0},
+        "access": {"acquisition_delay_s": 0.0},
+        "links": {"rate_model": "mcs"},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    epA = k._ensure_endpoint(A)
+    # retiring link to sat 0 with a far-future hard deadline: it is still
+    # draining, so _pick must apply the same gates as for an active link
+    epA.links[0] = kernel.Link(0, "retiring", k.env.now, retire_at=100.0,
+                               cause="test", interrupt=k.env.event())
+    pktA = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    pktA.assigned_sat = 0
+    epA.queue.append(pktA)
+    epA.queued_bits += pktA.bits
+    epA.area.add(pktA.bits, k.env.now)
+
+    epB = k._ensure_endpoint(B)
+    epB.links[0] = kernel.Link(0, "active", k.env.now,
+                               interrupt=k.env.event())
+    pktB = kernel.DataPacket(2, B, A, 1_000_000, None, 0.0)
+    pktB.assigned_sat = 0
+    epB.queue.append(pktB)
+    epB.queued_bits += pktB.bits
+    epB.area.add(pktB.bits, k.env.now)
+
+    k._poke(k.uplinks[0].wake)
+    k.env.step()
+
+    # A's gated head must NOT be dequeued/pin the server
+    assert [p.pid for p in epA.queue] == [1]
+    assert epA.queued_bits == pktA.bits
+    # the server must be serving B (or have already served B), never pinned
+    # on A's unservable retiring link
+    cur = k.uplinks[0].current
+    served = [pid for _cell, pid in k.service_log["uplink"]]
+    assert 2 in served or (cur is not None and cur[0] is epB), (
+        "server was pinned on the retiring gated head")
+    assert 1 not in served
+
+
+def test_mcs_deadline_wake_expires_exactly_at_deadline():
+    """D1 round-3 F2-A: when the GSL certified wait wakes the server exactly
+    at a packet's deadline, the packet must expire at the deadline, not one
+    time_step later.  time_step=0.7 makes 1.0 a non-tick instant, so a strict
+    (>) sweep would only catch the packet at 1.4."""
+    geo = _Scripted(
+        2, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+        visible=lambda s, lat, lon, t: (
+            (s == 0 and (lat, lon) == AC)
+            or (s == 1 and (lat, lon) == BC)),
+        # uplink slant always beyond the MCS max range: zero rate forever
+        slant_range_fn=lambda s, lat, lon, t: (
+            12500.0 if (lat, lon) == AC else 600.0))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "time_step_s": 0.7},
+        "links": {"rate_model": "mcs"},
+        "execution": {"monitor": True},
+    })
+    res = kernel.run_simulation(
+        cfg, [row(1, 0.0, A, B, deadline=1.0)], geometry=geo)
+    assert res["fates"][1] == "DATA_DEADLINE_EXPIRED"
+    fate_t = [t for t, kind, kv in res["monitor_log"]
+              if kind == "fate" and dict(kv).get("pid") == 1]
+    assert fate_t, "missing fate monitor event"
+    assert fate_t[0] == pytest.approx(1.0, abs=1e-9), (
+        "packet expired at %s, not exactly at its deadline 1.0" % fate_t[0])
