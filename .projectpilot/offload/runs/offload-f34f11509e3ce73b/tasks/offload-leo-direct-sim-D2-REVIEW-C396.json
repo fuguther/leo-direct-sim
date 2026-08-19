@@ -1,0 +1,57 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:D2-REVIEW-C396",
+    "title": "D2 dynamic topology round-3 cold-start review (commit c3965ae)",
+    "goal": "Review exact commit c3965ae8a03d64db4c01a05ed59d5e53d184959d on branch codex/20260819-d2-holding-integration. Round-2 (commit 4bfcf80) REQUEST_CHANGES findings, all claimed fixed, to re-verify with fresh adversarial reading: (F3) max_entities fail-closed must use one unified live-entity formula counting base sats+initial ISLs, lazy endpoints, and live dynamic ISL generations together, and _recompute_topology must purge drained generations BEFORE the cap check so a removed direction that drained with no successor is not live-counted; verify _live_entity_count, _ensure_endpoint, _recompute_topology ordering. (F4) C5/C7 must keep each CacheEntry's advertisement origin and call _origin_features with topo[origin] (not root sat) so peer-bound isl_queue_bits are validated against the peer the entry was measured on; verify build_observation C5/C7. (F2 blocking, independent review) the one-transceiver gate must hold across continuous rematch G0->G1->G2: a successor retired by a second rematch must still wait for ALL OLDER generations on the same (sat,direction) to drain before transmitting (the gate must not be skipped for retired links, and must not deadlock two retired generations waiting on each other — verify the gen-ordered busy list and the G0->G1->G2 regression); also verify prompt reclaim: a drained generation with no successor must leave _retired_isls immediately (purge at drain), and drained generations must be reclaimed before the cap check. Also verify the new regressions actually cover: continuous rematch no-transceiver-overlap (service interval non-overlap), entity-cap cross-term both directions, no-successor drain reclaim, C5/C7 fresh-peer accepted and stale-peer rejected. Confirm no regression in receipt counters, holding queue, and overall test adequacy. Return APPROVE or REQUEST_CHANGES with FACT/INFERENCE/UNVERIFIED, exact path/line evidence, concrete reproduction conditions, severity and open_items. Do not modify code.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "c3965ae8a03d64db4c01a05ed59d5e53d184959d",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/learning.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/tests/test_dynamic_topology.py",
+        "CODE/leo_sim/tests/test_learning.py",
+        "CODE/leo_sim/tests/test_holding_queue.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "结论可复核",
+      "返回本地下一步动作"
+    ],
+    "requiredEvidence": [
+      "GitHub 或原始来源证据"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "852bf14037ef84d517cb168f9fd862ac2adc996672c943d14c32011b30943b6c"
+}
