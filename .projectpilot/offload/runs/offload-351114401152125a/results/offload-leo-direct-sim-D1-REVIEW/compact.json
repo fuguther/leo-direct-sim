@@ -1,0 +1,109 @@
+{
+  "taskId": "offload:leo-direct-sim:D1-REVIEW",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。RF/MCS legacy 数值核心和 _transmit 内集中竞态结构基本成立，snapshot 也有显式除零保护；但 active GSL 初始零速率被前置过滤后退化为 time_step 轮询，可错过精确 recovery/deadline；ISL 零速率等待只看 probe expiry 且不响应 wake，会延迟其他 packet 的 deadline/TTL 与 queue-area 结算。另有 legal-mask 非对称、snapshot 陈旧速率和 receipt 归因不足。当前测试未覆盖这些关键组合。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "Active GSL 初始 zero-rate 在进入 _transmit 前被过滤，精确 next_slant_range_under recovery 被绕过并退化为 time_step polling，可改变 service-start 时间甚至 deadline fate。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L259-L341",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L393-L459",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1160-L1284",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L45-L72"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "ISL zero-rate wait 只使用当前 probe 的 expiry 且 timeout 不与 self.wake 竞速，其他已排队或后续入队 packet 的 deadline/TTL 可被延迟到 probe expiry、recovery 或 horizon。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L548-L602",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L666-L690"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "Legal action semantics 对 rate=0 不一致：ISL MCS-zero 方向会从 legal mask 删除，而 active geometry-up 的 destination GSL 即使 downlink MCS rate=0 仍被强制设为 deliver-only。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1937-L2005"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "Snapshot 无直接除零，但 waiting_for_link 阶段可能保留旧的 positive _service_rate_bps；当前 rate 后续变为 0 时 _transmit 不清空该值，remaining_service_s 可基于陈旧速率。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L992-L1018",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1198-L1225"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "summary": "D1 receipt/provenance 仅记录 mcs_rate_samples 数量且只在真实 transmission start 计数，没有 sampled rate 值；无法满足设计要求的 constant-vs-MCS 速率差异归因，且全 zero-rate 影响调度时 effective.mcs 可为 false。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1285-L1315",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1898-L1935",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/receipt.py#L45-L73",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/receipt.py#L128-L160",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L73-L92"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "summary": "设计称 constant 模式忽略 RF，但 config 与测试仍在 constant 模式严格校验 RF，设计、实现和测试合同不一致。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L45-L46",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/config.py#L510-L552",
+        "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/tests/test_link_budget_integration.py#L48-L61"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "将 active GSL zero-rate recovery 接到 certified next_slant_range_under，并与 deadline/retirement 精确竞速。",
+    "让 ISL zero-rate wait 考虑全部 queued deadline/TTL 且与 self.wake 竞速。",
+    "明确并测试 downlink rate=0 时 deliver action 的合法性，消除与 ISL mask 的未声明非对称。",
+    "修正 waiting_for_link snapshot 的陈旧 service_rate_bps 表征。",
+    "扩充 MCS rate evidence，记录实际 sample 或可核验摘要，并区分 probe 与真实 service-start。",
+    "增加 GSL recovery、multi-expiry、snapshot、legal mask、GE/geometry/retirement race 和解析时延测试。",
+    "统一 constant 模式 RF 校验的设计、实现与测试合同。",
+    "在本地授权环境运行完整测试并复现 F1/F2 最小场景后再决定 D1 gate。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L548-L602",
+    "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/kernel.py#L1160-L1335",
+    "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/link_budget.py#L80-L164",
+    "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/CODE/leo_sim/tests/test_link_budget_integration.py#L105-L204",
+    "github://fuguther/leo-direct-sim/blob/9ae6a71294419dc31cc6b24771aeeb91b14ed285/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L45-L92"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "UNVERIFIED: 按任务合同未执行 shell/pytest；commit 的实际测试运行结果需本地 Agent 验证。",
+    "UNVERIFIED: next_isl_range_under / next_slant_range_under 的真实 geometry 实现位于允许读取路径之外，其 certified crossing 正确性未审计。",
+    "UNVERIFIED: test_link_budget_integration.py 依赖的 tests.helpers.StaticGeometry/make_cfg/row 位于白名单之外，fixture 语义未独立审计。",
+    "UNVERIFIED: 白名单之外是否另有测试覆盖 MCS+GE/geometry/retirement 等组合竞态，本 Worker 无权读取确认。"
+  ]
+}
