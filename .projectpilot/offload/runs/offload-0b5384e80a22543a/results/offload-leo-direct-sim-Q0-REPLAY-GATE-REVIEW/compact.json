@@ -1,0 +1,100 @@
+{
+  "taskId": "offload:leo-direct-sim:Q0-REPLAY-GATE-REVIEW",
+  "status": "EVIDENCE_READY",
+  "summary": "RESULT_CANDIDATE: REQUEST_CHANGES。基础 FORWARD/DELIVER execution audit 已放在真实 _transmit 启动点，validation failure 原子性基本成立；但 DELIVER 未绑定当前 pending 卫星，可跨星瞬移后被 gate 认证；execution audit 又缺少 plan/action 因果身份，后续内核重决策的同 tuple 服务可追认旧计划。重复历史 matcher、WAIT NaN 及证据导出也未闭合，因此不应作为第一阶段 Q0 execution gate 放行。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "FACT: DELIVER 不检查 action.sat 与 packet 当前 pending satellite 一致，apply 会从真实 pending sat 删除后直接加入 action.sat downlink；INFERENCE: 可跨卫星瞬移并由真实 downlink start 使 replay gate 假绿；UNVERIFIED: 未执行运行时反例。阻塞第一阶段 gate。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1158-L1164",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1232-L1261",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1283-L1310",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1338-L1388",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md#L63-L76"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "blocking",
+      "summary": "FACT: execution audit 没有 plan/action identity，且所有 DataPacket ISL/downlink service start 都会进入该 audit；downlink 未启动即可因 association 丢失退回 pending，再由内核自动重决策。INFERENCE: later autonomous same-tuple start 可满足旧 Q0 expectation，形成因果假阳性。UNVERIFIED: 具体 SimPy 时间线待本地复现。阻塞第一阶段 gate。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1338-L1388",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1515-L1527",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L495-L508",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1624-L1631",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L2160-L2186",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L2247-L2252"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "FACT: verifier 先选择最早未使用的相同 tuple execution，之后才检查 executed_at 是否早于 submission；INFERENCE: 存在旧 audit 且后来又有正确 start 时，会错误匹配旧记录并 false-negative。UNVERIFIED: 重复 action 运行反例待本地执行。阻塞 repeated-action 场景下的可靠 gate。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1356-L1388",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/q0.py#L53-L68"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "FACT: q0_plan_audit 无 plan hash/action identity/first divergence，run() 仅导出 expected/executed 两份 list，也不导出 verify verdict/errors；设计稿明确要求 plan hash、version、first divergence 与 planned-vs-executed gate。INFERENCE: 当前 artifact 不足以独立证明 exact plan 到 execution 的绑定。UNVERIFIED: 合同外 receipt 是否另有补偿不可读取。阻塞正式 evidence-bearing gate。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1320-L1336",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L2438-L2448",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md#L72-L76",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md#L118-L124"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "summary": "FACT: WAIT until 只校验 numeric，NaN 可通过 PlanAction；kernel 的 <=now/>horizon 校验对 NaN 均为 false，apply 又立即记录 wait execution，而 take_ready 对 NaN 永不成立。INFERENCE: WAIT(NaN) 可 validate/apply/replay-pass 但永不按 until 释放。UNVERIFIED: mutation test 未执行。若 WAIT 属于 gate 支持范围则阻塞。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/q0.py#L43-L50",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1262-L1273",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1310-L1328",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1358-L1369",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L192-L201",
+        "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/tests/test_q0_contract.py#L17-L23"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "本地 Agent 新增 wrong-satellite DELIVER 回归，并要求整份 plan fail-closed、pending/downlink/state_version/audit 全部不变。",
+    "给每个 applied Q0 action 分配稳定 plan_id/action_id，并把该 identity 绑定到具体 queue residency；取消/退回 pending 时显式记录 divergence，禁止 later autonomous service 追认旧 expectation。",
+    "修改 matcher：executed_at >= submitted_at 必须参与候选筛选；forward/deliver/wait 均实施严格一对一匹配，并增加重复 packet/sat/direction 历史测试。",
+    "WAIT until 强制有限数值，并增加 NaN/Inf mutation tests。",
+    "运行结果导出 plan hash、action identity、匹配 execution、verdict/errors 和 first divergence，再用本地 Agent 执行完整 Q0 replay regression。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1232-L1388",
+    "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/kernel.py#L1490-L1527",
+    "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/CODE/leo_sim/tests/test_q0_contract.py#L65-L147",
+    "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md#L63-L76",
+    "github://fuguther/leo-direct-sim/blob/a81a16563758890115a258556edf6d8c87884e02/ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md#L118-L124"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "UNVERIFIED: 受合同禁止本地 Shell/测试约束，F1/F2/F3/F5 的定向运行时反例尚未实际执行；本地 Agent 应在该精确 commit 或对应整改 commit 上补充并运行回归。",
+    "UNVERIFIED: 任务禁止读取允许路径外的 runner/receipt，因此无法确认是否存在外部层额外计算 verify_q0_replay verdict 或补充 plan hash/action binding；本审阅不得假定存在该补偿。"
+  ]
+}
