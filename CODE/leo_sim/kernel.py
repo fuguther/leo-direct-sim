@@ -582,6 +582,23 @@ class ISLLink:
                     self.wake = k.env.event()
                 continue
             is_ctrl = bool(self.ctrl_q)
+            if k.rate_model == "mcs":
+                probe = self.ctrl_q[0] if is_ctrl else self.data_q[0]
+                rate = k._link_rate("isl", k.env.now, self.sat,
+                                    peer=self.peer)
+                if rate <= 0:
+                    next_rate = k.geometry.next_isl_range_under(
+                        self.sat, self.peer, k.rate_max_isl_km,
+                        k.env.now, k.horizon)
+                    expiry = (probe.generated_at + probe.ttl_s
+                              if is_ctrl else probe.deadline)
+                    waits = [t for t in (next_rate, expiry)
+                             if t is not None and k.env.now < t <= k.horizon]
+                    if not waits:
+                        yield k.env.timeout(max(0.0, k.horizon - k.env.now))
+                    else:
+                        yield k.env.timeout(min(waits) - k.env.now)
+                    continue
             pkt = self.ctrl_q.popleft() if is_ctrl else self.data_q.popleft()
             self.current = pkt
             if is_ctrl:

@@ -163,6 +163,33 @@ def test_mcs_zero_rate_head_does_not_bypass_endpoint_fifo():
     assert [pid for _cell, pid in res["service_log"]["uplink"]] == [1, 2]
 
 
+def test_mcs_zero_rate_isl_head_stays_queued_until_recovery():
+    topo = {0: {"E": 1}, 1: {"W": 0}}
+    geo = _Scripted(
+        2, neighbors_map=topo,
+        isl_range_fn=lambda a, b, t: 5900.0,
+        visible=lambda s, lat, lon, t: (
+            (s == 0 and (lat, lon) == AC)
+            or (s == 1 and (lat, lon) == BC)))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0},
+        "links": {"rate_model": "mcs"},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    link = k.isls[0]["E"]
+    link.put_data(pkt)
+
+    # Let the ISL server attempt its first scheduling step.  A zero MCS
+    # rate is not a service start and must not dequeue/head-of-line block the
+    # packet while waiting for rate recovery.
+    for _ in range(6):
+        k.env.step()
+    assert link.data_q and link.data_q[0] is pkt
+    assert link.data_bits == pkt.bits
+    assert link._svc is None
+
+
 def test_constant_rate_default_is_unaffected():
     topo = {0: {"E": 1}, 1: {"W": 0}}
     geo = _Scripted(
