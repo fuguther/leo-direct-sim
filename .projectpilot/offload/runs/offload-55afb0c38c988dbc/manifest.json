@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "planId": "offload-55afb0c38c988dbc",
+  "relayManifest": {
+    "planId": "offload-55afb0c38c988dbc",
+    "projectId": "leo-direct-sim",
+    "backend": "web_chat",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:Q0-REPLAY-GATE-REVIEW",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "ffb1d5d17e9078e206228268e080102d5140eb25",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/q0.py",
+          "CODE/leo_sim/q0_tiny.py",
+          "CODE/leo_sim/tests/test_q0_contract.py",
+          "CODE/leo_sim/tests/test_q0_tiny.py",
+          "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md"
+        ],
+        "promptHash": "910d46039609e79f4a203fd030f5fef7053484d126561a34235080f907d0ea19"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:Q0-REPLAY-GATE-REVIEW:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "ffb1d5d17e9078e206228268e080102d5140eb25",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/q0.py",
+          "CODE/leo_sim/q0_tiny.py",
+          "CODE/leo_sim/tests/test_q0_contract.py",
+          "CODE/leo_sim/tests/test_q0_tiny.py",
+          "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md"
+        ],
+        "promptHash": "c59a718e05dad6813925a1bebea09f4f79cbc535d902831225df4eaded4087a2"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "55afb0c38c988dbc15308a7dc60bb4f3119d30d7d6a6c20753378a0dc1442371"
+  },
+  "sourceBaseCommit": "ffb1d5d17e9078e206228268e080102d5140eb25",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:Q0-REPLAY-GATE-REVIEW",
+      "promptHash": "910d46039609e79f4a203fd030f5fef7053484d126561a34235080f907d0ea19",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "ffb1d5d17e9078e206228268e080102d5140eb25",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/q0.py",
+          "CODE/leo_sim/q0_tiny.py",
+          "CODE/leo_sim/tests/test_q0_contract.py",
+          "CODE/leo_sim/tests/test_q0_tiny.py",
+          "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:Q0-REPLAY-GATE-REVIEW:independent_review",
+      "promptHash": "c59a718e05dad6813925a1bebea09f4f79cbc535d902831225df4eaded4087a2",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "ffb1d5d17e9078e206228268e080102d5140eb25",
+        "paths": [
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/q0.py",
+          "CODE/leo_sim/q0_tiny.py",
+          "CODE/leo_sim/tests/test_q0_contract.py",
+          "CODE/leo_sim/tests/test_q0_tiny.py",
+          "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
