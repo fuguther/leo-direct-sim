@@ -1,0 +1,99 @@
+{
+  "taskId": "offload:leo-direct-sim:D2-REVIEW-4BFC-R2:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。Round-1 F1 已关闭：rematch 会显式 discard queued learning-forward transition，receipt accounting 也纳入该 counter。F2 仍阻断：连续 rematch 可使已被再次 retire 的中间 generation 绕过 predecessor gate，与更老 generation 同时占用同一 (sat,direction) transceiver；无 successor 的 drained generation 还可能延迟 reclaim。另发现 dynamic ISL/lazy endpoint entity cap 交叉漏计，以及 C5/C7 peer-binding 使用错误 origin。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "FACT: round-1 F1 CLOSED。queued learning-forward 在 rematch 入 holding 前显式从 open transition 集删除、清空 learning 字段并增加 learning_discarded_at_rematch，避免 re-decision 的 non-deliver KernelError；receipt accounting 已包含该 discard。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/kernel.py#L1104-L1119",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/kernel.py#L2319-L2329",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/receipt.py#L392-L408",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/tests/test_dynamic_topology.py#L99-L145"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "blocking",
+      "summary": "FACT/INFERENCE: round-1 F2 remains OPEN。single-transceiver predecessor gate only applies while the generation is not retired. With G0->G1->G2 rematches before G0 drains, G1 can be retired while waiting, wake, skip the gate, and drain control concurrently with G0. Separately, a retired link that drains without a successor does not itself purge/reclaim; the next recompute performs the cap check before purge.",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/kernel.py#L651-L690",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/kernel.py#L1057-L1073",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/kernel.py#L1083-L1099",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/kernel.py#L1120-L1138",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/tests/test_dynamic_topology.py#L63-L80"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "FACT/INFERENCE: max_entities is not globally fail-closed after lazy activation. Endpoint admission ignores live dynamic-ISL delta, while dynamic-ISL admission ignores lazy endpoints, so each check can pass independently while their combined live count exceeds the cap.",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/kernel.py#L899-L918",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/kernel.py#L997-L1006",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/kernel.py#L1093-L1099"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "FACT: C5/C7 peer-bound queue features use the root sat as _origin_features origin instead of the advertisement's actual origin. After rematch this can zero a valid {peer,value} metric or accept a stale one. Producer schema and routing propagation/queue consumers otherwise perform peer binding correctly.",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/learning.py#L1005-L1028",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/learning.py#L1237-L1240",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/learning.py#L1270-L1277",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/learning.py#L1288-L1296",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/kernel.py#L1994-L2015",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/routing.py#L195-L251"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "summary": "FACT: authorized regression coverage is insufficient for the required D2 gate. It has a one-rematch control-drain test but no repeated-generation exclusivity/non-overlap test, delayed no-successor reclaim test, combined entity-cap test, or C5/C7 peer-binding regression.",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/tests/test_dynamic_topology.py#L63-L165",
+        "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/tests/test_holding_queue.py#L13-L113"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "修复 F2：把 (sat,direction) transceiver ownership 设计为跨所有 generations 的串行 gate，而不是仅由 current/non-retired generation 检查 retired predecessors；增加 G0->G1->G2 连续 rematch 对抗测试并断言 service interval 不重叠。",
+    "让 retired generation drain 完成时可靠触发 reclaim，且在每次 dynamic entity-cap 计算前先结算所有已经 drained 的 generations；增加方向消失后再出现的 cap-boundary regression。",
+    "统一 max_entities 的 live-count source of truth，同时计入 lazy endpoints 与未 reclaim 的 dynamic ISL generations；双向创建路径都调用同一 fail-closed 检查。",
+    "修复 C5/C7，使 _origin_features 使用每个 CacheEntry 的真实 origin；加入 rematch 后 valid-peer 与 stale-peer 两组回归测试。",
+    "本地 Agent 在可执行环境中复现 F2/F3/F4 反例并运行完整授权/相关测试后再决定最终 gate。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/kernel.py#L651-L690",
+    "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/kernel.py#L1057-L1138",
+    "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/kernel.py#L899-L918",
+    "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/kernel.py#L997-L1006",
+    "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/learning.py#L1270-L1296",
+    "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/receipt.py#L66-L77",
+    "github://fuguther/leo-direct-sim/blob/4bfcf8040317d2bcaa8bb14201087fdbd5d269c5/CODE/leo_sim/tests/test_dynamic_topology.py#L63-L165"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "UNVERIFIED: kernel._advertise 明确构造了 isl_queue_bits/isl_propagation_s 的 {peer,value} 输入，但负责组装 snapshot 的被调用实现不在本任务授权读取路径内，因此本 Worker 无法独立证明该结构在中间组装步骤中逐字段原样保留。",
+    "UNVERIFIED: 按任务合同未执行本地 Shell 或测试；F2/F3/F4 的运行时复现需由本地 Agent 在最终验收环境确认。"
+  ]
+}
