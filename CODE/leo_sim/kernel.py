@@ -380,6 +380,9 @@ class UplinkServer(_DRRMixin):
                 if p.assigned_sat == self.sat:
                     return p
             elif p.assigned_sat in (None, self.sat):
+                if (self.k.rate_model == "mcs" and self.k._link_rate(
+                        "uplink", self.k.env.now, self.sat, ep=ep) <= 0):
+                    return None
                 return p
         return None
 
@@ -389,7 +392,10 @@ class UplinkServer(_DRRMixin):
             cells = sorted(ep.cell for ep in k.endpoints.values())
             sel = self._drr_select(cells, lambda c: self._pick(k.endpoints[c]))
             if sel is None:
-                yield self.wake
+                if k.rate_model == "mcs":
+                    yield self.k.env.timeout(k.time_step) | self.wake
+                else:
+                    yield self.wake
                 self.wake = k.env.event()
                 continue
             cell, pkt = sel
@@ -505,6 +511,9 @@ class DownlinkServer(_DRRMixin):
             return None
         if not self.k.geometry.gsl_available(self.sat, ep.lat, ep.lon, self.k.env.now):
             return None
+        if (self.k.rate_model == "mcs" and self.k._link_rate(
+                "downlink", self.k.env.now, self.sat, ep=ep) <= 0):
+            return None
         return q[0]
 
     def _run(self):
@@ -523,7 +532,10 @@ class DownlinkServer(_DRRMixin):
                         k._hold_packet(self.sat, pkt)
             sel = self._drr_select(cells, self._servable)
             if sel is None:
-                yield self.wake
+                if k.rate_model == "mcs":
+                    yield k.env.timeout(k.time_step) | self.wake
+                else:
+                    yield self.wake
                 self.wake = k.env.event()
                 continue
             cell, pkt = sel
@@ -673,7 +685,6 @@ class ISLLink:
             if is_ctrl:
                 self.ctrl_bits -= pkt.bits
                 self.ctrl_area.remove(pkt.bits, k.env.now)
-                k.mech["control_tx_started"] += 1
             else:
                 self.data_bits -= pkt.bits
                 self.data_area.remove(pkt.bits, k.env.now)
@@ -1136,6 +1147,8 @@ class Kernel:
             sampled = getattr(srv, "_service_rate_bps", None)
             if sampled is not None:
                 rate_bps = sampled
+            if rate_bps <= 0:
+                return None
             if srv._svc_phase == "waiting_for_link":
                 return bits / rate_bps
             if srv._svc_phase == "transmitting" \
@@ -1513,7 +1526,6 @@ class Kernel:
                     rate_up = False
                 else:
                     dur = pkt.bits / rate
-                    self.mech["mcs_rate_samples"] += 1
                     if owner is not None:
                         owner._service_rate_bps = rate
             retire_t = None
@@ -1598,6 +1610,10 @@ class Kernel:
                 # service progress: stamp the phase and start time here.
                 owner._svc_phase = "transmitting"
                 owner._tx_started_at = t0
+            if rate_fn is not None:
+                self.mech["mcs_rate_samples"] += 1
+            if isinstance(pkt, ControlPacket):
+                self.mech["control_tx_started"] += 1
             if (link_ref[0] == "isl" and isinstance(pkt, DataPacket)
                     and pkt.learning_state is not None
                     and pkt.isl_enqueued_at is not None):
@@ -2289,6 +2305,10 @@ class Kernel:
             link = self.isls[sat][d]
             if self.cfg_links["geometry_loss"] and not self.geometry.isl_available(
                     sat, link.peer, now):
+                unavailable = True
+                continue
+            if self.rate_model == "mcs" and self._link_rate(
+                    "isl", now, sat, peer=link.peer) <= 0:
                 unavailable = True
                 continue
             if link.room(pkt.bits):

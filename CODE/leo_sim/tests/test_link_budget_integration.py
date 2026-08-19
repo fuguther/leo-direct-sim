@@ -143,6 +143,26 @@ def test_mcs_zero_rate_waits_then_expires_at_deadline():
     assert res["mechanism_counters"]["mcs_rate_samples"] > 0
 
 
+def test_mcs_zero_rate_head_does_not_bypass_endpoint_fifo():
+    topo = {0: {"E": 1}, 1: {"W": 0}}
+    geo = _Scripted(
+        2, neighbors_map=topo,
+        isl_range_fn=lambda a, b, t: 5900.0 if t < 1.0 else 1000.0,
+        visible=lambda s, lat, lon, t: (
+            (s == 0 and (lat, lon) == AC)
+            or (s == 1 and (lat, lon) == BC)))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0},
+        "links": {"rate_model": "mcs"},
+    })
+    res = kernel.run_simulation(
+        cfg, [row(1, 0.0, A, B, bits=1_000_000),
+              row(2, 0.0, A, B, bits=1_000_000)], geometry=geo)
+    assert res["fates"][1] == "DELIVERED"
+    assert res["fates"][2] == "DELIVERED"
+    assert [pid for _cell, pid in res["service_log"]["uplink"]] == [1, 2]
+
+
 def test_constant_rate_default_is_unaffected():
     topo = {0: {"E": 1}, 1: {"W": 0}}
     geo = _Scripted(
