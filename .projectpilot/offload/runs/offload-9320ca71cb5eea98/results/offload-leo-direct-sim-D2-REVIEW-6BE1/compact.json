@@ -1,0 +1,87 @@
+{
+  "taskId": "offload:leo-direct-sim:D2-REVIEW-6BE1",
+  "status": "EVIDENCE_READY",
+  "summary": "APPROVE（RESULT_CANDIDATE）。源码审查确认 F4-EDGE 已对 peer=None 的 structured peer-bound queue record fail closed；no-successor 回归将排空固定在 t=2.0、夹在 t=1.5/t=3.0 recompute 间，且按路径检查删除 prompt purge 会使 t=2.0 三组断言失败。统一 entity accounting/pre-cap purge、G0→G1→G2 transceiver gate、C5/C7 advertisement-origin binding、holding/receipt conservation 均未见回归。未执行 pytest，运行结果留给本地 Agent 最终验证。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "FACT: F4-EDGE closed；structured isl_queue_bits 在当前 topo[origin] 已无该方向、peer=None 时直接读取为 0，且 C5/C7 removed-direction regression 覆盖该状态。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/learning.py#L1005-L1031",
+        "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/tests/test_learning.py#L286-L339"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "FACT/INFERENCE: no-successor test deterministically leaves old 0:E live at t=1.5 and requires it reclaimed at the last t=2.0 event before the next t=3.0 recompute；删除 ISLLink._run 的 prompt purge 时这些 t=2.0 assertions 会失败。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/kernel.py#L651-L675",
+        "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/tests/test_dynamic_topology.py#L315-L389"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "FACT: round-2/3 live-entity formula、pre-cap purge 和双向 creation-order cap regressions 保持闭合。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/kernel.py#L1009-L1038",
+        "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/kernel.py#L1086-L1132",
+        "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/tests/test_dynamic_topology.py#L259-L313"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "FACT: G0→G1→G2 one-transceiver gate 仍按 generation id 等待所有同 slot 的更老未排空 generation，连续 rematch regression 逐 event 检查无重叠。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/kernel.py#L674-L704",
+        "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/tests/test_dynamic_topology.py#L195-L257"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "FACT: C5/C7 保留 advertisement origin；holding queue 容量/面积/fate 与 receipt 重新计算的数据、控制 ledger conservation 路径仍在。UNVERIFIED: 本网页审查未执行测试。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/learning.py#L1231-L1305",
+        "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/kernel.py#L2580-L2645",
+        "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/receipt.py#L930-L947",
+        "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/tests/test_holding_queue.py#L12-L83"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "本地 Agent 在精确 SHA 上运行 test_c5_c7_reject_queue_bits_after_direction_removed 与 test_removed_direction_reclaims_drained_generation_without_successor。",
+    "随后运行允许范围内 test_dynamic_topology.py、test_learning.py、test_holding_queue.py 全量回归；若运行结果与静态审查冲突，以本地验证结果为准。",
+    "当前审查未发现需要修改生产代码的 blocking、major 或 minor 项。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/learning.py#L1005-L1031",
+    "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/tests/test_learning.py#L286-L339",
+    "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/kernel.py#L651-L704",
+    "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/tests/test_dynamic_topology.py#L315-L389",
+    "github://fuguther/leo-direct-sim/blob/6be16cd2f471f4a343fc7e788ac7a9d6e13ff76d/CODE/leo_sim/receipt.py#L930-L947"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "UNVERIFIED: 受 REMOTE/只读合同限制，本网页 Worker 未执行 pytest；需本地 Agent 对精确 commit 完成 targeted + allowed-suite runtime verification 后给最终验收结论。"
+  ]
+}
