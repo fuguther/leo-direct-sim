@@ -1,0 +1,321 @@
+D2 post-integration cold-start review
+
+Verdict: REQUEST_CHANGES
+
+审阅对象严格绑定 commit 0cff2547c59ca2d8f66d690f6b922d6bf71588b9，未修改代码。
+
+核心 rematch 算法本身具备确定性、几何过滤、双向拓扑 fail-closed、路由结构重建、holding queue 守恒记账和 receipt counter plumbing。但集成后仍存在 2 个 blocking 语义缺陷 + 2 个 major 边界缺陷，因此不能 APPROVE。
+
+F1 — BLOCKING — queued learning-forward packet 在 rematch 后会触发 KernelError
+
+FACT
+
+动态重匹配只把旧链路 data_q 中的数据包取出并 _hold_packet() 回 satellite holding；它没有处理包上尚未闭合的 learning transition：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L955-L980
+
+Forward action 的 queue reward 明确要到 真实 ISL service start 才写入 pkt.learning_reward：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1490-L1510
+
+因此，包如果尚在 data_q 就遇到 rematch，其状态为：
+
+learning_state != None
+
+learning_action == "forward"
+
+learning_reward == None
+
+下一次 pending 重决策调用 _learning_action() 时，这种状态被代码明确判为非法，并抛 KernelError("unsettled non-deliver learning transition at re-decision")：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L2059-L2088
+
+KernelError 是普通 RuntimeError；run() 的受控中断只捕获 CapExceeded 和 FateError，该错误不是正常 fate：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L56-L63
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L2280-L2297
+
+Reproduction condition
+
+开启 DDQN/Q-learning；制造一个已经选择 forward、但仍排在即将被替换的 ISL data_q 中尚未开始 transmission 的包，例如降低 ISL rate/制造前序 backlog；在 service start 前触发拓扑重匹配改变该 direction 的 peer；下一次 _pending_ticker() 重决策即可进入上述异常路径。
+
+这是确定性的执行错误，blocking。
+
+F2 — BLOCKING — retired-link control drain 会把旧拓扑的 directional metrics 静默解释成新拓扑链路
+
+FACT + INFERENCE
+
+设计明确规定：
+
+queued data 回退到 pending；
+
+queued control 留在旧 ISL drain；
+
+拓扑、reverse adjacency、control tree 立即换成新拓扑。
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L61-L77
+
+实现与这一点一致：_recompute_topology() 只清空 data_q，没有清 ctrl_q，旧 link 被放入 _retired_isls：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L955-L980
+
+而 ISLLink worker 没有 retired-state 禁止启动；只按 geometry/GE/TTL 决定是否继续发送，因此 queued control 确实会在旧链路上继续 drain：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L560-L670
+
+控制快照在生成时把当时 ISL 的 queue/propagation 按 direction 构造；收到后，只要 TTL 有效就无 topology-version/peer 检查地写入 cache，并且旧包继续依据当前 control_children 转发：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1740-L1830
+
+ControlPacket 本身也没有 topology epoch 或 peer-binding 字段：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L211-L225
+
+与此同时，delay/capacity routing 使用当前 topo把 (a,b) 重新转换为 direction，然后按该 direction 读取 cache 中的 isl_propagation_s / isl_queue_bits：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/routing.py#L195-L244
+
+INFERENCE
+
+因此如果：
+
+旧 topo: satellite A, E -> X
+新 topo: satellite A, E -> Y
+
+而一个 rematch 前生成的 snapshot 在 rematch 后才到达，cache 中 "E" 的 propagation/queue 是 A→X 的历史状态；routing 却会把它作为当前 A→Y 的 metric 使用。
+
+这不是正常的 AoI/staleness：信息甚至不再描述同一条 edge。
+
+Reproduction condition
+
+启用 control plane + delay 或 capacity routing；让控制包 TTL 跨越 rematch；在某 origin 的 direction peer 从 X 改为 Y 时，使旧 snapshot 处于 retired ctrl_q、service 或 propagation；rematch 后让它成功到达并参与下一次 route calculation。
+
+若 advertise_interval_s == recompute_interval_s，风险更高，因为 control advertiser 的 process 在 topology ticker 之前创建：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L880-L900
+
+结论：控制包 drain 在 ledger conservation 上是显式的，但 topology semantics 不是 fail-closed。 对 delay/capacity 科学结果属于 blocking。
+
+F3 — MAJOR — 动态 rematch 绕过 max_entities，retired ISL 可持续累积
+
+FACT
+
+max_entities 只在 Kernel 初始化时对初始 ISL 数量检查：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L827-L840
+
+每次拓扑变化则：
+
+将旧 link 永久追加到 _retired_isls；
+
+为新 peer 创建新的 ISLLink；
+
+没有重新执行 max_entities 检查。
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L955-L976
+
+_all_isls() 明确同时保存 current + retired：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L941-L945
+
+Reproduction condition
+
+令 max_entities 仅略高于 initial entity count，配置短 recompute_interval_s，脚本 geometry 每个 epoch 至少改变一个方向。第一次/若干次 rematch 后实体数即可超过配置上限而不会 CapExceeded。
+
+这是 bounded-kernel 的 fail-closed 失效，severity major。
+
+F4 — MAJOR — retired-link draining state 被 global snapshot / packet-location index 隐藏
+
+FACT
+
+代码已经承认 retired links 仍是活跃状态的一部分，并在最终 occupied/queue-area accounting 中使用 _all_isls()：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L941-L945
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L2298-L2329
+
+但是 snapshot_global()["isl_links"] 只遍历 self.isls，即当前拓扑，不遍历 _all_isls()：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1050-L1090
+
+Q0 的 live-data location/index 同样只搜索 current self.isls：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1202-L1250
+
+因此 rematch 后：
+
+retired ctrl_q 隐藏；
+
+retired link 当前正在 service 的 control 隐藏；
+
+retired link 当前正在 service 的 data 在 transmission 完成进入 _in_flight 前也隐藏。
+
+Reproduction condition
+
+让某旧 link 在 rematch 时存在 current data/control 或 queued control；rematch 后、旧 service/drain 完成前调用 snapshot_global()。
+
+Ledger conservation 最终仍可成立，但所谓 global current-state view 不完整。若 Q0/全局 planner 与 D2 联用，这是 major。
+
+已验证正常的部分
+
+FACT — rematching interval。 ticker 先等待 interval，并拒绝在 now >= horizon 时重算；启用动态拓扑时初始 topology 使用 t=0，默认 None 则维持静态路径：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L797-L802
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L947-L980
+
+FACT — deterministic matching / geometry legality。 candidates 先调用 isl_available，再按 (range, a, b) tuple 排序，因此距离 tie 由卫星 ID 确定性打破；E/W slot 一次只能接受一条边：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/model.py#L543-L568
+
+geometry legality 同时检查 max range 与 Earth clearance：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/model.py#L573-L590
+
+build_topology 对动态 neighbor graph 做双向检查，单向 edge 抛错而非静默补边：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/routing.py#L62-L87
+
+FACT — routing structures rebuild。 rematch 后 rebuild reverse adjacency、sorted reverse adjacency 和 control broadcast tree：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L931-L980
+
+FACT — holding queue primitive。 queue 是 finite FIFO，put/remove 均同步 queued bits 与 QueueArea；overflow 返回失败，kernel 转成显式 HOLDING_QUEUE_OVERFLOW fate：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L115-L180
+
+对应 primitive tests 覆盖 capacity、FIFO、remove-order、area 和 overflow fate：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/tests/test_holding_queue.py#L14-L74
+
+FACT — receipt。 topo_recomputes 已进入 strict mechanism-counter key set；requested 中绑定 recompute interval/matching；effective.dynamic_topology 从 counter 重算：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/receipt.py#L48-L76
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/receipt.py#L128-L160
+
+retired-link 语义的明确判定
+
+不是“queued control/data 都 drain”。
+
+准确行为是：
+
+queued data：不 drain。 从 retired link data_q FIFO popleft，移除旧 ISL queue-area，再按顺序 append 到 satellite holding；holding 满则显式 HOLDING_QUEUE_OVERFLOW。
+
+queued control：drain。 留在 retired link 的 ctrl_q，允许继续在旧 peer 上启动 transmission，直到发送、TTL expiry、链路失败或 horizon。
+
+已经成为 link.current 的 data/control：继续旧链路 service，不被 rematch 中断。
+
+已经 transmission 完成、处于 propagation 的 data/control：继续到原 peer。
+
+最终 accounting 使用 current+retired links，因此 bits/queue-area/control ledger 本身基本守恒。
+
+因此：data migration 的守恒处理是 fail-closed；control drain 的账目也是显式的，但其拓扑信息语义不是 fail-closed，F2 必须修。
+
+Test adequacy
+
+UNVERIFIED / inadequate evidence。
+
+设计要求有专门的 dynamic-topology tests，包括 0.5/1.0/1.5 三次 recompute 和 data migration conservation：
+
+github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L89-L102
+
+但对合同允许的 CODE/leo_sim/tests/test_dynamic_topology.py 在 pinned commit 做了两次 exact-ref 读取，均返回 Not Found。文件不存在无法合法构造 blob/...#Lx 引用，因此不伪造行证据。当前可检查的 test_holding_queue.py 只证明 holding primitive，没有覆盖 F1/F2/F3/F4 的 D2 integration boundary。
+
+Open items
+
+UNVERIFIED: 本地 Agent 应确认 pinned commit 的 tree 中 CODE/leo_sim/tests/test_dynamic_topology.py 是否确实缺失；若缺失，测试充分性本身需要修复。
+
+UNVERIFIED: recompute_interval_s 的 >0 + finite 与 matching=="markovian" 配置校验位于本合同未授权路径，无法验证。Kernel ticker 自身不防御 interval=0。
+
+UNVERIFIED: rematch 后新 ISLLink 的 GE 实例重新创建且 RNG key 使用 sat:direction；outage.py 不在允许读取范围，因此无法验证新/旧 peer 的 GE trajectory reset/reuse 是否符合合同。
+
+UNVERIFIED: num_planes=1 是否由配置层禁止。_cross_plane_matching() 本身会令 east_plane == p，与设计中的“不同面候选”前提冲突；配置路径不在授权范围。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:D2-REVIEW-0CFF:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。基础 rematch 的 interval、确定性贪心、几何过滤、双向 fail-closed、holding 记账和 receipt plumbing 基本正确。但 queued learning-forward 包迁回 holding 后会以未结算 transition 重决策并触发 KernelError；旧拓扑 control snapshot 可跨 rematch drain 后按新 peer 的同名方向静默解释，污染 delay/capacity routing。另有动态 ISL 绕过 max_entities、retired draining state 不进入 global snapshot/Q0 live index。queued data 实际迁 holding，queued control 与 current service 才 drain；账目守恒但控制拓扑语义并非 fail-closed。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "FACT: rematch 迁移尚未开始 ISL service 的 learning-forward 包时不结算/取消 open transition；下一次 pending 重决策对 forward+reward=None 明确抛 KernelError。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L955-L980",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1490-L1510",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L2059-L2088",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L2280-L2297"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "blocking",
+      "summary": "INFERENCE strongly supported by code: queued control intentionally drains retired links, but pre-rematch direction-keyed queue/propagation metrics carry no topology epoch/peer binding and are accepted after rematch; delay/capacity routing resolves that direction against the current peer, silently misbinding old-edge metrics to a new edge.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L61-L77",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L211-L225",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1740-L1830",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/routing.py#L195-L244"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "FACT: max_entities is checked only for initial ISLs; every rematch may retain old ISLLink objects and allocate replacements without rechecking the configured entity cap.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L827-L840",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L941-L945",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L955-L976"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "FACT: retired ISLs participate in drain/final accounting but snapshot_global and Q0 live-packet indexing traverse only current self.isls, hiding retired control queues and retired-link current data/control service.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L941-L945",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1050-L1090",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1202-L1250",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L2298-L2329"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "FACT: core rematch mechanics otherwise use deterministic range/a/b ordering, current geometry legality, bidirectional fail-closed construction, routing-structure rebuilds, finite FIFO holding accounting, and strict topo_recomputes receipt plumbing.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/model.py#L543-L590",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/routing.py#L62-L87",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L931-L980",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/tests/test_holding_queue.py#L14-L74",
+        "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/receipt.py#L48-L76"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "修复 rematch 数据迁移对 open forward learning transition 的生命周期：迁回 holding 前显式结算、取消或定义 rematch transition 语义，并加入尚未 service-start 的学习包回归测试。",
+    "给 control snapshot 的 topology-dependent ISL metrics 增加 topology epoch/peer binding；rematch 后对不匹配缓存 fail closed 或丢弃这些字段，禁止按新 peer 静默解释旧 direction metric。",
+    "为 retired ISL 建立明确生命周期和回收条件，并将动态创建对象纳入 max_entities 检查。",
+    "让 global snapshot/Q0 live-state 显式包含 retired/draining ISL，或定义单独 retired_links 区域，避免隐藏正在 drain 的控制和服务中数据。",
+    "本地 Agent 核验 pinned commit 是否缺失 test_dynamic_topology.py，并覆盖 queued data migration、queued control drain、current service、control epoch crossing、learning migration、entity cap 和 snapshot completeness。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/ANALYSIS/TOPOLOGY-REMATCH-DESIGN-20260819.md#L61-L102",
+    "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L955-L980",
+    "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L1740-L1830",
+    "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/kernel.py#L2059-L2088",
+    "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/routing.py#L195-L244",
+    "github://fuguther/leo-direct-sim/blob/0cff2547c59ca2d8f66d690f6b922d6bf71588b9/CODE/leo_sim/receipt.py#L48-L76"
+  ],
+  "open_items": [
+    "UNVERIFIED: exact-ref GitHub read of CODE/leo_sim/tests/test_dynamic_topology.py returned Not Found twice; local Agent must confirm whether the pinned commit truly lacks this test file.",
+    "UNVERIFIED: config validation is outside the authorized paths, so recompute_interval_s finite/>0 and matching=markovian fail-loud validation could not be checked.",
+    "UNVERIFIED: outage.py is outside the authorized paths; rematch-created ISLLink GE trajectory reset/reuse semantics keyed by sat:direction could not be verified.",
+    "UNVERIFIED: configuration admissibility of num_planes=1 could not be checked; model._cross_plane_matching itself does not enforce the design premise that a cross-plane candidate is from a different plane."
+  ]
+}
+===END_OFFLOAD_RESULT===
