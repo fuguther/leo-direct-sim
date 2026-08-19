@@ -160,6 +160,36 @@ def test_dynamic_topology_recomputes_and_reports_effective_mechanism():
     assert res["mechanisms"]["effective"]["dynamic_topology"] is True
 
 
+def test_dynamic_topology_requeues_data_from_retired_isl_before_rebuild():
+    def at(sat, dirs, t):
+        if t < 0.5:
+            nb = {0: {"E": 1}, 1: {"W": 0}}
+        else:
+            nb = {0: {"E": 2}, 2: {"W": 0}}
+        return {d: n for d, n in nb.get(sat, {}).items() if d in dirs}
+
+    geo = StaticGeometry(3, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+                         neighbors_at_fn=at)
+    cfg = make_cfg({
+        "scenario": {"num_satellites": 3, "num_planes": 1,
+                      "duration_s": 1.0},
+        "topology": {"recompute_interval_s": 0.5},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    pkt = kernel.DataPacket(1, "src", "dst", 8_000, None, 0.0)
+    old_link = k.isls[0]["E"]
+    old_link.data_q.append(pkt)
+    old_link.data_bits = pkt.bits
+    old_link.data_area.add(pkt.bits, 0.0)
+
+    k._recompute_topology(0.5)
+
+    assert k.pending[0] == [pkt]
+    assert k.pending[0].queued_bits == pkt.bits
+    assert old_link in k._retired_isls
+    assert k.isls[0]["E"].peer == 2
+
+
 def test_integration_hop_vs_delay_paths_differ():
     ranges = {(0, 1): 100.0, (1, 2): 100.0, (0, 2): 10_000.0}
     fn = lambda a, b, t: ranges.get((a, b), ranges.get((b, a), 100.0))
