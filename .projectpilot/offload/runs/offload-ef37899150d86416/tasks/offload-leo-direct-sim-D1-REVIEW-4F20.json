@@ -1,0 +1,59 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:D1-REVIEW-4F20",
+    "title": "D1 dynamic link rate post-fix cold-start review",
+    "goal": "Review exact commit 4f20cf2 on branch codex/20260819-d1-dynamic-rate. Check legacy RF/MCS equivalence; zero-rate, geometry-loss and GE-down queue/service semantics for shared uplink, downlink and ISL; snapshot residual-service accounting; legal masks; counters/receipt; deadline, retirement and GE/geometry races; and regression test adequacy. Explicitly verify the post-fix claim that an unavailable GSL head is not dequeued. Return APPROVE or REQUEST_CHANGES with FACT/INFERENCE/UNVERIFIED, exact path/line evidence, concrete reproduction conditions, severity and open_items. Do not modify code.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "4f20cf2068008496d494794873fe70bd6ecc7c68",
+      "paths": [
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/link_budget.py",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/tests/test_link_budget_integration.py",
+        "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Explicit APPROVE or REQUEST_CHANGES",
+      "Every major finding has exact evidence and reproduction condition",
+      "Open items included"
+    ],
+    "requiredEvidence": [
+      "Exact commit-bound GitHub paths and line references",
+      "Explicit review of the new GSL queue-gating tests"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "f76c1aca7d5c9c4838e7e3b2f076ced52d7a36cb5a125f2b658ec11376218c2f"
+}
