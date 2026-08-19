@@ -1,0 +1,124 @@
+{
+  "taskId": "offload:leo-direct-sim:D1-INDEPENDENT-REVIEW",
+  "status": "EVIDENCE_READY",
+  "summary": "RESULT_CANDIDATE：建议 REQUEST_CHANGES。链路预算公式、三套默认 RF、MCS golden 与 max-rate 逆推在授权证据内自洽；但发现 4 个 major：MCS=0 的 waiting snapshot 会除零且动态 waiting residual 可能陈旧；零速率包在真正起传前已 dequeue/current，造成 queue_area 口径分裂和 shared GSL HOL；receipt 的 mcs/control counters 对 cold-start 有假阴性/假开始；约 5826.78–6000 km ISL 可 geometry-legal 但 MCS=0，Kernel legal mask 未过滤。另有 constant 未真正忽略 RF、动态安排 retirement 的同刻 tie 两个 minor。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "MCS 零速率 waiting_for_link 时 snapshot_global 以 service_rate_bps=0 计算 remaining_service_s，存在确定的除零路径；非零 down-wait 还可能把起传前旧采样速率误报为未来实际 service duration。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L291-L334",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L565-L615",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L950-L1055"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "零速率包在真正 transmission start 前已从 Uplink/Downlink/ISL queue 与 queue_area 中移出并占住 server；这与 D1 的“link down、包排队”合同及 ISL realized queue reward 不一致，并可使 shared GSL 的不可服务 endpoint 阻塞其他正速率 endpoint。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L291-L342",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L413-L474",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L500-L625",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L1150-L1285",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L70-L96"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "receipt 的 REQUESTED/EFFECTIVE/COUNTER key-set 与 hash 验证结构闭合，但 mcs_rate_samples 只在 rate>0 时增加，导致零速率 MCS 实际改变 fate 时 effective.mcs 可为 false；正速率却 geometry/GE down 时又可计 sample。control_tx_started 也在 MCS gate 前增加，verifier 只能验证这些错误 counter 的内部一致性。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L540-L615",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L1170-L1205",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L2100-L2165",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/receipt.py#L35-L145",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/receipt.py#L650-L680",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/receipt.py#L1010-L1085"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "默认 ISL RF 的非零 MCS 最大距离约 5826.7766 km，而 geometry max_isl_km=6000；因此存在 geometry-legal/MCS-zero 壳层。Kernel._decide 的 legal mask 只检查 geometry 与 queue room，不检查当前 MCS>0，可把 legacy 语义下不可用的零速率边作为合法动作。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/link_budget.py#L113-L180",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/config.py#L246-L285",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/model.py#L553-L568",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L1904-L1975",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L70-L96"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "constant transmission 路径仍用固定速率，但 config 会无条件验证 MCS table/三套 RF，Kernel 也无条件构造 RFParams 并计算 max-rate range；与设计稿“constant 时忽略 RF”的声明不完全一致。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/config.py#L510-L554",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L728-L759",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L868-L893",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L40-L65"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "summary": "若 link 在 _transmit 当前 race 建立后才转 retiring，retirement interrupt 与既有 completion/deadline 精确同刻时，env.now==fail_t 不会触发 recompute，可能违反代码声明的 retirement tie-wins 语义。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L1150-L1325",
+        "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L1430-L1495"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "P0：修 snapshot waiting 相位；rate=0 时禁止 bits/rate，并避免把起传前采样值描述为确定 remaining_service_s。",
+    "P0：把当前 MCS 可起传性纳入 dequeue/servable eligibility；共享 GSL 不应让 zero-rate endpoint 阻塞其他正速率 endpoint，并统一 queue_area 与 learning queue-wait 口径。",
+    "P0：拆分 mcs_rate_queries、mcs_zero_rate_waits、mcs_service_starts；把 control_tx_started 移到真正 phase=transmitting 的位置，并据明确语义重定义 effective.mcs。",
+    "P0：rate_model=mcs 时在 Kernel 最终 legal action mask 中排除当前 MCS=0 的 ISL/GSL action，仅使用当前几何，不读取未来。",
+    "P1：明确 constant 是否真正 ignore RF；若是，则只在 mcs 分支验证/构造 RF/max-range；若不是则更新设计与兼容合同。",
+    "P1：补 retirement==completion、retirement==deadline 精确同刻竞速测试，并在 AnyOf wake 后重新读取当前 retire 状态。",
+    "本地 Agent 运行完整测试及针对 snapshot、queue_area、control counters、receipt verify、5900km legal-mask、shared-GSL HOL 的定向复现后再作最终合并判定。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/link_budget.py#L33-L180",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/config.py#L246-L285",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/config.py#L510-L554",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L500-L625",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L950-L1055",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L1150-L1325",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/kernel.py#L1904-L1975",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/receipt.py#L35-L145",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/receipt.py#L1010-L1085",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/CODE/leo_sim/tests/test_link_budget_integration.py#L14-L157",
+    "github://fuguther/leo-direct-sim/blob/c0a1f182b3447d2c6f0a5d885ef07582e9f0dc42/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L1-L125"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "旧平台原始源文件不在授权路径，三套 RF 参数的 legacy provenance 尚需本地 Agent 独立逐字段核验。",
+    "需统计真实 Walker 66 场景中 ISL range 落入约 5826.78–6000 km 壳层的实际频率。",
+    "routing.py 未获授权，尚未验证各 routing policy 对 MCS-zero candidate 的具体排序频率；已确认 Kernel final legal filter 不检查 MCS。",
+    "需用 D1 前真实 constant-mode receipt fixture 验证新 verifier 的历史工件兼容性。",
+    "本任务禁止本地 Shell，尚未执行 test_link_budget_integration.py 或完整测试套；所有静态复现需本地 Agent 运行确认。",
+    "需用 deterministic SimPy 用例验证 retirement 与 completion/deadline 精确同刻时的实际 callback 顺序及最终 fate。"
+  ]
+}
