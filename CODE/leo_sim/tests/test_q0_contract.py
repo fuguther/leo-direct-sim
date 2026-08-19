@@ -145,3 +145,30 @@ def test_q0_replay_gate_rejects_plan_without_matching_service_event():
     ok, errors = k.verify_q0_replay()
     assert not ok
     assert any("no matching service start" in error for error in errors)
+
+
+def test_kernel_rejects_deliver_teleport_from_wrong_satellite():
+    """Q0 review F1: a DELIVER action must only be admitted for the
+    satellite that actually holds the packet in pending.  Without this check
+    a plan could deliver a pending packet straight to the ground from a
+    satellite that does not hold it (teleport)."""
+    geo = StaticGeometry(2, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+                         visible=lambda s, lat, lon, t: True)
+    cfg = make_cfg({"scenario": {"num_satellites": 2, "num_planes": 1}})
+    dst = cell(0.0, 10.0)
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    ep = kernel.TrafficEndpoint(dst)
+    k.endpoints[dst] = ep
+    ep.links[0] = kernel.Link(0, "active", 0.0)
+    ep.links[1] = kernel.Link(1, "active", 0.0)
+    pkt = kernel.DataPacket(1, cell(0.0, 0.0), dst, 8_000, None, 0.0)
+    k.pending[0].append(pkt)  # held at sat0
+    # deliver via sat1, which also holds an active link to the destination:
+    # without the wrong-pending-satellite check this would validate as OK
+    plan = JointPlan(0, (PlanAction("deliver", 1, 1),))
+
+    ok, errors = k.apply_joint_plan(plan)
+
+    assert not ok and any("wrong pending satellite" in e for e in errors)
+    assert [p.pid for p in k.pending[0]] == [1]
+    assert k.ledger.fate_of(1) is None

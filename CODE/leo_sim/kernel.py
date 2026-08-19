@@ -1248,7 +1248,10 @@ class Kernel:
                 forward_bits[(action.sat, action.direction)] = (
                     forward_bits.get((action.sat, action.direction), 0) + packet.bits)
             elif action.kind == "deliver":
-                if action.packet_id not in locations:
+                # a DELIVER is only admissible for the satellite that
+                # actually holds the packet in pending (no teleport)
+                if action.sat != location[1]:
+                    errors.append(f"packet {action.packet_id}: wrong pending satellite")
                     continue
                 ep = self.endpoints.get(packet.dst)
                 link = ep.links.get(action.sat) if ep is not None else None
