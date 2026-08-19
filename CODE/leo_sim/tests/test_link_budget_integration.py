@@ -732,3 +732,53 @@ def test_constant_rate_downlink_ge_gated_head_does_not_pin_shared_server():
     served = [pid for _cell, pid in k.service_log["downlink"]]
     assert 2 in served, "servable endpoint B was never served"
     assert 1 not in served, "GE-gated head A was dequeued"
+
+
+def test_mcs_gated_head_hard_retirement_released_at_instant_not_next_tick():
+    """D1 round-5 F1-R: a pre-dequeue-gated head (never in _transmit) must
+    still be released at the hard retirement deadline via the interrupt, not
+    deferred to the next _evaluate_handover tick.  time_step=0.7 makes
+    retire_at=1.0 a non-tick instant; the release must happen at 1.0 and the
+    packet must be unassigned so a successor can serve it."""
+    geo = _Scripted(
+        2, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+        visible=lambda s, lat, lon, t: (
+            (s == 0 and (lat, lon) == AC)
+            or (s == 1 and (lat, lon) == BC)),
+        slant_km=600.0)
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "time_step_s": 0.7},
+        "access": {"acquisition_delay_s": 0.0},
+        "links": {"rate_model": "mcs", "ge_enabled": True,
+                   "ge_gsl": {"mean_good_s": 1000.0,
+                               "mean_bad_s": 1000.0}},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    ep = k._ensure_endpoint(A)
+    k._associate(ep, 0, k.env.now)
+    pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    pkt.deadline = 1.5  # after retire_at: expiry must not preempt the release
+    pkt.assigned_sat = 0
+    k.ledger.register(pkt.pid, pkt.bits)
+    ep.queue.append(pkt)
+    ep.queued_bits += pkt.bits
+    ep.area.add(pkt.bits, k.env.now)
+    ge = k._gsl_ge(0, A)
+    ge._bad = True
+    ge._last_t = 0.0
+    ge._next_flip = float("inf")
+    link = ep.links[0]
+    link.state = "retiring"
+    link.cause = "lease"
+    link.retire_at = 1.0
+    k.env.process(k._fire_interrupt(link, 1.0))
+    k._poke(k.uplinks[0].wake)
+    k.env.run(until=2.0)
+    releases = [e for e in k.handover_events
+                if e["type"] == "release"
+                and str(e["reason"]).startswith("lease")]
+    assert releases, "retiring gated link was never released"
+    assert releases[0]["t"] == pytest.approx(1.0, abs=1e-9), (
+        "release at %s, not the hard retirement instant 1.0" % releases[0]["t"])
+    assert pkt.assigned_sat is None, (
+        "gated head still assigned to the retired link")

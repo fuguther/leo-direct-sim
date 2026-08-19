@@ -1381,6 +1381,26 @@ class Kernel:
         yield self.env.timeout(max(0.0, at - self.env.now))
         if not link.interrupt.triggered:
             link.interrupt.succeed()
+        # D1 F1-R: a pre-dequeue-gated head never enters _transmit, so it
+        # never races this interrupt; the hard-retirement cleanup must also
+        # run here immediately instead of waiting for the next
+        # _evaluate_handover tick (up to one time_step of stale assignment /
+        # slot hold).  If a service IS in flight, _transmit's own interrupt
+        # race performs the retirement side effect ("retired" -> caller ->
+        # _on_link_retired), so skip to avoid a double release.
+        for cell, ep in self.endpoints.items():
+            if ep.links.get(link.sat) is not link:
+                continue
+            if link.state != "retiring" or self.env.now < link.retire_at:
+                continue
+            if self._in_service(ep, link.sat):
+                continue
+            for p in ep.queue:
+                if p.assigned_sat == link.sat:
+                    p.assigned_sat = None
+            self._release(ep, link.sat, self.env.now,
+                          f"{link.cause or 'mbb'}_retire_deadline")
+            break
 
     def _transmit(self, dur: float | None, pkt, link_ref, occ_key: str,
                   owner=None, rate_fn=None, rate_recover_fn=None):
