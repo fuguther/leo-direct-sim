@@ -7,6 +7,13 @@
 - 验证：Q0 专项（合同、回放、快照、tiny）`23 passed`；`CODE/leo_sim/tests` 全量 `417 passed`。
 - 边界：tiny 的 `N` 方向是合成 wire contract，不能直接当作真实星座方向；Q0-F 未来时间线、CP-SAT/MILP 交叉验证和真实 kernel 轨迹回放仍未完成。
 
+## 2026-08-19（独立复核调度留痕）
+
+- Q0-I/replay 最新复核绑定 commit `ffb1d5d17e9078e206228268e080102d5140eb25`，operation `offload-operation:dbd05d1ac037396821a4c375e70242c1`；截至记录时仍为 `DISPATCHING`，无 verdict。
+- D1 动态速率复核绑定 commit `9ae6a71294419dc31cc6b24771aeeb91b14ed285`，operation `offload-operation:8115689838821c1d7a5994fbb0a18d77`；截至记录时仍为 `DISPATCHING`。
+- D2 动态拓扑复核绑定 commit `0cff2547c59ca2d8f66d690f6b922d6bf71588b9`，operation `offload-operation:f854226eae8ed24762dbc893ce51d16e`；截至记录时仍为 `DISPATCHING`。
+- 三项均是只读独立审阅；在返回明确 APPROVE 前，D1/D2 不得合并、部署或用于论文实验。
+
 ## 2026-08-19（Q0 第一阶段 planned-vs-executed 回放门禁）
 
 - 分支 `codex/20260819-q0-replay-gate`：Q0 原子计划提交后记录期望动作；真实 ISL/GSL 服务进入 transmitting 阶段时记录执行动作，WAIT 在有限 holding queue 原子落地时记录执行。
