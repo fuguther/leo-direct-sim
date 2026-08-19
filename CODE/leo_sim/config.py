@@ -116,6 +116,10 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "ge_gsl": dict,  # {mean_good_s, mean_bad_s} continuous-time, abstract defaults
         "ge_isl": dict,
     },
+    "topology": {
+        "recompute_interval_s": (int, float, type(None)),
+        "matching": str,  # markovian (legacy greedy shortest-edge matching)
+    },
     "control_plane": {
         "enabled": bool,
         "vis_k": int,  # the single propagation-limit contract (actual ISL hops)
@@ -242,6 +246,10 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "ge_gsl": {"mean_good_s": 300.0, "mean_bad_s": 1.0},
         "ge_isl": {"mean_good_s": 900.0, "mean_bad_s": 0.5},
     },
+    "topology": {
+        "recompute_interval_s": None,  # None = static (V2 current behavior)
+        "matching": "markovian",
+    },
     "control_plane": {
         "enabled": True,
         "vis_k": 2,
@@ -338,10 +346,10 @@ def _check_finite(node: Any, path: str = "") -> None:
 
 
 def _validate_semantics(cfg: Mapping[str, Any]) -> None:
-    sc, ep, dm, ac, lk, cp, rt, lr, ex = (
+    sc, ep, dm, ac, lk, tp, cp, rt, lr, ex = (
         cfg["scenario"], cfg["endpoints"], cfg["demand"], cfg["access"],
-        cfg["links"], cfg["control_plane"], cfg["routing"], cfg["learning"],
-        cfg["execution"],
+        cfg["links"], cfg["topology"], cfg["control_plane"], cfg["routing"],
+        cfg["learning"], cfg["execution"],
     )
     if sc["duration_s"] <= 0:
         raise ConfigError("scenario.duration_s must be > 0")
@@ -489,6 +497,15 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
                or ge[k] <= 0
                for k in ("mean_good_s", "mean_bad_s")):
             raise ConfigError(f"links.{name} mean dwell times must be > 0")
+    if tp["recompute_interval_s"] is not None and (
+            isinstance(tp["recompute_interval_s"], bool)
+            or not isinstance(tp["recompute_interval_s"], (int, float))
+            or not math.isfinite(tp["recompute_interval_s"])
+            or tp["recompute_interval_s"] <= 0):
+        raise ConfigError(
+            "topology.recompute_interval_s must be null or a positive number")
+    if tp["matching"] != "markovian":
+        raise ConfigError("topology.matching currently supports only 'markovian'")
     if cp["vis_k"] < 0:
         raise ConfigError("control_plane.vis_k must be >= 0")
     if cp["ttl_s"] <= 0 or cp["advertise_interval_s"] <= 0 or cp["packet_bits"] < 1:

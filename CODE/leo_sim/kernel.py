@@ -724,6 +724,7 @@ class Kernel:
         self.cfg_sc = cfg["scenario"]
         self.cfg_access = cfg["access"]
         self.cfg_links = cfg["links"]
+        self.cfg_topo = cfg["topology"]
         self.cfg_cp = cfg["control_plane"]
         self.cfg_rt = cfg["routing"]
         self.cfg_learning = cfg["learning"]
@@ -795,19 +796,9 @@ class Kernel:
             per_ep_rows.setdefault(r["src_grid_id"], []).append(r)
 
         self.topo = routing.build_topology(
-            self.geometry, self.num_sats, self.cfg_links["isl_dirs"])
-        # static routing structures: topo never changes, so build the reverse
-        # adjacency and its sorted neighbour lists once instead of rebuilding
-        # them on every decision (behaviour-identical, same iteration order)
-        self._routing_reverse_adj = routing._reverse_adj(self.topo)
-        self._routing_sorted_rev_adj = {
-            s: sorted(self._routing_reverse_adj.get(s, ()))
-            for s in self._routing_reverse_adj}
-        self.control_children = [
-            routing.control_broadcast_children(
-                self.topo, origin, self.cfg_cp["vis_k"])
-            for origin in range(self.num_sats)
-        ] if self.cfg_cp["enabled"] and self.cfg_cp["vis_k"] > 0 else []
+            self.geometry, self.num_sats, self.cfg_links["isl_dirs"],
+            t=0.0 if self.cfg_topo["recompute_interval_s"] is not None else None)
+        self._build_routing_structures()
 
         # per-satellite state
         self.slots: list[set[str]] = [set() for _ in range(self.num_sats)]
@@ -837,6 +828,7 @@ class Kernel:
         self.uplinks = [UplinkServer(self, s) for s in range(self.num_sats)]
         self.downlinks = [DownlinkServer(self, s) for s in range(self.num_sats)]
         self.isls: list[dict[str, ISLLink]] = [{} for _ in range(self.num_sats)]
+        self._retired_isls: list[ISLLink] = []
         for s in range(self.num_sats):
             for d, n in self.topo[s].items():
                 self.isls[s][d] = ISLLink(self, s, d, n)
@@ -881,6 +873,7 @@ class Kernel:
             "learning_train_steps": 0,
             "learning_discarded_at_stop": 0,
             "holding_queue_overflows": 0,
+            "topo_recomputes": 0,
         }
         # packets holding an open (not yet closed) learning transition; the
         # horizon close must account for every one of them, never silently
@@ -899,6 +892,8 @@ class Kernel:
                 self.env.process(self._control_advertiser(s))
         for cell in sorted(per_ep_rows):
             self.env.process(self._emitter(self.endpoints[cell], per_ep_rows[cell]))
+        if self.cfg_topo["recompute_interval_s"] is not None:
+            self.env.process(self._topology_ticker())
         for s in range(self.num_sats):
             self.env.process(self._pending_ticker(s))
         self.env.process(self._horizon_closer())
@@ -932,6 +927,57 @@ class Kernel:
     def _log(self, kind, **kv):
         if self.monitor:
             self.monitor_log.append((self.env.now, kind, tuple(sorted(kv.items()))))
+
+    def _build_routing_structures(self):
+        self._routing_reverse_adj = routing._reverse_adj(self.topo)
+        self._routing_sorted_rev_adj = {
+            s: sorted(self._routing_reverse_adj.get(s, ()))
+            for s in self._routing_reverse_adj}
+        self.control_children = [
+            routing.control_broadcast_children(
+                self.topo, origin, self.cfg_cp["vis_k"])
+            for origin in range(self.num_sats)
+        ] if self.cfg_cp["enabled"] and self.cfg_cp["vis_k"] > 0 else []
+
+    def _all_isls(self):
+        """Current plus retired links, including queues draining after rematch."""
+        return [link for links in self.isls for link in links.values()] + list(
+            self._retired_isls)
+
+    def _topology_ticker(self):
+        interval = self.cfg_topo["recompute_interval_s"]
+        while True:
+            yield self.env.timeout(interval)
+            if self.env.now >= self.horizon:
+                return
+            self._recompute_topology(self.env.now)
+
+    def _recompute_topology(self, now: float):
+        new_topo = routing.build_topology(
+            self.geometry, self.num_sats, self.cfg_links["isl_dirs"], t=now)
+        old_links = self.isls
+        for s in range(self.num_sats):
+            for link in old_links[s].values():
+                if new_topo[s].get(link.dir) == link.peer:
+                    continue
+                while link.data_q:
+                    pkt = link.data_q.popleft()
+                    link.data_bits -= pkt.bits
+                    link.data_area.remove(pkt.bits, now)
+                    self._hold_packet(s, pkt)
+                self._retired_isls.append(link)
+            new_links = {}
+            for direction, peer in new_topo[s].items():
+                old = old_links[s].get(direction)
+                if old is not None and old.peer == peer:
+                    new_links[direction] = old
+                else:
+                    new_links[direction] = ISLLink(self, s, direction, peer)
+            self.isls[s] = new_links
+        self.topo = new_topo
+        self._build_routing_structures()
+        self._state_version += 1
+        self.mech["topo_recomputes"] += 1
 
     def _count_data_packet(self):
         """Enforce the trace/data-packet cap.
@@ -2256,10 +2302,10 @@ class Kernel:
                 if srv._svc is not None:
                     t0, key = srv._svc
                     self.occupied[key] += self.env.now - t0
-            for lnk in self.isls[s].values():
-                if lnk._svc is not None:
-                    t0, key = lnk._svc
-                    self.occupied[key] += self.env.now - t0
+        for lnk in self._all_isls():
+            if lnk._svc is not None:
+                t0, key = lnk._svc
+                self.occupied[key] += self.env.now - t0
         stop_time = self.env.now  # == horizon on a natural end (closer)
         # settle all queue-area integrals at the exact stop time
         for ep in self.endpoints.values():
@@ -2267,17 +2313,15 @@ class Kernel:
         for s in range(self.num_sats):
             self.holding_areas[s].close(stop_time)
             self.downlinks[s].area.close(stop_time)
-            for lnk in self.isls[s].values():
-                lnk.data_area.close(stop_time)
-                lnk.ctrl_area.close(stop_time)
+        for lnk in self._all_isls():
+            lnk.data_area.close(stop_time)
+            lnk.ctrl_area.close(stop_time)
         queue_area = {
             "uplink": sum(ep.area.area for ep in self.endpoints.values()),
             "downlink": sum(self.downlinks[s].area.area for s in range(self.num_sats)),
             "holding": sum(area.area for area in self.holding_areas),
-            "isl_data": sum(lnk.data_area.area for s in range(self.num_sats)
-                            for lnk in self.isls[s].values()),
-            "isl_ctrl": sum(lnk.ctrl_area.area for s in range(self.num_sats)
-                            for lnk in self.isls[s].values()),
+            "isl_data": sum(lnk.data_area.area for lnk in self._all_isls()),
+            "isl_ctrl": sum(lnk.ctrl_area.area for lnk in self._all_isls()),
         }
         self.access_stats["waiting_at_stop"] = sum(
             len(q) for q in self.access_wait)
@@ -2301,6 +2345,8 @@ class Kernel:
                 if self.learner is not None else "none"),
             "learning_mode": (
                 self.learner.mode if self.learner is not None else "train"),
+            "topology_recompute_interval_s": self.cfg_topo["recompute_interval_s"],
+            "topology_matching": self.cfg_topo["matching"],
         }
         ctrl_fc = self.ctrl_ledger.fate_counts()
         control_counters = {
@@ -2326,6 +2372,7 @@ class Kernel:
             "ge": self.ge_enabled and (
                 self.mech["ge_gsl_queries"] + self.mech["ge_isl_queries"] > 0),
             "mbb": self.mech["mbb_events"] > 0,
+            "dynamic_topology": self.mech["topo_recomputes"] > 0,
             "learning": False,
             "ge_gsl_queries": self.mech["ge_gsl_queries"],
             "ge_isl_queries": self.mech["ge_isl_queries"],
