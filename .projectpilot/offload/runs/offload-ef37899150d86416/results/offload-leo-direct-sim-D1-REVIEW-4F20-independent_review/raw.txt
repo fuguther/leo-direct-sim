@@ -1,0 +1,414 @@
+D1 dynamic link rate post-fix 独立审阅
+
+结论：REQUEST_CHANGES
+
+对精确 commit 4f20cf2068008496d494794873fe70bd6ecc7c68 的只读 cold-start 审阅发现：active GSL 的 post-fix 确实把 geometry / GE / zero-rate 检查前移到了 dequeue 之前，但“unavailable GSL head is not dequeued”这一说法不能整体成立。至少存在一个可由代码直接证明的 retiring-uplink 绕过；此外，新的 pre-dequeue gate 使 GSL 的精确 recovery/deadline 竞速退化成 time_step 轮询，并造成 GE receipt counter 漏记。另有一个 ISL zero-rate/no-deadline 在 horizon 处形成零时间循环的 blocking 问题。
+
+我未执行本地测试或 shell；以下为精确 commit 上的静态 RESULT_CANDIDATE。
+
+Findings
+F1 — BLOCKING — ISL zero-rate、无 deadline、无恢复时可在 horizon 形成 timeout(0) 无限循环
+
+分类：FACT + INFERENCE
+
+ISL 在 dequeue 前正确检查 zero MCS rate；当 rate 为 0 时，它寻找 next_rate 和 head packet expiry。如果二者都不存在，就等待到 horizon：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L565-L608
+
+问题在于到达 env.now == horizon 后，同一分支再次执行：
+
+Python
+运行
+yield k.env.timeout(max(0.0, k.horizon - k.env.now))
+
+此时等价于 timeout(0)，随后 continue，队列仍非空、rate 仍为 0，于是继续在 horizon 调度零时长事件。与此同时 Kernel.run() 明确处理所有 t_next <= horizon 的事件，只有超过 max_events 才中断：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L2100-L2121
+
+复现条件：
+
+rate_model=mcs；
+
+ISL geometry 本身 available；
+
+mcs_rate_bps == 0 且直到 horizon 都不恢复；
+
+data packet 无 deadline，或 control expiry 不在未来；
+
+packet 位于 ISL queue。
+
+当前测试几乎构造了这个条件：test_mcs_zero_rate_isl_head_stays_queued_until_recovery 放入一个 deadline=None 的 packet，ISL 永久 5900 km、rate=0，但只执行 6 次 env.step()，没有运行到 horizon，因此遗漏该故障：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/tests/test_link_budget_integration.py#L166-L190
+
+影响： 正常的“零速率直到仿真结束”场景可能不是 natural_end，而是最终撞 max_events 成为 interrupted run。因此阻塞 D1 通过。
+
+F2 — MAJOR — post-fix active GSL 虽然不再 dequeue unavailable head，但丢失了精确 recovery/deadline 调度
+
+分类：FACT + INFERENCE
+
+active uplink 的新 gate 确实有效：MCS 模式下，geometry unavailable、GE down、rate≤0 都在 _pick() 返回 packet 之前检查：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L273-L295
+
+downlink _servable() 同样在 dequeue 前检查 geometry、GE 和 MCS rate：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L410-L429
+
+因此，“active MCS GSL unavailable head remains queued”这一窄化后的 claim 是成立的。
+
+但一旦 _pick/_servable 返回 None，两种 GSL server 都不再进入 _transmit()，而只是：
+
+Python
+运行
+yield env.timeout(time_step) | wake
+
+uplink：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L297-L306
+
+downlink：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L431-L452
+
+这使 _transmit() 已实现的精确 next_gsl_change、ge.next_up、next_slant_range_under、deadline/retirement race 在 active-GSL pre-service outage 上变得不可达：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L1205-L1296
+
+而设计稿明确要求 zero-rate recovery 由 certified next_slant_range_under 唤醒，并和 deadline/retirement 竞速：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L47-L65
+
+复现条件：
+
+active GSL；
+
+当前 rate=0 或 GE/geometry down；
+
+recovery 时刻 t_r 落在两个 endpoint/server tick 之间；
+
+没有其他事件碰巧 poke server。
+
+预期按设计应在 t_r 重新尝试；实际最早通常到下一 time_step polling point。短于一个 time_step、完全落在两次 polling 之间的 GE-up window 甚至可能完全错过。
+
+同理，active GSL packet 留在普通 uplink/downlink queue 后，deadline 也由周期 sweep 而非 _transmit() 的 exact deadline event 处理，deadline fate 与 queue-area 结算存在最高约一个 tick 的延迟。
+
+建议： 保留“不 dequeue”的修复，但 server idle wait 应直接 race 当前 blocked heads 的 deterministic recovery / GE-up / deadline / retirement，而不是统一 time_step polling。
+
+F3 — MAJOR — retiring uplink 绕过 post-fix gate，unavailable GSL head 仍会被 dequeue 并占住共享 server
+
+分类：FACT
+
+UplinkServer._pick() 对 retiring link 使用了单独分支：
+
+Python
+运行
+if link.state == "retiring":
+    if p.assigned_sat == self.sat:
+        return p
+
+该 return 发生在 geometry / GE / MCS-rate 检查之前：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L273-L295
+
+而 _run() 一旦获得这个 packet，马上从 endpoint queue 删除，减少 queued_bits 和 queue-area，并令它成为 current：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L307-L318
+
+随后才进入 _transmit()，在那里发现 geometry / GE / rate down 并等待恢复或 retirement：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L1205-L1296
+
+复现条件：
+
+两个 endpoint 共用同一 satellite uplink server；
+
+endpoint A 的 link 已进入 retiring；
+
+A 的 head packet 已 assigned_sat == sat；
+
+A 的 GSL 此时 geometry down、GE down 或 MCS rate=0；
+
+endpoint B active 且完全 servable；
+
+DRR 先选择 A。
+
+结果是 A 被 dequeue 后进入 pre-service waiting，整个共享 uplink 的 current 被 A 占据，B 无法被服务，直到 A recovery / deadline / hard retirement。
+
+此外，A 在这段等待期间已经从 endpoint queue 移除，而 _transmit() 又特意不把 pre-service wait 算入 occupied，因此这段时间既不是 queue-area 又不是 link occupation，诊断记账出现空洞。
+
+因此，本 commit 不能宣称一般性的“unavailable GSL head is not dequeued”。 downlink 的 retiring path 经过统一 _servable() gate，但 uplink 没有。
+
+F4 — MAJOR — 新的 pre-dequeue GE gate 会绕过 GE counters，receipt 可把真正改变运行结果的 GE 报成 ineffective
+
+分类：FACT + INFERENCE
+
+post-fix 在 uplink _pick() 与 downlink _servable() 直接调用 is_down()：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L273-L295
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L410-L429
+
+ISL 的 available_now() 也直接以 GE state 阻止 dequeue：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L546-L550
+
+然而 ge_gsl_queries / ge_isl_queries 的增加仅发生在 _transmit() 内：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L1205-L1218
+
+因此，如果 GE 在 pre-dequeue gate 阶段持续阻止发送、packet 从未进入 _transmit()，GE query counter 可以保持 0。
+
+receipt 又把：
+
+effective.ge =
+    ge_enabled AND (ge_gsl_queries + ge_isl_queries > 0)
+
+作为有效性判据：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/receipt.py#L129-L151
+
+复现条件： ge_enabled=true，待发送 head 从首次调度开始即 GE-down，并一直由 pre-dequeue gate 阻止到 deadline/horizon。
+
+此时 GE 明显改变了 packet service/fate/timing，但 counter/receipt 可能宣称 GE 没有 effective。
+
+这同时使 ge_waits 无法完整表示新的 pre-dequeue wait。
+
+F5 — MAJOR — 新增 GSL queue-gating regression tests 没有可靠触达其声称验证的分支
+
+分类：FACT + INFERENCE
+
+这是本轮要求显式核验的测试部分。
+
+Downlink GE test：确定的 false-positive
+
+test_mcs_gsl_ge_down_does_not_dequeue_shared_downlink_head 构造 Kernel 后立即：
+
+downlinks[1].put(pkt)；
+
+强制 GE bad；
+
+直接调用 _servable(B)。
+
+期间没有执行 environment step，也没有显式关联 B 与 sat 1：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/tests/test_link_budget_integration.py#L220-L244
+
+而 TrafficEndpoint 初始化时 links={}：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L203-L212
+
+_servable() 在检查 GE 之前就会因为 link is None 返回：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L410-L429
+
+因此该测试即使删掉 GE gate 也仍然可能通过；它没有证明 post-fix 的 GE-before-dequeue 行为。
+
+Uplink geometry-down test：高度疑似同样未建立 active association
+
+该测试手工向 endpoint queue 插入 packet，然后只执行一次 k.env.step()：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/tests/test_link_budget_integration.py#L193-L217
+
+Kernel 构造期间 uplink/downlink/ISL server processes 在 endpoint ticker 之前创建，而 association 是后续 process/tick 才发生的：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L833-L840
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L886-L907
+
+因此，INFERENCE： 单个 env.step() 很可能只让先创建的 server 观察到“没有 association”，测试同样可能因为 link is None 而过绿，而不是 geometry gate。
+
+至少需要显式构造/确认 active link 后再断言 queue head 未 dequeue。
+
+还缺少的关键 D1 regression
+
+允许读取的该测试文件中没有覆盖：
+
+retiring uplink + unavailable head；
+
+GSL zero-rate 精确 recovery timing；
+
+GSL GE/geometry recovery timing；
+
+pre-gate GE counter / receipt effectiveness；
+
+zero-rate/no-deadline 跑到 horizon；
+
+snapshot waiting/transmitting residual；
+
+设计稿要求的 propagation + bits/rate(slant) 解析延迟断言；
+
+constant vs MCS 差分归因。
+
+设计稿本身将后两项列为完成标准：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L78-L84
+
+通过项 / 未发现阻塞问题的部分
+1. RF / MCS 数值实现
+
+FACT： 三套参数与允许读取的设计稿一致：
+
+ISL：26 GHz / 500 MHz / 10 W / 0.26 m × 0.26 m
+
+uplink：30 GHz / 500 MHz / 20 W / 0.33 m × 0.26 m
+
+downlink：20 GHz / 500 MHz / 10 W / 0.26 m × 0.26 m
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/link_budget.py#L86-L102
+
+FSPL/SNR/MCS 计算和 max_rate_range_km() 的第一非零 MCS threshold 反解内部自洽：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/link_budget.py#L104-L169
+
+允许读取的 integration tests 固定了 ISL goldens、三套 RF 1000 km golden 和 threshold 两侧行为：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/tests/test_link_budget_integration.py#L15-L46
+
+UNVERIFIED： 顶层合同禁止读取 legacy SimulationRL.py 和 test_link_budget_characterization.py，所以我只能确认“当前实现 ↔ 允许读取的设计稿/集成 golden”一致，不能独立声称已对原 legacy 源逐行等价验证。
+
+2. 配置 fail-closed
+
+三个 RF mapping 均要求 exact key set、有限正数；MCS 模式还验证最低非零 MCS step 不被 min_rate_bps 排除，因此 max_rate_range_km() 的 recovery threshold 前提是闭合的：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/config.py#L516-L551
+
+3. Snapshot residual-service
+
+snapshot 已区分 waiting_for_link 与 transmitting，并使用实际 transmission start，而不是最初 dequeue 时间计算 residual：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L981-L1027
+
+对应 _transmit() 在真正开始发送时才重置 _svc、_tx_started_at 并更新 sampled rate：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L1297-L1314
+
+FACT： 未发现直接的 zero-division；rate≤0 会返回 None。
+INFERENCE： 正常 active GSL/ISL 路径的 residual accounting 已修复此前“pre-service wait 被当作服务进度”的问题。F3 的 retiring-uplink bypass 仍可导致 waiting snapshot 暴露 dequeue 时的 stale/zero rate，这是该 bug 的次生影响。
+
+4. ISL MCS legal mask
+
+当前路由决策会在 legal list 形成时剔除 geometry-unavailable 和当前 MCS rate≤0 的 ISL，并检查 queue room；learner 返回 mask 外动作会 fail loud：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L1946-L2028
+
+这部分没有发现 zero-rate 被错误标为 legal 的直接问题。
+
+5. 已开始服务后的 race
+
+一旦真正进入 _transmit()，geometry loss、GE down、deadline 和 hard retirement 都与 completion 显式比较，实际 occupied 只累计真实发送时间：
+
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L1328-L1357
+
+主要问题发生在post-fix 将 active GSL 的 unavailable period 移到 _transmit() 之外以后，而不是这段 in-flight race 本身。
+
+建议整改顺序
+
+先修 F1：ISL zero-rate branch 在 now >= horizon 应结束/settle，而不是 schedule timeout(0)。
+
+修 F3：retiring uplink 的 assigned packet 必须执行与 active packet 同样的 geometry/GE/rate gate；仅 assignment eligibility 可以不同。
+
+修 F2：pre-dequeue 保持 packet queued，但等待机制恢复为 event-driven；至少 race next_*_change、GE-up、rate-under crossing、deadline、retirement。
+
+修 F4：定义并统一“GE query/effective”的计数边界；pre-service gate 的实际 GE consultations 必须进入 receipt 可验证 counter。
+
+重写两个 GSL queue-gating tests，必须先显式确认 link.state == "active" 或 "retiring"，再制造 outage；增加 F1/F2/F3/F4 对抗回归。
+
+open_items
+
+UNVERIFIED — capacity routing rate semantics： Kernel 调用 routing.choose_next_hop() 时仍传入常数 self.isl_rate_bps，而不是当前 MCS rate：
+github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L1967-L1983
+但 routing.py 不在允许读取范围内，因此无法判断 capacity policy 是否实际使用该参数以及是否构成 D1 语义偏差。
+
+UNVERIFIED — certified recovery provider： next_isl_range_under / next_slant_range_under 的真实生产实现位于禁止读取的 geometry/model 路径，无法独立验证 crossing certification、boundary/tie 精度以及是否可能漏穿越。
+
+UNVERIFIED — original legacy source equivalence： legacy SimulationRL.py 及 characterization test 不在读取白名单；本审阅只能验证当前实现与允许读取的设计稿和 pinned integration goldens 自洽。
+
+UNVERIFIED — runtime reproduction： 顶层合同禁止 shell/本地运行，因此 F1 的 horizon livelock、F2 recovery quantization、F3 shared-server pinning 需本地 Agent 用精确 commit 运行最小复现后最终签字。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:D1-REVIEW-4F20:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "REQUEST_CHANGES。active MCS GSL 的 post-fix 确实在 dequeue 前检查 geometry/GE/zero-rate，但 retiring uplink 绕过该 gate；active GSL recovery/deadline 又退化为 time_step polling。另发现 ISL 永久零速率且无 deadline 时在 horizon 可形成 timeout(0) 循环，以及 pre-gate GE consultation 不进入 counters/receipt。新增两个 GSL gate 测试至少 downlink 用例确定未触达 GE 分支。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "FACT+INFERENCE: ISL zero-rate、无 deadline、无恢复时在 horizon 可重复调度 timeout(0)，run 会持续处理 <= horizon 的事件并最终可能撞 max_events，而非自然结束。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L565-L608",
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L2100-L2121",
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/tests/test_link_budget_integration.py#L166-L190"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "FACT+INFERENCE: active GSL unavailable head 现在保持在队列中，但 server 只按 time_step|wake 重试，使设计要求的 certified rate/geometry/GE recovery 与 exact deadline race 在 pre-service 阶段不可达。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L273-L306",
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L410-L452",
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L1205-L1296",
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L47-L65"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "FACT: retiring uplink 对 assigned head 直接 return，绕过 geometry/GE/MCS gate；packet 随后被 dequeue 并可在 _transmit 中等待，从而占住共享 uplink server。一般性的 unavailable-GSL-head-not-dequeued claim 为假。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L273-L295",
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L307-L340",
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L1205-L1296"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "FACT+INFERENCE: GE pre-dequeue checks调用 is_down() 却不增加 ge_*_queries；counter 只在 _transmit 中增加，因此 GE 可实际阻止服务而 receipt effective.ge 仍为 false。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L273-L295",
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L410-L429",
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L1205-L1218",
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/receipt.py#L129-L151"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "summary": "FACT+INFERENCE: 新 GSL gate tests 不足。downlink GE test 在未建立 association 时直接调用 _servable，必先因 link=None 返回；uplink 用例也未显式建立 active link 且只 step 一次。缺 retiring、recovery timing、counter/receipt 与 horizon regression。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/tests/test_link_budget_integration.py#L193-L244",
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L203-L212",
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L410-L429",
+        "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/ANALYSIS/LINK-BUDGET-DESIGN-20260816.md#L78-L84"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "本地 Agent 先复现并修复 F1：永久 zero-rate、deadline=None 的 ISL packet 必须自然到 horizon，不得产生零时间事件循环。",
+    "统一 active/retiring uplink 的 pre-dequeue geometry/GE/MCS gate，增加 retiring shared-uplink 对抗测试。",
+    "保留 head queued 语义，同时把 GSL blocked-head recovery/deadline/retirement 改为精确 event-driven race，而非仅 time_step polling。",
+    "将 pre-dequeue GE consultation 纳入 ge_gsl_queries/ge_isl_queries/ge_waits 或重新定义并一致验证 receipt effective 语义。",
+    "重写两个新 GSL queue-gating tests：显式建立目标 active/retiring association 后再制造 outage，并增加 counters、queue-area、current、service_log 与 exact recovery 断言。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L273-L340",
+    "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L410-L485",
+    "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L565-L631",
+    "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/kernel.py#L1205-L1357",
+    "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/tests/test_link_budget_integration.py#L166-L244",
+    "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/link_budget.py#L86-L169",
+    "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/config.py#L516-L551",
+    "github://fuguther/leo-direct-sim/blob/4f20cf2068008496d494794873fe70bd6ecc7c68/CODE/leo_sim/receipt.py#L129-L151"
+  ],
+  "open_items": [
+    "UNVERIFIED: routing.py 不在允许读取范围；Kernel 向 choose_next_hop 传入 constant self.isl_rate_bps，无法判断 capacity policy 是否因此仍未使用动态 MCS rate。",
+    "UNVERIFIED: geometry/model 实现不在允许读取范围；无法独立验证 production next_isl_range_under/next_slant_range_under 的 certified crossing 与边界精度。",
+    "UNVERIFIED: legacy SimulationRL.py 和 characterization test 不在白名单；RF/MCS legacy equivalence 仅能对允许读取的设计稿和 pinned integration goldens 核验。",
+    "UNVERIFIED: 合同禁止本地 shell/测试执行；F1-F4 需本地 Agent 在精确 commit 上运行最小复现后完成最终验收。"
+  ]
+}
+===END_OFFLOAD_RESULT===
