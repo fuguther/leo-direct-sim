@@ -1,5 +1,20 @@
 # NOTES.md
 
+## 2026-08-19（D1/D2 靠拢、旧平台账本与实验路线图）
+
+- 用户已决定 D1 动态链路速率、D2 动态拓扑重匹配按旧平台行为继续推进。
+- D1 独立分支 `codex/20260819-d1-dynamic-rate`：原实现 `c0a1f18` 经复核为
+  REQUEST_CHANGES；本轮修复零速率快照除零、MCS/控制发送计数时机、ISL 合法掩码、
+  GSL 零速率等待唤醒与 FIFO 越过，提交 `5e2d779`，`CODE/leo_sim/tests` 为
+  406 passed。仍需不同模型冷启动复核，暂不合入。
+- D2 独立分支 `codex/20260819-d2-dynamic-topology`：实现已提交 `7cb11e8`，
+  `CODE/leo_sim/tests` 为 400 passed；尚无独立冷启动复核，暂不合入。
+- 主分支文档提交 `101088b`：新增 `ANALYSIS/LEGACY-FEATURE-LEDGER-20260819.md`
+  和 `ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md`，并把 Q0 信息裁剪组合矩阵
+  补入 `ANALYSIS/Q0-ALGO-RESEARCH-20260818.md`。
+- 当前结论：已有基线/机制验收链可以继续做低风险平台验证；D1/D2 未复核版本不能作为
+  正式论文实验基线。Q0 调研不再无限扩张，矩阵定稿后进入合同冻结与 tiny 原型。
+
 ## 2026-08-19（R6-G2b 收口：台账置 fixed）
 
 - #51（governance symlink 词法根边界）复核两轮收敛（第 1 轮 REQUEST_CHANGES → 修复
