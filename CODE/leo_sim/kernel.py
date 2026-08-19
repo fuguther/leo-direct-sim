@@ -1350,7 +1350,37 @@ class Kernel:
     def _try_grant(self, ep: TrafficEndpoint, now: float, preposition: bool = False) -> bool:
         for _elev, s in self._candidates(ep, now):
             if len(self.slots[s]) < self.cfg_access["slots_per_satellite"]:
-                req_t = self.access_wait[s].pop(ep.cell, None)
+                waiters = self.access_wait[s]
+                if waiters:
+                    # FIFO contract: a free slot on a contended satellite goes
+                    # to the earliest request.  An endpoint that has not
+                    # queued here (or is not the oldest waiter) must join the
+                    # queue via _request_or_grant and wait its turn, instead
+                    # of jumping ahead because its endpoint ticker happens to
+                    # run first.
+                    req_t = waiters.get(ep.cell)
+                    if req_t is None:
+                        continue
+                    oldest_cell, _oldest_t = min(
+                        waiters.items(), key=lambda kv: (kv[1], kv[0]))
+                    if ep.cell != oldest_cell:
+                        continue
+                    del waiters[ep.cell]  # grant consumes this request
+                else:
+                    req_t = None
+                # a successful grant anywhere ends this endpoint's presence
+                # on every satellite's wait queue; stale entries on other
+                # satellites must not linger and create phantom contention
+                # (or silently drop their accumulated wait from the stats)
+                for s2 in range(self.num_sats):
+                    if s2 == s:
+                        continue  # the granting satellite is settled below
+                    stale_t = self.access_wait[s2].pop(ep.cell, None)
+                    if stale_t is not None:
+                        wt = now - stale_t
+                        self.access_stats["wait_time_s_total"] += wt
+                        self.access_stats["wait_time_s_max"] = max(
+                            self.access_stats["wait_time_s_max"], wt)
                 self._associate(ep, s, now)
                 if preposition:
                     self.access_stats["preposition_grants"] += 1
