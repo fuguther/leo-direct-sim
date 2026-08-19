@@ -48,7 +48,8 @@ from collections import deque
 import numpy as np
 import simpy
 
-from . import control, fates, grid as gridmod, learning as _learning, model, q0
+from . import (control, fates, grid as gridmod, learning as _learning,
+               link_budget, model, q0)
 from . import outage, rng as rngmod, routing
 from . import trace as tracemod
 
@@ -401,13 +402,27 @@ class UplinkServer(_DRRMixin):
             self.current = (ep, pkt)
             k._note_busy(cell)
             k.service_log["uplink"].append((cell, pkt.pid))
-            dur = pkt.bits / k.ul_rate_bps
+            rate = None
+            if k.rate_model == "mcs":
+                rate = k._link_rate("uplink", k.env.now, self.sat, ep=ep)
+                rate_fn = lambda t, sat=self.sat, ep=ep: k._link_rate(
+                    "uplink", t, sat, ep=ep)
+                rate_recover_fn = lambda t, lim, sat=self.sat, ep=ep: (
+                    k.geometry.next_slant_range_under(
+                        sat, ep.lat, ep.lon, k.rate_max_uplink_km, t, lim))
+                dur = None
+            else:
+                rate_fn = rate_recover_fn = None
+                dur = pkt.bits / k.ul_rate_bps
+            self._service_rate_bps = (rate if rate is not None
+                                      else k.ul_rate_bps)
             self._svc = (k.env.now, "gsl_uplink_s")
             self._svc_phase = "waiting_for_link"
             self._tx_started_at = None
             outcome = yield k.env.process(
                 k._transmit(dur, pkt, ("gsl", self.sat, ep, ep.links.get(self.sat)),
-                            "gsl_uplink_s", owner=self))
+                            "gsl_uplink_s", owner=self, rate_fn=rate_fn,
+                            rate_recover_fn=rate_recover_fn))
             k.service_log["uplink_bits"].append((k.env.now, cell, pkt.bits))
             self._svc = None
             self._svc_phase = None
@@ -518,13 +533,27 @@ class DownlinkServer(_DRRMixin):
             self.current = pkt
             ep = k.endpoints[cell]
             k.service_log["downlink"].append((cell, pkt.pid))
-            dur = pkt.bits / k.dl_rate_bps
+            rate = None
+            if k.rate_model == "mcs":
+                rate = k._link_rate("downlink", k.env.now, self.sat, ep=ep)
+                rate_fn = lambda t, sat=self.sat, ep=ep: k._link_rate(
+                    "downlink", t, sat, ep=ep)
+                rate_recover_fn = lambda t, lim, sat=self.sat, ep=ep: (
+                    k.geometry.next_slant_range_under(
+                        sat, ep.lat, ep.lon, k.rate_max_downlink_km, t, lim))
+                dur = None
+            else:
+                rate_fn = rate_recover_fn = None
+                dur = pkt.bits / k.dl_rate_bps
+            self._service_rate_bps = (rate if rate is not None
+                                      else k.dl_rate_bps)
             self._svc = (k.env.now, "gsl_downlink_s")
             self._svc_phase = "waiting_for_link"
             self._tx_started_at = None
             outcome = yield k.env.process(
                 k._transmit(dur, pkt, ("gsl", self.sat, ep, ep.links.get(self.sat)),
-                            "gsl_downlink_s", owner=self))
+                            "gsl_downlink_s", owner=self, rate_fn=rate_fn,
+                            rate_recover_fn=rate_recover_fn))
             self._svc = None
             self._svc_phase = None
             self._tx_started_at = None
@@ -650,14 +679,29 @@ class ISLLink:
                 self.data_area.remove(pkt.bits, k.env.now)
             k.service_log["isl"].append(("ctrl" if is_ctrl else "data",
                                          pkt.iid if is_ctrl else pkt.pid))
-            dur = pkt.bits / k.isl_rate_bps
+            rate = None
+            if k.rate_model == "mcs":
+                rate = k._link_rate("isl", k.env.now, self.sat,
+                                    peer=self.peer)
+                rate_fn = lambda t, sat=self.sat, peer=self.peer: (
+                    k._link_rate("isl", t, sat, peer=peer))
+                rate_recover_fn = lambda t, lim, sat=self.sat, peer=self.peer: (
+                    k.geometry.next_isl_range_under(
+                        sat, peer, k.rate_max_isl_km, t, lim))
+                dur = None
+            else:
+                rate_fn = rate_recover_fn = None
+                dur = pkt.bits / k.isl_rate_bps
+            self._service_rate_bps = (rate if rate is not None
+                                      else k.isl_rate_bps)
             occ = "ctrl_isl_s" if is_ctrl else "isl_s"
             self._svc = (k.env.now, occ)
             self._svc_phase = "waiting_for_link"
             self._tx_started_at = None
             outcome = yield k.env.process(
                 k._transmit(dur, pkt, ("isl", self.sat, self.peer, self.ge),
-                            occ, owner=self))
+                            occ, owner=self, rate_fn=rate_fn,
+                            rate_recover_fn=rate_recover_fn))
             self._svc = None
             self._svc_phase = None
             self._tx_started_at = None
@@ -780,6 +824,23 @@ class Kernel:
         self.ul_rate_bps = self.cfg_access["uplink_rate_mbps"] * 1e6
         self.dl_rate_bps = self.cfg_access["downlink_rate_mbps"] * 1e6
         self.isl_rate_bps = self.cfg_links["isl_rate_mbps"] * 1e6
+        # D1: distance-dependent MCS rates (rate_model=constant keeps the
+        # historical fixed-rate behavior exactly; rate_model=mcs samples the
+        # legacy RF params once at service start).
+        self.rate_model = self.cfg_links["rate_model"]
+        self.mcs_table = self.cfg_links["mcs_table"]
+        self.rf_isl = link_budget.RFParams.from_mapping(
+            self.cfg_links["rf_isl"])
+        self.rf_uplink = link_budget.RFParams.from_mapping(
+            self.cfg_links["rf_uplink"])
+        self.rf_downlink = link_budget.RFParams.from_mapping(
+            self.cfg_links["rf_downlink"])
+        self.rate_max_isl_km = link_budget.max_rate_range_km(
+            self.rf_isl, self.mcs_table)
+        self.rate_max_uplink_km = link_budget.max_rate_range_km(
+            self.rf_uplink, self.mcs_table)
+        self.rate_max_downlink_km = link_budget.max_rate_range_km(
+            self.rf_downlink, self.mcs_table)
 
         # sparse activation: only trace-active cells become endpoints; every
         # row passes the unified packet-row contract regardless of its origin
@@ -874,6 +935,7 @@ class Kernel:
             "learning_discarded_at_stop": 0,
             "holding_queue_overflows": 0,
             "topo_recomputes": 0,
+            "mcs_rate_samples": 0,
         }
         # packets holding an open (not yet closed) learning transition; the
         # horizon close must account for every one of them, never silently
@@ -910,6 +972,28 @@ class Kernel:
     def _poke(self, event):
         if not event.triggered:
             event.succeed()
+
+    def _link_rate(self, kind: str, t: float, sat: int,
+                   peer: int | None = None, ep=None) -> float:
+        """Sample the service rate for kind in {isl,uplink,downlink} at t."""
+        if self.rate_model == "constant":
+            if kind == "isl":
+                return self.isl_rate_bps
+            if kind == "uplink":
+                return self.ul_rate_bps
+            if kind == "downlink":
+                return self.dl_rate_bps
+            raise ValueError(f"unknown link kind {kind!r}")
+        if kind == "isl":
+            return link_budget.mcs_rate_bps(
+                self.geometry.isl_range_km(sat, peer, t),
+                self.rf_isl, self.mcs_table)
+        if kind not in ("uplink", "downlink"):
+            raise ValueError(f"unknown link kind {kind!r}")
+        rf = self.rf_uplink if kind == "uplink" else self.rf_downlink
+        return link_budget.mcs_rate_bps(
+            self.geometry.slant_range_km(sat, ep.lat, ep.lon, t),
+            rf, self.mcs_table)
 
     def _note_busy(self, cell: str):
         """Last-activity stamp for fair-access idle measurement."""
@@ -1019,14 +1103,12 @@ class Kernel:
             if srv._svc is None:
                 return None
             t0, occ = srv._svc
-            # remaining service time is derivable from the in-service packet
-            # and its link rate (uplink/downlink only; ISL rate depends on
-            # data-vs-control, resolved by the caller)
             return {
                 "started_at": t0,
                 "occ_key": occ,
                 "phase": getattr(srv, "_svc_phase", None),
                 "tx_started_at": getattr(srv, "_tx_started_at", None),
+                "service_rate_bps": getattr(srv, "_service_rate_bps", None),
             }
 
         def _packet_info(pkt) -> dict:
@@ -1051,6 +1133,9 @@ class Kernel:
             """
             if srv._svc is None:
                 return None
+            sampled = getattr(srv, "_service_rate_bps", None)
+            if sampled is not None:
+                rate_bps = sampled
             if srv._svc_phase == "waiting_for_link":
                 return bits / rate_bps
             if srv._svc_phase == "transmitting" \
@@ -1368,8 +1453,8 @@ class Kernel:
         if not link.interrupt.triggered:
             link.interrupt.succeed()
 
-    def _transmit(self, dur: float, pkt, link_ref, occ_key: str,
-                  owner=None):
+    def _transmit(self, dur: float | None, pkt, link_ref, occ_key: str,
+                  owner=None, rate_fn=None, rate_recover_fn=None):
         """Race service completion vs geometry loss vs GE outage vs deadline
         vs (GSL only) hard link retirement.
 
@@ -1417,13 +1502,27 @@ class Kernel:
                 self.mech[ge_q_key] += 1
             geom_up = (not self.cfg_links["geometry_loss"]) or avail(t0)
             ge_up = (not self.ge_enabled) or not ge.is_down(t0)
+            rate_up = True
+            if rate_fn is not None:
+                rate = rate_fn(t0)
+                if rate <= 0:
+                    # D1 zero/low-rate gate: the physical link is up but no
+                    # feasible MCS rate exists at this distance.  Wait for the
+                    # certified range-under recovery (plus deadline/retire);
+                    # the packet stays queued and is NEVER failed here.
+                    rate_up = False
+                else:
+                    dur = pkt.bits / rate
+                    self.mech["mcs_rate_samples"] += 1
+                    if owner is not None:
+                        owner._service_rate_bps = rate
             retire_t = None
             if (link is not None and link.state == "retiring"
                     and link.retire_at is not None):
                 retire_t = link.retire_at
                 if retire_t <= t0:
                     return "retired"  # no service may start past the deadline
-            if not (geom_up and ge_up):
+            if not (geom_up and ge_up and rate_up):
                 ups = []
                 if not geom_up:
                     nxt = next_change(t0, self.horizon)
@@ -1434,6 +1533,10 @@ class Kernel:
                     if nxt_up <= self.horizon:
                         ups.append(nxt_up)
                     self.mech["ge_waits"] += 1
+                if not rate_up:
+                    nxt_rate = rate_recover_fn(t0, self.horizon)
+                    if nxt_rate is not None:
+                        ups.append(nxt_rate)
                 # Wait for the earliest of: link recovery, the actual
                 # deadline, or the hard retirement interrupt.  The packet is
                 # NEVER failed at t0 before its deadline: retirement may free
@@ -2337,6 +2440,7 @@ class Kernel:
         requested = {
             "policy": self.cfg_rt["policy"],
             "association": self.cfg_access["association"],
+            "rate_model": self.rate_model,
             "ge_enabled": self.ge_enabled,
             "control_enabled": bool(self.cfg_cp["enabled"]),
             "monitor": self.monitor,
@@ -2369,6 +2473,7 @@ class Kernel:
         # have been consulted on a service path; MBB requires a real event.
         effective = {
             "control_plane": self.mech["control_entered_queue"] > 0,
+            "mcs": self.mech["mcs_rate_samples"] > 0,
             "ge": self.ge_enabled and (
                 self.mech["ge_gsl_queries"] + self.mech["ge_isl_queries"] > 0),
             "mbb": self.mech["mbb_events"] > 0,

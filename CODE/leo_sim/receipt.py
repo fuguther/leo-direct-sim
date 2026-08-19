@@ -47,10 +47,12 @@ DEP_KEYS = {"python", "simpy", "numpy", "pyyaml"}
 # on it, so its version is part of the run identity (and its absence on the
 # verifying host fails closed).
 TF_DEP_KEY = "tensorflow"
-REQUESTED_KEYS = {"policy", "association", "ge_enabled", "control_enabled", "monitor",
-                  "learning_algorithm", "learning_mode",
-                  "topology_recompute_interval_s", "topology_matching"}
-EFFECTIVE_KEYS = {"control_plane", "ge", "mbb", "learning", "dynamic_topology"}
+REQUESTED_KEYS = {"policy", "association", "rate_model", "ge_enabled",
+                  "control_enabled", "monitor", "learning_algorithm",
+                  "learning_mode", "topology_recompute_interval_s",
+                  "topology_matching"}
+EFFECTIVE_KEYS = {"control_plane", "mcs", "ge", "mbb", "learning",
+                  "dynamic_topology"}
 
 LEDGER_KEYS = {
     "packet_fates", "control_instances", "control_counters",
@@ -70,6 +72,7 @@ MECHANISM_COUNTER_KEYS = {
     "ge_initialized", "mbb_events", "learning_initialized",
     "learning_decisions", "learning_transitions", "learning_train_steps",
     "learning_discarded_at_stop", "holding_queue_overflows", "topo_recomputes",
+    "mcs_rate_samples",
 }
 MECHANISM_COUNTER_BOOLS = {"control_initialized", "ge_initialized",
                            "learning_initialized"}
@@ -131,6 +134,7 @@ def requested_from_config(cfg: dict) -> dict:
     return {
         "policy": cfg["routing"]["policy"],
         "association": cfg["access"]["association"],
+        "rate_model": cfg["links"]["rate_model"],
         "ge_enabled": bool(cfg["links"]["ge_enabled"]),
         "control_enabled": bool(cfg["control_plane"]["enabled"]),
         "monitor": bool(cfg["execution"]["monitor"]),
@@ -146,6 +150,7 @@ def effective_from_counters(counters: dict, requested: dict) -> dict:
     is effective only if it really entered the send path."""
     return {
         "control_plane": counters.get("control_entered_queue", 0) > 0,
+        "mcs": counters.get("mcs_rate_samples", 0) > 0,
         "ge": requested.get("ge_enabled", False) and (
             counters.get("ge_gsl_queries", 0)
             + counters.get("ge_isl_queries", 0) > 0),
