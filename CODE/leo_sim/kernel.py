@@ -663,8 +663,12 @@ class ISLLink:
 
     def available_now(self) -> bool:
         k = self.k
-        if k.ge_enabled and self.ge.is_down(k.env.now):
-            return False
+        if k.ge_enabled:
+            # every GE state query is a real channel read; count it so a
+            # deferral caused by the outage shows up in receipt effective.ge
+            k.mech["ge_isl_queries"] += 1
+            if self.ge.is_down(k.env.now):
+                return False
         return k.geometry.isl_available(self.sat, self.peer, k.env.now)
 
     def put_data(self, pkt: DataPacket) -> None:
@@ -950,6 +954,7 @@ class Kernel:
         self.slots: list[set[str]] = [set() for _ in range(self.num_sats)]
         self.caches: list[control.LocalCache] = [control.LocalCache() for _ in range(self.num_sats)]
         self.pending: list[list[DataPacket]] = [[] for _ in range(self.num_sats)]
+        self._pending_wake: list[float | None] = [None] * self.num_sats
         self.seen_ctrl: list[set[tuple[int, int]]] = [set() for _ in range(self.num_sats)]
         self.gsl_ge: dict[tuple[int, str], outage.GilbertElliott] = {}
 
@@ -2268,7 +2273,7 @@ class Kernel:
 
     def _decide(self, pkt: DataPacket, sat: int) -> None:
         now = self.env.now
-        if pkt.deadline is not None and now > pkt.deadline:
+        if pkt.deadline is not None and now >= pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             return
         if len(pkt.path) > self.cfg_rt["max_hops"]:
@@ -2290,10 +2295,23 @@ class Kernel:
                 # GE up counts as an MCS hold; if the GSL GE is down the
                 # deferral belongs to the outage, not to MCS (receipt
                 # effective.mcs recomputes from this counter).
-                ge_up = (not self.ge_enabled
-                         or not self._gsl_ge(sat, ep.cell).is_down(now))
+                ge = self._gsl_ge(sat, ep.cell)
+                ge_up = not self.ge_enabled or not ge.is_down(now)
+                if self.ge_enabled:
+                    self.mech["ge_gsl_queries"] += 1
                 if ge_up:
                     self.mech["mcs_zero_rate_holds"] += 1
+                    nxt = self.geometry.next_slant_range_under(
+                        sat, ep.lat, ep.lon, self.rate_max_downlink_km,
+                        now, self.horizon)
+                    if nxt is not None:
+                        self._schedule_pending_wake(sat, nxt)
+                else:
+                    nxt_up = ge.next_up(now)
+                    if nxt_up <= self.horizon:
+                        self._schedule_pending_wake(sat, nxt_up)
+                if pkt.deadline is not None:
+                    self._schedule_pending_wake(sat, pkt.deadline)
                 self.pending[sat].append(pkt)
                 return
             dl = self.downlinks[sat]
@@ -2333,12 +2351,15 @@ class Kernel:
             if not self.cfg_cp["enabled"] and self.cfg_rt["policy"] != "oracle":
                 self._fail(pkt, "NO_ROUTE")
             else:
+                if pkt.deadline is not None:
+                    self._schedule_pending_wake(sat, pkt.deadline)
                 self.pending[sat].append(pkt)  # wait for re-decision
             return
         # loop avoidance: never forward back onto a satellite already visited
         cands = [d for d in cands if self.topo[sat][d] not in pkt.path]
         unavailable = False
         rate_blocked = False
+        recover_at = float("inf")
         legal = []
         for d in cands:
             link = self.isls[sat][d]
@@ -2353,9 +2374,20 @@ class Kernel:
                 # D1 F4 attribution: an ISL GE outage is the actual blocker
                 # when it overlaps a zero rate; only geometry-up AND GE-up
                 # zero-rate counts as an MCS hold.
-                ge_up = (not self.ge_enabled) or not link.ge.is_down(now)
+                ge_up = not self.ge_enabled or not link.ge.is_down(now)
+                if self.ge_enabled:
+                    self.mech["ge_isl_queries"] += 1
                 if ge_up:
                     rate_blocked = True
+                    nxt = self.geometry.next_isl_range_under(
+                        sat, link.peer, self.rate_max_isl_km,
+                        now, self.horizon)
+                    if nxt is not None:
+                        recover_at = min(recover_at, nxt)
+                else:
+                    nxt_up = link.ge.next_up(now)
+                    if nxt_up <= self.horizon:
+                        recover_at = min(recover_at, nxt_up)
                 continue
             if link.room(pkt.bits):
                 legal.append(d)
@@ -2379,6 +2411,10 @@ class Kernel:
         if unavailable:
             if rate_blocked:
                 self.mech["mcs_zero_rate_holds"] += 1
+            if pkt.deadline is not None:
+                self._schedule_pending_wake(sat, pkt.deadline)
+            if recover_at != float("inf"):
+                self._schedule_pending_wake(sat, recover_at)
             self.pending[sat].append(pkt)  # temporarily unavailable: wait
             return
         if cands:
@@ -2393,6 +2429,24 @@ class Kernel:
         self.pending[sat] = []
         for pkt in waiting:
             self._decide(pkt, sat)
+
+    def _schedule_pending_wake(self, sat: int, at: float) -> None:
+        """Certified re-decision for parked packets on `sat` (D1 precise
+        wait).  A parked packet is normally re-decided by the time_step
+        ticker, but a deadline or an MCS/GE recovery has a certified event
+        time; schedule a one-shot wake at the earliest such time so expiry
+        and recovery are exact instead of degraded to polling."""
+        if at is None or at <= self.env.now or at >= self.horizon:
+            return
+        if self._pending_wake[sat] is None or at < self._pending_wake[sat]:
+            self._pending_wake[sat] = at
+            self.env.process(self._pending_wake_once(sat, at))
+
+    def _pending_wake_once(self, sat: int, at: float):
+        yield self.env.timeout(max(0.0, at - self.env.now))
+        if self._pending_wake[sat] == at:
+            self._pending_wake[sat] = None
+            self._redecide_pending(sat)
 
     def _ingress_after_prop(self, pkt: DataPacket, sat: int, prop: float):
         yield self.env.timeout(prop)
@@ -2418,7 +2472,7 @@ class Kernel:
         yield self.env.timeout(prop)
         self._in_flight.pop(pkt.pid, None)
         now = self.env.now
-        if pkt.deadline is not None and now > pkt.deadline:
+        if pkt.deadline is not None and now >= pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             return
         self._finish_learning_transition(

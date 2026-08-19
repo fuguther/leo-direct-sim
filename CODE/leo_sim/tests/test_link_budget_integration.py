@@ -678,6 +678,184 @@ def test_mcs_ge_gated_deliver_decision_not_attributed_to_mcs():
     assert k.mech["mcs_zero_rate_holds"] == 0
     assert k.pending[0] == [pkt]
 
+def test_mcs_ge_gated_isl_candidate_decision_not_attributed_to_mcs():
+    """D1 round-6 F4-DECIDE (ISL lane): the _decide() ISL candidate loop must
+    not attribute a zero MCS rate as an MCS hold when the ISL GE is the
+    actual blocker.  Geometry up + MCS rate 0 + GE down must park the packet
+    in pending without incrementing mcs_zero_rate_holds."""
+    topo = {0: {"E": 1}, 1: {"W": 0}}
+    geo = _Scripted(
+        2, neighbors_map=topo,
+        isl_range_fn=lambda a, b, t: 7000.0,  # beyond ISL MCS range: rate 0
+        visible=lambda s, lat, lon, t: (s == 1 and (lat, lon) == BC))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "num_satellites": 2},
+        "links": {"rate_model": "mcs", "ge_enabled": True,
+                   "ge_isl": {"mean_good_s": 0.001,
+                               "mean_bad_s": 1000.0}},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    # sat 1 actively serves B (so the oracle routes via the 0:E ISL); sat 0
+    # itself must not serve B, forcing the decision into the ISL candidate
+    # loop instead of the deliver branch
+    ep = k._ensure_endpoint(B)
+    ep.links[1] = kernel.Link(1, "active", k.env.now,
+                              interrupt=k.env.event())
+    ge = k.isls[0]["E"].ge
+    ge._bad = True
+    ge._last_t = 0.0
+    ge._next_flip = float("inf")
+    pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    pkt.assigned_sat = 0
+    k.ledger.register(pkt.pid, pkt.bits)
+    k._decide(pkt, 0)
+    assert k.mech["mcs_zero_rate_holds"] == 0
+    assert k.pending[0] == [pkt]
+
+
+def test_mcs_zero_rate_pending_expires_at_exact_deadline_not_tick():
+    """D1 round-6 independent finding 1: the normal _decide() zero-rate path
+    parks the packet in pending; the certified pending wake must expire it at
+    the exact deadline (0.5), not at the next blind time_step tick (0.7)."""
+    import math
+    geo = _Scripted(
+        1, neighbors_map={0: {}},
+        visible=lambda s, lat, lon, t: (lat, lon) == BC,
+        slant_range_fn=lambda s, lat, lon, t: (
+            12500.0 if (lat, lon) == BC else 600.0))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 1.0, "num_satellites": 1,
+                     "time_step_s": 0.7},
+        "links": {"rate_model": "mcs"},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    ep = k._ensure_endpoint(B)
+    ep.links[0] = kernel.Link(0, "active", k.env.now,
+                              interrupt=k.env.event())
+    pkt = kernel.DataPacket(1, A, B, 1_000_000, 0.5, 0.0)
+    k.ledger.register(pkt.pid, pkt.bits)
+    k._decide(pkt, 0)
+    assert k.pending[0] == [pkt]
+    assert k.mech["mcs_zero_rate_holds"] == 1
+
+    while True:
+        t_next = k.env.peek()
+        if t_next > k.horizon or t_next == math.inf:
+            break
+        k.env.step()
+        if k.ledger.fate_of(pkt.pid) is not None:
+            assert k.env.now == pytest.approx(0.5, abs=1e-9), (
+                f"packet expired at {k.env.now}, not exactly at deadline 0.5")
+            return
+    raise AssertionError("packet never expired before horizon")
+
+
+def test_mcs_zero_rate_pending_recovers_at_exact_range_crossing_not_tick():
+    """D1 round-6 independent finding 1: the certified pending wake must
+    re-decide a parked zero-rate packet at the exact range recovery (t=1.0),
+    not at the next time_step tick (t=1.4)."""
+    geo = _Scripted(
+        1, neighbors_map={0: {}},
+        visible=lambda s, lat, lon, t: (lat, lon) == BC,
+        slant_range_fn=lambda s, lat, lon, t: (
+            12500.0 if t < 1.0
+            else (600.0 if (lat, lon) == BC else 600.0)))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "num_satellites": 1,
+                     "time_step_s": 0.7},
+        "links": {"rate_model": "mcs"},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    ep = k._ensure_endpoint(B)
+    ep.links[0] = kernel.Link(0, "active", k.env.now,
+                              interrupt=k.env.event())
+    pkt = kernel.DataPacket(1, A, B, 8_000, 10.0, 0.0)
+    k.ledger.register(pkt.pid, pkt.bits)
+    k._decide(pkt, 0)
+    assert k.pending[0] == [pkt]
+
+    # step until the packet leaves pending or horizon; the certified wake at
+    # t=1.0 must re-decide it into the downlink queue well before the t=1.4
+    # time_step tick
+    import math
+    redecided_at = None
+    while True:
+        t_next = k.env.peek()
+        if t_next > k.horizon or t_next == math.inf:
+            break
+        k.env.step()
+        if not k.pending[0] and k.ledger.fate_of(pkt.pid) is None:
+            # left pending -> downlink queue or in service
+            redecided_at = k.env.now
+            break
+    assert redecided_at is not None, "packet never left pending"
+    assert redecided_at == pytest.approx(1.0, abs=1e-9), (
+        f"re-decided at {redecided_at}, not at the certified recovery 1.0")
+
+
+def test_mcs_ge_gated_deliver_decision_counts_ge_query():
+    """D1 round-6 independent finding 2: the _decide() GSL GE attribution
+    query must be counted so receipt effective.ge is not a false negative
+    when GE (not MCS) is the actual blocker."""
+    geo = _Scripted(
+        1, neighbors_map={0: {}},
+        visible=lambda s, lat, lon, t: (lat, lon) == BC,
+        slant_range_fn=lambda s, lat, lon, t: (
+            12500.0 if (lat, lon) == BC else 600.0))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "num_satellites": 1},
+        "links": {"rate_model": "mcs", "ge_enabled": True,
+                   "ge_gsl": {"mean_good_s": 0.001,
+                               "mean_bad_s": 1000.0}},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    ep = k._ensure_endpoint(B)
+    ep.links[0] = kernel.Link(0, "active", k.env.now,
+                              interrupt=k.env.event())
+    ge = k._gsl_ge(0, B)
+    ge._bad = True
+    ge._last_t = 0.0
+    ge._next_flip = float("inf")
+    pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    k.ledger.register(pkt.pid, pkt.bits)
+    k._decide(pkt, 0)
+    assert k.mech["mcs_zero_rate_holds"] == 0
+    assert k.pending[0] == [pkt]
+    assert k.mech["ge_gsl_queries"] > 0, (
+        "GE attribution query must be counted for receipt effective.ge")
+
+
+def test_isl_ge_down_pre_gate_counts_query_without_transmit():
+    """D1 round-6 independent finding 2: ISLLink.available_now() queries GE
+    in the pre-gate; a GE-down link that never reaches _transmit() must still
+    be counted so receipt effective.ge reflects the actual blocker."""
+    topo = {0: {"E": 1}, 1: {"W": 0}}
+    geo = _Scripted(
+        2, neighbors_map=topo,
+        visible=lambda s, lat, lon, t: (
+            (s == 0 and (lat, lon) == AC)
+            or (s == 1 and (lat, lon) == BC)))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "num_satellites": 2},
+        "links": {"rate_model": "mcs", "ge_enabled": True,
+                   "ge_isl": {"mean_good_s": 0.001,
+                               "mean_bad_s": 1000.0}},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    link = k.isls[0]["E"]
+    ge = link.ge
+    ge._bad = True
+    ge._last_t = 0.0
+    ge._next_flip = float("inf")
+    pkt = kernel.DataPacket(1, A, B, 8_000, 10.0, 0.0)
+    k.ledger.register(pkt.pid, pkt.bits)
+    link.put_data(pkt)
+    k.env.run(until=2.0)
+    assert k.mech["ge_isl_queries"] > 0
+    assert k.ledger.fate_of(pkt.pid) is None  # still queued, not served
+    assert link._svc is None
+
+
 
 def test_mcs_downlink_tail_deadline_wakes_server_at_exact_time():
     """D1 round-5 independent finding 2: the downlink MCS wait must include
