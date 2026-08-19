@@ -1939,11 +1939,18 @@ class Kernel:
         if isinstance(pkt, ControlPacket):
             self.ctrl_ledger.record(pkt.iid, fate, pkt.bits)
         else:
+            # A forward whose ISL service already started has settled its
+            # realized M1 queue reward at service start (_transmit). A later
+            # mid-service failure (geometry/GE/deadline/retire) must not
+            # erase that realized reward: keep it, and settle 0 only when no
+            # reward was realized yet (failure before service start).
             self._finish_learning_transition(
                 pkt,
                 np.zeros(_learning.CONTRACT_DIMS[self.cfg_rt["contract"]]),
                 {a: False for a in _learning.ACTIONS}, True,
-                terminal_reward=0.0,
+                terminal_reward=(None
+                                 if pkt.learning_reward is not None
+                                 else 0.0),
             )
             self.ledger.record(pkt.pid, fate, pkt.bits)
             self._log("fate", pid=pkt.pid, fate=fate)
