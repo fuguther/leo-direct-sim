@@ -1,0 +1,59 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:Q0-LIT-MEETING:independent_review",
+    "title": "Q0 information-ablation literature map and no-results meeting narrative",
+    "goal": "结合仓库 ANALYSIS/Q0-ALGO-RESEARCH-20260818.md、ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md、ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md 的问题定义，检索并核验同行评审论文和权威原始资料，建立五条证据链：A 当前全局状态的在线最优 MDP/SMDP；B 完整未来信息的 clairvoyant/offline upper bound；C 部分可观测与 belief/POMDP；D 陈旧队列/延迟信息下的 backpressure 或分布式路由；E LEO/DTN/contact-plan/deadline-aware routing。优先 2018-2026，但每条链允许纳入不可替代的经典原始论文。输出 8-12 篇候选，每篇给标题、作者、年份、venue、DOI或稳定原文链接、核心命题、适用假设、与本项目 Q0-F/Q0-I/信息裁剪矩阵的精确映射、不能支持的过度解读。另给明天前 90-120 分钟能读完的 4 篇优先清单（每篇读哪些章节、带着什么问题读），并给一份 6-8 页组会叙事骨架，明确区分 FACT/INFERENCE/未验证，不编造本项目实验结果。不要泛泛罗列卫星路由综述；不要把普通 MPC/RL/贪心称为严格上界；不要用单条 trace 证明一般价值。\n\n工作方式按深度任务展开：先定义检索边界和关键词，再逐条核验来源；关键论断至少两类独立证据交叉支持，优先论文原文、DOI、出版社或作者主页；对每个结论主动给反例、边界和替代解释。最后必须列 open_items、实际检索过的来源与未能访问全文的条目。全文不少于 3000 中文字，禁止摘要式收尾。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+      "paths": [
+        "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+        "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+        "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result",
+      "web_research"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "8-12 篇来源逐篇给稳定标识和可核验链接",
+      "每篇明确能支持什么和不能支持什么",
+      "给出 4 篇短时阅读顺序与 6-8 页无结果组会骨架",
+      "FACT/INFERENCE/未验证三态清楚且有 open_items"
+    ],
+    "requiredEvidence": [
+      "论文 DOI、出版社页面、arXiv 或作者原文链接",
+      "仓库三份 Q0 文档的精确路径映射",
+      "关键结论的独立来源交叉核验"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "a7ce32330a66426b65770273abaa9a5ac36d5cdde7ab656d7b69c3865b0dfc37"
+}
