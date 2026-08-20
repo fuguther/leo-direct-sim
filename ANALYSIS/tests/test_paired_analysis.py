@@ -312,6 +312,34 @@ class PairedAnalysisTests(unittest.TestCase):
                 "fields mismatch" in error or "differs from recomputation" in error
                 for error in errors), (label, errors))
 
+    def test_output_declarations_cannot_point_to_another_project_directory(self) -> None:
+        path = self._write_verified()
+        candidate = json.loads(path.read_text(encoding="utf-8"))
+        forged_dir = self.tmp / "forged-output"
+        forged_dir.mkdir()
+        forged_payloads = {
+            "summary.csv": b"contrast,metric\nforged,forged\n",
+            "report.md": b"# Forged report\n",
+            "analysis-code.py": b"raise SystemExit('forged')\n",
+        }
+        candidate["output_hashes"] = {}
+        candidate["output_artifacts"] = []
+        for name, payload in forged_payloads.items():
+            forged = forged_dir / name
+            forged.write_bytes(payload)
+            digest = _sha(forged)
+            candidate["output_hashes"][name] = digest
+            candidate["output_artifacts"].append({
+                "path": str(forged.relative_to(PROJECT_ROOT)),
+                "sha256": digest,
+            })
+        _write_json(path, candidate)
+        valid, errors = pa.verify_persisted_analysis(PROJECT_ROOT, path)
+        self.assertFalse(valid)
+        self.assertTrue(any(
+            "manifest-directory" in error or "manifest directory" in error
+            for error in errors), errors)
+
     def test_every_preregistered_pairing_key_requires_both_contrast_arms(self) -> None:
         self._append_control_only_seed(8)
         manifest, _results, errors = self._run()
@@ -405,6 +433,10 @@ def test_hash_drift_is_fail_closed() -> None:
 
 def test_persisted_semantics_and_field_set_are_fail_closed() -> None:
     _run_fixture_method("test_persisted_semantics_and_field_set_are_fail_closed")
+
+
+def test_output_declarations_cannot_point_to_another_project_directory() -> None:
+    _run_fixture_method("test_output_declarations_cannot_point_to_another_project_directory")
 
 
 def test_every_preregistered_pairing_key_requires_both_contrast_arms() -> None:

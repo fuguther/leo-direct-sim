@@ -1,36 +1,52 @@
-"""CI collection bridge for the canonical analysis and claim tests.
+"""CI bridge for canonical analysis and claim tests without double collection.
 
-The existing workflow collects ``CODE/tests``.  These imports intentionally
-re-export the single source tests without copying fixtures or assertions.
+The hosted workflow explicitly targets ``CODE/tests`` and therefore would not
+discover the canonical tests under ANALYSIS and PAPER.  In that explicit
+scope this module runs those source modules in one isolated pytest subprocess.
+For a no-target full-suite invocation, pytest discovers the source modules
+itself and this bridge skips, so every test has one logical execution.
 """
 
-from ANALYSIS.tests.test_paired_analysis import (
-    test_artifact_identity_mismatch_is_blocked,
-    test_authorization_or_binding_bypass_is_blocked,
-    test_complete_hash_verified_pairs_are_analyzed,
-    test_entry_symlink_is_blocked,
-    test_every_preregistered_pairing_key_requires_both_contrast_arms,
-    test_existing_output_is_not_overwritten,
-    test_hash_drift_is_fail_closed,
-    test_incomplete_cohort_and_duplicate_run_are_rejected,
-    test_missing_artifact_is_blocked,
-    test_non_natural_and_bad_receipt_are_blocked,
-    test_persisted_semantics_and_field_set_are_fail_closed,
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+
+ROOT = Path(__file__).resolve().parents[2]
+CANONICAL_TESTS = (
+    "ANALYSIS/tests/test_paired_analysis.py",
+    "PAPER/tests/test_eligible_claims.py",
 )
-from PAPER.tests.test_eligible_claims import VerifiedAnalysisEvidenceTests
 
 
-__all__ = [
-    "VerifiedAnalysisEvidenceTests",
-    "test_artifact_identity_mismatch_is_blocked",
-    "test_authorization_or_binding_bypass_is_blocked",
-    "test_complete_hash_verified_pairs_are_analyzed",
-    "test_entry_symlink_is_blocked",
-    "test_every_preregistered_pairing_key_requires_both_contrast_arms",
-    "test_existing_output_is_not_overwritten",
-    "test_hash_drift_is_fail_closed",
-    "test_incomplete_cohort_and_duplicate_run_are_rejected",
-    "test_missing_artifact_is_blocked",
-    "test_non_natural_and_bad_receipt_are_blocked",
-    "test_persisted_semantics_and_field_set_are_fail_closed",
-]
+def _explicitly_targets_code_tests(argv: list[str]) -> bool:
+    code_tests = ROOT / "CODE/tests"
+    for raw in argv[1:]:
+        if raw.startswith("-"):
+            continue
+        target = raw.split("::", 1)[0]
+        try:
+            candidate = Path(target).resolve()
+            candidate.relative_to(code_tests)
+            return True
+        except ValueError:
+            continue
+    return False
+
+
+@pytest.mark.skipif(
+    not _explicitly_targets_code_tests(sys.argv),
+    reason="no-target full pytest discovers ANALYSIS/PAPER source tests directly",
+)
+def test_canonical_analysis_and_claim_contracts_for_code_ci_scope() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "pytest", *CANONICAL_TESTS, "-q"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr

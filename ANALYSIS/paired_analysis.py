@@ -737,23 +737,20 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
         output_artifacts = manifest.get("output_artifacts")
         if not isinstance(output_artifacts, list) or len(output_artifacts) != 3:
             raise ValueError("analysis output artifact set is not exact")
-        seen_outputs: set[str] = set()
-        for entry in output_artifacts:
-            if not isinstance(entry, dict) or set(entry) != {"path", "sha256"}:
-                raise ValueError("output artifact entry malformed")
-            path = _safe_child(root, entry["path"], "analysis output")
-            name = path.name
-            if name in seen_outputs or name not in output_hashes:
-                raise ValueError("analysis output artifact set is duplicated or unexpected")
-            seen_outputs.add(name)
-            if output_hashes[name] != entry["sha256"]:
-                raise ValueError(f"analysis output hash aliases differ: {name}")
-            if file_sha256(path) != entry["sha256"]:
-                raise ValueError(f"analysis output hash mismatch: {entry['path']}")
-        if seen_outputs != set(output_hashes):
-            raise ValueError("analysis output artifact set is incomplete")
         output_dir = Path(manifest_path).relative_to(root).parent
         output_abs = root / output_dir
+        expected_output_hashes: dict[str, str] = {}
+        expected_output_artifacts: list[dict[str, str]] = []
+        for name in ("summary.csv", "report.md", "analysis-code.py"):
+            relative = str(output_dir / name)
+            path = _safe_child(root, relative, f"analysis output {name}")
+            digest = file_sha256(path)
+            expected_output_hashes[name] = digest
+            expected_output_artifacts.append({"path": relative, "sha256": digest})
+        if output_hashes != expected_output_hashes:
+            raise ValueError("analysis output hashes differ from manifest-directory artifacts")
+        if output_artifacts != expected_output_artifacts:
+            raise ValueError("analysis output artifact declarations differ from manifest directory")
         code_output = _safe_child(root, str(output_dir / "analysis-code.py"), "analysis code snapshot")
         if code_output.read_bytes() != code.read_bytes():
             raise ValueError("analysis-code.py does not match current analyzer")
