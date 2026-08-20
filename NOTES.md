@@ -281,6 +281,23 @@
 - 该次仅为版本一致性部署；`0c378a5` 同代码已完成的 MCS/burst smoke 证据仍适用于代码行为，
   但正式授权 cohort/E0 仍未运行。
 
+## 2026-08-21：E0-REAL 50 Mbps 首次 M-Lab/MCS 长窗 smoke（候选）
+
+- 分支：`codex/20260821-e0-calibration`，基线 main `743d05c`；新增
+  `CODE/leo_sim/profiles/mlab_e0_calibration.yaml`（140 星、MCS、动态拓扑重算 1 s、
+  M-Lab measurement-proxy 三 OD cycle、20--40 s burst）。
+- 运行：60 s 本地自然结束，461 offered packets / 3.688 Gbit；440 delivered、20
+  `ACCESS_REJECTED`、1 `IN_SYSTEM_AT_STOP`，守恒通过；修复后 `receipt verify=verified`。
+  同一 trace SHA=`dfe47500712ddc353c4ba5b9564d943be7f10018d07e36bdeb52b4d35d166910`。
+- 资源：macOS `/usr/bin/time` 记录 wall `78.66 s`、user `78.28 s`、sys `0.36 s`，约
+  99.5% CPU busy；该测量没有可用 max-RSS 字段，不能伪造内存结论。
+- 真实缺陷：receipt 重算没有把 `IN_SYSTEM_AT_STOP` 等合法未到达 fate 传给 metrics，导致
+  截止时仍在传播中的包被错误报告为 `unmatched propagation starts`。本分支修复并新增回归，
+  全量 `CODE/leo_sim/tests CODE/tests` = **524 passed**。
+- 研究边界：当前 utilization 分母仍是“已记录服务窗容量”，本次六条 GSL 窗几乎均为 1.0，
+  不能冒充几何可用容量利用率；E0 只能作为负载/守恒/资源工程诊断，DIAG-CONGESTION 前仍
+  必须补 available-capacity 分母和 VM 同 SHA 验证。
+
 ## 2026-08-21：M-Lab 真实测量代理与高负载 VM smoke
 
 - 来源核对：旧工作区任务记录确认 `CODE/data/traffic/mlab_2026-05-27.csv` 来自公开
