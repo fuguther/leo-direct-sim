@@ -24,15 +24,16 @@ requirements:
   reward_and_mask_blockers_closed: {status: blocked}
   v2_formal_evidence_chain_verified: {status: blocked}
   real_traffic_provenance_verified: {status: completed_verified, evidence: PR84_main_743d05c_mlab_source_sha_schema_and_manifest}
-  multi_od_and_burst_verified: {status: completed_verified, evidence: main_4e89b5c_pr93_vm_56cell_mlab_t0_receipt_and_metrics_recompute}
-  mlab_multi_od_t0_verified: {status: completed_verified, evidence: main_4e89b5c_trace_f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4_vm_receipt}
-  topology_cadence_calibration_verified: {status: completed_verified, evidence: main_4e89b5c_vm_cadence_0p5_1_2_5_receipts_raw_metrics_recompute}
+  multi_od_and_burst_verified: {status: completed_verified, evidence: main_29c1583_pr93_vm_56cell_mlab_t0_receipt_and_metrics_recompute}
+  mlab_multi_od_t0_verified: {status: completed_verified, evidence: main_29c1583_trace_f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4_vm_receipt}
+  topology_cadence_calibration_verified: {status: completed_verified, evidence: main_29c1583_vm_cadence_0p5_1_2_5_receipts_raw_metrics_recompute}
+  e0_load_calibration_verified: {status: completed_verified, evidence: main_29c1583_vm_mlab_multiod_burst_50_100_200_receipts_metrics_recompute}
   link_utilization_recomputation_verified: {status: blocked}
   packet_delay_decomposition_verified: {status: blocked}
   q0_minimum_loop_verified: {status: blocked}
   q0_replay_review_approved: {status: blocked}
   three_final_audit_rounds_no_new_major: {status: blocked}
-  exact_main_deployed_to_vm: {status: completed_verified, evidence: main_4e89b5c_deployment_8b22597b548eea77ffa5dce79694ad9c4c690b598270127b5b3cae71c85b6178_source_1c231110c23d2236cc6667a9cb551b2a9a4ae69b4ed4718b1696f16f5789546f}
+  exact_main_deployed_to_vm: {status: completed_verified, evidence: main_29c1583_deployment_6519847a3a866e7342d8aa36360ed2e68d3cb98ef51d4458d390420925271cc6_source_8a9ab6f570585567efba1c675fe12dd4687c4c917bdabab24aedeaf6ca32866c}
   learning_vm_smoke_verified: {status: blocked, reason: no_current_main_training_and_evaluation_smoke}
   mcs_vm_comparison_verified: {status: blocked, reason: basic_smoke_only_no_legacy_mcs_comparison}
   d2_long_window_vm_verified: {status: blocked, reason: no_long_window_topology_holding_vm_evidence}
@@ -167,13 +168,14 @@ experiments:
   - id: E0-LOAD-CALIBRATION
     class: engineering_calibration
     title: mlab_multi_od_burst_load_calibration
-    status: rerun_required
+    status: completed_verified
     prerequisites: [D1_merged_to_main, D2_merged_to_main, TRAFFIC-T0, TOPOLOGY-CADENCE-CALIBRATION, exact_main_deployed_to_vm]
     arms: [offered_50_mbps, offered_100_mbps, offered_200_mbps]
     traffic_mode: mlab_measurement_proxy_multi_od_with_20s_burst
     purpose: Select low, medium and high load candidates before formal E0 on the new bounded multi-OD profile; this engineering calibration is not a paper effect result.
     decision: null
-    reason: previous three-explicit-site table is historical after PR93; rerun on main_4e89b5c with mlab_auto and cadence_1s
+    reason: rerun completed on main_29c1583 with mlab_auto and cadence_1s; candidates identified but formal load freeze remains after resource/pilot gates
+    evidence: {main_sha: 29c158349caf33c313d9ec0940f8eefc13f91485, deployment_receipt_sha: 6519847a3a866e7342d8aa36360ed2e68d3cb98ef51d4458d390420925271cc6, loads_mbps: [50, 100, 200], offered_packets: {50: 1299, 100: 2756, 200: 5551}, delivered: {50: 613, 100: 1253, 200: 2382}, holding_overflow: {50: 0, 100: 0, 200: 167}, natural_end: true, conservation_ok: true, receipt_verified: true, metrics_recomputed: true}
     required_evidence: [same_trace_identity_per_arm, natural_end, conservation, receipt_verified, fate_counts, vm_wall_time, raw_metrics_recompute]
 
   - id: DIAG-CONGESTION

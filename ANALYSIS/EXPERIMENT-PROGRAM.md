@@ -1,6 +1,6 @@
 # LEO 拥塞控制与链路利用率实验总计划
 
-> CURRENT；最后核验：2026-08-21。当前 main `4e89b5c` 已部署 VM；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 工程校准、receipt horizon 修复和 physical available-capacity 分母已完成。E0 低/中/高负载需在该新多 OD profile 上重标定；R1-A1、V2 artifact→claim 闭环、学习 VM smoke、逐包三段时延正式 gate、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
+> CURRENT；最后核验：2026-08-21。当前 main `29c1583` 已部署 VM；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 工程校准、receipt horizon 修复、physical available-capacity 分母和新 profile 的 E0 工程负载标定已完成。50/100/200 Mbps 只冻结为下一阶段的低/中/压力候选，不是正式论文结果；R1-A1、V2 artifact→claim 闭环、学习 VM smoke、逐包三段时延正式 gate、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
 
 ## 1. 研究主线与工作方法
 
@@ -36,10 +36,10 @@
 
 先关闭会改变任何后续结论的底层问题：
 
-- D1/D2 代码已合入并有回归测试；当前 `4e89b5c` VM 已跑 MCS/动态拓扑多 OD T0，但 D1 旧平台逐距离 MCS 对照、D2 长窗语义验收仍缺；
+- D1/D2 代码已合入并有回归测试；当前 `29c1583` VM 已跑 MCS/动态拓扑多 OD T0 和三档负载标定，但 D1 旧平台逐距离 MCS 对照、D2 长窗语义验收仍缺；
 - **先关闭 R1-A1 奖励 blocker**，再冻结物理目标与学习语义；已修复的 mask 旁路不能代表整体信息公平完成；
 - 闭合 V2 `compile → review → authorize → run → receipt → metric recomputation → paired analysis → claim`；当前只完成矩阵编译/授权 Stage 1，真实 artifact→claim 闭环仍缺；
-- 当前 `4e89b5c` 已完成非学习同 SHA 工程 T0/cadence smoke；正式授权 cohort、学习 VM smoke、formal VM E0/PILOT 仍需按 runbook 执行。
+- 当前 `29c1583` 已完成非学习同 SHA 工程 T0/cadence smoke 和 E0 负载标定；正式授权 cohort、学习 VM smoke、formal VM E0/PILOT 仍需按 runbook 执行。
 
 P0 的验收是“同一 SHA 的结果可以被重新算出来并拒绝篡改”，不是仅有 pytest 绿。
 
@@ -53,7 +53,7 @@ P0 的验收是“同一 SHA 的结果可以被重新算出来并拒绝篡改”
 
 在进入 E0 负载标定前，用同一份不可变的 M-Lab measurement-proxy + burst trace 比较拓扑重算间隔 `0.5/1/2/5 s`。这一步只回答“更新太慢会不会改变当前负载下的结果、以及运行成本如何”，不把短 smoke 当成 D2 长窗语义已经完全证明。
 
-本轮以合入并部署的 `4e89b5c` 为准：profile 为 140 星、20 s、MCS、50 Mbps、8--16 s burst、56 个测量强连通候选单元；四档均 natural end、conservation true、receipt verified，且 trace SHA 均为 `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`。fates 均为 1,299 offered、613 delivered、579 `ACCESS_REJECTED`、107 `IN_SYSTEM_AT_STOP`；raw packet/service/availability ledgers 独立重算均 `validation.ok=true`。该轮仍是工程校准，不是 formal E0 或论文结果。
+本轮以合入并部署的 `29c1583` 为准：profile 为 140 星、20 s、MCS、50 Mbps、8--16 s burst、56 个测量强连通候选单元；四档均 natural end、conservation true、receipt verified，且 trace SHA 均为 `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`。fates 均为 1,299 offered、613 delivered、579 `ACCESS_REJECTED`、107 `IN_SYSTEM_AT_STOP`；raw packet/service/availability ledgers 独立重算均 `validation.ok=true`。该轮仍是工程校准，不是 formal E0 或论文结果。
 
 | cadence | VM 140 星/20 s 结果 | VM 墙钟 | 工程判断 |
 |---:|---|---:|---|
@@ -66,17 +66,17 @@ P0 的验收是“同一 SHA 的结果可以被重新算出来并拒绝篡改”
 
 #### E0-LOAD-CALIBRATION（工程负载标定，非正式论文结果）
 
-PR #93 改变了 M-Lab 端点选择（从显式三点变为有界强连通多 OD）；此前 50/100/200 Mbps 三 OD 表格只能作为历史先验，不能直接沿用。下一轮必须在 `4e89b5c`、56-cell profile、cadence 1 s 上重跑并记录同一 trace/config/VM 证据。
+PR #93 改变了 M-Lab 端点选择（从显式三点变为有界强连通多 OD）；此前 50/100/200 Mbps 三 OD 表格只能作为历史先验，不能直接沿用。现已在 `29c1583`、56-cell profile、cadence 1 s 上完成同一 VM 环境的三档工程标定，并记录同一 trace/config/VM 证据。
 
-以下旧表是三 OD profile 的历史工程先验，不能作为当前主线的冻结值。新一轮仍以“只改变 `offered_mbps`、找出无拥塞/可解释积压/明显压力三个区间”为目标，但必须在新 56-cell 多 OD profile 上重跑；它不是正式效果比较，也不冻结论文最终负载。
+下面这张表是新 56-cell 多 OD profile 的工程标定结果，不是正式效果比较，也不冻结论文最终负载。旧三 OD 表仍保留在历史 NOTES 中，仅作背景先验。标定只改变 `offered_mbps`，目标是找出无明显溢出、可解释积压和明显压力三个区间。
 
-| offered load | offered / delivered | 主要非交付结果 | 本地 receipt | VM receipt |
+| offered load | offered / delivered | 主要非交付结果 | VM 墙钟 | 结论 |
 |---:|---:|---|---|---|
-| 50 Mbps | 461 / 440 | 20 `ACCESS_REJECTED`，1 `IN_SYSTEM_AT_STOP`，0 holding overflow | verified | verified（同 SHA 工程 smoke） |
-| 100 Mbps | 944 / 877 | 60 `ACCESS_REJECTED`，7 `HOLDING_QUEUE_OVERFLOW` | verified | verified |
-| 200 Mbps | 1940 / 1816 | 96 `ACCESS_REJECTED`，28 `HOLDING_QUEUE_OVERFLOW` | verified | verified |
+| 50 Mbps | 1,299 / 613 | 579 `ACCESS_REJECTED`，107 `IN_SYSTEM_AT_STOP`，0 holding overflow | 119 s | 低负载候选 |
+| 100 Mbps | 2,756 / 1,253 | 1,270 `ACCESS_REJECTED`，233 `IN_SYSTEM_AT_STOP`，0 holding overflow | 129 s | 中负载候选 |
+| 200 Mbps | 5,551 / 2,382 | 2,597 `ACCESS_REJECTED`，405 `IN_SYSTEM_AT_STOP`，167 `HOLDING_QUEUE_OVERFLOW` | 134 s | 压力/过载对照 |
 
-本地墙钟约为 78.7/79.0/79.3 s；VM 100/200 Mbps 分别约 265.9/264.5 s，说明正式训练和评估预算必须按 VM 实测而不是本机时间估计。当前候选解释是：`50` 作为低负载、`100` 作为中负载、`200` 作为高负载/压力档；同 SHA VM 50 Mbps 工程 run 已自然结束且 receipt verified。最终冻结前还必须补 available-capacity 的独立重算、逐包三段时延和正式授权 E0。`10 Mbps` 另作低负载 sanity（67/74 delivered，0 holding overflow），不作为主三档之一。
+三档均在同一 canonical VM、同一 `29c1583`、同一 56-cell M-Lab/burst profile、1 s cadence 下自然结束，`conservation_ok=true`、`receipt verify=verified`，原始 ledger 重算 `validation.ok=true`。对应 trace SHA 为 `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`（50）、`e6e7bd329f6822046f5d57611690d609a3647e1dca7639e170e985d891000e09`（100）、`f009c98d8be5757a4ba1afe585fed32d6974143582eb3c9d8657344413a834c6`（200）。因此暂定 `50` 为低负载、`100` 为中负载、`200` 为压力/过载对照；这只是工程标定，不是论文效果结果。正式冻结前仍需完成 available-capacity 独立重算记录、逐包三段时延 artifact、资源 RSS 门禁、学习 pilot 和正式授权 E0。`10 Mbps` 另作低负载 sanity，不作为主三档之一。
 
 #### TRAFFIC-VALIDATE
 
@@ -97,7 +97,7 @@ PR #93 改变了 M-Lab 端点选择（从显式三点变为有界强连通多 OD
 
 #### E0-REAL
 
-- 先用确定性路由和真实流量/代理 trace 扫负载；
+- 先用确定性路由和真实流量/代理 trace 扫负载；当前工程标定已给出低/中/压力三个候选档，下一步在同一 trace/配置合同上做资源剖析和算法 pilot；
 - 冻结低、中、高三档：低档接近无拥塞，中档能区分机制，高档明显积压但非全面塌缩；
 - uniform E0 只作 sanity 和边界对照；旧 50/100/200 Mbps 只作历史先验。
 
