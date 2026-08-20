@@ -60,6 +60,19 @@ def test_burst_window_must_intersect_scenario_horizon():
     assert ok["config"]["demand"]["mode"] == "burst"
 
 
+def test_mlab_burst_requires_complete_intersecting_window():
+    with pytest.raises(config.ConfigError, match="mode=mlab"):
+        config.resolve_config({
+            "demand": {"mode": "mlab", "burst_start_s": 1.0},
+        })
+    with pytest.raises(config.ConfigError, match="intersect"):
+        config.resolve_config({
+            "scenario": {"duration_s": 10.0},
+            "demand": {"mode": "mlab", "burst_start_s": 10.0,
+                       "burst_duration_s": 1.0},
+        })
+
+
 def test_learning_eval_requires_sha_bound_checkpoint():
     with pytest.raises(config.ConfigError, match="checkpoint_path and checkpoint_sha256"):
         config.resolve_config({

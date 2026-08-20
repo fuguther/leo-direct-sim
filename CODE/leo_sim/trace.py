@@ -7,7 +7,9 @@ range. Identical config+input+seed is byte reproducible.
 
 Supported modes: uniform, gravity, hotspot, burst, diurnal, csv, mlab.
 The mlab mode reuses repository M-Lab data as OD weights only; provenance is
-always labelled measurement_proxy and never calibrated user demand.
+always labelled measurement_proxy and never calibrated user demand.  When
+burst_start_s/burst_duration_s are supplied with mlab, the same measured OD
+weights receive the explicit burst transform.
 """
 from __future__ import annotations
 
@@ -185,7 +187,7 @@ def _dst_choices(gen, mode, endpoints, i, t, dm, mlab_weights=None):
 
 
 def _rate_multiplier(mode, t, src_lon, dm):
-    if mode == "burst":
+    if mode in ("burst", "mlab") and dm["burst_start_s"] is not None:
         start, dur = dm["burst_start_s"], dm["burst_duration_s"]
         if start <= t < start + dur:
             return dm["burst_multiplier"]
@@ -207,15 +209,51 @@ def _load_mlab_weights(endpoints, grid_deg: float, agg_deg: float):
     if not REPO_MLAB_CSV.exists():
         raise TraceError(f"m-lab source not found: {REPO_MLAB_CSV}")
     weights: dict[tuple[str, str], float] = {}
+    hours: set[int] = set()
+    row_count = 0
+    required = {
+        "client_lat", "client_lon", "server_lat", "server_lon",
+        "hour_utc", "sample_count", "mean_throughput_mbps",
+    }
     with open(REPO_MLAB_CSV, newline="", encoding="utf-8") as fh:
-        for row in csv.DictReader(fh):
+        reader = csv.DictReader(fh)
+        missing = required - set(reader.fieldnames or [])
+        if missing:
+            raise TraceError(f"m-lab source missing columns {sorted(missing)}")
+        for row_number, row in enumerate(reader, start=2):
+            row_count += 1
             try:
-                s = grid.aggregate_id(grid.grid_id(float(row["client_lat"]), float(row["client_lon"]), grid_deg), agg_deg)
-                d = grid.aggregate_id(grid.grid_id(float(row["server_lat"]), float(row["server_lon"]), grid_deg), agg_deg)
-            except (ValueError, KeyError):
-                continue
-            weights[(s, d)] = weights.get((s, d), 0.0) + float(row["mean_throughput_mbps"]) * float(row["sample_count"])
-    return weights
+                lat_s, lon_s = float(row["client_lat"]), float(row["client_lon"])
+                lat_d, lon_d = float(row["server_lat"]), float(row["server_lon"])
+                hour = int(row["hour_utc"])
+                count = int(row["sample_count"])
+                throughput = float(row["mean_throughput_mbps"])
+            except (TypeError, ValueError, KeyError) as exc:
+                raise TraceError(
+                    f"m-lab row {row_number}: invalid measurement field: {exc}") from exc
+            if (not all(math.isfinite(v) for v in
+                        (lat_s, lon_s, lat_d, lon_d, throughput))
+                    or not 0 <= hour <= 23
+                    or count <= 0
+                    or throughput <= 0.0):
+                raise TraceError(
+                    f"m-lab row {row_number}: hour_utc, sample_count and "
+                    "mean_throughput_mbps must be valid positive measurements")
+            try:
+                s = grid.aggregate_id(grid.grid_id(lat_s, lon_s, grid_deg), agg_deg)
+                d = grid.aggregate_id(grid.grid_id(lat_d, lon_d, grid_deg), agg_deg)
+            except (ValueError, TypeError) as exc:
+                raise TraceError(
+                    f"m-lab row {row_number}: endpoint coordinates invalid") from exc
+            hours.add(hour)
+            weights[(s, d)] = weights.get((s, d), 0.0) + throughput * count
+    if row_count == 0 or not weights:
+        raise TraceError("m-lab source contains no usable measurement rows")
+    return weights, {
+        "row_count": row_count,
+        "od_pair_count": len(weights),
+        "hour_utc_values": sorted(hours),
+    }
 
 
 def compile_trace(resolved: dict, out_dir: str) -> dict:
@@ -245,6 +283,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
     source_type = "synthetic_generator"
     source_path: str | None = None
     endpoints: list[dict] = []  # csv mode fills this from the CSV itself
+    mlab_summary = None
 
     if mode == "csv":
         src_path = dm["csv_path"]
@@ -346,7 +385,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
         gen = rng.streams(sc["seed"])["demand"]
         mlab_weights = None
         if mode == "mlab":
-            mlab_weights = _load_mlab_weights(
+            mlab_weights, mlab_summary = _load_mlab_weights(
                 endpoints, ep["grid_deg"], ep["aggregation_deg"])
             provenance = "measurement_proxy"
             input_hash = hashlib.sha256(REPO_MLAB_CSV.read_bytes()).hexdigest()
@@ -380,7 +419,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                 continue
             # thinning with max multiplier keeps diurnal/burst deterministic
             max_mult = 1.0
-            if mode == "burst":
+            if mode in ("burst", "mlab") and dm["burst_start_s"] is not None:
                 max_mult = max(1.0, dm["burst_multiplier"])
             elif mode == "diurnal":
                 max_mult = 1.0 + abs(dm["diurnal_amplitude"])
@@ -457,6 +496,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                 "generated endpoint aggregate IDs"
             ),
         },
+        "measurement_summary": mlab_summary,
         "offered_load": {
             "load_mode": "observed_trace" if mode == "csv" else "target_rate_sampler",
             "target_offered_mbps": (
@@ -477,7 +517,8 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                 "start_s": float(dm["burst_start_s"]),
                 "duration_s": float(dm["burst_duration_s"]),
                 "multiplier": float(dm["burst_multiplier"]),
-            } if mode == "burst" else None),
+            } if mode in ("burst", "mlab")
+            and dm["burst_start_s"] is not None else None),
             "diurnal": ({
                 "amplitude": float(dm["diurnal_amplitude"]),
                 "phase_h": float(dm["diurnal_phase_h"]),

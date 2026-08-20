@@ -280,3 +280,18 @@
   source tree SHA `a1e6a5730dd8e7ed51881d89166c79073c6f5d72bca35d57ed4a4ccac8c274de`。
 - 该次仅为版本一致性部署；`0c378a5` 同代码已完成的 MCS/burst smoke 证据仍适用于代码行为，
   但正式授权 cohort/E0 仍未运行。
+
+## 2026-08-21：T0 M-Lab measurement-proxy OD + burst 闭环（候选）
+
+- 分支：`codex/20260821-traffic-t0`，基线 main `51f832c`；本条记录对应当前未合入候选，
+  不改变 main/VM 状态。
+- `mlab` trace 编译现在 fail-closed 校验必需字段、小时范围、样本数和吞吐量，并在 manifest
+  写入源 SHA、`row_count=44929`、`od_pair_count=4825`、完整 `hour_utc=0..23` 覆盖；显式
+  burst 会记录 start/duration/multiplier。新增 schema、解释文档和
+  `CODE/leo_sim/profiles/mlab_measured_od_burst.yaml`。
+- 验证：`CODE/leo_sim/tests/test_config.py CODE/leo_sim/tests/test_trace.py` 为 **22 passed**；
+  相关 receipt 回归 `205 passed`；profile validate 成功；本地 `run` 10 s 自然结束，
+  18/18 delivered、0 in-system、`conservation_ok=true`，`receipt verify=verified`，
+  trace SHA=`21812f86b7883a47560bd15f9d7d2958a503fc71a7bc27d52dd3cfd252caea4d`。
+- 边界：这是可复现的 M-Lab **measurement_proxy**，不是原始用户流量或校准运营负载；尚未部署
+  当前分支到 VM，也未完成 E0 负载标定、学习训练/检查点恢复和正式授权 cohort。

@@ -140,6 +140,90 @@ def test_mlab_adapter_labels_measurement_proxy(tmp_path):
     assert m["offered_packets"] > 0
 
 
+def _write_mlab_fixture(path: Path) -> None:
+    path.write_text(
+        "client_city,client_lat,client_lon,server_city,server_lat,server_lon,"
+        "hour_utc,sample_count,mean_throughput_mbps\n"
+        "A,34.717,135.418,B,35.553,139.781,0,2,10.0\n"
+        "A,34.717,135.418,B,35.553,139.781,12,3,20.0\n"
+        "B,35.553,139.781,A,34.717,135.418,23,1,5.0\n",
+        encoding="utf-8",
+    )
+
+
+def test_mlab_manifest_records_source_coverage_and_burst(tmp_path, monkeypatch):
+    source = tmp_path / "mlab.csv"
+    _write_mlab_fixture(source)
+    monkeypatch.setattr(trace, "REPO_MLAB_CSV", source)
+    cfg = _cfg(**{"endpoints": {"sites": [
+        {"name": "a", "lat": 34.717, "lon": 135.418},
+        {"name": "b", "lat": 35.553, "lon": 139.781},
+    ]}})
+    cfg["config"]["demand"].update({
+        "mode": "mlab",
+        "burst_start_s": 1.0,
+        "burst_duration_s": 2.0,
+        "burst_multiplier": 3.0,
+    })
+    manifest = trace.compile_trace(cfg, str(tmp_path / "out"))
+
+    assert manifest["provenance"] == "measurement_proxy"
+    assert manifest["not_calibrated_user_demand"] is True
+    contract = manifest["provenance_contract"]
+    assert contract["source"]["sha256"] == hashlib.sha256(
+        source.read_bytes()).hexdigest()
+    assert contract["measurement_summary"] == {
+        "row_count": 3,
+        "od_pair_count": 2,
+        "hour_utc_values": [0, 12, 23],
+    }
+    assert contract["traffic_transform"]["burst"] == {
+        "start_s": 1.0,
+        "duration_s": 2.0,
+        "multiplier": 3.0,
+    }
+
+
+def test_mlab_burst_trace_is_byte_reproducible(tmp_path, monkeypatch):
+    source = tmp_path / "mlab.csv"
+    _write_mlab_fixture(source)
+    monkeypatch.setattr(trace, "REPO_MLAB_CSV", source)
+    cfg = _cfg(**{"endpoints": {"sites": [
+        {"name": "a", "lat": 34.717, "lon": 135.418},
+        {"name": "b", "lat": 35.553, "lon": 139.781},
+    ]}})
+    cfg["config"]["demand"].update({
+        "mode": "mlab",
+        "burst_start_s": 1.0,
+        "burst_duration_s": 2.0,
+        "burst_multiplier": 3.0,
+    })
+    first = trace.compile_trace(cfg, str(tmp_path / "first"))
+    second = trace.compile_trace(cfg, str(tmp_path / "second"))
+    for name in ("trace.csv", "manifest.json"):
+        assert (tmp_path / "first" / name).read_bytes() == (
+            tmp_path / "second" / name).read_bytes()
+    assert first["trace_sha256"] == second["trace_sha256"]
+
+
+def test_mlab_source_rejects_invalid_hour_or_measurement(tmp_path, monkeypatch):
+    source = tmp_path / "mlab.csv"
+    source.write_text(
+        "client_lat,client_lon,server_lat,server_lon,hour_utc,sample_count,"
+        "mean_throughput_mbps\n"
+        "34.717,135.418,35.553,139.781,24,1,10.0\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(trace, "REPO_MLAB_CSV", source)
+    cfg = _cfg(**{"endpoints": {"sites": [
+        {"name": "a", "lat": 34.717, "lon": 135.418},
+        {"name": "b", "lat": 35.553, "lon": 139.781},
+    ]}})
+    cfg["config"]["demand"]["mode"] = "mlab"
+    with pytest.raises(trace.TraceError, match="hour_utc"):
+        trace.compile_trace(cfg, str(tmp_path / "invalid"))
+
+
 def test_demand_modes_all_generate(tmp_path):
     for mode in ("uniform", "gravity", "hotspot", "burst", "diurnal"):
         over = {"demand": {"mode": mode, "offered_mbps": 5.0, "packet_bits": 100_000}}
