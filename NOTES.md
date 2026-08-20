@@ -272,3 +272,11 @@
   offered-load 账本 `85,000,000 bits / 60 s` 可重算。
 - 同一部署还完成 MCS smoke：receipt `effective.mcs=true`，服务窗速率出现
   `283.9025 Mbps / 2.103214 Gbps / 2.9504275 Gbps`；结果仍为工程证据，不是正式论文样本。
+
+## 2026-08-21：最终文档版 main 部署
+
+- 文档合并后的 clean main `42ff519d6caed3c9666f55e3390989c6943d1093` 已再次部署，确保后续
+  formal run 使用当前主线 SHA；deployment receipt `ab047f09ec66088d7ab6af93bf8fdc6e989d6d087b1d0651a47383423888f6f9`，
+  source tree SHA `a1e6a5730dd8e7ed51881d89166c79073c6f5d72bca35d57ed4a4ccac8c274de`。
+- 该次仅为版本一致性部署；`0c378a5` 同代码已完成的 MCS/burst smoke 证据仍适用于代码行为，
+  但正式授权 cohort/E0 仍未运行。

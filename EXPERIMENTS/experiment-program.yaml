@@ -30,7 +30,7 @@ requirements:
   q0_minimum_loop_verified: {status: blocked}
   q0_replay_review_approved: {status: blocked}
   three_final_audit_rounds_no_new_major: {status: blocked}
-  exact_main_deployed_to_vm: {status: completed_verified, evidence: deployment_7a3c06a6_0c378a5_burst_engineering_smoke_receipt_verified_nonformal}
+  exact_main_deployed_to_vm: {status: completed_verified, evidence: deployment_ab047f09_42ff519_burst_engineering_smoke_receipt_verified_nonformal}
   per_action_physical_features_verified: {status: blocked}
   field_age_provenance_verified: {status: blocked}
   replay_resume_verified: {status: blocked}
