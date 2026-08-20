@@ -25,7 +25,7 @@
 | Q0 当前全局快照 | 无等价严格接口 | snapshot 已进 main | Q0 前置已完成 | 保留只读、因果和版本测试 |
 | Q0 计划注入与执行归因 | 无 | 候选分支存在，审阅未通过 | BLOCKER-THEORY | action_id 贯穿执行；receipt 持久化 verdict/errors/executed；不阻塞 E0/pilot |
 | Q0-I/Q0-F tiny | 无统一实现 | Q0-I 候选；Q0-F 未完成 | BLOCKER-THEORY | 独立穷举/第二算法交叉验证；从真实诊断窗口抽 tiny |
-| 真实流量 provenance、多 OD、突发 | 有多种模式 | V2 已有 CSV 多 OD、M-Lab/人口代理及 burst window；缺统一来源/单位/映射合同 | BLOCKER-DIAG | 绑定源 hash、source type、许可/时间/字段、OD/时间映射和 offered-load 重算；代理不得冒充原始 packet trace |
+| 真实流量 provenance、多 OD、突发 | 有多种模式 | trace manifest 已绑定 source type/path/SHA、时间/坐标/bit 单位、CSV OD→aggregate 映射、目标/实际 offered load；M-Lab/人口仍明确是代理；当前分支 `3878862` 尚未部署 | BLOCKER-DIAG | 合入后用真实 CSV 多 OD/突发样本和 VM receipt 验收；代理不得冒充原始 packet trace |
 | 逐向链路利用率可重算 | 聚合统计较多 | `2f577a5` 已加入逐服务窗原始事件：`rate×service-window` 容量、served bits、链路 ID，并在 `ledgers.json` 中由原始事件重算；这不是“整段可用时间”分母，尚未完成正式口径/VM 证据 | BLOCKER-DIAG | 先在诊断合同中明确服务窗容量口径；若论文声称可用时间利用率，再补几何/可用区间 ledger 并做分母对照 |
 | per-action 斜距/速率/方向特征 | RAAC 有 4×9 action_feats | V2 内部路由能访问相关量，但 decision sink 无逐动作等价物 | BLOCKER-THEORY | INFO-LADDER 前加入 distance/rate/availability/observed_at/source；不默认给所有臂 |
 | 逐字段 AoI | 旧有定时观测/年龄统计 | V2 是 cache-entry 级 age，未有字段级 generated/received/source age | BLOCKER-THEORY | AGE-LADDER 前完成并做 shuffle/fixed-fresh 负对照 |
