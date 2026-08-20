@@ -492,10 +492,12 @@ def execute(
     input_paths: dict[str, str] = {}
     if root.exists():
         # The caller adds the exact request/manifest paths in write_outputs;
-        # execute itself only binds the run artifacts and current analyzer.
-        code_path = (root / "ANALYSIS" / "paired_analysis.py").resolve()
-        if code_path.is_file():
-            input_paths[str(code_path.relative_to(root.resolve()))] = file_sha256(code_path)
+        # execute itself binds the analyzer and the claim-gate schema so a
+        # later schema relaxation cannot silently reinterpret this evidence.
+        for source_rel in ("ANALYSIS/paired_analysis.py", "ANALYSIS/claims/claim.schema.json"):
+            source_path = (root / source_rel).resolve()
+            if source_path.is_file():
+                input_paths[source_rel] = file_sha256(source_path)
     def _relative_or_absolute(path: Path) -> str:
         try:
             return str(path.relative_to(root))

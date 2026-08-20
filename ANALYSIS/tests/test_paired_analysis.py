@@ -203,6 +203,8 @@ class PairedAnalysisTests(unittest.TestCase):
 
     def test_complete_hash_verified_pairs_are_analyzed(self) -> None:
         path = self._write_verified()
+        persisted = json.loads(path.read_text(encoding="utf-8"))
+        self.assertIn("ANALYSIS/claims/claim.schema.json", persisted["inputs"])
         valid, errors = pa.verify_persisted_analysis(PROJECT_ROOT, path)
         self.assertTrue(valid, errors)
 
