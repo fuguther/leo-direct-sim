@@ -24,10 +24,10 @@
 | 信息公平 | 已修复明确 cache-hop 偷看；逐动作物理特征、逐字段 AoI 未完成 | FACT；硬阻塞信息归因 |
 | 当前 VM | 已部署精确 main `ac0d019`；deployment receipt SHA=`c43e711442195cc8f31025167784773562e3a71ddb8c3cca65f25e1b787aa66b`，source tree SHA=`bf9a90090e2d2ac82701483c08fcaebe1976a083a71315405fbb0f5ef683b98d` | FACT |
 | VM 工程 smoke | 非学习/内核和 M-Lab 50/100 Mbps smoke 可自然结束且守恒；学习算法 VM smoke 尚未完成 | FACT；非正式、非授权运行 |
-| 真实流量/测量 | M-Lab 文件已按源 SHA、字段、小时覆盖、OD 映射和 burst 变换写入 provenance；当前 V2 仍把它标为 measurement proxy，并将小时用于覆盖审计而非逐小时强度重放 | FACT；不能当原始真实包回放 |
+| 真实流量/测量 | M-Lab 文件已按源 SHA、字段、小时覆盖、OD 映射和 burst 变换写入 provenance；同一 140 星配置已完成 50/100/200 Mbps 多 OD + burst 的本地和 VM 工程标定；当前 V2 仍把它标为 measurement proxy，并将小时用于覆盖审计而非逐小时强度重放 | FACT；不能当原始真实包回放 |
 | Q0 | snapshot 已在 main；计划注入/执行归因候选未通过审阅；Q0-I/Q0-F tiny 闭环未完成。Q0 不阻塞工程 smoke，但阻塞信息 vs 决策归因 | FACT |
 | 正式分析链 | 矩阵编译/授权 Stage 1 已完成；artifact→指标→配对分析→claim 的真实授权产物和闭环仍缺 | FACT，partial；仍 blocking |
-| 测量层 | 每包 queue/tx/prop 和服务窗事件已有本地重算；receipt 已修复合法 horizon in-flight 重算。拓扑 cadence 已在同一 trace 上完成本地 0.5/1/2/5 s 全窗扫描和 VM 10 s plumbing smoke；逐向 available-capacity 分母/正式 VM artifact 和三段和 gate 仍未完成 | FACT；阻塞拥塞论文诊断 |
+| 测量层 | 每包 queue/tx/prop 和服务窗事件已有本地重算；receipt 已修复合法 horizon in-flight 重算。拓扑 cadence 已在同一 trace 上完成本地 0.5/1/2/5 s 全窗扫描和 VM 10 s plumbing smoke；50/100/200 Mbps E0 负载标定已自然结束且 receipt verified；逐向 available-capacity 分母/正式 VM artifact 和三段和 gate 仍未完成 | FACT；阻塞拥塞论文诊断 |
 | 续训 | replay、optimizer、target network、RNG 完整恢复未实现 | FACT；阻塞昂贵长训 |
 | 三轮三方无新问题 | 只完成局部 PR/局部模块审阅，没有在最终冻结平台上完成连续三轮 | FACT，未满足 |
 
@@ -41,7 +41,7 @@
 | A1 D1/D2 入 main | 精确 head 复核有效；CI 绿；合入后 main 全量与行为对照绿 | **代码已完成**；D1 还缺 VM MCS 对照，D2 还缺长窗 VM 验证 | 待验证 |
 | A2 已知科学 blocker | 奖励、mask、deadline/Q0 控制范围有明确修复或冻结决策 | mask 已修复；**R1-A1 奖励 blocker 未关闭**；逐动作信息和 AoI 未完成 | 先关闭 |
 | A3 正式证据链 | compile、review、authorize、run、receipt、analysis、claim 全链路真实产物 | Stage 1 矩阵编译/授权已完成；artifact→paired analysis→claim 仍 open | 1–2 日 |
-| A4 真实流量与测量 | provenance、多 OD/突发；逐向利用率分子/分母；每包 queue/tx/prop；拥塞指标可从 artifact 重算 | M-Lab/burst 合同已合入；本地 140 星 60 s MCS smoke 可验证。可信分母、VM artifact 和三段时延正式 gate 仍 open | 1–2 日 |
+| A4 真实流量与测量 | provenance、多 OD/突发；逐向利用率分子/分母；每包 queue/tx/prop；拥塞指标可从 artifact 重算 | M-Lab/burst 合同和 50/100/200 Mbps 本地+VM 工程标定已完成；可信分母、VM artifact 和三段时延正式 gate 仍 open | 1–2 日 |
 | A5 最终平台审计 | 冻结 commit 上三轮 Codex/不同模型/网页 GPT 无新增 blocking/major | 未开始最终三轮 | 2–5 日 |
 | A6 VM 与 pilot | 部署同一 main SHA；VM/TF 门禁、真实 smoke、E0-REAL、基线诊断与 pilot 自然结束 | `ac0d019` 同 SHA 非学习 M-Lab/burst 与 140 星 MCS smoke 已完成；**学习 smoke、formal VM E0、全算法 pilot 尚未开始** | 待执行 |
 
@@ -67,5 +67,5 @@
 2. 补齐逐向 available-capacity 分母、逐窗口记录、每包 queue/tx/prop 三段时延及三段和校验；拓扑 cadence 的当前工程候选为 1 s，正式冻结仍需在 E0 负载下复核。
 3. 在已部署 `ac0d019` 上完成 D1 VM MCS 对照和 D2 长时间拓扑/holding VM 验证。
 4. 闭合 V2 artifact→指标→配对分析→claim，并完成至少一个学习训练/评估 VM smoke。
-5. 再跑 VM E0-REAL 和全算法 pilot；Q0-I/Q0-F、逐动作物理特征、逐字段 AoI 按信息归因阶段完成。
+5. 用 50/100/200 Mbps 作为 E0 正式标定候选，先补测量层和授权链，再跑 VM E0-REAL；之后进入全算法 pilot。Q0-I/Q0-F、逐动作物理特征、逐字段 AoI 按信息归因阶段完成。
 7. 长训前补 replay/optimizer/target/RNG 完整恢复；通过后才冻结论文正式矩阵。

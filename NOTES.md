@@ -349,3 +349,10 @@
 - 本地固定同一 trace SHA=`dfe47500712ddc353c4ba5b9564d943be7f10018d07e36bdeb52b4d35d166910`，140 星、60 s、MCS、M-Lab 三 OD + burst，扫描 `0.5/1/2/5 s`。四档均自然结束、守恒通过、receipt 无错误，461 offered、440 delivered、20 `ACCESS_REJECTED`、1 `IN_SYSTEM_AT_STOP`；拓扑重算次数为 119/59/29/11，墙钟约 118.9/79.9/60.5/48.9 s。
 - VM 固定同一部署代码 `5d2ddec3fecfa0a8b83174eaf30aa1da8bf4e9a5d766ddfa6a387e4b8cc6a193`，66 星、10 s 短 smoke 扫描四档；均自然结束、18/18 delivered、守恒通过、receipt verified。该 VM 扫描只验证部署合同和 cadence plumbing，不替代长窗 D2 语义证明。
 - 暂定决策：E0 先用 1 s；2 s 作为成本敏感性对照，5 s 作为慢更新负对照。需在低/中/高负载、长窗上比较交付、积压、利用率和切换指标后再冻结。连续进程的 `ru_maxrss` 未作为逐 run 内存证据，独立资源剖析仍未完成。
+
+## 2026-08-21：E0 多 OD + burst 负载标定
+
+- 分支：`codex/20260821-e0-load-calibration`；代码未修改，使用当前已部署代码 SHA=`5d2ddec3fecfa0a8b83174eaf30aa1da8bf4e9a5d766ddfa6a387e4b8cc6a193`、140 星、60 s、MCS、拓扑 cadence 1 s、M-Lab 三 OD、20--40 s burst。
+- 本地结果（同一运行合同、各自 trace/config SHA）：50 Mbps = 461 offered / 440 delivered / 20 `ACCESS_REJECTED` / 1 `IN_SYSTEM_AT_STOP`，config `e27ed88d83e8bb39f1b858cfe4e725d4291f2a9a4fe5d9d14d10973918c0a0e2`，trace `dfe47500712ddc353c4ba5b9564d943be7f10018d07e36bdeb52b4d35d166910`；100 Mbps = 944 / 877 / 60 / 7 `HOLDING_QUEUE_OVERFLOW`，config `a7acd58e141152bd00a347f737bacaab03653abe5db730c9f6b31684d058c953`，trace `9a41cd118c2c44fc76785047cafcaa194ea999c78d28fafed449588d721f65da`；200 Mbps = 1940 / 1816 / 96 / 28 `HOLDING_QUEUE_OVERFLOW`，config `6bd42a0d15ee1d5d0a18324d6a6f3679d8374dfdd0b948b325ad94abfca0c7ee`，trace `eba4359f12a9247ee85e32bd39a49cf404677d41dad2bfa6c7d7f39cab09bfe1`。三档均 natural end、conservation true、receipt verified；本地墙钟约 78.7/79.0/79.3 s。
+- VM 结果（同一部署代码）：100 Mbps = 944 / 877 / 60 / 7 holding overflow，config `a7c4efd26dc6dd41064c7f066e2de005ce9495cf4453b423a0cf57cf26bcf9a4`，trace 与本地相同，wall `265.85 s`；200 Mbps = 1940 / 1816 / 96 / 28 holding overflow，config `1446e0bddfea67481995ffaa555e316627c4a91655d82b995f6a23101508def0`，trace 与本地相同，wall `264.48 s`。两档均 natural end、conservation true、receipt verified；50 Mbps 同部署的 140 星 60 s smoke 已在上一条记录中验证。
+- 暂定候选：50 Mbps 低负载、100 Mbps 中负载、200 Mbps 高/压力负载；10 Mbps 只做 sanity。该表仍不是正式论文结果：available-capacity 分母、逐包三段时延、正式授权 E0 和资源 RSS 门禁仍未完成。VM 墙钟约为本地 3.4 倍，后续训练预算必须按 VM 实测调整。

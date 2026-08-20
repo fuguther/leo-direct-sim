@@ -60,6 +60,18 @@ P0 的验收是“同一 SHA 的结果可以被重新算出来并拒绝篡改”
 
 结论是暂定的：E0 先用 1 s，随后在低/中/高负载和长窗上复核；若 1 s 与 2 s 在交付、积压、利用率和切换指标上仍等价，才考虑把 2 s 作为成本更低的主设置。四档的最大 RSS 没有作为证据记录，因为同一 Python 进程连续运行时 macOS 的 `ru_maxrss` 是累计峰值，不能伪装成逐 run 内存比较；内存门禁留到独立的 E0 资源剖析。
 
+#### E0-LOAD-CALIBRATION（工程负载标定，非正式论文结果）
+
+在相同的 140 星、60 s、MCS、1 s 拓扑 cadence、三 OD M-Lab measurement-proxy + 20--40 s burst 条件下，只改变 `offered_mbps`。这一步的目标是找出“没有明显排队”“开始出现可解释积压”“压力明显但仍能自然结束”的三个候选区间；它不是正式效果比较，也不冻结论文最终负载。
+
+| offered load | offered / delivered | 主要非交付结果 | 本地 receipt | VM receipt |
+|---:|---:|---|---|---|
+| 50 Mbps | 461 / 440 | 20 `ACCESS_REJECTED`，1 `IN_SYSTEM_AT_STOP`，0 holding overflow | verified | verified（同 SHA 工程 smoke） |
+| 100 Mbps | 944 / 877 | 60 `ACCESS_REJECTED`，7 `HOLDING_QUEUE_OVERFLOW` | verified | verified |
+| 200 Mbps | 1940 / 1816 | 96 `ACCESS_REJECTED`，28 `HOLDING_QUEUE_OVERFLOW` | verified | verified |
+
+本地墙钟约为 78.7/79.0/79.3 s；VM 100/200 Mbps 分别约 265.9/264.5 s，说明正式训练和评估预算必须按 VM 实测而不是本机时间估计。当前候选解释是：`50` 作为低负载、`100` 作为中负载、`200` 作为高负载/压力档；最终冻结前还必须补 available-capacity 分母、逐包三段时延和正式授权 E0。`10 Mbps` 另作低负载 sanity（67/74 delivered，0 holding overflow），不作为主三档之一。
+
 #### TRAFFIC-VALIDATE
 
 - 主输入优先采用有来源、许可证/使用边界、时间范围、字段含义和 SHA 的 packet/flow/OD 数据；
