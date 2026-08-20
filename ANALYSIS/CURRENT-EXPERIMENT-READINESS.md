@@ -1,6 +1,6 @@
 # leo_sim V2 当前实验就绪状态
 
-> 状态最后核验：2026-08-21；当前 main 为 `b356d03d205e0b0851ca998874d6b3256c2b9640`，已部署到 canonical VM。代码可做同 SHA 非学习工程 smoke，M-Lab measurement-proxy + burst 合同和逐向 physical available-capacity 分母已合入；140 星、60 s、MCS 的 VM E0 工程校准 receipt 已验证。奖励 blocker、V2 artifact→claim 闭环、学习 VM smoke 和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
+> 状态最后核验：2026-08-21；当前 main 为 `4e89b5c4d0de789b1d89043e5be5fd98b6fa7ea9`，已部署到 canonical VM。代码可做同 SHA 非学习工程 smoke；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 校准和逐向 physical available-capacity 分母已有 VM receipt/重算证据。旧三 OD 的 E0 表格因 PR #93 的端点选择行为改变而需重跑。奖励 blocker、V2 artifact→claim 闭环、学习 VM smoke 和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
 ## 1. 两个目标
@@ -16,18 +16,18 @@
 
 | 项目 | 当前事实 | 判定 |
 |---|---|---|
-| GitHub main | `b356d03`（PR #91 合入）；当前代码测试 `531 passed`，1 秒拓扑/MCS/M-Lab profile 本地可跑 | FACT |
+| GitHub main | `4e89b5c`（PR #93 合入，PR #91 capacity 代码仍在祖先）；当前代码 CI 绿；1 秒拓扑/MCS/M-Lab 多 OD profile 本地可跑 | FACT |
 | D1 动态链路速率 | 已合入、测试通过；VM E0 使用 MCS 并已自然结束，但旧平台 MCS 表征与逐距离对照尚未完成 | FACT；正式论文支撑未确认 |
 | D2 动态拓扑/holding 语义 | 已合入；退役链路、在途包、等待语义有测试；长时间 VM 验证尚未完成 | FACT；正式论文支撑未确认 |
 | 包守恒/FIFO/等待/在途 | 基础能力和回归测试已有，VM smoke 守恒通过；正式 artifact/分析链和长窗覆盖未闭合 | FACT；论文证据未闭合 |
 | 奖励/学习语义 | R1-A1 仍是 blocker；不能开始学习算法正式实验 | FACT；硬阻塞 |
 | 信息公平 | 已修复明确 cache-hop 偷看；逐动作物理特征、逐字段 AoI 未完成 | FACT；硬阻塞信息归因 |
-| 当前 VM | 已部署精确 main `b356d03d205e0b0851ca998874d6b3256c2b9640`；deployment receipt SHA=`ea343bc8d9b7fefbe2f88cddf594dfe97d7fce850db66a8170b46759c6e11578`，source tree SHA=`d391dff5431c44c8af6b42302b2611b8ba4c1dc06b64a871d5f6a569cfcb64a8` | FACT |
-| VM 工程 smoke | 同 SHA 140 星/60 s/MCS/M-Lab 三 OD + burst E0：461 offered、440 delivered、20 `ACCESS_REJECTED`、1 `IN_SYSTEM_AT_STOP`；natural end、conservation true、receipt verified，wall 267 s。学习算法 VM smoke 尚未完成 | FACT；非正式、非授权运行 |
-| 真实流量/测量 | M-Lab 文件已按源 SHA、字段、小时覆盖、OD 映射和 burst 变换写入 provenance；同一 140 星配置已完成 50/100/200 Mbps 多 OD + burst 的本地和 VM 工程标定；当前 V2 仍把它标为 measurement proxy，并将小时用于覆盖审计而非逐小时强度重放 | FACT；不能当原始真实包回放 |
+| 当前 VM | 已部署精确 main `4e89b5c4d0de789b1d89043e5be5fd98b6fa7ea9`；deployment receipt SHA=`8b22597b548eea77ffa5dce79694ad9c4c690b598270127b5b3cae71c85b6178`，source tree SHA=`1c231110c23d2236cc6667a9cb551b2a9a4ae69b4ed4718b1696f16f5789546f` | FACT |
+| VM 工程 smoke | 新 56-cell M-Lab 多 OD T0：20 s、1,299 offered、613 delivered、579 `ACCESS_REJECTED`、107 `IN_SYSTEM_AT_STOP`；natural end、conservation true、receipt verified，trace SHA=`f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`。学习算法 VM smoke 尚未完成 | FACT；非正式、非授权运行 |
+| 真实流量/测量 | M-Lab 快照 44,929 行、4,752 OD、2,604 聚合单元；PR #93 新增显式有界强连通多 OD 选择，manifest 记录选中 56-cell 规则和源 SHA；旧三 OD E0 数值需重跑 | FACT；不能当原始真实包回放 |
 | Q0 | snapshot 已在 main；计划注入/执行归因候选未通过审阅；Q0-I/Q0-F tiny 闭环未完成。Q0 不阻塞工程 smoke，但阻塞信息 vs 决策归因 | FACT |
 | 正式分析链 | 矩阵编译/授权 Stage 1 已完成；artifact→指标→配对分析→claim 的真实授权产物和闭环仍缺 | FACT，partial；仍 blocking |
-| 测量层 | 每包 queue/tx/prop 和服务窗事件已有本地重算；receipt 已修复合法 horizon in-flight 重算。拓扑 cadence 已在同一 trace 上完成本地 0.5/1/2/5 s 全窗扫描和 VM 10 s plumbing smoke；50/100/200 Mbps E0 负载标定已自然结束且 receipt verified；逐向 available-capacity 分母已合入并在本次 VM E0 产生 29,656 个窗口；正式逐包三段时延 artifact、独立重算和三段和 gate 仍未完成 | FACT；阻塞拥塞论文诊断 |
+| 测量层 | 新多 OD trace 的 0.5/1/2/5 s VM cadence 四档均自然结束、receipt verified、raw metrics 重算通过；1/2/5 s packet/link metrics 逐项相同，1 s 暂定主候选。逐向 available-capacity 分母已有 10,932-window T0 ledger；正式逐包三段时延 artifact、独立重算和三段和 gate 仍未完成 | FACT；阻塞拥塞论文诊断 |
 | 续训 | replay、optimizer、target network、RNG 完整恢复未实现 | FACT；阻塞昂贵长训 |
 | 三轮三方无新问题 | 只完成局部 PR/局部模块审阅，没有在最终冻结平台上完成连续三轮 | FACT，未满足 |
 
@@ -41,9 +41,9 @@
 | A1 D1/D2 入 main | 精确 head 复核有效；CI 绿；合入后 main 全量与行为对照绿 | **代码已完成**；同 SHA VM E0 已覆盖 MCS/动态拓扑基础运行；仍缺旧平台 MCS 对照和专门 D2 长窗/退役链路验收 | 待验证 |
 | A2 已知科学 blocker | 奖励、mask、deadline/Q0 控制范围有明确修复或冻结决策 | mask 已修复；**R1-A1 奖励 blocker 未关闭**；逐动作信息和 AoI 未完成 | 先关闭 |
 | A3 正式证据链 | compile、review、authorize、run、receipt、analysis、claim 全链路真实产物 | Stage 1 矩阵编译/授权已完成；artifact→paired analysis→claim 仍 open | 1–2 日 |
-| A4 真实流量与测量 | provenance、多 OD/突发；逐向利用率分子/分母；每包 queue/tx/prop；拥塞指标可从 artifact 重算 | M-Lab/burst 合同、50/100/200 Mbps 本地+VM 工程标定和 available-capacity 分母代码已完成；同 SHA VM E0 已验证分母 ledger；正式三段时延 artifact、独立重算和授权 gate 仍 open | 1–2 日 |
+| A4 真实流量与测量 | provenance、多 OD/突发；逐向利用率分子/分母；每包 queue/tx/prop；拥塞指标可从 artifact 重算 | 新 56-cell M-Lab/burst T0、cadence 四档和 raw metrics 重算已在 `4e89b5c` VM 完成；旧三 OD 50/100/200 表格因端点选择行为改变需重跑；正式三段时延 artifact、独立重算和授权 gate 仍 open | 1–2 日 |
 | A5 最终平台审计 | 冻结 commit 上三轮 Codex/不同模型/网页 GPT 无新增 blocking/major | 未开始最终三轮 | 2–5 日 |
-| A6 VM 与 pilot | 部署同一 main SHA；VM/TF 门禁、真实 smoke、E0-REAL、基线诊断与 pilot 自然结束 | `b356d03` 同 SHA 非学习 M-Lab/burst 与 140 星 MCS E0 工程校准已完成；**学习 smoke、formal VM E0、全算法 pilot 尚未开始** | 待执行 |
+| A6 VM 与 pilot | 部署同一 main SHA；VM/TF 门禁、真实 smoke、E0-REAL、基线诊断与 pilot 自然结束 | `4e89b5c` 同 SHA 非学习多 OD/burst T0 与 cadence 校准已完成；**新 profile 的 E0-REAL、学习 smoke、formal VM E0、全算法 pilot 尚未开始** | 待执行 |
 
 最早的真实流量 smoke 会早于目标 A 完成，但它只能暴露工程问题。Q0 不阻塞这个 smoke 或 E0-REAL；V2 分析链、利用率分母和三段时延才是把诊断升级为论文证据的硬门。
 
@@ -64,8 +64,8 @@
 ## 5. 下一步顺序
 
 1. **先关闭 R1-A1 奖励 blocker**，在此之前不跑学习算法正式实验。
-2. available-capacity 分母代码已合入并有本次 VM E0 ledger；补齐逐窗口独立重算、每包 queue/tx/prop 三段时延及三段和校验。拓扑 cadence 的当前工程候选为 1 s，正式冻结仍需在 E0 负载下复核。
-3. 在已部署 `b356d03` 上完成 D1 VM MCS 对照和 D2 长时间拓扑/holding VM 验证。
+2. available-capacity 分母代码已合入并有新多 OD VM T0 ledger；补齐逐窗口独立重算、每包 queue/tx/prop 三段时延及三段和校验。拓扑 cadence 当前候选为 1 s；下一步在新 profile 上重跑 E0 低/中/高负载后再冻结。
+3. 在已部署 `4e89b5c` 上完成 D1 VM MCS 对照和 D2 长时间拓扑/holding VM 验证。
 4. 闭合 V2 artifact→指标→配对分析→claim，并完成至少一个学习训练/评估 VM smoke。
-5. 用 50/100/200 Mbps 作为 E0 正式标定候选，先补测量层和授权链，再跑 formal VM E0-REAL；之后进入全算法 pilot。Q0-I/Q0-F、逐动作物理特征、逐字段 AoI 按信息归因阶段完成。
+5. 在新 56-cell M-Lab profile 上重跑 50/100/200 Mbps E0 工程标定，先补测量层和授权链，再跑 formal VM E0-REAL；之后进入全算法 pilot。Q0-I/Q0-F、逐动作物理特征、逐字段 AoI 按信息归因阶段完成。
 7. 长训前补 replay/optimizer/target/RNG 完整恢复；通过后才冻结论文正式矩阵。
