@@ -40,17 +40,31 @@ def _nonempty(event: dict, key: str) -> str:
     return value
 
 
-def summarize(packet_events: list[dict], service_windows: list[dict]) -> dict:
+def summarize(
+    packet_events: list[dict],
+    service_windows: list[dict],
+    *,
+    non_arrival_pids: set[int] | frozenset[int] | None = None,
+) -> dict:
     """Return metrics rebuilt from raw packet and service-window events.
 
     A queue entry may remain unmatched when a packet is still queued or is
     terminated before service.  Every service start must, however, identify a
     known queue entry when it supplies ``queue_id``.  Propagation starts and
-    arrivals are strict one-to-one pairs so a reported propagation delay cannot
-    be manufactured from a delivery timestamp alone.
+    arrivals are strict one-to-one pairs for packets that arrive.  A caller
+    may explicitly identify packets whose fate proves that no arrival event is
+    expected; those packets are excluded from propagation latency rather than
+    being assigned a fabricated arrival time.
     """
     if not isinstance(packet_events, list) or not isinstance(service_windows, list):
         raise MetricsError("packet_events and service_windows must be lists")
+    if non_arrival_pids is None:
+        non_arrival_pids = frozenset()
+    elif not isinstance(non_arrival_pids, (set, frozenset)):
+        raise MetricsError("non_arrival_pids must be a set of packet ids")
+    if any(isinstance(pid, bool) or not isinstance(pid, int) or pid < 0
+           for pid in non_arrival_pids):
+        raise MetricsError("non_arrival_pids must contain non-negative integers")
 
     emitted: dict[int, float] = {}
     queue_entries: dict[int, tuple[int, float, str]] = {}
@@ -143,8 +157,12 @@ def summarize(packet_events: list[dict], service_windows: list[dict]) -> dict:
         else:
             raise MetricsError(f"unknown packet event kind {kind!r}")
 
-    if prop_starts:
-        raise MetricsError(f"unmatched propagation starts: {sorted(prop_starts)}")
+    unmatched = {
+        key: start for key, start in prop_starts.items()
+        if key[0] not in non_arrival_pids
+    }
+    if unmatched:
+        raise MetricsError(f"unmatched propagation starts: {sorted(unmatched)}")
 
     # Holding is a real queue, but it has no service_start of its own.  Its
     # residence is therefore paired with the next downstream queue admission

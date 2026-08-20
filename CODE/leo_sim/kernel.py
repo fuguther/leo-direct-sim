@@ -3324,8 +3324,23 @@ class Kernel:
         # externally anchored review/authorization/deployment receipt and is
         # therefore always false for this ungoverned runtime entry point.
         research_eligible = False
+        # A propagation start can legitimately have no arrival event when
+        # the horizon cuts the flight short or the packet is assigned an
+        # explicit in-flight/deadline/loss fate.  Pass only those packet ids
+        # from the authoritative fate ledger; all other orphan starts remain
+        # a hard metrics error.
+        non_arrival_pids = {
+            pid for pid, fate in self.ledger._fates.items()
+            if fate in {
+                "IN_SYSTEM_AT_STOP",
+                "GEOMETRY_LOSS_IN_FLIGHT",
+                "RANDOM_OUTAGE_IN_FLIGHT",
+                "DATA_DEADLINE_EXPIRED",
+            }
+        }
         congestion_metrics = metrics.summarize(
-            self.packet_events, self.link_service_windows)
+            self.packet_events, self.link_service_windows,
+            non_arrival_pids=non_arrival_pids)
         result = {
             "natural_end": not interrupted,
             "interrupted": interrupted,

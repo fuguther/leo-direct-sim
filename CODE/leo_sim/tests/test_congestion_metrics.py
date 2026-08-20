@@ -52,6 +52,34 @@ def test_summarize_rejects_orphan_service_start():
         ], [])
 
 
+def test_summarize_accepts_in_flight_packet_without_fabricating_arrival():
+    events = [
+        {"kind": "packet_emitted", "pid": 1, "at": 0.0, "bits": 100},
+        {"kind": "queue_enter", "pid": 1, "at": 0.0, "queue": "isl",
+         "queue_id": 7},
+        {"kind": "service_start", "pid": 1, "at": 0.5,
+         "stage": "isl", "link_id": "isl:0:1", "queue_id": 7,
+         "bits": 100, "rate_bps": 400.0},
+        {"kind": "propagation_start", "pid": 1, "at": 0.75,
+         "stage": "isl", "link_id": "isl:0:1", "prop_id": 3,
+         "delay_s": 0.25},
+    ]
+    windows = [{
+        "pid": 1, "stage": "isl", "link_id": "isl:0:1",
+        "start": 0.5, "end": 0.75, "rate_bps": 400.0,
+        "capacity_bits": 100.0, "served_bits": 100,
+        "outcome": "ok",
+    }]
+
+    with pytest.raises(metrics.MetricsError, match="unmatched propagation"):
+        metrics.summarize(events, windows)
+
+    got = metrics.summarize(events, windows, non_arrival_pids={1})
+    packet = got["packets"]["1"]
+    assert packet["prop_s"] == pytest.approx(0.0)
+    assert "e2e_s" not in packet
+
+
 def test_kernel_persists_real_event_metrics_for_a_delivered_packet():
     a = cell(0.0, 0.0)
     b = cell(0.0, 10.0)
