@@ -82,6 +82,18 @@
   `470 passed, 1 skipped, 3 subtests passed`；YAML 解析、实验 ID 唯一性和依赖引用检查通过，
   `git diff --check` 通过。
 
+## 2026-08-20：V2 矩阵编译与授权 Stage 1 收口
+
+- PR #67 候选新增 V2 多 cell 矩阵 request/manifest/analysis 编译、完整 cohort 授权、
+  配对/acceptance/control signature/checkpoint/path 身份门；不包含 Stage 2 的
+  artifact→metrics→paired analysis→claim。
+- 两轮独立冷审均先返回 `REQUEST_CHANGES` 并复造真实缺口；最终 bearing SHA
+  `290e31da543b3ab366a9a7e83b2b9d6b18a9173c` 获 `APPROVE`。关闭项包括
+  runtime config path、acceptance、pairing 完整性、checkpoint 内容身份、精确 intervention leaf、
+  symlink/alias containment、compile-report 重绑定及空 override 映射。
+- 最终本地证据：matrix `20 passed`；CI 范围 `445 passed`；无参数全量
+  `490 passed, 1 skipped, 3 subtests passed`；`git diff --check` 通过。
+
 ## 下一步
 
 1. 关闭 R7-F1 的 V2 矩阵、artifact 指标重算、paired analysis 与 claim gate；
