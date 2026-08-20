@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -201,6 +202,74 @@ class PairedAnalysisTests(unittest.TestCase):
         pa.write_outputs(PROJECT_ROOT, out, manifest, results)
         return out / "analysis-manifest.json"
 
+    def _rehash_run_artifacts(self, run: Path) -> None:
+        artifact_path = run / "artifact_manifest.json"
+        artifact_manifest = json.loads(artifact_path.read_text(encoding="utf-8"))
+        artifact_manifest["artifacts"] = [
+            {
+                "path": item["path"],
+                "size": (run / item["path"]).stat().st_size,
+                "sha256": _sha(run / item["path"]),
+            }
+            for item in artifact_manifest["artifacts"]
+        ]
+        _write_json(artifact_path, artifact_manifest)
+
+    def _refresh_compiled_and_authorized_cohort(self) -> None:
+        _write_json(self.manifest_path, self.run_manifest)
+        self.analysis["run_manifest_sha256"] = _sha(self.manifest_path)
+        self.analysis["planned_run_ids"] = [
+            row["run_id"] for row in self.run_manifest["planned_runs"]]
+        self.analysis["planned_runs"] = [
+            {key: row.get(key) for key in (
+                "run_id", "arm_id", "seed", "config_sha256", "controlled_signature")}
+            for row in self.run_manifest["planned_runs"]
+        ]
+        _write_json(self.analysis_path, self.analysis)
+        self.authorization["authorized_runs"] = [
+            {"run_id": row["run_id"], "config_sha256": row["config_sha256"]}
+            for row in self.run_manifest["planned_runs"]
+        ]
+        _write_json(self.authorization_path, self.authorization)
+        self.authorization_sha256 = _sha(self.authorization_path)
+        for _run_id, run in self.run_entries:
+            meta_path = run / "run_trace/run_meta.json"
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            meta["authorization_sha256"] = self.authorization_sha256
+            _write_json(meta_path, meta)
+            self._rehash_run_artifacts(run)
+
+    def _append_control_only_seed(self, seed: int) -> None:
+        source = self.run_entries[0][1]
+        run_id = f"EXP-TEST-control-s{seed}"
+        run = self.results_root / run_id
+        shutil.copytree(source, run)
+        config_path = run / "config_used.json"
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        config["provenance"]["run_id"] = run_id
+        config["provenance"]["seed"] = seed
+        _write_json(config_path, config)
+        config_sha = pa.canonical_sha(config)
+        meta_path = run / "run_trace/run_meta.json"
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        meta["requested_run_id"] = run_id
+        meta["config_canonical_sha256"] = config_sha
+        _write_json(meta_path, meta)
+        artifact_path = run / "artifact_manifest.json"
+        artifact_manifest = json.loads(artifact_path.read_text(encoding="utf-8"))
+        artifact_manifest["run_id"] = run_id
+        artifact_manifest["config_sha256"] = config_sha
+        _write_json(artifact_path, artifact_manifest)
+        self.run_manifest["planned_runs"].append({
+            "run_id": run_id,
+            "arm_id": "control",
+            "seed": seed,
+            "config_sha256": config_sha,
+            "controlled_signature": "same-control-config",
+        })
+        self.run_entries.append((run_id, run))
+        self._refresh_compiled_and_authorized_cohort()
+
     def test_complete_hash_verified_pairs_are_analyzed(self) -> None:
         path = self._write_verified()
         persisted = json.loads(path.read_text(encoding="utf-8"))
@@ -215,6 +284,42 @@ class PairedAnalysisTests(unittest.TestCase):
         valid, errors = pa.verify_persisted_analysis(PROJECT_ROOT, path)
         self.assertFalse(valid)
         self.assertTrue(any("hash mismatch" in item for item in errors), errors)
+
+    def test_persisted_semantics_and_field_set_are_fail_closed(self) -> None:
+        path = self._write_verified()
+        original = json.loads(path.read_text(encoding="utf-8"))
+        def add_extra_input(value: dict) -> None:
+            raw = "CODE/__init__.py"
+            digest = _sha(PROJECT_ROOT / raw)
+            value["inputs"][raw] = digest
+            value["input_hashes"][raw] = digest
+
+        mutations = (
+            ("analysis_id", lambda value: value.__setitem__("analysis_id", "AN-FORGED")),
+            ("claim_boundary", lambda value: value.__setitem__(
+                "claim_boundary", {"cannot_conclude": ["Forged conclusion boundary."]})),
+            ("extra", lambda value: value.__setitem__("unbound_semantics", {"claim": "forged"})),
+            ("extra_input", add_extra_input),
+            ("missing", lambda value: value.pop("analysis_id")),
+        )
+        for label, mutate in mutations:
+            candidate = json.loads(json.dumps(original))
+            mutate(candidate)
+            _write_json(path, candidate)
+            valid, errors = pa.verify_persisted_analysis(PROJECT_ROOT, path)
+            self.assertFalse(valid, (label, errors))
+            self.assertTrue(any(
+                "fields mismatch" in error or "differs from recomputation" in error
+                for error in errors), (label, errors))
+
+    def test_every_preregistered_pairing_key_requires_both_contrast_arms(self) -> None:
+        self._append_control_only_seed(8)
+        manifest, _results, errors = self._run()
+        self.assertEqual(manifest["status"], "BLOCKED")
+        self.assertTrue(any(
+            "pairing key" in error and "lacks planned arms ['treatment']" in error
+            for error in errors), errors)
+        self.assertEqual(manifest["planned_contrasts"][0]["n_pairs"], 1)
 
     def test_incomplete_cohort_and_duplicate_run_are_rejected(self) -> None:
         _manifest, _results, errors = self._run(self.run_entries[:1])
@@ -296,6 +401,14 @@ def test_complete_hash_verified_pairs_are_analyzed() -> None:
 
 def test_hash_drift_is_fail_closed() -> None:
     _run_fixture_method("test_hash_drift_is_fail_closed")
+
+
+def test_persisted_semantics_and_field_set_are_fail_closed() -> None:
+    _run_fixture_method("test_persisted_semantics_and_field_set_are_fail_closed")
+
+
+def test_every_preregistered_pairing_key_requires_both_contrast_arms() -> None:
+    _run_fixture_method("test_every_preregistered_pairing_key_requires_both_contrast_arms")
 
 
 def test_incomplete_cohort_and_duplicate_run_are_rejected() -> None:

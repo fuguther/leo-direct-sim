@@ -39,6 +39,21 @@ MANIFEST_SCHEMA = "experiment-run-manifest/v2"
 OUTPUT_SCHEMA = "analysis-manifest/v1"
 RECEIPT_SCHEMA = "leo-effective-receipt/v1"
 ARTIFACT_SCHEMA = "artifact-manifest/v1"
+PERSISTED_ANALYSIS_FIELDS = {
+    "schema", "status", "errors", "experiment_id", "analysis_id",
+    "primary_metric", "paired_by", "verified_run_ids",
+    "bound_run_artifacts", "planned_contrasts", "input_hashes", "inputs",
+    "claim_boundary", "analysis_request_path", "run_manifest_path",
+    "authorization_path", "results_root", "authorization_sha256",
+    "run_entries", "output_hashes", "output_artifacts",
+}
+RECOMPUTED_ANALYSIS_FIELDS = (
+    "schema", "status", "errors", "experiment_id", "analysis_id",
+    "primary_metric", "paired_by", "verified_run_ids",
+    "bound_run_artifacts", "planned_contrasts", "claim_boundary",
+    "analysis_request_path", "run_manifest_path", "authorization_path",
+    "results_root", "authorization_sha256", "run_entries",
+)
 
 
 def canonical_sha(value: Any) -> str:
@@ -445,6 +460,22 @@ def execute(
     if not isinstance(pair_by, list) or not pair_by:
         errors.append("analysis preregistration paired_by is missing")
         pair_by = []
+    planned_grouped: dict[tuple[Any, ...], dict[str, dict[str, Any]]] = {}
+    for row in planned:
+        planned_pair_row = {
+            "seed": row.get("seed"),
+            "scenario_identity": canonical_sha(run_manifest.get("scenario_identity")),
+            "controlled_signature": row.get("controlled_signature"),
+        }
+        try:
+            key = _pair_key(planned_pair_row, pair_by)
+        except ValueError as exc:
+            errors.append(str(exc))
+            continue
+        arm = row.get("arm_id")
+        if arm in planned_grouped.setdefault(key, {}):
+            errors.append(f"duplicate planned run for pairing key {key} and arm {arm}")
+        planned_grouped[key][arm] = row
     grouped: dict[tuple[Any, ...], dict[str, dict[str, Any]]] = {}
     for row in results:
         try:
@@ -468,11 +499,32 @@ def execute(
         name = contrast.get("name")
         left = contrast.get("left_arm")
         right = contrast.get("right_arm")
+        if not isinstance(left, str) or not isinstance(right, str) or left == right:
+            errors.append(f"contrast {name} has invalid or identical arms")
+            continue
+        required_arms = {left, right}
+        contrast_keys = {
+            key for key, arms in planned_grouped.items()
+            if required_arms.intersection(arms)
+        }
         diffs: list[float] = []
-        for key, arms in grouped.items():
-            if left not in arms or right not in arms:
+        for key in sorted(contrast_keys, key=repr):
+            planned_arms = set(planned_grouped[key])
+            verified_arms = set(grouped.get(key, {}))
+            missing_planned = sorted(required_arms - planned_arms)
+            missing_verified = sorted(required_arms - verified_arms)
+            if missing_planned:
+                errors.append(
+                    f"contrast {name} pairing key {key} lacks planned arms {missing_planned}")
+            if missing_verified:
+                errors.append(
+                    f"contrast {name} pairing key {key} lacks verified arms {missing_verified}")
+            if missing_planned or missing_verified:
                 continue
+            arms = grouped[key]
             diffs.append(arms[left]["metrics"][primary] - arms[right]["metrics"][primary])
+        if not contrast_keys:
+            errors.append(f"contrast {name} has no preregistered pairing keys")
         if not diffs:
             errors.append(f"contrast {name} has no complete pairs")
         low, high, uncertainty = _bootstrap(diffs, int(canonical_sha({"experiment_id": run_manifest.get("experiment_id"), "contrast": name})[:16], 16))
@@ -612,6 +664,11 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
         manifest = _read_json(manifest_path)
         if not isinstance(manifest, dict) or manifest.get("schema") != OUTPUT_SCHEMA:
             raise ValueError("analysis manifest schema mismatch")
+        if set(manifest) != PERSISTED_ANALYSIS_FIELDS:
+            missing = sorted(PERSISTED_ANALYSIS_FIELDS - set(manifest))
+            extra = sorted(set(manifest) - PERSISTED_ANALYSIS_FIELDS)
+            raise ValueError(
+                f"analysis manifest fields mismatch: missing={missing} extra={extra}")
         if manifest.get("status") != "VERIFIED" or manifest.get("errors") != []:
             raise ValueError("analysis manifest is not VERIFIED and empty-error")
         code = _safe_child(root, "ANALYSIS/paired_analysis.py", "analysis source")
@@ -653,9 +710,17 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
         )
         if recompute_errors:
             raise ValueError("recomputed analysis is blocked: " + "; ".join(recompute_errors))
-        for key in ("experiment_id", "primary_metric", "paired_by", "verified_run_ids", "planned_contrasts", "authorization_sha256"):
+        for key in RECOMPUTED_ANALYSIS_FIELDS:
             if recomputed.get(key) != manifest.get(key):
                 raise ValueError(f"persisted analysis differs from recomputation: {key}")
+        expected_inputs = dict(recomputed.get("input_hashes", {}))
+        for raw in (
+            manifest["analysis_request_path"], manifest["run_manifest_path"],
+            manifest["authorization_path"],
+        ):
+            expected_inputs[raw] = file_sha256(_safe_child(root, raw, "recomputed analysis input"))
+        if inputs != expected_inputs:
+            raise ValueError("persisted analysis input set differs from recomputation")
         bound = manifest.get("bound_run_artifacts")
         if not isinstance(bound, list) or not bound:
             raise ValueError("analysis manifest has no bound run artifacts")
@@ -665,12 +730,28 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
             path = _safe_child(root, entry["path"], "bound run artifact")
             if file_sha256(path) != entry["sha256"]:
                 raise ValueError(f"bound run artifact hash mismatch: {entry['path']}")
-        for entry in manifest.get("output_artifacts", []):
+        output_hashes = manifest.get("output_hashes")
+        if not isinstance(output_hashes, dict) or set(output_hashes) != {
+                "summary.csv", "report.md", "analysis-code.py"}:
+            raise ValueError("analysis output hash set is not exact")
+        output_artifacts = manifest.get("output_artifacts")
+        if not isinstance(output_artifacts, list) or len(output_artifacts) != 3:
+            raise ValueError("analysis output artifact set is not exact")
+        seen_outputs: set[str] = set()
+        for entry in output_artifacts:
             if not isinstance(entry, dict) or set(entry) != {"path", "sha256"}:
                 raise ValueError("output artifact entry malformed")
             path = _safe_child(root, entry["path"], "analysis output")
+            name = path.name
+            if name in seen_outputs or name not in output_hashes:
+                raise ValueError("analysis output artifact set is duplicated or unexpected")
+            seen_outputs.add(name)
+            if output_hashes[name] != entry["sha256"]:
+                raise ValueError(f"analysis output hash aliases differ: {name}")
             if file_sha256(path) != entry["sha256"]:
                 raise ValueError(f"analysis output hash mismatch: {entry['path']}")
+        if seen_outputs != set(output_hashes):
+            raise ValueError("analysis output artifact set is incomplete")
         output_dir = Path(manifest_path).relative_to(root).parent
         output_abs = root / output_dir
         code_output = _safe_child(root, str(output_dir / "analysis-code.py"), "analysis code snapshot")
