@@ -18,7 +18,8 @@ Field authority classes (recorded in ledgers.json field_authority):
   counters);
 - diagnostic: reported, schema-checked, never usable as research-eligibility
   or scientific-metric evidence (occupied, queue areas, events_processed,
-  access stats, handover events).
+  access stats, handover events, raw packet/service events).  The derived
+  congestion metrics are recomputed from those raw events before acceptance.
 """
 from __future__ import annotations
 
@@ -29,7 +30,8 @@ import math
 import platform
 from pathlib import Path
 
-from . import config as config_mod, fates, rng as rng_mod, trace as trace_mod
+from . import (config as config_mod, fates, metrics, rng as rng_mod,
+               trace as trace_mod)
 
 RECEIPT_SCHEMA = "leo-sim-receipt/v3"
 
@@ -59,7 +61,8 @@ LEDGER_KEYS = {
     "packet_fates", "control_instances", "control_counters",
     "mechanism_counters", "occupied", "queue_area_bits_s", "handover_events",
     "access", "events_processed", "stop_time_s", "deliveries",
-    "field_authority", "learning",
+    "field_authority", "learning", "packet_events", "link_service_windows",
+    "congestion_metrics",
 }
 CONTROL_COUNTER_KEYS = {
     "snapshots_created", "registered", "entered_queue", "transmission_started",
@@ -100,6 +103,9 @@ FIELD_AUTHORITY = {
     "events_processed": "diagnostic",
     "stop_time_s": "recomputed",
     "deliveries": "recomputed",
+    "packet_events": "diagnostic",
+    "link_service_windows": "diagnostic",
+    "congestion_metrics": "recomputed",
     "learning": "ledger_consistency",
 }
 
@@ -313,6 +319,9 @@ def build_ledgers(result: dict, rows: list[dict]) -> dict:
         "events_processed": result["events_processed"],
         "stop_time_s": result["stop_time_s"],
         "deliveries": {str(pid): d for pid, d in result["deliveries"].items()},
+        "packet_events": result["packet_events"],
+        "link_service_windows": result["link_service_windows"],
+        "congestion_metrics": result["congestion_metrics"],
         "learning": (result.get("learning")
                      if result.get("learning") is not None
                      else {"algorithm": "none"}),
@@ -436,6 +445,17 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
         # continue with whatever is present; per-field guards handle absence
     if ledgers.get("field_authority") != FIELD_AUTHORITY:
         errors.append("ledgers field_authority mismatch")
+
+    raw_events = ledgers.get("packet_events")
+    raw_windows = ledgers.get("link_service_windows")
+    stored_metrics = ledgers.get("congestion_metrics")
+    try:
+        recomputed_metrics = metrics.summarize(raw_events, raw_windows)
+    except metrics.MetricsError as exc:
+        errors.append(f"congestion metrics invalid: {exc}")
+    else:
+        if stored_metrics != recomputed_metrics:
+            errors.append("congestion_metrics != recomputed raw event metrics")
 
     # Learning artifact: the ledger SHA binds the metadata and verification
     # recomputes the actual checkpoint hash.  This prevents a saved/loaded
