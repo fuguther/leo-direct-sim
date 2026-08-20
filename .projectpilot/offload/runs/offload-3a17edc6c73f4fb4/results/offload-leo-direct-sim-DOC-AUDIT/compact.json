@@ -1,0 +1,68 @@
+{
+  "taskId": "offload:leo-direct-sim:DOC-AUDIT",
+  "status": "EVIDENCE_READY",
+  "summary": "审阅确认当前主要问题不是缺少文档，而是多个文档重复承担状态源。最大风险为 Q0 合同未冻结、Registry 状态冲突、实验 07/08/09 未收敛为单一实验规范。建议保留 Registry、Roadmap、Feature Ledger 三个状态 owner，新增 Q0-CONTRACT 与 EXPERIMENT-SPEC，历史报告只保留证据。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "FINDINGS-REGISTRY 主表和 Open/Follow-up 状态冲突。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/FINDINGS-REGISTRY.md#L39-L46",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/FINDINGS-REGISTRY.md#L60-L68"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "blocking",
+      "summary": "Q0 objective 存在 bits/packet、latency/queue cost、tiny surrogate 多版本冲突。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260817.md#L21-L24",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260818.md#L20-L24",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md#L10-L16"
+      ]
+    },
+    {
+      "id": "F11",
+      "severity": "major",
+      "summary": "实验 07/08/09 应合并为单一 Experiment Spec。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/07-experiment-plan-20260814.md#L72-L96",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/08-experiment-matrix-20260814.md#L130-L136"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "建立 Q0-CONTRACT 并冻结 objective、taxonomy、solver gate。",
+    "将 Roadmap 作为唯一 readiness owner。",
+    "将 Legacy Feature Ledger 作为唯一旧平台能力状态 owner。",
+    "将 07/08/09 合并成 EXPERIMENT-SPEC。",
+    "历史报告添加 superseded 标记但不修改历史正文。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/FINDINGS-REGISTRY.md#L39-L46",
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md#L65-L82",
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260818.md#L9-L24"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "Q0 objective 未冻结",
+    "Q0-A/B 与 Q0-I/J/F 映射未冻结",
+    "CP-SAT/MILP gate 属性未冻结",
+    "Registry fixed 状态需进一步验证",
+    "state_version 语义未统一",
+    "NOTES 不在读取范围",
+    "代码路径不在读取范围",
+    "commit 后本地修改不在审阅范围"
+  ]
+}
