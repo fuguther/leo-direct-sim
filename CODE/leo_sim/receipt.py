@@ -555,6 +555,9 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
     raw_events = ledgers.get("packet_events")
     raw_windows = ledgers.get("link_service_windows")
     raw_available = ledgers.get("link_available_windows")
+    if not isinstance(raw_available, list):
+        errors.append("ledgers link_available_windows must be a list")
+        raw_available = []
     stored_metrics = ledgers.get("congestion_metrics")
     # A packet may have a valid propagation start but no arrival because the
     # run horizon (or an explicit terminal loss) cut the flight short.  The

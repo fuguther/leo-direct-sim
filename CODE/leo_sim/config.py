@@ -177,7 +177,7 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "dry_run": bool,
         # Physical-capacity measurement samples are diagnostic evidence; a
         # fixed interval makes the denominator explicit and reproducible.
-        "available_capacity_interval_s": (int, float),
+        "available_capacity_interval_s": (int, float, type(None)),
     },
     "outputs": {
         "out_dir": str,
@@ -337,7 +337,9 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "max_packets": 200_000,
         "monitor": False,
         "dry_run": False,
-        "available_capacity_interval_s": 1.0,
+        # Opt in for E0/diagnostic profiles; training/smoke runs that do not
+        # report utilization should not pay the sampling and artifact cost.
+        "available_capacity_interval_s": None,
     },
     "outputs": {"out_dir": "leo_sim_out", "trace_path": None, "plotting": False},
 }
@@ -705,11 +707,13 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
     for f in ("max_events", "max_entities", "max_packets"):
         if ex[f] < 1:
             raise ConfigError(f"execution.{f} must be >= 1")
-    if (isinstance(ex["available_capacity_interval_s"], bool)
-            or ex["available_capacity_interval_s"] <= 0
-            or not math.isfinite(ex["available_capacity_interval_s"])):
+    interval = ex["available_capacity_interval_s"]
+    if (interval is not None and (
+            isinstance(interval, bool)
+            or interval <= 0
+            or not math.isfinite(interval))):
         raise ConfigError(
-            "execution.available_capacity_interval_s must be finite and > 0")
+            "execution.available_capacity_interval_s must be null or finite and > 0")
 
 
 def trace_identity_payload(resolved: dict) -> dict:

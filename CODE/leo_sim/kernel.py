@@ -1596,7 +1596,10 @@ class Kernel:
             })
 
     def _available_capacity_ticker(self):
-        interval = float(self.cfg_ex["available_capacity_interval_s"])
+        configured = self.cfg_ex["available_capacity_interval_s"]
+        if configured is None:
+            return
+        interval = float(configured)
         start = 0.0
         while start < self.horizon:
             end = min(self.horizon, start + interval)

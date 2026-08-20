@@ -59,6 +59,7 @@ execution:
   max_events: 20000000
   max_entities: 2000
   max_packets: 100000
+  available_capacity_interval_s: 1.0
 outputs:
   out_dir: leo_sim_out/mlab-e0-calibration
   plotting: false

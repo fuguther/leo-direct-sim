@@ -163,7 +163,8 @@ def test_kernel_persists_real_event_metrics_for_a_delivered_packet():
     b = cell(0.0, 10.0)
     geo = StaticGeometry(1, visible=lambda *_: True)
     result = kernel.run_simulation(
-        make_cfg({"scenario": {"num_satellites": 1, "num_planes": 1}}),
+        make_cfg({"scenario": {"num_satellites": 1, "num_planes": 1},
+                  "execution": {"available_capacity_interval_s": 1.0}}),
         [row(1, 0.0, a, b)], geometry=geo)
 
     packet = result["congestion_metrics"]["packets"]["1"]
