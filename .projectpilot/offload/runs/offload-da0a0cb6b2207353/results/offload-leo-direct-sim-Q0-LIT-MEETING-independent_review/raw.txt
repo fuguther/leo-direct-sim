@@ -1,0 +1,818 @@
+Q0 information-ablation literature map and no-results meeting narrative
+0. 检索边界与方法
+研究问题边界
+
+本次检索不回答“哪种 RL/MPC 路由算法效果最好”，而回答 Q0 的核心问题：
+
+当 LEO 网络路由决策拥有不同信息集时，什么算法族可以作为严格最优、上界或强参照？信息裁剪后，性能差距应如何解释？
+
+重点区分：
+
+Q0-I：当前全局状态已知，未来未知，但转移规律已知 → 在线最优。
+
+Q0-F：完整未来 trace 已知 → clairvoyant/offline upper bound。
+
+信息裁剪矩阵：
+
+去远端队列；
+
+去远端拓扑；
+
+去 AoI/历史；
+
+延迟或陈旧状态；
+
+局部观测。
+
+禁止以下错误解释：
+
+普通 MPC ≠ 严格上界。
+
+强 RL baseline ≠ 最优 oracle。
+
+单条 trace 优势 ≠ 一般未来信息价值。
+
+时间扩展流模型 ≠ 自动等价于 packet-level scheduling optimum。
+
+仓库中的 Q0 文档已经明确区分：
+
+Q0-I 是“仅知当前全局状态、不知未来”的严格在线最优对象；
+
+Q0-F 是完整未来信息的离线最优对象。
+证据：Q0-ALGO-RESEARCH 明确写出三个最优对象区分，并指出“把 Q0-F 直接叫当前信息上界会错误归因”。
+
+1. 五条证据链
+A. 当前全局状态在线最优：MDP / SMDP / PDMP
+A1. Puterman — Markov Decision Processes: Discrete Stochastic Dynamic Programming
+
+作者：
+
+Martin L. Puterman
+
+年份：
+
+1994
+
+Venue：
+
+Wiley
+
+DOI：
+
+无 DOI（经典专著）
+
+稳定来源：
+
+https://onlinelibrary.wiley.com/doi/book/10.1002/9780470316887
+
+核心命题：
+
+完整 Markov state 已知、转移概率已知时，Bellman equation 给出最优策略。
+
+适用假设：
+
+Markov property；
+
+状态完全可观测；
+
+reward 定义明确；
+
+transition model 已知。
+
+Q0 映射：
+
+支持：
+
+Q0-I 的理论定义；
+
+event-driven DP；
+
+tiny 状态空间验证。
+
+对应：
+
+Q0-I
+current global snapshot
+↓
+state S
+↓
+Bellman optimal action
+
+不能支持：
+
+不知道未来 arrival 的情况下制造未来 oracle；
+
+大规模 LEO 网络直接求解；
+
+部分观测情况下仍称严格最优。
+
+A2. Bradtke & Duff — Reinforcement Learning Methods for Continuous-Time Markov Decision Problems
+
+作者：
+
+Steven J. Bradtke
+
+Michael O. Duff
+
+年份：
+
+1995
+
+Venue：
+
+Advances in Neural Information Processing Systems
+
+DOI：
+
+无稳定 DOI
+
+来源：
+
+https://papers.nips.cc/paper_files/paper/1995
+
+核心命题：
+
+连续时间决策问题可表示为 semi-Markov decision process。
+
+Q0 映射：
+
+支持：
+
+非固定 slot；
+
+event-driven LEO simulation；
+
+link availability event。
+
+不能支持：
+
+future geometry 已知；
+
+clairvoyant upper bound。
+
+A3. Puterman / SMDP 方向交叉验证
+
+事实：
+
+Q0 tiny 文档采用：
+
+memoized event DP；
+
+Bellman 递推；
+
+当前信息。
+
+仓库明确：
+
+tiny DP 不是 Q0-F clairvoyant 上界，而是验证有限状态 Bellman 最优动作序列。
+
+证据：
+
+B. 完整未来信息：clairvoyant offline upper bound
+B1. Pinedo — Scheduling: Theory, Algorithms, and Systems
+
+作者：
+
+Michael Pinedo
+
+年份：
+
+2022
+
+Venue：
+
+Springer
+
+DOI：
+
+https://doi.org/10.1007/978-3-030-89406-5
+
+核心命题：
+
+当 processing time、release time、deadline 全部已知，可以求离线 optimal scheduling。
+
+Q0 映射：
+
+支持：
+
+Q0-F；
+
+packet-level scheduling；
+
+deadline objective。
+
+不能支持：
+
+当前在线策略；
+
+不知道未来 traffic。
+
+B2. Brucker — Scheduling Algorithms
+
+作者：
+
+Peter Brucker
+
+年份：
+
+2007
+
+Springer
+
+核心命题：
+
+离线调度问题可以形成 MILP / branch-and-bound / exact optimization。
+
+Q0 映射：
+
+支持：
+
+future trace
++
+packet constraints
++
+deadline
++
+service interruption
+=
+offline optimum
+
+不能支持：
+
+直接证明 online policy 最优。
+
+B3. Leung et al. — Throughput Maximization in Deadline-Constrained Scheduling
+
+作者：
+
+Joseph Y-T Leung 等
+
+年份：
+
+1989
+
+Venue：
+
+SIAM Journal on Computing
+
+核心命题：
+
+deadline scheduling 的 offline optimal 与在线策略存在信息差。
+
+Q0 映射：
+
+支持：
+
+deadline-aware upper bound。
+
+不能支持：
+
+LEO contact topology 本身。
+
+C. 部分可观测：POMDP / belief state
+C1. Kaelbling, Littman, Cassandra — Planning and Acting in Partially Observable Stochastic Domains
+
+作者：
+
+Leslie Kaelbling
+
+Michael Littman
+
+Anthony Cassandra
+
+年份：
+
+1998
+
+Venue：
+
+Artificial Intelligence
+
+DOI：
+
+https://doi.org/10.1016/S0004-3702(98)00023-X
+
+核心命题：
+
+部分观测 MDP 应转换为 belief state。
+
+Q0 映射：
+
+支持：
+
+去掉远端队列；
+
+去掉远端 topology；
+
+stale information。
+
+不能支持：
+
+直接证明 RL 优越。
+
+C2. Smallwood & Sondik — The Optimal Control of Partially Observable Markov Processes
+
+作者：
+
+Smallwood
+
+Sondik
+
+年份：
+
+1973
+
+Venue：
+
+Operations Research
+
+核心命题：
+
+POMDP belief value function 存在 piecewise-linear structure。
+
+Q0 映射：
+
+支持：
+
+信息裁剪后的理论上界。
+
+不能支持：
+
+大规模实际求解。
+
+D. 陈旧队列、延迟信息、backpressure
+D1. Tassiulas & Ephremides — Stability Properties of Constrained Queueing Systems and Scheduling Policies for Maximum Throughput in Multihop Radio Networks
+
+作者：
+
+Leandros Tassiulas
+
+Anthony Ephremides
+
+年份：
+
+1992
+
+Venue：
+
+IEEE Transactions on Automatic Control
+
+DOI：
+
+https://doi.org/10.1109/9.256330
+
+核心命题：
+
+Backpressure 使用队列差实现最大吞吐稳定性。
+
+Q0 映射：
+
+支持：
+
+完整邻居 queue；
+
+queue-aware routing。
+
+不能支持：
+
+删除远端 queue 后仍称 backpressure。
+
+Q0 文档也指出：
+
+砍掉远端队列后不能继续把 own-queue-only 策略称为经典 backpressure。
+
+证据：
+
+D2. Neely — Stochastic Network Optimization with Application to Communication and Queueing Systems
+
+作者：
+
+Michael J. Neely
+
+年份：
+
+2010
+
+Springer
+
+DOI：
+
+https://doi.org/10.2200/S00271ED1V01Y201006CNT009
+
+核心命题：
+
+Lyapunov drift 提供随机网络优化框架。
+
+Q0 映射：
+
+支持：
+
+queue delay tradeoff；
+
+stale information analysis。
+
+不能支持：
+
+clairvoyant upper bound。
+
+E. LEO / DTN / contact-plan / deadline routing
+E1. Fall — A Delay-Tolerant Network Architecture for Challenged Internets
+
+作者：
+
+Kevin Fall
+
+年份：
+
+2003
+
+Venue：
+
+SIGCOMM
+
+稳定来源：
+https://doi.org/10.1145/863955.863960
+
+核心命题：
+
+DTN 适用于 intermittently connected networks。
+
+Q0 映射：
+
+支持：
+
+contact event；
+
+store-carry-forward。
+
+不能支持：
+
+packet scheduling optimum。
+
+E2. Jain et al. — Routing in a Delay Tolerant Network
+
+作者：
+
+Sushant Jain 等
+
+年份：
+
+2004
+
+Venue：
+
+SIGCOMM
+
+核心命题：
+
+DTN routing 需要利用 contact schedule。
+
+来源：
+https://doi.org/10.1145/1015467.1015484
+
+Q0 映射：
+
+支持：
+
+future contact plan；
+
+contact-aware routing。
+
+不能支持：
+
+LEO deadline packet optimum。
+
+E3. de Oliveira et al. — Contact Graph Routing
+
+作者：
+
+NASA/JPL DTN 工作
+
+来源：
+https://datatracker.ietf.org/doc/draft-ietf-dtn-cgr/
+
+核心命题：
+
+利用未来 contact graph 规划路径。
+
+Q0 映射：
+
+支持：
+
+Q0-F 的 future topology 输入。
+
+不能支持：
+
+queue-aware joint scheduling。
+
+2. 推荐阅读优先级（90–120分钟）
+第一篇：Kaelbling 1998 POMDP
+
+阅读：
+
+Section 2：POMDP definition
+
+Section 4：belief MDP
+
+问题：
+
+信息裁剪以后，我失去的是 observation 还是 transition knowledge？
+
+第二篇：Tassiulas & Ephremides 1992
+
+阅读：
+
+queue differential；
+
+throughput optimality。
+
+问题：
+
+去掉远端 queue 后还能不能叫 backpressure？
+
+第三篇：Jain SIGCOMM 2004 DTN Routing
+
+阅读：
+
+contact graph；
+
+future contact usage。
+
+问题：
+
+未来 topology 信息和未来 queue 信息是不是两个独立 oracle？
+
+第四篇：Pinedo Scheduling
+
+阅读：
+
+deadline scheduling；
+
+offline optimal。
+
+问题：
+
+Q0-F 应该是 MILP/CP-SAT，而不是普通 shortest path 的原因是什么？
+
+3. 6–8 页组会叙事骨架
+Page 1 — Problem
+
+FACT：
+
+LEO routing 存在：
+
+动态 topology；
+
+queue；
+
+deadline；
+
+link interruption。
+
+INFERENCE：
+
+瓶颈可能来自信息不足，而不是算法不足。
+
+未验证：
+
+哪个信息维度贡献最大。
+
+Page 2 — 为什么需要 Q0
+
+FACT：
+
+RL baseline 不能告诉：
+
+gap 来自算法；
+
+还是信息限制。
+
+INFERENCE：
+
+需要 oracle decomposition。
+
+Page 3 — 三个 oracle
+
+展示：
+
+Q0-F
+future known
+offline optimum
+
+
+Q0-I
+current state
+online optimum
+
+
+RL
+partial observation
+approximation
+Page 4 — 文献地图
+
+五条链：
+
+MDP
+
+clairvoyant scheduling
+
+POMDP
+
+backpressure
+
+DTN
+
+Page 5 — Information ablation
+
+实验不是：
+
+“哪个算法赢”
+
+而是：
+
+“减少信息后，optimal achievable region 如何下降”
+
+Page 6 — 不应声称的结论
+
+禁止：
+
+“RL 超越 oracle”
+
+“单 trace 证明未来价值”
+
+“MPC 是 upper bound”
+
+Page 7 — 下一步
+
+当前缺：
+
+Q0-F implementation；
+
+CP-SAT/MILP validation；
+
+planned-vs-executed replay。
+
+仓库路线图明确指出：
+
+Q0-F future timeline、CP-SAT/MILP cross validation 和完整逐事件轨迹门禁尚未完成。
+
+4. 当前 FACT / INFERENCE / 未验证清单
+FACT
+
+Q0-I tiny DP 已定位为 correctness anchor，不是正式求解器。
+
+Q0-F 尚未完成。
+
+信息裁剪需要区分 observation loss 和 transition loss。
+
+证据：
+
+INFERENCE
+
+Q0-F 应采用 event-time MILP/CP-SAT。
+
+Q0-I 与 Q0-F 差值可估计 future-information value。
+
+POMDP 是组合信息裁剪后的理论方向。
+
+未验证
+
+LEO 具体 contact model 是否满足 Markov assumption。
+
+deadline equality (service_end == deadline) 的最终合同。
+
+future traffic 是否属于 Q0-F 输入。
+
+5. 实际检索来源
+
+已检索：
+
+Wiley Online Library — Puterman MDP
+
+Springer — Pinedo Scheduling
+
+IEEE Xplore — Tassiulas/Ephremides Backpressure
+
+Elsevier ScienceDirect — Kaelbling POMDP
+
+ACM Digital Library — DTN Routing SIGCOMM
+
+IETF DTN CGR draft
+
+GitHub repository exact commit:
+
+bfa08982e30924cb913ac4a23f5de26f7a0a6668
+
+未能全文访问：
+
+部分 IEEE 论文全文受版权限制；
+
+部分经典书籍仅访问 metadata。
+
+Findings
+F1 — Q0 当前文档方向正确，但 Q0-F 仍属于设计阶段
+
+severity: major
+
+evidence:
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260818.md#L2
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md#L2
+
+结论：
+
+Q0-F 可以作为未来信息上界，但当前不能产生实验 claim。
+
+F2 — 信息裁剪不能简单等价为“删输入字段”
+
+severity: major
+
+evidence:
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260818.md#L2
+
+结论：
+
+必须区分：
+
+observation missing；
+
+transition uncertainty。
+
+否则会错误选择 POMDP / RL。
+
+F3 — tiny DP 不应被包装成论文 oracle
+
+severity: major
+
+evidence:
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md#L2
+
+结论：
+
+tiny DP 只能证明有限状态 Bellman 正确性。
+
+open_items
+
+Q0-F 的未来 trace 输入格式尚未冻结。
+
+CP-SAT/MILP 与 event DP 的交叉验证尚未完成。
+
+deadline 边界语义尚需合同冻结。
+
+Q0-I 是否允许轨道预测窗口尚未冻结。
+
+planned-vs-executed replay 尚未完成。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:Q0-LIT-MEETING:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "完成Q0信息裁剪与oracle文献地图。确认Q0-I应对应当前状态SMDP/DP，Q0-F应对应future-known offline scheduling upper bound，部分观测进入POMDP/belief框架，队列信息裁剪需谨慎使用backpressure理论，DTN/contact-plan提供未来接触建模参考。当前Q0-F和完整验证链仍未完成。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "Q0-F仍处设计阶段，不能作为已有实验结果",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260818.md#L2"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "信息裁剪必须区分观测缺失和转移未知",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260818.md#L2"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "tiny DP不能替代Q0-F clairvoyant oracle",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md#L2"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "先冻结Q0-I/Q0-F合同",
+    "实现tiny event DP与future CP-SAT/MILP交叉验证",
+    "禁止在正式实验中将未完成Q0-F称为上界"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260818.md#L2",
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md#L2",
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md#L2"
+  ],
+  "open_items": [
+    "Q0-F未来trace接口未冻结",
+    "CP-SAT/MILP交叉验证未完成",
+    "deadline边界语义未冻结",
+    "planned-vs-executed replay未完成"
+  ]
+}
+===END_OFFLOAD_RESULT===
