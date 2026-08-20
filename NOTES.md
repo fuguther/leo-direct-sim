@@ -413,3 +413,10 @@
 - 长窗：main runtime code SHA=`d2247140312396cbf111e54239ec5274f22257c024d4f0909f50a6c4232454c0`，140 星、60 s、100 Mbps、56-cell M-Lab/burst、1 s cadence。VM 输出 `engineering-d2-long-60s-0fc9427`：`natural_end=true`、`conservation_ok=true`、`receipt verify=verified`、metrics `validation.ok=true`；8,510,023 events、216,243 packet events、7,908 service windows、33,137 availability windows、2,792 delivered、3,211 `ACCESS_REJECTED`、194 `HOLDING_QUEUE_OVERFLOW`、537 `IN_SYSTEM_AT_STOP`，输出约 139 MB。该轮是 D2 长窗工程验证，不是论文效果结果。
 - 20 s DDQN：同一 100 Mbps/56-cell M-Lab trace，训练与评估 trace SHA 均为 `e6e7bd329f6822046f5d57611690d609a3647e1dca7639e170e985d891000e09`。训练 natural/conservation/receipt/metrics 全通过，1,220 train steps、1,227 transitions、checkpoint SHA=`9554170451d2f1866bcc23e381772189014e3f9e64c8ba5e931a46ce19312e97`；评估重新加载该 checkpoint，natural/conservation/receipt/metrics 全通过，0 train steps。20 s 负载下 3 `HOLDING_QUEUE_OVERFLOW`、约 375 个 `IN_SYSTEM_AT_STOP`，说明起步时长已进入真实拥塞压力区。
 - 边界：本轮仍是 engineering/pilot；没有授权 cohort、paired claim、replay/optimizer/target/RNG 断点恢复或正式论文统计，不能直接写入论文结论。
+
+## 2026-08-21：容量锚点与最新 VM 证据文档同步
+
+- 分支：`codex/20260821-capacity-anchor-docs`；仅同步实验真相源和机器索引，不修改仿真内核。
+- 当前 main `0f7249fb085ea05576c04d8b2b1f9e55be9e12a0` 已部署到 canonical VM；deployment receipt SHA=`89e70f943ef7c19b4f615e56cbf7cf2c349d49f572b916a97d2f816e4a33a4a9`，source tree SHA=`6dc0afec1070002fe83c5ddd0955c40c7ba5a2316cffa01fe1d01f8bc047d2fd`。
+- 文档补录：capacity policy 负对照、D2 60 秒长窗、20 秒 DDQN train→checkpoint→eval、当前 main/deployment SHA；明确这些仍是 engineering/pilot，formal V2 artifact→claim、replay 续训、正式 E0/PILOT 和 Q0 闭环仍未完成。
+- 验证：`git diff --check` 通过；`EXPERIMENTS/experiment-program.yaml` 可由 PyYAML 解析（22 experiments、23 requirements）。待本分支 CI 绿后合入并重新确认 VM SHA。

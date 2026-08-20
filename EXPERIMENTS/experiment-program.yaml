@@ -24,19 +24,19 @@ requirements:
   reward_and_mask_blockers_closed: {status: completed_verified, evidence: main_ce2566b_reward_penalty_and_main_758b606_mask_regressions}
   v2_formal_evidence_chain_verified: {status: blocked}
   real_traffic_provenance_verified: {status: completed_verified, evidence: PR84_main_743d05c_mlab_source_sha_schema_and_manifest}
-  multi_od_and_burst_verified: {status: completed_verified, evidence: main_8e2f1df_pr93_vm_56cell_mlab_t0_receipt_and_metrics_recompute}
-  mlab_multi_od_t0_verified: {status: completed_verified, evidence: main_8e2f1df_trace_f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4_vm_receipt}
-  topology_cadence_calibration_verified: {status: completed_verified, evidence: main_8e2f1df_vm_cadence_0p5_1_2_5_receipts_raw_metrics_recompute}
-  e0_load_calibration_verified: {status: completed_verified, evidence: main_8e2f1df_vm_mlab_multiod_burst_50_100_200_receipts_metrics_recompute}
+  multi_od_and_burst_verified: {status: completed_verified, evidence: main_0f7249f_pr93_vm_56cell_mlab_t0_receipt_and_metrics_recompute}
+  mlab_multi_od_t0_verified: {status: completed_verified, evidence: main_0f7249f_trace_f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4_vm_receipt}
+  topology_cadence_calibration_verified: {status: completed_verified, evidence: main_0f7249f_vm_cadence_0p5_1_2_5_receipts_raw_metrics_recompute}
+  e0_load_calibration_verified: {status: completed_verified, evidence: main_0f7249f_vm_mlab_multiod_burst_50_100_200_receipts_metrics_recompute}
   link_utilization_recomputation_verified: {status: blocked}
   packet_delay_decomposition_verified: {status: blocked}
   q0_minimum_loop_verified: {status: blocked}
   q0_replay_review_approved: {status: blocked}
   three_final_audit_rounds_no_new_major: {status: blocked}
-  exact_main_deployed_to_vm: {status: completed_verified, evidence: main_8e2f1df_deployment_4bd3ba95438379a88cb58f4e4c9fe6559fa924f04e0b901e4c122a4527c286d5_source_78ec19d13664527375f56e5c9f7429620e59a8837604224fe6ad5ea2880c008a}
-  learning_vm_smoke_verified: {status: completed_verified, evidence: main_8e2f1df_vm_qlearning_ddqn_gat_mpnn_train_eval_and_ddqn20_receipts_metrics_recompute}
+  exact_main_deployed_to_vm: {status: completed_verified, evidence: main_0f7249f_deployment_89e70f943ef7c19b4f615e56cbf7cf2c349d49f572b916a97d2f816e4a33a4a9_source_6dc0afec1070002fe83c5ddd0955c40c7ba5a2316cffa01fe1d01f8bc047d2fd}
+  learning_vm_smoke_verified: {status: completed_verified, evidence: main_0f7249f_vm_qlearning_ddqn_gat_mpnn_train_eval_ddqn20_capacity_anchor_receipts_metrics_recompute}
   mcs_vm_comparison_verified: {status: blocked, reason: basic_smoke_only_no_legacy_mcs_comparison}
-  d2_long_window_vm_verified: {status: completed_verified, evidence: main_8e2f1df_vm_60s_100mbps_multiod_long_window_receipt_metrics_recompute}
+  d2_long_window_vm_verified: {status: completed_verified, evidence: main_0f7249f_vm_60s_100mbps_multiod_long_window_receipt_metrics_recompute}
   per_action_physical_features_verified: {status: blocked}
   field_age_provenance_verified: {status: blocked}
   replay_resume_verified: {status: blocked}
