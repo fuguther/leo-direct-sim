@@ -31,19 +31,42 @@
 ```yaml
 links:
   rate_model: "constant" | "mcs"      # 默认 constant（现状，不破坏既有回执）
-  rf:                                  # rate_model=mcs 时必填，缺省 fail-loud
+  mcs_table: "legacy-dvbs2x"          # 当前仅支持旧表
+  rf_isl:                              # 三组均为同一严格字段集合
     frequency_hz: 26e9
     bandwidth_hz: 500e6
     max_ptx_w: 10.0
-    antenna_diameter_m: 0.26
+    antenna_diameter_tx_m: 0.26
+    antenna_diameter_rx_m: 0.26
+    pointing_loss_db: 0.3
+    noise_figure_db: 2.0
+    noise_temperature_k: 290.0
+    min_rate_bps: 10000.0
+  rf_uplink:                           # legacy: 30 GHz, 20 W, Tx 0.33 m/Rx 0.26 m
+    frequency_hz: 30e9
+    bandwidth_hz: 500e6
+    max_ptx_w: 20.0
+    antenna_diameter_tx_m: 0.33
+    antenna_diameter_rx_m: 0.26
+    pointing_loss_db: 0.3
+    noise_figure_db: 2.0
+    noise_temperature_k: 290.0
+    min_rate_bps: 10000.0
+  rf_downlink:                         # legacy: 20 GHz, 10 W, Tx/Rx 0.26 m
+    frequency_hz: 20e9
+    bandwidth_hz: 500e6
+    max_ptx_w: 10.0
+    antenna_diameter_tx_m: 0.26
+    antenna_diameter_rx_m: 0.26
     pointing_loss_db: 0.3
     noise_figure_db: 2.0
     noise_temperature_k: 290.0
     min_rate_bps: 10000.0             # 低于此速率视为不可用（见 2.3）
-  mcs_table: "legacy-dvbs2x"          # 门限表选择；先只支持旧表（表征测试钉死）
 ```
 
-校验（fail-loud）：`rate_model=mcs` 时 rf 字段缺/非正 → ConfigError；`constant` 时忽略 rf。
+校验（fail-loud）：配置结构始终只接受上述精确字段；`rate_model=mcs` 时三组
+RF 数值必须有限且为正，否则 `ConfigError`；`constant` 时 RF/MCS 数值不参与
+运行语义，因而不做数值校验。
 
 ### 2.5 实现调整（2026-08-19，D1 PR）
 

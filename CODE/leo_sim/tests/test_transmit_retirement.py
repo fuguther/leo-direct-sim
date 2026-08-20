@@ -167,3 +167,44 @@ def test_deadline_equals_retire_at_does_not_swallow_retirement():
     fate_t = [t for t, kind, kv in k.monitor_log
               if kind == "fate" and dict(kv).get("pid") == 1]
     assert fate_t and fate_t[0] >= 1.5 - 1e-9
+
+
+@pytest.mark.parametrize("deadline", [None, 1.0])
+def test_active_service_retiring_at_completion_is_not_reported_ok(deadline):
+    """R7-D1-F1: a retirement scheduled after service starts still wins a
+    tie with service completion (and with the packet deadline).  ``_transmit``
+    must re-read the mutable link lifecycle after the interrupt race; the
+    ``retire_t`` snapshot taken while the link was active is necessarily
+    absent.
+    """
+    cfg = make_cfg({
+        "scenario": {"num_satellites": 1, "num_planes": 1,
+                     "duration_s": 2.0},
+        "links": {"geometry_loss": False, "ge_enabled": False},
+        "control_plane": {"enabled": False},
+    })
+    k = kernel.Kernel(cfg, [], geometry=StaticGeometry(1))
+    ep = k._ensure_endpoint(A)
+    link = kernel.Link(0, "active", k.env.now,
+                       interrupt=k.env.event())
+    ep.links[0] = link
+    pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    pkt.deadline = deadline
+    outcome = []
+
+    def transmit():
+        result = yield k.env.process(k._transmit(
+            1.0, pkt, ("gsl", 0, ep, link), "gsl_uplink_s"))
+        outcome.append(result)
+
+    def retire_at_completion():
+        yield k.env.timeout(1.0)
+        link.state = "retiring"
+        link.retire_at = 1.0
+        if not link.interrupt.triggered:
+            link.interrupt.succeed()
+
+    k.env.process(transmit())
+    k.env.process(retire_at_completion())
+    k.env.run(until=1.1)
+    assert outcome == ["retired"]

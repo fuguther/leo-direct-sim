@@ -154,7 +154,8 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
                     oracle_targets: list[int] | None = None,
                     best_only: bool = False,
                     reverse_adj: dict | None = None,
-                    sorted_adj: dict | None = None) -> tuple[list[str], str]:
+                    sorted_adj: dict | None = None,
+                    rate_from_propagation=None) -> tuple[list[str], str]:
     """Return (ordered candidate directions, status).
 
     status: "ok" (candidates non-empty), "no_info" (no destination
@@ -235,7 +236,15 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
                     qb = entry.payload.get("isl_queue_bits", {}).get(dir_ab) if dir_ab else None
             if qb is None:
                 return float("inf")  # unknown queue state is not assumed free
-            return c + qb / isl_rate_bps
+            # Dynamic-rate mode derives capacity from the exact same
+            # propagation observation used above: current for our incident
+            # edge, cached/stale for a remote edge.  This changes no
+            # information boundary and makes a zero-MCS edge unreachable.
+            rate = (isl_rate_bps if rate_from_propagation is None
+                    else rate_from_propagation(c))
+            if rate <= 0:
+                return float("inf")
+            return c + qb / rate
 
     if policy != "hop":
         # dist[x] = forward cost from x to the nearest target; the search

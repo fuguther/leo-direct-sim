@@ -1,7 +1,7 @@
 """Behavioral tests for routing policies and the deliver action contract."""
 import pytest
 
-from CODE.leo_sim import control, kernel, routing
+from CODE.leo_sim import control, kernel, link_budget, model, routing
 from CODE.leo_sim.tests.helpers import StaticGeometry, cell, cell_center, make_cfg, row
 
 A = cell(0.0, 0.0)
@@ -104,6 +104,38 @@ def test_capacity_policy_avoids_advertised_congestion():
         "capacity", 0, B, 1.0, geo, topo, cache, {}, 1e9, lambda km: km / 299_792.458)
     assert status == "ok"
     assert dirs[0] == "N"  # path via 2: sat1's E queue is advertised congested
+
+
+def test_capacity_policy_uses_observed_dynamic_mcs_rate():
+    """D1: capacity cost uses the rate implied by the same current/cached
+    propagation observation, not the legacy constant service rate.  The E
+    edge is beyond the MCS threshold and therefore cannot be preferred merely
+    by direction tie-break."""
+    ranges = {(0, 1): 5900.0, (0, 2): 1000.0,
+              (1, 3): 1000.0, (2, 3): 1000.0}
+    geo = StaticGeometry(
+        4, neighbors_map=DIVERGE,
+        isl_range_fn=lambda a, b, _t: ranges.get(
+            (a, b), ranges.get((b, a), 1000.0)))
+    topo = _topo(geo)
+    prop_1000 = model.propagation_delay_s(1000.0)
+    cache = _cache_with([
+        (3, {"visible_cells": [B], "isl_queue_bits": {},
+             "isl_propagation_s": {"W": prop_1000, "S": prop_1000}},
+         0.0, 0.01, 10.0),
+        (1, {"visible_cells": [], "isl_queue_bits": {"E": 0},
+             "isl_propagation_s": {"E": prop_1000}}, 0.0, 0.01, 10.0),
+        (2, {"visible_cells": [], "isl_queue_bits": {"E": 0},
+             "isl_propagation_s": {"E": prop_1000}}, 0.0, 0.01, 10.0),
+    ])
+    dirs, status = routing.choose_next_hop(
+        "capacity", 0, B, 1.0, geo, topo, cache,
+        {"E": 1_000_000, "N": 1_000_000}, 1e9,
+        model.propagation_delay_s,
+        rate_from_propagation=lambda prop: link_budget.mcs_rate_bps(
+            prop * model.C_KM_S, link_budget.LEGACY_ISL_RF))
+    assert status == "ok"
+    assert dirs[0] == "N"
 
 
 def test_capacity_policy_without_info_is_no_info_or_unreachable():

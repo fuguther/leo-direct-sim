@@ -1,5 +1,17 @@
 # NOTES.md
 
+## 2026-08-20（D1 第 7 轮独立复核返工，待新 SHA 复核）
+
+- 冷启动审阅 exact SHA `408d368` 返回 `REQUEST_CHANGES_CANDIDATE`：复现 active
+  服务在 completion/deadline 同刻进入 hard-retirement 时被误报 `ok`；新增双参数
+  回归（修前 2 failed）并在竞态唤醒后重读链路生命周期，retirement 同刻优先。
+- constant 模式只保持 RF 结构校验、不再校验未使用的 RF/MCS 数值；更新过时设计示例。
+  补齐 GSL/ISL `bits / sampled_rate` 手算占用时长、ISL 非 tick 精确恢复测试。
+- 复核遗留的 capacity 路由常数速率已关闭：MCS 模式从同一传播观测推导速率，
+  本地边用当前观测、远端边用 cache 观测，未扩大信息边界；零 MCS 边不可达。
+- 验证：D1 定向 `45 passed`；`CODE/leo_sim/tests` 全量 `444 passed`；
+  `git diff --check` 通过。当前候选尚未提交/推送，须新 exact SHA 独立复核。
+
 ## 2026-08-19（R6-G2b 收口：台账置 fixed）
 
 - #51（governance symlink 词法根边界）复核两轮收敛（第 1 轮 REQUEST_CHANGES → 修复

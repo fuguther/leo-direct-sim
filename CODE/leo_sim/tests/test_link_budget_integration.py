@@ -61,6 +61,20 @@ def test_config_mcs_requires_valid_rf():
             }})
 
 
+def test_constant_rate_ignores_rf_numeric_semantics():
+    """R7-D1-F2: inactive RF values are not operational inputs in constant
+    mode.  Unknown-key checks remain global config hygiene, while numeric RF
+    validation belongs only to the MCS mode that consumes those values.
+    """
+    resolved = config.resolve_config({
+        "links": {
+            "rate_model": "constant",
+            "rf_isl": {"frequency_hz": 0},
+        },
+    })
+    assert resolved["config"]["links"]["rate_model"] == "constant"
+
+
 class _Scripted(StaticGeometry):
     """StaticGeometry + scripted range crossing for rate recovery."""
 
@@ -357,6 +371,25 @@ def test_mcs_zero_rate_uplink_recovers_at_certified_time_not_next_tick():
     assert res["deliveries"][1]["delivered_at"] < 1.2
 
 
+def test_mcs_zero_rate_isl_recovers_at_certified_time_not_next_tick():
+    """R7-D1-F4: ISL recovery is scheduled at the certified range crossing,
+    even when that instant is not a simulation tick."""
+    geo = _Scripted(
+        2, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+        isl_range_fn=lambda a, b, t: 5900.0 if t < 1.0 else 1000.0,
+        visible=lambda s, lat, lon, t: (
+            (s == 0 and (lat, lon) == AC)
+            or (s == 1 and (lat, lon) == BC)),
+        slant_km=600.0)
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0, "time_step_s": 0.7},
+        "links": {"rate_model": "mcs"},
+    })
+    res = kernel.run_simulation(cfg, [row(1, 0.0, A, B)], geometry=geo)
+    assert res["fates"][1] == "DELIVERED"
+    assert res["deliveries"][1]["delivered_at"] < 1.2
+
+
 def test_mcs_zero_rate_deadline_before_horizon_expires_not_in_system():
     """F1: a deadline between the last tick and the horizon must still expire.
 
@@ -440,7 +473,8 @@ def test_mcs_all_zero_rate_run_marks_mechanism_effective():
 
 
 def test_mcs_receipt_records_sampled_rate_range():
-    """F5: sampled MCS rates are attributed with a min/max range in bps."""
+    """F5/R7-D1-F4: sampled rates are attributed, and every real service
+    duration is exactly ``bits / sampled_rate`` for its fixed slant range."""
     topo = {0: {"E": 1}, 1: {"W": 0}}
     geo = _Scripted(
         2, neighbors_map=topo,
@@ -459,6 +493,16 @@ def test_mcs_receipt_records_sampled_rate_range():
     # samples: uplink@600km ~2.95e9, isl@1000km ~1.81e9, downlink@600 ~2.10e9
     assert 1.8e9 < counters["mcs_rate_min_bps"] < 1.82e9
     assert 2.9e9 < counters["mcs_rate_max_bps"] < 3.0e9
+    bits = 8_000_000
+    assert res["occupied"]["gsl_uplink_s"] == pytest.approx(
+        bits / link_budget.mcs_rate_bps(
+            600.0, link_budget.LEGACY_UPLINK_RF), rel=1e-9)
+    assert res["occupied"]["isl_s"] == pytest.approx(
+        bits / link_budget.mcs_rate_bps(
+            1000.0, link_budget.LEGACY_ISL_RF), rel=1e-9)
+    assert res["occupied"]["gsl_downlink_s"] == pytest.approx(
+        bits / link_budget.mcs_rate_bps(
+            600.0, link_budget.LEGACY_DOWNLINK_RF), rel=1e-9)
 
 
 def test_mcs_retiring_uplink_gated_head_stays_queued_and_server_free():

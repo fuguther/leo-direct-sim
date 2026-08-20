@@ -1613,6 +1613,16 @@ class Kernel:
             else:
                 yield wait
             self.occupied[occ_key] += self.env.now - t0
+            # The link can enter ``retiring`` after service starts, so the
+            # retire_t snapshot above may be absent.  Re-read the mutable
+            # lifecycle after every race wake.  Retirement wins an exact tie
+            # with completion/deadline, matching the pre-service/down-wait
+            # lifecycle rule and preventing a completed-looking packet from
+            # escaping onto a link whose hard deadline is already due.
+            if (link is not None and link.state == "retiring"
+                    and link.retire_at is not None
+                    and self.env.now >= link.retire_at):
+                return "retired"
             if self.env.now < fail_t - 1e-12:
                 continue  # woken by the interrupt: recompute the race
             if fail_kind is None:
@@ -2343,7 +2353,11 @@ class Kernel:
             # heuristic-best path and cannot learn to deviate from it)
             best_only=False,
             reverse_adj=self._routing_reverse_adj,
-            sorted_adj=self._routing_sorted_rev_adj)
+            sorted_adj=self._routing_sorted_rev_adj,
+            rate_from_propagation=(
+                (lambda prop_s: link_budget.mcs_rate_bps(
+                    prop_s * model.C_KM_S, self.rf_isl, self.mcs_table))
+                if self.rate_model == "mcs" else None))
         if status == "unreachable":
             self._fail(pkt, "NO_ROUTE")
             return

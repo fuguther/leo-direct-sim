@@ -525,22 +525,25 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
     if lk["rate_model"] not in VALID_RATE_MODELS:
         raise ConfigError(
             f"links.rate_model must be one of {sorted(VALID_RATE_MODELS)}")
-    if lk["mcs_table"] != link_budget.LEGACY_DVBS2X:
-        raise ConfigError(
-            f"links.mcs_table currently supports only "
-            f"{link_budget.LEGACY_DVBS2X!r}")
     for label in ("rf_isl", "rf_uplink", "rf_downlink"):
         rf = lk[label]
         if not isinstance(rf, Mapping) or set(rf) != RF_KEYS:
             raise ConfigError(
                 f"links.{label} must have exactly "
                 f"{sorted(RF_KEYS)}")
-        for key in RF_KEYS:
-            v = rf[key]
-            if isinstance(v, bool) or not isinstance(v, (int, float)) \
-                    or not math.isfinite(v) or v <= 0:
-                raise ConfigError(f"links.{label}.{key} must be a positive number")
     if lk["rate_model"] == "mcs":
+        if lk["mcs_table"] != link_budget.LEGACY_DVBS2X:
+            raise ConfigError(
+                f"links.mcs_table currently supports only "
+                f"{link_budget.LEGACY_DVBS2X!r}")
+        for label in ("rf_isl", "rf_uplink", "rf_downlink"):
+            rf = lk[label]
+            for key in RF_KEYS:
+                v = rf[key]
+                if isinstance(v, bool) or not isinstance(v, (int, float)) \
+                        or not math.isfinite(v) or v <= 0:
+                    raise ConfigError(
+                        f"links.{label}.{key} must be a positive number")
         # The certified rate-recovery threshold assumes the first non-zero MCS
         # step already satisfies min_rate_bps; otherwise the effective
         # rate-up distance is not the SNR threshold and recovery would be
