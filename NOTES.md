@@ -342,3 +342,10 @@
   trace SHA=`21812f86b7883a47560bd15f9d7d2958a503fc71a7bc27d52dd3cfd252caea4d`。
 - 边界：这是可复现的 M-Lab **measurement_proxy**，不是原始用户流量或校准运营负载；尚未部署
   当前分支到 VM，也未完成 E0 负载标定、学习训练/检查点恢复和正式授权 cohort。
+
+## 2026-08-21：拓扑重算间隔工程校准
+
+- 分支：`codex/20260821-topology-cadence-docs`；基于已部署代码 `ac0d019` 的文档证据补录，未修改仿真内核。
+- 本地固定同一 trace SHA=`dfe47500712ddc353c4ba5b9564d943be7f10018d07e36bdeb52b4d35d166910`，140 星、60 s、MCS、M-Lab 三 OD + burst，扫描 `0.5/1/2/5 s`。四档均自然结束、守恒通过、receipt 无错误，461 offered、440 delivered、20 `ACCESS_REJECTED`、1 `IN_SYSTEM_AT_STOP`；拓扑重算次数为 119/59/29/11，墙钟约 118.9/79.9/60.5/48.9 s。
+- VM 固定同一部署代码 `5d2ddec3fecfa0a8b83174eaf30aa1da8bf4e9a5d766ddfa6a387e4b8cc6a193`，66 星、10 s 短 smoke 扫描四档；均自然结束、18/18 delivered、守恒通过、receipt verified。该 VM 扫描只验证部署合同和 cadence plumbing，不替代长窗 D2 语义证明。
+- 暂定决策：E0 先用 1 s；2 s 作为成本敏感性对照，5 s 作为慢更新负对照。需在低/中/高负载、长窗上比较交付、积压、利用率和切换指标后再冻结。连续进程的 `ru_maxrss` 未作为逐 run 内存证据，独立资源剖析仍未完成。
