@@ -1,5 +1,7 @@
 # LEO 仿真平台 V2：卫星直连接入、真实控制链路与旧机制清理计划
 
+> **HISTORICAL PLAN**：保留建库时的目标与取舍；当前能力和迁移优先级见 `PLATFORM-CAPABILITY-LEDGER.md`。
+
 ## 1. 目标、事实与边界
 
 当前源码仍以 [`SimulationRL.py`](/Users/lge/Desktop/LEO-Research-Workspace/CODE/SimulationRL.py) 的 Gateway 汇聚路径为正式主线；仓库中没有可直接接管正式运行的完整 `satellite_direct` 内核。因此本计划不是“小修补”，而是在保留可信基础设施的前提下建设并切换新内核。

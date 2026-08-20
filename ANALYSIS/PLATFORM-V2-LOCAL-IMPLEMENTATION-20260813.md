@@ -1,5 +1,7 @@
 # LEO 仿真平台 V2 本地实现报告（2026-08-13，四轮审查修复后修订版）
 
+> **HISTORICAL IMPLEMENTATION REPORT**：只保留当时实现与反例审查证据；当前状态见 `CURRENT-EXPERIMENT-READINESS.md`。
+
 > 本版取代文末附录中的初版报告。初版"本地实现完成（89 tests）"结论已被第一轮 Codex 独立反例审查否决，其后经第二轮（20 项）、第三轮（4 类）Codex 独立探针审查与第四轮 Codex 验收审查（7 组冻结缺陷）修复。各轮权威记录分别见：
 > - `PLATFORM-V2-REMEDIATION-20260813.md`（第一轮：10 探针否决与修复）
 > - `PLATFORM-V2-REMEDIATION-ROUND2-20260813.md`（第二轮：20 项）

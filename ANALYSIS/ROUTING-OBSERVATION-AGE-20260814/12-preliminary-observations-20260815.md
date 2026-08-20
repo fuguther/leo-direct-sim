@@ -1,5 +1,7 @@
 # E1 初步观察（进行中，非最终结论，2026-08-15 凌晨）
 
+> **HISTORICAL RESULT**：仅记录旧平台候选的中途观察；当前正式矩阵状态见 `../EXPERIMENT-PROGRAM.md`。
+
 > 状态：E1 30/90 cell 完成、0 失败。本文件只记录已实观测到的现象，等 E1
 > 全部跑完 + 配对检验后才下结论。原始数据 `/tmp/leo-formal-exp1/matrix-summary.json`。
 

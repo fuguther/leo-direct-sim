@@ -1,0 +1,160 @@
+schema: leo-experiment-program/v1
+updated_at: "2026-08-20"
+authority:
+  human_plan: ANALYSIS/EXPERIMENT-PROGRAM.md
+  readiness: ANALYSIS/CURRENT-EXPERIMENT-READINESS.md
+  findings: ANALYSIS/FINDINGS-REGISTRY.md
+  note: >-
+    This file is a planning index. It is not a run request, authorization,
+    deployment receipt, experiment receipt, or research-eligibility verdict.
+
+status_values:
+  - blocked
+  - planned
+  - pilot_required
+  - rerun_required
+  - ready_for_authorization
+  - running
+  - completed_verified
+  - historical_only
+
+requirements:
+  D1_merged_to_main: {status: blocked}
+  D2_merged_to_main: {status: blocked}
+  reward_and_mask_blockers_closed: {status: blocked}
+  formal_evidence_chain_verified: {status: blocked}
+  q0_minimum_loop_verified: {status: blocked}
+  q0_replay_review_approved: {status: blocked}
+  three_final_audit_rounds_no_new_major: {status: blocked}
+  exact_main_deployed_to_vm: {status: blocked}
+  field_age_provenance_verified: {status: blocked}
+  interaction_triggered: {status: planned, conditional: true}
+  primary_uniform_results_verified: {status: planned, conditional: true}
+
+gates:
+  platform_frozen:
+    status: blocked
+    requires:
+      - D1_merged_to_main
+      - D2_merged_to_main
+      - reward_and_mask_blockers_closed
+      - formal_evidence_chain_verified
+      - q0_minimum_loop_verified
+      - three_final_audit_rounds_no_new_major
+      - exact_main_deployed_to_vm
+  formal_analysis_available:
+    status: blocked
+    reason: persisted_analysis_entrypoint_and_fixtures_missing
+  current_load_levels_frozen:
+    status: blocked
+    reason: E0_must_rerun_after_final_D1_D2_platform_freeze
+
+experiments:
+  - id: VAL-D1
+    class: platform_validation
+    title: dynamic_link_rate_equivalence
+    status: blocked
+    prerequisites: [D1_merged_to_main]
+    purpose: Verify legacy MCS characterization and V2 service/observation/receipt integration.
+    required_evidence: [pytest, characterization_ledger, independent_review, vm_receipt]
+
+  - id: VAL-D2
+    class: platform_validation
+    title: dynamic_topology_and_holding_semantics
+    status: blocked
+    prerequisites: [D2_merged_to_main]
+    purpose: Verify rematching, retiring links, in-flight ownership, FIFO and finite holding behavior.
+    required_evidence: [pytest, long_window_trace, independent_review, vm_receipt]
+
+  - id: Q0-I-TINY
+    class: upper_bound_diagnostic
+    title: current_global_causal_optimum
+    status: blocked
+    prerequisites: [platform_frozen, q0_replay_review_approved]
+    arms: [event_dp, independent_enumeration]
+    purpose: Separate current-information decision gap from practical learner error.
+    required_evidence: [objective_equality, action_trace_equality, replay_receipt]
+
+  - id: Q0-F-TINY
+    class: upper_bound_diagnostic
+    title: clairvoyant_future_optimum
+    status: blocked
+    prerequisites: [platform_frozen, Q0-I-TINY]
+    arms: [event_milp_or_cp_sat, independent_enumeration]
+    purpose: Measure the value of future information under identical data-plane physics.
+    required_evidence: [objective_equality, VF_ge_VI, replay_receipt]
+
+  - id: E0
+    class: calibration
+    title: load_level_calibration
+    status: rerun_required
+    prerequisites: [platform_frozen, formal_analysis_available]
+    arms: [deterministic_shortest_path]
+    traffic_mode: uniform
+    purpose: Freeze informative low, medium and high loads on the final platform.
+    required_evidence: [natural_end, conservation, load_table, frozen_thresholds]
+
+  - id: PILOT-ALL
+    class: engineering_pilot
+    title: all_arm_end_to_end_pilot
+    status: blocked
+    prerequisites: [E0]
+    purpose: Verify every arm and estimate wall time, variance, memory and sample size.
+    required_evidence:
+      - compile_authorize_run_analysis_chain
+      - natural_end
+      - conservation
+      - checkpoint_verified
+      - no_info_zero
+      - seed_provenance
+
+  - id: EXP1-HOPS
+    class: formal_effect
+    title: observation_hop_ablation
+    status: rerun_required
+    prerequisites: [PILOT-ALL, current_load_levels_frozen]
+    fixed: [GAT, feature_set_F1, training_budget, control_plane_range]
+    arms: [obs_hops_1, obs_hops_2, obs_hops_3]
+    loads: [low, medium, high]
+    purpose: Estimate the value of wider local observation and select h_star.
+    historical_evidence: ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/13-e1-results-20260815.md
+
+  - id: EXP2-AGG
+    class: formal_effect
+    title: aggregation_architecture
+    status: blocked
+    prerequisites: [EXP1-HOPS]
+    fixed: [h_star, feature_set_F1, training_budget]
+    arms: [cache_aggregation, MPNN, GAT, deterministic_shortest_path]
+    purpose: Separate aggregation architecture value from information-range value.
+
+  - id: EXP2B-FEATURES
+    class: formal_effect
+    title: information_content_ablation
+    status: blocked
+    prerequisites: [EXP1-HOPS]
+    fixed: [GAT, h_star, training_budget]
+    arms: [F0_queue_direction, F1_rate_availability, F2_field_age]
+    purpose: Align practical information gains with the Q0 information ladder.
+
+  - id: EXP3-AGE
+    class: formal_effect
+    title: information_age_mechanism
+    status: blocked
+    prerequisites: [EXP2B-FEATURES, field_age_provenance_verified]
+    arms: [G0_no_age, G1_age_feature, G2_age_attention, G3_age_shuffle, G4_fixed_fresh]
+    purpose: Test whether real freshness is causally used rather than acting as extra capacity.
+
+  - id: INT-HOPS-AGG
+    class: conditional_followup
+    title: hop_aggregation_interaction
+    status: planned
+    prerequisites: [EXP1-HOPS, EXP2-AGG, interaction_triggered]
+    purpose: Resolve non-additive hop-by-architecture effects only if single-factor results conflict.
+
+  - id: SENS-GRAVITY
+    class: sensitivity
+    title: gravity_traffic_sensitivity
+    status: planned
+    prerequisites: [primary_uniform_results_verified]
+    purpose: Test external validity without replacing the uniform-traffic primary analysis.
