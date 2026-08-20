@@ -255,7 +255,7 @@ def test_paired_learning_cells_allow_different_seeds_and_external_checkpoints(tm
                                "checkpoint_sha256": sha_a,
                                "checkpoint_metadata_sha256": metadata_sha}},
          "checkpoint_lineage": {"mode": "evaluation_only",
-                                 "source_run_id": "external-a",
+                                 "source_run_id": f"external-{sha_a}",
                                  "source_sha256": sha_a}},
         {"run_id": "EXP-LEO-V2-MATRIX-right-s42-l2", "arm_id": "right",
          "phase": "evaluation", "trace_seed": 42, "learning_seed": 2,
@@ -264,7 +264,7 @@ def test_paired_learning_cells_allow_different_seeds_and_external_checkpoints(tm
                                "checkpoint_sha256": sha_b,
                                "checkpoint_metadata_sha256": metadata_sha}},
          "checkpoint_lineage": {"mode": "evaluation_only",
-                                 "source_run_id": "external-b",
+                                 "source_run_id": f"external-{sha_b}",
                                  "source_sha256": sha_b}},
     ]
     source = tmp_path / "request.json"
@@ -279,6 +279,18 @@ def test_paired_learning_cells_allow_different_seeds_and_external_checkpoints(tm
         matrix.compile_matrix_experiment(source,
                                          tmp_path / "EXPERIMENTS" / "EXP-BAD",
                                          project_root=tmp_path)
+    unbound = copy.deepcopy(request)
+    unbound["experiment_id"] = "EXP-UNBOUND"
+    for cell in unbound["cells"]:
+        cell["run_id"] = cell["run_id"].replace(
+            "EXP-LEO-V2-MATRIX", "EXP-UNBOUND", 1)
+    unbound["cells"][0]["checkpoint_lineage"]["source_run_id"] = \
+        "external-arbitrary-label"
+    source.write_text(json.dumps(unbound), encoding="utf-8")
+    with pytest.raises(matrix.MatrixError, match="content-bound external checkpoint"):
+        matrix.compile_matrix_experiment(
+            source, tmp_path / "EXPERIMENTS" / unbound["experiment_id"],
+            project_root=tmp_path)
 
 
 def test_matrix_rejects_evaluation_cells_with_cyclic_checkpoint_lineage(tmp_path):
@@ -321,7 +333,7 @@ def test_matrix_rejects_evaluation_cells_with_cyclic_checkpoint_lineage(tmp_path
     source = tmp_path / "request.json"
     source.write_text(json.dumps(request), encoding="utf-8")
 
-    with pytest.raises(matrix.MatrixError, match="planned training run"):
+    with pytest.raises(matrix.MatrixError, match="content-bound external checkpoint"):
         matrix.compile_matrix_experiment(
             source, tmp_path / "EXPERIMENTS" / request["experiment_id"],
             project_root=tmp_path)
@@ -352,6 +364,10 @@ def test_matrix_rejects_duplicate_contrasts_for_same_arm_pair(tmp_path):
     (lambda r: r["analysis"].update(paired_by=["seed"]), "unsupported paired_by"),
     (lambda r: r["analysis"]["planned_contrasts"][0].update(right_arm="missing"),
      "unknown arm"),
+    (lambda r: r["arms"][1].update(intervention_paths=["demand"]),
+     "exact override leaf paths"),
+    (lambda r: r["arms"][1]["intervention_paths"].append(
+        "scenario.duration_s"), "exact override leaf paths"),
 ])
 def test_matrix_pairing_and_intervention_contract_fails_closed(mutation, message, tmp_path):
     request = _request()

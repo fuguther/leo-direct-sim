@@ -247,6 +247,12 @@ def validate_request(request: Any) -> dict[str, Any]:
                              f"arms[{i}].config_overrides")
         _validate_override_paths(overrides, set(normalized_paths),
                                  f"arm {arm_id}")
+        override_paths = _leaf_paths(overrides)
+        if set(normalized_paths) != override_paths:
+            raise MatrixError(
+                f"arm {arm_id} intervention_paths must equal exact override "
+                f"leaf paths; declared={sorted(normalized_paths)}, "
+                f"actual={sorted(override_paths)}")
         if any(_path_allowed(path, STOCHASTIC_IDENTITY_PATHS)
                for path in _leaf_paths(overrides)):
             raise MatrixError(f"arm {arm_id} cannot override stochastic identity paths")
@@ -428,23 +434,19 @@ def _validate_pairing_contract(request: dict[str, Any],
     """
     contrasts = request["analysis"]["planned_contrasts"]
     by_pair: dict[str, list[dict[str, Any]]] = {}
-    planned_rows = {row["run_id"]: row for row in rows}
     for row in rows:
         by_pair.setdefault(row["pairing_key"], []).append(row)
         source_run_id = row["checkpoint_lineage"]["source_run_id"]
         if source_run_id is not None and source_run_id == row["run_id"]:
             raise MatrixError(
                 f"cell {row['run_id']} checkpoint lineage cannot reference itself")
-        if source_run_id in planned_rows and \
-                planned_rows[source_run_id]["phase"] != "training":
+        if source_run_id is not None and source_run_id != \
+                f"external-{row['checkpoint_lineage']['source_sha256']}":
             raise MatrixError(
-                f"cell {row['run_id']} checkpoint lineage must reference a "
-                "planned training run or an external- source")
-        if source_run_id is not None and source_run_id not in planned_rows \
-                and not source_run_id.startswith("external-"):
-            raise MatrixError(
-                f"cell {row['run_id']} external checkpoint source_run_id must use "
-                "the external- prefix")
+                f"cell {row['run_id']} evaluation lineage must use the "
+                "content-bound external checkpoint identity "
+                "external-<source_sha256>; planned training provenance is not "
+                "verified by the v1 matrix contract")
     contrast_by_arms = {
         frozenset((contrast["left_arm"], contrast["right_arm"])): contrast
         for contrast in contrasts
