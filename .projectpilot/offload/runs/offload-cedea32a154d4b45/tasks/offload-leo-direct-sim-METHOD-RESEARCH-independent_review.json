@@ -1,0 +1,58 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:METHOD-RESEARCH:independent_review",
+    "title": "真实流量拥塞与链路利用率方法调研",
+    "goal": "围绕 LEO/动态网络仿真中的拥塞控制与链路利用率，调研一个务实的先诊断后理论再方案流程。重点回答：真实流量 trace 如何映射为多OD/突发输入；链路利用率的分母、时间窗、方向和分层应怎样定义才不误导；拥塞诊断至少需要哪些队列、丢包、积压、完成率和三段时延数据；Q0-I/F 如何服务于瓶颈归因而不是阻塞 pilot；从观测到提出新控制方案前需要哪些反例、负对照和压力场景。优先官方文档、同行评审论文和公开数据源；不要为写论文而虚构创新点。结论区分事实、主流方法和推断，关键论断给真实链接，最后给可执行的最小测量合同与 open_items。按深度任务五阶段工作，不少于 3000 字。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "5b3ec5f35c5f193408b1800a769c2dca882a2559",
+      "paths": [
+        "ANALYSIS/EXPERIMENT-PROGRAM.md",
+        "ANALYSIS/Q0-INFORMATION-ABLATION-PROTOCOL.md",
+        "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result",
+      "web_research"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "真实流量、利用率、拥塞和Q0角色均有可执行定义",
+      "关键方法论结论带可核验来源",
+      "不给未经证据的新方案结论",
+      "输出最小测量合同和 open_items"
+    ],
+    "requiredEvidence": [
+      "来源标题、链接、发布时间或年份",
+      "事实与推断边界"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "88daaa4ee24d8c9cd4b66baa36d17e1e4927a0c56b5931ff9646b8062b15468a"
+}
