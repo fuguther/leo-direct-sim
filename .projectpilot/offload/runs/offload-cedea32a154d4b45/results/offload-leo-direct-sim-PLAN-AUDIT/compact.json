@@ -1,0 +1,71 @@
+{
+  "taskId": "offload:leo-direct-sim:PLAN-AUDIT",
+  "status": "EVIDENCE_READY",
+  "summary": "当前实验路线已经具备先平台冻结、再信息诊断、再算法研究的正确方向。主要风险不是缺少模型，而是拥塞归因链不足：需要先完成D1/D2、reward/mask/证据链冻结，补真实流量、多OD、burst、链路利用率定义和queue/tx/prop分解。Q0-I/F应服务于性能差分解释，不应成为E0/PILOT默认平台前置。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "D1/D2动态物理语义仍是正式实验前置条件，不应在未冻结状态运行论文实验",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L1-L40"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "Q0-I/F应作为信息价值诊断工具，而不是阻塞E0/PILOT的默认平台门禁",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L120"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "当前拥塞研究缺少完整瓶颈归因链，需要补利用率重算和queue/tx/prop分解",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L100-L120"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "V2 artifact到指标重算再到claim的分析闭环尚未完成",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L20-L80"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "先完成D1/D2合入后的平台冻结和行为对照",
+    "建立真实流量、多OD、burst输入合同",
+    "冻结链路利用率和时延分解指标定义",
+    "将Q0-I/F放入诊断阶段而非平台启动阶段",
+    "基于拥塞归因结果再设计新控制方案"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L200",
+    "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L1-L120",
+    "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L1-L160"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "未读取experiment-program.yaml，无法核对机器状态清单一致性",
+    "未读取CODE/leo_sim实现，无法完成代码级queue/tx/prop能力确认",
+    "缺少真实trace schema，无法审计trace到OD/burst映射",
+    "缺少正式metric specification，无法确认链路利用率定义"
+  ]
+}
