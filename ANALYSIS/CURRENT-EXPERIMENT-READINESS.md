@@ -16,11 +16,11 @@
 
 | 项目 | 当前事实 | 判定 |
 |---|---|---|
-| GitHub main | `b037b6182bf16c9d406cabf4fa5dc8da8b441a2a`；合并后本地完整套件 `555 passed, 1 skipped, 3 subtests passed` | FACT |
+| GitHub main | `66be0adedbf96bcdad722ca6720851904b256129`；合并后本地完整套件 `555 passed, 1 skipped, 3 subtests passed` | FACT |
 | D1 动态链路速率 | PR #55 已合入 main；独立冷审 APPROVE；D1 定向 `51 passed`，合并后 CI 绿 | FACT |
 | D2 动态拓扑/holding 语义 | PR #56 已合入 main；合并提交前本地 `555 passed, 1 skipped, 3 subtests passed`，CI pytest SUCCESS | FACT |
-| 当前 VM | 已部署 `b037b618...`；deployment receipt `4866768f...`，source tree SHA 与本地一致 | FACT |
-| VM 工程 smoke | `smoke.yaml` 在 VM 自然结束；`DELIVERED=1`、`conservation_ok=true`、`IN_SYSTEM_AT_STOP=0`；receipt verify=`verified` | FACT；非正式授权运行 |
+| 当前 VM | 已部署精确 main `66be0adedbf96bcdad722ca6720851904b256129`；deployment receipt `24b0a478...`，source tree SHA `6291acba...` 与本地一致 | FACT |
+| VM 工程 smoke | `CODE/Results/_vm_smoke_66be0ad` 自然结束；`DELIVERED=1`、`conservation_ok=true`、`IN_SYSTEM_AT_STOP=0`；receipt verify=`verified` | FACT；非正式授权运行 |
 | 真实流量/测量 | CSV 已支持 packet-level 多 OD；M-Lab 与 population-gravity 是代理；burst window 已有。利用率缺可用容量分母和逐向事件，每包 queue/tx/prop 未实现 | FACT；exact `5b3ec5f...` 只读核查 |
 | Q0 | snapshot 已在 main；planned-vs-executed、holding、Q0-I tiny 存在于未合入候选分支并收到 REQUEST_CHANGES；Q0-F 精确交叉验证未完成。Q0 不阻塞 E0/pilot，但阻塞理论归因和新方案冻结 | FACT |
 | 正式分析链 | #64 已恢复 generic `experiment-run-manifest/v2` 的 paired analysis/claim 链并纳入 CI；`leo_sim_v2` 使用独立 request/manifest/result 合同，尚无 V2 artifact→指标重算→paired analysis→claim 闭环 | FACT，partial；R7-F1 仍 blocking |
