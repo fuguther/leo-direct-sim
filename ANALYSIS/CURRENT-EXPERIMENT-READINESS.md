@@ -27,7 +27,7 @@
 | 真实流量/测量 | M-Lab 文件已按源 SHA、字段、小时覆盖、OD 映射和 burst 变换写入 provenance；当前 V2 仍把它标为 measurement proxy，并将小时用于覆盖审计而非逐小时强度重放 | FACT；不能当原始真实包回放 |
 | Q0 | snapshot 已在 main；计划注入/执行归因候选未通过审阅；Q0-I/Q0-F tiny 闭环未完成。Q0 不阻塞工程 smoke，但阻塞信息 vs 决策归因 | FACT |
 | 正式分析链 | 矩阵编译/授权 Stage 1 已完成；artifact→指标→配对分析→claim 的真实授权产物和闭环仍缺 | FACT，partial；仍 blocking |
-| 测量层 | 每包 queue/tx/prop 和服务窗事件已有本地重算；receipt 已修复合法 horizon in-flight 重算。逐向 available-capacity 分母/正式 VM artifact 和三段和 gate 仍未完成 | FACT；阻塞拥塞论文诊断 |
+| 测量层 | 每包 queue/tx/prop 和服务窗事件已有本地重算；receipt 已修复合法 horizon in-flight 重算。拓扑 cadence 已在同一 trace 上完成本地 0.5/1/2/5 s 全窗扫描和 VM 10 s plumbing smoke；逐向 available-capacity 分母/正式 VM artifact 和三段和 gate 仍未完成 | FACT；阻塞拥塞论文诊断 |
 | 续训 | replay、optimizer、target network、RNG 完整恢复未实现 | FACT；阻塞昂贵长训 |
 | 三轮三方无新问题 | 只完成局部 PR/局部模块审阅，没有在最终冻结平台上完成连续三轮 | FACT，未满足 |
 
@@ -64,7 +64,7 @@
 ## 5. 下一步顺序
 
 1. **先关闭 R1-A1 奖励 blocker**，在此之前不跑学习算法正式实验。
-2. 补齐逐向 available-capacity 分母、逐窗口记录、每包 queue/tx/prop 三段时延及三段和校验。
+2. 补齐逐向 available-capacity 分母、逐窗口记录、每包 queue/tx/prop 三段时延及三段和校验；拓扑 cadence 的当前工程候选为 1 s，正式冻结仍需在 E0 负载下复核。
 3. 在已部署 `ac0d019` 上完成 D1 VM MCS 对照和 D2 长时间拓扑/holding VM 验证。
 4. 闭合 V2 artifact→指标→配对分析→claim，并完成至少一个学习训练/评估 VM smoke。
 5. 再跑 VM E0-REAL 和全算法 pilot；Q0-I/Q0-F、逐动作物理特征、逐字段 AoI 按信息归因阶段完成。
