@@ -23,6 +23,12 @@ SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 EXPERIMENT_ID = re.compile(r"^EXP-[A-Za-z0-9][A-Za-z0-9_-]*$")
 PHASES = {"training", "evaluation", "train", "eval", "non_learning"}
 LINEAGE_MODES = {"new_training", "evaluation_only", "not_applicable"}
+SUPPORTED_PAIRED_BY = {"pairing_key"}
+STOCHASTIC_IDENTITY_PATHS = {
+    "scenario.seed", "learning.seed",
+    "learning.checkpoint_path", "learning.checkpoint_sha256",
+    "learning.checkpoint_metadata_sha256",
+}
 
 
 class MatrixError(ValueError):
@@ -71,6 +77,52 @@ def _mapping(value: Any, label: str) -> dict[str, Any]:
     return value
 
 
+def _dotted_path(value: Any, label: str) -> str:
+    if not isinstance(value, str) or not value or any(
+            not SAFE_ID.fullmatch(part) for part in value.split(".")):
+        raise MatrixError(f"{label} must be a safe dotted path")
+    return value
+
+
+def _leaf_paths(value: dict[str, Any], prefix: str = "") -> set[str]:
+    paths: set[str] = set()
+    for key, child in value.items():
+        path = f"{prefix}.{key}" if prefix else str(key)
+        if isinstance(child, dict) and child:
+            paths.update(_leaf_paths(child, path))
+        else:
+            paths.add(path)
+    return paths
+
+
+def _path_allowed(path: str, allowed: set[str]) -> bool:
+    return any(path == candidate or path.startswith(candidate + ".")
+               for candidate in allowed)
+
+
+def _validate_override_paths(overrides: dict[str, Any], allowed: set[str],
+                             label: str) -> None:
+    for path in sorted(_leaf_paths(overrides)):
+        if not _path_allowed(path, allowed):
+            raise MatrixError(f"{label} has undeclared intervention path: {path}")
+
+
+def _remove_dotted(tree: dict[str, Any], path: str) -> None:
+    cursor: Any = tree
+    parts = path.split(".")
+    for part in parts[:-1]:
+        if not isinstance(cursor, dict) or part not in cursor:
+            return
+        cursor = cursor[part]
+    if isinstance(cursor, dict):
+        cursor.pop(parts[-1], None)
+
+
+def _remove_paths(tree: dict[str, Any], paths: set[str]) -> None:
+    for path in paths:
+        _remove_dotted(tree, path)
+
+
 def _validate_checkpoint_lineage(value: Any, label: str) -> dict[str, Any]:
     lineage = _expect_keys(value, {"mode", "source_run_id", "source_sha256"}, label)
     if lineage["mode"] not in LINEAGE_MODES:
@@ -116,16 +168,19 @@ def _validate_analysis(value: Any) -> dict[str, Any]:
     for key in ("primary_metric", "estimand"):
         if not isinstance(analysis[key], str) or not analysis[key]:
             raise MatrixError(f"analysis.{key} must be a non-empty string")
-    if not isinstance(analysis["paired_by"], list) or not analysis["paired_by"] \
-            or any(not isinstance(x, str) or not x for x in analysis["paired_by"]):
-        raise MatrixError("analysis.paired_by must be a non-empty string list")
+    if analysis["paired_by"] != ["pairing_key"]:
+        raise MatrixError("unsupported paired_by; v1 supports only ['pairing_key']")
     contrasts = analysis["planned_contrasts"]
     if not isinstance(contrasts, list) or not contrasts:
         raise MatrixError("analysis.planned_contrasts must be non-empty")
+    contrast_names: set[str] = set()
     for i, contrast in enumerate(contrasts):
         item = _expect_keys(contrast, {"name", "left_arm", "right_arm", "estimand"},
                             f"analysis.planned_contrasts[{i}]")
         _safe_id(item["name"], f"analysis.planned_contrasts[{i}].name")
+        if item["name"] in contrast_names:
+            raise MatrixError(f"duplicate contrast name: {item['name']}")
+        contrast_names.add(item["name"])
         _safe_id(item["left_arm"], f"analysis.planned_contrasts[{i}].left_arm")
         _safe_id(item["right_arm"], f"analysis.planned_contrasts[{i}].right_arm")
         if not isinstance(item["estimand"], str) or not item["estimand"]:
@@ -167,15 +222,31 @@ def validate_request(request: Any) -> dict[str, Any]:
     arm_ids: set[str] = set()
     normalized_arms: list[dict[str, Any]] = []
     for i, raw in enumerate(arms):
-        arm = _expect_keys(raw, {"arm_id", "config_overrides"}, f"arms[{i}]")
+        arm = _expect_keys(raw, {
+            "arm_id", "config_overrides", "intervention_paths",
+        }, f"arms[{i}]")
         arm_id = _safe_id(arm["arm_id"], f"arms[{i}].arm_id")
         if arm_id in arm_ids:
             raise MatrixError(f"duplicate arm_id: {arm_id}")
         arm_ids.add(arm_id)
+        intervention_paths = arm["intervention_paths"]
+        if not isinstance(intervention_paths, list):
+            raise MatrixError(f"arms[{i}].intervention_paths must be a list")
+        normalized_paths = [_dotted_path(path,
+                                         f"arms[{i}].intervention_paths")
+                            for path in intervention_paths]
+        if len(set(normalized_paths)) != len(normalized_paths):
+            raise MatrixError(f"arms[{i}].intervention_paths contains duplicates")
+        overrides = _mapping(arm["config_overrides"],
+                             f"arms[{i}].config_overrides")
+        _validate_override_paths(overrides, set(normalized_paths),
+                                 f"arm {arm_id}")
+        if any(_path_allowed(path, STOCHASTIC_IDENTITY_PATHS)
+               for path in _leaf_paths(overrides)):
+            raise MatrixError(f"arm {arm_id} cannot override stochastic identity paths")
         normalized_arms.append({"arm_id": arm_id,
-                                "config_overrides": _mapping(
-                                    arm["config_overrides"],
-                                    f"arms[{i}].config_overrides")})
+                                "config_overrides": overrides,
+                                "intervention_paths": normalized_paths})
     cells = request["cells"]
     if not isinstance(cells, list) or not cells:
         raise MatrixError("cells must be a non-empty list")
@@ -213,6 +284,9 @@ def validate_request(request: Any) -> dict[str, Any]:
                                            f"cells[{i}].config_overrides"),
             "checkpoint_lineage": lineage,
         })
+        _validate_override_paths(normalized_cells[-1]["config_overrides"],
+                                 STOCHASTIC_IDENTITY_PATHS,
+                                 f"cell {run_id}")
     _validate_acceptance(request["acceptance"])
     _validate_analysis(request["analysis"])
     _validate_claim_boundary(request["claim_boundary"])
@@ -221,9 +295,6 @@ def validate_request(request: Any) -> dict[str, Any]:
             raise MatrixError("analysis contrast references unknown arm")
         if contrast["left_arm"] == contrast["right_arm"]:
             raise MatrixError("analysis contrast must compare distinct arms")
-    if not any(c["arm_id"] == request["analysis"]["planned_contrasts"][0]["left_arm"]
-               for c in normalized_cells):
-        raise MatrixError("analysis contrast left arm has no planned cell")
     return {
         **request,
         "arms": normalized_arms,
@@ -273,14 +344,18 @@ def _checkpoint_for_config(config: dict[str, Any], lineage: dict[str, Any],
     expected_lineage = "new_training" if phase == "training" else "evaluation_only"
     if lineage["mode"] != expected_lineage:
         raise MatrixError(f"{label}: phase/checkpoint lineage mismatch")
+    if phase == "evaluation":
+        actual_sha = learning.get("checkpoint_sha256")
+        if actual_sha != lineage["source_sha256"]:
+            raise MatrixError(
+                f"{label}: checkpoint_lineage.source_sha256 does not match "
+                "resolved learning.checkpoint_sha256")
 
 
-def _control_projection(resolved_config: dict[str, Any]) -> dict[str, Any]:
+def _control_projection(resolved_config: dict[str, Any],
+                        intervention_paths: list[str]) -> dict[str, Any]:
     projection = copy.deepcopy(resolved_config)
-    projection["scenario"].pop("seed", None)
-    projection["learning"].pop("seed", None)
-    for key in ("checkpoint_path", "checkpoint_sha256", "checkpoint_metadata_sha256"):
-        projection["learning"].pop(key, None)
+    _remove_paths(projection, STOCHASTIC_IDENTITY_PATHS | set(intervention_paths))
     return projection
 
 
@@ -294,12 +369,10 @@ def _canonical_run_id(experiment_id: str, cell: dict[str, Any]) -> str:
 def _resolve_cells(request: dict[str, Any], project_root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     validated = validate_request(request)
     arm_by_id = {arm["arm_id"]: arm for arm in validated["arms"]}
-    common_resolved = governance.build_run_intent({
-        "runtime_kind": governance.RUNTIME_KIND,
-        "config": validated["common_config"],
-    }, project_root=project_root)
-    controlled_signature = canonical_sha(_control_projection(
-        common_resolved["resolved"]["config"]))
+    all_intervention_paths = {
+        path for arm in validated["arms"]
+        for path in arm["intervention_paths"]
+    }
     rows: list[dict[str, Any]] = []
     for index, cell in enumerate(validated["cells"]):
         if _canonical_run_id(validated["experiment_id"], cell) != cell["run_id"]:
@@ -320,6 +393,7 @@ def _resolve_cells(request: dict[str, Any], project_root: Path) -> tuple[dict[st
         _checkpoint_for_config(intent["resolved"]["config"],
                                cell["checkpoint_lineage"], cell["phase"],
                                cell["learning_seed"], f"cell {cell['run_id']}")
+        arm = arm_by_id[cell["arm_id"]]
         rows.append({
             **cell,
             "runtime_kind": governance.RUNTIME_KIND,
@@ -329,24 +403,78 @@ def _resolve_cells(request: dict[str, Any], project_root: Path) -> tuple[dict[st
             "input_sha256": intent["input_sha256"],
             "code_sha256": intent["code_sha256"],
             "execution_chain_sha256": governance.execution_chain_sha256(),
-            "controlled_signature": controlled_signature,
+            "controlled_signature": canonical_sha(_control_projection(
+                intent["resolved"]["config"], all_intervention_paths)),
+            "acceptance": validated["acceptance"],
             "config_path": f"resolved/{cell['run_id']}.leo-sim.yaml",
         })
+    _validate_pairing_contract(validated, rows)
+    return validated, rows
+
+
+def _validate_pairing_contract(request: dict[str, Any],
+                               rows: list[dict[str, Any]]) -> None:
+    """Validate the executable v1 paired comparison contract.
+
+    Every pairing key is exactly one left/right pair for one preregistered
+    contrast. Trace identity is shared; learning identity and checkpoints are
+    intentionally allowed to differ between the two arms.
+    """
+    contrasts = request["analysis"]["planned_contrasts"]
     by_pair: dict[str, list[dict[str, Any]]] = {}
+    planned_run_ids = {row["run_id"] for row in rows}
     for row in rows:
         by_pair.setdefault(row["pairing_key"], []).append(row)
+        source_run_id = row["checkpoint_lineage"]["source_run_id"]
+        if source_run_id is not None and source_run_id == row["run_id"]:
+            raise MatrixError(
+                f"cell {row['run_id']} checkpoint lineage cannot reference itself")
+        if source_run_id is not None and source_run_id not in planned_run_ids \
+                and not source_run_id.startswith("external-"):
+            raise MatrixError(
+                f"cell {row['run_id']} external checkpoint source_run_id must use "
+                "the external- prefix")
+    contrast_by_arms = {
+        frozenset((contrast["left_arm"], contrast["right_arm"])): contrast
+        for contrast in contrasts
+    }
     for pairing_key, group in by_pair.items():
-        if len({row["arm_id"] for row in group}) != len(group):
-            raise MatrixError(f"pairing_key {pairing_key} repeats an arm")
-        identity = {
-            (row["phase"], row["trace_seed"], row["learning_seed"],
-             json.dumps(row["checkpoint_lineage"], sort_keys=True),
-             row["controlled_signature"])
-            for row in group
+        if len(group) != 2:
+            raise MatrixError(
+                f"pairing_key {pairing_key} must have exactly one left and one right cell")
+        arm_ids = frozenset(row["arm_id"] for row in group)
+        contrast = contrast_by_arms.get(arm_ids)
+        if contrast is None:
+            raise MatrixError(
+                f"pairing_key {pairing_key} has no matching planned contrast")
+        left = next(row for row in group if row["arm_id"] == contrast["left_arm"])
+        right = next(row for row in group if row["arm_id"] == contrast["right_arm"])
+        if left["trace_seed"] != right["trace_seed"]:
+            raise MatrixError(
+                f"pairing_key {pairing_key} must share trace_seed for paired comparison")
+        if left["phase"] != right["phase"]:
+            raise MatrixError(
+                f"pairing_key {pairing_key} must share learning phase")
+        if left["controlled_signature"] != right["controlled_signature"]:
+            raise MatrixError(
+                f"pairing_key {pairing_key} has inconsistent controlled configuration")
+    for contrast in contrasts:
+        contrast_arm_ids = {
+            contrast["left_arm"], contrast["right_arm"]}
+        contrast_keys = {
+            pairing_key for pairing_key, group in by_pair.items()
+            if {row["arm_id"] for row in group} == contrast_arm_ids
         }
-        if len(identity) != 1:
-            raise MatrixError(f"pairing_key {pairing_key} has inconsistent paired control or learning identity")
-    return validated, rows
+        if not contrast_keys:
+            raise MatrixError(
+                f"contrast {contrast['name']} has no planned pairing key")
+        for pairing_key in contrast_keys:
+            group = by_pair[pairing_key]
+            if {row["arm_id"] for row in group} != {
+                    contrast["left_arm"], contrast["right_arm"]}:
+                raise MatrixError(
+                    f"pairing_key {pairing_key} does not contain both arms of "
+                    f"contrast {contrast['name']}")
 
 
 def _write_json(path: Path, value: Any) -> None:
@@ -359,6 +487,40 @@ def _write_json(path: Path, value: Any) -> None:
 def _artifact_hashes(out_dir: Path, paths: list[str]) -> dict[str, str]:
     return {raw: hashlib.sha256((out_dir / raw).read_bytes()).hexdigest()
             for raw in sorted(paths)}
+
+
+def _reject_symlink_ancestors(path: Path, stop: Path) -> None:
+    """Reject caller-controlled symlink components up to a trusted root."""
+    path = Path(path)
+    stop = Path(stop)
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    if not stop.is_absolute():
+        stop = Path.cwd() / stop
+    try:
+        path.relative_to(stop)
+    except ValueError as exc:
+        raise MatrixError(f"path escapes project root: {path}") from exc
+    current = path
+    while True:
+        if current.is_symlink():
+            raise MatrixError(f"path contains a symbolic ancestor: {path}")
+        if current == stop:
+            break
+        if current == current.parent:
+            raise MatrixError(f"path is not below project root: {path}")
+        current = current.parent
+
+
+def _canonical_experiment_dir(root: Path, experiment_id: str,
+                               out_dir: Path) -> Path:
+    expected = (root / "EXPERIMENTS" / experiment_id).resolve()
+    candidate = out_dir.resolve(strict=False)
+    if candidate != expected:
+        raise MatrixError(
+            f"output directory must be canonical {expected}; got {candidate}")
+    _reject_symlink_ancestors(out_dir, root)
+    return expected
 
 
 def _analysis_document(request: dict[str, Any], manifest_sha: str,
@@ -374,7 +536,7 @@ def _analysis_document(request: dict[str, Any], manifest_sha: str,
             {key: row[key] for key in (
                 "run_id", "arm_id", "phase", "trace_seed", "learning_seed",
                 "pairing_key", "config_sha256", "trace_identity_sha256",
-                "input_sha256", "controlled_signature")}
+                "input_sha256", "controlled_signature", "acceptance")}
             for row in rows
         ],
         "request_sha256": request_sha,
@@ -387,14 +549,22 @@ def compile_matrix_experiment(request_path: Path, out_dir: Path,
                               project_root: Path | None = None) -> dict[str, Any]:
     request_path = Path(request_path)
     out_dir = Path(out_dir)
+    if not request_path.is_absolute():
+        request_path = Path.cwd() / request_path
+    if not out_dir.is_absolute():
+        out_dir = Path.cwd() / out_dir
     project_root = Path(project_root or request_path.parent).resolve()
+    _reject_symlink_ancestors(request_path, project_root)
     if request_path.is_symlink() or not request_path.is_file():
         raise MatrixError(f"request is not a regular file: {request_path}")
     try:
         request = json.loads(request_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise MatrixError(f"request unreadable: {exc}") from exc
-    validated, rows = _resolve_cells(request, project_root)
+    validated = validate_request(request)
+    validated, rows = _resolve_cells(validated, project_root)
+    out_dir = _canonical_experiment_dir(project_root,
+                                         validated["experiment_id"], out_dir)
     if out_dir.is_symlink():
         raise MatrixError("output directory may not be symbolic")
     if out_dir.exists():
@@ -426,7 +596,7 @@ def compile_matrix_experiment(request_path: Path, out_dir: Path,
             "learning_seed", "pairing_key", "config_overrides",
             "checkpoint_lineage", "config_path", "config_sha256",
             "trace_identity_sha256", "input_sha256", "code_sha256",
-            "execution_chain_sha256", "controlled_signature")}
+            "execution_chain_sha256", "controlled_signature", "acceptance")}
                    for row in rows],
         "execution_authorized": False,
     }
@@ -469,7 +639,9 @@ def compile_matrix_experiment(request_path: Path, out_dir: Path,
 def verify_compiled_matrix(root: Path, experiment_dir: Path) -> tuple[str, dict[str, str], list[dict[str, Any]]]:
     """Recompute all matrix identities without trusting compiled documents."""
     root = Path(root).resolve()
-    experiment_dir = Path(experiment_dir).resolve()
+    raw_experiment_dir = Path(experiment_dir)
+    _reject_symlink_ancestors(raw_experiment_dir, root)
+    experiment_dir = raw_experiment_dir.resolve()
     docs = {}
     for name in ("request.json", "compile-report.json", "run-manifest.json",
                  "analysis-request.json"):
@@ -492,10 +664,14 @@ def verify_compiled_matrix(root: Path, experiment_dir: Path) -> tuple[str, dict[
         raise MatrixError("matrix compile report has an invalid field set")
     if (report["schema"] != governance.COMPILE_REPORT_SCHEMA
             or report["status"] != "COMPILED_REVIEW_REQUIRED"
+            or report["runtime_kind"] != governance.RUNTIME_KIND
+            or report["experiment_id"] != request["experiment_id"]
             or report["errors"] != [] or report["request_sha256"] != request_sha
             or report["execution_authorized"] is not False
             or report["launcher_generated"] is not False):
         raise MatrixError("matrix compile report is not a clean review-required build")
+    expected_experiment_dir = _canonical_experiment_dir(
+        root, request["experiment_id"], experiment_dir)
     if manifest.get("schema") != MATRIX_MANIFEST_SCHEMA or \
             manifest.get("runtime_kind") != governance.RUNTIME_KIND or \
             manifest.get("experiment_id") != request["experiment_id"] or \
@@ -504,12 +680,12 @@ def verify_compiled_matrix(root: Path, experiment_dir: Path) -> tuple[str, dict[
             manifest.get("common_config_sha256") != canonical_sha(request["common_config"]) or \
             manifest.get("arms") != request["arms"]:
         raise MatrixError("matrix manifest identity/state mismatch")
-    expected_request, rows = _resolve_cells(request, root)
+    _, rows = _resolve_cells(request, root)
     expected_cells = [{key: row[key] for key in (
         "run_id", "runtime_kind", "arm_id", "phase", "trace_seed",
         "learning_seed", "pairing_key", "config_overrides", "checkpoint_lineage",
         "config_path", "config_sha256", "trace_identity_sha256", "input_sha256",
-        "code_sha256", "execution_chain_sha256", "controlled_signature")}
+        "code_sha256", "execution_chain_sha256", "controlled_signature", "acceptance")}
                      for row in rows]
     if set(manifest) != {"schema", "runtime_kind", "experiment_id", "request_sha256",
                          "common_config_sha256", "arms", "cells", "execution_authorized"}:
@@ -527,6 +703,12 @@ def verify_compiled_matrix(root: Path, experiment_dir: Path) -> tuple[str, dict[
         raise MatrixError("matrix compile report artifact hash map is incomplete or stale")
     for row in rows:
         config_path = experiment_dir / row["config_path"]
+        _reject_symlink_ancestors(config_path, experiment_dir)
+        try:
+            config_path.resolve().relative_to(expected_experiment_dir)
+        except ValueError as exc:
+            raise MatrixError(
+                f"matrix resolved config escapes experiment directory: {row['run_id']}") from exc
         if config_path.is_symlink() or not config_path.is_file():
             raise MatrixError(f"matrix config is missing or symbolic: {row['run_id']}")
         resolved = config_mod.load_config_file(str(config_path))
@@ -545,8 +727,12 @@ def verify_compiled_matrix(root: Path, experiment_dir: Path) -> tuple[str, dict[
         "run_id", "runtime_kind", "arm_id", "phase", "trace_seed",
         "learning_seed", "pairing_key", "config_path", "config_sha256",
         "trace_identity_sha256", "input_sha256", "code_sha256",
-        "execution_chain_sha256", "controlled_signature", "checkpoint_lineage")}
+        "execution_chain_sha256", "controlled_signature", "checkpoint_lineage",
+        "acceptance")}
                   for row in rows]
+    for row in authorized:
+        row["config_path"] = str(
+            (experiment_dir / row["config_path"]).resolve().relative_to(root))
     if len(authorized) != len(request["cells"]) or \
             {row["run_id"] for row in authorized} != {cell["run_id"] for cell in request["cells"]}:
         raise MatrixError("authorized matrix cohort is not exactly the planned cells")

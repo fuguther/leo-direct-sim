@@ -1,10 +1,17 @@
 import copy
 import json
+from pathlib import Path
 
 import pytest
 
 from CODE.experiment_platform import authorize_experiment
 from CODE.leo_sim import matrix
+from CODE.work.finalize_decision import evaluate_decision, file_sha256
+
+
+def _write_json(path, value):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def _request():
@@ -24,10 +31,11 @@ def _request():
             "routing": {"policy": "oracle"},
         },
         "arms": [
-            {"arm_id": "control", "config_overrides": {}},
+            {"arm_id": "control", "config_overrides": {},
+             "intervention_paths": []},
             {"arm_id": "treatment", "config_overrides": {
                 "demand": {"offered_mbps": 2.0},
-            }},
+            }, "intervention_paths": ["demand.offered_mbps"]},
         ],
         "cells": [
             {"run_id": "EXP-LEO-V2-MATRIX-control-s42", "arm_id": "control",
@@ -83,6 +91,7 @@ def test_compile_matrix_emits_one_bound_v2_config_and_runbook_command_per_cell(t
         assert len(cell["code_sha256"]) == 64
         assert all(len(v) == 64 for v in cell["execution_chain_sha256"].values())
         assert len(cell["controlled_signature"]) == 64
+        assert cell["acceptance"] == request["acceptance"]
         config_path = out / cell["config_path"]
         assert config_path.name == f"{cell['run_id']}.leo-sim.yaml"
         assert config_path.is_file()
@@ -124,5 +133,213 @@ def test_authorizer_verifies_matrix_cohort_as_one_atomic_set(tmp_path):
     assert {row["run_id"] for row in authorized} == {
         cell["run_id"] for cell in request["cells"]}
     assert all(row["runtime_kind"] == "leo_sim_v2" for row in authorized)
+    assert all(row["config_path"].startswith("EXPERIMENTS/") for row in authorized)
     assert all(path.startswith(str(experiment.relative_to(tmp_path)))
                for path in artifacts)
+
+
+def _make_finalization(root: Path, experiment: Path) -> Path:
+    schema_root = Path(__file__).resolve().parents[2] / "work"
+    work_root = root / "CODE" / "work"
+    work_root.mkdir(parents=True, exist_ok=True)
+    for name in ("work-package.schema.json", "review-receipt.schema.json",
+                 "decision.schema.json"):
+        (work_root / name).write_bytes((schema_root / name).read_bytes())
+    artifact_hashes = {
+        str(path.relative_to(root)): file_sha256(path)
+        for path in sorted(experiment.rglob("*")) if path.is_file()
+    }
+    work_dir = work_root / "WP-MATRIX" / "R01"
+    brief = {
+        "schema": "agent-work-package/v2", "work_id": "WP-MATRIX",
+        "revision": 1, "parent_revision": None,
+        "producer_id": "producer:test", "producer_session_id": "P-matrix-r01",
+        "objective": "Review matrix artifacts before execution.",
+        "allowed_inputs": [str(experiment.relative_to(root))], "excluded_inputs": [],
+        "deliverables": ["Bound matrix authorization"],
+        "cannot_claim": ["No run or performance claim."],
+        "acceptance": ["All matrix cells are bound."],
+        "review_roles": ["cold_start", "satellite_drl", "adversarial"],
+        "cost_tier": "high_judgment", "status": "REVIEW",
+    }
+    brief_path = work_dir / "brief.json"
+    _write_json(brief_path, brief)
+    refs = []
+    for role in brief["review_roles"]:
+        receipt = {
+            "schema": "agent-review-receipt/v2",
+            "receipt_id": f"RR-MATRIX-{role.upper()}", "work_id": "WP-MATRIX",
+            "revision": 1, "artifact_hashes": artifact_hashes,
+            "producer_id": brief["producer_id"],
+            "producer_session_id": brief["producer_session_id"],
+            "reviewer_id": f"reviewer:{role}", "reviewer_session_id": f"R-{role}",
+            "independence": {"producer_and_reviewer_are_distinct": True,
+                             "review_started_from_declared_inputs": True},
+            "role": role, "verdict": "PASS", "evidence": ["fixture pass"],
+            "blocking_findings": [], "unknowns": [], "required_revision": [],
+        }
+        receipt_path = work_dir / f"review-{role}.json"
+        _write_json(receipt_path, receipt)
+        refs.append({"receipt_id": receipt["receipt_id"],
+                     "path": str(receipt_path.relative_to(root)),
+                     "sha256": file_sha256(receipt_path), "role": role,
+                     "verdict": "PASS"})
+    decision = {
+        "schema": "agent-work-decision/v1", "work_id": "WP-MATRIX",
+        "revision": 1, "producer_id": brief["producer_id"],
+        "artifact_hashes": artifact_hashes, "decision_maker_id": "decision:test",
+        "applied_review_receipts": refs, "decision": "ACCEPT",
+        "rationale": "Fixture reviews bind the complete matrix.",
+        "blocking_findings": [], "revision_instructions": [], "next_revision": None,
+    }
+    decision_path = work_dir / "decision.json"
+    _write_json(decision_path, decision)
+    finalization, errors = evaluate_decision(root, brief_path, decision_path)
+    assert errors == []
+    finalization_path = work_dir / "finalization.json"
+    _write_json(finalization_path, finalization)
+    return finalization_path
+
+
+def test_matrix_compile_authorize_row_and_runtime_verifier_e2e(tmp_path):
+    request = _request()
+    source = tmp_path / "request.json"
+    source.write_text(json.dumps(request), encoding="utf-8")
+    experiment = tmp_path / "EXPERIMENTS" / request["experiment_id"]
+    matrix.compile_matrix_experiment(source, experiment, project_root=tmp_path)
+    finalization = _make_finalization(tmp_path, experiment)
+    authorization_path = experiment / "authorization.json"
+    authorization = authorize_experiment.build_authorization(
+        tmp_path, experiment, finalization)
+    _write_json(authorization_path, authorization)
+    verified = authorize_experiment.verify_authorization(tmp_path, authorization_path)
+    assert len(verified["authorized_cells"]) == len(request["cells"])
+    row = verified["authorized_runs"][0]
+    config_path = tmp_path / row["config_path"]
+    runtime_verified = authorize_experiment.verify_authorization_for_leo_sim_v2_config(
+        tmp_path, authorization_path, config_path, row["run_id"])
+    assert runtime_verified["status"] == "AUTHORIZED"
+
+
+def test_paired_learning_cells_allow_different_seeds_and_external_checkpoints(tmp_path):
+    ckpt_a = tmp_path / "EXPERIMENTS" / "ckpt-a.keras"
+    ckpt_b = tmp_path / "EXPERIMENTS" / "ckpt-b.keras"
+    ckpt_a.parent.mkdir(parents=True)
+    ckpt_a.write_bytes(b"checkpoint-a")
+    ckpt_b.write_bytes(b"checkpoint-b")
+    metadata = ckpt_a.parent / "metadata.json"
+    metadata.write_text("{\"contract\": \"C3\"}\n", encoding="utf-8")
+    import hashlib
+    sha_a = hashlib.sha256(ckpt_a.read_bytes()).hexdigest()
+    sha_b = hashlib.sha256(ckpt_b.read_bytes()).hexdigest()
+    metadata_sha = hashlib.sha256(metadata.read_bytes()).hexdigest()
+    request = _request()
+    request["arms"] = [
+        {"arm_id": "left", "config_overrides": {}, "intervention_paths": []},
+        {"arm_id": "right", "config_overrides": {}, "intervention_paths": []},
+    ]
+    request["common_config"]["routing"] = {
+        "policy": "hop", "learning_enabled": True, "contract": "C3",
+    }
+    request["common_config"]["control_plane"] = {"enabled": True}
+    request["common_config"]["learning"] = {
+        "algorithm": "ddqn", "mode": "eval",
+    }
+    request["analysis"]["planned_contrasts"][0].update(
+        left_arm="left", right_arm="right")
+    request["cells"] = [
+        {"run_id": "EXP-LEO-V2-MATRIX-left-s42-l1", "arm_id": "left",
+         "phase": "evaluation", "trace_seed": 42, "learning_seed": 1,
+         "pairing_key": "pair-42", "config_overrides": {
+                 "learning": {"checkpoint_path": "EXPERIMENTS/ckpt-a.keras",
+                               "checkpoint_sha256": sha_a,
+                               "checkpoint_metadata_sha256": metadata_sha}},
+         "checkpoint_lineage": {"mode": "evaluation_only",
+                                 "source_run_id": "external-a",
+                                 "source_sha256": sha_a}},
+        {"run_id": "EXP-LEO-V2-MATRIX-right-s42-l2", "arm_id": "right",
+         "phase": "evaluation", "trace_seed": 42, "learning_seed": 2,
+         "pairing_key": "pair-42", "config_overrides": {
+                 "learning": {"checkpoint_path": "EXPERIMENTS/ckpt-b.keras",
+                               "checkpoint_sha256": sha_b,
+                               "checkpoint_metadata_sha256": metadata_sha}},
+         "checkpoint_lineage": {"mode": "evaluation_only",
+                                 "source_run_id": "external-b",
+                                 "source_sha256": sha_b}},
+    ]
+    source = tmp_path / "request.json"
+    source.write_text(json.dumps(request), encoding="utf-8")
+    out = tmp_path / "EXPERIMENTS" / request["experiment_id"]
+    report = matrix.compile_matrix_experiment(source, out, project_root=tmp_path)
+    assert report["status"] == "COMPILED_REVIEW_REQUIRED"
+    bad = copy.deepcopy(request)
+    bad["cells"][1]["checkpoint_lineage"]["source_sha256"] = "0" * 64
+    source.write_text(json.dumps(bad), encoding="utf-8")
+    with pytest.raises(matrix.MatrixError, match="source_sha256"):
+        matrix.compile_matrix_experiment(source,
+                                         tmp_path / "EXPERIMENTS" / "EXP-BAD",
+                                         project_root=tmp_path)
+
+
+@pytest.mark.parametrize("mutation, message", [
+    (lambda r: r["arms"][1]["config_overrides"].update(
+        scenario={"duration_s": 2.0}),
+     "undeclared intervention"),
+    (lambda r: r["cells"].pop(), "pairing_key .* exactly one left and one right"),
+    (lambda r: r["analysis"].update(paired_by=["seed"]), "unsupported paired_by"),
+    (lambda r: r["analysis"]["planned_contrasts"][0].update(right_arm="missing"),
+     "unknown arm"),
+])
+def test_matrix_pairing_and_intervention_contract_fails_closed(mutation, message, tmp_path):
+    request = _request()
+    mutation(request)
+    source = tmp_path / "request.json"
+    source.write_text(json.dumps(request), encoding="utf-8")
+    with pytest.raises(matrix.MatrixError, match=message):
+        matrix.compile_matrix_experiment(source,
+                                         tmp_path / "EXPERIMENTS" / request["experiment_id"],
+                                         project_root=tmp_path)
+
+
+def test_matrix_rejects_escape_and_symlink_output_paths(tmp_path):
+    request = _request()
+    source = tmp_path / "request.json"
+    source.write_text(json.dumps(request), encoding="utf-8")
+    with pytest.raises(matrix.MatrixError, match="canonical"):
+        matrix.compile_matrix_experiment(source, tmp_path / "elsewhere",
+                                         project_root=tmp_path)
+    canonical = tmp_path / "EXPERIMENTS" / request["experiment_id"]
+    canonical.parent.mkdir(parents=True)
+    target = tmp_path / "outside"
+    target.mkdir()
+    canonical.symlink_to(target, target_is_directory=True)
+    with pytest.raises(matrix.MatrixError, match="symbolic"):
+        matrix.compile_matrix_experiment(source, canonical, project_root=tmp_path)
+
+
+def test_matrix_verifier_rejects_symlinked_resolved_ancestor_and_report_rebind(tmp_path):
+    request = _request()
+    source = tmp_path / "request.json"
+    source.write_text(json.dumps(request), encoding="utf-8")
+    experiment = tmp_path / "EXPERIMENTS" / request["experiment_id"]
+    matrix.compile_matrix_experiment(source, experiment, project_root=tmp_path)
+    resolved = experiment / "resolved"
+    real_resolved = experiment / "resolved-real"
+    resolved.rename(real_resolved)
+    resolved.symlink_to(real_resolved, target_is_directory=True)
+    with pytest.raises(matrix.MatrixError, match="symbolic"):
+        matrix.verify_compiled_matrix(tmp_path, experiment)
+
+    # A fresh compile isolates the report identity check from the symlink case.
+    experiment = tmp_path / "EXPERIMENTS" / "EXP-LEO-V2-MATRIX-REPORT"
+    request["experiment_id"] = "EXP-LEO-V2-MATRIX-REPORT"
+    request["cells"][0]["run_id"] = "EXP-LEO-V2-MATRIX-REPORT-control-s42"
+    request["cells"][1]["run_id"] = "EXP-LEO-V2-MATRIX-REPORT-treatment-s42"
+    source.write_text(json.dumps(request), encoding="utf-8")
+    matrix.compile_matrix_experiment(source, experiment, project_root=tmp_path)
+    report_path = experiment / "compile-report.json"
+    report = json.loads(report_path.read_text())
+    report["runtime_kind"] = "legacy_gateway"
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+    with pytest.raises(matrix.MatrixError, match="compile report"):
+        matrix.verify_compiled_matrix(tmp_path, experiment)
