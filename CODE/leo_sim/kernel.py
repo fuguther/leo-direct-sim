@@ -1571,11 +1571,10 @@ class Kernel:
                 if rate > 0:
                     rows.append(("downlink", f"gsl:downlink:{sat}:{cell}", rate))
 
-        topo = (routing.build_topology(
-                    self.geometry, self.num_sats, self.cfg_links["isl_dirs"],
-                    t=sample_at)
-                if self.cfg_topo["recompute_interval_s"] is not None
-                else self.topo)
+        # Use the topology generation that is actually live at this sample;
+        # recomputing a hypothetical matching here would count links the
+        # simulator has not yet installed when cadence is intentionally slow.
+        topo = self.topo
         for sat in range(self.num_sats):
             for _direction, peer in sorted(topo[sat].items()):
                 if not self.geometry.isl_available(sat, peer, sample_at):
