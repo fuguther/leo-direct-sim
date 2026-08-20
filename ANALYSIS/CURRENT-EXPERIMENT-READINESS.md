@@ -32,7 +32,7 @@
 |---|---|---|---:|
 | A0 文档与合同收敛 | 当前真相源唯一；实验清单、Q0 边界、claim 边界一致 | 本 PR 处理 | 1–2 日 |
 | A1 D1/D2 入 main | 精确 head 复核有效；CI 绿；合入后 main 全量与行为对照绿 | 候选已实现、未合并 | 1–2 日 |
-| A2 已知科学 blocker | 奖励正循环、mask 信息泄漏、deadline/Q0 控制范围有明确修复或冻结决策 | open | 2–5 日 |
+| A2 已知科学 blocker | 奖励正循环、mask 信息泄漏、deadline/Q0 控制范围有明确修复或冻结决策 | mask 已由 #62 关闭；其余 open | 2–5 日 |
 | A3 正式证据链 | compile、review、authorize、run、receipt、analysis、claim 测试均存在并在 CI/本地通过 | broken | 2–4 日 |
 | A4 Q0 最小闭环 | Q0-I tiny 与独立穷举/第二实现一致；Q0-F tiny；逐事件 replay 可归因且 receipt 持久化 | 部分候选、需返工 | 3–6 日 |
 | A5 最终平台审计 | 冻结 commit 上三轮 Codex/不同模型/网页 GPT 无新增 blocking/major | 未开始最终三轮 | 2–5 日 |
@@ -45,7 +45,7 @@
 | 层 | 需要补到什么程度 | 当前主要缺口 | 是否阻塞目标 A |
 |---|---|---|---|
 | 物理/拓扑 | D1/D2；长时窗接缝、极区、接入/切换边界；选择性加入 Doppler/ARQ/天线并校准 | D1/D2 未合；高级物理尚无实证校准 | D1/D2 是；高级物理否 |
-| 信息 | 每类信息来源、传播、年龄、预测性与 mask 完全一致 | mask 可能泄漏；逐字段 AoI 尚待 EXP3 | mask 是；AoI 只阻塞 EXP3 |
+| 信息 | 每类信息来源、传播、年龄、预测性与 mask 完全一致 | #62 已关闭已知 cache-hop 旁路；逐字段 AoI 尚待 EXP3 | 已知 mask blocker 已关；AoI 只阻塞 EXP3 |
 | 控制 | 路由、等待、服务顺序、接入分配的权限分层 | Q0-I/Q0-J 控制范围未完全冻结 | Q0 是 |
 | 流量 | uniform 主线、gravity 敏感性、多 OD/走廊/突发场景 | 命名走廊需 CSV；单 OD 结论外推有限 | 多 OD 不阻塞首批 |
 | 学习 | 公平训练/评估、收敛诊断、断点恢复；按研究需要增加 temporal/path-credit/多智能体 | replay 不持久；temporal、FL/CKA 等未迁 | 长训韧性视 pilot；研究臂不阻塞 |
@@ -59,7 +59,7 @@
 1. 完成本轮文档收敛，冻结当前问题和实验程序。
 2. 合入 D1/D2 后重新跑 main 行为对照与全量测试。
 3. 修复正式分析链，并把相关测试纳入 CI。
-4. 关闭奖励、mask、deadline 与 Q0 replay blocker。
+4. 关闭奖励、deadline 与 Q0 replay blocker；保留 #62 的 mask 信息边界回归。
 5. 实现并交叉验证 Q0-I/Q0-F tiny。
 6. 在最终 commit 上执行三轮整平台审计。
 7. 部署同一 commit 到 VM，跑门禁、smoke、E0 和全臂 pilot。

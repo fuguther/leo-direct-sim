@@ -44,13 +44,14 @@
 - Q0 replay/tiny 是未合入候选并有 REQUEST_CHANGES；Q0-F 尚未完成。
 - 上述状态是 2026-08-20 核验快照，后续变化必须更新 CURRENT 文档，不能只追加 NOTES。
 
-## 2026-08-20：R1-A2 信息边界候选修复
+## 2026-08-20：R1-A2 信息边界修复合入
 
 - 隔离分支 `codex/20260820-r1-mask-information` 复现为 FACT：在学习观测不变时，
   `obs_hops` 外的两跳目的地广告会让旧代码开启 forward 动作。
-- 候选修复让学习选路的目的地广告、远端传播与队列指标和 observation 共用
-  cache-hop 边界；当前仍是未合入候选，须经承重改动独立冷启动复核与 PR/CI 后
-  才能把 `ANALYSIS/FINDINGS-REGISTRY.md` 的 R1-A2 标为 fixed。
+- 修复让学习选路的目的地广告、远端传播与队列指标和 observation 共用 cache-hop
+  边界；C1 同时约束当前邻居来源与实际一跳传播。
+- #62 head `614fd23` 独立冷启动复核 APPROVE；定向 `41 passed`、仿真内核全量
+  `410 passed`、GitHub pytest SUCCESS；squash 合入 main `758b606`，R1-A2 已 fixed。
 
 ## 下一步
 
@@ -58,5 +59,5 @@
    `ANALYSIS/GIT-WORKTREE-RECONCILIATION-20260820.md` 对 24 个 clean+merged
    worktree 候选逐条申请回收，保护 3 个 dirty、2 个 orphan 和 5 个 detached 项。
 2. D1/D2 合入后更新 CURRENT 文档中的精确 main/VM 状态。
-3. 修 R7-F1 正式分析链，再关闭 R1-A1/R1-A2 与 Q0 blocker。
+3. 修 R7-F1 正式分析链，再关闭 R1-A1 与 Q0 blocker；保留 R1-A2 回归。
 4. 最终冻结平台三轮审计后部署 VM，重跑 E0 与全臂 pilot。
