@@ -87,4 +87,3 @@
 3. 对两个 `ORPHAN-UNVERIFIED` 做 commit 差分审计，判断唯一内容应续作、归档还是已被 squash 等价吸收。
 4. 对五个 detached checkout 查明创建目的和是否仍被部署/复核流程引用。
 5. 三个 `DIRTY-PROTECT` 由其 owner 按新状态机处理：形成 checkpoint/Draft PR、明确 blocker，或保持原样并登记接手门；其他 Agent 不得代交。
-

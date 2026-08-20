@@ -1,6 +1,6 @@
 # Git 生命周期治理设计
 
-日期：2026-08-20  
+日期：2026-08-20
 适用仓库：`fuguther/leo-direct-sim`
 
 ## 1. 问题与证据
@@ -85,4 +85,3 @@
 ## 10. 当前存量治理
 
 先生成只读分类账，将现有 worktree 分成：`ACTIVE`、`DIRTY-PROTECT`、`MERGED-CLEANUP-CANDIDATE`、`ORPHAN-UNVERIFIED`、`DETACHED-VERIFY`。本轮只生成分类与证据，不执行删除。待远端 PR 和 main 归属逐项核实后，再把明确可回收路径逐条提交用户批准。
-
