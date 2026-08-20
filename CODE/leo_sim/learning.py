@@ -2,9 +2,10 @@
 
 Information boundary: every contract observes ONLY the current satellite's own
 directly measured state plus its actually-arrived, non-expired local control
-cache. C1 restricts the cache further to 1-hop origins; C3-C7 share exactly
-the same information set (the vis_k cache) and differ only in
-representation/aggregation and AoI handling.
+cache. C1 restricts the cache further to 1-hop origins; C3-C7 share the
+configured ``obs_hops`` information set (``None`` means the full vis_k cache)
+and differ only in representation/aggregation and AoI handling.  The kernel
+applies the same hop boundary to learning-route discovery/action gating.
 
 Canonical Double-DQN target (dependency-independent, tested here):
     a* = argmax_a Q_online(s', a)   over legal (masked) actions only

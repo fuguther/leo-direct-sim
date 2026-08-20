@@ -333,6 +333,56 @@ class _FourSatGeometry(StaticGeometry):
         return tuple((float(i), 0.0, 550.0) for i in range(self.num_satellites))
 
 
+@pytest.mark.parametrize(
+    ("contract", "obs_hops"),
+    [("C3", 1), ("C1", None)],
+)
+def test_learning_routing_cannot_use_cache_beyond_obs_hops(
+        contract, obs_hops):
+    """R1-A2: the action/decision gate is part of the learner's information.
+
+    A two-hop destination advertisement is intentionally cropped by
+    ``obs_hops=1``.  Adding that hidden entry leaves the observation bytewise
+    unchanged, so it must not make a forwarding decision/action available.
+    """
+    topo = {
+        0: {"E": 1},
+        1: {"W": 0, "E": 2},
+        2: {"W": 1},
+    }
+    geo = _FourSatGeometry(3, neighbors_map=topo)
+    cfg = make_cfg({
+        "scenario": {"num_satellites": 3, "num_planes": 1},
+        "control_plane": {"enabled": True, "vis_k": 2},
+        "routing": {"policy": "hop", "learning_enabled": True,
+                    "contract": contract},
+        "learning": {"algorithm": "qlearning", "obs_hops": obs_hops},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    k._ensure_endpoint(B)
+    visible_obs = k._learning_observation(0, B)
+    k.caches[0].put(control.CacheEntry(
+        2,
+        {"serve_cells": [B], "isl_queue_bits": {},
+         "isl_propagation_s": {}},
+        generated_at=0.0, received_at=0.0, ttl_s=10.0, hops=2,
+    ))
+    hidden_obs = k._learning_observation(0, B)
+    assert np.array_equal(visible_obs, hidden_obs), (
+        "the hidden entry unexpectedly entered the learning observation")
+
+    learner = _MaskRecordingLearner()
+    k.learner = learner
+    pkt = kernel.DataPacket(1, A, B, 1_000_000, None, 0.0)
+    pkt.path.append(0)
+    k.ledger.register(pkt.pid, pkt.bits)
+    k._decide(pkt, 0)
+
+    assert learner.decisions == 0, (
+        "a cache entry hidden from the observation opened a learning action")
+    assert list(k.pending[0]) == [pkt]
+
+
 def test_learning_action_space_not_preclipped_to_heuristic_best():
     """DDQN must be able to pick ANY locally legal direction, not only the
     heuristic-best one. Regression: kernel passed best_only=True for learning

@@ -106,6 +106,40 @@ def test_capacity_policy_avoids_advertised_congestion():
     assert dirs[0] == "N"  # path via 2: sat1's E queue is advertised congested
 
 
+@pytest.mark.parametrize("policy", ["delay", "capacity"])
+def test_cropped_cache_metrics_cannot_make_remote_path_reachable(policy):
+    """Learning routing must crop path metrics with the observation cache.
+
+    The destination advertisement is inside the one-hop information boundary,
+    but both possible intermediate satellites advertise their remote-edge
+    metrics at two hops.  Those hidden metrics may make the route usable with
+    the full cache, but not with ``cache_hops=1``.
+    """
+    geo = StaticGeometry(4, neighbors_map=DIVERGE)
+    topo = _topo(geo)
+    cache = control.LocalCache()
+    cache.put(control.CacheEntry(
+        3, {"serve_cells": [B], "isl_queue_bits": {},
+            "isl_propagation_s": {}},
+        0.0, 0.01, 10.0, hops=1))
+    for origin, direction in ((1, "E"), (2, "E")):
+        cache.put(control.CacheEntry(
+            origin,
+            {"serve_cells": [], "isl_queue_bits": {direction: 0},
+             "isl_propagation_s": {direction: 0.001}},
+            0.0, 0.01, 10.0, hops=2))
+
+    full_dirs, full_status = routing.choose_next_hop(
+        policy, 0, B, 1.0, geo, topo, cache, {}, 1e9,
+        lambda km: km / 299_792.458)
+    cropped_dirs, cropped_status = routing.choose_next_hop(
+        policy, 0, B, 1.0, geo, topo, cache, {}, 1e9,
+        lambda km: km / 299_792.458, cache_hops=1)
+
+    assert full_status == "ok" and full_dirs
+    assert cropped_status == "unreachable" and cropped_dirs == []
+
+
 def test_capacity_policy_without_info_is_no_info_or_unreachable():
     geo = StaticGeometry(4, neighbors_map=DIVERGE)
     topo = _topo(geo)

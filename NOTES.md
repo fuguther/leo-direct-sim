@@ -44,6 +44,14 @@
 - Q0 replay/tiny 是未合入候选并有 REQUEST_CHANGES；Q0-F 尚未完成。
 - 上述状态是 2026-08-20 核验快照，后续变化必须更新 CURRENT 文档，不能只追加 NOTES。
 
+## 2026-08-20：R1-A2 信息边界候选修复
+
+- 隔离分支 `codex/20260820-r1-mask-information` 复现为 FACT：在学习观测不变时，
+  `obs_hops` 外的两跳目的地广告会让旧代码开启 forward 动作。
+- 候选修复让学习选路的目的地广告、远端传播与队列指标和 observation 共用
+  cache-hop 边界；当前仍是未合入候选，须经承重改动独立冷启动复核与 PR/CI 后
+  才能把 `ANALYSIS/FINDINGS-REGISTRY.md` 的 R1-A2 标为 fixed。
+
 ## 下一步
 
 1. 合入 Git 生命周期治理；随后按
