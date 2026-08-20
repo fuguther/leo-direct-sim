@@ -1,6 +1,6 @@
 # LEO 拥塞控制与链路利用率实验总计划
 
-> CURRENT；最后核验：2026-08-21。当前 main `4990e61`；M-Lab measurement-proxy + burst 合同和 receipt horizon 修复已合入，本地 140 星 MCS 50 Mbps E0 smoke 已完成但 `4990e61` 尚未部署 VM。R1-A1、可信 available-capacity 分母、V2 artifact→claim 闭环、学习 VM smoke、VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
+> CURRENT；最后核验：2026-08-21。当前 main `ac0d019` 已部署 VM；M-Lab measurement-proxy + burst 合同、receipt horizon 修复和非学习同 SHA smoke 已完成。R1-A1、可信 available-capacity 分母、V2 artifact→claim 闭环、学习 VM smoke、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
 
 ## 1. 研究主线与工作方法
 
@@ -39,7 +39,7 @@
 - D1/D2 代码已合入并有回归测试，但 D1 仍缺 VM MCS 对照、D2 仍缺长窗 VM 验证；
 - **先关闭 R1-A1 奖励 blocker**，再冻结物理目标与学习语义；已修复的 mask 旁路不能代表整体信息公平完成；
 - 闭合 V2 `compile → review → authorize → run → receipt → metric recomputation → paired analysis → claim`；当前只完成矩阵编译/授权 Stage 1，真实 artifact→claim 闭环仍缺；
-- 当前 `4990e61` 本地非学习工程 smoke 通过；正式授权 cohort、当前 SHA VM 部署、学习 VM smoke、VM E0/PILOT 仍需按 runbook 执行。
+- 当前 `ac0d019` 已完成非学习同 SHA 工程 smoke；正式授权 cohort、学习 VM smoke、formal VM E0/PILOT 仍需按 runbook 执行。
 
 P0 的验收是“同一 SHA 的结果可以被重新算出来并拒绝篡改”，不是仅有 pytest 绿。
 
