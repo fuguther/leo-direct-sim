@@ -1,0 +1,68 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:DOC-AUDIT:independent_review",
+    "title": "Recent documentation source-of-truth audit",
+    "goal": "审阅绑定提交中的近期路线图、旧平台差距、Q0、实验矩阵和状态报告，列出具体冲突与过时声明，给出最小化的单一真相源结构。不要修改文件，不要根据文件日期猜状态，不要把历史报告改成当前状态。每条冲突必须给 GitHub 文件与行号证据；说明应保留、加 superseded 标记、合并到哪个当前文档，或继续独立保留。审阅 FINDINGS-REGISTRY、EXPERIMENT-READINESS-ROADMAP、LEGACY-DESIGN-AUDIT、LEGACY-FEATURE-LEDGER、MIGRATION-BACKLOG、Q0-ALGO-RESEARCH 两版、Q0 接口/tiny 设计、MORNING-REPORT 两版、EXPERT-REVIEW、实验 07/08/09。输出 open_items，并明确该提交之后的本地未提交修改不在审阅范围。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+      "paths": [
+        "ANALYSIS/FINDINGS-REGISTRY.md",
+        "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+        "ANALYSIS/LEGACY-DESIGN-AUDIT-20260819.md",
+        "ANALYSIS/LEGACY-FEATURE-LEDGER-20260819.md",
+        "ANALYSIS/MIGRATION-BACKLOG-20260816.md",
+        "ANALYSIS/Q0-ALGO-RESEARCH-20260817.md",
+        "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+        "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md",
+        "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+        "ANALYSIS/MORNING-REPORT-20260817.md",
+        "ANALYSIS/MORNING-REPORT-20260819.md",
+        "ANALYSIS/EXPERT-REVIEW-20260816.md",
+        "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/07-experiment-plan-20260814.md",
+        "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/08-experiment-matrix-20260814.md",
+        "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/09-experiment-config-20260814.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "每条过时或冲突声明都给出具体文件和行号",
+      "给出保留、标记替代、合并或继续独立四类处置建议",
+      "输出一个最小真相源目录结构和 open_items"
+    ],
+    "requiredEvidence": [
+      "绑定 commit 的 GitHub 永久链接与行号",
+      "冲突双方的原文证据"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "2d7ce23d78bfe11ca59c05ad0a621b71fea91e06757eff228534aa1537eb48b8"
+}
