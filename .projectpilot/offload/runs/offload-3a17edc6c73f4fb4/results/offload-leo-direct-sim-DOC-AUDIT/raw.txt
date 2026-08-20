@@ -1,0 +1,564 @@
+该任务的审阅范围、证据要求和绑定 commit 与上一轮一致。上一轮已完成基于允许路径的 evidence gathering；以下给出压缩后的正式 RESULT_CANDIDATE（保留关键冲突、处置建议和 open_items）。
+
+Recent documentation source-of-truth audit
+
+审阅边界
+
+仅读取：
+
+fuguther/leo-direct-sim
+
+commit bfa08982e30924cb913ac4a23f5de26f7a0a6668
+
+合同允许的 ANALYSIS 文档路径
+
+未访问：
+
+任何未提交本地修改
+
+代码路径
+
+其他仓库文件
+
+外部来源
+
+以下结论仅用于本地 Agent 后续验证，属于 RESULT_CANDIDATE。
+
+核心结论
+
+当前文档体系存在四个需要优先收口的问题：
+
+没有唯一状态源
+
+FINDINGS-REGISTRY
+
+MORNING-REPORT
+
+EXPERIMENT-READINESS-ROADMAP
+
+三者均包含状态描述，但存在直接冲突。
+
+Q0 没有唯一数学合同
+
+objective 不一致；
+
+Q0 分类命名不一致；
+
+tiny DP 与正式 Q0 的关系未冻结。
+
+实验文档存在历史设计稿与当前配置混用
+
+07/08/09 都保存了有效信息；
+
+但没有单一 Experiment Spec owner。
+
+Legacy 文档角色重叠
+
+Audit 是历史审计；
+
+Ledger 应成为当前 capability owner；
+
+Migration Backlog 不应继续承担状态真相。
+
+Findings
+F1 — FINDINGS-REGISTRY 内部状态冲突
+
+Severity: major
+
+主表：
+
+R4C-F2 标记 fixed(待拍板)
+
+R4C-F4 标记 fixed
+
+R5-G1/R5-G2 标记 fixed
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/FINDINGS-REGISTRY.md#L39-L46
+
+但 Open/Follow-up 又写：
+
+R4C-F2 等待拍板；
+
+R4C-F4/R4C-i-F4 待终审；
+
+R5-G1/R5-G2 仍有后续动作。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/FINDINGS-REGISTRY.md#L60-L68
+
+处置
+
+保留 FINDINGS-REGISTRY。
+
+调整：
+
+Registry 成为唯一 finding status owner；
+
+Open/Follow-up 不再复制状态；
+
+重新核验 fixed 是否对应绑定 commit 的真实状态。
+
+F2 — Registry 与历史审阅文档职责边界未闭合
+
+Severity: major
+
+Registry 指向 Expert Review/NOTES：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/FINDINGS-REGISTRY.md#L60-L68
+
+但 Morning Report 又写：
+
+以后新问题都往 Expert Review 清单记录
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/MORNING-REPORT-20260817.md#L26-L31
+
+处置
+
+Registry：保留，作为当前状态源；
+
+Expert Review：继续独立保留，作为历史分析证据；
+
+actionable 项迁入 Registry。
+
+F3 — Roadmap 内部存在两个 readiness 快照
+
+Severity: major
+
+前部：
+
+Q0 tiny 未完成；
+
+实验矩阵未正式定稿。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md#L21-L28
+
+后部：
+
+Q0-I tiny DP 已存在；
+
+planned-vs-executed 第一阶段门禁存在。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md#L65-L82
+
+同时：
+
+实验矩阵称为设计冻结稿。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md#L82-L87
+
+处置
+
+保留 Roadmap。
+
+建议：
+
+拆分：
+
+historical snapshot；
+
+current readiness；
+
+pending gates。
+
+F4 — Q0 objective 未冻结
+
+Severity: blocking
+
+版本 1：
+
+deadline 前交付 bits → 完成时延 → 队列积分
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260817.md#L21-L24
+
+版本 2：
+
+按时交付包数 → 队列成本 → E2E 时延
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260818.md#L20-L24
+
+tiny：
+
+deadline 交付数 → 完成时间总和 → 等待时隙
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md#L10-L16
+
+处置
+
+新增唯一：
+
+Q0-CONTRACT
+
+负责：
+
+objective；
+
+metric；
+
+surrogate；
+
+tiny 映射。
+
+F5 — Q0 分类命名冲突
+
+Severity: major
+
+旧：
+
+Q0-A/B
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md#L40-L45
+
+新：
+
+Q0-I/J/F
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260818.md#L9-L13
+
+处置
+
+Q0-ALGO-RESEARCH-20260817 标记 superseded；
+
+统一使用 Q0-I/J/F。
+
+F6 — CP-SAT/MILP 是 gate 还是 optional 未冻结
+
+Severity: major
+
+Registry：
+
+tiny 用 CP-SAT/event DP 交叉验证
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/FINDINGS-REGISTRY.md#L47-L50
+
+tiny design：
+
+合同冻结后再决定是否实现 CP-SAT/MILP
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md#L27-L31
+
+处置
+
+合并到 Q0-CONTRACT。
+
+F7 — Interface Design 不应继续作为状态源
+
+Severity: major
+
+Interface 仍描述：
+
+草案，待用户拍板后进入实现
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md#L1-L5
+
+但 Roadmap 已记录 snapshot 完成。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md#L24-L28
+
+处置
+
+继续独立保留。
+
+角色：
+
+Interface = API/spec；
+
+Roadmap = readiness。
+
+F8 — state_version 语义冲突
+
+Severity: minor
+
+Interface：
+
+任何写操作递增
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md#L40-L45
+
+Registry：
+
+事件级粒度与设计文档不一致
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/FINDINGS-REGISTRY.md#L52-L55
+
+处置
+
+保留为 open item。
+
+F9 — Legacy 文档 owner 重叠
+
+Severity: major
+
+Migration Backlog：
+
+M3 等旧迁移计划。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/MIGRATION-BACKLOG-20260816.md#L8-L31
+
+Feature Ledger：
+
+已重新定义 capability 状态。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/LEGACY-FEATURE-LEDGER-20260819.md#L1-L21
+
+处置
+
+Ledger 保留；
+
+Migration Backlog 标 superseded；
+
+Audit 保留历史证据。
+
+F10 — M3 ID 多义
+
+Severity: major
+
+Migration：
+
+M3 = path-credit
+
+M3 = 删除项
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/MIGRATION-BACKLOG-20260816.md#L8-L31
+
+Legacy Audit：
+
+M3 = 队列动态特征
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/LEGACY-DESIGN-AUDIT-20260819.md#L23-L29
+
+处置
+
+改用稳定 capability ID。
+
+F11 — 实验 07/08/09 应合并
+
+Severity: major
+
+07：
+
+V2 没有真实 GAT/MPNN
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/07-experiment-plan-20260814.md#L72-L96
+
+08：
+
+图编码器已迁入 V2 并 VM 验证
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/08-experiment-matrix-20260814.md#L130-L136
+
+处置
+
+建立：
+
+EXPERIMENT-SPEC
+
+合并：
+
+07 的研究问题；
+
+08 的 matrix；
+
+09 的 config。
+
+F12 — E0 smoke 与 formal experiment 混淆
+
+Severity: major
+
+08：
+
+E0 未启动
+
+随后：
+
+E0 实测
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/08-experiment-matrix-20260814.md#L130-L136
+
+09：
+
+明确：
+
+24 星 smoke；
+
+140 星正式场景需要重扫。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/09-experiment-config-20260814.md#L1-L18
+
+处置
+
+Experiment Spec 中拆：
+
+historical smoke；
+
+formal protocol；
+
+current run status。
+
+最小真相源结构
+ANALYSIS/
+
+
+├── FINDINGS-REGISTRY.md
+│   └── finding status owner
+
+
+├── CURRENT-READINESS.md
+│   └── 当前 commit / gate / test / review 状态
+
+
+├── LEGACY-FEATURE-LEDGER.md
+│   └── legacy capability owner
+
+
+├── Q0-CONTRACT.md
+│   └── Q0-I/J/F/objective/contracts
+
+
+└── EXPERIMENT-SPEC.md
+    └── experiment matrix + config + statistics
+
+设计文档：
+
+DESIGN/
+
+
+├── Q0-INTERFACE-DESIGN.md
+└── Q0-TINY-DP-DESIGN.md
+
+历史：
+
+ARCHIVE/
+
+
+├── MORNING-REPORT-*
+├── EXPERT-REVIEW
+├── MIGRATION-BACKLOG
+├── LEGACY-DESIGN-AUDIT
+└── superseded experiment drafts
+open_items
+
+Q0 objective 未冻结。
+
+Q0-A/B 与 Q0-I/J/F 映射未冻结。
+
+CP-SAT/MILP 是否 hard gate 未冻结。
+
+Registry fixed 状态需绑定 commit 实证确认。
+
+state_version 语义未统一。
+
+NOTES 不在允许读取范围，无法确认全部历史 issue 是否迁入 Registry。
+
+代码路径不在允许读取范围，无法确认实验配置前置实现状态。
+
+commit 后本地修改不在审阅范围。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:DOC-AUDIT",
+  "status": "EVIDENCE_READY",
+  "summary": "审阅确认当前主要问题不是缺少文档，而是多个文档重复承担状态源。最大风险为 Q0 合同未冻结、Registry 状态冲突、实验 07/08/09 未收敛为单一实验规范。建议保留 Registry、Roadmap、Feature Ledger 三个状态 owner，新增 Q0-CONTRACT 与 EXPERIMENT-SPEC，历史报告只保留证据。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "FINDINGS-REGISTRY 主表和 Open/Follow-up 状态冲突。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/FINDINGS-REGISTRY.md#L39-L46",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/FINDINGS-REGISTRY.md#L60-L68"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "blocking",
+      "summary": "Q0 objective 存在 bits/packet、latency/queue cost、tiny surrogate 多版本冲突。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260817.md#L21-L24",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260818.md#L20-L24",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md#L10-L16"
+      ]
+    },
+    {
+      "id": "F11",
+      "severity": "major",
+      "summary": "实验 07/08/09 应合并为单一 Experiment Spec。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/07-experiment-plan-20260814.md#L72-L96",
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/08-experiment-matrix-20260814.md#L130-L136"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "建立 Q0-CONTRACT 并冻结 objective、taxonomy、solver gate。",
+    "将 Roadmap 作为唯一 readiness owner。",
+    "将 Legacy Feature Ledger 作为唯一旧平台能力状态 owner。",
+    "将 07/08/09 合并成 EXPERIMENT-SPEC。",
+    "历史报告添加 superseded 标记但不修改历史正文。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/FINDINGS-REGISTRY.md#L39-L46",
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md#L65-L82",
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260818.md#L9-L24"
+  ],
+  "open_items": [
+    "Q0 objective 未冻结",
+    "Q0-A/B 与 Q0-I/J/F 映射未冻结",
+    "CP-SAT/MILP gate 属性未冻结",
+    "Registry fixed 状态需进一步验证",
+    "state_version 语义未统一",
+    "NOTES 不在读取范围",
+    "代码路径不在读取范围",
+    "commit 后本地修改不在审阅范围"
+  ]
+}
+===END_OFFLOAD_RESULT===
