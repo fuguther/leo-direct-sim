@@ -26,7 +26,7 @@ def test_summarize_recomputes_queue_tx_propagation_and_link_utilization():
         "pid": 1, "stage": "isl", "link_id": "isl:0:1",
         "start": 0.5, "end": 0.75, "rate_bps": 400.0,
         "capacity_bits": 100.0, "served_bits": 100,
-        "outcome": "ok",
+        "bits": 100, "outcome": "ok",
     }]
 
     got = metrics.summarize(events, windows)
@@ -41,6 +41,44 @@ def test_summarize_recomputes_queue_tx_propagation_and_link_utilization():
     assert link["served_bits"] == 100
     assert link["utilization"] == pytest.approx(1.0)
     assert got["validation"]["ok"] is True
+
+
+def test_summarize_uses_idle_physical_capacity_as_utilization_denominator():
+    windows = [{
+        "pid": 1, "stage": "isl", "link_id": "isl:0:1",
+        "start": 0.5, "end": 0.75, "rate_bps": 400.0,
+        "capacity_bits": 100.0, "served_bits": 100,
+        "bits": 100, "outcome": "ok",
+    }]
+    available = [{
+        "stage": "isl", "link_id": "isl:0:1",
+        "start": 0.0, "end": 1.0, "rate_bps": 400.0,
+        "capacity_bits": 400.0,
+    }]
+    got = metrics.summarize([], windows,
+                            available_capacity_windows=available)
+    link = got["links"]["isl:0:1"]
+    assert link["capacity_bits"] == pytest.approx(100.0)
+    assert link["available_capacity_bits"] == pytest.approx(400.0)
+    assert link["available_time_s"] == pytest.approx(1.0)
+    assert link["available_samples"] == 1
+    assert link["utilization"] == pytest.approx(0.25)
+
+
+def test_summarize_rejects_service_above_sampled_available_capacity():
+    with pytest.raises(metrics.MetricsError, match="available capacity"):
+        metrics.summarize(
+            [], [{
+                "pid": 1, "stage": "isl", "link_id": "isl:0:1",
+                "start": 0.0, "end": 1.0, "rate_bps": 200.0,
+                "capacity_bits": 200.0, "served_bits": 200,
+                "bits": 200, "outcome": "ok",
+            }],
+            available_capacity_windows=[{
+                "stage": "isl", "link_id": "isl:0:1",
+                "start": 0.0, "end": 1.0, "rate_bps": 100.0,
+                "capacity_bits": 100.0,
+            }])
 
 
 def test_summarize_rejects_orphan_service_start():
@@ -125,7 +163,8 @@ def test_kernel_persists_real_event_metrics_for_a_delivered_packet():
     b = cell(0.0, 10.0)
     geo = StaticGeometry(1, visible=lambda *_: True)
     result = kernel.run_simulation(
-        make_cfg({"scenario": {"num_satellites": 1, "num_planes": 1}}),
+        make_cfg({"scenario": {"num_satellites": 1, "num_planes": 1},
+                  "execution": {"available_capacity_interval_s": 1.0}}),
         [row(1, 0.0, a, b)], geometry=geo)
 
     packet = result["congestion_metrics"]["packets"]["1"]
@@ -137,3 +176,69 @@ def test_kernel_persists_real_event_metrics_for_a_delivered_packet():
         result["deliveries"][1]["delivered_at"])
     assert result["packet_events"]
     assert result["link_service_windows"]
+    assert result["link_available_windows"]
+    assert any(v["available_capacity_bits"] > v["capacity_bits"]
+               for v in result["congestion_metrics"]["links"].values())
+
+
+def test_capacity_metric_splits_scripted_visibility_change_inside_interval():
+    class Flap(StaticGeometry):
+        def __init__(self):
+            super().__init__(1, visible=lambda *_: True,
+                             gsl_changes=[0.25, 0.75])
+
+        def ground_visible(self, sat_id, lat, lon, t):
+            return 0.25 <= t < 0.75
+
+    result = kernel.run_simulation(
+        make_cfg({"scenario": {"duration_s": 1.0},
+                  "execution": {"available_capacity_interval_s": 1.0}}),
+        [row(1, 0.0, cell(0.0, 0.0), cell(0.0, 10.0))],
+        geometry=Flap())
+    link_id = f"gsl:uplink:0:{cell(0.0, 0.0)}"
+    windows = [w for w in result["link_available_windows"]
+               if w["link_id"] == link_id]
+    assert [(w["start"], w["end"]) for w in windows] == [(0.25, 0.75)]
+
+
+def test_capacity_metric_includes_retired_isl_generation():
+    from CODE.leo_sim.tests.test_dynamic_topology import _cfg, _geometry
+
+    cfg = _cfg()
+    cfg["config"]["execution"]["available_capacity_interval_s"] = 1.0
+    geo = _geometry()
+    # Keep the scripted rematch while making both generations physically
+    # usable, matching the in-flight retired-service case under review.
+    geo.isl_available = lambda _a, _b, _t: True
+    result = kernel.run_simulation(cfg, [], geometry=geo)
+    old = [w for w in result["link_available_windows"]
+           if w["link_id"] == "isl:0:1"]
+    new = [w for w in result["link_available_windows"]
+           if w["link_id"] == "isl:0:2"]
+    assert [(w["start"], w["end"]) for w in old] == [(0.0, 0.5)]
+    assert [(w["start"], w["end"]) for w in new] == [(0.5, 1.0)]
+
+
+def test_capacity_metric_cuts_a_retired_generation_at_drain_time():
+    from CODE.leo_sim.tests.test_dynamic_topology import _cfg, _geometry
+
+    cfg = _cfg()
+    cfg["config"]["scenario"]["duration_s"] = 2.0
+    cfg["config"]["links"]["isl_rate_mbps"] = 0.004
+    cfg["config"]["execution"]["available_capacity_interval_s"] = 0.5
+    geo = _geometry()
+    geo.isl_available = lambda _a, _b, _t: True
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    old = k.isls[0]["E"]
+    # Keep the old generation in service past the rematch, then let it drain
+    # inside a later capacity window.
+    cp = kernel.ControlPacket(1, 0, 1, 0.0, 10.0, 1, 5_000, {})
+    k.ctrl_ledger.register(cp.iid, cp.bits)
+    old.put_ctrl(cp)
+    result = k.run()
+    old_windows = [w for w in result["link_available_windows"]
+                   if w["link_id"] == "isl:0:1"]
+    assert old_windows
+    assert max(w["end"] for w in old_windows) <= old.drained_at + 1e-9
+    assert any(w["end"] == pytest.approx(old.drained_at)
+               for w in old_windows)

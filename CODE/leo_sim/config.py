@@ -175,6 +175,9 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "max_packets": int,
         "monitor": bool,
         "dry_run": bool,
+        # Physical-capacity measurement samples are diagnostic evidence; a
+        # fixed interval makes the denominator explicit and reproducible.
+        "available_capacity_interval_s": (int, float, type(None)),
     },
     "outputs": {
         "out_dir": str,
@@ -334,6 +337,9 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "max_packets": 200_000,
         "monitor": False,
         "dry_run": False,
+        # Opt in for E0/diagnostic profiles; training/smoke runs that do not
+        # report utilization should not pay the sampling and artifact cost.
+        "available_capacity_interval_s": None,
     },
     "outputs": {"out_dir": "leo_sim_out", "trace_path": None, "plotting": False},
 }
@@ -701,6 +707,22 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
     for f in ("max_events", "max_entities", "max_packets"):
         if ex[f] < 1:
             raise ConfigError(f"execution.{f} must be >= 1")
+    interval = ex["available_capacity_interval_s"]
+    if (interval is not None and (
+            isinstance(interval, bool)
+            or interval < 0.01
+            or not math.isfinite(interval))):
+        raise ConfigError(
+            "execution.available_capacity_interval_s must be null or finite and >= 0.01")
+    effective_interval = interval
+    topo_interval = tp["recompute_interval_s"]
+    if (effective_interval is not None and topo_interval is not None):
+        effective_interval = min(effective_interval, topo_interval)
+    if (effective_interval is not None
+            and sc["duration_s"] / effective_interval > 100_000):
+        raise ConfigError(
+            "execution.available_capacity_interval_s creates more than "
+            "100000 sampling intervals")
 
 
 def trace_identity_payload(resolved: dict) -> dict:

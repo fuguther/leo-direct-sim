@@ -42,6 +42,26 @@ def test_invalid_combinations_rejected():
         config.resolve_config({"scenario": {"num_satellites": 7, "num_planes": 3}})
 
 
+def test_available_capacity_sampling_interval_is_positive():
+    with pytest.raises(config.ConfigError, match="available_capacity_interval_s"):
+        config.resolve_config({"execution": {"available_capacity_interval_s": 0}})
+    with pytest.raises(config.ConfigError, match="available_capacity_interval_s"):
+        config.resolve_config({"execution": {"available_capacity_interval_s": True}})
+    with pytest.raises(config.ConfigError, match="available_capacity_interval_s"):
+        config.resolve_config({"execution": {"available_capacity_interval_s": 0.001}})
+    with pytest.raises(config.ConfigError, match="100000"):
+        config.resolve_config({
+            "scenario": {"duration_s": 2000.0},
+            "execution": {"available_capacity_interval_s": 0.01},
+        })
+    with pytest.raises(config.ConfigError, match="100000"):
+        config.resolve_config({
+            "scenario": {"duration_s": 2000.0},
+            "topology": {"recompute_interval_s": 0.005},
+            "execution": {"available_capacity_interval_s": 1.0},
+        })
+
+
 def test_burst_window_must_intersect_scenario_horizon():
     base = {
         "scenario": {"duration_s": 120.0},

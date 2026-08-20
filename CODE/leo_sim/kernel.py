@@ -769,6 +769,11 @@ class ISLLink:
         # queue/in-service packet (retired) and signals `drained` once the
         # direction slot is physically free again.
         self.retired = False
+        # Set when the retired generation has no queue or service left.  The
+        # timestamp lets the physical-capacity ledger include a just-drained
+        # generation in the interval that contains its final service, without
+        # counting that generation in later intervals.
+        self.drained_at: float | None = None
         self.drained = kern.env.event()
         ge_cfg = kern.cfg_links["ge_isl"]
         self.ge = outage.GilbertElliott(
@@ -1118,6 +1123,15 @@ class Kernel:
         per_ep_rows: dict[str, list[dict]] = {}
         for r in rows:
             per_ep_rows.setdefault(r["src_grid_id"], []).append(r)
+        # Measurement-only endpoint universe.  These coordinates are kept
+        # separate from lazy TrafficEndpoint activation so the physical
+        # capacity denominator cannot depend on whether a demand packet has
+        # arrived yet (and cannot leak that universe into routing/learning).
+        self._metric_endpoint_specs = {
+            cell: gridmod.grid_center(cell)
+            for r in rows
+            for cell in (r["src_grid_id"], r["dst_grid_id"])
+        }
 
         self.topo = routing.build_topology(
             self.geometry, self.num_sats, self.cfg_links["isl_dirs"],
@@ -1185,6 +1199,7 @@ class Kernel:
         # records instead of trusting a pre-aggregated counter.
         self.packet_events: list[dict] = []
         self.link_service_windows: list[dict] = []
+        self.link_available_windows: list[dict] = []
         self._metric_queue_seq = 0
         self._metric_prop_seq = 0
         self.handover_events: list[dict] = []
@@ -1500,6 +1515,7 @@ class Kernel:
             if link._is_drained():
                 if not link.drained.triggered:
                     link.drained.succeed()
+                link.drained_at = float(self.env.now)
                 self._isl_dyn_drained += 1
                 self._retired_isls_done.append(link)
             else:
@@ -1513,6 +1529,227 @@ class Kernel:
             if self.env.now >= self.horizon:
                 return
             self._recompute_topology(self.env.now)
+
+    def _metric_available_rate(self, stage: str, sat: int, t: float,
+                               *, peer: int | None = None,
+                               lat: float | None = None,
+                               lon: float | None = None) -> float:
+        """Return the physical rate used by the availability denominator.
+
+        This is deliberately geometry/rate only.  Queue occupancy, access
+        association, and stochastic GE outages are not capacity: they are
+        explained by the numerator/fate and queue metrics instead.
+        """
+        if self.rate_model == "constant":
+            if stage == "isl":
+                return self.isl_rate_bps
+            return self.ul_rate_bps if stage == "uplink" else self.dl_rate_bps
+        if stage == "isl":
+            return link_budget.mcs_rate_bps(
+                self.geometry.isl_range_km(sat, peer, t),
+                self.rf_isl, self.mcs_table)
+        rf = self.rf_uplink if stage == "uplink" else self.rf_downlink
+        return link_budget.mcs_rate_bps(
+            self.geometry.slant_range_km(sat, lat, lon, t),
+            rf, self.mcs_table)
+
+    def _metric_capacity_segments(self, stage: str, sat: int,
+                                  start: float, end: float, *,
+                                  peer: int | None = None,
+                                  lat: float | None = None,
+                                  lon: float | None = None):
+        """Yield geometry/rate-stable pieces of one metric interval.
+
+        A midpoint is not sufficient evidence for a moving link: visibility
+        can change inside an interval, and an MCS threshold can be crossed
+        and crossed back before the next sample.  The geometry provider's
+        certified change/root APIs provide deterministic cut points.
+        """
+        if end <= start:
+            return
+        if stage == "isl":
+            available = lambda t: self.geometry.isl_available(sat, peer, t)
+            next_change = lambda a, b: self.geometry.next_isl_change(
+                sat, peer, a, b)
+            range_at = lambda t: self.geometry.isl_range_km(sat, peer, t)
+            next_range_under = lambda threshold, a, b: (
+                self.geometry.next_isl_range_under(
+                    sat, peer, threshold, a, b))
+            rf = self.rf_isl
+        else:
+            available = lambda t: self.geometry.gsl_available(sat, lat, lon, t)
+            next_change = lambda a, b: self.geometry.next_gsl_change(
+                sat, lat, lon, a, b)
+            range_at = lambda t: self.geometry.slant_range_km(
+                sat, lat, lon, t)
+            next_range_under = lambda threshold, a, b: (
+                self.geometry.next_slant_range_under(
+                    sat, lat, lon, threshold, a, b))
+            rf = self.rf_uplink if stage == "uplink" else self.rf_downlink
+
+        boundaries = [float(start), float(end)]
+        eps = min(1e-9, max((end - start) * 1e-8, 1e-12))
+
+        def add_roots(root_fn):
+            cursor = float(start)
+            for _ in range(1024):
+                if cursor >= end - eps:
+                    return
+                nxt = root_fn(cursor, end)
+                if nxt is None:
+                    return
+                nxt = float(nxt)
+                if not (cursor < nxt <= end):
+                    raise KernelError(
+                        f"non-monotone geometry root {nxt} from {cursor}")
+                boundaries.append(nxt)
+                if nxt >= end - eps:
+                    return
+                cursor = nxt
+            raise KernelError("geometry change certification exceeded 1024 roots")
+
+        add_roots(next_change)
+        if self.rate_model == "mcs":
+            # Only thresholds that could be reached in this interval need a
+            # root search.  RANGE_RATE_KM_S is conservative for supported
+            # constellation geometry and keeps the opt-in metric affordable.
+            probe_times = (start, (start + end) / 2.0,
+                           max(start, end - eps))
+            ranges = [float(range_at(t)) for t in probe_times]
+            if any(not math.isfinite(v) or v <= 0 for v in ranges):
+                raise KernelError("non-finite geometry range in capacity metric")
+            margin = model.RANGE_RATE_KM_S * (end - start)
+            lo, hi = min(ranges) - margin, max(ranges) + margin
+            thresholds = link_budget.mcs_rate_threshold_ranges_km(
+                rf, self.mcs_table)
+            for threshold in thresholds:
+                if lo <= threshold <= hi:
+                    add_roots(lambda a, b, threshold=threshold:
+                              next_range_under(threshold, a, b))
+
+        unique = sorted(set(boundaries))
+        for a, b in zip(unique, unique[1:]):
+            if b - a <= eps:
+                continue
+            t = (a + b) / 2.0
+            if not available(t):
+                continue
+            rate = self._metric_available_rate(
+                stage, sat, t, peer=peer, lat=lat, lon=lon)
+            if rate > 0:
+                yield float(a), float(b), float(rate)
+
+    def _record_available_capacity_sample(self, start: float, end: float,
+                                           sample_at: float) -> None:
+        """Record geometry-segmented fixed-interval capacity quadrature.
+
+        ``sample_at`` remains in this private signature for compatibility with
+        early diagnostic probes; certified segment midpoints are authoritative.
+        Idle physical links remain in the denominator.
+        """
+        if end <= start:
+            return
+        for cell, (lat, lon) in sorted(self._metric_endpoint_specs.items()):
+            for sat in range(self.num_sats):
+                for stage in ("uplink", "downlink"):
+                    for seg_start, seg_end, rate in self._metric_capacity_segments(
+                            stage, sat, start, end, lat=lat, lon=lon):
+                        self.link_available_windows.append({
+                            "stage": stage,
+                            "link_id": f"gsl:{stage}:{sat}:{cell}",
+                            "start": seg_start,
+                            "end": seg_end,
+                            "rate_bps": float(rate),
+                            "capacity_bits": float(rate) * (seg_end - seg_start),
+                        })
+
+        # A retired ISL generation may drain an in-flight packet after a
+        # rematch.  Include all generations, deduplicated by physical directed
+        # edge, so the independent denominator cannot undercount that service.
+        current_edges = {(sat, peer) for sat in range(self.num_sats)
+                         for peer in self.topo[sat].values()}
+        live_edges = {(link.sat, link.peer) for link in self._retired_isls}
+        drained_by_edge: dict[tuple[int, int], list[float]] = {}
+        for link in self._retired_isls_done:
+            if link.drained_at is not None and link.drained_at > start + 1e-12:
+                drained_by_edge.setdefault((link.sat, link.peer), []).append(
+                    float(link.drained_at))
+        edges = current_edges | live_edges | set(drained_by_edge)
+        for sat, peer in sorted(edges):
+            # If no current/live generation owns this edge, a drained
+            # generation contributes only until its last drain instant.  This
+            # prevents a service ending mid-window from inflating the physical
+            # capacity denominator through the rest of that window.
+            edge_end = end
+            if ((sat, peer) not in current_edges
+                    and (sat, peer) not in live_edges):
+                edge_end = min(end, max(drained_by_edge[(sat, peer)]))
+            if edge_end <= start + 1e-12:
+                continue
+            for seg_start, seg_end, rate in self._metric_capacity_segments(
+                    "isl", sat, start, edge_end, peer=peer):
+                self.link_available_windows.append({
+                    "stage": "isl",
+                    "link_id": f"isl:{sat}:{peer}",
+                    "start": seg_start,
+                    "end": seg_end,
+                    "rate_bps": float(rate),
+                    "capacity_bits": float(rate) * (seg_end - seg_start),
+                })
+
+    def _truncate_drained_capacity_windows(self) -> None:
+        """Clip an interval that contained a retired generation's drain.
+
+        The sampler cannot know the future drain instant when it opens a
+        window.  At natural stop all retired generations have a definitive
+        ``drained_at``; clip the raw evidence before metrics recomputation so
+        an old generation is not counted after its final service.
+        """
+        drains = {
+            f"isl:{link.sat}:{link.peer}": float(link.drained_at)
+            for link in self._retired_isls_done
+            if link.drained_at is not None
+        }
+        if not drains:
+            return
+        clipped = []
+        for window in self.link_available_windows:
+            drain = drains.get(window["link_id"])
+            if drain is None or window["start"] >= drain:
+                clipped.append(window)
+                continue
+            end = min(float(window["end"]), drain)
+            if end <= float(window["start"]) + 1e-12:
+                continue
+            item = dict(window)
+            item["end"] = end
+            item["capacity_bits"] = float(item["rate_bps"]) * (
+                end - float(item["start"]))
+            clipped.append(item)
+        self.link_available_windows = clipped
+
+    def _available_capacity_ticker(self):
+        configured = self.cfg_ex["available_capacity_interval_s"]
+        if configured is None:
+            return
+        interval = float(configured)
+        topo_interval = self.cfg_topo["recompute_interval_s"]
+        start = 0.0
+        while start < self.horizon:
+            end = min(self.horizon, start + interval)
+            # Topology rematching is a real state transition.  A capacity
+            # window may not straddle it, otherwise the midpoint can describe
+            # the old generation while service in the second half uses the
+            # newly installed neighbor.
+            if topo_interval is not None:
+                next_topo = ((math.floor(start / topo_interval) + 1)
+                             * topo_interval)
+                if next_topo > start + 1e-12:
+                    end = min(end, next_topo)
+            sample_at = start + (end - start) / 2.0
+            self._record_available_capacity_sample(start, end, sample_at)
+            yield self.env.timeout(max(0.0, end - self.env.now))
+            start = end
 
     def _recompute_topology(self, now: float):
         new_topo = routing.build_topology(
@@ -2263,6 +2500,10 @@ class Kernel:
         """Guarantees the simulation clock reaches the exact horizon, so
         final accounting (in-service occupation, queue areas, IN_SYSTEM)
         settles at the configured horizon, never at a stray last event."""
+        # Start measurement after the already-created endpoint/emitter
+        # processes.  This preserves the historical same-time ordering used
+        # by deterministic kernel tests while still sampling from t=0.
+        self.env.process(self._available_capacity_ticker())
         yield self.env.timeout(self.horizon)
         self.closed_at = self.env.now
 
@@ -3234,6 +3475,8 @@ class Kernel:
         for lnk in self._all_isls():
             lnk.data_area.close(stop_time)
             lnk.ctrl_area.close(stop_time)
+        self._purge_drained_retired()
+        self._truncate_drained_capacity_windows()
         queue_area = {
             "uplink": sum(ep.area.area for ep in self.endpoints.values()),
             "downlink": sum(self.downlinks[s].area.area for s in range(self.num_sats)),
@@ -3340,6 +3583,7 @@ class Kernel:
         }
         congestion_metrics = metrics.summarize(
             self.packet_events, self.link_service_windows,
+            available_capacity_windows=self.link_available_windows,
             non_arrival_pids=non_arrival_pids)
         result = {
             "natural_end": not interrupted,
@@ -3358,6 +3602,7 @@ class Kernel:
             "service_log": self.service_log,
             "packet_events": list(self.packet_events),
             "link_service_windows": list(self.link_service_windows),
+            "link_available_windows": list(self.link_available_windows),
             "congestion_metrics": congestion_metrics,
             "handover": {"events": self.handover_events},
             "control": {

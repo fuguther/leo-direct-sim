@@ -141,6 +141,28 @@ def max_rate_range_km(rf: RFParams,
     return d_m / 1000.0
 
 
+def mcs_rate_threshold_ranges_km(
+        rf: RFParams, table: str = LEGACY_DVBS2X) -> tuple[float, ...]:
+    """Return slant ranges at which the legacy MCS rate can change.
+
+    ``mcs_rate_bps`` is piecewise constant in distance.  A new table entry
+    becomes feasible whenever received SNR crosses one of the positive MCS
+    thresholds, so these ranges are the certified cut points for the
+    availability metric's interval quadrature.
+    """
+    if table != LEGACY_DVBS2X:
+        raise ValueError(f"unsupported mcs_table {table!r}")
+    maxptx_db, g, no = _derived(rf)
+    out = []
+    for snr_target in LEGACY_DVBS2X_LIN[1:]:
+        path_loss_db = (maxptx_db + g - no
+                        - 10 * math.log10(float(snr_target)))
+        d_m = (math.pow(10.0, path_loss_db / 20.0) * VC
+               / (4.0 * math.pi * rf.frequency_hz))
+        out.append(d_m / 1000.0)
+    return tuple(sorted(set(out)))
+
+
 def mcs_rate_bps(slant_km: float, rf: RFParams,
                  table: str = LEGACY_DVBS2X) -> float:
     """Legacy get_data_rate/adjustDataRate/adjustDownRate for one distance."""

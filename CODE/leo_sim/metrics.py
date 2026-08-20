@@ -44,6 +44,7 @@ def summarize(
     packet_events: list[dict],
     service_windows: list[dict],
     *,
+    available_capacity_windows: list[dict] | None = None,
     non_arrival_pids: set[int] | frozenset[int] | None = None,
 ) -> dict:
     """Return metrics rebuilt from raw packet and service-window events.
@@ -56,8 +57,13 @@ def summarize(
     expected; those packets are excluded from propagation latency rather than
     being assigned a fabricated arrival time.
     """
-    if not isinstance(packet_events, list) or not isinstance(service_windows, list):
+    if (not isinstance(packet_events, list)
+            or not isinstance(service_windows, list)):
         raise MetricsError("packet_events and service_windows must be lists")
+    if available_capacity_windows is None:
+        available_capacity_windows = []
+    elif not isinstance(available_capacity_windows, list):
+        raise MetricsError("available_capacity_windows must be a list")
     if non_arrival_pids is None:
         non_arrival_pids = frozenset()
     elif not isinstance(non_arrival_pids, (set, frozenset)):
@@ -213,6 +219,9 @@ def summarize(
         tx_durations[pid] += duration
         item = links.setdefault(link_id, {
             "stage": stage, "capacity_bits": 0.0, "served_bits": 0.0,
+            "available_capacity_bits": 0.0,
+            "available_time_s": 0.0,
+            "available_samples": 0,
             "service_windows": 0,
         })
         if item["stage"] != stage:
@@ -221,11 +230,53 @@ def summarize(
         item["served_bits"] += served
         item["service_windows"] += 1
 
+    # Availability is sampled independently from service.  An idle but
+    # geometrically usable link therefore contributes to the denominator.
+    seen_available: set[tuple[str, float, float]] = set()
+    for window in available_capacity_windows:
+        if not isinstance(window, dict):
+            raise MetricsError("every available capacity window must be a mapping")
+        stage = _nonempty(window, "stage")
+        link_id = _nonempty(window, "link_id")
+        start = _finite(window.get("start"), "available_window.start")
+        end = _finite(window.get("end"), "available_window.end")
+        rate = _finite(window.get("rate_bps"), "available_window.rate_bps")
+        capacity = _finite(window.get("capacity_bits"),
+                           "available_window.capacity_bits")
+        if start < 0 or end <= start or rate <= 0 or capacity < 0:
+            raise MetricsError("invalid available capacity window bounds/rate")
+        expected = rate * (end - start)
+        if not math.isclose(expected, capacity, rel_tol=1e-9, abs_tol=1e-9):
+            raise MetricsError("available capacity does not equal rate*time")
+        key = (link_id, start, end)
+        if key in seen_available:
+            raise MetricsError(f"duplicate available capacity window {key}")
+        seen_available.add(key)
+        item = links.setdefault(link_id, {
+            "stage": stage, "capacity_bits": 0.0, "served_bits": 0.0,
+            "available_capacity_bits": 0.0,
+            "available_time_s": 0.0,
+            "available_samples": 0,
+            "service_windows": 0,
+        })
+        if item["stage"] != stage:
+            raise MetricsError(f"link {link_id} changes stage")
+        item["available_capacity_bits"] += capacity
+        item["available_time_s"] += end - start
+        item["available_samples"] += 1
+
     for item in links.values():
+        # Hand-built legacy fixtures omit availability samples; preserve their
+        # old denominator while kernel runs use the physical sample ledger.
+        denominator = item["available_capacity_bits"]
+        if not available_capacity_windows:
+            denominator = item["capacity_bits"]
+            item["available_capacity_bits"] = denominator
         item["utilization"] = min(
             1.0,
-            item["served_bits"] / item["capacity_bits"]
-            if item["capacity_bits"] else 0.0)
+            item["served_bits"] / denominator if denominator else 0.0)
+        if available_capacity_windows and item["served_bits"] > denominator * (1.0 + 1e-9):
+            raise MetricsError("served bits exceed sampled available capacity")
 
     packets = {}
     for pid in sorted(set(emitted) | set(delivered) | set(queue_wait)
