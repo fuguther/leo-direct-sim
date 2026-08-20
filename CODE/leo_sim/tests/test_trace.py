@@ -150,6 +150,12 @@ def test_demand_modes_all_generate(tmp_path):
         m = trace.compile_trace(cfg, str(tmp_path / mode))
         assert m["offered_packets"] > 0, mode
         assert m["provenance"] == "synthetic"
+        transform = m["provenance_contract"]["traffic_transform"]
+        assert transform["mode"] == mode
+        if mode == "burst":
+            assert transform["burst"] == {
+                "start_s": 1.0, "duration_s": 2.0, "multiplier": 2.0
+            }
 
 
 def test_population_gravity_uses_population_for_sources_and_destinations(

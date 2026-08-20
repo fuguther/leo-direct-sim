@@ -471,6 +471,18 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
             "offered_packets": len(rows),
             "offered_bits": offered_bits,
         },
+        "traffic_transform": {
+            "mode": mode,
+            "burst": ({
+                "start_s": float(dm["burst_start_s"]),
+                "duration_s": float(dm["burst_duration_s"]),
+                "multiplier": float(dm["burst_multiplier"]),
+            } if mode == "burst" else None),
+            "diurnal": ({
+                "amplitude": float(dm["diurnal_amplitude"]),
+                "phase_h": float(dm["diurnal_phase_h"]),
+            } if mode == "diurnal" else None),
+        },
     }
     manifest = {
         "schema": TRACE_MANIFEST_SCHEMA,
