@@ -1,0 +1,655 @@
+拥塞与链路利用率研究路线冷审（PLAN-AUDIT）
+0. 审查结论摘要
+
+结论：当前实验计划的大方向已经从“直接堆算法”转向“先诊断瓶颈，再证明信息/控制价值，再提出方案”，研究逻辑基本正确；但距离论文级可信实验仍存在几个关键缺口。
+
+最重要判断：
+
+不要把 Q0-I/F 作为 E0/PILOT 的平台前置。
+
+Q0-I/F 的价值是解释性能差距来源，不是证明平台能跑。
+
+平台首先需要保证 D1/D2、reward、mask、deadline、证据链、指标可重算正确。
+
+Q0 应在物理语义冻结后进入诊断阶段，而不是阻塞所有实验启动。
+
+当前最大的研究风险不是缺少 GNN/RL 方法，而是无法回答“为什么拥塞发生”。
+
+如果没有真实流量映射、多 OD、突发输入、链路利用率定义、queue/tx/prop 三段时延分解，后续任何 congestion-aware 方法都可能变成针对错误症状优化。
+
+链路利用率必须从“展示指标”升级为“可重算证据”。
+当前计划已有完成率、时延、积压等主指标，但对于瓶颈归因，还需要明确：
+
+分母：瞬时容量、窗口容量还是可用服务容量；
+
+时间窗：滑动窗口还是 episode 聚合；
+
+方向：有向 ISL/GSL 分开；
+
+层级：物理链路、方向队列、服务端口分别统计。
+
+真实流量诊断应早于新控制方案。
+最短可靠路线：
+
+平台语义冻结
+      ↓
+E0 负载重新标定
+      ↓
+真实流量/多OD/突发注入
+      ↓
+拥塞瓶颈诊断
+(queue + utilization + loss + completion + delay decomposition)
+      ↓
+Q0-I/F 信息价值分解
+      ↓
+提出机制假设
+      ↓
+负对照/反例验证
+      ↓
+新拥塞控制方案
+一、当前研究主线一致性审查
+1. 现有实验程序与新研究问题匹配度
+
+当前实验计划已经明确：
+
+VAL-D1、VAL-D2、VM-SMOKE：平台正确性；
+
+Q0-I/Q0-F/Q0-REPLAY：信息与未来价值分解；
+
+E0/PILOT：实验校准；
+
+EXP1-EXP3：信息范围、聚合、信息年龄研究。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L200
+
+判断：
+
+这个顺序比“直接设计 congestion-aware GNN/RL”合理，因为它先回答：
+
+有没有拥塞？
+
+拥塞在哪里？
+
+拥塞来源是信息不足、决策不足还是控制约束？
+
+新方法解决的是哪一个瓶颈？
+
+这是论文级研究必须具备的因果链。
+
+A. 论文级正式实验前的平台必做项
+
+以下属于 所有论文实验之前必须完成。
+
+A1. D1 动态链路速率冻结
+
+状态：
+
+当前能力账本明确指出：
+
+距离→SNR/MCS→速率属于 BLOCKER-A；
+
+D1 候选实现仍需进入正式平台。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L1-L120
+
+原因：
+
+如果链路容量不是动态真实值：
+
+利用率没有物理意义；
+
+queue buildup 可能只是固定容量假象；
+
+congestion controller 学到的是错误环境。
+
+反例：
+
+如果实际容量变化导致服务能力下降，而模型认为容量固定，则模型可能通过绕路避免“虚假拥塞”，论文结论会错误归因到 routing。
+
+结论：
+
+D1 是正式拥塞研究 blocker。
+
+A2. D2 动态拓扑/holding 语义冻结
+
+原因：
+
+LEO 拥塞不是静态图问题。
+
+拓扑变化影响：
+
+可用路径；
+
+队列积压位置；
+
+等待策略；
+
+link utilization denominator。
+
+如果 ISL 重匹配或 holding 语义错误，会产生伪拥塞。
+
+结论：
+
+D2 必须在真实流量诊断之前完成。
+
+A3. reward 目标冻结
+
+当前账本明确：
+
+reward 无正循环、物理目标一致性仍属于 BLOCKER-A。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L20-L60
+
+问题：
+
+拥塞研究尤其容易被 reward 污染。
+
+例如：
+
+reward 鼓励短路径：
+
+短路径收益 > 排队代价
+
+模型可能主动制造热点。
+
+最终观察：
+
+“模型学习不好”。
+
+实际原因：
+
+目标函数错误。
+
+必须先证明：
+
+reward 与完成率一致；
+
+不存在循环取利；
+
+Q0 不依赖 shaped reward。
+
+A4. mask / 信息泄漏冻结
+
+当前 #62 已关闭已知 cache-hop 旁路，但最终平台仍需要继续检查未知旁路。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L40-L70
+
+原因：
+
+后续研究重点就是信息价值。
+
+如果 baseline 偷看未来或远端信息：
+
+EXP1/EXP3 结论全部失效。
+
+A5. 指标链闭环
+
+必须具备：
+
+raw event
+   ↓
+artifact
+   ↓
+metric recompute
+   ↓
+analysis
+   ↓
+claim
+
+当前 readiness 文档指出：
+
+V2 artifact→指标重算→paired analysis→claim 闭环仍未完成。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L20-L80
+
+这是论文可信度 blocker。
+
+B. 只在特定阶段/实验前完成的项
+
+这些不是平台前置。
+
+B1. Q0-I / Q0-F
+
+判断：
+
+不应该阻塞 E0。
+
+原因：
+
+E0 问题：
+
+当前平台在什么负载下产生什么拥塞？
+
+Q0 问题：
+
+如果信息无限增强，理论上还能提升多少？
+
+两个问题不同。
+
+正确顺序：
+
+D1/D2
+ ↓
+E0
+ ↓
+拥塞诊断
+ ↓
+Q0-I/F
+ ↓
+机制设计
+
+而不是：
+
+Q0完成
+ ↓
+才允许跑实验
+
+否则会让理论诊断工具阻塞基础测量。
+
+B2. per-action 距离速率特征
+
+账本已经分类：
+
+CLAIM-GATED。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L80-L110
+
+建议：
+
+不要默认加入所有模型。
+
+正确实验：
+
+EXP2B：
+
+F0 queue + destination
+F1 + link rate
+F2 + field age
+
+否则无法知道提升来自：
+
+更多信息；
+
+更强模型；
+
+更大输入维度。
+
+B3. 逐字段 age
+
+属于 EXP3 前置。
+
+不能提前塞入 baseline。
+
+原因：
+
+age-aware 方法需要证明：
+
+新增信息来自 freshness，而不是额外参数。
+
+必须包含：
+
+no age；
+
+age feature；
+
+age attention；
+
+shuffled age；
+
+fixed fresh age。
+
+B4. replay 续训
+
+当前属于 CEILING。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L110-L130
+
+判断：
+
+不是首批论文 blocker。
+
+但如果：
+
+长训练失败；
+
+seed 方差过大；
+
+checkpoint 恢复成本高；
+
+则应升级。
+
+C. 可以明确牺牲的真实性
+C1. 高级物理模型
+
+可以暂缓：
+
+完整 Doppler；
+
+ARQ；
+
+天线模型；
+
+FSO。
+
+原因：
+
+没有校准数据时，增加复杂度不会增加可信度。
+
+账本明确：
+
+这些属于 INTENTIONAL/CEILING。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L140-L160
+
+C2. 分布式学习细节
+
+可以暂缓：
+
+FL；
+
+CKA；
+
+每星模型；
+
+path-credit。
+
+除非论文 claim 是：
+
+“分布式学习机制提升”。
+
+否则会污染主线。
+
+C3. 大规模真实性
+
+不建议优先追求：
+
+更大星座；
+
+更多物理参数；
+
+更多模块。
+
+优先保证：
+
+小规模可证明。
+
+原因：
+
+tiny exact validation > large approximate simulation。
+
+D. 从真实流量诊断到新拥塞控制方案的最短依赖顺序
+Phase 1：测清楚问题
+1. 流量模型
+
+必须加入：
+
+多 OD；
+
+hotspot OD；
+
+temporal burst；
+
+gravity pattern。
+
+单 OD 不能支持 congestion claim。
+
+反例：
+
+一个 OD 的瓶颈可能只是固定路径问题，不是网络拥塞机制。
+
+2. 链路利用率重新定义
+
+推荐：
+
+对每个有向链路：
+
+U
+e
+	​
+
+(t,W)=
+∫
+W
+	​
+
+C
+e
+	​
+
+(τ)dτ
+transmitted bits on e during W
+	​
+
+
+其中：
+
+C
+e
+	​
+
+(t)：动态容量；
+
+W：明确窗口。
+
+必须同时报告：
+
+mean utilization；
+
+peak utilization；
+
+overloaded duration；
+
+queue growth correlation。
+
+3. 拥塞诊断指标
+
+最低集合：
+
+类别	指标
+队列	queue length、queue age
+服务	tx bytes、service time
+链路	capacity、utilization
+失败	drop、TTL expire
+业务	completion rate、deadline miss
+时延	queue + tx + propagation
+
+当前账本指出 queue/tx/prop 分解尚不足：
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L100-L120
+
+Phase 2：理论归因
+
+使用：
+
+C(π
+L
+	​
+
+)−C
+F
+∗
+	​
+
+=(C
+I
+∗
+	​
+
+−C
+F
+∗
+	​
+
+)+(C
+L
+∗
+	​
+
+−C
+I
+∗
+	​
+
+)+(C(π
+L
+	​
+
+)−C
+L
+∗
+	​
+
+)
+
+对应：
+
+未来信息价值；
+
+当前信息价值；
+
+算法能力损失。
+
+Q0-I/F 在这里发挥作用。
+
+Phase 3：提出方案
+
+只有当诊断显示：
+
+信息不足
+
+研究：
+
+age-aware；
+
+broader observation；
+
+belief model。
+
+决策不足
+
+研究：
+
+better aggregation；
+
+congestion-aware routing。
+
+控制不足
+
+研究：
+
+scheduling；
+
+service allocation。
+
+不能提前假设：
+
+“需要 congestion-aware GNN”。
+
+E. 当前文档矛盾、过时状态和不合理门禁
+问题	严重度	判断
+Q0 被部分流程描述为 blocker	major	Q0 应阻塞 claim，不应阻塞基础实验
+V2 分析链未闭环	major	必须补 artifact→metric→claim
+D1/D2 尚未成为正式平台事实	major	必须冻结
+单 OD 到多 OD 外推	major	必须补场景
+链路利用率没有完整归因定义	major	无法支持 congestion claim
+queue/tx/prop 分解缺失	major	影响时延解释
+replay 未持久化	minor	暂不阻塞
+高级物理未实现	info	可以牺牲
+最短执行路线建议
+1. 合入 D1/D2
+2. 冻结 reward/mask/deadline
+3. 修 V2 analysis chain
+4. E0 重新扫描负载
+5. 加真实流量、多OD、burst
+6. 建立 utilization + queue/tx/prop 分析
+7. 做拥塞瓶颈分类
+8. Q0-I/F 分解信息价值
+9. 根据结果提出控制方案
+10. 做反例和负对照
+11. EXP1-EXP3
+open_items
+
+当前允许读取范围内未提供 EXPERIMENTS/experiment-program.yaml 内容，因此无法核对 YAML 状态是否与 EXPERIMENT-PROGRAM.md 完全一致。
+
+当前未读取 CODE/leo_sim/ 具体实现文件，因此无法确认 queue/tx/prop 埋点能力的代码级现状，只能依据能力账本判断。
+
+当前文档没有给出真实流量 trace schema，因此无法审计 trace→OD→burst 映射合同。
+
+当前未发现明确的链路利用率定义合同，需要后续冻结 metric specification。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:PLAN-AUDIT",
+  "status": "EVIDENCE_READY",
+  "summary": "当前实验路线已经具备先平台冻结、再信息诊断、再算法研究的正确方向。主要风险不是缺少模型，而是拥塞归因链不足：需要先完成D1/D2、reward/mask/证据链冻结，补真实流量、多OD、burst、链路利用率定义和queue/tx/prop分解。Q0-I/F应服务于性能差分解释，不应成为E0/PILOT默认平台前置。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "D1/D2动态物理语义仍是正式实验前置条件，不应在未冻结状态运行论文实验",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L1-L40"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "Q0-I/F应作为信息价值诊断工具，而不是阻塞E0/PILOT的默认平台门禁",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L120"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "当前拥塞研究缺少完整瓶颈归因链，需要补利用率重算和queue/tx/prop分解",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L100-L120"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "V2 artifact到指标重算再到claim的分析闭环尚未完成",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L20-L80"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "先完成D1/D2合入后的平台冻结和行为对照",
+    "建立真实流量、多OD、burst输入合同",
+    "冻结链路利用率和时延分解指标定义",
+    "将Q0-I/F放入诊断阶段而非平台启动阶段",
+    "基于拥塞归因结果再设计新控制方案"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L200",
+    "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L1-L120",
+    "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L1-L160"
+  ],
+  "open_items": [
+    "未读取experiment-program.yaml，无法核对机器状态清单一致性",
+    "未读取CODE/leo_sim实现，无法完成代码级queue/tx/prop能力确认",
+    "缺少真实trace schema，无法审计trace到OD/burst映射",
+    "缺少正式metric specification，无法确认链路利用率定义"
+  ]
+}
+===END_OFFLOAD_RESULT===
