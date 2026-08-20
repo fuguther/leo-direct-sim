@@ -21,6 +21,18 @@ import sys
 from pathlib import Path
 from typing import Any, Iterable
 
+# The runbook invokes this file by path from the project root. Make that
+# invocation independent of an ambient PYTHONPATH while keeping imports
+# rooted at the exact project copy being analyzed.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from CODE.experiment_platform.authorize_experiment import (
+    AuthorizationError,
+    verify_authorization,
+)
+
 
 ANALYSIS_SCHEMA = "analysis-request/v2"
 MANIFEST_SCHEMA = "experiment-run-manifest/v2"
@@ -73,6 +85,22 @@ def _safe_child(root: Path, raw: str, label: str) -> Path:
         if cursor.is_symlink():
             raise ValueError(f"{label} contains a symbolic link: {raw}")
     return resolved
+
+
+def _lexical_direct_run(path: Path, results_root: Path, label: str) -> Path:
+    """Reject an entry symlink before resolving it.
+
+    Production runs are direct children of CODE/Results.  Tests may inject a
+    different explicit results_root, but the direct-child and lexical
+    non-symlink contract remains identical.
+    """
+    lexical = Path(path).absolute()
+    root = Path(results_root).absolute()
+    if lexical.is_symlink() or not lexical.is_dir():
+        raise ValueError(f"{label} must be an existing lexical non-symlink directory")
+    if lexical.parent != root or lexical.name.startswith("_"):
+        raise ValueError(f"{label} must be a direct non-control child of {root}")
+    return lexical
 
 
 def _safe_artifact(root: Path, raw: str, label: str) -> Path:
@@ -153,10 +181,80 @@ def _planned_row(manifest: dict[str, Any], run_id: str) -> dict[str, Any]:
     return matches[0]
 
 
-def _verify_run(root: Path, manifest: dict[str, Any], run_id: str, raw_path: Path, required_metrics: list[str]) -> dict[str, Any]:
-    run_dir = raw_path.resolve()
-    if run_dir.is_symlink() or not run_dir.is_dir():
-        raise ValueError(f"run directory is missing or symbolic: {raw_path}")
+def _verify_compiled_binding(
+    root: Path,
+    analysis: dict[str, Any],
+    run_manifest: dict[str, Any],
+    request_path: Path,
+    manifest_path: Path,
+    authorization_path: Path,
+) -> tuple[dict[str, Any], str, dict[str, dict[str, Any]]]:
+    """Recompute the compile/review/authorization binding before admitting runs."""
+    request = _read_json(request_path)
+    analysis_file_sha = file_sha256(request_path)
+    manifest_file_sha = file_sha256(manifest_path)
+    if analysis.get("request_sha256") != analysis_file_sha:
+        raise ValueError("analysis request does not bind request.json")
+    if analysis.get("run_manifest_sha256") != manifest_file_sha:
+        raise ValueError("analysis request does not bind run-manifest.json")
+    if analysis.get("scenario_identity_sha256") != canonical_sha(run_manifest.get("scenario_identity", {})):
+        raise ValueError("analysis request scenario identity binding mismatch")
+    if request.get("identity", {}).get("experiment_id") != run_manifest.get("experiment_id"):
+        raise ValueError("request and run manifest experiment identity mismatch")
+    if analysis.get("experiment_id") != run_manifest.get("experiment_id"):
+        raise ValueError("analysis and run manifest experiment identity mismatch")
+    planned = run_manifest.get("planned_runs")
+    if not isinstance(planned, list) or not planned:
+        raise ValueError("run manifest planned_runs is missing")
+    planned_ids = [row.get("run_id") for row in planned]
+    if analysis.get("planned_run_ids") != planned_ids:
+        raise ValueError("analysis planned_run_ids do not exactly match manifest order")
+    projected = [
+        {key: row.get(key) for key in ("run_id", "arm_id", "seed", "config_sha256", "controlled_signature")}
+        for row in planned
+    ]
+    if analysis.get("planned_runs") != projected:
+        raise ValueError("analysis planned_runs do not bind manifest cohort and config identities")
+    try:
+        authorization = verify_authorization(root, authorization_path)
+    except (AuthorizationError, OSError, ValueError, json.JSONDecodeError) as exc:
+        raise ValueError(f"authorization verification failed: {exc}") from exc
+    if authorization.get("status") != "AUTHORIZED":
+        raise ValueError("authorization status is not AUTHORIZED")
+    try:
+        experiment_rel = str(request_path.parent.resolve().relative_to(root.resolve()))
+    except ValueError as exc:
+        raise ValueError("compiled request is outside project root") from exc
+    if authorization.get("experiment_dir") != experiment_rel:
+        raise ValueError("authorization experiment directory does not match analysis inputs")
+    authorized = authorization.get("authorized_runs")
+    if not isinstance(authorized, list):
+        raise ValueError("authorization authorized_runs is missing")
+    authorized_by_id: dict[str, dict[str, Any]] = {}
+    for row in authorized:
+        if not isinstance(row, dict) or not isinstance(row.get("run_id"), str) or row["run_id"] in authorized_by_id:
+            raise ValueError("authorization authorized_runs is malformed or duplicated")
+        authorized_by_id[row["run_id"]] = row
+    if set(authorized_by_id) != set(planned_ids):
+        raise ValueError("authorization cohort does not exactly match run manifest")
+    for row in planned:
+        auth_row = authorized_by_id[row["run_id"]]
+        if auth_row.get("config_sha256") != row.get("config_sha256"):
+            raise ValueError(f"authorization config hash mismatch: {row['run_id']}")
+    return authorization, file_sha256(authorization_path), authorized_by_id
+
+
+def _verify_run(
+    root: Path,
+    manifest: dict[str, Any],
+    run_id: str,
+    raw_path: Path,
+    required_metrics: list[str],
+    results_root: Path,
+    authorized_row: dict[str, Any],
+    authorization_sha256: str,
+) -> dict[str, Any]:
+    run_dir = _lexical_direct_run(raw_path, results_root, f"run {run_id}")
     row = _planned_row(manifest, run_id)
     meta_path = _safe_child(run_dir, "run_trace/run_meta.json", "run metadata")
     config_path = _safe_child(run_dir, "config_used.json", "config used")
@@ -169,10 +267,16 @@ def _verify_run(root: Path, manifest: dict[str, Any], run_id: str, raw_path: Pat
     config_sha = canonical_sha(config)
     if meta.get("requested_run_id") != run_id:
         raise ValueError(f"run {run_id} requested_run_id mismatch")
+    if authorized_row.get("run_id") != run_id:
+        raise ValueError(f"run {run_id} is not authorized")
     if meta.get("config_canonical_sha256") != config_sha:
         raise ValueError(f"run {run_id} config hash mismatch in run_meta")
-    if row.get("config_sha256") != config_sha:
+    if row.get("config_sha256") != config_sha or authorized_row.get("config_sha256") != config_sha:
         raise ValueError(f"run {run_id} config hash differs from run manifest")
+    if artifacts.get("run_id") != run_id:
+        raise ValueError(f"run {run_id} artifact manifest run_id mismatch")
+    if artifacts.get("config_sha256") != config_sha:
+        raise ValueError(f"run {run_id} artifact manifest config hash mismatch")
     provenance = config.get("provenance")
     if not isinstance(provenance, dict):
         raise ValueError(f"run {run_id} lacks config provenance")
@@ -189,6 +293,14 @@ def _verify_run(root: Path, manifest: dict[str, Any], run_id: str, raw_path: Pat
         raise ValueError(f"run {run_id} scenario identity mismatch")
     if meta.get("scenario_identity_sha256") not in (None, scenario_sha):
         raise ValueError(f"run {run_id} scenario identity hash mismatch")
+    launch_nonce = meta.get("launch_nonce")
+    run_attempt_id = meta.get("run_attempt_id")
+    if not isinstance(launch_nonce, str) or len(launch_nonce) != 32 or any(c not in "0123456789abcdef" for c in launch_nonce):
+        raise ValueError(f"run {run_id} launch_nonce is invalid")
+    if not isinstance(run_attempt_id, str) or len(run_attempt_id) != 32 or any(c not in "0123456789abcdef" for c in run_attempt_id):
+        raise ValueError(f"run {run_id} run_attempt_id is invalid")
+    if meta.get("authorization_sha256") != authorization_sha256:
+        raise ValueError(f"run {run_id} authorization hash mismatch")
     if meta.get("natural_end") is not True or meta.get("interrupted") is not False:
         raise ValueError(f"run {run_id} did not end naturally")
     receipt = meta.get("effective_receipt")
@@ -244,9 +356,55 @@ def _bootstrap(values: list[float], seed: int, draws: int = 4000) -> tuple[float
     return low, high, "BOOTSTRAP_95"
 
 
-def execute(root: Path, analysis: dict[str, Any], run_manifest: dict[str, Any], run_entries: list[tuple[str, Path]], out_dir: Path) -> tuple[dict[str, Any], list[dict[str, Any]], list[str]]:
+def execute(
+    root: Path,
+    analysis: dict[str, Any],
+    run_manifest: dict[str, Any],
+    run_entries: list[tuple[str, Path]],
+    out_dir: Path,
+    *,
+    request_path: Path | None = None,
+    manifest_path: Path | None = None,
+    authorization_path: Path | None = None,
+    results_root: Path | None = None,
+) -> tuple[dict[str, Any], list[dict[str, Any]], list[str]]:
     errors: list[str] = []
     results: list[dict[str, Any]] = []
+    root = root.resolve()
+    if request_path is None or manifest_path is None or authorization_path is None:
+        errors.append("analysis requires request.json, run-manifest.json and authorization.json paths")
+        return {
+            "schema": OUTPUT_SCHEMA, "status": "BLOCKED", "errors": errors,
+            "experiment_id": run_manifest.get("experiment_id"), "analysis_id": analysis.get("analysis_id"),
+            "primary_metric": analysis.get("primary_metric", ""), "paired_by": [],
+            "verified_run_ids": [], "bound_run_artifacts": [], "planned_contrasts": [],
+            "input_hashes": {}, "claim_boundary": {"cannot_conclude": analysis.get("cannot_conclude", [])},
+        }, results, errors
+    request_path = request_path.resolve()
+    manifest_path = manifest_path.resolve()
+    authorization_path = authorization_path.resolve()
+    results_root = (results_root or root / "CODE" / "Results").absolute()
+    for label, path in (
+        ("request", request_path), ("run manifest", manifest_path),
+        ("authorization", authorization_path), ("results root", results_root),
+    ):
+        try:
+            path.relative_to(root)
+        except ValueError:
+            errors.append(f"{label} is outside project root")
+    for run_id, path in run_entries:
+        try:
+            Path(path).absolute().relative_to(root)
+        except ValueError:
+            errors.append(f"run {run_id} is outside project root")
+    try:
+        authorization, authorization_sha256, authorized_by_id = _verify_compiled_binding(
+            root, analysis, run_manifest, request_path, manifest_path, authorization_path)
+    except ValueError as exc:
+        errors.append(str(exc))
+        authorization = {}
+        authorization_sha256 = ""
+        authorized_by_id = {}
     if analysis.get("schema") != ANALYSIS_SCHEMA:
         errors.append("analysis request schema mismatch")
     if run_manifest.get("schema") != MANIFEST_SCHEMA:
@@ -278,7 +436,9 @@ def execute(root: Path, analysis: dict[str, Any], run_manifest: dict[str, Any], 
         if errors and set(supplied_ids) != set(planned_ids):
             break
         try:
-            results.append(_verify_run(root, run_manifest, run_id, path, required_metrics))
+            results.append(_verify_run(
+                root, run_manifest, run_id, path, required_metrics, results_root,
+                authorized_by_id.get(run_id, {}), authorization_sha256))
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             errors.append(f"{run_id}: {exc}")
     pair_by = analysis.get("preregistration", {}).get("paired_by", []) if isinstance(analysis.get("preregistration"), dict) else []
@@ -336,6 +496,19 @@ def execute(root: Path, analysis: dict[str, Any], run_manifest: dict[str, Any], 
         code_path = (root / "ANALYSIS" / "paired_analysis.py").resolve()
         if code_path.is_file():
             input_paths[str(code_path.relative_to(root.resolve()))] = file_sha256(code_path)
+    def _relative_or_absolute(path: Path) -> str:
+        try:
+            return str(path.relative_to(root))
+        except ValueError:
+            return str(path)
+
+    # ``request_path`` is the compile input request.json.  The analyzer
+    # itself is analysis-request.json in the same compiled experiment
+    # directory; persist that distinct path so verification cannot silently
+    # replay the wrong JSON document.
+    analysis_request_path = request_path.parent / "analysis-request.json"
+    if not analysis_request_path.is_file():
+        errors.append("compiled analysis-request.json is missing")
     manifest = {
         "schema": OUTPUT_SCHEMA,
         "status": "VERIFIED" if not errors else "BLOCKED",
@@ -349,6 +522,15 @@ def execute(root: Path, analysis: dict[str, Any], run_manifest: dict[str, Any], 
         "planned_contrasts": output_contrasts,
         "input_hashes": input_paths,
         "claim_boundary": {"cannot_conclude": analysis.get("cannot_conclude", [])},
+        "analysis_request_path": _relative_or_absolute(analysis_request_path),
+        "run_manifest_path": _relative_or_absolute(manifest_path),
+        "authorization_path": _relative_or_absolute(authorization_path),
+        "results_root": _relative_or_absolute(results_root),
+        "authorization_sha256": authorization_sha256,
+        "run_entries": [
+            {"run_id": run_id, "path": _relative_or_absolute(Path(path).absolute())}
+            for run_id, path in run_entries
+        ],
     }
     return manifest, results, sorted(set(errors))
 
@@ -382,6 +564,10 @@ def _write_report(path: Path, manifest: dict[str, Any]) -> None:
 def write_outputs(root: Path, out_dir: Path, manifest: dict[str, Any], results: list[dict[str, Any]]) -> None:
     root = root.resolve()
     out_dir = out_dir.resolve()
+    if out_dir.is_symlink():
+        raise ValueError("analysis output directory may not be symbolic")
+    if out_dir.exists() and (not out_dir.is_dir() or any(out_dir.iterdir())):
+        raise ValueError("analysis output directory must be new or empty")
     out_dir.mkdir(parents=True, exist_ok=True)
     _write_summary(out_dir / "summary.csv", manifest)
     _write_report(out_dir / "report.md", manifest)
@@ -394,6 +580,15 @@ def write_outputs(root: Path, out_dir: Path, manifest: dict[str, Any], results: 
     # ``inputs`` is the public, paper-facing name.  Keep input_hashes as an
     # internal-compatible alias so old callers can inspect the same binding.
     persisted["inputs"] = dict(persisted.get("input_hashes", {}))
+    for key in ("analysis_request_path", "run_manifest_path", "authorization_path"):
+        raw = persisted.get(key)
+        if not isinstance(raw, str):
+            raise ValueError(f"analysis manifest missing {key}")
+        path = _safe_child(root, raw, key)
+        persisted["inputs"][raw] = file_sha256(path)
+    if persisted.get("authorization_sha256") != persisted["inputs"].get(persisted.get("authorization_path")):
+        raise ValueError("authorization hash is not bound in analysis inputs")
+    persisted["input_hashes"] = dict(persisted["inputs"])
     persisted["output_hashes"] = {
         "summary.csv": file_sha256(out_dir / "summary.csv"),
         "report.md": file_sha256(out_dir / "report.md"),
@@ -427,6 +622,38 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
             path = _safe_child(root, raw, "analysis input")
             if not isinstance(digest, str) or file_sha256(path) != digest:
                 raise ValueError(f"analysis input hash mismatch: {raw}")
+        required_input_paths = {
+            "analysis_request_path", "run_manifest_path", "authorization_path",
+        }
+        if any(not isinstance(manifest.get(key), str) for key in required_input_paths):
+            raise ValueError("analysis manifest lacks compiled input paths")
+        if manifest.get("authorization_sha256") != inputs.get(manifest["authorization_path"]):
+            raise ValueError("persisted authorization hash binding mismatch")
+        analysis_input_path = _safe_child(root, manifest["analysis_request_path"], "analysis request")
+        manifest_input_path = _safe_child(root, manifest["run_manifest_path"], "run manifest")
+        authorization_input_path = _safe_child(root, manifest["authorization_path"], "authorization")
+        request_input_path = _safe_child(root, str(Path(manifest["analysis_request_path"]).parent / "request.json"), "request")
+        analysis_input = _read_json(analysis_input_path)
+        run_manifest_input = _read_json(manifest_input_path)
+        run_entries_raw = manifest.get("run_entries")
+        if not isinstance(run_entries_raw, list) or any(not isinstance(item, dict) for item in run_entries_raw):
+            raise ValueError("persisted run_entries are malformed")
+        results_root = _safe_child(root, manifest.get("results_root", ""), "results root")
+        entries = []
+        for item in run_entries_raw:
+            if set(item) != {"run_id", "path"}:
+                raise ValueError("persisted run entry has unexpected fields")
+            entries.append((item["run_id"], root / item["path"]))
+        recomputed, _results, recompute_errors = execute(
+            root, analysis_input, run_manifest_input, entries, manifest_path.parent,
+            request_path=request_input_path, manifest_path=manifest_input_path,
+            authorization_path=authorization_input_path, results_root=results_root,
+        )
+        if recompute_errors:
+            raise ValueError("recomputed analysis is blocked: " + "; ".join(recompute_errors))
+        for key in ("experiment_id", "primary_metric", "paired_by", "verified_run_ids", "planned_contrasts", "authorization_sha256"):
+            if recomputed.get(key) != manifest.get(key):
+                raise ValueError(f"persisted analysis differs from recomputation: {key}")
         bound = manifest.get("bound_run_artifacts")
         if not isinstance(bound, list) or not bound:
             raise ValueError("analysis manifest has no bound run artifacts")
@@ -484,6 +711,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--analysis", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--authorization", type=Path, required=True)
     parser.add_argument("--run", action="append", default=[])
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
@@ -491,11 +719,13 @@ def main(argv: list[str] | None = None) -> int:
         analysis = _read_json(args.analysis)
         run_manifest = _read_json(args.manifest)
         root = Path.cwd().resolve()
-        manifest, results, errors = execute(root, analysis, run_manifest, _load_run_entries(args.run), args.out)
-        manifest["input_hashes"].update({
-            str(args.analysis.resolve().relative_to(root)): file_sha256(args.analysis.resolve()),
-            str(args.manifest.resolve().relative_to(root)): file_sha256(args.manifest.resolve()),
-        })
+        request_path = args.analysis.resolve().parent / "request.json"
+        manifest, results, errors = execute(
+            root, analysis, run_manifest, _load_run_entries(args.run), args.out,
+            request_path=request_path, manifest_path=args.manifest.resolve(),
+            authorization_path=args.authorization.resolve(),
+            results_root=root / "CODE" / "Results",
+        )
         write_outputs(root, args.out.resolve(), manifest, results)
         if errors:
             for error in errors:

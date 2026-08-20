@@ -800,7 +800,8 @@ def render_runbook(request: dict[str, Any], manifest: dict[str, Any]) -> str:
     )
     analysis_command = (
         f"python3 ANALYSIS/paired_analysis.py --analysis EXPERIMENTS/{experiment_id}/analysis-request.json "
-        f"--manifest EXPERIMENTS/{experiment_id}/run-manifest.json {run_args} "
+        f"--manifest EXPERIMENTS/{experiment_id}/run-manifest.json "
+        f"--authorization EXPERIMENTS/{experiment_id}/authorization.json {run_args} "
         f"--out ANALYSIS/{experiment_id}"
     )
     lines.extend([
