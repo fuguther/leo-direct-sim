@@ -80,6 +80,46 @@ def test_summarize_accepts_in_flight_packet_without_fabricating_arrival():
     assert "e2e_s" not in packet
 
 
+def test_receipt_recomputation_uses_fate_qualified_in_flight_set(tmp_path):
+    """An in-flight packet at horizon remains verifiable from raw events."""
+    import hashlib
+    from CODE.leo_sim import receipt, trace
+
+    cfg = make_cfg({
+        "scenario": {"duration_s": 0.1},
+        "endpoints": {"sites": [
+            {"name": "a", "lat": 0.0, "lon": 0.0},
+            {"name": "b", "lat": 0.0, "lon": 10.0},
+        ]},
+        "demand": {"mode": "csv", "csv_path": str(tmp_path / "input.csv")},
+    })
+    (tmp_path / "input.csv").write_text(
+        "packet_id,emit_time_s,src_lat,src_lon,dst_lat,dst_lon,bits,deadline_at_s\n"
+        "1,0.099,0.0,0.0,0.0,10.0,8000000,\n",
+        encoding="utf-8")
+    trace_dir = tmp_path / "trace"
+    manifest = trace.compile_trace(cfg, str(trace_dir))
+    trace_bytes = (trace_dir / "trace.csv").read_bytes()
+    manifest["__trace_sha256"] = hashlib.sha256(trace_bytes).hexdigest()
+    manifest["__sha256"] = hashlib.sha256(
+        (trace_dir / "manifest.json").read_bytes()).hexdigest()
+    geo = StaticGeometry(2, visible=lambda *_: True,
+                         neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+                         slant_km=600.0)
+    result = kernel.run_simulation(
+        cfg, trace.load_trace(str(trace_dir / "trace.csv"),
+                              horizon_s=0.1,
+                              max_packets=cfg["config"]["execution"]["max_packets"]),
+        geometry=geo)
+    assert result["fate_counts"]["IN_SYSTEM_AT_STOP"] == 1
+    out = tmp_path / "run"
+    receipt.write_run(str(out), cfg, trace_bytes, manifest, result,
+                      trace.load_trace(str(trace_dir / "trace.csv"),
+                                       horizon_s=0.1,
+                                       max_packets=cfg["config"]["execution"]["max_packets"]))
+    assert receipt.verify_receipt_dir(str(out)) == []
+
+
 def test_kernel_persists_real_event_metrics_for_a_delivered_packet():
     a = cell(0.0, 0.0)
     b = cell(0.0, 10.0)

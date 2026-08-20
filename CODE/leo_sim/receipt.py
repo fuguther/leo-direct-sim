@@ -552,8 +552,24 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
     raw_events = ledgers.get("packet_events")
     raw_windows = ledgers.get("link_service_windows")
     stored_metrics = ledgers.get("congestion_metrics")
+    # A packet may have a valid propagation start but no arrival because the
+    # run horizon (or an explicit terminal loss) cut the flight short.  The
+    # kernel passes this same fate-qualified set when it first computes the
+    # metrics; receipt verification must use it too, otherwise a valid
+    # high-load run becomes unverifiable at the horizon.
+    non_arrival_pids = set()
+    packet_fates = ledgers.get("packet_fates")
+    if isinstance(packet_fates, dict):
+        for pid_s, pair in packet_fates.items():
+            if (isinstance(pid_s, str) and pid_s.isdigit()
+                    and isinstance(pair, list) and len(pair) == 2
+                    and pair[0] in {
+                        "IN_SYSTEM_AT_STOP", "GEOMETRY_LOSS_IN_FLIGHT",
+                        "RANDOM_OUTAGE_IN_FLIGHT", "DATA_DEADLINE_EXPIRED"}):
+                non_arrival_pids.add(int(pid_s))
     try:
-        recomputed_metrics = metrics.summarize(raw_events, raw_windows)
+        recomputed_metrics = metrics.summarize(
+            raw_events, raw_windows, non_arrival_pids=non_arrival_pids)
     except metrics.MetricsError as exc:
         errors.append(f"congestion metrics invalid: {exc}")
     else:
