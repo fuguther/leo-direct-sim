@@ -87,6 +87,19 @@
 - 当前周期结束后原样归档；不得通过压缩删除失败、REQUEST_CHANGES 或未验证记录。
 - 实时问题状态只在 `ANALYSIS/FINDINGS-REGISTRY.md` 更新。
 
+## 2026-08-21：拥塞/利用率最小观测层
+
+- 分支：`codex/20260820-congestion-observability`；代码提交 `e68f265`。
+- Kernel 记录每个数据包的 emission、queue enter、service start、propagation start/arrival、
+  delivery；每个真实服务窗记录 link ID、rate、occupied interval、capacity bits、served bits
+  与 outcome。holding residence 由相邻 queue admission 重算，未凭空补 horizon exit。
+- `CODE/leo_sim/metrics.py` 从原始事件重算每包 queue/holding、tx、prop、E2E 以及逐链路服务窗
+  utilization；`receipt.py` 把原始事件和重算结果写入/校验 `ledgers.json`，ledger SHA 继续绑定 receipt。
+- 先写反例再实现：纯 metrics 的 queue/tx/prop/utilization 与 orphan queue ID 拒绝测试；真实单星
+  端到端事件测试。验证：`python3 -m pytest -q` = **563 passed, 1 skipped, 3 subtests passed**。
+- 边界：当前分母是“记录到的传输服务窗容量”，不是链路在几何上可用的全部时间容量；真实流量
+  provenance、多 OD/突发和 VM 部署验证仍是下一包，不得把该分支直接称为论文就绪。
+
 ## 2026-08-20：奖励目标第一包
 
 - 分支：`codex/20260820-reward-objective`；提交 `4163226`。

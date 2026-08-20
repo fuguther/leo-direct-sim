@@ -48,7 +48,8 @@ from collections import deque
 import numpy as np
 import simpy
 
-from . import control, fates, grid as gridmod, learning as _learning, model, q0, link_budget
+from . import (control, fates, grid as gridmod, learning as _learning, metrics,
+               model, q0, link_budget)
 from . import outage, rng as rngmod, routing
 from . import trace as tracemod
 
@@ -66,7 +67,8 @@ class CapExceeded(KernelError):
 class DataPacket:
     __slots__ = ("pid", "src", "dst", "bits", "deadline", "emitted_at", "path",
                  "assigned_sat", "learning_state", "learning_action",
-                 "learning_reward", "isl_enqueued_at", "holding_until")
+                 "learning_reward", "isl_enqueued_at", "holding_until",
+                 "metric_queue_id", "metric_prop_id")
 
     def __init__(self, pid, src, dst, bits, deadline, emitted_at):
         self.pid = pid
@@ -84,6 +86,8 @@ class DataPacket:
         # wait (service start minus this) feeds the M1 queue reward
         self.isl_enqueued_at = None
         self.holding_until = None
+        self.metric_queue_id = None
+        self.metric_prop_id = None
 
 
 class QueueArea:
@@ -507,6 +511,8 @@ class UplinkServer(_DRRMixin):
                 ep.queue.appendleft(pkt)
                 ep.queued_bits += pkt.bits
                 ep.area.add(pkt.bits, k.env.now)
+                k._metric_queue_enter(
+                    pkt, "uplink", f"gsl:uplink:pending:{cell}")
                 k._note_busy(cell)
                 k._on_link_retired(ep, self.sat)
                 for sat_id in list(ep.links):
@@ -516,6 +522,8 @@ class UplinkServer(_DRRMixin):
                 ep.queue.appendleft(pkt)
                 ep.queued_bits += pkt.bits
                 ep.area.add(pkt.bits, k.env.now)
+                k._metric_queue_enter(
+                    pkt, "uplink", f"gsl:uplink:pending:{cell}")
                 if k.env.now >= k.horizon:
                     # No service can start past the horizon: requeue and stop
                     # retrying in the same time slice, or the process loops
@@ -529,6 +537,8 @@ class UplinkServer(_DRRMixin):
             now = k.env.now
             prop = model.propagation_delay_s(
                 k.geometry.slant_range_km(self.sat, ep.lat, ep.lon, now))
+            k._metric_propagation_start(
+                pkt, "uplink", f"gsl:uplink:{self.sat}:{cell}", prop)
             k._in_flight[pkt.pid] = {
                 "kind": "ingress", "sat": self.sat,
                 "arrival_at": k.env.now + prop, "pkt": pkt}
@@ -559,6 +569,8 @@ class DownlinkServer(_DRRMixin):
         self.queues.setdefault(pkt.dst, deque()).append(pkt)
         self.queued_bits += pkt.bits
         self.area.add(pkt.bits, self.k.env.now)
+        self.k._metric_queue_enter(
+            pkt, "downlink", f"gsl:downlink:{self.sat}:{pkt.dst}")
         self.k._note_busy(pkt.dst)
         self.k._poke(self.wake)
 
@@ -707,6 +719,8 @@ class DownlinkServer(_DRRMixin):
                 self.queues[cell].appendleft(pkt)
                 self.queued_bits += pkt.bits
                 self.area.add(pkt.bits, k.env.now)
+                k._metric_queue_enter(
+                    pkt, "downlink", f"gsl:downlink:{self.sat}:{cell}")
                 if k.env.now >= k.horizon:
                     break
                 yield self.wake
@@ -717,6 +731,8 @@ class DownlinkServer(_DRRMixin):
             now = k.env.now
             prop = model.propagation_delay_s(
                 k.geometry.slant_range_km(self.sat, ep.lat, ep.lon, now))
+            k._metric_propagation_start(
+                pkt, "downlink", f"gsl:downlink:{self.sat}:{cell}", prop)
             k._in_flight[pkt.pid] = {
                 "kind": "deliver", "sat": self.sat,
                 "arrival_at": k.env.now + prop, "pkt": pkt}
@@ -782,6 +798,7 @@ class ISLLink:
         self.data_q.append(pkt)
         self.data_bits += pkt.bits
         self.data_area.add(pkt.bits, self.k.env.now)
+        self.k._metric_queue_enter(pkt, "isl", f"isl:{self.sat}:{self.peer}")
         self.k._poke(self.wake)
 
     def put_ctrl(self, pkt: ControlPacket) -> None:
@@ -947,6 +964,8 @@ class ISLLink:
                     self.data_q.appendleft(pkt)
                     self.data_bits += pkt.bits
                     self.data_area.add(pkt.bits, k.env.now)
+                    self.k._metric_queue_enter(
+                        pkt, "isl", f"isl:{self.sat}:{self.peer}")
                 if k.env.now >= k.horizon:
                     break
                 yield self.wake
@@ -962,6 +981,8 @@ class ISLLink:
             if is_ctrl:
                 k.env.process(k._ctrl_arrive_after_prop(pkt, self.sat, self.peer, prop))
             else:
+                k._metric_propagation_start(
+                    pkt, "isl", f"isl:{self.sat}:{self.peer}", prop)
                 k._in_flight[pkt.pid] = {
                     "kind": "isl", "sat": self.peer,
                     "arrival_at": k.env.now + prop, "pkt": pkt}
@@ -1159,6 +1180,13 @@ class Kernel:
                          "isl_s": 0.0, "ctrl_isl_s": 0.0}
         self.service_log = {"uplink": [], "downlink": [], "isl": [],
                             "uplink_bits": []}
+        # Raw, bounded-by-packet event evidence for congestion metrics.  The
+        # metrics module recomputes queue/tx/propagation values from these
+        # records instead of trusting a pre-aggregated counter.
+        self.packet_events: list[dict] = []
+        self.link_service_windows: list[dict] = []
+        self._metric_queue_seq = 0
+        self._metric_prop_seq = 0
         self.handover_events: list[dict] = []
         self.monitor_log: list[tuple] = []
         self.q0_plan_audit: list[dict] = []
@@ -1354,6 +1382,7 @@ class Kernel:
     def _hold_packet(self, sat: int, pkt: DataPacket) -> bool:
         """Admit a packet to finite satellite holding, or assign its fate."""
         if self.pending[sat].put(pkt, self.env.now):
+            self._metric_queue_enter(pkt, "holding", f"holding:{sat}")
             self._note_busy(pkt.dst)
             return True
         self.mech["holding_queue_overflows"] += 1
@@ -1363,6 +1392,85 @@ class Kernel:
     def _log(self, kind, **kv):
         if self.monitor:
             self.monitor_log.append((self.env.now, kind, tuple(sorted(kv.items()))))
+
+    # ------------------------------------------------------- raw metrics
+    def _metric_packet_emitted(self, pkt: DataPacket) -> None:
+        self.packet_events.append({
+            "kind": "packet_emitted", "pid": pkt.pid,
+            "at": float(pkt.emitted_at), "bits": pkt.bits,
+        })
+
+    def _metric_queue_enter(self, pkt: DataPacket, queue: str,
+                            link_id: str) -> None:
+        qid = self._metric_queue_seq
+        self._metric_queue_seq += 1
+        pkt.metric_queue_id = qid
+        self.packet_events.append({
+            "kind": "queue_enter", "pid": pkt.pid,
+            "at": float(self.env.now), "queue": queue,
+            "link_id": link_id, "queue_id": qid,
+        })
+
+    def _metric_link_id(self, link_ref, occ_key: str) -> tuple[str, str]:
+        if link_ref[0] == "isl":
+            _, sat, peer, _ge = link_ref
+            return "isl", f"isl:{sat}:{peer}"
+        _, sat, ep, _link = link_ref
+        stage = "uplink" if occ_key == "gsl_uplink_s" else "downlink"
+        return stage, f"gsl:{stage}:{sat}:{ep.cell}"
+
+    def _metric_service_start(self, pkt: DataPacket, stage: str,
+                               link_id: str, rate_bps: float,
+                               bits: int) -> None:
+        qid = pkt.metric_queue_id
+        self.packet_events.append({
+            "kind": "service_start", "pid": pkt.pid,
+            "at": float(self.env.now), "stage": stage,
+            "link_id": link_id, "queue_id": qid,
+            "bits": bits, "rate_bps": float(rate_bps),
+        })
+        pkt.metric_queue_id = None
+
+    def _metric_service_window(self, pkt: DataPacket, stage: str,
+                               link_id: str, start: float, end: float,
+                               rate_bps: float, outcome: str) -> None:
+        duration = max(0.0, float(end) - float(start))
+        self.link_service_windows.append({
+            "pid": pkt.pid, "stage": stage, "link_id": link_id,
+            "start": float(start), "end": float(end),
+            "rate_bps": float(rate_bps),
+            "capacity_bits": float(rate_bps) * duration,
+            "served_bits": int(pkt.bits) if outcome == "ok" else 0,
+            "bits": int(pkt.bits), "outcome": outcome,
+        })
+
+    def _metric_propagation_start(self, pkt: DataPacket, stage: str,
+                                  link_id: str, delay_s: float) -> None:
+        prop_id = self._metric_prop_seq
+        self._metric_prop_seq += 1
+        pkt.metric_prop_id = prop_id
+        self.packet_events.append({
+            "kind": "propagation_start", "pid": pkt.pid,
+            "at": float(self.env.now), "stage": stage,
+            "link_id": link_id, "prop_id": prop_id,
+            "delay_s": float(delay_s),
+        })
+
+    def _metric_propagation_arrival(self, pkt: DataPacket) -> None:
+        prop_id = pkt.metric_prop_id
+        if prop_id is None:
+            raise KernelError(f"packet {pkt.pid} propagation arrived without start")
+        self.packet_events.append({
+            "kind": "propagation_arrival", "pid": pkt.pid,
+            "at": float(self.env.now), "prop_id": prop_id,
+        })
+        pkt.metric_prop_id = None
+
+    def _metric_delivered(self, pkt: DataPacket) -> None:
+        self.packet_events.append({
+            "kind": "delivered", "pid": pkt.pid,
+            "at": float(self.env.now),
+        })
 
     def _build_routing_structures(self):
         self._routing_reverse_adj = routing._reverse_adj(self.topo)
@@ -2069,6 +2177,24 @@ class Kernel:
                     self.mech["mcs_rate_min_bps"] = rate_bps
                 if rate_bps > self.mech["mcs_rate_max_bps"]:
                     self.mech["mcs_rate_max_bps"] = rate_bps
+            metric_stage = metric_link_id = metric_window_start = None
+            metric_rate_bps = None
+            if isinstance(pkt, DataPacket):
+                metric_stage, metric_link_id = self._metric_link_id(link_ref, occ_key)
+                metric_rate_bps = float(rate if rate_fn is not None
+                                        else (owner._service_rate_bps
+                                              if owner is not None
+                                              else pkt.bits / dur))
+                self._metric_service_start(
+                    pkt, metric_stage, metric_link_id, metric_rate_bps, pkt.bits)
+                metric_window_start = t0
+
+            def record_metric_window(outcome: str) -> None:
+                if isinstance(pkt, DataPacket):
+                    self._metric_service_window(
+                        pkt, metric_stage, metric_link_id,
+                        metric_window_start, self.env.now,
+                        metric_rate_bps, outcome)
             if isinstance(pkt, ControlPacket):
                 self.mech["control_tx_started"] += 1
             if (link_ref[0] == "isl" and isinstance(pkt, DataPacket)
@@ -2115,15 +2241,20 @@ class Kernel:
             if (link is not None and link.state == "retiring"
                     and link.retire_at is not None
                     and self.env.now >= link.retire_at):
+                record_metric_window("retired")
                 return "retired"
             if self.env.now < fail_t - 1e-12:
+                record_metric_window("interrupted")
                 continue  # woken by the interrupt: recompute the race
             if fail_kind is None:
+                record_metric_window("ok")
                 return "ok"
             if fail_kind == "RETIRE":
+                record_metric_window("retired")
                 return "retired"
             if fail_kind == "RANDOM_OUTAGE_IN_FLIGHT":
                 self.mech["ge_failures"] += 1
+            record_metric_window("failed")
             self._fail(pkt, fail_kind)
             return "fail"
 
@@ -2147,6 +2278,7 @@ class Kernel:
             self._count_data_packet()
             pkt = DataPacket(r["packet_id"], r["src_grid_id"], r["dst_grid_id"],
                              r["bits"], r["deadline_at_s"], self.env.now)
+            self._metric_packet_emitted(pkt)
             self.ledger.register(pkt.pid, pkt.bits)
             now = self.env.now
             if pkt.deadline is not None and now > pkt.deadline:
@@ -2168,6 +2300,8 @@ class Kernel:
             ep.queue.append(pkt)
             ep.queued_bits += pkt.bits
             ep.area.add(pkt.bits, now)
+            self._metric_queue_enter(
+                pkt, "uplink", f"gsl:uplink:pending:{cell}")
             self._note_busy(ep.cell)
             if link is None:
                 self._request_or_grant(ep, now)
@@ -2979,6 +3113,7 @@ class Kernel:
     def _ingress_after_prop(self, pkt: DataPacket, sat: int, prop: float):
         yield self.env.timeout(prop)
         self._in_flight.pop(pkt.pid, None)
+        self._metric_propagation_arrival(pkt)
         if pkt.deadline is not None and self.env.now > pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             return
@@ -2989,6 +3124,7 @@ class Kernel:
     def _isl_arrive_after_prop(self, pkt: DataPacket, sat: int, prop: float):
         yield self.env.timeout(prop)
         self._in_flight.pop(pkt.pid, None)
+        self._metric_propagation_arrival(pkt)
         if pkt.deadline is not None and self.env.now > pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             return
@@ -2999,6 +3135,7 @@ class Kernel:
     def _deliver_after_prop(self, pkt: DataPacket, sat: int, prop: float):
         yield self.env.timeout(prop)
         self._in_flight.pop(pkt.pid, None)
+        self._metric_propagation_arrival(pkt)
         now = self.env.now
         if pkt.deadline is not None and now >= pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
@@ -3013,6 +3150,7 @@ class Kernel:
         )
         self.ledger.record(pkt.pid, "DELIVERED", pkt.bits)
         self.deliveries[pkt.pid] = {"delivered_at": now, "path": list(pkt.path)}
+        self._metric_delivered(pkt)
         self._log("delivered", pid=pkt.pid, sat=sat)
 
     # ----------------------------------------------------------------- fates
@@ -3186,6 +3324,8 @@ class Kernel:
         # externally anchored review/authorization/deployment receipt and is
         # therefore always false for this ungoverned runtime entry point.
         research_eligible = False
+        congestion_metrics = metrics.summarize(
+            self.packet_events, self.link_service_windows)
         result = {
             "natural_end": not interrupted,
             "interrupted": interrupted,
@@ -3201,6 +3341,9 @@ class Kernel:
             "queue_area_bits_s": queue_area,
             "access": dict(self.access_stats),
             "service_log": self.service_log,
+            "packet_events": list(self.packet_events),
+            "link_service_windows": list(self.link_service_windows),
+            "congestion_metrics": congestion_metrics,
             "handover": {"events": self.handover_events},
             "control": {
                 "counters": control_counters,
