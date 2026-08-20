@@ -5,6 +5,21 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-20：D1/D2 合入与 VM 工程 smoke
+
+- PR #55（D1 动态链路速率）与 PR #56（D2 动态拓扑/holding）均已合入 main；当前 main
+  为 `b037b6182bf16c9d406cabf4fa5dc8da8b441a2a`，PR #56 CI `pytest` SUCCESS。
+- D2 合并前本地证据：`pytest -q` = `555 passed, 1 skipped, 3 subtests passed`；
+  `git diff --check` 通过。VM 同一代码环境 `CODE/leo_sim/tests` = `494 passed, 1 skipped`；
+  唯一 skip 是 macOS `/var` 别名反例在 Linux VM 不存在。
+- 部署：canonical VM `/data/论文/leo-direct-sim`，source tree SHA
+  `422b2c747d0a224daa3d786eff68cf8ff6a0fe1baf9aa6d69d16e4cbbbbfb175`，deployment receipt
+  SHA `4866768f757eb1df3c3ac9f4b9539ed8b6dde728b668177472232ad869137aab`。
+- 非正式工程 smoke：`smoke.yaml` 在 VM 自然结束，`DELIVERED=1`、
+  `conservation_ok=true`、`IN_SYSTEM_AT_STOP=0`，`receipt verify`=`verified`。
+- 边界：仓库当前没有 R02 的合法 `finalization.json`/`authorization.json`，因此没有伪造正式授权；
+  本 smoke 证明“已部署版本可运行”，不证明 V2 正式分析链、真实流量诊断或论文结论已就绪。
+
 ## 2026-08-19（有限 holding queue：容量/面积/WAIT 语义）
 
 - 分支：`codex/20260819-holding-queue`。
