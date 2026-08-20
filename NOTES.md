@@ -240,3 +240,14 @@
   `git diff --check` 通过。
 - 边界：还没有当前 SHA 的 VM receipt，也没有整段几何可用时间分母；下一步合入、部署并跑真实 CSV
   多 OD/突发与 E0 smoke。
+
+## 2026-08-21：main 499d2e6 VM 工程 smoke
+
+- 从 clean full clone 固定 `499d2e6fb6b9aea0883aa57781f55b8655fe7638` 部署到 canonical VM。
+- deployment receipt：`ba705741be0cc700acd392106651fe01faeba93cff0333e3d8543bd8421a00df`；
+  source tree SHA `718a5268f736f77a9f4b749e5edc2ee2551041710cc07b8ee57eac247161d09d`。
+- 非正式工程 smoke：`CODE/Results/_codex_vm_smoke_499d2e6`；natural end、`DELIVERED=1`、
+  `conservation_ok=true`、`IN_SYSTEM_AT_STOP=0`；receipt verify=`verified`；36 packet events、
+  4 service windows，trace provenance contract 含 source/units/offered-load。
+- 边界：这不是 formal authorization、不是真实 CSV/E0、不是论文结果；下一步补正式授权
+  cohort 与真实多 OD/突发 load calibration。
