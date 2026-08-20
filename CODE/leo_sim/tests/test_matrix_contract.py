@@ -368,6 +368,9 @@ def test_matrix_rejects_duplicate_contrasts_for_same_arm_pair(tmp_path):
      "exact override leaf paths"),
     (lambda r: r["arms"][1]["intervention_paths"].append(
         "scenario.duration_s"), "exact override leaf paths"),
+    (lambda r: r["arms"][1].update(
+        config_overrides={"scenario": {}}, intervention_paths=["scenario"]),
+     "empty mapping"),
 ])
 def test_matrix_pairing_and_intervention_contract_fails_closed(mutation, message, tmp_path):
     request = _request()

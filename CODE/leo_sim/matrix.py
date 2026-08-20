@@ -88,7 +88,10 @@ def _leaf_paths(value: dict[str, Any], prefix: str = "") -> set[str]:
     paths: set[str] = set()
     for key, child in value.items():
         path = f"{prefix}.{key}" if prefix else str(key)
-        if isinstance(child, dict) and child:
+        if isinstance(child, dict):
+            if not child:
+                raise MatrixError(
+                    f"config override contains empty mapping at {path}")
             paths.update(_leaf_paths(child, path))
         else:
             paths.add(path)
