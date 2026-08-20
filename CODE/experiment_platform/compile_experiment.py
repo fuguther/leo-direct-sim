@@ -345,9 +345,6 @@ def scenario_identity(catalog: dict[str, Any], profiles_path: Path, catalog_path
     )
     files = code_files + [
         "ANALYSIS/paired_analysis.py",
-        "ANALYSIS/compare_graph_execution_ab.py",
-        "CODE/tools/run_graph_cpu_ab.py",
-        "CODE/inputRL.csv",
         "CODE/Gateways.csv",
         "CODE/population_map/gpw_v4_population_count_rev11_2020_15_min.tif",
         "CODE/scripts/remote/deployment_guard.py",

@@ -16,13 +16,55 @@ from CODE.experiment_platform.compile_experiment import arm_constraints, compile
 
 class NonLearningContractTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.request_path = ROOT / "EXPERIMENTS" / "EXP-20260715-VM-SMOKE-R04" / "request.json"
-        self.request = load_json(self.request_path)
-        self.config = load_json(
-            ROOT / "EXPERIMENTS" / "EXP-20260715-VM-SMOKE-R04" / "resolved" / "control.s20260715.config.json"
-        )
+        self.tmp = tempfile.TemporaryDirectory()
+        fixture_root = Path(self.tmp.name)
+        self.request_path = fixture_root / "request.json"
+        template = load_json(ROOT / "EXPERIMENTS" / "templates" / "experiment-request.example.json")
+        template["identity"].update({"experiment_id": "EXP-TEST-NONLEARNING", "owner": "test"})
+        template["design"].update({
+            "intended_role": "diagnostic",
+            "base_profile": "infrastructure-smoke-v1",
+            "planned_seeds": [20260715],
+            "factor_changed": ["traffic.fraction"],
+            "secondary_metrics": [],
+        })
+        capabilities = {
+            "train": [],
+            "evaluation": ["full_topology", "global_link_slant_range"],
+            "deployment": ["full_topology", "global_link_slant_range"],
+        }
+        def arm(arm_id: str, role: str, changes: dict) -> dict:
+            return {
+                "id": arm_id,
+                "label": arm_id,
+                "role": role,
+                "method_family": "slant_range",
+                "execution_kind": "non_learning",
+                "information_contract": capabilities,
+                "training_budget": {"simulated_seconds": 0},
+                "evaluation_budget": {"simulated_seconds": 0},
+                "execution_budget": {"simulated_seconds": 0.3},
+                "checkpoint_lineage": {"mode": "not_applicable", "source_run_id": None, "source_sha256": None},
+                "changes": changes,
+            }
+        template["design"]["arms"] = [arm("control", "control", {}), arm("higher_load", "treatment", {"traffic.fraction": 0.2})]
+        template["analysis"]["planned_contrasts"] = [{
+            "name": "higher_load_minus_control",
+            "left_arm": "higher_load",
+            "right_arm": "control",
+            "estimand": "paired mean difference in delivery_rate",
+        }]
+        template["analysis"]["minimum_effect"]["metric"] = "delivery_rate"
+        self.request_path.write_text(json.dumps(template, indent=2) + "\n", encoding="utf-8")
+        self.request = template
+        self.compiled = fixture_root / "compiled"
+        self.assertEqual(compile_request(self.request_path, self.compiled), 0)
+        self.config = load_json(self.compiled / "resolved" / "control.s20260715.config.json")
         catalog = load_json(ROOT / "CODE" / "experiment_platform" / "parameter-catalog.json")
         self.specs = {item["path"]: item for item in catalog["parameters"]}
+
+    def tearDown(self) -> None:
+        self.tmp.cleanup()
 
     def errors_for(self, config=None, arm=None) -> list[str]:
         errors, _warnings, _effective = arm_constraints(
@@ -34,19 +76,16 @@ class NonLearningContractTests(unittest.TestCase):
         return errors
 
     def test_r04_compiles_as_non_learning(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            out = Path(tmp) / "experiment"
-            self.assertEqual(compile_request(self.request_path, out), 0)
-            manifest = json.loads((out / "run-manifest.json").read_text(encoding="utf-8"))
-            self.assertTrue(all(row["run_phase"] == "non_learning" for row in manifest["planned_runs"]))
-            self.assertTrue(all(row["checkpoint_lineage"]["mode"] == "not_applicable" for row in manifest["planned_runs"]))
-            runbook = (out / "RUNBOOK.md").read_text(encoding="utf-8")
-            self.assertIn("set -euo pipefail", runbook)
-            self.assertIn("SECONDS + 900", runbook)
-            self.assertIn("--launch-nonce", runbook)
-            self.assertIn("--run-attempt-id", runbook)
-            self.assertIn("verify-pulled-run.py", runbook)
-            self.assertNotIn("while :", runbook)
+        manifest = json.loads((self.compiled / "run-manifest.json").read_text(encoding="utf-8"))
+        self.assertTrue(all(row["run_phase"] == "non_learning" for row in manifest["planned_runs"]))
+        self.assertTrue(all(row["checkpoint_lineage"]["mode"] == "not_applicable" for row in manifest["planned_runs"]))
+        runbook = (self.compiled / "RUNBOOK.md").read_text(encoding="utf-8")
+        self.assertIn("set -euo pipefail", runbook)
+        self.assertIn("SECONDS + 900", runbook)
+        self.assertIn("--launch-nonce", runbook)
+        self.assertIn("--run-attempt-id", runbook)
+        self.assertIn("verify-pulled-run.py", runbook)
+        self.assertNotIn("while :", runbook)
 
     def test_non_learning_rejects_learning_identity_budget_eval_and_checkpoint(self) -> None:
         arm = copy.deepcopy(self.request["design"]["arms"][0])
