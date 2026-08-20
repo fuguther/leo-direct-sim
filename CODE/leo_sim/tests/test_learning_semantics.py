@@ -334,11 +334,11 @@ class _FourSatGeometry(StaticGeometry):
 
 
 @pytest.mark.parametrize(
-    ("contract", "obs_hops"),
-    [("C3", 1), ("C1", None)],
+    ("contract", "obs_hops", "hidden_origin"),
+    [("C3", 1, 2), ("C1", None, 1)],
 )
 def test_learning_routing_cannot_use_cache_beyond_obs_hops(
-        contract, obs_hops):
+        contract, obs_hops, hidden_origin):
     """R1-A2: the action/decision gate is part of the learner's information.
 
     A two-hop destination advertisement is intentionally cropped by
@@ -362,7 +362,7 @@ def test_learning_routing_cannot_use_cache_beyond_obs_hops(
     k._ensure_endpoint(B)
     visible_obs = k._learning_observation(0, B)
     k.caches[0].put(control.CacheEntry(
-        2,
+        hidden_origin,
         {"serve_cells": [B], "isl_queue_bits": {},
          "isl_propagation_s": {}},
         generated_at=0.0, received_at=0.0, ttl_s=10.0, hops=2,

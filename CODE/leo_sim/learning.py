@@ -1056,15 +1056,17 @@ def information_set(contract: str, sat: int, cache, now: float,
                     topo, obs_hops: int | None = None) -> dict[int, object]:
     """The exact cache entries a contract may see.
 
-    C1 always sees only 1-hop origins.  C3-C7 and the graph contracts see the
-    same set: all valid arrived entries, optionally restricted to entries that
-    travelled at most `obs_hops` hops (None = no hop restriction, i.e. the
-    full vis_k cache).
+    C1 sees only current-neighbour origins whose advertisement also arrived in
+    at most one control hop.  C3-C7 and the graph contracts see the same set:
+    all valid arrived entries, optionally restricted to entries that travelled
+    at most `obs_hops` hops (None = no hop restriction, i.e. the full vis_k
+    cache).
     """
     entries = cache.valid_entries(now)
     if contract == "C1":
         allowed = {sat} | set(topo.get(sat, {}).values())
-        return {o: e for o, e in entries.items() if o in allowed}
+        return {o: e for o, e in entries.items()
+                if o in allowed and e.hops <= 1}
     if contract in ("C3", "C4", "C5", "C6", "C7", "GAT", "MPNN"):
         if obs_hops is None:
             return dict(entries)
