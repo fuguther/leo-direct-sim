@@ -19,18 +19,18 @@ status_values:
   - historical_only
 
 requirements:
-  D1_merged_to_main: {status: completed_verified, evidence: main_14b1d55_ci_basic_vm_smoke_mcs_comparison_pending}
-  D2_merged_to_main: {status: completed_verified, evidence: main_14b1d55_ci_holding_tests_long_window_vm_pending}
+  D1_merged_to_main: {status: completed_verified, evidence: "main_ac0d019_ci_d1_tests_vm_mcs_smoke_legacy_mcs_comparison_pending"}
+  D2_merged_to_main: {status: completed_verified, evidence: "main_ac0d019_ci_d2_holding_tests_vm_60s_smoke_dedicated_long_window_semantics_pending"}
   reward_and_mask_blockers_closed: {status: blocked}
   v2_formal_evidence_chain_verified: {status: blocked}
-  real_traffic_provenance_verified: {status: blocked}
-  multi_od_and_burst_verified: {status: blocked}
+  real_traffic_provenance_verified: {status: completed_verified, evidence: PR84_main_743d05c_mlab_source_sha_schema_and_manifest}
+  multi_od_and_burst_verified: {status: completed_verified, evidence: main_ac0d019_vm_mlab_50_100_200_engineering_smoke_receipts}
   link_utilization_recomputation_verified: {status: blocked}
   packet_delay_decomposition_verified: {status: blocked}
   q0_minimum_loop_verified: {status: blocked}
   q0_replay_review_approved: {status: blocked}
   three_final_audit_rounds_no_new_major: {status: blocked}
-  exact_main_deployed_to_vm: {status: completed_verified, evidence: main_14b1d55_deployment_1d1b1b8c_mlab_50_100_engineering_smoke_nonformal}
+  exact_main_deployed_to_vm: {status: completed_verified, evidence: main_ac0d019_deployment_c43e7114_source_bf9a9009_nonformal}
   learning_vm_smoke_verified: {status: blocked, reason: no_current_main_training_and_evaluation_smoke}
   mcs_vm_comparison_verified: {status: blocked, reason: basic_smoke_only_no_legacy_mcs_comparison}
   d2_long_window_vm_verified: {status: blocked, reason: no_long_window_topology_holding_vm_evidence}
@@ -138,6 +138,17 @@ experiments:
     traffic_mode: real_or_measurement_proxy_multi_od_with_uniform_control
     purpose: Freeze informative low, medium and high loads on the final platform using primary real traffic and a synthetic control.
     required_evidence: [natural_end, conservation, provenance, load_table, frozen_thresholds]
+
+  - id: E0-LOAD-CALIBRATION
+    class: engineering_calibration
+    title: mlab_multi_od_burst_load_calibration
+    status: completed_verified
+    prerequisites: [D1_merged_to_main, D2_merged_to_main, real_traffic_provenance_verified, multi_od_and_burst_verified, exact_main_deployed_to_vm]
+    arms: [offered_50_mbps, offered_100_mbps, offered_200_mbps]
+    traffic_mode: mlab_measurement_proxy_multi_od_with_20s_burst
+    purpose: Select low, medium and high load candidates before formal E0; this engineering calibration is not a paper effect result.
+    decision: {low: 50, medium: 100, high: 200, sanity_only: 10}
+    required_evidence: [same_trace_identity, natural_end, conservation, receipt_verified, fate_counts, vm_wall_time]
 
   - id: DIAG-CONGESTION
     class: diagnostic

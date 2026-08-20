@@ -27,7 +27,7 @@
 | Q0 当前全局快照 | 无等价严格接口 | snapshot 已进 main | Q0 前置已完成 | 保留只读、因果和版本测试 |
 | Q0 计划注入与执行归因 | 无 | 候选分支存在但审阅未通过，尚未形成可用于正式结论的执行归因闭环 | BLOCKER-THEORY | action_id 贯穿执行；receipt 持久化 verdict/errors/executed；不阻塞工程 smoke，但阻塞 Q0 结论 |
 | Q0-I/Q0-F tiny | 无统一实现 | Q0-I/Q0-F tiny 尚未完成可接受的交叉验证闭环 | BLOCKER-THEORY | 独立穷举/第二算法交叉验证；从真实诊断窗口抽 tiny |
-| 真实流量 provenance、多 OD、突发 | 有多种模式 | M-Lab 文件、source/SHA、字段/小时覆盖、OD 映射和 burst 变换已合入；M-Lab/人口仍是代理，当前 main 尚未完成 VM receipt/授权验收；小时用于覆盖审计而非逐小时强度重放 | BLOCKER-DIAG | 用当前 SHA 的 VM 多 OD/突发样本完成 offered-load 和 receipt 验收；代理不得冒充原始 packet trace |
+| 真实流量 provenance、多 OD、突发 | 有多种模式 | M-Lab 文件、source/SHA、字段/小时覆盖、OD 映射和 burst 变换已合入；50/100/200 Mbps 多 OD + burst 已在当前部署代码上完成本地和 VM 工程 receipt 验证；M-Lab/人口仍是代理，小时用于覆盖审计而非逐小时强度重放 | BLOCKER-DIAG | 进入正式授权 cohort 前仍需把 offered-load、available-capacity 和分析链绑定；代理不得冒充原始 packet trace |
 | 逐向链路利用率可重算 | 聚合统计较多 | 有服务窗容量/served bits 及本地 queue/tx/prop 重算；**分母仍是已记录服务窗容量，不是几何 available capacity，正式 VM 证据尚未完成** | BLOCKER-DIAG | 明确 available-capacity 分母，按方向/窗口持久化并做独立重算与负对照 |
 | per-action 斜距/速率/方向特征 | RAAC 有 4×9 action_feats | V2 内部路由能访问相关量，但 decision sink 无逐动作等价物 | BLOCKER-THEORY | INFO-LADDER 前加入 distance/rate/availability/observed_at/source；不默认给所有臂 |
 | 逐字段 AoI | 旧有定时观测/年龄统计 | V2 是 cache-entry 级 age，未有字段级 generated/received/source age | BLOCKER-THEORY | AGE-LADDER 前完成并做 shuffle/fixed-fresh 负对照 |
