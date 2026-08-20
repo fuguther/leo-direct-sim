@@ -1,6 +1,6 @@
 # leo_sim V2 平台能力账本
 
-> CURRENT；最后核验：2026-08-21，runtime main `14b1d55`。本文只记录已经有当前代码、测试或 VM 证据支撑的状态；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移决策见 `MIGRATION-BACKLOG-20260816.md`。
+> CURRENT；最后核验：2026-08-21，runtime main `4990e61`。本文只记录已经有当前代码、测试或 VM 证据支撑的状态；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移决策见 `MIGRATION-BACKLOG-20260816.md`。
 
 ## 判定与优先级
 
@@ -26,11 +26,11 @@
 | Q0 当前全局快照 | 无等价严格接口 | snapshot 已进 main | Q0 前置已完成 | 保留只读、因果和版本测试 |
 | Q0 计划注入与执行归因 | 无 | 候选分支存在但审阅未通过，尚未形成可用于正式结论的执行归因闭环 | BLOCKER-THEORY | action_id 贯穿执行；receipt 持久化 verdict/errors/executed；不阻塞工程 smoke，但阻塞 Q0 结论 |
 | Q0-I/Q0-F tiny | 无统一实现 | Q0-I/Q0-F tiny 尚未完成可接受的交叉验证闭环 | BLOCKER-THEORY | 独立穷举/第二算法交叉验证；从真实诊断窗口抽 tiny |
-| 真实流量 provenance、多 OD、突发 | 有多种模式 | 已有 M-Lab 文件和 trace provenance 基础；M-Lab/人口仍是代理，正式多 OD/突发合同和当前 main 的授权产物尚未完成；V2 `mlab` 尚未消费 `hour_utc` | BLOCKER-DIAG | 用真实 CSV 多 OD/突发样本完成 source/SHA、时间、OD、offered-load 和 VM receipt 验收；代理不得冒充原始 packet trace |
-| 逐向链路利用率可重算 | 聚合统计较多 | 有服务窗容量/served bits 的中间事件，但**可信的逐向分母、逐窗口合同和正式 VM 证据尚未完成** | BLOCKER-DIAG | 明确 available-capacity 分母，按方向/窗口持久化并做独立重算与负对照 |
+| 真实流量 provenance、多 OD、突发 | 有多种模式 | M-Lab 文件、source/SHA、字段/小时覆盖、OD 映射和 burst 变换已合入；M-Lab/人口仍是代理，当前 main 尚未完成 VM receipt/授权验收；小时用于覆盖审计而非逐小时强度重放 | BLOCKER-DIAG | 用当前 SHA 的 VM 多 OD/突发样本完成 offered-load 和 receipt 验收；代理不得冒充原始 packet trace |
+| 逐向链路利用率可重算 | 聚合统计较多 | 有服务窗容量/served bits 及本地 queue/tx/prop 重算；**分母仍是已记录服务窗容量，不是几何 available capacity，正式 VM 证据尚未完成** | BLOCKER-DIAG | 明确 available-capacity 分母，按方向/窗口持久化并做独立重算与负对照 |
 | per-action 斜距/速率/方向特征 | RAAC 有 4×9 action_feats | V2 内部路由能访问相关量，但 decision sink 无逐动作等价物 | BLOCKER-THEORY | INFO-LADDER 前加入 distance/rate/availability/observed_at/source；不默认给所有臂 |
 | 逐字段 AoI | 旧有定时观测/年龄统计 | V2 是 cache-entry 级 age，未有字段级 generated/received/source age | BLOCKER-THEORY | AGE-LADDER 前完成并做 shuffle/fixed-fresh 负对照 |
-| 每包 queue/tx/prop 分解 | 有 | 内部事件和本地重算骨架已存在，但**正式 artifact 持久化、三段和校验、失败/积压覆盖尚未完成** | BLOCKER-DIAG | 在正式 receipt/analysis 中逐包持久化 queue/tx/prop/e2e，并完成三段和 gate |
+| 每包 queue/tx/prop 分解 | 有 | 内部事件和本地重算已有；receipt 已修复合法 horizon in-flight 传播的重算，正式 VM artifact、三段和校验及失败/积压覆盖仍未完成 | BLOCKER-DIAG | 在正式 receipt/analysis 中逐包持久化 queue/tx/prop/e2e，并完成三段和 gate |
 | replay buffer 持久化 | 有 | V2 只有 online model checkpoint；replay、optimizer、target network、RNG 尚未完整持久化 | BLOCKER-LONGTRAIN | 正式长训前做中断续训 vs 不间断训练等价验收，绑定 schema/SHA/config |
 | 学习算法 VM smoke | 有 | 尚未完成当前 main 上的训练/评估 VM smoke；目前只有非学习/内核工程 smoke | BLOCKER-P0（学习实验） | R1-A1 关闭后，至少完成一个训练和一个评估臂的自然结束、checkpoint 血缘和 receipt 验收 |
 | 多步/TD-λ/temporal | 有 | V2 只有设计稿 | CONDITIONAL | 诊断若指向信用分配问题，再作为研究臂 |
