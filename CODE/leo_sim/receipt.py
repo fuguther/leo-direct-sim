@@ -225,7 +225,7 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
     provenance_contract = manifest.get("provenance_contract")
     if not isinstance(provenance_contract, dict) or set(provenance_contract) != {
             "schema", "source", "units", "od_mapping", "offered_load",
-            "traffic_transform"}:
+            "traffic_transform", "measurement_summary"}:
         errors.append("manifest provenance_contract keys mismatch")
     else:
         if provenance_contract.get("schema") != "leo-sim-trace-provenance/v1":
@@ -251,6 +251,11 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
         if not isinstance(transform, dict) or set(transform) != {
                 "mode", "burst", "diurnal"}:
             errors.append("manifest provenance traffic_transform keys mismatch")
+        summary = provenance_contract.get("measurement_summary")
+        if summary is not None and (
+                not isinstance(summary, dict)
+                or set(summary) != {"row_count", "od_pair_count", "hour_utc_values"}):
+            errors.append("manifest measurement_summary keys mismatch")
     if resolved_version is not None and manifest.get("config_version") != resolved_version:
         errors.append("manifest config_version mismatch")
     if resolved_cfg is None:
@@ -328,6 +333,7 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
         od_mapping = provenance_contract.get("od_mapping", {})
         offered_load = provenance_contract.get("offered_load", {})
         transform = provenance_contract.get("traffic_transform", {})
+        measurement_summary = provenance_contract.get("measurement_summary")
         if source.get("sha256") != manifest.get("input_sha256"):
             errors.append("provenance source SHA != manifest input SHA")
         expected_source_type = {
@@ -353,8 +359,27 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
             errors.append("provenance offered_load ledger mismatch")
         if transform.get("mode") != mode:
             errors.append("provenance traffic transform mode mismatch")
+        if mode == "mlab":
+            if not isinstance(measurement_summary, dict):
+                errors.append("M-Lab manifest measurement_summary missing")
+            else:
+                if not _is_nonneg_int(measurement_summary.get("row_count")) \
+                        or measurement_summary.get("row_count", 0) <= 0:
+                    errors.append("M-Lab measurement row_count must be positive")
+                if not _is_nonneg_int(measurement_summary.get("od_pair_count")) \
+                        or measurement_summary.get("od_pair_count", 0) <= 0:
+                    errors.append("M-Lab measurement od_pair_count must be positive")
+                hours = measurement_summary.get("hour_utc_values")
+                if not (isinstance(hours, list) and bool(hours)
+                        and all(_is_nonneg_int(h) and h <= 23 for h in hours)
+                        and hours == sorted(hours)
+                        and len(hours) == len(set(hours))):
+                    errors.append("M-Lab measurement hour_utc_values invalid")
+        elif measurement_summary is not None:
+            errors.append("non-M-Lab manifest must not contain measurement_summary")
         expected_burst = None
-        if mode == "burst":
+        if mode in {"burst", "mlab"} \
+                and resolved_cfg["demand"]["burst_start_s"] is not None:
             expected_burst = {
                 "start_s": float(resolved_cfg["demand"]["burst_start_s"]),
                 "duration_s": float(resolved_cfg["demand"]["burst_duration_s"]),

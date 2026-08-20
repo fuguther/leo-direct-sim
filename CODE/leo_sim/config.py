@@ -474,9 +474,16 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
     if dm["source_population_exponent"] <= 0 \
             or dm["destination_population_exponent"] <= 0:
         raise ConfigError("population exponents must be > 0")
-    if dm["mode"] == "burst":
+    burst_declared = (
+        dm["burst_start_s"] is not None
+        or dm["burst_duration_s"] is not None
+    )
+    if dm["mode"] in {"burst", "mlab"} and (
+            dm["mode"] == "burst" or burst_declared):
         if dm["burst_start_s"] is None or dm["burst_duration_s"] is None:
-            raise ConfigError("demand.mode=burst requires burst_start_s and burst_duration_s")
+            raise ConfigError(
+                f"demand.mode={dm['mode']} requires burst_start_s and "
+                "burst_duration_s")
         if dm["burst_start_s"] < 0 or dm["burst_duration_s"] <= 0:
             raise ConfigError("burst window invalid")
         # a burst window that never intersects [0, duration_s] would silently
