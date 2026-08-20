@@ -256,7 +256,12 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
         summary = provenance_contract.get("measurement_summary")
         if summary is not None and (
                 not isinstance(summary, dict)
-                or set(summary) != {"row_count", "od_pair_count", "hour_utc_values"}):
+                or not {"row_count", "od_pair_count", "hour_utc_values"}
+                <= set(summary)
+                or set(summary) - {
+                    "row_count", "od_pair_count", "hour_utc_values",
+                    "endpoint_selection",
+                }):
             errors.append("manifest measurement_summary keys mismatch")
     if resolved_version is not None and manifest.get("config_version") != resolved_version:
         errors.append("manifest config_version mismatch")
@@ -377,6 +382,43 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
                         and hours == sorted(hours)
                         and len(hours) == len(set(hours))):
                     errors.append("M-Lab measurement hour_utc_values invalid")
+                selection = measurement_summary.get("endpoint_selection")
+                auto = resolved_cfg["endpoints"].get("mlab_auto", False)
+                if auto:
+                    expected_selection_keys = {
+                        "method", "candidate_aggregate_cells",
+                        "candidate_scc_count", "selected_aggregate_cells",
+                        "selected_aggregate_ids", "max_sites", "source_weighting",
+                    }
+                    if not isinstance(selection, dict) \
+                            or set(selection) != expected_selection_keys:
+                        errors.append("M-Lab endpoint_selection metadata keys mismatch")
+                    else:
+                        ids = selection.get("selected_aggregate_ids")
+                        selected_count = selection.get("selected_aggregate_cells")
+                        max_sites = selection.get("max_sites")
+                        if selection.get("method") != \
+                                "largest_strongly_connected_component":
+                            errors.append("M-Lab endpoint_selection method mismatch")
+                        if max_sites != \
+                                resolved_cfg["endpoints"]["mlab_max_sites"]:
+                            errors.append("M-Lab endpoint_selection cap mismatch")
+                        if selection.get("source_weighting") != \
+                                "measured_outgoing_throughput":
+                            errors.append("M-Lab endpoint_selection weighting mismatch")
+                        ids_valid = (
+                            isinstance(ids, list)
+                            and all(isinstance(value, str) and value for value in ids)
+                            and ids == sorted(set(ids))
+                        ) if isinstance(ids, list) else False
+                        if not (ids_valid and _is_nonneg_int(selected_count)
+                                and _is_nonneg_int(max_sites)
+                                and len(ids) == selected_count
+                                and 2 <= len(ids) <= max_sites):
+                            errors.append("M-Lab endpoint_selection IDs invalid")
+                elif selection is not None:
+                    errors.append(
+                        "explicit M-Lab endpoints must not contain endpoint_selection")
         elif measurement_summary is not None:
             errors.append("non-M-Lab manifest must not contain measurement_summary")
         expected_burst = None
