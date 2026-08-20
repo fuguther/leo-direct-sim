@@ -1,6 +1,6 @@
 # leo_sim V2 平台能力账本
 
-> CURRENT；最后核验：2026-08-20。本文维护现行结论；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移决策见 `MIGRATION-BACKLOG-20260816.md`。
+> CURRENT；最后核验：2026-08-21，main `2f577a5`。本文维护现行结论；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移决策见 `MIGRATION-BACKLOG-20260816.md`。
 
 ## 判定与优先级
 
@@ -21,15 +21,15 @@
 | 接入 FIFO / downlink 恢复 | 旧语义参照 | V2 #26/#25 已合入 main | 已关闭 | 保留回归 |
 | 奖励无正循环/物理目标一致 | 旧平台奖励族复杂 | 已关闭已知“额外转发跳数获正收益”风险（`4163226`）；物理字典序目标仍未冻结，Q0 不得以 shaped reward 判最优 | BLOCKER-THEORY | 保留 `forward_step_penalty ≤ −reward_w1` 回归；在 Q0 合同中冻结物理目标 |
 | 动作 mask 与观测信息集一致 | 旧/新均需审 | #62 已修已知 cache-hop 旁路，独立冷审与不可区分反例通过 | 已关闭已知 blocker | 保留 C1/C3 与远端传播/队列指标回归；最终冻结平台继续找未知旁路 |
-| 正式证据链 | V2 目标更强 | V2 矩阵 Stage 1 已合入；artifact→指标重算→paired analysis→claim Stage 2 仍未完成 | BLOCKER-P0 | 复用严格重验原则，完成 V2 结果分析与 claim gate；禁止以 generic 绿冒充 V2 完成 |
+| 正式证据链 | V2 目标更强 | V2 矩阵已合入；`CODE/experiment_platform/v2_analysis.py` 已接 receipt/formal/governance/ledgers→指标重算→paired analysis→claim-gate 输出，并有真实 receipt fixture 测试；真实授权 cohort/VM 产物尚无 | BLOCKER-P0 | 在当前 SHA 部署后跑完整授权 cohort，验证持久化 analysis manifest，再做 claim/value review；禁止以本地 fixture 冒充论文数据 |
 | Q0 当前全局快照 | 无等价严格接口 | snapshot 已进 main | Q0 前置已完成 | 保留只读、因果和版本测试 |
 | Q0 计划注入与执行归因 | 无 | 候选分支存在，审阅未通过 | BLOCKER-THEORY | action_id 贯穿执行；receipt 持久化 verdict/errors/executed；不阻塞 E0/pilot |
 | Q0-I/Q0-F tiny | 无统一实现 | Q0-I 候选；Q0-F 未完成 | BLOCKER-THEORY | 独立穷举/第二算法交叉验证；从真实诊断窗口抽 tiny |
 | 真实流量 provenance、多 OD、突发 | 有多种模式 | V2 已有 CSV 多 OD、M-Lab/人口代理及 burst window；缺统一来源/单位/映射合同 | BLOCKER-DIAG | 绑定源 hash、source type、许可/时间/字段、OD/时间映射和 offered-load 重算；代理不得冒充原始 packet trace |
-| 逐向链路利用率可重算 | 聚合统计较多 | `e68f265` 已加入逐服务窗原始事件：`rate×service-window` 容量、served bits、链路 ID，并在 `ledgers.json` 中由原始事件重算；这不是“整段可用时间”分母，尚未完成正式可用容量口径/VM 证据 | BLOCKER-DIAG | 先用服务窗容量做拥塞诊断；若论文声称可用时间利用率，再补几何/可用区间 ledger 并做分母对照 |
+| 逐向链路利用率可重算 | 聚合统计较多 | `2f577a5` 已加入逐服务窗原始事件：`rate×service-window` 容量、served bits、链路 ID，并在 `ledgers.json` 中由原始事件重算；这不是“整段可用时间”分母，尚未完成正式口径/VM 证据 | BLOCKER-DIAG | 先在诊断合同中明确服务窗容量口径；若论文声称可用时间利用率，再补几何/可用区间 ledger 并做分母对照 |
 | per-action 斜距/速率/方向特征 | RAAC 有 4×9 action_feats | V2 内部路由能访问相关量，但 decision sink 无逐动作等价物 | BLOCKER-THEORY | INFO-LADDER 前加入 distance/rate/availability/observed_at/source；不默认给所有臂 |
 | 逐字段 AoI | 旧有定时观测/年龄统计 | V2 是 cache-entry 级 age，未有字段级 generated/received/source age | BLOCKER-THEORY | AGE-LADDER 前完成并做 shuffle/fixed-fresh 负对照 |
-| 每包 queue/tx/prop 分解 | 有 | `e68f265` 已持久化 packet queue-enter/service-start、service-window、propagation start/arrival 和 delivered 事件；`metrics.summarize()` 重算 queue/holding、tx、prop、E2E，并由 receipt 校验 | BLOCKER-DIAG | 合入并部署后做多 OD/突发、失败/积压/在途负对照；三段之和仍需作为正式实验验收 |
+| 每包 queue/tx/prop 分解 | 有 | `2f577a5` 已持久化 packet queue-enter/service-start、service-window、propagation start/arrival 和 delivered 事件；`metrics.summarize()` 重算 queue/holding、tx、prop、E2E，并由 receipt 校验 | BLOCKER-DIAG | 当前 SHA 部署后做多 OD/突发、失败/积压/在途负对照；三段之和仍需作为正式实验验收 |
 | replay buffer 持久化 | 有 | V2 只有 online model checkpoint；replay/optimizer/target/RNG 未持久化 | BLOCKER-LONGTRAIN | 正式长训前做中断续训 vs 不间断训练等价验收，绑定 schema/SHA/config |
 | 多步/TD-λ/temporal | 有 | V2 只有设计稿 | CONDITIONAL | 诊断若指向信用分配问题，再作为研究臂 |
 | path-credit | 有 | V2 未接运行时 | CONDITIONAL | 诊断若指向端到端信用分配，再立单独研究臂 |

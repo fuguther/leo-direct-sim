@@ -636,6 +636,16 @@ def compile_matrix_experiment(request_path: Path, out_dir: Path,
             f"  --authorization EXPERIMENTS/{validated['experiment_id']}/authorization.json \\",
             f"  --session {row['run_id'].lower()}", "```", "",
         ])
+    runbook_lines.extend([
+        "## V2 analysis after every authorized cell has a natural-end result", "",
+        "```bash",
+        "python3 -m CODE.experiment_platform.v2_analysis \\",
+        f"  --experiment EXPERIMENTS/{validated['experiment_id']} \\",
+        f"  --authorization EXPERIMENTS/{validated['experiment_id']}/authorization.json \\",
+        f"  --out ANALYSIS/{validated['experiment_id']}/v2-paired",
+        "```", "",
+        "The output is evidence-bound analysis only; claim-support and value-gate review remain required.",
+    ])
     (out_dir / "RUNBOOK.md").write_text("\n".join(runbook_lines), encoding="utf-8")
     bound_paths = ["request.json", "run-manifest.json", "analysis-request.json",
                    "RUNBOOK.md", *(row["config_path"] for row in rows)]

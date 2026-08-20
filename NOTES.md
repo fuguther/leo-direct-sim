@@ -213,3 +213,17 @@
 4. 冻结同一 main SHA 并部署 VM，按 E0-REAL→PILOT-BASELINES→DIAG-CONGESTION 做实验诊断。
 5. 再完成 Q0-I/F、逐候选物理特征、逐字段 age；基于诊断提出方案，长训前完成 replay 完整恢复。
 6. 平台关键门禁不再被文档/Git 清理抢占；回收 worktree时继续保护 dirty、orphan 与 detached 项。
+
+## 2026-08-21：V2 结果到成对分析适配器
+
+- 分支：`codex/20260821-v2-analysis-chain`；基线 main `2f577a5`。
+- 新增 `CODE/experiment_platform/v2_analysis.py`：对 V2 矩阵的授权 cohort 逐 run 校验
+  `receipt.json`、`ledgers.json`、`formal_run.json`、`governance_receipt.json`、
+  `resolved_config.json`、`manifest.json`；从 receipt/原始事件重算 delivery、时延和服务窗利用率，
+  按 preregistered pairing 做差值，并写出 `analysis-manifest.json`、`summary.json`、`report.md`、
+  `claim-gate.json`。
+- `CODE/leo_sim/matrix.py` 生成的 RUNBOOK 现在包含 V2 分析命令；该命令只在所有授权 cell
+  自然结束并产出结果后执行，不能跳过授权或把 fixture 变成论文结论。
+- 验证：V2 定向 `22 passed`；全量 `565 passed, 1 skipped, 3 subtests passed`；`git diff --check` 通过。
+- 边界：这是 V2 分析入口和本地真实 receipt fixture，不是 VM 授权 cohort 证据；R7-F1 继续保持
+  `open`，下一步部署同一 SHA，跑真实流量/E0 与持久化分析闭环。
