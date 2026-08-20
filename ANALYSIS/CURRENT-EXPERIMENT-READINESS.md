@@ -21,7 +21,7 @@
 | D2 动态拓扑/holding 语义 | PR #56 已合入 main；合并提交前本地 `555 passed, 1 skipped, 3 subtests passed`，CI pytest SUCCESS | FACT |
 | 当前 VM | 已有旧 main 的工程 smoke；尚未部署当前 `2f577a5`（含奖励和事件观测） | FACT；当前 SHA VM 证据 open |
 | VM 工程 smoke | `CODE/Results/_vm_smoke_66be0ad` 自然结束；`DELIVERED=1`、`conservation_ok=true`、`IN_SYSTEM_AT_STOP=0`；receipt verify=`verified` | FACT；非正式授权运行 |
-| 真实流量/测量 | CSV 已支持 packet-level 多 OD；M-Lab 与 population-gravity 是代理；burst window 已有。`2f577a5` 已合入逐包 queue/tx/prop 与逐服务窗容量/served 原始事件，并由 ledgers 重算；统一来源/单位/映射和整段可用时间分母仍 open | FACT；VM/正式 provenance 仍 open |
+| 真实流量/测量 | CSV 已支持 packet-level 多 OD；M-Lab 与 population-gravity 是代理；burst window 已有。trace manifest 现在绑定 source type/path/SHA、单位、OD 映射、目标与实际 offered load；事件层由 `2f577a5` 合入并由 ledgers 重算；整段可用时间分母和 VM/正式 provenance 仍 open | FACT；当前分支 `3878862`，待合入/部署 |
 | Q0 | snapshot 已在 main；planned-vs-executed、holding、Q0-I tiny 存在于未合入候选分支并收到 REQUEST_CHANGES；Q0-F 精确交叉验证未完成。Q0 不阻塞 E0/pilot，但阻塞理论归因和新方案冻结 | FACT |
 | 正式分析链 | generic 链已恢复；新增 `CODE/experiment_platform/v2_analysis.py`，可校验 V2 receipt/formal/governance/ledgers、重算指标并做 paired analysis，且 RUNBOOK 已生成入口；尚无真实授权 cohort 的持久化分析产物 | FACT，partial；R7-F1 仍 blocking |
 | 三轮三方无新问题 | 只完成局部 PR/局部模块审阅，没有在最终冻结平台上完成连续三轮 | FACT，未满足 |
@@ -36,7 +36,7 @@
 | A1 D1/D2 入 main | 精确 head 复核有效；CI 绿；合入后 main 全量与行为对照绿 | **已完成**：#55/#56 已合入；D1/D2 合入记录在 `66be0ad`，当前 main 继续保留 | 已完成 |
 | A2 已知科学 blocker | 奖励正循环、mask 信息泄漏、deadline/Q0 控制范围有明确修复或冻结决策 | mask 已由 #62 关闭；其余 open | 2–5 日 |
 | A3 正式证据链 | compile、review、authorize、run、receipt、analysis、claim 测试均存在并在 CI/本地通过 | V2 结果适配器与重算测试已存在；真实授权 cohort、持久化 output 和 claim review 仍 open | 1–2 日 |
-| A4 真实流量与测量 | provenance、多 OD/突发；逐向利用率分子/分母；每包 queue/tx/prop；拥塞指标可从 artifact 重算 | 原始事件、服务窗分子/分母和重算已合入；真实 provenance、整段可用时间分母选择和 VM 验收仍 open | 1–3 日 |
+| A4 真实流量与测量 | provenance、多 OD/突发；逐向利用率分子/分母；每包 queue/tx/prop；拥塞指标可从 artifact 重算 | trace provenance 合同已实现（source/SHA、单位、OD 映射、offered-load）；服务窗事件与重算已合入；整段可用时间分母选择和 VM 验收仍 open | 1–2 日 |
 | A5 最终平台审计 | 冻结 commit 上三轮 Codex/不同模型/网页 GPT 无新增 blocking/major | 未开始最终三轮 | 2–5 日 |
 | A6 VM 与 pilot | 部署同一 main SHA；VM/TF 门禁、真实 smoke、E0-REAL、基线诊断与 pilot 自然结束 | **VM smoke 已完成；E0-REAL/基线 pilot 尚未开始** | 1–3 日 |
 
@@ -60,7 +60,7 @@
 
 1. 完成本轮主线与机器清单收敛，不再让旧 EXP1→EXP3 顺序支配当前工作。
 2. D1/D2、奖励门和事件观测已合入；V2 适配器本地全量绿，但 R7-F1 仍要用真实授权结果收口。
-3. 绑定真实流量 provenance、多 OD/突发验收，并在论文实验合同中明确服务窗容量或整段可用时间分母。
+3. 合入并部署 trace provenance 合同；用 CSV 多 OD/突发样本验收 source/SHA、单位、OD 映射和 offered-load 重算，并在论文实验合同中明确服务窗容量或整段可用时间分母。
 4. 部署当前 `2f577a5` 到 VM，先跑授权 smoke，再跑 E0-REAL、DIAG-CONGESTION 与基线 pilot。
 5. 从诊断窗口实现并交叉验证 Q0-I/Q0-F tiny，再补候选方向物理特征和逐字段 age 信息阶梯。
 6. 根据诊断与 Q0 差距提出机制；长训前补 replay/optimizer/target/RNG 完整恢复。

@@ -227,3 +227,16 @@
 - 验证：V2 定向 `22 passed`；全量 `565 passed, 1 skipped, 3 subtests passed`；`git diff --check` 通过。
 - 边界：这是 V2 分析入口和本地真实 receipt fixture，不是 VM 授权 cohort 证据；R7-F1 继续保持
   `open`，下一步部署同一 SHA，跑真实流量/E0 与持久化分析闭环。
+
+## 2026-08-21：trace provenance 与 offered-load 合同
+
+- 分支：`codex/20260821-trace-provenance`；代码提交 `3878862`，基线 main `91a6604`。
+- 每个 trace manifest 新增 `provenance_contract`：源类型/路径/SHA、时间/坐标/bits 单位、CSV
+  坐标到 aggregate grid 的映射规则、目标 offered Mbps、实际 trace offered Mbps、包/bit 账本。
+  `receipt.py` 会按 resolved config 和 manifest 账本重验，缺字段或篡改时 fail closed。
+- CSV 输入保留 source packet ID 并绑定输入文件 SHA；M-Lab/人口模式继续明确标记为代理，不得写成
+  校准用户需求。
+- 验证：trace/receipt/acceptance 定向 `119 passed`；全量 `565 passed, 1 skipped, 3 subtests passed`；
+  `git diff --check` 通过。
+- 边界：还没有当前 SHA 的 VM receipt，也没有整段几何可用时间分母；下一步合入、部署并跑真实 CSV
+  多 OD/突发与 E0 smoke。
