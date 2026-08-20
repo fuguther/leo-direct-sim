@@ -225,10 +225,12 @@ def test_delay_route_uses_arrived_remote_link_metric_not_global_geometry():
             (a, b), global_ranges.get((b, a), 1_000.0)))
     cache = control.LocalCache()
     cache.put(control.CacheEntry(
-        1, {"serve_cells": [], "isl_propagation_s": {"E": 0.0001}},
+        1, {"serve_cells": [],
+            "isl_propagation_s": {"E": {"peer": 2, "value": 0.0001}}},
         0.0, 0.1, 10.0))
     cache.put(control.CacheEntry(
-        2, {"serve_cells": [B], "isl_propagation_s": {"W": 0.0001}},
+        2, {"serve_cells": [B],
+            "isl_propagation_s": {"W": {"peer": 1, "value": 0.0001}}},
         0.0, 0.1, 10.0))
     dirs, status = routing.choose_next_hop(
         "delay", 0, B, 1.0, geo, topo, cache, {}, 1e9,

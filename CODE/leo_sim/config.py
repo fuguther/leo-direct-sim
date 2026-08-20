@@ -106,6 +106,7 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "dual_connect": bool,
         "slot_lease_s": (int, float),  # max hold time under contention
         "idle_release_s": (int, float),  # idle hold before releasing to waiters
+        "holding_queue_bits": int,  # per-satellite re-decision holding area
     },
     "links": {
         "rate_model": str,  # constant|mcs (legacy distance-dependent MCS rates)
@@ -121,6 +122,10 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "ge_enabled": bool,
         "ge_gsl": dict,  # {mean_good_s, mean_bad_s} continuous-time, abstract defaults
         "ge_isl": dict,
+    },
+    "topology": {
+        "recompute_interval_s": (int, float, type(None)),
+        "matching": str,  # markovian (legacy greedy shortest-edge matching)
     },
     "control_plane": {
         "enabled": bool,
@@ -242,6 +247,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "dual_connect": False,
         "slot_lease_s": 10.0,
         "idle_release_s": 1.0,
+        "holding_queue_bits": 64_000_000,
     },
     "links": {
         "rate_model": "constant",
@@ -276,6 +282,10 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         # abstract defaults, NOT calibrated to any real constellation operator
         "ge_gsl": {"mean_good_s": 300.0, "mean_bad_s": 1.0},
         "ge_isl": {"mean_good_s": 900.0, "mean_bad_s": 0.5},
+    },
+    "topology": {
+        "recompute_interval_s": None,  # None = static (V2 current behavior)
+        "matching": "markovian",
     },
     "control_plane": {
         "enabled": True,
@@ -373,10 +383,10 @@ def _check_finite(node: Any, path: str = "") -> None:
 
 
 def _validate_semantics(cfg: Mapping[str, Any]) -> None:
-    sc, ep, dm, ac, lk, cp, rt, lr, ex = (
+    sc, ep, dm, ac, lk, tp, cp, rt, lr, ex = (
         cfg["scenario"], cfg["endpoints"], cfg["demand"], cfg["access"],
-        cfg["links"], cfg["control_plane"], cfg["routing"], cfg["learning"],
-        cfg["execution"],
+        cfg["links"], cfg["topology"], cfg["control_plane"], cfg["routing"],
+        cfg["learning"], cfg["execution"],
     )
     if sc["duration_s"] <= 0:
         raise ConfigError("scenario.duration_s must be > 0")
@@ -492,6 +502,8 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
     for f in ("uplink_queue_bits", "downlink_queue_bits"):
         if ac[f] < 0:
             raise ConfigError(f"access.{f} must be >= 0")
+    if ac["holding_queue_bits"] < 0:
+        raise ConfigError("access.holding_queue_bits must be >= 0")
     if ac["drr_quantum_bits"] < 1:
         raise ConfigError("access.drr_quantum_bits must be >= 1")
     if ac["hysteresis_deg"] < 0 or ac["min_dwell_s"] < 0 or ac["acquisition_delay_s"] < 0:
@@ -522,6 +534,15 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
                or ge[k] <= 0
                for k in ("mean_good_s", "mean_bad_s")):
             raise ConfigError(f"links.{name} mean dwell times must be > 0")
+    if tp["recompute_interval_s"] is not None and (
+            isinstance(tp["recompute_interval_s"], bool)
+            or not isinstance(tp["recompute_interval_s"], (int, float))
+            or not math.isfinite(tp["recompute_interval_s"])
+            or tp["recompute_interval_s"] <= 0):
+        raise ConfigError(
+            "topology.recompute_interval_s must be null or a positive number")
+    if tp["matching"] != "markovian":
+        raise ConfigError("topology.matching currently supports only 'markovian'")
     if lk["rate_model"] not in VALID_RATE_MODELS:
         raise ConfigError(
             f"links.rate_model must be one of {sorted(VALID_RATE_MODELS)}")

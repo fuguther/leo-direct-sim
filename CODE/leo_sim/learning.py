@@ -1003,9 +1003,33 @@ def own_state(slots_used: int, slots_cap: int, isl_queue_bits: dict,
     ], dtype=np.float64)
 
 
-def _origin_features(entry, now: float, isl_queue_cap: int) -> np.ndarray:
+def _peer_bit_value(record, peer: int | None):
+    """Queue metric carried by an advertisement.
+
+    New payloads bind each direction to the peer it was measured on
+    (``{"peer": p, "value": bits}``); after a rematch the direction may point
+    at a different peer, or be removed from the origin's topology entirely
+    (peer is None).  Either way the metric must read as 0: an entry for a
+    direction that no longer exists is stale even though there is no peer
+    left to mismatch against.  Legacy plain-int payloads are accepted for
+    backwards-compatible direct test callers.
+    """
+    if isinstance(record, dict):
+        if peer is None or record.get("peer") != peer:
+            return 0
+        value = record.get("value")
+        return value if isinstance(value, (int, float)) else 0
+    return record if isinstance(record, (int, float)) else 0
+
+
+def _origin_features(entry, now: float, isl_queue_cap: int,
+                     topo: dict | None = None,
+                     origin: int | None = None) -> np.ndarray:
     p = entry.payload
-    q = sum(p.get("isl_queue_bits", {}).values())
+    peers = (topo.get(origin, {}) if topo is not None and origin is not None
+             else {})
+    q = sum(_peer_bit_value(rec, peers.get(d))
+            for d, rec in p.get("isl_queue_bits", {}).items())
     used = p.get("access_slots_used", 0)
     cap = max(1, p.get("access_slots_cap", 1))
     nvis = len(p.get("visible_cells", ()))
@@ -1103,7 +1127,10 @@ def _graph_node_features(origin: int, entry, root: int, first_dir: str,
                          root_pos: tuple = (0.0, 0.0, 0.0)) -> np.ndarray:
     """18-dim node feature for one subgraph node (V2 payload semantics)."""
     p = entry.payload if entry is not None else {}
-    q = p.get("isl_queue_bits", {}) if entry is not None else {}
+    peers = topo.get(origin, {})
+    q = {d: _peer_bit_value(rec, peers.get(d))
+         for d, rec in (p.get("isl_queue_bits", {})
+                        if entry is not None else {}).items()}
     used = p.get("access_slots_used", 0) if entry is not None else 0
     cap = max(1, p.get("access_slots_cap", 1)) if entry is not None else 1
     nvis = len(p.get("visible_cells", ())) if entry is not None else 0
@@ -1215,7 +1242,8 @@ def build_observation(contract: str, sat: int, cache, now: float, topo,
             obs_hops=obs_hops, dst_feats=dst_feats, root_pos=root_pos)
     entries = information_set(contract, sat, cache, now, topo,
                               obs_hops=obs_hops)
-    feats = {o: _origin_features(e, now, isl_queue_cap) for o, e in entries.items()}
+    feats = {o: _origin_features(e, now, isl_queue_cap, topo, o)
+             for o, e in entries.items()}
     own = np.asarray(own, dtype=np.float64)
     df = (np.asarray(dst_feats, dtype=np.float64).reshape(-1)
           if dst_feats is not None else np.zeros(DEST_FEATURES))
@@ -1249,9 +1277,12 @@ def build_observation(contract: str, sat: int, cache, now: float, topo,
         if not entries:
             return _finish(np.concatenate(
                 [own, np.zeros(ORIGIN_FEATURES), [0.0]]))
-        freshest = min(entries.values(), key=lambda e: e.aoi(now))
+        freshest_o, freshest = min(
+            entries.items(), key=lambda oe: oe[1].aoi(now))
         return _finish(np.concatenate(
-            [own, _origin_features(freshest, now, isl_queue_cap), [1.0]]))
+            [own, _origin_features(freshest, now, isl_queue_cap, topo,
+                                   freshest_o),
+             [1.0]]))
 
     if contract == "C6":
         buckets = [[] for _ in range(C6_MAX_HOPS)]
@@ -1263,11 +1294,14 @@ def build_observation(contract: str, sat: int, cache, now: float, topo,
         return _finish(np.concatenate([own] + blocks))
 
     if contract == "C7":
-        ordered = sorted(entries.values(), key=lambda e: e.aoi(now))
+        ordered = sorted(entries.items(), key=lambda oe: oe[1].aoi(now))
         blocks = []
-        for e in ordered[:C7_MAX_ENTRIES]:
+        for o, e in ordered[:C7_MAX_ENTRIES]:
+            # keep each entry's advertisement origin: peer-bound queue bits
+            # must be validated against the peer the entry was measured on
+            # (topo[origin]), never against the root satellite's own edges
             blocks.append(np.concatenate(
-                [_origin_features(e, now, isl_queue_cap), [1.0]]))
+                [_origin_features(e, now, isl_queue_cap, topo, o), [1.0]]))
         while len(blocks) < C7_MAX_ENTRIES:
             blocks.append(np.zeros(ORIGIN_FEATURES + 1))
         return _finish(np.concatenate([own] + blocks))

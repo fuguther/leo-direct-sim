@@ -60,8 +60,13 @@ def control_broadcast_children(topo, origin: int, max_hops: int) -> dict[int, li
     return children
 
 
-def build_topology(geometry, num_sats: int, dirs) -> dict[int, dict[str, int]]:
-    """Static a-priori neighbor graph; self-links are excluded.
+def build_topology(geometry, num_sats: int, dirs, t: float | None = None) \
+        -> dict[int, dict[str, int]]:
+    """A-priori neighbor graph; self-links are excluded.
+
+    t=None uses the geometry's static neighbor rules (exact current V2
+    behavior).  t given uses dynamic neighbors_at (e.g. legacy Markovian
+    cross-plane rematching at a recompute boundary).
 
     Physical ISLs are bidirectional, and that contract is VERIFIED here (fail
     closed): if a geometry provider hands us a one-way edge we refuse to build
@@ -69,7 +74,8 @@ def build_topology(geometry, num_sats: int, dirs) -> dict[int, dict[str, int]]:
     edge."""
     topo: dict[int, dict[str, int]] = {}
     for s in range(num_sats):
-        nb = geometry.neighbors(s, dirs)
+        nb = geometry.neighbors(s, dirs) if t is None \
+            else geometry.neighbors_at(s, dirs, t)
         topo[s] = {d: n for d, n in nb.items() if n != s}
     for s, nb in topo.items():
         for d, n in nb.items():
@@ -205,7 +211,12 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
         direction = _dir_of(topo, a, b)
         if direction is None:
             return None
-        value = entry.payload.get("isl_propagation_s", {}).get(direction)
+        rec = entry.payload.get("isl_propagation_s", {}).get(direction)
+        # the advertised metric is valid only for the peer it was measured
+        # on; after a rematch the direction may point at a different peer
+        if not isinstance(rec, dict) or rec.get("peer") != b:
+            return None
+        value = rec.get("value")
         if not isinstance(value, (int, float)) or value < 0:
             return None
         return float(value)
@@ -241,7 +252,11 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
                     qb = None
                 else:
                     dir_ab = _dir_of(topo, a, b)
-                    qb = entry.payload.get("isl_queue_bits", {}).get(dir_ab) if dir_ab else None
+                    rec = (entry.payload.get("isl_queue_bits", {})
+                           .get(dir_ab) if dir_ab else None)
+                    qb = (rec.get("value")
+                          if isinstance(rec, dict) and rec.get("peer") == b
+                          else None)
             if qb is None:
                 return float("inf")  # unknown queue state is not assumed free
             # Dynamic-rate mode derives capacity from the exact same

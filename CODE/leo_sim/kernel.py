@@ -48,8 +48,8 @@ from collections import deque
 import numpy as np
 import simpy
 
-from . import control, fates, grid as gridmod, learning as _learning, model
-from . import link_budget, outage, rng as rngmod, routing
+from . import control, fates, grid as gridmod, learning as _learning, model, q0, link_budget
+from . import outage, rng as rngmod, routing
 from . import trace as tracemod
 
 LearningUnavailable = _learning.LearningUnavailable
@@ -66,7 +66,7 @@ class CapExceeded(KernelError):
 class DataPacket:
     __slots__ = ("pid", "src", "dst", "bits", "deadline", "emitted_at", "path",
                  "assigned_sat", "learning_state", "learning_action",
-                 "learning_reward", "isl_enqueued_at")
+                 "learning_reward", "isl_enqueued_at", "holding_until")
 
     def __init__(self, pid, src, dst, bits, deadline, emitted_at):
         self.pid = pid
@@ -83,6 +83,7 @@ class DataPacket:
         # enqueue time on the current ISL egress queue; the realized queue
         # wait (service start minus this) feeds the M1 queue reward
         self.isl_enqueued_at = None
+        self.holding_until = None
 
 
 class QueueArea:
@@ -110,6 +111,102 @@ class QueueArea:
 
     def close(self, t: float):
         self._acc(t)
+
+
+class SatelliteHoldingQueue:
+    """Finite FIFO for packets held by a satellite between decisions.
+
+    Unlike the legacy ``pending`` list, admission is capacity checked and
+    every mutation updates the shared queue-area integral.  The small list
+    compatibility surface is intentional while callers migrate: iteration,
+    indexing, ``append`` and equality remain available to old diagnostics.
+    """
+
+    __slots__ = ("capacity_bits", "area", "_items", "queued_bits", "_now")
+
+    def __init__(self, capacity_bits: int, area: QueueArea, now_fn=None):
+        if capacity_bits < 0:
+            raise ValueError("holding queue capacity must be >= 0")
+        self.capacity_bits = capacity_bits
+        self.area = area
+        self._items: list[DataPacket] = []
+        self.queued_bits = 0
+        self._now = now_fn or (lambda: 0.0)
+
+    def __len__(self):
+        return len(self._items)
+
+    def __iter__(self):
+        return iter(self._items)
+
+    def __getitem__(self, index):
+        return self._items[index]
+
+    def __eq__(self, other):
+        if isinstance(other, SatelliteHoldingQueue):
+            other = other._items
+        return self._items == other
+
+    def room(self, bits: int) -> bool:
+        return self.queued_bits + bits <= self.capacity_bits
+
+    def put(self, pkt: DataPacket, now: float) -> bool:
+        if not self.room(pkt.bits):
+            return False
+        self._items.append(pkt)
+        self.queued_bits += pkt.bits
+        self.area.add(pkt.bits, now)
+        return True
+
+    def append(self, pkt: DataPacket) -> None:
+        """Compatibility append at the kernel's current time.
+
+        New kernel paths use ``put`` so an overflow can receive an explicit
+        fate.  Direct legacy-style callers get a loud error instead of an
+        unaccounted packet.
+        """
+        if not self.put(pkt, self._now()):
+            raise CapExceeded("holding queue capacity exceeded")
+
+    def remove(self, pkt: DataPacket, now: float) -> None:
+        self._items.remove(pkt)
+        self.queued_bits -= pkt.bits
+        self.area.remove(pkt.bits, now)
+
+    def pop(self, index: int = 0, now: float = 0.0):
+        if not self._items:
+            return None
+        pkt = self._items.pop(index)
+        self.queued_bits -= pkt.bits
+        self.area.remove(pkt.bits, now)
+        return pkt
+
+    def clear(self, now: float) -> list[DataPacket]:
+        items = list(self._items)
+        self._items.clear()
+        if self.queued_bits:
+            self.area.remove(self.queued_bits, now)
+        self.queued_bits = 0
+        return items
+
+    def take_ready(self, now: float) -> list[DataPacket]:
+        """Remove packets whose explicit WAIT interval has elapsed."""
+        ready = [p for p in self._items
+                 if p.holding_until is None or now >= p.holding_until]
+        if not ready:
+            return []
+        for pkt in ready:
+            self.remove(pkt, now)
+            pkt.holding_until = None
+        return ready
+
+    def sweep_expired(self, now: float) -> list[DataPacket]:
+        """Remove packets whose data deadline has passed while being held."""
+        expired = [p for p in self._items
+                   if p.deadline is not None and now > p.deadline]
+        for pkt in expired:
+            self.remove(pkt, now)
+        return expired
 
 
 class ControlPacket:
@@ -509,7 +606,7 @@ class DownlinkServer(_DRRMixin):
                             pkt = self.queues[c].popleft()
                             self.queued_bits -= pkt.bits
                             self.area.remove(pkt.bits, k.env.now)
-                            k.pending[self.sat].append(pkt)
+                            k._hold_packet(self.sat, pkt)
             sel = self._drr_select(cells, self._servable)
             if sel is None:
                 if k.rate_model == "mcs":
@@ -603,7 +700,7 @@ class DownlinkServer(_DRRMixin):
             if outcome == "retired":
                 # partial downlink never reached the endpoint: re-decide at
                 # this satellite (the destination holds a new association).
-                k.pending[self.sat].append(pkt)
+                k._hold_packet(self.sat, pkt)
                 k._on_link_retired(ep, self.sat)
                 continue
             if outcome == "stalled":
@@ -632,11 +729,15 @@ class ISLLink:
     queued data when the link next goes idle; a packet in service is never
     interrupted). Availability is re-checked at every use."""
 
-    def __init__(self, kern, sat, direction, peer):
+    def __init__(self, kern, sat, direction, peer, gen=0):
         self.k = kern
         self.sat = sat
         self.dir = direction
         self.peer = peer
+        # monotone per-satellite-link generation id: rematch ordering.  The
+        # one-transceiver gate must wait only for OLDER generations, never
+        # for younger retired ones (that would deadlock G0 against G1).
+        self.gen = gen
         self.data_q: deque[DataPacket] = deque()
         self.ctrl_q: deque[ControlPacket] = deque()
         self.data_bits = 0
@@ -648,6 +749,11 @@ class ISLLink:
         self._svc = None
         self._svc_phase = None  # None | waiting_for_link | transmitting
         self._tx_started_at = None
+        # D2 rematch lifecycle: a replaced link keeps draining its control
+        # queue/in-service packet (retired) and signals `drained` once the
+        # direction slot is physically free again.
+        self.retired = False
+        self.drained = kern.env.event()
         ge_cfg = kern.cfg_links["ge_isl"]
         self.ge = outage.GilbertElliott(
             ge_cfg["mean_good_s"], ge_cfg["mean_bad_s"],
@@ -684,14 +790,61 @@ class ISLLink:
         self.ctrl_area.add(pkt.bits, self.k.env.now)
         self.k._poke(self.wake)
 
+    def _is_drained(self) -> bool:
+        """Nothing left to serve: queues empty and no transmission active."""
+        return (not self.data_q and not self.ctrl_q and self.current is None)
+
     def _run(self):
         k = self.k
         while True:
             self._expire_waiting()
             if not self.ctrl_q and not self.data_q:
+                if self.retired:
+                    # fully drained: release the (sat, direction) slot and
+                    # end this server process — the link object stays alive
+                    # only for stop-time accounting
+                    if not self.drained.triggered:
+                        self.drained.succeed()
+                    # Reclaim immediately so a later rematch sees the
+                    # released slot in its entity-cap accounting even when
+                    # no successor generation is waiting on this slot.
+                    k._purge_drained_retired()
+                    return
                 yield self.wake
                 self.wake = k.env.event()
                 continue
+            busy = [l for l in k._retired_isls
+                    if l.sat == self.sat and l.dir == self.dir
+                    and l.gen < self.gen and not l._is_drained()]
+            if busy:
+                # ONE transceiver per (sat, direction): every generation —
+                # retired or not — must wait for all OLDER generations on
+                # the same physical slot to drain before it transmits its
+                # own queued packets.  Without this, a second rematch that
+                # retires an already-gated successor lets that successor
+                # skip the gate (it now sees retired=True) and transmit
+                # concurrently with an even older generation still in
+                # service; gating on `not self.retired` alone would also
+                # deadlock two retired generations waiting on each other,
+                # so the wait list is ordered by generation id.
+                wait_ev = (simpy.events.AllOf(k.env, [l.drained for l in busy])
+                           | self.wake)
+                # our own queued packets still expire at their own
+                # deadlines while we wait for the slot
+                expiries = [p.generated_at + p.ttl_s for p in self.ctrl_q]
+                expiries.extend(p.deadline for p in self.data_q
+                                if p.deadline is not None)
+                waits = [u for u in expiries
+                         if k.env.now < u <= k.horizon]
+                if waits:
+                    wait_ev = wait_ev | k.env.timeout(
+                        min(waits) - k.env.now)
+                yield wait_ev
+                if self.wake.triggered:
+                    self.wake = k.env.event()
+                k._purge_drained_retired()
+                continue
+
             if not self.available_now():
                 # link down right now: wait for the earliest recovery
                 ups = [k.geometry.next_isl_change(self.sat, self.peer,
@@ -847,6 +1000,7 @@ class Kernel:
         self.cfg_sc = cfg["scenario"]
         self.cfg_access = cfg["access"]
         self.cfg_links = cfg["links"]
+        self.cfg_topo = cfg["topology"]
         self.cfg_cp = cfg["control_plane"]
         self.cfg_rt = cfg["routing"]
         self.cfg_learning = cfg["learning"]
@@ -945,24 +1099,19 @@ class Kernel:
             per_ep_rows.setdefault(r["src_grid_id"], []).append(r)
 
         self.topo = routing.build_topology(
-            self.geometry, self.num_sats, self.cfg_links["isl_dirs"])
-        # static routing structures: topo never changes, so build the reverse
-        # adjacency and its sorted neighbour lists once instead of rebuilding
-        # them on every decision (behaviour-identical, same iteration order)
-        self._routing_reverse_adj = routing._reverse_adj(self.topo)
-        self._routing_sorted_rev_adj = {
-            s: sorted(self._routing_reverse_adj.get(s, ()))
-            for s in self._routing_reverse_adj}
-        self.control_children = [
-            routing.control_broadcast_children(
-                self.topo, origin, self.cfg_cp["vis_k"])
-            for origin in range(self.num_sats)
-        ] if self.cfg_cp["enabled"] and self.cfg_cp["vis_k"] > 0 else []
+            self.geometry, self.num_sats, self.cfg_links["isl_dirs"],
+            t=0.0 if self.cfg_topo["recompute_interval_s"] is not None else None)
+        self._build_routing_structures()
 
         # per-satellite state
         self.slots: list[set[str]] = [set() for _ in range(self.num_sats)]
         self.caches: list[control.LocalCache] = [control.LocalCache() for _ in range(self.num_sats)]
-        self.pending: list[list[DataPacket]] = [[] for _ in range(self.num_sats)]
+        self.holding_areas = [QueueArea() for _ in range(self.num_sats)]
+        self.pending: list[SatelliteHoldingQueue] = [
+            SatelliteHoldingQueue(
+                self.cfg_access["holding_queue_bits"], self.holding_areas[s],
+                now_fn=lambda self=self: self.env.now)
+            for s in range(self.num_sats)]
         self._pending_wake: list[float | None] = [None] * self.num_sats
         self.seen_ctrl: list[set[tuple[int, int]]] = [set() for _ in range(self.num_sats)]
         self.gsl_ge: dict[tuple[int, str], outage.GilbertElliott] = {}
@@ -983,12 +1132,22 @@ class Kernel:
         self.uplinks = [UplinkServer(self, s) for s in range(self.num_sats)]
         self.downlinks = [DownlinkServer(self, s) for s in range(self.num_sats)]
         self.isls: list[dict[str, ISLLink]] = [{} for _ in range(self.num_sats)]
+        self._retired_isls: list[ISLLink] = []
+        # drained generations are kept for stop-time area/occupied accounting
+        # only — no queue, no process, no live state
+        self._retired_isls_done: list[ISLLink] = []
+        self._isl_gen_seq = 0
         for s in range(self.num_sats):
             for d, n in self.topo[s].items():
-                self.isls[s][d] = ISLLink(self, s, d, n)
+                self.isls[s][d] = ISLLink(
+                    self, s, d, n, gen=self._isl_gen_seq)
+                self._isl_gen_seq += 1
                 n_entities += 1
         if n_entities > self.cfg_ex["max_entities"]:
             raise CapExceeded(f"entities {n_entities} > max_entities")
+        self._n_entities_base = n_entities
+        self._isl_dyn_created = 0
+        self._isl_dyn_drained = 0
         # base entity count (sat servers + ISL links) for the lazy-endpoint
         # cap check; endpoints created at runtime must respect the same bound
         self._entity_base = n_entities
@@ -1002,6 +1161,7 @@ class Kernel:
                             "uplink_bits": []}
         self.handover_events: list[dict] = []
         self.monitor_log: list[tuple] = []
+        self.q0_plan_audit: list[dict] = []
         self.monitor = bool(self.cfg_ex["monitor"])
         self.data_packet_count = 0
         # Q0 readiness: monotonic state version (bumped once per event step)
@@ -1028,6 +1188,13 @@ class Kernel:
             "learning_transitions": 0,
             "learning_train_steps": 0,
             "learning_discarded_at_stop": 0,
+            "learning_discarded_at_rematch": 0,
+            "holding_queue_overflows": 0,
+            "topo_recomputes": 0,
+            # D2 receipt truthfulness: True when the dynamic t=0 matching
+            # already differed from the static topology, even if no interval
+            # recompute happened before the horizon.
+            "topo_dynamic_init": False,
             "mcs_rate_samples": 0,
             # D1 attribution: zero-rate holds count every deferral event
             # where the MCS gate (not geometry/GE) delayed a scheduling or
@@ -1037,6 +1204,10 @@ class Kernel:
             "mcs_rate_min_bps": 0,
             "mcs_rate_max_bps": 0,
         }
+        if self.cfg_topo["recompute_interval_s"] is not None:
+            static_topo = routing.build_topology(
+                self.geometry, self.num_sats, self.cfg_links["isl_dirs"])
+            self.mech["topo_dynamic_init"] = self.topo != static_topo
         # packets holding an open (not yet closed) learning transition; the
         # horizon close must account for every one of them, never silently
         self._learning_open: set[DataPacket] = set()
@@ -1054,9 +1225,23 @@ class Kernel:
                 self.env.process(self._control_advertiser(s))
         for cell in sorted(per_ep_rows):
             self.env.process(self._emitter(cell, per_ep_rows[cell]))
+        if self.cfg_topo["recompute_interval_s"] is not None:
+            self.env.process(self._topology_ticker())
         for s in range(self.num_sats):
             self.env.process(self._pending_ticker(s))
         self.env.process(self._horizon_closer())
+
+    def _live_entity_count(self) -> int:
+        """Total live entities for the max_entities fail-closed gate.
+
+        Base entities (satellite servers + initial ISL links) plus lazy
+        endpoints plus live dynamic ISL generations.  Every runtime creator
+        — lazy endpoint activation and dynamic topology rematch — must use
+        this single formula, or the two can each pass their own check while
+        the combined live count exceeds the configured cap.
+        """
+        return (self._entity_base + len(self.endpoints)
+                + self._isl_dyn_created - self._isl_dyn_drained)
 
     def _ensure_endpoint(self, cell: str) -> TrafficEndpoint:
         """Create a trace cell's endpoint the first time it becomes active.
@@ -1069,10 +1254,9 @@ class Kernel:
         ep = self.endpoints.get(cell)
         if ep is not None:
             return ep
-        if len(self.endpoints) + self._entity_base >= self.cfg_ex["max_entities"]:
+        if self._live_entity_count() >= self.cfg_ex["max_entities"]:
             raise CapExceeded(
-                f"entities {len(self.endpoints) + self._entity_base + 1} "
-                f"> max_entities")
+                f"entities {self._live_entity_count() + 1} > max_entities")
         ep = TrafficEndpoint(cell)
         self.endpoints[cell] = ep
         self.env.process(self._endpoint_ticker(ep))
@@ -1167,9 +1351,123 @@ class Kernel:
         """Last-activity stamp for fair-access idle measurement."""
         self.access_last_busy[cell] = self.env.now
 
+    def _hold_packet(self, sat: int, pkt: DataPacket) -> bool:
+        """Admit a packet to finite satellite holding, or assign its fate."""
+        if self.pending[sat].put(pkt, self.env.now):
+            self._note_busy(pkt.dst)
+            return True
+        self.mech["holding_queue_overflows"] += 1
+        self._fail(pkt, "HOLDING_QUEUE_OVERFLOW")
+        return False
+
     def _log(self, kind, **kv):
         if self.monitor:
             self.monitor_log.append((self.env.now, kind, tuple(sorted(kv.items()))))
+
+    def _build_routing_structures(self):
+        self._routing_reverse_adj = routing._reverse_adj(self.topo)
+        self._routing_sorted_rev_adj = {
+            s: sorted(self._routing_reverse_adj.get(s, ()))
+            for s in self._routing_reverse_adj}
+        self.control_children = [
+            routing.control_broadcast_children(
+                self.topo, origin, self.cfg_cp["vis_k"])
+            for origin in range(self.num_sats)
+        ] if self.cfg_cp["enabled"] and self.cfg_cp["vis_k"] > 0 else []
+
+    def _all_isls(self):
+        """Current plus retired links, including queues draining after rematch."""
+        return [link for links in self.isls for link in links.values()] + list(
+            self._retired_isls) + list(self._retired_isls_done)
+
+    def _purge_drained_retired(self):
+        """Reclaim fully drained retired generations (M5).
+
+        A drained link has no queue, no in-service packet and (once its
+        server notices) no process; it moves to the accounting-only list so
+        long horizons cannot accumulate live entities without bound.
+        """
+        still = []
+        for link in self._retired_isls:
+            if link._is_drained():
+                if not link.drained.triggered:
+                    link.drained.succeed()
+                self._isl_dyn_drained += 1
+                self._retired_isls_done.append(link)
+            else:
+                still.append(link)
+        self._retired_isls = still
+
+    def _topology_ticker(self):
+        interval = self.cfg_topo["recompute_interval_s"]
+        while True:
+            yield self.env.timeout(interval)
+            if self.env.now >= self.horizon:
+                return
+            self._recompute_topology(self.env.now)
+
+    def _recompute_topology(self, now: float):
+        new_topo = routing.build_topology(
+            self.geometry, self.num_sats, self.cfg_links["isl_dirs"], t=now)
+        old_links = self.isls
+        # Reclaim drained generations before the cap check: a direction that
+        # was removed may already have fully drained with no successor
+        # waiting, and counting it as live here would spuriously fail a
+        # later re-add at the cap boundary.
+        self._purge_drained_retired()
+        planned_new = 0
+        for s in range(self.num_sats):
+            for direction, peer in new_topo[s].items():
+                old = old_links[s].get(direction)
+                if old is None or old.peer != peer:
+                    planned_new += 1
+        live = self._live_entity_count()
+        if live + planned_new > self.cfg_ex["max_entities"]:
+            raise CapExceeded(
+                f"dynamic topology would create {planned_new} ISL links "
+                f"({live + planned_new} entities > max_entities "
+                f"{self.cfg_ex['max_entities']})")
+        for s in range(self.num_sats):
+            for link in old_links[s].values():
+                if new_topo[s].get(link.dir) == link.peer:
+                    continue
+                while link.data_q:
+                    pkt = link.data_q.popleft()
+                    link.data_bits -= pkt.bits
+                    link.data_area.remove(pkt.bits, now)
+                    if pkt in self._learning_open:
+                        # the queued forward action was superseded by the
+                        # rematch before any service started; re-deciding it
+                        # with a stale open transition would fail loud, and
+                        # remembering it would fabricate a next state for an
+                        # action that never happened
+                        self._learning_open.discard(pkt)
+                        pkt.learning_state = None
+                        pkt.learning_action = None
+                        pkt.learning_reward = None
+                        self.mech["learning_discarded_at_rematch"] += 1
+                    self._hold_packet(s, pkt)
+                link.retired = True
+                # wake a sleeping server so a fully drained link releases
+                # its direction slot immediately instead of dozing forever
+                self._poke(link.wake)
+                self._retired_isls.append(link)
+            new_links = {}
+            for direction, peer in new_topo[s].items():
+                old = old_links[s].get(direction)
+                if old is not None and old.peer == peer:
+                    new_links[direction] = old
+                else:
+                    new_links[direction] = ISLLink(
+                        self, s, direction, peer, gen=self._isl_gen_seq)
+                    self._isl_gen_seq += 1
+                    self._isl_dyn_created += 1
+            self.isls[s] = new_links
+        self.topo = new_topo
+        self._build_routing_structures()
+        self._state_version += 1
+        self.mech["topo_recomputes"] += 1
+        self._purge_drained_retired()
 
     def _count_data_packet(self):
         """Enforce the trace/data-packet cap.
@@ -1228,6 +1526,7 @@ class Kernel:
                 "emitted_at": pkt.emitted_at,
                 "path": list(pkt.path),
                 "assigned_sat": getattr(pkt, "assigned_sat", None),
+                "holding_until": getattr(pkt, "holding_until", None),
             }
 
         def _remaining_service(bits, rate_bps, srv) -> float | None:
@@ -1365,9 +1664,28 @@ class Kernel:
             "pending": {s: [{"pid": p.pid, **_packet_info(p)}
                             for p in self.pending[s]]
                         for s in range(self.num_sats)},
+            "holding": {s: {"queued_bits": self.pending[s].queued_bits,
+                             "capacity_bits": self.pending[s].capacity_bits}
+                         for s in range(self.num_sats)},
             "uplinks": uplinks,
             "downlinks": downlinks,
             "isl_links": isl_links,
+            # live draining generations replaced by a rematch: still real
+            # network state (queued control, in-service packet) until drained
+            "retired_isls": [{
+                "sat": lnk.sat,
+                "dir": lnk.dir,
+                "peer": lnk.peer,
+                "data_bits": lnk.data_bits,
+                "ctrl_bits": lnk.ctrl_bits,
+                "ctrl_q": [c.iid for c in lnk.ctrl_q],
+                "in_service": (
+                    {"pid": lnk.current.pid}
+                    if isinstance(lnk.current, DataPacket)
+                    else {"iid": lnk.current.iid}
+                    if lnk.current is not None else None),
+                "svc": _svc_state(lnk),
+            } for lnk in self._retired_isls],
             "gsl_ge": gsl_ge,
             "in_flight": {
                 pid: {"pid": pid, "kind": v["kind"], "sat": v["sat"],
@@ -1394,6 +1712,169 @@ class Kernel:
                 enabled=self.ge_enabled)
             self.gsl_ge[key] = ge
         return ge
+
+    def _data_packet_locations(self) -> dict[int, tuple[str, int | None]]:
+        """Read-only index of live data packets for Q0 plan validation."""
+        found: dict[int, tuple[str, int | None]] = {}
+        for sat, packets in enumerate(self.pending):
+            for pkt in packets:
+                found[pkt.pid] = ("pending", sat)
+        for ep in self.endpoints.values():
+            for pkt in ep.queue:
+                found[pkt.pid] = ("uplink", pkt.assigned_sat)
+        for srv in self.uplinks:
+            if srv.current is not None:
+                found[srv.current[1].pid] = ("in_service", srv.sat)
+        for sat, srv in enumerate(self.downlinks):
+            for packets in srv.queues.values():
+                for pkt in packets:
+                    found[pkt.pid] = ("downlink", sat)
+            if isinstance(srv.current, DataPacket):
+                found[srv.current.pid] = ("in_service", sat)
+        for link in self._all_isls():
+            # current AND draining retired generations: a packet in service
+            # on a replaced link is still real network state
+            for pkt in link.data_q:
+                found[pkt.pid] = ("isl", link.sat)
+            if isinstance(link.current, DataPacket):
+                found[link.current.pid] = ("in_service", link.sat)
+        for value in self._in_flight.values():
+            pkt = value["pkt"]
+            if isinstance(pkt, DataPacket):
+                found[pkt.pid] = ("in_flight", value.get("sat"))
+        return found
+
+    def _data_packets(self) -> dict[int, DataPacket]:
+        packets: dict[int, DataPacket] = {}
+        for ep in self.endpoints.values():
+            packets.update({p.pid: p for p in ep.queue})
+        for packets_by_cell in (srv.queues for srv in self.downlinks):
+            for queue in packets_by_cell.values():
+                packets.update({p.pid: p for p in queue})
+        for link in self._all_isls():
+            packets.update({p.pid: p for p in link.data_q})
+        for packets_at_sat in self.pending:
+            packets.update({p.pid: p for p in packets_at_sat})
+        return packets
+
+    def validate_joint_plan(self, plan: q0.JointPlan) -> tuple[bool, tuple[str, ...]]:
+        """Validate a Q0 plan without mutating kernel state.
+
+        This is intentionally narrower than execution: it proves the plan is
+        current and physically admissible at this instant.  Applying actions
+        remains a separate atomic operation and is not exposed yet.
+        """
+        errors: list[str] = []
+        ok, version_errors = q0.validate_plan_version(plan, self._state_version)
+        errors.extend(version_errors)
+        locations = self._data_packet_locations()
+        packets = self._data_packets()
+        forward_bits: dict[tuple[int, str], int] = {}
+        deliver_bits: dict[int, int] = {}
+        for action in plan.actions:
+            location = locations.get(action.packet_id)
+            if location is None:
+                errors.append(f"packet {action.packet_id} is not live")
+                continue
+            if location[0] in ("in_service", "in_flight"):
+                errors.append(f"packet {action.packet_id} is not actionable")
+                continue
+            if action.sat >= self.num_sats:
+                errors.append(f"packet {action.packet_id}: sat {action.sat} out of range")
+                continue
+            packet = packets.get(action.packet_id)
+            if packet is None:
+                errors.append(f"packet {action.packet_id}: packet lookup failed")
+                continue
+            if location[0] != "pending":
+                errors.append(f"packet {action.packet_id}: plan requires pending packet")
+                continue
+            if action.kind == "forward":
+                if location[1] is not None and action.sat != location[1] \
+                        and location[0] == "pending":
+                    errors.append(f"packet {action.packet_id}: wrong pending satellite")
+                    continue
+                peer = self.topo.get(action.sat, {}).get(action.direction)
+                if peer is None:
+                    errors.append(f"packet {action.packet_id}: non-adjacent direction")
+                    continue
+                link = self.isls[action.sat].get(action.direction)
+                if link is None:
+                    errors.append(f"packet {action.packet_id}: ISL capacity unavailable")
+                    continue
+                forward_bits[(action.sat, action.direction)] = (
+                    forward_bits.get((action.sat, action.direction), 0) + packet.bits)
+            elif action.kind == "deliver":
+                if action.packet_id not in locations:
+                    continue
+                ep = self.endpoints.get(packet.dst)
+                link = ep.links.get(action.sat) if ep is not None else None
+                if link is None or link.state != "active" \
+                        or not self.geometry.ground_visible(action.sat, ep.lat, ep.lon, self.env.now):
+                    errors.append(f"packet {action.packet_id}: deliver target unavailable")
+                    continue
+                if not self.downlinks[action.sat].room(packet.bits):
+                    errors.append(f"packet {action.packet_id}: downlink capacity unavailable")
+                deliver_bits[action.sat] = deliver_bits.get(action.sat, 0) + packet.bits
+            else:
+                if location[0] != "pending":
+                    errors.append(f"packet {action.packet_id}: WAIT requires pending packet")
+                elif action.sat != location[1]:
+                    errors.append(
+                        f"packet {action.packet_id}: wrong pending satellite")
+                elif action.until is None or action.until <= self.env.now or action.until > self.horizon:
+                    errors.append(f"packet {action.packet_id}: invalid WAIT deadline")
+                elif (self.pending[action.sat].queued_bits
+                      > self.pending[action.sat].capacity_bits):
+                    errors.append(
+                        f"packet {action.packet_id}: holding capacity already exceeded")
+        for (sat, direction), bits in forward_bits.items():
+            link = self.isls[sat][direction]
+            if link._used() + bits > self.cfg_links["isl_queue_bits"]:
+                errors.append(f"ISL plan capacity overcommitted at {sat}:{direction}")
+        for sat, bits in deliver_bits.items():
+            if self.downlinks[sat].queued_bits + bits > self.cfg_access["downlink_queue_bits"]:
+                errors.append(f"downlink plan capacity overcommitted at {sat}")
+        return not errors, tuple(errors)
+
+    def apply_joint_plan(self, plan: q0.JointPlan) -> tuple[bool, tuple[str, ...]]:
+        """Atomically apply a validated pending-packet plan.
+
+        The first Q0 execution contract intentionally accepts only packets in
+        finite kernel ``pending`` lists.  All actions are revalidated against
+        the same live version before any mutation, so an invalid action cannot
+        partially consume a plan.
+        """
+        ok, errors = self.validate_joint_plan(plan)
+        if not ok:
+            return False, errors
+        packets = self._data_packets()
+        pending_by_pid = {
+            pkt.pid: sat for sat, queue in enumerate(self.pending)
+            for pkt in queue
+        }
+        for action in plan.actions:
+            sat = pending_by_pid[action.packet_id]
+            self.pending[sat].remove(packets[action.packet_id], self.env.now)
+        for action in plan.actions:
+            pkt = packets[action.packet_id]
+            if action.kind == "forward":
+                pkt.assigned_sat = None
+                self.isls[action.sat][action.direction].put_data(pkt)
+            elif action.kind == "deliver":
+                self.downlinks[action.sat].put(pkt)
+                pkt.assigned_sat = action.sat
+            else:
+                pkt.holding_until = action.until
+                self._hold_packet(action.sat, pkt)
+        if plan.actions:
+            self._state_version += 1
+            self.q0_plan_audit.append({
+                "version": plan.version,
+                "applied_at": float(self.env.now),
+                "actions": len(plan.actions),
+            })
+        return True, ()
 
     # --------------------------------------------------------- transmission
     def _fire_interrupt(self, link: Link, at: float):
@@ -1703,6 +2184,8 @@ class Kernel:
     def _pending_ticker(self, sat: int):
         while True:
             yield self.env.timeout(self.time_step)
+            for pkt in self.pending[sat].sweep_expired(self.env.now):
+                self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             self._redecide_pending(sat)
             self._sweep_downlink_queues(sat)
             self._access_tick_sat(sat)
@@ -1893,7 +2376,13 @@ class Kernel:
             waiting = [p for p in self.pending[s] if p.dst == cell]
             if not waiting:
                 continue
-            self.pending[s] = [p for p in self.pending[s] if p.dst != cell]
+            # the satellite holding queue is capacity-checked and area
+            # accounted; remove each packet through the queue API instead of
+            # replacing the queue object with a plain list (D2 holding
+            # queue)
+            q = self.pending[s]
+            for pkt in waiting:
+                q.remove(pkt, self.env.now)
             for pkt in waiting:
                 self._decide(pkt, s)
 
@@ -1906,11 +2395,16 @@ class Kernel:
     # --------------------------------------------------------------- control
     def _advertise(self, sat: int):
         self.ctrl_seq += 1
-        isl_bits = {d: link.data_bits + link.ctrl_bits
+        # metrics are bound to the CURRENT peer identity: after a rematch an
+        # old advertisement must read as "unknown" for the new edge, never be
+        # reinterpreted as the new peer's metric (D2 review M2)
+        isl_bits = {d: {"peer": link.peer,
+                        "value": link.data_bits + link.ctrl_bits}
                     for d, link in self.isls[sat].items()}
         isl_prop = {
-            d: model.propagation_delay_s(
-                self.geometry.isl_range_km(sat, link.peer, self.env.now))
+            d: {"peer": link.peer,
+                "value": model.propagation_delay_s(
+                    self.geometry.isl_range_km(sat, link.peer, self.env.now))}
             for d, link in self.isls[sat].items()
         }
         serve = sorted(c for c, ep in self.endpoints.items()
@@ -2331,7 +2825,7 @@ class Kernel:
                         self._schedule_pending_wake(sat, nxt_up)
                 if pkt.deadline is not None:
                     self._schedule_pending_wake(sat, pkt.deadline)
-                self.pending[sat].append(pkt)
+                self._hold_packet(sat, pkt)
                 return
             dl = self.downlinks[sat]
             if dl.room(pkt.bits):
@@ -2385,7 +2879,7 @@ class Kernel:
             else:
                 if pkt.deadline is not None:
                     self._schedule_pending_wake(sat, pkt.deadline)
-                self.pending[sat].append(pkt)  # wait for re-decision
+                self._hold_packet(sat, pkt)  # wait for re-decision
             return
         # loop avoidance: never forward back onto a satellite already visited
         cands = [d for d in cands if self.topo[sat][d] not in pkt.path]
@@ -2447,7 +2941,7 @@ class Kernel:
                 self._schedule_pending_wake(sat, pkt.deadline)
             if recover_at != float("inf"):
                 self._schedule_pending_wake(sat, recover_at)
-            self.pending[sat].append(pkt)  # temporarily unavailable: wait
+            self._hold_packet(sat, pkt)  # temporarily unavailable: wait
             return
         if cands:
             self._fail(pkt, "ISL_QUEUE_OVERFLOW")
@@ -2457,8 +2951,7 @@ class Kernel:
     def _redecide_pending(self, sat: int):
         if not self.pending[sat]:
             return
-        waiting = self.pending[sat]
-        self.pending[sat] = []
+        waiting = self.pending[sat].take_ready(self.env.now)
         for pkt in waiting:
             self._decide(pkt, sat)
 
@@ -2553,8 +3046,13 @@ class Kernel:
                 t_next = self.env.peek()
                 if t_next > self.horizon or t_next == math.inf:
                     break
+                v_before = self._state_version
                 self.env.step()
-                self._state_version += 1
+                # exactly one version bump per event step: handlers that
+                # already bumped (topology recompute, plan application)
+                # count as this step's bump
+                if self._state_version == v_before:
+                    self._state_version += 1
                 events += 1
                 if events > self.cfg_ex["max_events"]:
                     raise CapExceeded("max_events exceeded")
@@ -2567,10 +3065,10 @@ class Kernel:
                 if srv._svc is not None:
                     t0, key = srv._svc
                     self.occupied[key] += self.env.now - t0
-            for lnk in self.isls[s].values():
-                if lnk._svc is not None:
-                    t0, key = lnk._svc
-                    self.occupied[key] += self.env.now - t0
+        for lnk in self._all_isls():
+            if lnk._svc is not None:
+                t0, key = lnk._svc
+                self.occupied[key] += self.env.now - t0
         stop_time = self.env.now  # == horizon on a natural end (closer)
         # Settle deadline fates no sweep reached before the stop: a packet
         # parked behind an unavailable link (e.g. a D1 zero-rate gate) whose
@@ -2580,30 +3078,27 @@ class Kernel:
             self._sweep_endpoint_queue(ep)
         for s in range(self.num_sats):
             self._sweep_downlink_queues(s)
-            kept = []
-            for pkt in self.pending[s]:
+            for pkt in list(self.pending[s]):
                 if pkt.deadline is not None and stop_time >= pkt.deadline:
+                    self.pending[s].remove(pkt, stop_time)
                     self._fail(pkt, "DATA_DEADLINE_EXPIRED")
-                else:
-                    kept.append(pkt)
-            self.pending[s] = kept
             for lnk in self.isls[s].values():
                 lnk._expire_waiting()
         # settle all queue-area integrals at the exact stop time
         for ep in self.endpoints.values():
             ep.area.close(stop_time)
         for s in range(self.num_sats):
+            self.holding_areas[s].close(stop_time)
             self.downlinks[s].area.close(stop_time)
-            for lnk in self.isls[s].values():
-                lnk.data_area.close(stop_time)
-                lnk.ctrl_area.close(stop_time)
+        for lnk in self._all_isls():
+            lnk.data_area.close(stop_time)
+            lnk.ctrl_area.close(stop_time)
         queue_area = {
             "uplink": sum(ep.area.area for ep in self.endpoints.values()),
             "downlink": sum(self.downlinks[s].area.area for s in range(self.num_sats)),
-            "isl_data": sum(lnk.data_area.area for s in range(self.num_sats)
-                            for lnk in self.isls[s].values()),
-            "isl_ctrl": sum(lnk.ctrl_area.area for s in range(self.num_sats)
-                            for lnk in self.isls[s].values()),
+            "holding": sum(area.area for area in self.holding_areas),
+            "isl_data": sum(lnk.data_area.area for lnk in self._all_isls()),
+            "isl_ctrl": sum(lnk.ctrl_area.area for lnk in self._all_isls()),
         }
         self.access_stats["waiting_at_stop"] = sum(
             len(q) for q in self.access_wait)
@@ -2628,6 +3123,8 @@ class Kernel:
                 if self.learner is not None else "none"),
             "learning_mode": (
                 self.learner.mode if self.learner is not None else "train"),
+            "topology_recompute_interval_s": self.cfg_topo["recompute_interval_s"],
+            "topology_matching": self.cfg_topo["matching"],
         }
         ctrl_fc = self.ctrl_ledger.fate_counts()
         control_counters = {
@@ -2658,6 +3155,9 @@ class Kernel:
             "ge": self.ge_enabled and (
                 self.mech["ge_gsl_queries"] + self.mech["ge_isl_queries"] > 0),
             "mbb": self.mech["mbb_events"] > 0,
+            "dynamic_topology": (
+                self.mech["topo_recomputes"] > 0
+                or self.mech["topo_dynamic_init"]),
             "learning": False,
             "ge_gsl_queries": self.mech["ge_gsl_queries"],
             "ge_isl_queries": self.mech["ge_isl_queries"],

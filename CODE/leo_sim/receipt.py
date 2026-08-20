@@ -47,10 +47,12 @@ DEP_KEYS = {"python", "simpy", "numpy", "pyyaml"}
 # on it, so its version is part of the run identity (and its absence on the
 # verifying host fails closed).
 TF_DEP_KEY = "tensorflow"
-REQUESTED_KEYS = {"policy", "association", "rate_model", "ge_enabled",
-                  "control_enabled", "monitor", "learning_algorithm",
-                  "learning_mode"}
-EFFECTIVE_KEYS = {"control_plane", "mcs", "ge", "mbb", "learning"}
+REQUESTED_KEYS = {"policy", "association", "ge_enabled", "control_enabled", "monitor",
+                  "learning_algorithm", "learning_mode",
+                  "topology_recompute_interval_s", "topology_matching"}
+REQUESTED_KEYS |= {"rate_model"}
+EFFECTIVE_KEYS = {"control_plane", "mcs", "ge", "mbb", "learning",
+                   "dynamic_topology"}
 
 LEDGER_KEYS = {
     "packet_fates", "control_instances", "control_counters",
@@ -69,13 +71,15 @@ MECHANISM_COUNTER_KEYS = {
     "control_tx_started", "control_tx_completed", "control_initialized",
     "ge_initialized", "mbb_events", "learning_initialized",
     "learning_decisions", "learning_transitions", "learning_train_steps",
-    "learning_discarded_at_stop", "mcs_rate_samples",
+    "learning_discarded_at_stop", "learning_discarded_at_rematch",
+    "holding_queue_overflows", "topo_recomputes", "topo_dynamic_init",
+    "mcs_rate_samples",
     "mcs_zero_rate_holds", "mcs_rate_min_bps", "mcs_rate_max_bps",
 }
 MECHANISM_COUNTER_BOOLS = {"control_initialized", "ge_initialized",
-                           "learning_initialized"}
+                           "learning_initialized", "topo_dynamic_init"}
 OCCUPIED_KEYS = {"gsl_uplink_s", "gsl_downlink_s", "isl_s", "ctrl_isl_s"}
-QUEUE_AREA_KEYS = {"uplink", "downlink", "isl_data", "isl_ctrl"}
+QUEUE_AREA_KEYS = {"uplink", "downlink", "holding", "isl_data", "isl_ctrl"}
 ACCESS_KEYS = {
     "requests", "grants", "preposition_grants", "wait_time_s_total",
     "wait_time_s_max", "slot_hold_s_total", "waiting_at_stop", "releases",
@@ -138,6 +142,8 @@ def requested_from_config(cfg: dict) -> dict:
         "monitor": bool(cfg["execution"]["monitor"]),
         "learning_algorithm": cfg["learning"]["algorithm"],
         "learning_mode": cfg["learning"]["mode"],
+        "topology_recompute_interval_s": cfg["topology"]["recompute_interval_s"],
+        "topology_matching": cfg["topology"]["matching"],
     }
 
 
@@ -152,6 +158,9 @@ def effective_from_counters(counters: dict, requested: dict) -> dict:
             counters.get("ge_gsl_queries", 0)
             + counters.get("ge_isl_queries", 0) > 0),
         "mbb": counters.get("mbb_events", 0) > 0,
+        "dynamic_topology": (
+            counters.get("topo_recomputes", 0) > 0
+            or counters.get("topo_dynamic_init", False)),
         # Evaluation legitimately performs no gradient updates; a learning
         # policy is effective when the real model made at least one routed
         # decision, regardless of train/eval mode.
@@ -390,17 +399,19 @@ def _is_nonneg_int(x) -> bool:
 
 def _learning_transition_accounting(mc: dict) -> list[str]:
     """Every learning decision opens exactly one transition; by the stop time
-    each is either remembered (transitions) or explicitly discarded at the
-    horizon (learning_discarded_at_stop). Any other difference means
-    transitions were silently lost."""
+    each is either remembered (transitions) or explicitly discarded
+    (learning_discarded_at_stop, or learning_discarded_at_rematch when a
+    topology rematch requeues a queued packet before its action is served).
+    Any other difference means transitions were silently lost."""
     if not all(_is_nonneg_int(mc.get(k)) for k in (
             "learning_decisions", "learning_transitions",
-            "learning_discarded_at_stop")):
+            "learning_discarded_at_stop", "learning_discarded_at_rematch")):
         return []  # the counter schema check reports the type problem
     if (mc["learning_decisions"] - mc["learning_transitions"]
-            != mc["learning_discarded_at_stop"]):
+            != mc["learning_discarded_at_stop"]
+            + mc["learning_discarded_at_rematch"]):
         return ["learning decisions != transitions + discarded_at_stop "
-                "(transitions silently lost)"]
+                "+ discarded_at_rematch (transitions silently lost)"]
     return []
 
 

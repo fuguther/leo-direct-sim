@@ -74,11 +74,14 @@ def test_delay_policy_uses_propagation_not_hops():
     topo = _topo(geo)
     cache = _cache_with([
         (1, {"visible_cells": [], "isl_queue_bits": {},
-             "isl_propagation_s": {"E": 100.0 / 299_792.458}},
+             "isl_propagation_s": {"E": {"peer": 2,
+                                         "value": 100.0 / 299_792.458}}},
          0.0, 0.01, 10.0),
         (2, {"visible_cells": [B], "isl_queue_bits": {},
-             "isl_propagation_s": {"W": 100.0 / 299_792.458,
-                                     "S": 10_000.0 / 299_792.458}},
+             "isl_propagation_s": {"W": {"peer": 1,
+                                         "value": 100.0 / 299_792.458},
+                                   "S": {"peer": 0,
+                                         "value": 10_000.0 / 299_792.458}}},
          0.0, 0.01, 10.0),
     ])
     d_hop, _ = routing.choose_next_hop(
@@ -94,11 +97,17 @@ def test_capacity_policy_avoids_advertised_congestion():
     topo = _topo(geo)
     cache = _cache_with([
         (3, {"visible_cells": [B], "isl_queue_bits": {},
-             "isl_propagation_s": {"W": 0.001, "S": 0.001}}, 0.0, 0.01, 10.0),
-        (1, {"visible_cells": [], "isl_queue_bits": {"E": 900_000_000},
-             "isl_propagation_s": {"E": 0.001}}, 0.0, 0.01, 10.0),
-        (2, {"visible_cells": [], "isl_queue_bits": {"E": 0},
-             "isl_propagation_s": {"E": 0.001}}, 0.0, 0.01, 10.0),
+             "isl_propagation_s": {"W": {"peer": 1, "value": 0.001},
+                                   "S": {"peer": 2, "value": 0.001}}},
+         0.0, 0.01, 10.0),
+        (1, {"visible_cells": [],
+             "isl_queue_bits": {"E": {"peer": 3, "value": 900_000_000}},
+             "isl_propagation_s": {"E": {"peer": 3, "value": 0.001}}},
+         0.0, 0.01, 10.0),
+        (2, {"visible_cells": [],
+             "isl_queue_bits": {"E": {"peer": 3, "value": 0}},
+             "isl_propagation_s": {"E": {"peer": 3, "value": 0.001}}},
+         0.0, 0.01, 10.0),
     ])
     dirs, status = routing.choose_next_hop(
         "capacity", 0, B, 1.0, geo, topo, cache, {}, 1e9, lambda km: km / 299_792.458)
@@ -121,12 +130,17 @@ def test_capacity_policy_uses_observed_dynamic_mcs_rate():
     prop_1000 = model.propagation_delay_s(1000.0)
     cache = _cache_with([
         (3, {"visible_cells": [B], "isl_queue_bits": {},
-             "isl_propagation_s": {"W": prop_1000, "S": prop_1000}},
+             "isl_propagation_s": {"W": {"peer": 1, "value": prop_1000},
+                                   "S": {"peer": 2, "value": prop_1000}}},
          0.0, 0.01, 10.0),
-        (1, {"visible_cells": [], "isl_queue_bits": {"E": 0},
-             "isl_propagation_s": {"E": prop_1000}}, 0.0, 0.01, 10.0),
-        (2, {"visible_cells": [], "isl_queue_bits": {"E": 0},
-             "isl_propagation_s": {"E": prop_1000}}, 0.0, 0.01, 10.0),
+        (1, {"visible_cells": [],
+             "isl_queue_bits": {"E": {"peer": 3, "value": 0}},
+             "isl_propagation_s": {"E": {"peer": 3, "value": prop_1000}}},
+         0.0, 0.01, 10.0),
+        (2, {"visible_cells": [],
+             "isl_queue_bits": {"E": {"peer": 3, "value": 0}},
+             "isl_propagation_s": {"E": {"peer": 3, "value": prop_1000}}},
+         0.0, 0.01, 10.0),
     ])
     dirs, status = routing.choose_next_hop(
         "capacity", 0, B, 1.0, geo, topo, cache,
@@ -157,8 +171,9 @@ def test_cropped_cache_metrics_cannot_make_remote_path_reachable(policy):
     for origin, direction in ((1, "E"), (2, "E")):
         cache.put(control.CacheEntry(
             origin,
-            {"serve_cells": [], "isl_queue_bits": {direction: 0},
-             "isl_propagation_s": {direction: 0.001}},
+            {"serve_cells": [],
+             "isl_queue_bits": {direction: {"peer": 3, "value": 0}},
+             "isl_propagation_s": {direction: {"peer": 3, "value": 0.001}}},
             0.0, 0.01, 10.0, hops=2))
 
     full_dirs, full_status = routing.choose_next_hop(
@@ -187,6 +202,74 @@ def test_oracle_is_labeled_analysis_upper_bound():
     res = kernel.run_simulation(cfg, [row(1, 0.0, A, B)], geometry=geo)
     assert res["routing_label"] == routing.ORACLE_LABEL == "analysis_upper_bound"
     assert res["mechanisms"]["requested"]["policy"] == "oracle"
+
+
+def test_dynamic_build_topology_uses_time_specific_neighbors():
+    def at(sat, dirs, t):
+        if t < 1.0:
+            nb = {0: {"E": 1}, 1: {"W": 0}}
+        else:
+            nb = {0: {"E": 2}, 2: {"W": 0}}
+        return {d: n for d, n in nb.get(sat, {}).items() if d in dirs}
+
+    geo = StaticGeometry(3, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+                         neighbors_at_fn=at)
+    assert routing.build_topology(geo, 3, ("E", "W"))[0] == {"E": 1}
+    assert routing.build_topology(geo, 3, ("E", "W"), t=1.0)[0] == {"E": 2}
+
+
+def test_dynamic_topology_recomputes_and_reports_effective_mechanism():
+    def at(sat, dirs, t):
+        if t < 0.5:
+            nb = {0: {"E": 1}, 1: {"W": 0}}
+        else:
+            nb = {0: {"E": 2}, 2: {"W": 0}}
+        return {d: n for d, n in nb.get(sat, {}).items() if d in dirs}
+
+    geo = StaticGeometry(3, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+                         neighbors_at_fn=at)
+    cfg = make_cfg({
+        "scenario": {"num_satellites": 3, "num_planes": 1,
+                      "duration_s": 1.6},
+        "topology": {"recompute_interval_s": 0.5},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    res = k.run()
+    assert res["natural_end"]
+    assert res["mechanism_counters"]["topo_recomputes"] == 3
+    assert res["mechanisms"]["requested"]["topology_recompute_interval_s"] == 0.5
+    assert res["mechanisms"]["effective"]["dynamic_topology"] is True
+
+
+def test_dynamic_topology_requeues_data_from_retired_isl_before_rebuild():
+    def at(sat, dirs, t):
+        if t < 0.5:
+            nb = {0: {"E": 1}, 1: {"W": 0}}
+        else:
+            nb = {0: {"E": 2}, 2: {"W": 0}}
+        return {d: n for d, n in nb.get(sat, {}).items() if d in dirs}
+
+    geo = StaticGeometry(3, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+                         neighbors_at_fn=at)
+    cfg = make_cfg({
+        "scenario": {"num_satellites": 3, "num_planes": 1,
+                      "duration_s": 1.0},
+        "topology": {"recompute_interval_s": 0.5},
+    })
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    pkt = kernel.DataPacket(1, "src", "dst", 8_000, None, 0.0)
+    old_link = k.isls[0]["E"]
+    old_link.data_q.append(pkt)
+    old_link.data_bits = pkt.bits
+    old_link.data_area.add(pkt.bits, 0.0)
+
+    k._recompute_topology(0.5)
+
+    assert k.pending[0] == [pkt]
+    assert k.pending[0].queued_bits == pkt.bits
+    assert old_link not in k._retired_isls
+    assert old_link in k._retired_isls_done
+    assert k.isls[0]["E"].peer == 2
 
 
 def test_integration_hop_vs_delay_paths_differ():

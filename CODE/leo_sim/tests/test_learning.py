@@ -284,3 +284,63 @@ def test_eval_model_decisions_are_effective_without_training_steps():
         {"ge_enabled": False, "learning_mode": "eval"},
     )
     assert effective["learning"] is True
+
+
+def _origin_entry_cache(origin, peer_claim, value):
+    """One cache entry from `origin` advertising isl_queue_bits E->{peer,value}."""
+    c = control.LocalCache()
+    payload = {"isl_queue_bits": {"E": {"peer": peer_claim, "value": value}},
+               "access_slots_used": 1, "access_slots_cap": 4,
+               "visible_cells": [B]}
+    c.put(control.CacheEntry(origin, payload, 5.0, 5.01, 10.0, hops=1))
+    return c
+
+
+def test_c5_c7_validate_queue_bits_against_advertisement_origin():
+    """Peer-bound isl_queue_bits must be validated against the topology edge
+    of the advertisement's ORIGIN, not the root satellite's own edges: after
+    a rematch the two can differ, and using the root would zero a valid
+    fresh metric."""
+    # root 0's E edge points at 3; the entry from origin 1 measured E on peer
+    # 2 (topo[1]["E"] == 2).  Using origin 1 accepts the fresh value.
+    topo = {0: {"E": 3, "N": 1}, 1: {"W": 0, "E": 2}, 2: {"W": 0},
+            3: {"W": 0}}
+    c = _origin_entry_cache(origin=1, peer_claim=2, value=1000)
+    own = _own()
+    for contract in ("C5", "C7"):
+        o = learning.build_observation(contract, 0, c, 6.0, topo, own)
+        q = o[learning.OWN_FEATURES]  # queue ratio is the 1st origin feature
+        assert q > 0.0, f"{contract} must accept a peer-matching entry"
+        assert o.shape == (learning.CONTRACT_DIMS[contract],), contract
+
+
+def test_c5_c7_reject_queue_bits_matching_only_root_edge():
+    """A record whose peer matches only the root satellite's edge (not the
+    origin's) must read as 0: it is stale for the real advertisement origin."""
+    # root 0 has E->2, but the entry from origin 1 measured E on peer 3
+    # (topo[1]["E"] == 3): the claimed peer 2 is wrong for origin 1 even
+    # though it happens to match root 0's own edge.
+    topo = {0: {"E": 2, "N": 1}, 1: {"W": 0, "E": 3}, 2: {"W": 0},
+            3: {"W": 0}}
+    c = _origin_entry_cache(origin=1, peer_claim=2, value=1000)
+    own = _own()
+    for contract in ("C5", "C7"):
+        o = learning.build_observation(contract, 0, c, 6.0, topo, own)
+        q = o[learning.OWN_FEATURES]
+        assert q == 0.0, f"{contract} must reject a stale-peer record"
+def test_c5_c7_reject_queue_bits_after_direction_removed():
+    """A record whose origin no longer has the advertised direction at all
+    (a rematch deleted it, so topo[origin] has no such key) must read as 0:
+    the stale metric must not be accepted just because no peer is left to
+    mismatch against."""
+    # origin 1 advertised E->{peer 2, value 1000}; after the rematch topo[1]
+    # has no "E" direction at all (peer=None)
+    topo = {0: {"E": 2, "N": 1}, 1: {"W": 0}, 2: {"W": 0}, 3: {"W": 0}}
+    c = _origin_entry_cache(origin=1, peer_claim=2, value=1000)
+    own = _own()
+    for contract in ("C5", "C7"):
+        o = learning.build_observation(contract, 0, c, 6.0, topo, own)
+        q = o[learning.OWN_FEATURES]
+        assert q == 0.0, f"{contract} must reject a removed-direction record"
+
+
