@@ -14,6 +14,9 @@
 
 ## 2026-08-20：文档真相源收敛
 
+- PR #58 已 squash 合并为 `e15c457d71db42e279d3599ecbbe5969608e8261`；主题为
+  实验就绪/Q0/平台能力/实验计划真相源收敛。GitHub CI `pytest` SUCCESS（15 s），
+  本地 `411 passed`，diff 无删除或移动路径。
 - 隔离分支：`codex/20260820-doc-consolidation`，基线 main
   `4c8d38ff38031ae134ae6738b3ebaa405e0f06f7`。
 - 开工基线：`python3 -m pytest CODE/leo_sim/tests CODE/tests -q` =
