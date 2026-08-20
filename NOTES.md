@@ -400,3 +400,10 @@
 - 固定 profile：140 星、20 s、MCS、1 s topology cadence、M-Lab 最大强连通 56-cell、8--16 s burst；三档只改变 `offered_mbps`。VM 三档均自然结束、`conservation_ok=true`、`receipt verify=verified`、原始 packet/service/availability ledger 重算 `validation.ok=true`。
 - 结果：50 Mbps = 1,299 offered / 613 delivered / 579 `ACCESS_REJECTED` / 107 `IN_SYSTEM_AT_STOP` / 0 overflow，wall 119 s，trace `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`；100 Mbps = 2,756 / 1,253 / 1,270 / 233 / 0，wall 129 s，trace `e6e7bd329f6822046f5d57611690d609a3647e1dca7639e170e985d891000e09`；200 Mbps = 5,551 / 2,382 / 2,597 / 405 / 167 holding overflow，wall 134 s，trace `f009c98d8be5757a4ba1afe585fed32d6974143582eb3c9d8657344413a834c6`。
 - 暂定解释：50 为低负载候选，100 为中负载候选，200 为压力/过载对照。它们是工程标定，不是正式论文效果结果；formal E0 仍需资源 RSS、三段时延 artifact/独立重算、学习 pilot、授权与 paired analysis 门禁。相关文档同步为 `ANALYSIS/EXPERIMENT-PROGRAM.md`、`ANALYSIS/CURRENT-EXPERIMENT-READINESS.md` 和 `EXPERIMENTS/experiment-program.yaml`。
+
+## 2026-08-21：main 0fc9427 资源剖析与四学习臂工程闭环
+
+- 部署：main `0fc9427520eb1d67e3493a521ea767c69b69575f`，canonical VM deployment receipt SHA=`c318945c852182c2d34e4d255a0ba79715ca31f030fb7f7c76be48065f0baae3`，source tree SHA=`390fd14375ab95aff885fe6de3758d5ea8638c74abd33a6e827da6832a987c94`。固定环境仍为 `/data/liguang13/conda-envs/leo-i39/bin/python`。
+- 资源剖析：同一 2 s、100 Mbps、56-cell M-Lab/burst 配置，1/2/4/8 线程均 natural end、conservation true、事件数 286,671、trace SHA=`f69b73b3e8bd02ff2b9e22c05d0c369d2bf1c36e7c7f8eab0bbe5c22f5165b02`；墙钟约 `14.298/14.412/15.648/14.707 s`，峰值 RSS `465,996/461,260/459,948/461,652 KiB`。没有可重复的多线程加速，后续 pilot 采用 1 线程串行，避免空耗 CPU。
+- 学习工程闭环：同一 2 s、100 Mbps、seed=7/41、`fast_train=true` 配置完成 Q-learning、DDQN(C3)、GAT、MPNN 各自 train→checkpoint→eval；8 个 run 均 natural end、`conservation_ok=true`、`receipt verify=verified`，8 个 raw ledger 独立 `metrics.validation.ok=true`。训练步数：Q-learning 112、DDQN(C3) 104、GAT 102、MPNN 103；每个 eval 均记录实际加载的训练 checkpoint SHA。
+- 训练—评估不是论文效果结果，只证明当前 main/VM 的学习执行链可跑通。仍未完成 replay/optimizer/target/RNG 完整续训、formal authorization cohort、V2 artifact→claim、逐包三段时延正式 gate 和 Q0 物理上界。
