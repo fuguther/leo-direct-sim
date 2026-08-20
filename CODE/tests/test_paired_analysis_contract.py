@@ -3,14 +3,15 @@
 The hosted workflow targets ``CODE/tests`` and therefore does not discover the
 canonical tests under ANALYSIS and PAPER.  This bridge inspects the tests that
 pytest actually collected: unless both canonical source modules are already
-present it runs both in one isolated subprocess; when both source modules are
-in the current session it skips, so a full-suite run does not duplicate them.
+present it runs only the missing modules in one isolated subprocess; when both
+source modules are in the current session it skips, so no module is duplicated.
 """
 
 from __future__ import annotations
 
 import subprocess
 import sys
+from collections.abc import Iterable
 from pathlib import Path
 
 import pytest
@@ -23,16 +24,45 @@ CANONICAL_TESTS = (
 )
 
 
+def _missing_canonical_tests(collected_item_paths: Iterable[Path]) -> tuple[str, ...]:
+    collected_paths = {path.resolve() for path in collected_item_paths}
+    return tuple(
+        relative
+        for relative in CANONICAL_TESTS
+        if (ROOT / relative).resolve() not in collected_paths
+    )
+
+
+@pytest.mark.parametrize(
+    ("collected", "expected"),
+    (
+        ((), CANONICAL_TESTS),
+        ((ROOT / CANONICAL_TESTS[0],), (CANONICAL_TESTS[1],)),
+        (
+            tuple(ROOT / relative for relative in CANONICAL_TESTS),
+            (),
+        ),
+    ),
+    ids=("all-missing", "one-missing", "none-missing"),
+)
+def test_missing_canonical_tests_do_not_duplicate_collected_modules(
+    collected: tuple[Path, ...],
+    expected: tuple[str, ...],
+) -> None:
+    assert _missing_canonical_tests(collected) == expected
+
+
 def test_canonical_analysis_and_claim_contracts_for_code_ci_scope(
     request: pytest.FixtureRequest,
 ) -> None:
-    canonical_paths = {(ROOT / relative).resolve() for relative in CANONICAL_TESTS}
-    collected_paths = {Path(item.path).resolve() for item in request.session.items}
-    if canonical_paths <= collected_paths:
+    missing = _missing_canonical_tests(
+        Path(item.path) for item in request.session.items
+    )
+    if not missing:
         pytest.skip("canonical ANALYSIS/PAPER source tests already collected")
 
     completed = subprocess.run(
-        [sys.executable, "-m", "pytest", *CANONICAL_TESTS, "-q"],
+        [sys.executable, "-m", "pytest", *missing, "-q"],
         cwd=ROOT,
         text=True,
         capture_output=True,
