@@ -1,6 +1,6 @@
 # LEO 拥塞控制与链路利用率实验总计划
 
-> CURRENT；最后核验：2026-08-21。当前 main `b356d03` 已部署 VM；M-Lab measurement-proxy + burst 合同、receipt horizon 修复、physical available-capacity 分母和非学习同 SHA E0 工程校准已完成。R1-A1、V2 artifact→claim 闭环、学习 VM smoke、逐包三段时延正式 gate、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
+> CURRENT；最后核验：2026-08-21。当前 main `4e89b5c` 已部署 VM；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 工程校准、receipt horizon 修复和 physical available-capacity 分母已完成。E0 低/中/高负载需在该新多 OD profile 上重标定；R1-A1、V2 artifact→claim 闭环、学习 VM smoke、逐包三段时延正式 gate、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
 
 ## 1. 研究主线与工作方法
 
@@ -36,33 +36,39 @@
 
 先关闭会改变任何后续结论的底层问题：
 
-- D1/D2 代码已合入并有回归测试，但 D1 仍缺 VM MCS 对照、D2 仍缺长窗 VM 验证；
+- D1/D2 代码已合入并有回归测试；当前 `4e89b5c` VM 已跑 MCS/动态拓扑多 OD T0，但 D1 旧平台逐距离 MCS 对照、D2 长窗语义验收仍缺；
 - **先关闭 R1-A1 奖励 blocker**，再冻结物理目标与学习语义；已修复的 mask 旁路不能代表整体信息公平完成；
 - 闭合 V2 `compile → review → authorize → run → receipt → metric recomputation → paired analysis → claim`；当前只完成矩阵编译/授权 Stage 1，真实 artifact→claim 闭环仍缺；
-- 当前 `ac0d019` 已完成非学习同 SHA 工程 smoke；正式授权 cohort、学习 VM smoke、formal VM E0/PILOT 仍需按 runbook 执行。
+- 当前 `4e89b5c` 已完成非学习同 SHA 工程 T0/cadence smoke；正式授权 cohort、学习 VM smoke、formal VM E0/PILOT 仍需按 runbook 执行。
 
 P0 的验收是“同一 SHA 的结果可以被重新算出来并拒绝篡改”，不是仅有 pytest 绿。
 
 ### P1：真实流量与测量底座
 
+#### TRAFFIC-T0（工程闭环，非论文结果）
+
+`mlab_multiod_burst_t0.yaml` 显式开启 `endpoints.mlab_auto`：从快照的 44,929 条测量、4,752 个有向 OD 对和 2,604 个聚合单元中，按最大强连通测量子图选择 56 个单元，默认上限 64；不用“所有城市都是网关”的假设。trace manifest 记录候选规模、选中单元、source weighting、源文件 SHA 和 `measurement_proxy` 边界。20 s VM T0 已自然结束、守恒、receipt 和 raw metrics 重算均通过；它证明数据映射链可执行，不证明论文效果。
+
 #### TOPOLOGY-CADENCE-CALIBRATION（工程校准，非论文结果）
 
-在进入 E0 负载标定前，先用同一份不可变的 M-Lab measurement-proxy + burst trace，比较拓扑重算间隔 `0.5/1/2/5 s`。这一步只回答“更新太慢会不会改变当前负载下的结果、以及运行成本如何”，不把短 smoke 当成 D2 长窗语义已经完全证明。
+在进入 E0 负载标定前，用同一份不可变的 M-Lab measurement-proxy + burst trace 比较拓扑重算间隔 `0.5/1/2/5 s`。这一步只回答“更新太慢会不会改变当前负载下的结果、以及运行成本如何”，不把短 smoke 当成 D2 长窗语义已经完全证明。
 
-本轮证据：本地 140 星、60 s、MCS、同一 trace 的四档均自然结束、守恒通过、receipt 可重算，均为 461 offered、440 delivered、20 access rejected、1 in-system；拓扑重算次数分别为 119、59、29、11，墙钟约 118.9、79.9、60.5、48.9 s。VM 另完成 66 星、10 s 的四档 plumbing smoke，四档均 18/18 delivered、自然结束、守恒通过、receipt verified；5 s 档的 receipt 也确认无丢包。随后在合入 `b356d03` 的同 SHA VM 上完成 140 星、60 s、MCS、1 s cadence 的 E0 工程运行：461 offered、440 delivered、20 access rejected、1 in-system，natural end/conservation/receipt verify 均通过，墙钟约 267 s，产生 29,656 个 physical availability windows。该运行仍是工程校准，不是 formal E0 或论文结果。
+本轮以合入并部署的 `4e89b5c` 为准：profile 为 140 星、20 s、MCS、50 Mbps、8--16 s burst、56 个测量强连通候选单元；四档均 natural end、conservation true、receipt verified，且 trace SHA 均为 `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`。fates 均为 1,299 offered、613 delivered、579 `ACCESS_REJECTED`、107 `IN_SYSTEM_AT_STOP`；raw packet/service/availability ledgers 独立重算均 `validation.ok=true`。该轮仍是工程校准，不是 formal E0 或论文结果。
 
-| cadence | 本地 140 星/60 s 结果 | 本地墙钟 | 工程判断 |
+| cadence | VM 140 星/20 s 结果 | VM 墙钟 | 工程判断 |
 |---:|---|---:|---|
-| 0.5 s | 440 delivered / 20 access rejected / 1 in-system；receipt 空错误 | 118.9 s | 成本最高，当前 trace 未显示结果收益 |
-| 1.0 s | 与其他档相同；receipt 空错误 | 79.9 s | **当前 E0 工程候选**，保留秒级拓扑变化 |
-| 2.0 s | 与其他档相同；receipt 空错误 | 60.5 s | 可作为成本敏感性对照 |
-| 5.0 s | 与其他档相同；receipt 空错误 | 48.9 s | 仅作为较慢更新的负对照，不直接作为主设置 |
+| 0.5 s | 613 delivered / 579 rejected / 107 in-system；39 次重算、21,726 availability samples | 171 s | 成本最高；只多采样，未改变交付/每包指标 |
+| 1.0 s | 与 2/5 s 逐项相同；19 次重算、10,932 samples | 120 s | **当前 E0 主候选**，保留秒级拓扑变化 |
+| 2.0 s | 与 1/5 s 逐项相同；9 次重算、10,932 samples | 107 s | 成本敏感性对照 |
+| 5.0 s | 与 1/2 s 逐项相同；3 次重算、10,932 samples | 94 s | 慢更新负对照，不直接作为主设置 |
 
-结论是暂定的：E0 先用 1 s，随后在低/中/高负载和长窗上复核；若 1 s 与 2 s 在交付、积压、利用率和切换指标上仍等价，才考虑把 2 s 作为成本更低的主设置。四档的最大 RSS 没有作为证据记录，因为同一 Python 进程连续运行时 macOS 的 `ru_maxrss` 是累计峰值，不能伪装成逐 run 内存比较；内存门禁留到独立的 E0 资源剖析。
+结论是暂定的：E0 先用 1 s，2 s 做成本敏感性，5 s 做慢更新负对照；只有在低/中/高负载和长窗上仍保持交付、积压、利用率和切换指标稳定，才考虑降低主 cadence。该轮没有把连续进程 RSS 当作逐 run 内存证据；内存门禁留到独立的 E0 资源剖析。
 
 #### E0-LOAD-CALIBRATION（工程负载标定，非正式论文结果）
 
-在相同的 140 星、60 s、MCS、1 s 拓扑 cadence、三 OD M-Lab measurement-proxy + 20--40 s burst 条件下，只改变 `offered_mbps`。这一步的目标是找出“没有明显排队”“开始出现可解释积压”“压力明显但仍能自然结束”的三个候选区间；它不是正式效果比较，也不冻结论文最终负载。
+PR #93 改变了 M-Lab 端点选择（从显式三点变为有界强连通多 OD）；此前 50/100/200 Mbps 三 OD 表格只能作为历史先验，不能直接沿用。下一轮必须在 `4e89b5c`、56-cell profile、cadence 1 s 上重跑并记录同一 trace/config/VM 证据。
+
+以下旧表是三 OD profile 的历史工程先验，不能作为当前主线的冻结值。新一轮仍以“只改变 `offered_mbps`、找出无拥塞/可解释积压/明显压力三个区间”为目标，但必须在新 56-cell 多 OD profile 上重跑；它不是正式效果比较，也不冻结论文最终负载。
 
 | offered load | offered / delivered | 主要非交付结果 | 本地 receipt | VM receipt |
 |---:|---:|---|---|---|

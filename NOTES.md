@@ -378,3 +378,18 @@
 - 部署：canonical VM `/data/论文/leo-direct-sim`，source tree SHA=`d391dff5431c44c8af6b42302b2611b8ba4c1dc06b64a871d5f6a569cfcb64a8`，deployment receipt SHA=`ea343bc8d9b7fefbe2f88cddf594dfe97d7fce850db66a8170b46759c6e11578`。VM 使用固定 `leo-i39` 环境（Python 3.11.15、PyYAML 6.0.2、NumPy 1.24.3、SimPy 4.0.1）；系统 `python3` 缺 PyYAML，不能作为运行环境。
 - VM 工程 E0（非 formal、非论文结果）：140 星、60 s、MCS、1 s 拓扑 cadence、M-Lab 三 OD + 20--40 s burst、50 Mbps；natural_end=`true`，`conservation_ok=true`，`receipt verify=verified`，461 offered / 440 `DELIVERED` / 20 `ACCESS_REJECTED` / 1 `IN_SYSTEM_AT_STOP`，0 queue overflow，wall=`267 s`；`link_available_windows=29,656`，ledgers=`93 MB`。结果证明同一 SHA 的非学习测量链可以在 VM 跑通，不证明正式 E0 或论文结论。
 - 当前边界：available-capacity 分母代码和 VM ledger 已有证据；逐窗口独立重算、每包 queue/tx/prop 三段时延和三段和 gate、D1 旧平台 MCS 对照、D2 长窗语义、R1-A1、学习 VM smoke、formal authorization cohort 仍是后续门禁。
+
+## 2026-08-21：PR #93 合入与 M-Lab 多 OD T0 闭环
+
+- PR #93 `feat: add bounded M-Lab multi-OD endpoint mapping` 已通过 CI（全量 `582 passed, 1 skipped, 3 subtests passed`）并合入 main；merge SHA=`4e89b5c4d0de789b1d89043e5be5fd98b6fa7ea9`。
+- 新增显式 `endpoints.mlab_auto=true` 与 `mlab_max_sites`：从完整快照的 44,929 行、4,752 个有向 OD 对、2,604 个聚合单元中选择最大测量强连通子图；默认上限 64，本 profile 选中 56 个单元。选择规则、单元列表、候选规模和 measured-outgoing source weighting 写入 trace manifest；显式端点模式不受影响。
+- canonical VM 已部署该 exact SHA；deployment receipt SHA=`8b22597b548eea77ffa5dce79694ad9c4c690b598270127b5b3cae71c85b6178`，source tree SHA=`1c231110c23d2236cc6667a9cb551b2a9a4ae69b4ed4718b1696f16f5789546f`。
+- VM T0 profile `mlab_multiod_burst_t0.yaml`（140 星、20 s、MCS、1 s cadence、50 Mbps、8--16 s burst、1 Mbps packets）：trace SHA=`f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`，1,299 offered、613 delivered、579 `ACCESS_REJECTED`、107 `IN_SYSTEM_AT_STOP`；natural end、conservation、receipt verify 均通过。
+- T0 原始 ledgers：20,935 packet events、1,648 service windows、10,932 availability windows；独立 metrics 重算与存档完全相等。该运行是工程 T0，不是 formal 或论文结果。
+
+## 2026-08-21：同一 M-Lab 多 OD trace 的 VM topology cadence 校准
+
+- 四档只改变 `topology.recompute_interval_s`，保持 config 之外的流量/seed/端点选择和 trace identity 不变；四档 trace SHA 均为 `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`。
+- `0.5 s / 1.0 s / 2.0 s / 5.0 s` 均 natural end、conservation true、receipt verified，fates 均为 `613 delivered / 579 ACCESS_REJECTED / 107 IN_SYSTEM_AT_STOP`；四档 raw ledgers 独立重算 metrics 均 `validation.ok=true`。
+- VM wall-clock / topology recomputes / availability samples：`0.5 s = 171 s / 39 / 21,726`；`1.0 s = 120 s / 19 / 10,932`；`2.0 s = 107 s / 9 / 10,932`；`5.0 s = 94 s / 3 / 10,932`。1/2/5 s 的每包指标和链路指标逐项相同；0.5 s 仅增加 availability 采样（capacity 浮点差在采样表示层），不改变交付/时延汇总。
+- 暂定决策：E0 主候选保留 `1.0 s`；`2.0 s` 做成本敏感性，`5.0 s` 做慢更新负对照。该 20 s 校准不能替代 D2 长窗语义证明；下一阶段为同 exact SHA 的 E0 低/中/高负载标定。
