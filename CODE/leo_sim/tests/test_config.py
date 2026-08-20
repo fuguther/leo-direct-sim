@@ -47,6 +47,13 @@ def test_available_capacity_sampling_interval_is_positive():
         config.resolve_config({"execution": {"available_capacity_interval_s": 0}})
     with pytest.raises(config.ConfigError, match="available_capacity_interval_s"):
         config.resolve_config({"execution": {"available_capacity_interval_s": True}})
+    with pytest.raises(config.ConfigError, match="available_capacity_interval_s"):
+        config.resolve_config({"execution": {"available_capacity_interval_s": 0.001}})
+    with pytest.raises(config.ConfigError, match="100000"):
+        config.resolve_config({
+            "scenario": {"duration_s": 2000.0},
+            "execution": {"available_capacity_interval_s": 0.01},
+        })
 
 
 def test_burst_window_must_intersect_scenario_horizon():

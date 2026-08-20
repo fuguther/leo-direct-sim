@@ -1547,52 +1547,134 @@ class Kernel:
             self.geometry.slant_range_km(sat, lat, lon, t),
             rf, self.mcs_table)
 
-    def _record_available_capacity_sample(self, start: float, end: float,
-                                           sample_at: float) -> None:
-        """Record one fixed-interval physical link-capacity sample.
+    def _metric_capacity_segments(self, stage: str, sat: int,
+                                  start: float, end: float, *,
+                                  peer: int | None = None,
+                                  lat: float | None = None,
+                                  lon: float | None = None):
+        """Yield geometry/rate-stable pieces of one metric interval.
 
-        The midpoint sample and explicit interval are part of the evidence
-        contract.  We do not infer availability from service windows, so idle
-        links remain visible in the denominator.
+        A midpoint is not sufficient evidence for a moving link: visibility
+        can change inside an interval, and an MCS threshold can be crossed
+        and crossed back before the next sample.  The geometry provider's
+        certified change/root APIs provide deterministic cut points.
         """
         if end <= start:
             return
-        rows: list[tuple[str, str, float]] = []
+        if stage == "isl":
+            available = lambda t: self.geometry.isl_available(sat, peer, t)
+            next_change = lambda a, b: self.geometry.next_isl_change(
+                sat, peer, a, b)
+            range_at = lambda t: self.geometry.isl_range_km(sat, peer, t)
+            next_range_under = lambda threshold, a, b: (
+                self.geometry.next_isl_range_under(
+                    sat, peer, threshold, a, b))
+            rf = self.rf_isl
+        else:
+            available = lambda t: self.geometry.gsl_available(sat, lat, lon, t)
+            next_change = lambda a, b: self.geometry.next_gsl_change(
+                sat, lat, lon, a, b)
+            range_at = lambda t: self.geometry.slant_range_km(
+                sat, lat, lon, t)
+            next_range_under = lambda threshold, a, b: (
+                self.geometry.next_slant_range_under(
+                    sat, lat, lon, threshold, a, b))
+            rf = self.rf_uplink if stage == "uplink" else self.rf_downlink
+
+        boundaries = [float(start), float(end)]
+        eps = min(1e-9, max((end - start) * 1e-8, 1e-12))
+
+        def add_roots(root_fn):
+            cursor = float(start)
+            for _ in range(1024):
+                if cursor >= end - eps:
+                    return
+                nxt = root_fn(cursor, end)
+                if nxt is None:
+                    return
+                nxt = float(nxt)
+                if not (cursor < nxt <= end):
+                    raise KernelError(
+                        f"non-monotone geometry root {nxt} from {cursor}")
+                boundaries.append(nxt)
+                if nxt >= end - eps:
+                    return
+                cursor = nxt
+            raise KernelError("geometry change certification exceeded 1024 roots")
+
+        add_roots(next_change)
+        if self.rate_model == "mcs":
+            # Only thresholds that could be reached in this interval need a
+            # root search.  RANGE_RATE_KM_S is conservative for supported
+            # constellation geometry and keeps the opt-in metric affordable.
+            probe_times = (start, (start + end) / 2.0,
+                           max(start, end - eps))
+            ranges = [float(range_at(t)) for t in probe_times]
+            if any(not math.isfinite(v) or v <= 0 for v in ranges):
+                raise KernelError("non-finite geometry range in capacity metric")
+            margin = model.RANGE_RATE_KM_S * (end - start)
+            lo, hi = min(ranges) - margin, max(ranges) + margin
+            thresholds = link_budget.mcs_rate_threshold_ranges_km(
+                rf, self.mcs_table)
+            for threshold in thresholds:
+                if lo <= threshold <= hi:
+                    add_roots(lambda a, b, threshold=threshold:
+                              next_range_under(threshold, a, b))
+
+        unique = sorted(set(boundaries))
+        for a, b in zip(unique, unique[1:]):
+            if b - a <= eps:
+                continue
+            t = (a + b) / 2.0
+            if not available(t):
+                continue
+            rate = self._metric_available_rate(
+                stage, sat, t, peer=peer, lat=lat, lon=lon)
+            if rate > 0:
+                yield float(a), float(b), float(rate)
+
+    def _record_available_capacity_sample(self, start: float, end: float,
+                                           sample_at: float) -> None:
+        """Record geometry-segmented fixed-interval capacity quadrature.
+
+        ``sample_at`` remains in this private signature for compatibility with
+        early diagnostic probes; certified segment midpoints are authoritative.
+        Idle physical links remain in the denominator.
+        """
+        if end <= start:
+            return
         for cell, (lat, lon) in sorted(self._metric_endpoint_specs.items()):
             for sat in range(self.num_sats):
-                if not self.geometry.gsl_available(sat, lat, lon, sample_at):
-                    continue
-                rate = self._metric_available_rate(
-                    "uplink", sat, sample_at, lat=lat, lon=lon)
-                if rate > 0:
-                    rows.append(("uplink", f"gsl:uplink:{sat}:{cell}", rate))
-                rate = self._metric_available_rate(
-                    "downlink", sat, sample_at, lat=lat, lon=lon)
-                if rate > 0:
-                    rows.append(("downlink", f"gsl:downlink:{sat}:{cell}", rate))
+                for stage in ("uplink", "downlink"):
+                    for seg_start, seg_end, rate in self._metric_capacity_segments(
+                            stage, sat, start, end, lat=lat, lon=lon):
+                        self.link_available_windows.append({
+                            "stage": stage,
+                            "link_id": f"gsl:{stage}:{sat}:{cell}",
+                            "start": seg_start,
+                            "end": seg_end,
+                            "rate_bps": float(rate),
+                            "capacity_bits": float(rate) * (seg_end - seg_start),
+                        })
 
-        # Use the topology generation that is actually live at this sample;
-        # recomputing a hypothetical matching here would count links the
-        # simulator has not yet installed when cadence is intentionally slow.
-        topo = self.topo
-        for sat in range(self.num_sats):
-            for _direction, peer in sorted(topo[sat].items()):
-                if not self.geometry.isl_available(sat, peer, sample_at):
-                    continue
-                rate = self._metric_available_rate(
-                    "isl", sat, sample_at, peer=peer)
-                if rate > 0:
-                    rows.append(("isl", f"isl:{sat}:{peer}", rate))
-
-        for stage, link_id, rate in sorted(rows, key=lambda x: (x[0], x[1])):
-            self.link_available_windows.append({
-                "stage": stage,
-                "link_id": link_id,
-                "start": float(start),
-                "end": float(end),
-                "rate_bps": float(rate),
-                "capacity_bits": float(rate) * (end - start),
-            })
+        # A retired ISL generation may drain an in-flight packet after a
+        # rematch.  Include all generations, deduplicated by physical directed
+        # edge, so the independent denominator cannot undercount that service.
+        edges = {(sat, peer) for sat in range(self.num_sats)
+                 for peer in self.topo[sat].values()}
+        for link in list(self._retired_isls) + list(self._retired_isls_done):
+            edges.add((link.sat, link.peer))
+        for sat, peer in sorted(edges):
+            for seg_start, seg_end, rate in self._metric_capacity_segments(
+                    "isl", sat, start, end, peer=peer):
+                self.link_available_windows.append({
+                    "stage": "isl",
+                    "link_id": f"isl:{sat}:{peer}",
+                    "start": seg_start,
+                    "end": seg_end,
+                    "rate_bps": float(rate),
+                    "capacity_bits": float(rate) * (seg_end - seg_start),
+                })
 
     def _available_capacity_ticker(self):
         configured = self.cfg_ex["available_capacity_interval_s"]

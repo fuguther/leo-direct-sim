@@ -710,10 +710,14 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
     interval = ex["available_capacity_interval_s"]
     if (interval is not None and (
             isinstance(interval, bool)
-            or interval <= 0
+            or interval < 0.01
             or not math.isfinite(interval))):
         raise ConfigError(
-            "execution.available_capacity_interval_s must be null or finite and > 0")
+            "execution.available_capacity_interval_s must be null or finite and >= 0.01")
+    if interval is not None and sc["duration_s"] / interval > 100_000:
+        raise ConfigError(
+            "execution.available_capacity_interval_s creates more than "
+            "100000 sampling intervals")
 
 
 def trace_identity_payload(resolved: dict) -> dict:

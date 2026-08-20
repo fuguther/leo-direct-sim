@@ -179,3 +179,33 @@ def test_kernel_persists_real_event_metrics_for_a_delivered_packet():
     assert result["link_available_windows"]
     assert any(v["available_capacity_bits"] > v["capacity_bits"]
                for v in result["congestion_metrics"]["links"].values())
+
+
+def test_capacity_metric_splits_scripted_visibility_change_inside_interval():
+    class Flap(StaticGeometry):
+        def __init__(self):
+            super().__init__(1, visible=lambda *_: True,
+                             gsl_changes=[0.25, 0.75])
+
+        def ground_visible(self, sat_id, lat, lon, t):
+            return 0.25 <= t < 0.75
+
+    result = kernel.run_simulation(
+        make_cfg({"scenario": {"duration_s": 1.0},
+                  "execution": {"available_capacity_interval_s": 1.0}}),
+        [row(1, 0.0, cell(0.0, 0.0), cell(0.0, 10.0))],
+        geometry=Flap())
+    link_id = f"gsl:uplink:0:{cell(0.0, 0.0)}"
+    windows = [w for w in result["link_available_windows"]
+               if w["link_id"] == link_id]
+    assert [(w["start"], w["end"]) for w in windows] == [(0.25, 0.75)]
+
+
+def test_capacity_metric_includes_retired_isl_generation():
+    from CODE.leo_sim.tests.test_dynamic_topology import _cfg, _geometry
+
+    cfg = _cfg()
+    cfg["config"]["execution"]["available_capacity_interval_s"] = 1.0
+    result = kernel.run_simulation(cfg, [], geometry=_geometry())
+    assert any(w["link_id"] == "isl:0:1"
+               for w in result["link_available_windows"])
