@@ -1,0 +1,58 @@
+{
+  "taskId": "offload:leo-direct-sim:Q0-LIT-MEETING:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "完成Q0信息裁剪与oracle文献地图。确认Q0-I应对应当前状态SMDP/DP，Q0-F应对应future-known offline scheduling upper bound，部分观测进入POMDP/belief框架，队列信息裁剪需谨慎使用backpressure理论，DTN/contact-plan提供未来接触建模参考。当前Q0-F和完整验证链仍未完成。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "Q0-F仍处设计阶段，不能作为已有实验结果",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260818.md#L2"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "信息裁剪必须区分观测缺失和转移未知",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260818.md#L2"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "tiny DP不能替代Q0-F clairvoyant oracle",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md#L2"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "先冻结Q0-I/Q0-F合同",
+    "实现tiny event DP与future CP-SAT/MILP交叉验证",
+    "禁止在正式实验中将未完成Q0-F称为上界"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-ALGO-RESEARCH-20260818.md#L2",
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md#L2",
+    "github://fuguther/leo-direct-sim/blob/bfa08982e30924cb913ac4a23f5de26f7a0a6668/ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md#L2"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "Q0-F未来trace接口未冻结",
+    "CP-SAT/MILP交叉验证未完成",
+    "deadline边界语义未冻结",
+    "planned-vs-executed replay未完成"
+  ]
+}
