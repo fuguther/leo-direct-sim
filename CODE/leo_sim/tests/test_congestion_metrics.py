@@ -217,3 +217,28 @@ def test_capacity_metric_includes_retired_isl_generation():
            if w["link_id"] == "isl:0:2"]
     assert [(w["start"], w["end"]) for w in old] == [(0.0, 0.5)]
     assert [(w["start"], w["end"]) for w in new] == [(0.5, 1.0)]
+
+
+def test_capacity_metric_cuts_a_retired_generation_at_drain_time():
+    from CODE.leo_sim.tests.test_dynamic_topology import _cfg, _geometry
+
+    cfg = _cfg()
+    cfg["config"]["scenario"]["duration_s"] = 2.0
+    cfg["config"]["links"]["isl_rate_mbps"] = 0.004
+    cfg["config"]["execution"]["available_capacity_interval_s"] = 0.5
+    geo = _geometry()
+    geo.isl_available = lambda _a, _b, _t: True
+    k = kernel.Kernel(cfg, [], geometry=geo)
+    old = k.isls[0]["E"]
+    # Keep the old generation in service past the rematch, then let it drain
+    # inside a later capacity window.
+    cp = kernel.ControlPacket(1, 0, 1, 0.0, 10.0, 1, 5_000, {})
+    k.ctrl_ledger.register(cp.iid, cp.bits)
+    old.put_ctrl(cp)
+    result = k.run()
+    old_windows = [w for w in result["link_available_windows"]
+                   if w["link_id"] == "isl:0:1"]
+    assert old_windows
+    assert max(w["end"] for w in old_windows) <= old.drained_at + 1e-9
+    assert any(w["end"] == pytest.approx(old.drained_at)
+               for w in old_windows)

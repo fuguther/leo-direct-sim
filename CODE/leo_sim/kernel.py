@@ -1666,17 +1666,28 @@ class Kernel:
         # A retired ISL generation may drain an in-flight packet after a
         # rematch.  Include all generations, deduplicated by physical directed
         # edge, so the independent denominator cannot undercount that service.
-        edges = {(sat, peer) for sat in range(self.num_sats)
-                 for peer in self.topo[sat].values()}
-        # A just-drained generation belongs to the interval ending at its
-        # drain instant, but not to later windows.  Live retired generations
-        # remain candidates because they may still finish an in-flight service.
-        for link in list(self._retired_isls) + list(self._retired_isls_done):
-            if link.drained_at is None or link.drained_at > start + 1e-12:
-                edges.add((link.sat, link.peer))
+        current_edges = {(sat, peer) for sat in range(self.num_sats)
+                         for peer in self.topo[sat].values()}
+        live_edges = {(link.sat, link.peer) for link in self._retired_isls}
+        drained_by_edge: dict[tuple[int, int], list[float]] = {}
+        for link in self._retired_isls_done:
+            if link.drained_at is not None and link.drained_at > start + 1e-12:
+                drained_by_edge.setdefault((link.sat, link.peer), []).append(
+                    float(link.drained_at))
+        edges = current_edges | live_edges | set(drained_by_edge)
         for sat, peer in sorted(edges):
+            # If no current/live generation owns this edge, a drained
+            # generation contributes only until its last drain instant.  This
+            # prevents a service ending mid-window from inflating the physical
+            # capacity denominator through the rest of that window.
+            edge_end = end
+            if ((sat, peer) not in current_edges
+                    and (sat, peer) not in live_edges):
+                edge_end = min(end, max(drained_by_edge[(sat, peer)]))
+            if edge_end <= start + 1e-12:
+                continue
             for seg_start, seg_end, rate in self._metric_capacity_segments(
-                    "isl", sat, start, end, peer=peer):
+                    "isl", sat, start, edge_end, peer=peer):
                 self.link_available_windows.append({
                     "stage": "isl",
                     "link_id": f"isl:{sat}:{peer}",
@@ -1685,6 +1696,37 @@ class Kernel:
                     "rate_bps": float(rate),
                     "capacity_bits": float(rate) * (seg_end - seg_start),
                 })
+
+    def _truncate_drained_capacity_windows(self) -> None:
+        """Clip an interval that contained a retired generation's drain.
+
+        The sampler cannot know the future drain instant when it opens a
+        window.  At natural stop all retired generations have a definitive
+        ``drained_at``; clip the raw evidence before metrics recomputation so
+        an old generation is not counted after its final service.
+        """
+        drains = {
+            f"isl:{link.sat}:{link.peer}": float(link.drained_at)
+            for link in self._retired_isls_done
+            if link.drained_at is not None
+        }
+        if not drains:
+            return
+        clipped = []
+        for window in self.link_available_windows:
+            drain = drains.get(window["link_id"])
+            if drain is None or window["start"] >= drain:
+                clipped.append(window)
+                continue
+            end = min(float(window["end"]), drain)
+            if end <= float(window["start"]) + 1e-12:
+                continue
+            item = dict(window)
+            item["end"] = end
+            item["capacity_bits"] = float(item["rate_bps"]) * (
+                end - float(item["start"]))
+            clipped.append(item)
+        self.link_available_windows = clipped
 
     def _available_capacity_ticker(self):
         configured = self.cfg_ex["available_capacity_interval_s"]
@@ -3433,6 +3475,8 @@ class Kernel:
         for lnk in self._all_isls():
             lnk.data_area.close(stop_time)
             lnk.ctrl_area.close(stop_time)
+        self._purge_drained_retired()
+        self._truncate_drained_capacity_windows()
         queue_area = {
             "uplink": sum(ep.area.area for ep in self.endpoints.values()),
             "downlink": sum(self.downlinks[s].area.area for s in range(self.num_sats)),
