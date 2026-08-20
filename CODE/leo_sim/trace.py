@@ -18,6 +18,7 @@ import hashlib
 import json
 import math
 import os
+from collections import deque
 from pathlib import Path
 
 from . import config, grid, population, rng
@@ -200,12 +201,15 @@ def _rate_multiplier(mode, t, src_lon, dm):
     return 1.0
 
 
-def _load_mlab_weights(endpoints, grid_deg: float, agg_deg: float):
-    """Aggregate M-Lab throughput samples onto active aggregate cells.
+def _read_mlab_measurements(grid_deg: float, agg_deg: float):
+    """Read the immutable M-Lab snapshot and aggregate it onto V2 cells.
 
     The mapping MUST use the resolved config's grid degrees — keying weights
     on any other grid silently disconnects them from the endpoints (the old
-    fixed-default grid did exactly that and hid behind 1e-9 smoothing)."""
+    fixed-default grid did exactly that and hid behind 1e-9 smoothing).  This
+    helper intentionally returns every measured OD pair; endpoint selection is
+    a separate, explicit step for the opt-in multi-OD mode.
+    """
     if not REPO_MLAB_CSV.exists():
         raise TraceError(f"m-lab source not found: {REPO_MLAB_CSV}")
     weights: dict[tuple[str, str], float] = {}
@@ -256,6 +260,177 @@ def _load_mlab_weights(endpoints, grid_deg: float, agg_deg: float):
     }
 
 
+def _load_mlab_weights(endpoints, grid_deg: float, agg_deg: float):
+    """Aggregate M-Lab weights and keep the historic explicit-site API."""
+    weights, summary = _read_mlab_measurements(grid_deg, agg_deg)
+    # Keep the coverage check in compile_trace as the single fail-closed gate;
+    # this function deliberately does not smooth or delete any source pairs.
+    return weights, summary
+
+
+def _strongly_connected_components(adjacency: dict[str, list[str]]) -> list[list[str]]:
+    """Return deterministic SCCs without recursion depth hazards."""
+    nodes = sorted(set(adjacency) | {
+        dst for values in adjacency.values() for dst in values
+    })
+    visited: set[str] = set()
+    order: list[str] = []
+    for start in nodes:
+        if start in visited:
+            continue
+        visited.add(start)
+        stack: list[tuple[str, int]] = [(start, 0)]
+        while stack:
+            node, index = stack[-1]
+            children = adjacency.get(node, [])
+            if index < len(children):
+                child = children[index]
+                stack[-1] = (node, index + 1)
+                if child not in visited:
+                    visited.add(child)
+                    stack.append((child, 0))
+            else:
+                order.append(node)
+                stack.pop()
+
+    reverse: dict[str, list[str]] = {node: [] for node in nodes}
+    for src, destinations in adjacency.items():
+        for dst in destinations:
+            reverse.setdefault(dst, []).append(src)
+    for values in reverse.values():
+        values.sort()
+
+    components: list[list[str]] = []
+    visited.clear()
+    for start in reversed(order):
+        if start in visited:
+            continue
+        component: list[str] = []
+        stack = [start]
+        visited.add(start)
+        while stack:
+            node = stack.pop()
+            component.append(node)
+            for child in reversed(reverse.get(node, [])):
+                if child not in visited:
+                    visited.add(child)
+                    stack.append(child)
+        components.append(sorted(component))
+    return components
+
+
+def _find_bounded_cycle(component: set[str], adjacency: dict[str, list[str]],
+                        max_sites: int) -> list[str] | None:
+    """Find a deterministic simple directed cycle no longer than max_sites."""
+    for start in sorted(component):
+        queue: deque[tuple[str, list[str]]] = deque([(start, [start])])
+        while queue:
+            node, path = queue.popleft()
+            for child in adjacency.get(node, []):
+                if child == start and len(path) >= 2:
+                    return path
+                if len(path) >= max_sites:
+                    continue
+                if child in component and child not in path:
+                    queue.append((child, path + [child]))
+    return None
+
+
+def _select_mlab_endpoints(grid_deg: float, agg_deg: float,
+                           max_sites: int) -> tuple[list[dict], dict, dict]:
+    """Select a bounded, closed, measurement-supported endpoint set.
+
+    M-Lab contains many client/server cells that are only one-way (a client
+    cell may never appear as a server).  Since V2 makes every active endpoint
+    an emitting traffic source, selecting those rows blindly would either fail
+    at compile time or require an unjustified fallback.  We therefore choose
+    the largest strongly connected measured subgraph, then apply a
+    deterministic cap.  The selected cell IDs and rule are recorded in the
+    trace manifest.
+    """
+    weights, summary = _read_mlab_measurements(grid_deg, agg_deg)
+    adjacency: dict[str, list[str]] = {}
+    for (src, dst), value in weights.items():
+        if src == dst or value <= 0.0:
+            continue
+        adjacency.setdefault(src, []).append(dst)
+    for src in adjacency:
+        adjacency[src] = sorted(set(adjacency[src]))
+    components = [set(c) for c in _strongly_connected_components(adjacency)
+                  if len(c) >= 2]
+    if not components:
+        raise TraceError(
+            "mlab_auto requires at least one measured strongly connected "
+            "component with two aggregate cells")
+
+    def rank(component: set[str]):
+        internal = sum(weights.get((src, dst), 0.0)
+                       for src in component for dst in adjacency.get(src, [])
+                       if dst in component)
+        return (-len(component), -internal, tuple(sorted(component)))
+
+    component = min(components, key=rank)
+    if len(component) <= max_sites:
+        selected = sorted(component)
+    else:
+        cycle = _find_bounded_cycle(component, adjacency, max_sites)
+        if cycle is None:
+            raise TraceError(
+                "mlab_auto endpoint cap cannot preserve a measured directed "
+                f"cycle of length <= {max_sites}; increase mlab_max_sites")
+        selected_set = set(cycle)
+        candidates = sorted(
+            (node for node in component if node not in selected_set),
+            key=lambda node: (
+                -sum(weights.get((node, dst), 0.0)
+                    for dst in adjacency.get(node, []) if dst in component),
+                node,
+            ),
+        )
+        # Adding a node only when it has a measured edge into the existing set
+        # preserves the invariant that every selected source has a measured
+        # destination within the active endpoint set.
+        for node in candidates:
+            if len(selected_set) >= max_sites:
+                break
+            if any(dst in selected_set for dst in adjacency.get(node, [])):
+                selected_set.add(node)
+        selected = sorted(selected_set)
+
+    selected_set = set(selected)
+    if any(not any(dst in selected_set for dst in adjacency.get(src, []))
+           for src in selected):
+        raise TraceError(
+            "mlab_auto selection produced an endpoint without a measured "
+            "outgoing OD; refusing silent demand fallback")
+
+    endpoints = []
+    for cell in selected:
+        lat, lon = grid.grid_center(cell)
+        outgoing = sum(weights.get((cell, dst), 0.0)
+                       for dst in selected_set if dst != cell)
+        endpoints.append({
+            "name": f"mlab:{cell}",
+            "lat": lat,
+            "lon": lon,
+            "weight": outgoing,
+            "agg_grid_id": cell,
+        })
+    summary = dict(summary)
+    summary["endpoint_selection"] = {
+        "method": "largest_strongly_connected_component",
+        "candidate_aggregate_cells": len(set(adjacency) | {
+            d for values in adjacency.values() for d in values
+        }),
+        "candidate_scc_count": len(components),
+        "selected_aggregate_cells": len(selected),
+        "selected_aggregate_ids": selected,
+        "max_sites": max_sites,
+        "source_weighting": "measured_outgoing_throughput",
+    }
+    return endpoints, weights, summary
+
+
 def compile_trace(resolved: dict, out_dir: str) -> dict:
     """Compile an immutable trace. Returns the manifest dict."""
     cfg = resolved["config"]
@@ -283,6 +458,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
     source_type = "synthetic_generator"
     source_path: str | None = None
     endpoints: list[dict] = []  # csv mode fills this from the CSV itself
+    mlab_weights = None
     mlab_summary = None
 
     if mode == "csv":
@@ -381,12 +557,16 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
             source_type = "population_raster"
             source_path = population_table.source_path
         else:
-            endpoints = _endpoints(cfg)
+            if mode == "mlab" and ep["mlab_auto"]:
+                endpoints, mlab_weights, mlab_summary = _select_mlab_endpoints(
+                    ep["grid_deg"], ep["aggregation_deg"], ep["mlab_max_sites"])
+            else:
+                endpoints = _endpoints(cfg)
         gen = rng.streams(sc["seed"])["demand"]
-        mlab_weights = None
         if mode == "mlab":
-            mlab_weights, mlab_summary = _load_mlab_weights(
-                endpoints, ep["grid_deg"], ep["aggregation_deg"])
+            if mlab_weights is None:
+                mlab_weights, mlab_summary = _load_mlab_weights(
+                    endpoints, ep["grid_deg"], ep["aggregation_deg"])
             provenance = "measurement_proxy"
             input_hash = hashlib.sha256(REPO_MLAB_CSV.read_bytes()).hexdigest()
             source_type = "mlab_snapshot"
@@ -493,7 +673,10 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
             "rule": (
                 "grid_id(lat,lon,grid_deg) then aggregate_id(...,aggregation_deg)"
                 if mode == "csv" else
-                "generated endpoint aggregate IDs"
+                ("M-Lab aggregate cells selected from the largest measured "
+                 "strongly connected component, bounded by endpoints.mlab_max_sites"
+                 if mode == "mlab" and ep["mlab_auto"] else
+                 "generated endpoint aggregate IDs")
             ),
         },
         "measurement_summary": mlab_summary,

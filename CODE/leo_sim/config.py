@@ -70,6 +70,11 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "grid_deg": (int, float),
         "aggregation_deg": (int, float),
         "sites": list,  # list of {name, lat, lon, demand_weight}
+        # Explicit opt-in for deterministic endpoint selection from the
+        # repository M-Lab measurement snapshot. Existing named-site
+        # profiles remain byte-compatible when this is false.
+        "mlab_auto": bool,
+        "mlab_max_sites": int,
     },
     "demand": {
         "mode": str,  # uniform|gravity|hotspot|burst|diurnal|csv|mlab
@@ -215,7 +220,15 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "min_elevation_deg": 25.0,
         "seed": 42,
     },
-    "endpoints": {"grid_deg": 0.25, "aggregation_deg": 1.0, "sites": []},
+    "endpoints": {
+        "grid_deg": 0.25,
+        "aggregation_deg": 1.0,
+        "sites": [],
+        "mlab_auto": False,
+        # Bound sparse ground-side entities while retaining many measured OD
+        # alternatives. Automatic selection is an explicit opt-in below.
+        "mlab_max_sites": 64,
+    },
     "demand": {
         "mode": "uniform",
         "offered_mbps": 1.0,
@@ -426,6 +439,14 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
         raise ConfigError("endpoints grid/aggregation degrees must be > 0")
     if ep["aggregation_deg"] < ep["grid_deg"]:
         raise ConfigError("endpoints.aggregation_deg must be >= grid_deg")
+    if ep["mlab_max_sites"] < 2 or ep["mlab_max_sites"] > 256:
+        raise ConfigError("endpoints.mlab_max_sites must be in [2, 256]")
+    if ep["mlab_auto"] and dm["mode"] != "mlab":
+        raise ConfigError("endpoints.mlab_auto is only valid with demand.mode=mlab")
+    if ep["mlab_auto"] and ep["sites"]:
+        raise ConfigError(
+            "endpoints.mlab_auto requires endpoints.sites to be empty; "
+            "choose automatic or explicit measurement endpoints")
     # grid IDs are only stable if cells tile the sphere evenly: both degrees
     # must divide 180/360 exactly, and aggregation must be an exact multiple
     # of the fine grid
