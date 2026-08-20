@@ -154,6 +154,11 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "checkpoint_path": (str, type(None)),
         "checkpoint_sha256": (str, type(None)),
         "checkpoint_metadata_sha256": (str, type(None)),
+        # Exact training continuation bundle.  This is distinct from an
+        # eval-only model checkpoint: it binds replay, optimizer/target state,
+        # counters and RNG state to the same training contract.
+        "resume_path": (str, type(None)),
+        "resume_sha256": (str, type(None)),
         "gamma": (int, float),
         "lr": (int, float),
         "batch_size": int,
@@ -322,6 +327,8 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "checkpoint_path": None,
         "checkpoint_sha256": None,
         "checkpoint_metadata_sha256": None,
+        "resume_path": None,
+        "resume_sha256": None,
         "gamma": 0.99,
         "lr": 0.001,
         "batch_size": 64,
@@ -669,6 +676,16 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
                    for c in lr["checkpoint_metadata_sha256"])):
         raise ConfigError(
             "learning.checkpoint_metadata_sha256 must be null or lowercase SHA-256")
+    if lr["resume_path"] is not None and not lr["resume_path"]:
+        raise ConfigError("learning.resume_path must be null or a non-empty path")
+    if lr["resume_sha256"] is not None and (
+            not isinstance(lr["resume_sha256"], str)
+            or len(lr["resume_sha256"]) != 64
+            or any(c not in "0123456789abcdef" for c in lr["resume_sha256"])):
+        raise ConfigError("learning.resume_sha256 must be null or lowercase SHA-256")
+    if (lr["resume_path"] is None) != (lr["resume_sha256"] is None):
+        raise ConfigError(
+            "learning.resume_path and learning.resume_sha256 must be provided together")
     if lr["algorithm"] == "none" and lr["mode"] != "train":
         raise ConfigError("learning.mode=eval requires a learning algorithm")
     if lr["algorithm"] == "none" and lr["checkpoint_path"] is not None:
@@ -678,6 +695,10 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
     if lr["algorithm"] == "none" and lr["checkpoint_metadata_sha256"] is not None:
         raise ConfigError(
             "learning.checkpoint_metadata_sha256 requires a learning algorithm")
+    if lr["algorithm"] == "none" and lr["resume_path"] is not None:
+        raise ConfigError("learning.resume_path requires a learning algorithm")
+    if lr["algorithm"] == "none" and lr["resume_sha256"] is not None:
+        raise ConfigError("learning.resume_sha256 requires a learning algorithm")
     if lr["algorithm"] != "none" and lr["mode"] == "eval" \
             and (lr["checkpoint_path"] is None or lr["checkpoint_sha256"] is None):
         raise ConfigError(
@@ -691,6 +712,8 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
         raise ConfigError(
             "learning.mode=eval with algorithm=ddqn requires "
             "checkpoint_metadata_sha256 (sibling metadata trust anchor)")
+    if lr["mode"] == "eval" and lr["resume_path"] is not None:
+        raise ConfigError("learning.mode=eval cannot load a training resume bundle")
     if lr["mode"] == "train" and (lr["checkpoint_path"] is not None
                                     or lr["checkpoint_sha256"] is not None
                                     or lr["checkpoint_metadata_sha256"] is not None):

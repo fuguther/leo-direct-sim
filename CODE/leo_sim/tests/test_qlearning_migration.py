@@ -151,6 +151,34 @@ def test_save_load_roundtrip_verified(tmp_path):
                  checkpoint_sha256="0" * 64)
 
 
+def test_exact_resume_restores_table_counters_and_rng(tmp_path):
+    """An interrupted Q-learning run must continue from the full state.
+
+    This is deliberately stronger than model save/load: the table, update
+    counters and exploration RNG all belong to the continuation contract.
+    """
+    ql = _learner(epsilon_start=1.0, epsilon_end=1.0)
+    dim = learning.CONTRACT_DIMS["C3"]
+    state = np.zeros(dim)
+    next_state = np.ones(dim)
+    ql.choose(state, FULL_MASK, 0.0)
+    ql.remember(state, "E", 1.5, next_state, FULL_MASK, False)
+    meta = ql.save_and_verify(tmp_path)
+    resumed = _learner(
+        mode="train", epsilon_start=1.0, epsilon_end=1.0,
+        resume_path=str(tmp_path / "resume"),
+        resume_sha256=meta["resume_sha256"],
+    )
+    assert resumed.table.keys() == ql.table.keys()
+    for key, values in ql.table.items():
+        assert np.array_equal(resumed.table[key], values)
+    assert resumed.decisions == ql.decisions
+    assert resumed.transitions == ql.transitions
+    assert resumed.train_steps == ql.train_steps
+    assert resumed.loaded_resume_sha256 == meta["resume_sha256"]
+    assert resumed.choose(state, FULL_MASK, 0.0) == ql.choose(state, FULL_MASK, 0.0)
+
+
 def test_checkpoint_contract_mismatch_rejected(tmp_path):
     """A checkpoint trained under one observation contract must not load
     under a different contract with the same input width (C3/C4 both have

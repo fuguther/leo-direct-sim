@@ -246,6 +246,45 @@ def test_graph_learning_fails_closed_without_tensorflow():
                                     seed=1)
 
 
+@pytest.mark.skipif(importlib.util.find_spec("tensorflow") is None,
+                    reason="TensorFlow resume contract requires the VM runtime")
+def test_ddqn_exact_resume_restores_replay_optimizer_target_and_rng(tmp_path):
+    """The DDQN continuation artifact must include every training state."""
+    from CODE.leo_sim import config
+
+    resolved = config.resolve_config({
+        "scenario": {"seed": 7},
+        "control_plane": {"enabled": True},
+        "routing": {"policy": "hop", "learning_enabled": True,
+                    "contract": "C3"},
+        "learning": {"algorithm": "ddqn", "mode": "train",
+                      "batch_size": 1, "replay_size": 8,
+                      "target_update_interval": 2, "fast_train": False},
+    })
+    cfg = resolved["config"]["learning"]
+    learner = learning.TensorflowDDQN("C3", cfg, seed=7)
+    dim = learning.CONTRACT_DIMS["C3"]
+    mask = {a: True for a in learning.ACTIONS}
+    learner.remember(np.zeros(dim), "E", 1.0, np.ones(dim), mask, False)
+    learner.remember(np.ones(dim), "N", 2.0, np.zeros(dim), mask, True)
+    meta = learner.save_and_verify(tmp_path)
+    resumed_cfg = dict(cfg)
+    resumed_cfg.update({
+        "resume_path": str(tmp_path / "resume"),
+        "resume_sha256": meta["resume_sha256"],
+    })
+    resumed = learning.TensorflowDDQN("C3", resumed_cfg, seed=7)
+    assert resumed.loaded_resume_sha256 == meta["resume_sha256"]
+    assert resumed.transitions == learner.transitions
+    assert resumed.train_steps == learner.train_steps
+    assert len(resumed.replay) == len(learner.replay)
+    assert resumed.optimizer.iterations.numpy() == learner.optimizer.iterations.numpy()
+    for left, right in zip(resumed.online.get_weights(), learner.online.get_weights()):
+        assert np.array_equal(left, right)
+    for left, right in zip(resumed.target.get_weights(), learner.target.get_weights()):
+        assert np.array_equal(left, right)
+
+
 def test_learning_rejects_oracle_information():
     from CODE.leo_sim import config
     with pytest.raises(config.ConfigError, match="oracle"):
@@ -342,5 +381,4 @@ def test_c5_c7_reject_queue_bits_after_direction_removed():
         o = learning.build_observation(contract, 0, c, 6.0, topo, own)
         q = o[learning.OWN_FEATURES]
         assert q == 0.0, f"{contract} must reject a removed-direction record"
-
 

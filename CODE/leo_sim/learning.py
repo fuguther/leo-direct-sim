@@ -141,6 +141,119 @@ def _read_checkpoint_metadata(path: Path, expected_sha, what: str):
     return _read_json_bytes(data, what), actual_sha
 
 
+def _resume_json(value):
+    """Convert numpy/TensorFlow scalar state to deterministic JSON values."""
+    if isinstance(value, np.ndarray):
+        return {
+            "__ndarray__": value.tolist(),
+            "dtype": str(value.dtype),
+            "shape": list(value.shape),
+        }
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, dict):
+        return {str(k): _resume_json(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_resume_json(v) for v in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    raise LearningUnavailable(
+        f"resume state contains non-serializable value {type(value).__name__}")
+
+
+def _resume_unjson(value):
+    if isinstance(value, dict) and set(value) == {"__ndarray__", "dtype", "shape"}:
+        try:
+            arr = np.asarray(value["__ndarray__"], dtype=value["dtype"])
+            if list(arr.shape) != list(value["shape"]):
+                raise ValueError("array shape mismatch")
+            return arr
+        except (TypeError, ValueError) as exc:
+            raise LearningUnavailable(f"resume ndarray is invalid: {exc}") from exc
+    if isinstance(value, dict):
+        return {k: _resume_unjson(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_resume_unjson(v) for v in value]
+    return value
+
+
+def _resume_file_record(path: Path) -> dict:
+    if path.is_symlink() or not path.is_file():
+        raise LearningUnavailable(f"resume artifact missing or symbolic: {path.name}")
+    data = path.read_bytes()
+    return {"sha256": hashlib.sha256(data).hexdigest(), "size_bytes": len(data)}
+
+
+def _write_resume_manifest(root: Path, schema: str, identity: dict) -> str:
+    files = {}
+    for path in sorted(root.rglob("*")):
+        if path.name == "manifest.json" or not path.is_file():
+            continue
+        rel = path.relative_to(root).as_posix()
+        if rel.startswith("../") or Path(rel).is_absolute():
+            raise LearningUnavailable("resume artifact path escapes bundle")
+        files[rel] = _resume_file_record(path)
+    if not files:
+        raise LearningUnavailable("resume bundle contains no state artifacts")
+    payload = {
+        "schema": schema,
+        "identity": identity,
+        "files": files,
+    }
+    manifest = root / "manifest.json"
+    manifest.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n",
+                        encoding="utf-8")
+    return hashlib.sha256(manifest.read_bytes()).hexdigest()
+
+
+def _verify_resume_bundle(root: Path, expected_sha: str, schema: str) -> dict:
+    if root.is_symlink() or not root.is_dir():
+        raise LearningUnavailable("resume_path must be a regular directory")
+    manifest = root / "manifest.json"
+    if manifest.is_symlink() or not manifest.is_file():
+        raise LearningUnavailable("resume manifest missing or symbolic")
+    data = manifest.read_bytes()
+    actual_sha = hashlib.sha256(data).hexdigest()
+    if actual_sha != expected_sha:
+        raise LearningUnavailable("resume manifest SHA-256 differs from resolved config")
+    payload = _read_json_bytes(data, "resume manifest")
+    if payload.get("schema") != schema:
+        raise LearningUnavailable(
+            f"resume schema {payload.get('schema')!r} != {schema!r}")
+    files = payload.get("files")
+    if not isinstance(files, dict) or not files:
+        raise LearningUnavailable("resume manifest has no file records")
+    for rel, record in files.items():
+        candidate = Path(rel)
+        if candidate.is_absolute() or ".." in candidate.parts:
+            raise LearningUnavailable("resume manifest contains unsafe file path")
+        path = root / candidate
+        actual = _resume_file_record(path)
+        if actual != record:
+            raise LearningUnavailable(f"resume artifact hash mismatch: {rel}")
+    return payload
+
+
+def _resume_identity(cfg: dict, contract: str, algorithm: str, seed: int) -> dict:
+    return {
+        "algorithm": algorithm,
+        "contract": contract,
+        "seed": int(seed),
+        "gamma": float(cfg["gamma"]),
+        "lr": float(cfg["lr"]),
+        "batch_size": int(cfg["batch_size"]),
+        "replay_size": int(cfg["replay_size"]),
+        "target_update_interval": int(cfg["target_update_interval"]),
+        "fast_train": bool(cfg["fast_train"]),
+    }
+
+
+def _require_resume_identity(manifest: dict, expected: dict) -> None:
+    if manifest.get("identity") != expected:
+        raise LearningUnavailable(
+            "resume training contract identity differs from resolved config")
+
+
 # Graph-state contracts: real GAT / MPNN encoders consume a k-hop local
 # subgraph, not a hand-rolled fixed aggregate.  These names are new: they do
 # NOT reuse the V1 C4/C5 semantics (V2's C4/C5 are cache-aggregation rules).
@@ -400,6 +513,10 @@ class TensorflowDDQN:
         self.rng = np.random.default_rng(self.seed)
         self.replay = deque(maxlen=int(cfg["replay_size"]))
         self.mode = cfg["mode"]
+        self.loaded_resume_path = None
+        self.loaded_resume_sha256 = None
+        self.resume_manifest_sha256 = None
+        self.resume_verified = False
         checkpoint = cfg.get("checkpoint_path")
         if checkpoint:
             path = Path(checkpoint)
@@ -463,6 +580,9 @@ class TensorflowDDQN:
         self._fast_train_fn = None
         self._fast_train_net_id = None
         self._fast_train_tgt_id = None
+        if cfg.get("resume_path") is not None:
+            self._load_resume_bundle(
+                Path(cfg["resume_path"]), cfg.get("resume_sha256"))
 
     def _network(self):
         tf = self.tf
@@ -612,10 +732,146 @@ class TensorflowDDQN:
 
         return _step
 
+    def _load_resume_bundle(self, root: Path, expected_sha: str) -> None:
+        if not isinstance(expected_sha, str):
+            raise LearningUnavailable("resume_sha256 is required for exact resume")
+        manifest = _verify_resume_bundle(
+            root, expected_sha, "leo-sim-ddqn-resume/v1")
+        _require_resume_identity(
+            manifest, _resume_identity(self.cfg, self.contract, "ddqn", self.seed))
+        files = manifest["files"]
+        state_path = root / "state.json"
+        replay_path = root / "replay.npz"
+        prefix = root / "tf_ckpt"
+        if "state.json" not in files or "replay.npz" not in files \
+                or "tf_ckpt.index" not in files:
+            raise LearningUnavailable("DDQN resume bundle is incomplete")
+        state = _read_json_bytes(state_path.read_bytes(), "DDQN resume state")
+        try:
+            replay = np.load(replay_path, allow_pickle=False)
+            states = np.asarray(replay["states"], dtype=np.float32)
+            actions = np.asarray(replay["actions"], dtype=np.int64)
+            rewards = np.asarray(replay["rewards"], dtype=np.float32)
+            next_states = np.asarray(replay["next_states"], dtype=np.float32)
+            masks = np.asarray(replay["masks"], dtype=bool)
+            dones = np.asarray(replay["dones"], dtype=bool)
+        except (OSError, KeyError, ValueError, TypeError) as exc:
+            raise LearningUnavailable(f"DDQN replay state is unreadable: {exc}") from exc
+        n = len(states)
+        if (actions.shape != (n,) or rewards.shape != (n,)
+                or next_states.shape != states.shape
+                or masks.shape != (n, len(ACTIONS)) or dones.shape != (n,)
+                or states.ndim != 2 or states.shape[1] != self.input_dim
+                or not np.all(np.isfinite(states))
+                or not np.all(np.isfinite(next_states))):
+            raise LearningUnavailable("DDQN replay state shape or finiteness mismatch")
+        if n > int(self.cfg["replay_size"]):
+            raise LearningUnavailable("DDQN replay state exceeds configured capacity")
+        self.replay.clear()
+        for i in range(n):
+            self.replay.append((states[i], int(actions[i]), float(rewards[i]),
+                                next_states[i], masks[i], bool(dones[i])))
+        try:
+            self.rng.bit_generator.state = _resume_unjson(state["numpy_rng_state"])
+            counters = state["counters"]
+            self.decisions = int(counters["decisions"])
+            self.transitions = int(counters["transitions"])
+            self.train_steps = int(counters["train_steps"])
+            if min(self.decisions, self.transitions, self.train_steps) < 0:
+                raise ValueError("negative training counter")
+        except (KeyError, TypeError, ValueError) as exc:
+            raise LearningUnavailable(f"DDQN resume state is invalid: {exc}") from exc
+        try:
+            tf_rng = state.get("tensorflow_rng_state")
+            if tf_rng is not None:
+                self.tf.random.get_global_generator().state.assign(
+                    np.asarray(_resume_unjson(tf_rng), dtype=np.int64))
+        except (AttributeError, TypeError, ValueError) as exc:
+            raise LearningUnavailable(f"TensorFlow RNG state is invalid: {exc}") from exc
+        try:
+            self.optimizer.build(self.online.trainable_variables)
+        except AttributeError:
+            # TensorFlow 2.13 Adam exposes build; retain a controlled fallback
+            # for compatible runtimes where slots are materialized lazily.
+            pass
+        checkpoint = self.tf.train.Checkpoint(
+            online=self.online, target=self.target, optimizer=self.optimizer)
+        try:
+            status = checkpoint.restore(str(prefix))
+            status.assert_consumed()
+        except Exception as exc:
+            raise LearningUnavailable(
+                f"DDQN TensorFlow resume checkpoint could not be restored: {exc}") from exc
+        self.loaded_resume_path = str(root.resolve())
+        self.loaded_resume_sha256 = expected_sha
+        self.resume_manifest_sha256 = expected_sha
+        self.resume_verified = True
+
+    def save_resume_and_verify(self, directory: str | Path) -> dict:
+        """Save and verify the complete DDQN continuation state.
+
+        The bundle is separate from the eval model checkpoint.  It contains
+        TensorFlow online/target/optimizer variables, replay, counters and
+        both numpy and TensorFlow RNG state, all bound by a hashed manifest.
+        """
+        out = Path(directory)
+        if out.is_symlink():
+            raise LearningUnavailable("resume output may not be symbolic")
+        out.mkdir(parents=True, exist_ok=True)
+        if any(out.iterdir()):
+            raise LearningUnavailable("resume output directory must be empty")
+        checkpoint = self.tf.train.Checkpoint(
+            online=self.online, target=self.target, optimizer=self.optimizer)
+        prefix = out / "tf_ckpt"
+        try:
+            checkpoint.write(str(prefix))
+            np.savez_compressed(
+                out / "replay.npz",
+                states=np.asarray([x[0] for x in self.replay], dtype=np.float32)
+                if self.replay else np.empty((0, self.input_dim), dtype=np.float32),
+                actions=np.asarray([x[1] for x in self.replay], dtype=np.int64),
+                rewards=np.asarray([x[2] for x in self.replay], dtype=np.float32),
+                next_states=np.asarray([x[3] for x in self.replay], dtype=np.float32)
+                if self.replay else np.empty((0, self.input_dim), dtype=np.float32),
+                masks=np.asarray([x[4] for x in self.replay], dtype=bool)
+                if self.replay else np.empty((0, len(ACTIONS)), dtype=bool),
+                dones=np.asarray([x[5] for x in self.replay], dtype=bool),
+            )
+            tf_state = self.tf.random.get_global_generator().state.numpy()
+            state = {
+                "numpy_rng_state": _resume_json(self.rng.bit_generator.state),
+                "tensorflow_rng_state": _resume_json(tf_state),
+                "counters": {
+                    "decisions": int(self.decisions),
+                    "transitions": int(self.transitions),
+                    "train_steps": int(self.train_steps),
+                },
+            }
+            (out / "state.json").write_text(
+                json.dumps(state, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8")
+            sha = _write_resume_manifest(
+                out, "leo-sim-ddqn-resume/v1",
+                _resume_identity(self.cfg, self.contract, "ddqn", self.seed))
+            verified = _verify_resume_bundle(
+                out, sha, "leo-sim-ddqn-resume/v1")
+        except Exception as exc:
+            if isinstance(exc, LearningUnavailable):
+                raise
+            raise LearningUnavailable(f"DDQN resume save failed: {exc}") from exc
+        self.resume_manifest_sha256 = sha
+        self.resume_verified = True
+        return {
+            "resume_path": str(out),
+            "resume_sha256": sha,
+            "resume_verified": bool(verified),
+        }
+
     def save_and_verify(self, directory: str | Path) -> dict:
         out = Path(directory)
         out.mkdir(parents=True, exist_ok=True)
         model_path = out / "online.keras"
+        resume = self.save_resume_and_verify(out / "resume")
         self.online.save(model_path)
         checkpoint_sha = hashlib.sha256(model_path.read_bytes()).hexdigest()
         loaded = self.tf.keras.models.load_model(
@@ -631,6 +887,7 @@ class TensorflowDDQN:
             "checkpoint_sha256": checkpoint_sha,
             "checkpoint_verified": verified,
             "probe_max_abs_error": float(np.max(np.abs(before - after))),
+            **resume,
         })
         (out / "metadata.json").write_text(
             json.dumps(metadata, indent=2, sort_keys=True) + "\n",
@@ -652,6 +909,10 @@ class TensorflowDDQN:
             "loaded_checkpoint_sha256": self.loaded_checkpoint_sha256,
             "loaded_checkpoint_metadata_sha256":
                 self.loaded_checkpoint_metadata_sha256,
+            "loaded_resume_path": self.loaded_resume_path,
+            "loaded_resume_sha256": self.loaded_resume_sha256,
+            "resume_manifest_sha256": self.resume_manifest_sha256,
+            "resume_verified": self.resume_verified,
             "actions": list(ACTIONS),
             "decisions": self.decisions,
             "transitions": self.transitions,
@@ -705,6 +966,10 @@ class TabularQLearning:
         self.gamma = float(cfg["gamma"])
         self.table: dict[bytes, np.ndarray] = {}
         checkpoint = cfg.get("checkpoint_path")
+        self.loaded_resume_path = None
+        self.loaded_resume_sha256 = None
+        self.resume_manifest_sha256 = None
+        self.resume_verified = False
         if checkpoint:
             path = Path(checkpoint)
             if not path.is_file():
@@ -822,6 +1087,9 @@ class TabularQLearning:
         self.decisions = 0
         self.transitions = 0
         self.train_steps = 0  # tabular: one Q-table update per train step
+        if cfg.get("resume_path") is not None:
+            self._load_resume_bundle(
+                Path(cfg["resume_path"]), cfg.get("resume_sha256"))
 
     @staticmethod
     def _key(observation) -> bytes:
@@ -894,6 +1162,7 @@ class TabularQLearning:
         out = Path(directory)
         out.mkdir(parents=True, exist_ok=True)
         table_path = out / "q_table.json"
+        resume = self.save_resume_and_verify(out / "resume")
         # F4-RUNTIME-STATE-KEY: save must never produce an artifact that the
         # eval loader would reject.  Reuse the loader's exact semantic
         # contract: canonical key width, finite little-endian float64 keys,
@@ -937,6 +1206,7 @@ class TabularQLearning:
             "checkpoint": table_path.name,
             "checkpoint_sha256": checkpoint_sha,
             "checkpoint_verified": verified,
+            **resume,
         })
         (out / "metadata.json").write_text(
             json.dumps(metadata, indent=2, sort_keys=True) + "\n",
@@ -949,6 +1219,106 @@ class TabularQLearning:
             (out / "metadata.json").read_bytes()).hexdigest()
         return result
 
+    def _load_resume_bundle(self, root: Path, expected_sha: str) -> None:
+        if not isinstance(expected_sha, str):
+            raise LearningUnavailable("resume_sha256 is required for exact resume")
+        manifest = _verify_resume_bundle(
+            root, expected_sha, "leo-sim-qlearning-resume/v1")
+        expected_identity = {
+            "algorithm": "qlearning",
+            "contract": self.contract,
+            "seed": self.seed,
+            "gamma": self.gamma,
+            "alpha": self.alpha,
+        }
+        _require_resume_identity(manifest, expected_identity)
+        if "q_table.json" not in manifest["files"] or "state.json" not in manifest["files"]:
+            raise LearningUnavailable("Q-learning resume bundle is incomplete")
+        payload = _read_json_bytes(
+            (root / "q_table.json").read_bytes(), "Q-learning resume table")
+        if payload.get("schema") != "leo-sim-qlearning-table/v1" \
+                or payload.get("contract") != self.contract:
+            raise LearningUnavailable("Q-learning resume table contract mismatch")
+        entries = payload.get("entries")
+        if not isinstance(entries, list):
+            raise LearningUnavailable("Q-learning resume table lacks entries")
+        expected_key_bytes = CONTRACT_DIMS[self.contract] * 8
+        for entry in entries:
+            if not isinstance(entry, (list, tuple)) or len(entry) != 2:
+                raise LearningUnavailable("Q-learning resume table entry is invalid")
+            try:
+                key = bytes.fromhex(entry[0])
+                values = np.asarray(entry[1], dtype=np.float64)
+            except (TypeError, ValueError) as exc:
+                raise LearningUnavailable(
+                    f"Q-learning resume table entry is unreadable: {exc}") from exc
+            if (len(key) != expected_key_bytes
+                    or values.shape != (len(ACTIONS),)
+                    or not np.all(np.isfinite(values))):
+                raise LearningUnavailable("Q-learning resume table shape mismatch")
+            self.table[key] = values
+        state = _read_json_bytes(
+            (root / "state.json").read_bytes(), "Q-learning resume state")
+        try:
+            self.rng.bit_generator.state = _resume_unjson(state["numpy_rng_state"])
+            counters = state["counters"]
+            self.decisions = int(counters["decisions"])
+            self.transitions = int(counters["transitions"])
+            self.train_steps = int(counters["train_steps"])
+            if min(self.decisions, self.transitions, self.train_steps) < 0:
+                raise ValueError("negative training counter")
+        except (KeyError, TypeError, ValueError) as exc:
+            raise LearningUnavailable(f"Q-learning resume state is invalid: {exc}") from exc
+        self.loaded_resume_path = str(root.resolve())
+        self.loaded_resume_sha256 = expected_sha
+        self.resume_manifest_sha256 = expected_sha
+        self.resume_verified = True
+
+    def save_resume_and_verify(self, directory: str | Path) -> dict:
+        """Save the complete tabular continuation state and its hash manifest."""
+        out = Path(directory)
+        if out.is_symlink():
+            raise LearningUnavailable("resume output may not be symbolic")
+        out.mkdir(parents=True, exist_ok=True)
+        if any(out.iterdir()):
+            raise LearningUnavailable("resume output directory must be empty")
+        payload = {
+            "schema": "leo-sim-qlearning-table/v1",
+            "contract": self.contract,
+            "entries": [[key.hex(), [float(v) for v in row]]
+                        for key, row in sorted(self.table.items())],
+        }
+        (out / "q_table.json").write_text(
+            json.dumps(payload, sort_keys=True) + "\n", encoding="utf-8")
+        state = {
+            "numpy_rng_state": _resume_json(self.rng.bit_generator.state),
+            "counters": {
+                "decisions": int(self.decisions),
+                "transitions": int(self.transitions),
+                "train_steps": int(self.train_steps),
+            },
+        }
+        (out / "state.json").write_text(
+            json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        identity = {
+            "algorithm": "qlearning",
+            "contract": self.contract,
+            "seed": self.seed,
+            "gamma": self.gamma,
+            "alpha": self.alpha,
+        }
+        sha = _write_resume_manifest(
+            out, "leo-sim-qlearning-resume/v1", identity)
+        verified = _verify_resume_bundle(
+            out, sha, "leo-sim-qlearning-resume/v1")
+        self.resume_manifest_sha256 = sha
+        self.resume_verified = True
+        return {
+            "resume_path": str(out),
+            "resume_sha256": sha,
+            "resume_verified": bool(verified),
+        }
+
     def diagnostics(self) -> dict:
         return {
             "algorithm": "qlearning",
@@ -958,6 +1328,10 @@ class TabularQLearning:
             "loaded_checkpoint_sha256": self.loaded_checkpoint_sha256,
             "loaded_checkpoint_metadata_sha256":
                 self.loaded_checkpoint_metadata_sha256,
+            "loaded_resume_path": self.loaded_resume_path,
+            "loaded_resume_sha256": self.loaded_resume_sha256,
+            "resume_manifest_sha256": self.resume_manifest_sha256,
+            "resume_verified": self.resume_verified,
             "actions": list(ACTIONS),
             "decisions": self.decisions,
             "transitions": self.transitions,
