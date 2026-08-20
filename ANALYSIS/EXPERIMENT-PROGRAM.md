@@ -45,6 +45,21 @@ P0 的验收是“同一 SHA 的结果可以被重新算出来并拒绝篡改”
 
 ### P1：真实流量与测量底座
 
+#### TOPOLOGY-CADENCE-CALIBRATION（工程校准，非论文结果）
+
+在进入 E0 负载标定前，先用同一份不可变的 M-Lab measurement-proxy + burst trace，比较拓扑重算间隔 `0.5/1/2/5 s`。这一步只回答“更新太慢会不会改变当前负载下的结果、以及运行成本如何”，不把短 smoke 当成 D2 长窗语义已经完全证明。
+
+本轮证据：本地 140 星、60 s、MCS、同一 trace 的四档均自然结束、守恒通过、receipt 可重算，均为 461 offered、440 delivered、20 access rejected、1 in-system；拓扑重算次数分别为 119、59、29、11，墙钟约 118.9、79.9、60.5、48.9 s。VM 另完成 66 星、10 s 的四档 plumbing smoke，四档均 18/18 delivered、自然结束、守恒通过、receipt verified；5 s 档的 receipt 也确认无丢包。VM 短 smoke 只作为部署/合同证据，不能替代 140 星长窗比较。
+
+| cadence | 本地 140 星/60 s 结果 | 本地墙钟 | 工程判断 |
+|---:|---|---:|---|
+| 0.5 s | 440 delivered / 20 access rejected / 1 in-system；receipt 空错误 | 118.9 s | 成本最高，当前 trace 未显示结果收益 |
+| 1.0 s | 与其他档相同；receipt 空错误 | 79.9 s | **当前 E0 工程候选**，保留秒级拓扑变化 |
+| 2.0 s | 与其他档相同；receipt 空错误 | 60.5 s | 可作为成本敏感性对照 |
+| 5.0 s | 与其他档相同；receipt 空错误 | 48.9 s | 仅作为较慢更新的负对照，不直接作为主设置 |
+
+结论是暂定的：E0 先用 1 s，随后在低/中/高负载和长窗上复核；若 1 s 与 2 s 在交付、积压、利用率和切换指标上仍等价，才考虑把 2 s 作为成本更低的主设置。四档的最大 RSS 没有作为证据记录，因为同一 Python 进程连续运行时 macOS 的 `ru_maxrss` 是累计峰值，不能伪装成逐 run 内存比较；内存门禁留到独立的 E0 资源剖析。
+
 #### TRAFFIC-VALIDATE
 
 - 主输入优先采用有来源、许可证/使用边界、时间范围、字段含义和 SHA 的 packet/flow/OD 数据；
