@@ -137,12 +137,15 @@ def _multi_source_bfs(adj, sources) -> dict[int, int]:
     return dist
 
 
-def destinations_in_cache(cache, dst_cell: str, now: float) -> list[int]:
+def destinations_in_cache(cache, dst_cell: str, now: float,
+                          max_cache_hops: int | None = None) -> list[int]:
     """Origins whose valid, actually-arrived advertisement reports CURRENT
     service capability (serve_cells) for dst_cell — visibility alone does
     not make a satellite a legal egress."""
     out = []
     for origin, entry in cache.valid_entries(now).items():
+        if max_cache_hops is not None and entry.hops > max_cache_hops:
+            continue
         if dst_cell in entry.payload.get("serve_cells", ()):
             out.append(origin)
     return sorted(out)
@@ -155,7 +158,8 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
                     best_only: bool = False,
                     reverse_adj: dict | None = None,
                     sorted_adj: dict | None = None,
-                    rate_from_propagation=None) -> tuple[list[str], str]:
+                    rate_from_propagation=None,
+                    cache_hops: int | None = None) -> tuple[list[str], str]:
     """Return (ordered candidate directions, status).
 
     status: "ok" (candidates non-empty), "no_info" (no destination
@@ -170,7 +174,8 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
         # analysis upper bound: caller passes the true current serving sats.
         targets = list(oracle_targets or [])
     else:
-        targets = destinations_in_cache(cache, dst_cell, now)
+        targets = destinations_in_cache(
+            cache, dst_cell, now, max_cache_hops=cache_hops)
     targets = [t for t in targets if t != sat]
     if not targets:
         return [], "no_info"
@@ -194,7 +199,8 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
             # A satellite directly observes its own incident link now.
             return prop_delay(geometry.isl_range_km(a, b, now))
         entry = cache.entry(a)
-        if entry is None or not entry.valid_at(now):
+        if entry is None or not entry.valid_at(now) \
+                or (cache_hops is not None and entry.hops > cache_hops):
             return None
         direction = _dir_of(topo, a, b)
         if direction is None:
@@ -229,7 +235,9 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
                 qb = q.get(dir_ab, 0) if dir_ab else None
             else:
                 entry = cache.entry(a)
-                if entry is None or not entry.valid_at(now):
+                if entry is None or not entry.valid_at(now) \
+                        or (cache_hops is not None
+                            and entry.hops > cache_hops):
                     qb = None
                 else:
                     dir_ab = _dir_of(topo, a, b)

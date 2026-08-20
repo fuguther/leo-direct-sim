@@ -1,5 +1,7 @@
 # 旧平台设计深审：新平台「忘记 / 想不到 / 做得不如」清单
 
+> **SUPPORTING（状态已被替代）**：逐行证据继续有效；D1/D2 等现行状态与取舍以 `PLATFORM-CAPABILITY-LEDGER.md` 为准。
+
 > 日期：2026-08-19。执行人：Codex（本地读码，未派单）。
 > 范围：以旧库 `/Users/lge/Desktop/LEO-Research-Workspace/CODE/`（SimulationRL.py 12556 行 + 依赖模块）为「旧平台 1 万行副本」主参照，
 > 新平台为本库 `CODE/leo_sim/`（V2 直连）。逐行读码，不是扫两眼的定性对比。

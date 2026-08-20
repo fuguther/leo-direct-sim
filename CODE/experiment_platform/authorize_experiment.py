@@ -112,6 +112,8 @@ def _verified_experiment(
     report = docs["compile-report.json"]
     manifest = docs["run-manifest.json"]
     analysis = docs["analysis-request.json"]
+    if manifest.get("schema") == "leo-sim-experiment-matrix-manifest/v1":
+        return _verified_leo_sim_v2_matrix_experiment(root, experiment_dir)
     if manifest.get("schema") == "leo-sim-experiment-run-manifest/v1":
         return _verified_leo_sim_v2_experiment(
             root, experiment_dir, docs, runbook_path)
@@ -226,6 +228,25 @@ def _verified_experiment(
         for raw in sorted(artifact_paths)
     }
     return experiment_id, artifact_hashes, authorized_runs
+
+
+def _verified_leo_sim_v2_matrix_experiment(
+    root: Path,
+    experiment_dir: Path,
+) -> tuple[str, dict[str, str], list[dict[str, Any]]]:
+    """Verify a V2 matrix as one exact planned-cell cohort.
+
+    Matrix verification is intentionally delegated to the dedicated contract
+    module.  This branch is selected only by its new manifest schema, so the
+    retained single-run V2 and generic legacy V2 paths remain unchanged.
+    """
+    from CODE.leo_sim import matrix as v2_matrix
+
+    try:
+        return v2_matrix.verify_compiled_matrix(root, experiment_dir)
+    except (v2_matrix.MatrixError, OSError, json.JSONDecodeError, KeyError,
+            TypeError, ValueError) as exc:
+        raise AuthorizationError(f"invalid leo_sim V2 matrix: {exc}") from exc
 
 
 def _verified_leo_sim_v2_experiment(
@@ -430,6 +451,12 @@ def build_authorization(root: Path, experiment_dir: Path, finalization_path: Pat
                 for row in authorized_runs),
         },
     }
+    if request.get("schema") == "leo-sim-experiment-matrix-request/v1":
+        # The matrix is an atomic authorization cohort: exposing the same
+        # exact rows separately makes the all-cells binding auditable without
+        # weakening the legacy authorized_runs consumer contract.
+        payload["authorized_cells"] = list(authorized_runs)
+        payload["verification_policy"]["require_exact_matrix_cohort"] = True
     payload["payload_sha256"] = canonical_sha(payload)
     return payload
 

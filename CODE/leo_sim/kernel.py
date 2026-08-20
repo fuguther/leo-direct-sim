@@ -2349,6 +2349,14 @@ class Kernel:
                 self._fail(pkt, "ACCESS_QUEUE_OVERFLOW")
             return
         own_q = {d: lnk.data_bits + lnk.ctrl_bits for d, lnk in self.isls[sat].items()}
+        # The action/decision gate is observable information too.  A learning
+        # arm may not use destination or path metrics from cache entries that
+        # its configured observation crops away (R1-A2).  C1 is intrinsically
+        # one-hop; other contracts use obs_hops=None for the full vis_k cache.
+        cache_hops = None
+        if self.learner is not None:
+            cache_hops = (1 if self.cfg_rt["contract"] == "C1"
+                          else self.cfg_learning.get("obs_hops"))
         cands, status = routing.choose_next_hop(
             self.cfg_rt["policy"], sat, pkt.dst, now, self.geometry, self.topo,
             self.caches[sat], own_q, self.isl_rate_bps, model.propagation_delay_s,
@@ -2366,7 +2374,8 @@ class Kernel:
             rate_from_propagation=(
                 (lambda prop_s: link_budget.mcs_rate_bps(
                     prop_s * model.C_KM_S, self.rf_isl, self.mcs_table))
-                if self.rate_model == "mcs" else None))
+                if self.rate_model == "mcs" else None),
+            cache_hops=cache_hops)
         if status == "unreachable":
             self._fail(pkt, "NO_ROUTE")
             return

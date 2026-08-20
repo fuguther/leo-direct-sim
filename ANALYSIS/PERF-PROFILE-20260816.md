@@ -1,5 +1,7 @@
 # 性能 profile 基线（acceptance 场景）
 
+> **HISTORICAL BASELINE**：数值只对应当时 commit；当前性能结论必须在冻结平台重测。
+
 > 日期：2026-08-16。方法：本机（macOS, Python 3.14）`cProfile` 跑 `acceptance.run_acceptance` 五场景（direct/k1/bbm/mbb/ge），全 PASS。只产报告，未改代码。
 > 规模：wall 13.353 s（含 receipt 写入），8815 万次函数调用。
 > **NN 调用列为 N/A**：本机无 TensorFlow，DDQN 学习臂只能本地 fail-closed；学习热路径（观测构建/NN 前向/训练）的 profile 须 VM 补测——本节数字全部来自非学习臂。

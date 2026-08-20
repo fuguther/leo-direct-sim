@@ -1,5 +1,7 @@
 # 链路预算（香农/MCS 速率）集成设计稿
 
+> **SUPPORTING DESIGN**：保留 D1 表征与设计依据；实现状态以 `PLATFORM-CAPABILITY-LEDGER.md` 为准。
+
 > 日期：2026-08-16。范围：设计稿 + 表征测试（`test_link_budget_characterization.py`），**集成代码留后续工作包**（任务 7 明示）。
 > 主线动机（MIGRATION-BACKLOG B5）：新平台链路速率是配置常数；E1 已发现瓶颈在接入侧，速率建模直接影响信息年龄主线结论。计划原文要求「经表征测试确认正确的链路预算计算」明确保留。
 

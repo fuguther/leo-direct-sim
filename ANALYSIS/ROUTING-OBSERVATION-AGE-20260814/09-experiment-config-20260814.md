@@ -1,7 +1,11 @@
 # 实验一/二完整配置（Codex × Kimi 最终定稿，2026-08-14）
 
+> **SUPERSEDED（2026-08-20）**：本文不再是配置真相源；其中 `obs_hops`、目的地特征等“待实现”状态已过时。现行计划见 `../EXPERIMENT-PROGRAM.md`。
+
 > 目标：把所有可能涉及到的详细配置一次性锁死，跑之前不再有"缺配置/配置冲突"
-> 的问题。本文件是配置真相源；与 `08` 矩阵文档冲突时以本文件为准。
+> 的问题。本文历史上曾作为配置真相源；该地位已于 2026-08-20 撤销，冲突时以
+> `../EXPERIMENT-PROGRAM.md`、`../../EXPERIMENTS/experiment-program.yaml` 和单次正式
+> `request.json` 为准。
 > 平台分支：`codex/20260813-platform-v2`，config_version `leo-sim-config/v1`。
 
 ## 0. 与 Kimi 协商后的事实修正（重要）

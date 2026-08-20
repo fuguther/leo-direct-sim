@@ -1,5 +1,7 @@
 # Population-Gravity Traffic Implementation Plan
 
+> **HISTORICAL IMPLEMENTATION PLAN**：实现计划不代表当前待办；现行实验范围见 `EXPERIMENT-PROGRAM.md`。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build reproducible population-distributed source traffic and probabilistic gravity destinations for the V2 satellite-direct platform.
@@ -46,4 +48,3 @@
 - [ ] Add a population stage to `platform check` that requires natural end, conservation, receipt verification, delivered data, multiple source regions and multiple destination regions.
 - [ ] Run focused tests, all V2 tests, then the exact one-command check in the isolated VM environment.
 - [ ] Record only engineering evidence; do not claim calibrated demand or algorithm superiority.
-

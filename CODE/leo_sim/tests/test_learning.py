@@ -34,8 +34,11 @@ def test_c3_to_c7_share_exactly_the_same_information_set():
     assert sets["C3"] == {1, 2, 3}
 
 
-def test_c1_sees_only_direct_neighbors():
-    cache = _entries([(1, 5.0, 1), (3, 5.0, 2)])
+def test_c1_sees_only_direct_neighbors_arriving_within_one_hop():
+    cache = _entries([(1, 5.0, 1), (2, 5.0, 2), (3, 5.0, 1)])
+    # Origin 2 is a current neighbour but its advertisement arrived via two
+    # control hops; origin 3 arrived in one hop but is not a current neighbour.
+    # Neither may enter the C1 observation/action information set.
     assert set(learning.information_set("C1", 0, cache, 6.0, TOPO)) == {1}
 
 
@@ -232,13 +235,15 @@ def test_graph_learning_fails_closed_without_tensorflow():
         else:
             # On TF hosts the run must at least construct without raising at
             # import time (network training itself is exercised on VM).
-            learning.TensorflowDDQN(
-                contract, make_cfg({
-                    "routing": {"policy": "hop", "learning_enabled": True,
-                                "contract": contract},
-                    "control_plane": {"enabled": True},
-                    "learning": {"algorithm": "ddqn", "mode": "train"}}),
-                seed=1)
+            # TensorflowDDQN takes the learning config section, not the
+            # resolved wrapper dict (the kernel passes cfg["learning"]).
+            cfg = make_cfg({
+                "routing": {"policy": "hop", "learning_enabled": True,
+                            "contract": contract},
+                "control_plane": {"enabled": True},
+                "learning": {"algorithm": "ddqn", "mode": "train"}})
+            learning.TensorflowDDQN(contract, cfg["config"]["learning"],
+                                    seed=1)
 
 
 def test_learning_rejects_oracle_information():

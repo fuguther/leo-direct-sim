@@ -1,0 +1,259 @@
+schema: leo-experiment-program/v1
+updated_at: "2026-08-20"
+authority:
+  human_plan: ANALYSIS/EXPERIMENT-PROGRAM.md
+  readiness: ANALYSIS/CURRENT-EXPERIMENT-READINESS.md
+  findings: ANALYSIS/FINDINGS-REGISTRY.md
+  note: >-
+    This file is a planning index. It is not a run request, authorization,
+    deployment receipt, experiment receipt, or research-eligibility verdict.
+
+status_values:
+  - blocked
+  - planned
+  - pilot_required
+  - rerun_required
+  - ready_for_authorization
+  - running
+  - completed_verified
+  - historical_only
+
+requirements:
+  D1_merged_to_main: {status: blocked}
+  D2_merged_to_main: {status: blocked}
+  reward_and_mask_blockers_closed: {status: blocked}
+  v2_formal_evidence_chain_verified: {status: blocked}
+  real_traffic_provenance_verified: {status: blocked}
+  multi_od_and_burst_verified: {status: blocked}
+  link_utilization_recomputation_verified: {status: blocked}
+  packet_delay_decomposition_verified: {status: blocked}
+  q0_minimum_loop_verified: {status: blocked}
+  q0_replay_review_approved: {status: blocked}
+  three_final_audit_rounds_no_new_major: {status: blocked}
+  exact_main_deployed_to_vm: {status: blocked}
+  per_action_physical_features_verified: {status: blocked}
+  field_age_provenance_verified: {status: blocked}
+  replay_resume_verified: {status: blocked}
+  interaction_triggered: {status: planned, conditional: true}
+  congestion_mechanism_identified: {status: blocked}
+
+gates:
+  platform_frozen:
+    status: blocked
+    requires:
+      - D1_merged_to_main
+      - D2_merged_to_main
+      - reward_and_mask_blockers_closed
+      - v2_formal_evidence_chain_verified
+      - three_final_audit_rounds_no_new_major
+      - exact_main_deployed_to_vm
+  formal_analysis_available:
+    status: blocked
+    reason: generic_analysis_exists_but_v2_artifact_to_metrics_to_claim_chain_is_open
+  real_diagnostic_ready:
+    status: blocked
+    requires:
+      - platform_frozen
+      - real_traffic_provenance_verified
+      - multi_od_and_burst_verified
+      - link_utilization_recomputation_verified
+      - packet_delay_decomposition_verified
+  current_load_levels_frozen:
+    status: blocked
+    reason: E0_REAL_must_run_after_real_diagnostic_ready
+  theory_ready:
+    status: blocked
+    requires:
+      - q0_minimum_loop_verified
+      - q0_replay_review_approved
+      - per_action_physical_features_verified
+      - field_age_provenance_verified
+
+experiments:
+  - id: VAL-D1
+    class: platform_validation
+    title: dynamic_link_rate_equivalence
+    status: blocked
+    prerequisites: [D1_merged_to_main]
+    purpose: Verify legacy MCS characterization and V2 service/observation/receipt integration.
+    required_evidence: [pytest, characterization_ledger, independent_review, vm_receipt]
+
+  - id: VAL-D2
+    class: platform_validation
+    title: dynamic_topology_and_holding_semantics
+    status: blocked
+    prerequisites: [D2_merged_to_main]
+    purpose: Verify rematching, retiring links, in-flight ownership, FIFO and finite holding behavior.
+    required_evidence: [pytest, long_window_trace, independent_review, vm_receipt]
+
+  - id: TRAFFIC-VALIDATE
+    class: platform_validation
+    title: real_traffic_multi_od_and_burst_provenance
+    status: blocked
+    prerequisites: [platform_frozen]
+    arms: [csv_real_or_trace, mlab_measurement_proxy, population_gravity_proxy, uniform_control]
+    purpose: Freeze source identity, units, time/OD mapping, burst transformation and offered-load recomputation.
+    required_evidence: [source_hash, provenance_contract, od_mapping, offered_bits_recomputation]
+
+  - id: METRIC-VALIDATE
+    class: platform_validation
+    title: congestion_utilization_and_delay_recomputation
+    status: blocked
+    prerequisites: [platform_frozen]
+    purpose: Recompute directional per-link utilization and per-packet queue/tx/prop delay from immutable events.
+    required_evidence:
+      - available_capacity_denominator
+      - served_bits_numerator
+      - queue_and_holding_integral
+      - packet_stage_sum_check
+      - artifact_hash_chain
+
+  - id: Q0-I-TINY
+    class: upper_bound_diagnostic
+    title: current_global_causal_optimum
+    status: blocked
+    prerequisites: [DIAG-CONGESTION, q0_replay_review_approved]
+    arms: [event_dp, independent_enumeration]
+    purpose: Separate current-information decision gap from practical learner error.
+    required_evidence: [objective_equality, action_trace_equality, replay_receipt]
+
+  - id: Q0-F-TINY
+    class: upper_bound_diagnostic
+    title: clairvoyant_future_optimum
+    status: blocked
+    prerequisites: [platform_frozen, Q0-I-TINY]
+    arms: [event_milp_or_cp_sat, independent_enumeration]
+    purpose: Measure the value of future information under identical data-plane physics.
+    required_evidence: [objective_equality, VF_ge_VI, replay_receipt]
+
+  - id: E0-REAL
+    class: calibration
+    title: real_traffic_load_level_calibration
+    status: rerun_required
+    prerequisites: [real_diagnostic_ready, formal_analysis_available]
+    arms: [deterministic_shortest_path]
+    traffic_mode: real_or_measurement_proxy_multi_od_with_uniform_control
+    purpose: Freeze informative low, medium and high loads on the final platform using primary real traffic and a synthetic control.
+    required_evidence: [natural_end, conservation, provenance, load_table, frozen_thresholds]
+
+  - id: DIAG-CONGESTION
+    class: diagnostic
+    title: baseline_congestion_and_link_utilization_diagnosis
+    status: blocked
+    prerequisites: [PILOT-BASELINES]
+    arms: [deterministic_shortest_path, queue_aware_anchor, DDQN, MPNN, GAT]
+    purpose: Locate bottlenecks and distinguish unused capacity, hotspot saturation, queueing, path stretch and learning failure.
+    required_evidence:
+      - paired_trace_and_load
+      - offered_delivered_dropped_in_system
+      - directional_link_utilization
+      - queue_tx_prop_delay
+      - backlog_and_fairness
+
+  - id: PILOT-BASELINES
+    class: engineering_pilot
+    title: baseline_end_to_end_pilot
+    status: blocked
+    prerequisites: [E0-REAL]
+    purpose: Verify every baseline arm and estimate wall time, variance, memory and sample size without making effect claims.
+    required_evidence:
+      - compile_authorize_run_analysis_chain
+      - natural_end
+      - conservation
+      - checkpoint_verified
+      - no_info_zero
+      - seed_provenance
+
+  - id: INFO-LADDER
+    class: upper_bound_diagnostic
+    title: per_action_physical_information_ladder
+    status: blocked
+    prerequisites: [Q0-F-TINY, per_action_physical_features_verified]
+    arms: [F0_queue_direction, F1_distance_rate_availability]
+    purpose: Measure whether candidate-direction physical information closes the diagnosed practical gap.
+
+  - id: AGE-LADDER
+    class: upper_bound_diagnostic
+    title: field_age_information_ladder
+    status: blocked
+    prerequisites: [INFO-LADDER, field_age_provenance_verified]
+    arms: [no_age, field_age, shuffled_age, fixed_fresh_age]
+    purpose: Test whether genuine freshness, rather than extra parameters or correlated noise, explains improvement.
+
+  - id: NEW-SCHEME-TINY
+    class: mechanism_validation
+    title: diagnosed_congestion_control_mechanism
+    status: blocked
+    prerequisites: [AGE-LADDER, congestion_mechanism_identified, replay_resume_verified]
+    purpose: Reject or support the mechanism hypothesis on tiny cases and adversarial stress scenarios before a large matrix.
+    required_evidence: [mechanism_hypothesis, negative_controls, q0_gap_alignment, resume_equivalence]
+
+  - id: EXP-CC-FORMAL
+    class: formal_effect
+    title: congestion_control_on_real_traffic
+    status: blocked
+    prerequisites: [NEW-SCHEME-TINY, current_load_levels_frozen]
+    traffic_mode: real_or_measurement_proxy_multi_od_with_bursts
+    arms: [deterministic_anchor, strongest_existing_learning_baseline, new_scheme, mechanism_ablation]
+    purpose: Test congestion-control effectiveness and explain link-utilization changes on paired real traffic.
+    required_evidence:
+      - frozen_request_and_contrasts
+      - paired_trace_traffic_and_training_seeds
+      - natural_end_and_conservation
+      - v2_recomputed_metrics
+      - independently_verified_claim
+
+  - id: EXP1-HOPS
+    class: conditional_followup
+    title: observation_hop_ablation
+    status: planned
+    conditional: true
+    prerequisites: [EXP-CC-FORMAL]
+    fixed: [GAT, feature_set_F1, training_budget, control_plane_range]
+    arms: [obs_hops_1, obs_hops_2, obs_hops_3]
+    loads: [low, medium, high]
+    purpose: Run only if the congestion diagnosis or formal result implicates observation range.
+    historical_evidence: ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/13-e1-results-20260815.md
+
+  - id: EXP2-AGG
+    class: conditional_followup
+    title: aggregation_architecture
+    status: blocked
+    prerequisites: [EXP1-HOPS]
+    fixed: [h_star, feature_set_F1, training_budget]
+    arms: [cache_aggregation, MPNN, GAT, deterministic_shortest_path]
+    conditional: true
+    purpose: Run only if the main mechanism depends on aggregation architecture.
+
+  - id: EXP2B-FEATURES
+    class: historical_alias
+    title: information_content_ablation
+    status: historical_only
+    replaced_by: INFO-LADDER
+    prerequisites: [INFO-LADDER]
+    fixed: [GAT, h_star, training_budget]
+    arms: [F0_queue_direction, F1_rate_availability, F2_field_age]
+    purpose: Align practical information gains with the Q0 information ladder.
+
+  - id: EXP3-AGE
+    class: historical_alias
+    title: information_age_mechanism
+    status: historical_only
+    replaced_by: AGE-LADDER
+    prerequisites: [AGE-LADDER]
+    arms: [G0_no_age, G1_age_feature, G2_age_attention, G3_age_shuffle, G4_fixed_fresh]
+    purpose: Test whether real freshness is causally used rather than acting as extra capacity.
+
+  - id: INT-HOPS-AGG
+    class: conditional_followup
+    title: hop_aggregation_interaction
+    status: planned
+    prerequisites: [EXP1-HOPS, EXP2-AGG, interaction_triggered]
+    purpose: Resolve non-additive hop-by-architecture effects only if single-factor results conflict.
+
+  - id: SENS-GRAVITY
+    class: sensitivity
+    title: gravity_traffic_sensitivity
+    status: planned
+    prerequisites: [EXP-CC-FORMAL]
+    purpose: Compare gravity and other proxies against the primary real-traffic result; uniform remains a controlled synthetic contrast.
