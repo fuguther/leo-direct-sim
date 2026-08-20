@@ -16,12 +16,12 @@
 
 | 项目 | 当前事实 | 判定 |
 |---|---|---|
-| GitHub main | `4c8d38ff38031ae134ae6738b3ebaa405e0f06f7`；本隔离基线 `411 passed` | FACT |
+| GitHub main | `12bf306de2dd7ca012feb59339262eb64913368c`；本地当前 CI 范围 `425 passed`，无参数全量 `470 passed, 1 skipped, 3 subtests passed` | FACT |
 | D1 动态链路速率 | PR #55，head `408d368c...`，CLEAN，CI pytest SUCCESS；候选实现未合入 main | FACT |
 | D2 动态拓扑/holding 语义 | PR #56，head `6be16cd2...`，CLEAN，CI pytest SUCCESS；候选实现未合入 main | FACT |
 | 当前 VM | 部署 `a2a588d9...`，clean，2026-08-20 01:51+08:00；落后 main 且不含 D1/D2 | FACT |
 | Q0 | snapshot 已在 main；planned-vs-executed、holding、Q0-I tiny 存在于未合入候选分支并收到 REQUEST_CHANGES；Q0-F 精确交叉验证未完成 | FACT |
-| 正式分析链 | `ANALYSIS/paired_analysis.py` 等硬绑定输入缺失；现有 CI 不覆盖完整 experiment-platform/PAPER 链 | FACT，blocking |
+| 正式分析链 | #64 已恢复 generic `experiment-run-manifest/v2` 的 paired analysis/claim 链并纳入 CI；`leo_sim_v2` 使用独立 request/manifest/result 合同，尚无 V2 artifact→指标重算→paired analysis→claim 闭环 | FACT，partial；R7-F1 仍 blocking |
 | 三轮三方无新问题 | 只完成局部 PR/局部模块审阅，没有在最终冻结平台上完成连续三轮 | FACT，未满足 |
 
 ## 3. 目标 A：实验就绪的门禁与工期
@@ -33,7 +33,7 @@
 | A0 文档与合同收敛 | 当前真相源唯一；实验清单、Q0 边界、claim 边界一致 | 本 PR 处理 | 1–2 日 |
 | A1 D1/D2 入 main | 精确 head 复核有效；CI 绿；合入后 main 全量与行为对照绿 | 候选已实现、未合并 | 1–2 日 |
 | A2 已知科学 blocker | 奖励正循环、mask 信息泄漏、deadline/Q0 控制范围有明确修复或冻结决策 | mask 已由 #62 关闭；其余 open | 2–5 日 |
-| A3 正式证据链 | compile、review、authorize、run、receipt、analysis、claim 测试均存在并在 CI/本地通过 | broken | 2–4 日 |
+| A3 正式证据链 | compile、review、authorize、run、receipt、analysis、claim 测试均存在并在 CI/本地通过 | generic 链已由 #64 恢复；V2 矩阵/结果分析/claim 仍 open | 2–4 日 |
 | A4 Q0 最小闭环 | Q0-I tiny 与独立穷举/第二实现一致；Q0-F tiny；逐事件 replay 可归因且 receipt 持久化 | 部分候选、需返工 | 3–6 日 |
 | A5 最终平台审计 | 冻结 commit 上三轮 Codex/不同模型/网页 GPT 无新增 blocking/major | 未开始最终三轮 | 2–5 日 |
 | A6 VM 与 pilot | 部署同一 main SHA；VM/TF 门禁、真实 smoke、E0 重扫、全臂 pilot 自然结束 | VM 版本落后 | 2–4 日 |
