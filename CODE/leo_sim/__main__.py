@@ -234,6 +234,7 @@ def _cmd_run(args) -> int:
         "mechanisms": {
             "policy": cfg["routing"]["policy"],
             "association": cfg["access"]["association"],
+            "rate_model": cfg["links"]["rate_model"],
             "control_plane": cfg["control_plane"]["enabled"],
             "ge_enabled": cfg["links"]["ge_enabled"],
             "learning": cfg["learning"]["algorithm"],

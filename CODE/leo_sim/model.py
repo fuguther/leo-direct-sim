@@ -326,6 +326,39 @@ class MemoizedGeometry:
             "next_isl_change", key,
             lambda: self._inner.next_isl_change(a, b, t, limit))
 
+    def next_slant_range_under(self, sat_id: int, lat: float, lon: float,
+                               threshold_km: float, t: float, limit: float):
+        """Next time in (t, limit] the ground link range drops to
+        threshold_km or below (certified with the RANGE_RATE_KM_S bound)."""
+        key = (sat_id, lat, lon, threshold_km, t, limit)
+        if self._compose:
+            def compute():
+                def margin(x):
+                    return threshold_km - self.slant_range_km(
+                        sat_id, lat, lon, x)
+                return _next_change_adaptive(margin, t, limit, RANGE_RATE_KM_S)
+            return self._lookup_result("next_slant_range_under", key, compute)
+        return self._lookup_result(
+            "next_slant_range_under", key,
+            lambda: self._inner.next_slant_range_under(
+                sat_id, lat, lon, threshold_km, t, limit))
+
+    def next_isl_range_under(self, a: int, b: int, threshold_km: float,
+                             t: float, limit: float):
+        """Next time in (t, limit] the ISL range drops to threshold_km or
+        below (certified with the RANGE_RATE_KM_S bound)."""
+        key = (a, b, threshold_km, t, limit)
+        if self._compose:
+            def compute():
+                def margin(x):
+                    return threshold_km - self.isl_range_km(a, b, x)
+                return _next_change_adaptive(margin, t, limit, RANGE_RATE_KM_S)
+            return self._lookup_result("next_isl_range_under", key, compute)
+        return self._lookup_result(
+            "next_isl_range_under", key,
+            lambda: self._inner.next_isl_range_under(
+                a, b, threshold_km, t, limit))
+
 
 def _next_change_adaptive(margin, t0: float, t1: float, rate_bound: float,
                           tol: float = 1e-9, max_iter: int = 1_000_000):
@@ -564,5 +597,31 @@ class Constellation:
             cx, cy, cz = pa[0] + s * dx, pa[1] + s * dy, pa[2] + s * dz
             closest = math.sqrt(cx * cx + cy * cy + cz * cz)
             return min(self.max_isl_km - rng, closest - EARTH_RADIUS_KM)
+
+        return _next_change_adaptive(margin, t, limit, RANGE_RATE_KM_S)
+
+    def next_slant_range_under(self, sat_id: int, lat: float, lon: float,
+                               threshold_km: float, t: float, limit: float):
+        """Next time in (t, limit] the GSL range is at most threshold_km.
+
+        Scheduling-only query (never an oracle channel for routing/learning);
+        stepping certified by the RANGE_RATE_KM_S bound, which also covers the
+        ground-station line-of-sight geometry (satellite orbital speed +
+        Earth rotation is bounded by the same constant).
+        """
+        def margin(x):
+            return threshold_km - self.slant_range_km(sat_id, lat, lon, x)
+
+        return _next_change_adaptive(margin, t, limit, RANGE_RATE_KM_S)
+
+    def next_isl_range_under(self, a: int, b: int, threshold_km: float,
+                             t: float, limit: float):
+        """Next time in (t, limit] the ISL range is at most threshold_km.
+
+        Scheduling-only query (never an oracle channel for routing/learning);
+        stepping certified by the RANGE_RATE_KM_S bound.
+        """
+        def margin(x):
+            return threshold_km - self.isl_range_km(a, b, x)
 
         return _next_change_adaptive(margin, t, limit, RANGE_RATE_KM_S)

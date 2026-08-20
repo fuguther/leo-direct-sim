@@ -12,6 +12,16 @@
 - 当前周期结束后原样归档；不得通过压缩删除失败、REQUEST_CHANGES 或未验证记录。
 - 实时问题状态只在 `ANALYSIS/FINDINGS-REGISTRY.md` 更新。
 
+## 2026-08-20：D1 第 8 轮返工与 main 合并
+
+- 第 8 轮 exact-SHA 审阅对 `0e1f2a8` 返回 `REQUEST_CHANGES`：constant 配置虽已
+  忽略 RF/MCS 数值，Kernel 初始化仍无条件派生 MCS 门限，导致配置解析成功后启动崩溃。
+- `a5dfb33` 扩充回归到真实 `Kernel` 构造；constant 分支完全跳过 RFParams/MCS range
+  派生，MCS 分支保持原校验/派生路径。上一轮同时关闭 completion/retirement 竞态、
+  精确服务时长、非 tick 恢复及 capacity 路由同源动态速率。
+- 合并最新 main 时同时保留 R1-A2 的 `cache_hops` 信息边界与 D1 的
+  `rate_from_propagation` 动态容量；两个回归组均作为合并验收门。
+
 ## 2026-08-20：文档真相源收敛
 
 - PR #58 已 squash 合并为 `e15c457d71db42e279d3599ecbbe5969608e8261`；主题为

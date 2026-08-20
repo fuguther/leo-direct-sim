@@ -16,6 +16,8 @@ from typing import Any, Mapping
 
 import yaml
 
+from . import link_budget
+
 CONFIG_SCHEMA_VERSION = "leo-sim-config/v1"
 TRACE_IDENTITY_VERSION = "leo-sim-trace-identity/v1"
 
@@ -106,6 +108,11 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "idle_release_s": (int, float),  # idle hold before releasing to waiters
     },
     "links": {
+        "rate_model": str,  # constant|mcs (legacy distance-dependent MCS rates)
+        "mcs_table": str,   # legacy-dvbs2x (the only supported table)
+        "rf_isl": dict,     # legacy markovianMatchingTwo ISL RF params
+        "rf_uplink": dict,  # legacy Gateway.gs2ngeo (ground -> satellite)
+        "rf_downlink": dict,  # legacy Satellite.ngeo2gt (satellite -> ground)
         "isl_rate_mbps": (int, float),
         "isl_queue_bits": int,
         "isl_dirs": list,  # subset of ["N","S","E","W"]
@@ -179,6 +186,13 @@ VALID_POLICIES = {"hop", "delay", "capacity", "oracle"}
 VALID_CONTRACTS = {"C1", "C3", "C4", "C5", "C6", "C7", "GAT", "MPNN"}
 VALID_ALGORITHMS = {"none", "ddqn", "qlearning"}
 VALID_ISL_DIRS = {"N", "S", "E", "W"}
+VALID_RATE_MODELS = {"constant", "mcs"}
+RF_KEYS = {
+    "frequency_hz", "bandwidth_hz", "max_ptx_w",
+    "antenna_diameter_tx_m", "antenna_diameter_rx_m",
+    "pointing_loss_db", "noise_figure_db", "noise_temperature_k",
+    "min_rate_bps",
+}
 
 DEFAULTS: dict[str, dict[str, Any]] = {
     "scenario": {
@@ -230,6 +244,29 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "idle_release_s": 1.0,
     },
     "links": {
+        "rate_model": "constant",
+        "mcs_table": link_budget.LEGACY_DVBS2X,
+        # legacy ISL params, markovianMatchingTwo (SimulationRL.py:8353)
+        "rf_isl": {
+            "frequency_hz": 26e9, "bandwidth_hz": 500e6, "max_ptx_w": 10.0,
+            "antenna_diameter_tx_m": 0.26, "antenna_diameter_rx_m": 0.26,
+            "pointing_loss_db": 0.3, "noise_figure_db": 2.0,
+            "noise_temperature_k": 290.0, "min_rate_bps": 10_000.0,
+        },
+        # legacy Gateway.gs2ngeo (SimulationRL.py:2617)
+        "rf_uplink": {
+            "frequency_hz": 30e9, "bandwidth_hz": 500e6, "max_ptx_w": 20.0,
+            "antenna_diameter_tx_m": 0.33, "antenna_diameter_rx_m": 0.26,
+            "pointing_loss_db": 0.3, "noise_figure_db": 2.0,
+            "noise_temperature_k": 290.0, "min_rate_bps": 10_000.0,
+        },
+        # legacy Satellite.ngeo2gt globals (SimulationRL.py:297-310, :1935)
+        "rf_downlink": {
+            "frequency_hz": 20e9, "bandwidth_hz": 500e6, "max_ptx_w": 10.0,
+            "antenna_diameter_tx_m": 0.26, "antenna_diameter_rx_m": 0.26,
+            "pointing_loss_db": 0.3, "noise_figure_db": 2.0,
+            "noise_temperature_k": 290.0, "min_rate_bps": 10_000.0,
+        },
         "isl_rate_mbps": 1000.0,
         "isl_queue_bits": 256_000_000,
         "isl_dirs": ["N", "S", "E", "W"],
@@ -485,6 +522,41 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
                or ge[k] <= 0
                for k in ("mean_good_s", "mean_bad_s")):
             raise ConfigError(f"links.{name} mean dwell times must be > 0")
+    if lk["rate_model"] not in VALID_RATE_MODELS:
+        raise ConfigError(
+            f"links.rate_model must be one of {sorted(VALID_RATE_MODELS)}")
+    for label in ("rf_isl", "rf_uplink", "rf_downlink"):
+        rf = lk[label]
+        if not isinstance(rf, Mapping) or set(rf) != RF_KEYS:
+            raise ConfigError(
+                f"links.{label} must have exactly "
+                f"{sorted(RF_KEYS)}")
+    if lk["rate_model"] == "mcs":
+        if lk["mcs_table"] != link_budget.LEGACY_DVBS2X:
+            raise ConfigError(
+                f"links.mcs_table currently supports only "
+                f"{link_budget.LEGACY_DVBS2X!r}")
+        for label in ("rf_isl", "rf_uplink", "rf_downlink"):
+            rf = lk[label]
+            for key in RF_KEYS:
+                v = rf[key]
+                if isinstance(v, bool) or not isinstance(v, (int, float)) \
+                        or not math.isfinite(v) or v <= 0:
+                    raise ConfigError(
+                        f"links.{label}.{key} must be a positive number")
+        # The certified rate-recovery threshold assumes the first non-zero MCS
+        # step already satisfies min_rate_bps; otherwise the effective
+        # rate-up distance is not the SNR threshold and recovery would be
+        # mis-scheduled.  Fail closed instead of silently approximating.
+        for label in ("rf_isl", "rf_uplink", "rf_downlink"):
+            rf = lk[label]
+            step_rate = link_budget.LEGACY_DVBS2X_SPEFF[1] \
+                * rf["bandwidth_hz"]
+            if step_rate < rf["min_rate_bps"]:
+                raise ConfigError(
+                    f"links.rate_model=mcs requires {label}.min_rate_bps <= "
+                    f"bandwidth_hz*min(MCS speff) (got {rf['min_rate_bps']} "
+                    f"vs {step_rate})")
     if cp["vis_k"] < 0:
         raise ConfigError("control_plane.vis_k must be >= 0")
     if cp["ttl_s"] <= 0 or cp["advertise_interval_s"] <= 0 or cp["packet_bits"] < 1:
