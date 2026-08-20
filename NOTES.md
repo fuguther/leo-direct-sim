@@ -261,3 +261,14 @@
   `traffic_transform`，burst/diurnal 参数与 resolved config 不一致时 receipt fail closed。
 - 验证：trace/receipt 定向 `119 passed`；全量 `565 passed, 1 skipped, 3 subtests passed`。
 - 之前 `499d2e6` 的 burst smoke 仍只算工程 plumbing，不能当已关闭证据；待本修复合入并重新部署后重跑。
+
+## 2026-08-21：0c378a5 修复版 VM burst 重验
+
+- 修复版 main `0c378a5c7538536d4ea65f4a3ac1e2b7c542ade9` 已部署；deployment receipt
+  `7a3c06a61b851b2ae282f83749931bb5f6ee7ab7abd3a63ca0492201669835f7`；source tree SHA
+  `abf0c04963564ad4bd9e9c61e5de0971c669ed85fafa71146f21573562c38ccd`。
+- `CODE/Results/_codex_vm_burst_smoke_0c378a5`：natural end、85/85 delivered、守恒通过、
+  receipt verify=`verified`；`traffic_transform.burst={start_s:10,duration_s:20,multiplier:3}`，
+  offered-load 账本 `85,000,000 bits / 60 s` 可重算。
+- 同一部署还完成 MCS smoke：receipt `effective.mcs=true`，服务窗速率出现
+  `283.9025 Mbps / 2.103214 Gbps / 2.9504275 Gbps`；结果仍为工程证据，不是正式论文样本。

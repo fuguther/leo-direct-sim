@@ -1,6 +1,6 @@
 # LEO 拥塞控制与链路利用率实验总计划
 
-> CURRENT；最后核验：2026-08-21。当前 main `499d2e6` 已部署 VM 并完成非正式工程 smoke；本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
+> CURRENT；最后核验：2026-08-21。当前 main `0c378a5` 已部署 VM 并完成非正式/MCS/burst 工程 smoke；本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
 
 ## 1. 研究主线与工作方法
 
@@ -39,7 +39,7 @@
 - 合入并验证 D1/D2；
 - 冻结物理目标与奖励语义，保留动作 mask 信息边界回归；
 - 闭合 V2 `compile → review → authorize → run → receipt → metric recomputation → paired analysis → claim`；
-- 冻结同一 main SHA，独立冷审后部署到 VM，跑 natural-end smoke；当前 `499d2e6` 已完成非正式 smoke，正式授权 cohort 仍需按 runbook 执行。
+- 冻结同一 main SHA，独立冷审后部署到 VM，跑 natural-end smoke；当前 `0c378a5` 已完成非正式/MCS/burst smoke，正式授权 cohort 仍需按 runbook 执行。
 
 P0 的验收是“同一 SHA 的结果可以被重新算出来并拒绝篡改”，不是仅有 pytest 绿。
 
