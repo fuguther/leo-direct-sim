@@ -1,0 +1,70 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:LEO-READINESS-PLAN-REVIEW-BFA0",
+    "title": "Independent readiness and experiment dependency review",
+    "goal": "Build an evidence-bounded hierarchy from total goal to prerequisites, ordered tasks, experiment families, and readiness gates; flag contradictions and unknowns.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+      "paths": [
+        "README.md",
+        "NOTES.md",
+        "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+        "ANALYSIS/MIGRATION-BACKLOG-20260816.md",
+        "ANALYSIS/LEGACY-DESIGN-AUDIT-20260819.md",
+        "ANALYSIS/LEGACY-FEATURE-LEDGER-20260819.md",
+        "ANALYSIS/FINDINGS-REGISTRY.md",
+        "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+        "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md",
+        "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+        "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/07-experiment-plan-20260814.md",
+        "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/08-experiment-matrix-20260814.md",
+        "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/09-experiment-config-20260814.md",
+        "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/10-e0-load-finalization-20260815.md",
+        "EXPERIMENTS/README.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Separates total goal, prerequisites, task order, experiments, and optional scope",
+      "Every completion/readiness assertion cites an exact path and line anchor",
+      "Explicitly lists contradictions and open items",
+      "Uses FACT / INFERENCE / 未验证 labels"
+    ],
+    "requiredEvidence": [
+      "Exact GitHub permalinks with line anchors",
+      "Dependency-ordered task list",
+      "Open-items declaration"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "c9af2b08446ec4a3418715fa948cf8c909a3240f17f5b359c287b952bdca1b8f"
+}
