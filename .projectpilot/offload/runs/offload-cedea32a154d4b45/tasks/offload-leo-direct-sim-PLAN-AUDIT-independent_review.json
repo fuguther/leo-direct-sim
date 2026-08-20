@@ -1,0 +1,63 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:PLAN-AUDIT:independent_review",
+    "title": "拥塞与链路利用率研究路线冷审",
+    "goal": "以 commit 5b3ec5f35c5f193408b1800a769c2dca882a2559 的现有真相源和 leo_sim 代码为准，审查当前实验计划与新研究主线是否一致。必须给出：A. 论文级正式实验前的平台必做项；B. 只在特定阶段/实验前做的项；C. 可明确牺牲的真实性；D. 从真实流量诊断到理论推导再到新拥塞控制方案的最短有依赖顺序；E. 当前文档中的矛盾、过时状态和不合理门禁。重点覆盖 D1/D2、reward、V2 证据链、真实流量/多OD/突发、per-action 距离速率可用性、逐字段 age、queue/tx/prop 三段时延、链路利用率可重算、replay 续训、Q0-I/F。不要写代码，不要把 Q0 当作 E0/pilot 的默认平台前置，除非给出因果理由。输出人话说明和表格，每条结论引用 GitHub 文件与精确行号；最后列 open_items。按深度任务五阶段工作，主动找反例和替代顺序，不少于 3000 字。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "5b3ec5f35c5f193408b1800a769c2dca882a2559",
+      "paths": [
+        "ANALYSIS/EXPERIMENT-PROGRAM.md",
+        "EXPERIMENTS/experiment-program.yaml",
+        "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+        "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md",
+        "ANALYSIS/LEGACY-DESIGN-AUDIT-20260819.md",
+        "ANALYSIS/MIGRATION-BACKLOG-20260816.md",
+        "ANALYSIS/Q0-INFORMATION-ABLATION-PROTOCOL.md",
+        "ANALYSIS/FINDINGS-REGISTRY.md",
+        "CODE/leo_sim/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "平台必做、阶段必做、可牺牲三类边界明确",
+      "顺序以真实流量诊断到理论再到新方案为主线",
+      "每个 major 结论有精确仓库证据和反例检查",
+      "明确列出文档矛盾和 open_items"
+    ],
+    "requiredEvidence": [
+      "GitHub exact-commit 行号引用",
+      "现有实验依赖与能力台账交叉证据"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "3d86d510738741624757ee05c38018ca77921ba6f2db178222faa3c90cea6e04"
+}
