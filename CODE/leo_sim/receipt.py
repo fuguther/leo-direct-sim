@@ -224,7 +224,8 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
         errors.append("manifest packet_id_contract mismatch")
     provenance_contract = manifest.get("provenance_contract")
     if not isinstance(provenance_contract, dict) or set(provenance_contract) != {
-            "schema", "source", "units", "od_mapping", "offered_load"}:
+            "schema", "source", "units", "od_mapping", "offered_load",
+            "traffic_transform"}:
         errors.append("manifest provenance_contract keys mismatch")
     else:
         if provenance_contract.get("schema") != "leo-sim-trace-provenance/v1":
@@ -246,6 +247,10 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
                 "load_mode", "target_offered_mbps", "realized_offered_mbps",
                 "horizon_s", "packet_bits", "offered_packets", "offered_bits"}:
             errors.append("manifest provenance offered_load keys mismatch")
+        transform = provenance_contract.get("traffic_transform")
+        if not isinstance(transform, dict) or set(transform) != {
+                "mode", "burst", "diurnal"}:
+            errors.append("manifest provenance traffic_transform keys mismatch")
     if resolved_version is not None and manifest.get("config_version") != resolved_version:
         errors.append("manifest config_version mismatch")
     if resolved_cfg is None:
@@ -322,6 +327,7 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
         units = provenance_contract.get("units", {})
         od_mapping = provenance_contract.get("od_mapping", {})
         offered_load = provenance_contract.get("offered_load", {})
+        transform = provenance_contract.get("traffic_transform", {})
         if source.get("sha256") != manifest.get("input_sha256"):
             errors.append("provenance source SHA != manifest input SHA")
         expected_source_type = {
@@ -345,6 +351,25 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
         if offered_load.get("offered_packets") != manifest.get("offered_packets") \
                 or offered_load.get("offered_bits") != manifest.get("offered_bits"):
             errors.append("provenance offered_load ledger mismatch")
+        if transform.get("mode") != mode:
+            errors.append("provenance traffic transform mode mismatch")
+        expected_burst = None
+        if mode == "burst":
+            expected_burst = {
+                "start_s": float(resolved_cfg["demand"]["burst_start_s"]),
+                "duration_s": float(resolved_cfg["demand"]["burst_duration_s"]),
+                "multiplier": float(resolved_cfg["demand"]["burst_multiplier"]),
+            }
+        if transform.get("burst") != expected_burst:
+            errors.append("provenance burst transform mismatch")
+        expected_diurnal = None
+        if mode == "diurnal":
+            expected_diurnal = {
+                "amplitude": float(resolved_cfg["demand"]["diurnal_amplitude"]),
+                "phase_h": float(resolved_cfg["demand"]["diurnal_phase_h"]),
+            }
+        if transform.get("diurnal") != expected_diurnal:
+            errors.append("provenance diurnal transform mismatch")
     return errors
 
 
