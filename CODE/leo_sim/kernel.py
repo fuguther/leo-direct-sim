@@ -1118,6 +1118,15 @@ class Kernel:
         per_ep_rows: dict[str, list[dict]] = {}
         for r in rows:
             per_ep_rows.setdefault(r["src_grid_id"], []).append(r)
+        # Measurement-only endpoint universe.  These coordinates are kept
+        # separate from lazy TrafficEndpoint activation so the physical
+        # capacity denominator cannot depend on whether a demand packet has
+        # arrived yet (and cannot leak that universe into routing/learning).
+        self._metric_endpoint_specs = {
+            cell: gridmod.grid_center(cell)
+            for r in rows
+            for cell in (r["src_grid_id"], r["dst_grid_id"])
+        }
 
         self.topo = routing.build_topology(
             self.geometry, self.num_sats, self.cfg_links["isl_dirs"],
@@ -1185,6 +1194,7 @@ class Kernel:
         # records instead of trusting a pre-aggregated counter.
         self.packet_events: list[dict] = []
         self.link_service_windows: list[dict] = []
+        self.link_available_windows: list[dict] = []
         self._metric_queue_seq = 0
         self._metric_prop_seq = 0
         self.handover_events: list[dict] = []
@@ -1513,6 +1523,87 @@ class Kernel:
             if self.env.now >= self.horizon:
                 return
             self._recompute_topology(self.env.now)
+
+    def _metric_available_rate(self, stage: str, sat: int, t: float,
+                               *, peer: int | None = None,
+                               lat: float | None = None,
+                               lon: float | None = None) -> float:
+        """Return the physical rate used by the availability denominator.
+
+        This is deliberately geometry/rate only.  Queue occupancy, access
+        association, and stochastic GE outages are not capacity: they are
+        explained by the numerator/fate and queue metrics instead.
+        """
+        if self.rate_model == "constant":
+            if stage == "isl":
+                return self.isl_rate_bps
+            return self.ul_rate_bps if stage == "uplink" else self.dl_rate_bps
+        if stage == "isl":
+            return link_budget.mcs_rate_bps(
+                self.geometry.isl_range_km(sat, peer, t),
+                self.rf_isl, self.mcs_table)
+        rf = self.rf_uplink if stage == "uplink" else self.rf_downlink
+        return link_budget.mcs_rate_bps(
+            self.geometry.slant_range_km(sat, lat, lon, t),
+            rf, self.mcs_table)
+
+    def _record_available_capacity_sample(self, start: float, end: float,
+                                           sample_at: float) -> None:
+        """Record one fixed-interval physical link-capacity sample.
+
+        The midpoint sample and explicit interval are part of the evidence
+        contract.  We do not infer availability from service windows, so idle
+        links remain visible in the denominator.
+        """
+        if end <= start:
+            return
+        rows: list[tuple[str, str, float]] = []
+        for cell, (lat, lon) in sorted(self._metric_endpoint_specs.items()):
+            for sat in range(self.num_sats):
+                if not self.geometry.gsl_available(sat, lat, lon, sample_at):
+                    continue
+                rate = self._metric_available_rate(
+                    "uplink", sat, sample_at, lat=lat, lon=lon)
+                if rate > 0:
+                    rows.append(("uplink", f"gsl:uplink:{sat}:{cell}", rate))
+                rate = self._metric_available_rate(
+                    "downlink", sat, sample_at, lat=lat, lon=lon)
+                if rate > 0:
+                    rows.append(("downlink", f"gsl:downlink:{sat}:{cell}", rate))
+
+        topo = (routing.build_topology(
+                    self.geometry, self.num_sats, self.cfg_links["isl_dirs"],
+                    t=sample_at)
+                if self.cfg_topo["recompute_interval_s"] is not None
+                else self.topo)
+        for sat in range(self.num_sats):
+            for _direction, peer in sorted(topo[sat].items()):
+                if not self.geometry.isl_available(sat, peer, sample_at):
+                    continue
+                rate = self._metric_available_rate(
+                    "isl", sat, sample_at, peer=peer)
+                if rate > 0:
+                    rows.append(("isl", f"isl:{sat}:{peer}", rate))
+
+        for stage, link_id, rate in sorted(rows, key=lambda x: (x[0], x[1])):
+            self.link_available_windows.append({
+                "stage": stage,
+                "link_id": link_id,
+                "start": float(start),
+                "end": float(end),
+                "rate_bps": float(rate),
+                "capacity_bits": float(rate) * (end - start),
+            })
+
+    def _available_capacity_ticker(self):
+        interval = float(self.cfg_ex["available_capacity_interval_s"])
+        start = 0.0
+        while start < self.horizon:
+            end = min(self.horizon, start + interval)
+            sample_at = start + (end - start) / 2.0
+            self._record_available_capacity_sample(start, end, sample_at)
+            yield self.env.timeout(max(0.0, end - self.env.now))
+            start = end
 
     def _recompute_topology(self, now: float):
         new_topo = routing.build_topology(
@@ -2263,6 +2354,10 @@ class Kernel:
         """Guarantees the simulation clock reaches the exact horizon, so
         final accounting (in-service occupation, queue areas, IN_SYSTEM)
         settles at the configured horizon, never at a stray last event."""
+        # Start measurement after the already-created endpoint/emitter
+        # processes.  This preserves the historical same-time ordering used
+        # by deterministic kernel tests while still sampling from t=0.
+        self.env.process(self._available_capacity_ticker())
         yield self.env.timeout(self.horizon)
         self.closed_at = self.env.now
 
@@ -3340,6 +3435,7 @@ class Kernel:
         }
         congestion_metrics = metrics.summarize(
             self.packet_events, self.link_service_windows,
+            available_capacity_windows=self.link_available_windows,
             non_arrival_pids=non_arrival_pids)
         result = {
             "natural_end": not interrupted,
@@ -3358,6 +3454,7 @@ class Kernel:
             "service_log": self.service_log,
             "packet_events": list(self.packet_events),
             "link_service_windows": list(self.link_service_windows),
+            "link_available_windows": list(self.link_available_windows),
             "congestion_metrics": congestion_metrics,
             "handover": {"events": self.handover_events},
             "control": {

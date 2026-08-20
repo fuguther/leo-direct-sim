@@ -356,3 +356,10 @@
 - 本地结果（同一运行合同、各自 trace/config SHA）：50 Mbps = 461 offered / 440 delivered / 20 `ACCESS_REJECTED` / 1 `IN_SYSTEM_AT_STOP`，config `e27ed88d83e8bb39f1b858cfe4e725d4291f2a9a4fe5d9d14d10973918c0a0e2`，trace `dfe47500712ddc353c4ba5b9564d943be7f10018d07e36bdeb52b4d35d166910`；100 Mbps = 944 / 877 / 60 / 7 `HOLDING_QUEUE_OVERFLOW`，config `a7acd58e141152bd00a347f737bacaab03653abe5db730c9f6b31684d058c953`，trace `9a41cd118c2c44fc76785047cafcaa194ea999c78d28fafed449588d721f65da`；200 Mbps = 1940 / 1816 / 96 / 28 `HOLDING_QUEUE_OVERFLOW`，config `6bd42a0d15ee1d5d0a18324d6a6f3679d8374dfdd0b948b325ad94abfca0c7ee`，trace `eba4359f12a9247ee85e32bd39a49cf404677d41dad2bfa6c7d7f39cab09bfe1`。三档均 natural end、conservation true、receipt verified；本地墙钟约 78.7/79.0/79.3 s。
 - VM 结果（同一部署代码）：100 Mbps = 944 / 877 / 60 / 7 holding overflow，config `a7c4efd26dc6dd41064c7f066e2de005ce9495cf4453b423a0cf57cf26bcf9a4`，trace 与本地相同，wall `265.85 s`；200 Mbps = 1940 / 1816 / 96 / 28 holding overflow，config `1446e0bddfea67481995ffaa555e316627c4a91655d82b995f6a23101508def0`，trace 与本地相同，wall `264.48 s`。两档均 natural end、conservation true、receipt verified；50 Mbps 同部署的 140 星 60 s smoke 已在上一条记录中验证。
 - 暂定候选：50 Mbps 低负载、100 Mbps 中负载、200 Mbps 高/压力负载；10 Mbps 只做 sanity。该表仍不是正式论文结果：available-capacity 分母、逐包三段时延、正式授权 E0 和资源 RSS 门禁仍未完成。VM 墙钟约为本地 3.4 倍，后续训练预算必须按 VM 实测调整。
+
+## 2026-08-21：逐向物理可用容量分母（候选，待独立复核）
+
+- 分支：`codex/20260821-available-capacity`；新增 `execution.available_capacity_interval_s`（默认 1 s）和独立的 `link_available_windows` ledger。每个固定区间用中点采样几何可用、MCS/固定速率为正的有向 GSL/ISL，空闲链路也进入利用率分母；不把队列占用、服务窗口或学习观测混进容量定义。
+- `metrics.summarize` 现在同时重算 service capacity 与 physical available capacity，输出 `available_capacity_bits`、`available_time_s`、`available_samples` 和 `utilization=served/available`；无新采样的手写旧 fixture 保持旧分母兼容。receipt 将原始 availability ledger 纳入 `ledgers_sha256`，验证时重新计算 metrics。
+- 验证：定向 `118 passed`；`pytest -q CODE/leo_sim/tests CODE/tests` = **528 passed**；M-Lab 10 s smoke = natural end、18/18 delivered、conservation true、receipt verified，2592 availability windows，链接利用率不再全部接近 1（本次范围 0.0--0.001）。
+- 边界：采样分母是明确的固定间隔物理机会估计，不是连续时间解析积分；GE outage 不从物理容量中扣除，而由独立 fate/队列指标解释。需要独立冷审、长窗 MCS VM 验证和资源成本评估后才能合入主线。

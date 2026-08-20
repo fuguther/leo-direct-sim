@@ -26,7 +26,7 @@ def test_summarize_recomputes_queue_tx_propagation_and_link_utilization():
         "pid": 1, "stage": "isl", "link_id": "isl:0:1",
         "start": 0.5, "end": 0.75, "rate_bps": 400.0,
         "capacity_bits": 100.0, "served_bits": 100,
-        "outcome": "ok",
+        "bits": 100, "outcome": "ok",
     }]
 
     got = metrics.summarize(events, windows)
@@ -41,6 +41,44 @@ def test_summarize_recomputes_queue_tx_propagation_and_link_utilization():
     assert link["served_bits"] == 100
     assert link["utilization"] == pytest.approx(1.0)
     assert got["validation"]["ok"] is True
+
+
+def test_summarize_uses_idle_physical_capacity_as_utilization_denominator():
+    windows = [{
+        "pid": 1, "stage": "isl", "link_id": "isl:0:1",
+        "start": 0.5, "end": 0.75, "rate_bps": 400.0,
+        "capacity_bits": 100.0, "served_bits": 100,
+        "bits": 100, "outcome": "ok",
+    }]
+    available = [{
+        "stage": "isl", "link_id": "isl:0:1",
+        "start": 0.0, "end": 1.0, "rate_bps": 400.0,
+        "capacity_bits": 400.0,
+    }]
+    got = metrics.summarize([], windows,
+                            available_capacity_windows=available)
+    link = got["links"]["isl:0:1"]
+    assert link["capacity_bits"] == pytest.approx(100.0)
+    assert link["available_capacity_bits"] == pytest.approx(400.0)
+    assert link["available_time_s"] == pytest.approx(1.0)
+    assert link["available_samples"] == 1
+    assert link["utilization"] == pytest.approx(0.25)
+
+
+def test_summarize_rejects_service_above_sampled_available_capacity():
+    with pytest.raises(metrics.MetricsError, match="available capacity"):
+        metrics.summarize(
+            [], [{
+                "pid": 1, "stage": "isl", "link_id": "isl:0:1",
+                "start": 0.0, "end": 1.0, "rate_bps": 200.0,
+                "capacity_bits": 200.0, "served_bits": 200,
+                "bits": 200, "outcome": "ok",
+            }],
+            available_capacity_windows=[{
+                "stage": "isl", "link_id": "isl:0:1",
+                "start": 0.0, "end": 1.0, "rate_bps": 100.0,
+                "capacity_bits": 100.0,
+            }])
 
 
 def test_summarize_rejects_orphan_service_start():
@@ -137,3 +175,6 @@ def test_kernel_persists_real_event_metrics_for_a_delivered_packet():
         result["deliveries"][1]["delivered_at"])
     assert result["packet_events"]
     assert result["link_service_windows"]
+    assert result["link_available_windows"]
+    assert any(v["available_capacity_bits"] > v["capacity_bits"]
+               for v in result["congestion_metrics"]["links"].values())

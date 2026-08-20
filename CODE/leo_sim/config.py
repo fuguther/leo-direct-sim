@@ -175,6 +175,9 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "max_packets": int,
         "monitor": bool,
         "dry_run": bool,
+        # Physical-capacity measurement samples are diagnostic evidence; a
+        # fixed interval makes the denominator explicit and reproducible.
+        "available_capacity_interval_s": (int, float),
     },
     "outputs": {
         "out_dir": str,
@@ -334,6 +337,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "max_packets": 200_000,
         "monitor": False,
         "dry_run": False,
+        "available_capacity_interval_s": 1.0,
     },
     "outputs": {"out_dir": "leo_sim_out", "trace_path": None, "plotting": False},
 }
@@ -701,6 +705,11 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
     for f in ("max_events", "max_entities", "max_packets"):
         if ex[f] < 1:
             raise ConfigError(f"execution.{f} must be >= 1")
+    if (isinstance(ex["available_capacity_interval_s"], bool)
+            or ex["available_capacity_interval_s"] <= 0
+            or not math.isfinite(ex["available_capacity_interval_s"])):
+        raise ConfigError(
+            "execution.available_capacity_interval_s must be finite and > 0")
 
 
 def trace_identity_payload(resolved: dict) -> dict:

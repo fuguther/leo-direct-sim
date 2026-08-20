@@ -62,6 +62,7 @@ LEDGER_KEYS = {
     "mechanism_counters", "occupied", "queue_area_bits_s", "handover_events",
     "access", "events_processed", "stop_time_s", "deliveries",
     "field_authority", "learning", "packet_events", "link_service_windows",
+    "link_available_windows",
     "congestion_metrics",
 }
 CONTROL_COUNTER_KEYS = {
@@ -105,6 +106,7 @@ FIELD_AUTHORITY = {
     "deliveries": "recomputed",
     "packet_events": "diagnostic",
     "link_service_windows": "diagnostic",
+    "link_available_windows": "diagnostic",
     "congestion_metrics": "recomputed",
     "learning": "ledger_consistency",
 }
@@ -424,6 +426,7 @@ def build_ledgers(result: dict, rows: list[dict]) -> dict:
         "deliveries": {str(pid): d for pid, d in result["deliveries"].items()},
         "packet_events": result["packet_events"],
         "link_service_windows": result["link_service_windows"],
+        "link_available_windows": result["link_available_windows"],
         "congestion_metrics": result["congestion_metrics"],
         "learning": (result.get("learning")
                      if result.get("learning") is not None
@@ -551,6 +554,7 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
 
     raw_events = ledgers.get("packet_events")
     raw_windows = ledgers.get("link_service_windows")
+    raw_available = ledgers.get("link_available_windows")
     stored_metrics = ledgers.get("congestion_metrics")
     # A packet may have a valid propagation start but no arrival because the
     # run horizon (or an explicit terminal loss) cut the flight short.  The
@@ -569,7 +573,9 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
                 non_arrival_pids.add(int(pid_s))
     try:
         recomputed_metrics = metrics.summarize(
-            raw_events, raw_windows, non_arrival_pids=non_arrival_pids)
+            raw_events, raw_windows,
+            available_capacity_windows=raw_available,
+            non_arrival_pids=non_arrival_pids)
     except metrics.MetricsError as exc:
         errors.append(f"congestion metrics invalid: {exc}")
     else:
