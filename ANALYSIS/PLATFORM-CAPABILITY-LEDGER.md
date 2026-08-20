@@ -1,6 +1,6 @@
 # leo_sim V2 平台能力账本
 
-> CURRENT；最后核验：2026-08-21，runtime main `ac0d019`，已部署 canonical VM。本文只记录已经有当前代码、测试或 VM 证据支撑的状态；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移决策见 `MIGRATION-BACKLOG-20260816.md`。
+> CURRENT；最后核验：2026-08-21，runtime main `b356d03`，已部署 canonical VM。本文只记录已经有当前代码、测试或 VM 证据支撑的状态；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移决策见 `MIGRATION-BACKLOG-20260816.md`。
 
 ## 判定与优先级
 
@@ -28,7 +28,7 @@
 | Q0 计划注入与执行归因 | 无 | 候选分支存在但审阅未通过，尚未形成可用于正式结论的执行归因闭环 | BLOCKER-THEORY | action_id 贯穿执行；receipt 持久化 verdict/errors/executed；不阻塞工程 smoke，但阻塞 Q0 结论 |
 | Q0-I/Q0-F tiny | 无统一实现 | Q0-I/Q0-F tiny 尚未完成可接受的交叉验证闭环 | BLOCKER-THEORY | 独立穷举/第二算法交叉验证；从真实诊断窗口抽 tiny |
 | 真实流量 provenance、多 OD、突发 | 有多种模式 | M-Lab 文件、source/SHA、字段/小时覆盖、OD 映射和 burst 变换已合入；50/100/200 Mbps 多 OD + burst 已在当前部署代码上完成本地和 VM 工程 receipt 验证；M-Lab/人口仍是代理，小时用于覆盖审计而非逐小时强度重放 | BLOCKER-DIAG | 进入正式授权 cohort 前仍需把 offered-load、available-capacity 和分析链绑定；代理不得冒充原始 packet trace |
-| 逐向链路利用率可重算 | 聚合统计较多 | 有服务窗容量/served bits 及本地 queue/tx/prop 重算；**分母仍是已记录服务窗容量，不是几何 available capacity，正式 VM 证据尚未完成** | BLOCKER-DIAG | 明确 available-capacity 分母，按方向/窗口持久化并做独立重算与负对照 |
+| 逐向链路利用率可重算 | 聚合统计较多 | **physical available-capacity 分母已合入**；按拓扑/几何/MCS 分段的 `link_available_windows` 已在 140 星 60 s VM E0 产生 29,656 个窗口，receipt 已纳入 ledger hash；正式独立重算、负对照和三段时延仍未完成 | BLOCKER-DIAG | 对 VM artifact 做独立重算，按方向/窗口核对 available/served/utilization，并补 queue/tx/prop 三段和 gate |
 | per-action 斜距/速率/方向特征 | RAAC 有 4×9 action_feats | V2 内部路由能访问相关量，但 decision sink 无逐动作等价物 | BLOCKER-THEORY | INFO-LADDER 前加入 distance/rate/availability/observed_at/source；不默认给所有臂 |
 | 逐字段 AoI | 旧有定时观测/年龄统计 | V2 是 cache-entry 级 age，未有字段级 generated/received/source age | BLOCKER-THEORY | AGE-LADDER 前完成并做 shuffle/fixed-fresh 负对照 |
 | 每包 queue/tx/prop 分解 | 有 | 内部事件和本地重算已有；receipt 已修复合法 horizon in-flight 传播的重算，正式 VM artifact、三段和校验及失败/积压覆盖仍未完成 | BLOCKER-DIAG | 在正式 receipt/analysis 中逐包持久化 queue/tx/prop/e2e，并完成三段和 gate |
