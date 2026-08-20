@@ -907,18 +907,27 @@ class Kernel:
         # legacy RF params once at service start).
         self.rate_model = self.cfg_links["rate_model"]
         self.mcs_table = self.cfg_links["mcs_table"]
-        self.rf_isl = link_budget.RFParams.from_mapping(
-            self.cfg_links["rf_isl"])
-        self.rf_uplink = link_budget.RFParams.from_mapping(
-            self.cfg_links["rf_uplink"])
-        self.rf_downlink = link_budget.RFParams.from_mapping(
-            self.cfg_links["rf_downlink"])
-        self.rate_max_isl_km = link_budget.max_rate_range_km(
-            self.rf_isl, self.mcs_table)
-        self.rate_max_uplink_km = link_budget.max_rate_range_km(
-            self.rf_uplink, self.mcs_table)
-        self.rate_max_downlink_km = link_budget.max_rate_range_km(
-            self.rf_downlink, self.mcs_table)
+        if self.rate_model == "mcs":
+            self.rf_isl = link_budget.RFParams.from_mapping(
+                self.cfg_links["rf_isl"])
+            self.rf_uplink = link_budget.RFParams.from_mapping(
+                self.cfg_links["rf_uplink"])
+            self.rf_downlink = link_budget.RFParams.from_mapping(
+                self.cfg_links["rf_downlink"])
+            self.rate_max_isl_km = link_budget.max_rate_range_km(
+                self.rf_isl, self.mcs_table)
+            self.rate_max_uplink_km = link_budget.max_rate_range_km(
+                self.rf_uplink, self.mcs_table)
+            self.rate_max_downlink_km = link_budget.max_rate_range_km(
+                self.rf_downlink, self.mcs_table)
+        else:
+            # Constant-rate mode never consumes RF/MCS configuration.  Keep
+            # explicit sentinels so accidental future use fails at the use
+            # site instead of silently deriving inactive physical semantics.
+            self.rf_isl = self.rf_uplink = self.rf_downlink = None
+            self.rate_max_isl_km = None
+            self.rate_max_uplink_km = None
+            self.rate_max_downlink_km = None
 
         # Sparse activation: endpoints are created lazily the first time a
         # cell becomes active (first emission from it, or first packet routed

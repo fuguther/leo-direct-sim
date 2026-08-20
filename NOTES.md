@@ -1,5 +1,14 @@
 # NOTES.md
 
+## 2026-08-20（D1 第 8 轮复核返工，待第 9 轮新 SHA 复核）
+
+- 第 8 轮 exact-SHA 审阅对 `0e1f2a8` 返回 `REQUEST_CHANGES`：constant 配置虽已
+  忽略 RF/MCS 数值，Kernel 初始化仍无条件派生 MCS 门限，导致配置解析成功后启动崩溃。
+- 扩充回归到真实 `Kernel` 构造（修前失败）；constant 分支现在完全跳过 RFParams 与
+  MCS range 派生并设置显式哨兵，MCS 分支保持原校验/派生路径。
+- 验证：新增复现 `1 passed`；`CODE/leo_sim/tests` 全量 `444 passed`。待提交、推送、
+  第 9 轮独立复核；旧 SHA 审阅结论不得沿用。
+
 ## 2026-08-20（D1 第 7 轮独立复核返工，待新 SHA 复核）
 
 - 冷启动审阅 exact SHA `408d368` 返回 `REQUEST_CHANGES_CANDIDATE`：复现 active

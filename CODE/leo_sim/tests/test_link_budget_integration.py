@@ -67,12 +67,17 @@ def test_constant_rate_ignores_rf_numeric_semantics():
     validation belongs only to the MCS mode that consumes those values.
     """
     resolved = config.resolve_config({
+        "scenario": {"num_satellites": 1, "num_planes": 1},
         "links": {
             "rate_model": "constant",
+            "mcs_table": "unused-in-constant-mode",
             "rf_isl": {"frequency_hz": 0},
         },
     })
     assert resolved["config"]["links"]["rate_model"] == "constant"
+    # The ignore contract covers the runtime constructor too, not only config
+    # parsing: no MCS table or RF-derived threshold may be evaluated.
+    kernel.Kernel(resolved, [], geometry=StaticGeometry(1))
 
 
 class _Scripted(StaticGeometry):
