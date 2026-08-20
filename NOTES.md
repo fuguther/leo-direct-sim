@@ -280,3 +280,19 @@
   source tree SHA `a1e6a5730dd8e7ed51881d89166c79073c6f5d72bca35d57ed4a4ccac8c274de`。
 - 该次仅为版本一致性部署；`0c378a5` 同代码已完成的 MCS/burst smoke 证据仍适用于代码行为，
   但正式授权 cohort/E0 仍未运行。
+
+## 2026-08-21：M-Lab 真实测量代理与高负载 VM smoke
+
+- 来源核对：旧工作区任务记录确认 `CODE/data/traffic/mlab_2026-05-27.csv` 来自公开
+  M-Lab NDT7 GCS 测量归档，按客户端/服务端城市与 UTC 小时聚合；文件 SHA256
+  `f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437`。它是测量代理，
+  不是用户包级真实流量，当前 V2 `mlab` 模式只使用空间 OD 权重。
+- 修复：`6936d10` 使指标层只对账本明确标记为仍在系统/途中丢失/截止时未到达的包放行未匹配
+  propagation start；真正孤立事件仍 fail closed。新增回归测试。
+- 验证：本地全量 `566 passed, 1 skipped, 3 subtests passed`；该干净 commit 已部署 VM，
+  deployment receipt SHA `38782c8a5a0fc11ef7751f421aae55219b8b1be1badeffe3552c936b7c8bbe66`。
+- VM 工程 smoke（30 s、24 星、Amagasaki→Tokyo、M-Lab proxy）：50 Mbps 为 1,533 包、
+  456 delivered、1 in-system、自然结束且 metrics=`ok`；100 Mbps 为 2,990 包、719 delivered、
+  88 in-system、自然结束且 metrics=`ok`；两次均守恒，未再出现 `unmatched propagation starts`。
+- 边界：这是部署一致性与负载暴露 smoke，不是 formal authorization 或论文样本；M-Lab 的
+  `hour_utc` 尚未进入当前 V2 mlab 变换，正式 E0/PILOT 仍需走编译→审阅→授权→回执链。
