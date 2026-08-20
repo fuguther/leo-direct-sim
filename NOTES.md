@@ -87,6 +87,18 @@
 - 当前周期结束后原样归档；不得通过压缩删除失败、REQUEST_CHANGES 或未验证记录。
 - 实时问题状态只在 `ANALYSIS/FINDINGS-REGISTRY.md` 更新。
 
+## 2026-08-20：奖励目标第一包
+
+- 分支：`codex/20260820-reward-objective`；提交 `4163226`。
+- 将训练侧 ISL 转发奖励改为“实测 M1 队列奖励 + 非正逐跳成本”，配置校验强制
+  `forward_step_penalty <= -reward_w1`；原始 `queue_reward()` 保留作诊断对照，并把该参数
+  写入 requested receipt 字段。
+- 先写反例测试再实现：零等待转发奖励为 0，正等待严格为负，非法 `-19 > -20` 配置拒绝。
+- 验证：`python3 -m pytest -q` = **557 passed, 1 skipped, 3 subtests passed**；
+  `git diff --check` 通过。
+- 边界：只关闭已知“额外跳数刷分”风险；Q0 物理字典序目标、拥塞观测、V2 分析闭环和 VM
+  学习 smoke 仍未完成。
+
 ## 2026-08-20：D1 第 8 轮返工与 main 合并
 
 - 第 8 轮 exact-SHA 审阅对 `0e1f2a8` 返回 `REQUEST_CHANGES`：constant 配置虽已

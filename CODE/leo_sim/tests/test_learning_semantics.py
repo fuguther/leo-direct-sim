@@ -123,9 +123,9 @@ def test_retired_deliver_never_collects_arrive_reward():
     assert actions == ["deliver", "E", "deliver"]
     # the retired deliver settles at 0 on re-decision (not delivered)
     assert records[0] == ("deliver", 0.0, False)
-    # the forward hop settles its realized M1 queue reward (~zero wait)
+    # the forward hop settles raw M1 plus the safe -W1 step cost (~zero wait)
     assert records[1][0] == "E" and not records[1][2]
-    assert records[1][1] == pytest.approx(20.0, rel=1e-9)
+    assert records[1][1] == pytest.approx(0.0, rel=1e-9)
     # only the actual delivery collects the arrival reward, done=True
     assert records[2][0] == "deliver" and records[2][2]
     assert records[2][1] == pytest.approx(50.0)

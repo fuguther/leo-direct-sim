@@ -51,6 +51,7 @@ REQUESTED_KEYS = {"policy", "association", "ge_enabled", "control_enabled", "mon
                   "learning_algorithm", "learning_mode",
                   "topology_recompute_interval_s", "topology_matching"}
 REQUESTED_KEYS |= {"rate_model"}
+REQUESTED_KEYS |= {"forward_step_penalty"}
 EFFECTIVE_KEYS = {"control_plane", "mcs", "ge", "mbb", "learning",
                    "dynamic_topology"}
 
@@ -142,6 +143,9 @@ def requested_from_config(cfg: dict) -> dict:
         "monitor": bool(cfg["execution"]["monitor"]),
         "learning_algorithm": cfg["learning"]["algorithm"],
         "learning_mode": cfg["learning"]["mode"],
+        # Bind the safe learning objective to the receipt; the resolved config
+        # hash alone is not enough for human-readable mechanism audits.
+        "forward_step_penalty": cfg["learning"]["forward_step_penalty"],
         "topology_recompute_interval_s": cfg["topology"]["recompute_interval_s"],
         "topology_matching": cfg["topology"]["matching"],
     }

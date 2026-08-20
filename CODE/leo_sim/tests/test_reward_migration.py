@@ -2,10 +2,12 @@
 out-queue observation).
 
 Anchor: ANALYSIS/LEO-V2-ORIGINAL-PLAN.md line 86 — "M1 的正确队列奖励和 M2
-的本地出向队列观测吸收为统一基线；删除开关". The v1 training-side semantics
-must equal the legacy CORRECTED versions:
+的本地出向队列观测吸收为统一基线；删除开关". The raw queue-reward
+diagnostic remains equal to the legacy CORRECTED version; the training-side
+forward objective also applies a non-positive per-hop cost so extra
+forwarding cannot improve return before delivery:
 
-- M1 queue reward: ``w1 * exp(-beta * t)`` with w1=20, beta=200 s^-1, where t
+- Raw M1 queue reward: ``w1 * exp(-beta * t)`` with w1=20, beta=200 s^-1, where t
   is the packet's realized queueing delay in seconds. Legacy source:
   ``getQueueReward`` M1 branch, SimulationRL.py:10289-10291 (constants:
   ``_M1_BETA = 200.0`` SimulationRL.py:345, ``w1 = 20`` default
@@ -33,6 +35,7 @@ from CODE.leo_sim.tests.helpers import StaticGeometry, cell, make_cfg, row
 W1 = 20.0    # legacy w1 default, SimulationRL.py:270
 BETA = 200.0  # legacy _M1_BETA, SimulationRL.py:345
 ARRIVE = 50.0  # legacy ArriveReward, SimulationRL.py:579
+STEP = -W1     # safe objective: raw queue reward cannot make a hop profitable
 
 
 # ---------------------------------------------------------- golden: M1 reward
@@ -153,13 +156,13 @@ def test_forward_reward_is_realized_m1_queue_wait():
     forward = [r for r in k.learner.records if r[0] == "E"]
     deliver = [r for r in k.learner.records if r[0] == "deliver"]
     assert len(forward) == 2 and len(deliver) == 2
-    # packet A: empty queue -> wait 0 -> w1 (legacy: empty queueTime list
-    # guards to 0 only when NO queue was ever traversed; a realized zero wait
-    # scores w1, SimulationRL.py:10291 with t=0)
-    assert forward[0][1] == pytest.approx(W1, rel=1e-12)
+    # The raw M1 diagnostic is W1 at zero wait, but the learning objective
+    # adds the configured -W1 step cost, so an extra hop is not profitable.
+    assert forward[0][1] == pytest.approx(W1 + STEP, rel=1e-12)
     # packet B: realized wait = A's 5 ms ISL service - 2 ms uplink offset
-    # = 3 ms -> 20 * exp(-200 * 0.003) = 20 * e^-0.6
-    assert forward[1][1] == pytest.approx(W1 * math.exp(-0.6), rel=1e-9)
+    # = 3 ms; the safe objective is 20 * exp(-0.6) - 20.
+    assert forward[1][1] == pytest.approx(W1 * math.exp(-0.6) + STEP,
+                                           rel=1e-9)
     assert not forward[0][2] and not forward[1][2]
 
 
@@ -188,7 +191,7 @@ def test_forward_m1_reward_survives_mid_service_deadline_failure():
     assert result["fates"][1] == "DATA_DEADLINE_EXPIRED"
     forward = [r for r in k.learner.records if r[0] == "E"]
     assert len(forward) == 1
-    assert forward[0][1] == pytest.approx(W1, rel=1e-6)
+    assert forward[0][1] == pytest.approx(W1 + STEP, rel=1e-6)
     assert forward[0][2] is True
     assert not [r for r in k.learner.records if r[0] == "deliver"]
 

@@ -19,7 +19,7 @@
 | 动态 ISL 对端重匹配 | 有 | **已合入当前 main `66be0ad...`**；退役排空、单收发器、holding 语义有回归 | BLOCKER-P0（长窗正式证据仍需） | 在 VM 长时窗验证重匹配/在途包归属，不再阻塞基础工程 smoke |
 | 未来端点惰性激活 | 旧行为曾泄漏 | V2 #28 已合入 main | 已关闭 | 保留回归 |
 | 接入 FIFO / downlink 恢复 | 旧语义参照 | V2 #26/#25 已合入 main | 已关闭 | 保留回归 |
-| 奖励无正循环/物理目标一致 | 旧平台奖励族复杂 | 专家审阅 A1 未正式关闭；Q0 不得以 shaped reward 判最优 | BLOCKER-P0 | 构造正循环反例；冻结物理字典序目标 |
+| 奖励无正循环/物理目标一致 | 旧平台奖励族复杂 | 已关闭已知“额外转发跳数获正收益”风险（`4163226`）；物理字典序目标仍未冻结，Q0 不得以 shaped reward 判最优 | BLOCKER-THEORY | 保留 `forward_step_penalty ≤ −reward_w1` 回归；在 Q0 合同中冻结物理目标 |
 | 动作 mask 与观测信息集一致 | 旧/新均需审 | #62 已修已知 cache-hop 旁路，独立冷审与不可区分反例通过 | 已关闭已知 blocker | 保留 C1/C3 与远端传播/队列指标回归；最终冻结平台继续找未知旁路 |
 | 正式证据链 | V2 目标更强 | V2 矩阵 Stage 1 已合入；artifact→指标重算→paired analysis→claim Stage 2 仍未完成 | BLOCKER-P0 | 复用严格重验原则，完成 V2 结果分析与 claim gate；禁止以 generic 绿冒充 V2 完成 |
 | Q0 当前全局快照 | 无等价严格接口 | snapshot 已进 main | Q0 前置已完成 | 保留只读、因果和版本测试 |
