@@ -1,6 +1,6 @@
 # LEO 拥塞控制与链路利用率实验总计划
 
-> CURRENT；最后核验：2026-08-21。当前 main `42ff519` 已部署 VM；此前同代码的非正式/MCS/burst 工程 smoke 已通过，本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
+> CURRENT；最后核验：2026-08-21。当前 main `14b1d55` 已部署 VM；非学习/内核和 M-Lab 50/100 Mbps 仅完成工程 smoke，R1-A1、正式测量合同、V2 artifact→claim 闭环、学习 VM smoke、E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
 
 ## 1. 研究主线与工作方法
 
@@ -36,10 +36,10 @@
 
 先关闭会改变任何后续结论的底层问题：
 
-- 合入并验证 D1/D2；
-- 冻结物理目标与奖励语义，保留动作 mask 信息边界回归；
-- 闭合 V2 `compile → review → authorize → run → receipt → metric recomputation → paired analysis → claim`；
-- 冻结同一 main SHA，独立冷审后部署到 VM，跑 natural-end smoke；当前 `42ff519` 已部署，正式授权 cohort 仍需按 runbook 执行。
+- D1/D2 代码已合入并有回归测试，但 D1 仍缺 VM MCS 对照、D2 仍缺长窗 VM 验证；
+- **先关闭 R1-A1 奖励 blocker**，再冻结物理目标与学习语义；已修复的 mask 旁路不能代表整体信息公平完成；
+- 闭合 V2 `compile → review → authorize → run → receipt → metric recomputation → paired analysis → claim`；当前只完成矩阵编译/授权 Stage 1，真实 artifact→claim 闭环仍缺；
+- 当前 `14b1d55` 已部署，非学习工程 smoke 通过；正式授权 cohort、学习 VM smoke、E0/PILOT 仍需按 runbook 执行。
 
 P0 的验收是“同一 SHA 的结果可以被重新算出来并拒绝篡改”，不是仅有 pytest 绿。
 
