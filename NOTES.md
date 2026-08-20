@@ -393,3 +393,10 @@
 - `0.5 s / 1.0 s / 2.0 s / 5.0 s` 均 natural end、conservation true、receipt verified，fates 均为 `613 delivered / 579 ACCESS_REJECTED / 107 IN_SYSTEM_AT_STOP`；四档 raw ledgers 独立重算 metrics 均 `validation.ok=true`。
 - VM wall-clock / topology recomputes / availability samples：`0.5 s = 171 s / 39 / 21,726`；`1.0 s = 120 s / 19 / 10,932`；`2.0 s = 107 s / 9 / 10,932`；`5.0 s = 94 s / 3 / 10,932`。1/2/5 s 的每包指标和链路指标逐项相同；0.5 s 仅增加 availability 采样（capacity 浮点差在采样表示层），不改变交付/时延汇总。
 - 暂定决策：E0 主候选保留 `1.0 s`；`2.0 s` 做成本敏感性，`5.0 s` 做慢更新负对照。该 20 s 校准不能替代 D2 长窗语义证明；下一阶段为同 exact SHA 的 E0 低/中/高负载标定。
+
+## 2026-08-21：main 29c1583 上完成 M-Lab 多 OD + burst 三档 E0 工程标定
+
+- 分支：`codex/20260821-e0-load-docs`；代码未修改，仅更新实验真相源和机器索引。基于 main `29c158349caf33c313d9ec0940f8eefc13f91485`，canonical VM deployment receipt SHA=`6519847a3a866e7342d8aa36360ed2e68d3cb98ef51d4458d390420925271cc6`，source tree SHA=`8a9ab6f570585567efba1c675fe12dd4687c4c917bdabab24aedeaf6ca32866c`。
+- 固定 profile：140 星、20 s、MCS、1 s topology cadence、M-Lab 最大强连通 56-cell、8--16 s burst；三档只改变 `offered_mbps`。VM 三档均自然结束、`conservation_ok=true`、`receipt verify=verified`、原始 packet/service/availability ledger 重算 `validation.ok=true`。
+- 结果：50 Mbps = 1,299 offered / 613 delivered / 579 `ACCESS_REJECTED` / 107 `IN_SYSTEM_AT_STOP` / 0 overflow，wall 119 s，trace `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`；100 Mbps = 2,756 / 1,253 / 1,270 / 233 / 0，wall 129 s，trace `e6e7bd329f6822046f5d57611690d609a3647e1dca7639e170e985d891000e09`；200 Mbps = 5,551 / 2,382 / 2,597 / 405 / 167 holding overflow，wall 134 s，trace `f009c98d8be5757a4ba1afe585fed32d6974143582eb3c9d8657344413a834c6`。
+- 暂定解释：50 为低负载候选，100 为中负载候选，200 为压力/过载对照。它们是工程标定，不是正式论文效果结果；formal E0 仍需资源 RSS、三段时延 artifact/独立重算、学习 pilot、授权与 paired analysis 门禁。相关文档同步为 `ANALYSIS/EXPERIMENT-PROGRAM.md`、`ANALYSIS/CURRENT-EXPERIMENT-READINESS.md` 和 `EXPERIMENTS/experiment-program.yaml`。
