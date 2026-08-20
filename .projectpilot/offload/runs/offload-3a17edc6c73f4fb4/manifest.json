@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "planId": "offload-3a17edc6c73f4fb4",
+  "relayManifest": {
+    "planId": "offload-3a17edc6c73f4fb4",
+    "projectId": "leo-direct-sim",
+    "backend": "web_chat",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:DOC-AUDIT",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+        "paths": [
+          "ANALYSIS/FINDINGS-REGISTRY.md",
+          "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+          "ANALYSIS/LEGACY-DESIGN-AUDIT-20260819.md",
+          "ANALYSIS/LEGACY-FEATURE-LEDGER-20260819.md",
+          "ANALYSIS/MIGRATION-BACKLOG-20260816.md",
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260817.md",
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+          "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+          "ANALYSIS/MORNING-REPORT-20260817.md",
+          "ANALYSIS/MORNING-REPORT-20260819.md",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/07-experiment-plan-20260814.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/08-experiment-matrix-20260814.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/09-experiment-config-20260814.md"
+        ],
+        "promptHash": "89c8d5100071387dba36f6d08aef7e206faa336c2ac8e57ea0a0cfb16325b052"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:DOC-AUDIT:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+        "paths": [
+          "ANALYSIS/FINDINGS-REGISTRY.md",
+          "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+          "ANALYSIS/LEGACY-DESIGN-AUDIT-20260819.md",
+          "ANALYSIS/LEGACY-FEATURE-LEDGER-20260819.md",
+          "ANALYSIS/MIGRATION-BACKLOG-20260816.md",
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260817.md",
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+          "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+          "ANALYSIS/MORNING-REPORT-20260817.md",
+          "ANALYSIS/MORNING-REPORT-20260819.md",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/07-experiment-plan-20260814.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/08-experiment-matrix-20260814.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/09-experiment-config-20260814.md"
+        ],
+        "promptHash": "2d7ce23d78bfe11ca59c05ad0a621b71fea91e06757eff228534aa1537eb48b8"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "3a17edc6c73f4fb48f4d7573f08f278da386b633c74029a3e9a10c1b1b683657"
+  },
+  "sourceBaseCommit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:DOC-AUDIT",
+      "promptHash": "89c8d5100071387dba36f6d08aef7e206faa336c2ac8e57ea0a0cfb16325b052",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+        "paths": [
+          "ANALYSIS/FINDINGS-REGISTRY.md",
+          "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+          "ANALYSIS/LEGACY-DESIGN-AUDIT-20260819.md",
+          "ANALYSIS/LEGACY-FEATURE-LEDGER-20260819.md",
+          "ANALYSIS/MIGRATION-BACKLOG-20260816.md",
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260817.md",
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+          "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+          "ANALYSIS/MORNING-REPORT-20260817.md",
+          "ANALYSIS/MORNING-REPORT-20260819.md",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/07-experiment-plan-20260814.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/08-experiment-matrix-20260814.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/09-experiment-config-20260814.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:DOC-AUDIT:independent_review",
+      "promptHash": "2d7ce23d78bfe11ca59c05ad0a621b71fea91e06757eff228534aa1537eb48b8",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+        "paths": [
+          "ANALYSIS/FINDINGS-REGISTRY.md",
+          "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+          "ANALYSIS/LEGACY-DESIGN-AUDIT-20260819.md",
+          "ANALYSIS/LEGACY-FEATURE-LEDGER-20260819.md",
+          "ANALYSIS/MIGRATION-BACKLOG-20260816.md",
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260817.md",
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+          "ANALYSIS/Q0-INTERFACE-DESIGN-20260817.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+          "ANALYSIS/MORNING-REPORT-20260817.md",
+          "ANALYSIS/MORNING-REPORT-20260819.md",
+          "ANALYSIS/EXPERT-REVIEW-20260816.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/07-experiment-plan-20260814.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/08-experiment-matrix-20260814.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/09-experiment-config-20260814.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
