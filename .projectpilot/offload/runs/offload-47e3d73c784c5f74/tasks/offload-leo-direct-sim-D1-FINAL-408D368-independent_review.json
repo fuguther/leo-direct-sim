@@ -1,0 +1,66 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:D1-FINAL-408D368:independent_review",
+    "title": "D1 动态链路速率 exact-SHA 冷启动终审",
+    "goal": "独立审阅 D1 最终状态。重点验证距离到速率采样、零速率等待与恢复、deadline 和 hard retirement 同刻竞速、GE 中断计数、GSL/ISL 队头语义、snapshot/receipt 归因、constant 模式兼容性、测试是否能检出反向 mutation。先查 FINDINGS 台账去重。每条 finding 必须给 exact SHA 文件行号证据、严重度、可复现反例和最小修复方向。若无 blocking/major，明确输出 APPROVE_CANDIDATE；若证据不足，写 open_items，禁止乐观通过。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "408d368cd31f0990d39480eff962dd53f49bb95b",
+      "paths": [
+        "AGENTS.md",
+        "ANALYSIS/FINDINGS-REGISTRY.md",
+        "ANALYSIS/LINK-BUDGET-DESIGN-20260816.md",
+        "CODE/leo_sim/__main__.py",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/link_budget.py",
+        "CODE/leo_sim/model.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/tests/test_link_budget_integration.py",
+        "CODE/leo_sim/tests/test_transmit_retirement.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "逐项覆盖 D1 服务语义、事件竞速、因果、守恒、回执和 constant 兼容性",
+      "先查 FINDINGS-REGISTRY 去重，不把既有编号重复冒充新发现",
+      "每条 blocking/major finding 有精确行号、反例和最小修复方向",
+      "明确给出 APPROVE_CANDIDATE、REQUEST_CHANGES_CANDIDATE 或 EVIDENCE_INSUFFICIENT"
+    ],
+    "requiredEvidence": [
+      "绑定 408d368cd31f0990d39480eff962dd53f49bb95b 的 github 文件行号",
+      "正向合同与至少一个反向 mutation/边界分析",
+      "显式 open_items 列表"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "3ec3eece3d2789e7d1b983edf89bad8ea23cf020d87dffef6303fa46c67bd9be"
+}
