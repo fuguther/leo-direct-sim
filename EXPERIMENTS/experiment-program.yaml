@@ -19,24 +19,24 @@ status_values:
   - historical_only
 
 requirements:
-  D1_merged_to_main: {status: completed_verified, evidence: "main_0fc9427_ci_d1_tests_vm_mcs_multiod_t0_legacy_mcs_comparison_pending"}
-  D2_merged_to_main: {status: completed_verified, evidence: "main_0fc9427_ci_d2_holding_tests_vm_multiod_t0_long_window_semantics_pending"}
+  D1_merged_to_main: {status: completed_verified, evidence: "main_8e2f1df_ci_d1_tests_vm_mcs_multiod_t0_legacy_mcs_comparison_pending"}
+  D2_merged_to_main: {status: completed_verified, evidence: "main_8e2f1df_ci_d2_holding_tests_vm_multiod_t0_long_window_receipt_metrics_verified"}
   reward_and_mask_blockers_closed: {status: completed_verified, evidence: main_ce2566b_reward_penalty_and_main_758b606_mask_regressions}
   v2_formal_evidence_chain_verified: {status: blocked}
   real_traffic_provenance_verified: {status: completed_verified, evidence: PR84_main_743d05c_mlab_source_sha_schema_and_manifest}
-  multi_od_and_burst_verified: {status: completed_verified, evidence: main_0fc9427_pr93_vm_56cell_mlab_t0_receipt_and_metrics_recompute}
-  mlab_multi_od_t0_verified: {status: completed_verified, evidence: main_0fc9427_trace_f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4_vm_receipt}
-  topology_cadence_calibration_verified: {status: completed_verified, evidence: main_0fc9427_vm_cadence_0p5_1_2_5_receipts_raw_metrics_recompute}
-  e0_load_calibration_verified: {status: completed_verified, evidence: main_0fc9427_vm_mlab_multiod_burst_50_100_200_receipts_metrics_recompute}
+  multi_od_and_burst_verified: {status: completed_verified, evidence: main_8e2f1df_pr93_vm_56cell_mlab_t0_receipt_and_metrics_recompute}
+  mlab_multi_od_t0_verified: {status: completed_verified, evidence: main_8e2f1df_trace_f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4_vm_receipt}
+  topology_cadence_calibration_verified: {status: completed_verified, evidence: main_8e2f1df_vm_cadence_0p5_1_2_5_receipts_raw_metrics_recompute}
+  e0_load_calibration_verified: {status: completed_verified, evidence: main_8e2f1df_vm_mlab_multiod_burst_50_100_200_receipts_metrics_recompute}
   link_utilization_recomputation_verified: {status: blocked}
   packet_delay_decomposition_verified: {status: blocked}
   q0_minimum_loop_verified: {status: blocked}
   q0_replay_review_approved: {status: blocked}
   three_final_audit_rounds_no_new_major: {status: blocked}
-  exact_main_deployed_to_vm: {status: completed_verified, evidence: main_0fc9427_deployment_c318945c852182c2d34e4d255a0ba79715ca31f030fb7f7c76be48065f0baae3_source_390fd14375ab95aff885fe6de3758d5ea8638c74abd33a6e827da6832a987c94}
-  learning_vm_smoke_verified: {status: completed_verified, evidence: main_0fc9427_vm_qlearning_ddqn_gat_mpnn_train_eval_receipts_metrics_recompute}
+  exact_main_deployed_to_vm: {status: completed_verified, evidence: main_8e2f1df_deployment_4bd3ba95438379a88cb58f4e4c9fe6559fa924f04e0b901e4c122a4527c286d5_source_78ec19d13664527375f56e5c9f7429620e59a8837604224fe6ad5ea2880c008a}
+  learning_vm_smoke_verified: {status: completed_verified, evidence: main_8e2f1df_vm_qlearning_ddqn_gat_mpnn_train_eval_and_ddqn20_receipts_metrics_recompute}
   mcs_vm_comparison_verified: {status: blocked, reason: basic_smoke_only_no_legacy_mcs_comparison}
-  d2_long_window_vm_verified: {status: blocked, reason: no_long_window_topology_holding_vm_evidence}
+  d2_long_window_vm_verified: {status: completed_verified, evidence: main_8e2f1df_vm_60s_100mbps_multiod_long_window_receipt_metrics_recompute}
   per_action_physical_features_verified: {status: blocked}
   field_age_provenance_verified: {status: blocked}
   replay_resume_verified: {status: blocked}
@@ -109,7 +109,7 @@ experiments:
     arms: [mlab_auto_max_64]
     traffic_mode: mlab_measurement_proxy_multi_od_with_burst
     purpose: Prove that the full measured snapshot can be mapped to a bounded, closed V2 OD set and run on VM without pretending every measured cell is a gateway.
-    evidence: {main_sha: 0fc9427520eb1d67e3493a521ea767c69b69575f, trace_sha: f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4, offered_packets: 1299, delivered: 613, access_rejected: 579, in_system: 107, natural_end: true, conservation_ok: true, metrics_recomputed: true}
+    evidence: {main_sha: 8e2f1dfe8ee39dacfb56d52d572d37046bb6b8a4, trace_sha: f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4, offered_packets: 1299, delivered: 613, access_rejected: 579, in_system: 107, natural_end: true, conservation_ok: true, metrics_recomputed: true}
     required_evidence: [source_hash, selection_manifest, natural_end, conservation, receipt_verified, raw_metrics_recompute]
 
   - id: TOPOLOGY-CADENCE-CALIBRATION
@@ -120,7 +120,7 @@ experiments:
     arms: [interval_0p5s, interval_1s, interval_2s, interval_5s]
     fixed: [trace_sha_f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4, mlab_multiod_burst_t0, seed_7]
     purpose: Measure whether topology update cadence changes current delivery, delay or utilization and record VM cost; this is engineering calibration, not a paper effect claim.
-    evidence: {main_sha: 0fc9427520eb1d67e3493a521ea767c69b69575f, wall_s: {0.5: 171, 1.0: 120, 2.0: 107, 5.0: 94}, topo_recomputes: {0.5: 39, 1.0: 19, 2.0: 9, 5.0: 3}, all_receipts_verified: true, all_metrics_recomputed: true}
+    evidence: {main_sha: 8e2f1dfe8ee39dacfb56d52d572d37046bb6b8a4, wall_s: {0.5: 171, 1.0: 120, 2.0: 107, 5.0: 94}, topo_recomputes: {0.5: 39, 1.0: 19, 2.0: 9, 5.0: 3}, all_receipts_verified: true, all_metrics_recomputed: true}
     decision: {primary: 1.0, sensitivity: [2.0], negative_control: [5.0]}
     required_evidence: [same_trace_sha, natural_end, conservation, receipt_verified, cadence_cost, raw_metrics_recompute]
 
@@ -174,8 +174,8 @@ experiments:
     traffic_mode: mlab_measurement_proxy_multi_od_with_20s_burst
     purpose: Select low, medium and high load candidates before formal E0 on the new bounded multi-OD profile; this engineering calibration is not a paper effect result.
     decision: null
-    reason: rerun completed on main_0fc9427 with mlab_auto and cadence_1s; candidates identified but formal load freeze remains after resource/pilot gates
-    evidence: {main_sha: 0fc9427520eb1d67e3493a521ea767c69b69575f, deployment_receipt_sha: c318945c852182c2d34e4d255a0ba79715ca31f030fb7f7c76be48065f0baae3, loads_mbps: [50, 100, 200], offered_packets: {50: 1299, 100: 2756, 200: 5551}, delivered: {50: 613, 100: 1253, 200: 2382}, holding_overflow: {50: 0, 100: 0, 200: 167}, natural_end: true, conservation_ok: true, receipt_verified: true, metrics_recomputed: true}
+    reason: rerun completed on main_8e2f1df with mlab_auto and cadence_1s; candidates identified but formal load freeze remains after resource/pilot gates
+    evidence: {main_sha: 8e2f1dfe8ee39dacfb56d52d572d37046bb6b8a4, deployment_receipt_sha: 4bd3ba95438379a88cb58f4e4c9fe6559fa924f04e0b901e4c122a4527c286d5, loads_mbps: [50, 100, 200], offered_packets: {50: 1299, 100: 2756, 200: 2382}, holding_overflow: {50: 0, 100: 0, 200: 167}, natural_end: true, conservation_ok: true, receipt_verified: true, metrics_recomputed: true}
     required_evidence: [same_trace_identity_per_arm, natural_end, conservation, receipt_verified, fate_counts, vm_wall_time, raw_metrics_recompute]
 
   - id: DIAG-CONGESTION
