@@ -65,11 +65,29 @@
 - V2 矩阵 Stage 1 候选 `4664a223` 已收到 REQUEST_CHANGES：真实 launch 授权路径、
   acceptance、配对完整性、checkpoint 血缘、控制变量和 symlink containment 均需返工。
 
+## 2026-08-20：研究主线与实际顺序重排
+
+- 用户锁定主线为“拥塞控制与链路利用率”，执行方法为真实流量优先、先实验诊断、
+  再理论推导、最后提出新方案；旧 EXP1→EXP3 不再是默认主线。
+- 本轮更新 `ANALYSIS/EXPERIMENT-PROGRAM.md`、
+  `EXPERIMENTS/experiment-program.yaml`、`ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`
+  和 `ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md`，把全部指定能力按最早真实依赖分门：
+  D1/D2/V2 证据链为平台门；真实流量、多 OD/突发、逐向利用率、每包三段时延为诊断门；
+  Q0-I/F、逐候选物理特征、逐字段 age 为理论门；replay/optimizer/target/RNG 恢复为长训门。
+- exact main `5b3ec5f...` 的 Luna 只读审计确认：CSV 多 OD、M-Lab/人口代理、burst、
+  GAT/MPNN 骨架已存在；利用率分母、每包三段时延、逐字段 age、完整续训、Q0-I/F
+  与 V2 分析闭环仍缺。网页 GPT 四通道首轮 1 个通过、3 个运行/证据门失败；重试又回收一份
+  同方向的计划审阅，方法调研仍未形成合格信封。按用户最新指令已取消继续重试；失败通道不计作三方通过。
+- 本分支 fresh 验证：CI 范围 `425 passed`；无参数全量
+  `470 passed, 1 skipped, 3 subtests passed`；YAML 解析、实验 ID 唯一性和依赖引用检查通过，
+  `git diff --check` 通过。
+
 ## 下一步
 
 1. 关闭 R7-F1 的 V2 矩阵、artifact 指标重算、paired analysis 与 claim gate；
    generic #64 只作为可复用基础，不代表 V2 完成。
-2. 获得所需语义/冲突授权后合入 D1/D2，并更新 CURRENT 中的精确 main/VM 状态。
-3. 关闭 R1-A1 与 Q0 replay/Q0-I/Q0-F blocker；保留 R1-A2 回归。
-4. 最终冻结平台三轮审计后部署同一 main SHA，重跑 E0 与全臂 pilot。
-5. 平台关键门禁不再被文档/Git 清理抢占；回收 worktree 时继续保护 dirty、orphan 与 detached 项。
+2. 获得所需语义/冲突授权后合入 D1/D2，关闭 R1-A1，并更新 CURRENT 中的精确 main/VM 状态。
+3. 补真实流量 provenance、多 OD/突发验收、逐向利用率分子/分母和每包 queue/tx/prop 事件。
+4. 冻结同一 main SHA 并部署 VM，按 E0-REAL→PILOT-BASELINES→DIAG-CONGESTION 做实验诊断。
+5. 再完成 Q0-I/F、逐候选物理特征、逐字段 age；基于诊断提出方案，长训前完成 replay 完整恢复。
+6. 平台关键门禁不再被文档/Git 清理抢占；回收 worktree时继续保护 dirty、orphan 与 detached 项。
