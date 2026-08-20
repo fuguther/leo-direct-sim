@@ -33,7 +33,7 @@ requirements:
   q0_minimum_loop_verified: {status: blocked}
   q0_replay_review_approved: {status: blocked}
   three_final_audit_rounds_no_new_major: {status: blocked}
-  exact_main_deployed_to_vm: {status: completed_verified, evidence: main_0f7249f_deployment_89e70f943ef7c19b4f615e56cbf7cf2c349d49f572b916a97d2f816e4a33a4a9_source_6dc0afec1070002fe83c5ddd0955c40c7ba5a2316cffa01fe1d01f8bc047d2fd}
+  exact_main_deployed_to_vm: {status: completed_verified, evidence: main_69c40b1_deployment_76244c2f62a49d748f213f6aa1544a122bd01d978ea53037bdc76ac46499e22c_source_b5a95f4d253cd6bb154fc22d590c8331d2a5c4e835b0f1d8ac2a3a653a21f578}
   learning_vm_smoke_verified: {status: completed_verified, evidence: main_0f7249f_vm_qlearning_ddqn_gat_mpnn_train_eval_ddqn20_capacity_anchor_receipts_metrics_recompute}
   mcs_vm_comparison_verified: {status: blocked, reason: basic_smoke_only_no_legacy_mcs_comparison}
   d2_long_window_vm_verified: {status: completed_verified, evidence: main_0f7249f_vm_60s_100mbps_multiod_long_window_receipt_metrics_recompute}

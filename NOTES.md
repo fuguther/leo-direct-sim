@@ -420,3 +420,9 @@
 - 当前 main `0f7249fb085ea05576c04d8b2b1f9e55be9e12a0` 已部署到 canonical VM；deployment receipt SHA=`89e70f943ef7c19b4f615e56cbf7cf2c349d49f572b916a97d2f816e4a33a4a9`，source tree SHA=`6dc0afec1070002fe83c5ddd0955c40c7ba5a2316cffa01fe1d01f8bc047d2fd`。
 - 文档补录：capacity policy 负对照、D2 60 秒长窗、20 秒 DDQN train→checkpoint→eval、当前 main/deployment SHA；明确这些仍是 engineering/pilot，formal V2 artifact→claim、replay 续训、正式 E0/PILOT 和 Q0 闭环仍未完成。
 - 验证：`git diff --check` 通过；`EXPERIMENTS/experiment-program.yaml` 可由 PyYAML 解析（22 experiments、23 requirements）。待本分支 CI 绿后合入并重新确认 VM SHA。
+
+## 2026-08-21：PR #98 合入并重新部署主线
+
+- PR #98 已通过 pytest CI 并 squash 合入，当前 main=`69c40b158abeabd6c7ccd0bbbead5ab646b51905`。
+- canonical VM 已重新部署同一 main；deployment receipt SHA=`76244c2f62a49d748f213f6aa1544a122bd01d978ea53037bdc76ac46499e22c`，source tree SHA=`b5a95f4d253cd6bb154fc22d590c8331d2a5c4e835b0f1d8ac2a3a653a21f578`。
+- 本次仍是文档同步和部署，不改变仿真行为；formal E0/PILOT、replay 续训、V2 artifact→claim 和 Q0 闭环继续保持未完成状态。
