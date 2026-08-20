@@ -1,6 +1,6 @@
 # leo_sim V2 当前实验就绪状态
 
-> 状态最后核验：2026-08-21；当前 main 为 `4990e61086ff2d53e4ff84aa6f95f569f3aa0371`。代码可做本地工程 smoke，M-Lab measurement-proxy + burst 合同已合入，且 140 星 MCS 长窗本地 smoke 的 receipt 已可验证；奖励 blocker、可信利用率分母、V2 artifact→claim 闭环、当前 SHA 的 VM 部署和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
+> 状态最后核验：2026-08-21；当前 main 为 `ac0d01965d91956b5d80df36dce5b351c1bdccc6`，已部署到 canonical VM。代码可做同 SHA 非学习工程 smoke，M-Lab measurement-proxy + burst 合同已合入，且 140 星 MCS 长窗 VM smoke 的 receipt 已可验证；奖励 blocker、可信利用率分母、V2 artifact→claim 闭环、学习 VM smoke 和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
 ## 1. 两个目标
@@ -22,7 +22,7 @@
 | 包守恒/FIFO/等待/在途 | 基础能力和回归测试已有，VM smoke 守恒通过；正式 artifact/分析链和长窗覆盖未闭合 | FACT；论文证据未闭合 |
 | 奖励/学习语义 | R1-A1 仍是 blocker；不能开始学习算法正式实验 | FACT；硬阻塞 |
 | 信息公平 | 已修复明确 cache-hop 偷看；逐动作物理特征、逐字段 AoI 未完成 | FACT；硬阻塞信息归因 |
-| 当前 VM | 已知最近部署是旧 main `14b1d55`；`4990e61` 尚未部署，不能把本地 E0 结果当 VM 证据 | FACT |
+| 当前 VM | 已部署精确 main `ac0d019`；deployment receipt SHA=`c43e711442195cc8f31025167784773562e3a71ddb8c3cca65f25e1b787aa66b`，source tree SHA=`bf9a90090e2d2ac82701483c08fcaebe1976a083a71315405fbb0f5ef683b98d` | FACT |
 | VM 工程 smoke | 非学习/内核和 M-Lab 50/100 Mbps smoke 可自然结束且守恒；学习算法 VM smoke 尚未完成 | FACT；非正式、非授权运行 |
 | 真实流量/测量 | M-Lab 文件已按源 SHA、字段、小时覆盖、OD 映射和 burst 变换写入 provenance；当前 V2 仍把它标为 measurement proxy，并将小时用于覆盖审计而非逐小时强度重放 | FACT；不能当原始真实包回放 |
 | Q0 | snapshot 已在 main；计划注入/执行归因候选未通过审阅；Q0-I/Q0-F tiny 闭环未完成。Q0 不阻塞工程 smoke，但阻塞信息 vs 决策归因 | FACT |
@@ -43,7 +43,7 @@
 | A3 正式证据链 | compile、review、authorize、run、receipt、analysis、claim 全链路真实产物 | Stage 1 矩阵编译/授权已完成；artifact→paired analysis→claim 仍 open | 1–2 日 |
 | A4 真实流量与测量 | provenance、多 OD/突发；逐向利用率分子/分母；每包 queue/tx/prop；拥塞指标可从 artifact 重算 | M-Lab/burst 合同已合入；本地 140 星 60 s MCS smoke 可验证。可信分母、VM artifact 和三段时延正式 gate 仍 open | 1–2 日 |
 | A5 最终平台审计 | 冻结 commit 上三轮 Codex/不同模型/网页 GPT 无新增 blocking/major | 未开始最终三轮 | 2–5 日 |
-| A6 VM 与 pilot | 部署同一 main SHA；VM/TF 门禁、真实 smoke、E0-REAL、基线诊断与 pilot 自然结束 | `4990e61` 尚未部署；本地 E0-REAL 50 Mbps 已完成工程 smoke；**学习 smoke、VM E0、全算法 pilot 尚未开始** | 待执行 |
+| A6 VM 与 pilot | 部署同一 main SHA；VM/TF 门禁、真实 smoke、E0-REAL、基线诊断与 pilot 自然结束 | `ac0d019` 同 SHA 非学习 M-Lab/burst 与 140 星 MCS smoke 已完成；**学习 smoke、formal VM E0、全算法 pilot 尚未开始** | 待执行 |
 
 最早的真实流量 smoke 会早于目标 A 完成，但它只能暴露工程问题。Q0 不阻塞这个 smoke 或 E0-REAL；V2 分析链、利用率分母和三段时延才是把诊断升级为论文证据的硬门。
 
@@ -65,7 +65,7 @@
 
 1. **先关闭 R1-A1 奖励 blocker**，在此之前不跑学习算法正式实验。
 2. 补齐逐向 available-capacity 分母、逐窗口记录、每包 queue/tx/prop 三段时延及三段和校验。
-3. 部署当前 `4990e61`，完成 D1 VM MCS 对照和 D2 长时间拓扑/holding VM 验证。
+3. 在已部署 `ac0d019` 上完成 D1 VM MCS 对照和 D2 长时间拓扑/holding VM 验证。
 4. 闭合 V2 artifact→指标→配对分析→claim，并完成至少一个学习训练/评估 VM smoke。
 5. 再跑 VM E0-REAL 和全算法 pilot；Q0-I/Q0-F、逐动作物理特征、逐字段 AoI 按信息归因阶段完成。
 7. 长训前补 replay/optimizer/target/RNG 完整恢复；通过后才冻结论文正式矩阵。

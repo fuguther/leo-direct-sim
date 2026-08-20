@@ -281,6 +281,20 @@
 - 该次仅为版本一致性部署；`0c378a5` 同代码已完成的 MCS/burst smoke 证据仍适用于代码行为，
   但正式授权 cohort/E0 仍未运行。
 
+## 2026-08-21：current main `ac0d019` VM deployment and smoke
+
+- 通过 guarded `push-remote.sh` 部署 clean main `ac0d01965d91956b5d80df36dce5b351c1bdccc6`；
+  deployment receipt SHA=`c43e711442195cc8f31025167784773562e3a71ddb8c3cca65f25e1b787aa66b`，
+  source tree SHA=`bf9a90090e2d2ac82701483c08fcaebe1976a083a71315405fbb0f5ef683b98d`。
+- VM 固定环境的 10 s M-Lab+burst smoke：config SHA=`38ee6b760b88829ee2751510755cb0fa1ded8c4c5cca0430d6527aeabbcbf110`、
+  trace SHA=`21812f86b7883a47560bd15f9d7d2958a503fc71a7bc27d52dd3cfd252caea4d`、
+  code SHA=`5d2ddec3fecfa0a8b83174eaf30aa1da8bf4e9a5d766ddfa6a387e4b8cc6a193`；18/18 delivered，
+  natural end，守恒通过，receipt verify=`verified`。shell timer：real 6.41 s、user 11.33 s、sys 0.55 s。
+- 同一 VM SHA 的 140 星 MCS/M-Lab 60 s smoke 也自然结束并 receipt verified：461 offered，
+  440 delivered、20 ACCESS_REJECTED、1 IN_SYSTEM_AT_STOP、守恒通过；它仍是工程证据，不是授权论文样本。
+- 边界：当前 `ac0d019` 已完成同 SHA VM 非学习验证；学习训练/评估 VM、formal authorization、
+  available-capacity 利用率分母和正式 E0/PILOT 仍未完成。
+
 ## 2026-08-21：E0-REAL 50 Mbps 首次 M-Lab/MCS 长窗 smoke（候选）
 
 - 分支：`codex/20260821-e0-calibration`，基线 main `743d05c`；新增

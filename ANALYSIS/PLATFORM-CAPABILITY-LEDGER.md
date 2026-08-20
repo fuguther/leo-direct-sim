@@ -1,6 +1,6 @@
 # leo_sim V2 平台能力账本
 
-> CURRENT；最后核验：2026-08-21，runtime main `4990e61`。本文只记录已经有当前代码、测试或 VM 证据支撑的状态；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移决策见 `MIGRATION-BACKLOG-20260816.md`。
+> CURRENT；最后核验：2026-08-21，runtime main `ac0d019`，已部署 canonical VM。本文只记录已经有当前代码、测试或 VM 证据支撑的状态；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移决策见 `MIGRATION-BACKLOG-20260816.md`。
 
 ## 判定与优先级
 
