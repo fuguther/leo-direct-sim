@@ -371,3 +371,10 @@
 - 独立冷审上一轮三项 blocker（退役 ISL、窗口内上下线/MCS 阈值、采样下限/上限）已关闭；本轮需复核拓扑事件切分后再决定合入。
 - 第二轮复核又发现旧代链路在窗口中途排空时会把容量计到窗口末尾；已改为按 `drained_at` 截断，并新增回归。待第三轮复核。
 - 处理方式：采样器先保留窗口内的候选片段，模拟自然结束、所有退役代际排空后，用确定的 `drained_at` 截断原始 availability ledger，再交给 metrics/receipt 重算；不会修改服务事件或数据包语义。
+
+## 2026-08-21：physical available-capacity 合入并完成同 SHA VM E0 工程校准
+
+- PR #91 已合入 main，merge SHA=`b356d03d205e0b0851ca998874d6b3256c2b9640`；独立冷审绑定前一提交 `396c2ee`，定向 `29 passed`，审查确认窗口内几何/MCS 分段、拓扑边界、新旧 ISL 代际和 `drained_at` 截断均无容量窗口跨界膨胀。合入前相关全量为 `531 passed`。
+- 部署：canonical VM `/data/论文/leo-direct-sim`，source tree SHA=`d391dff5431c44c8af6b42302b2611b8ba4c1dc06b64a871d5f6a569cfcb64a8`，deployment receipt SHA=`ea343bc8d9b7fefbe2f88cddf594dfe97d7fce850db66a8170b46759c6e11578`。VM 使用固定 `leo-i39` 环境（Python 3.11.15、PyYAML 6.0.2、NumPy 1.24.3、SimPy 4.0.1）；系统 `python3` 缺 PyYAML，不能作为运行环境。
+- VM 工程 E0（非 formal、非论文结果）：140 星、60 s、MCS、1 s 拓扑 cadence、M-Lab 三 OD + 20--40 s burst、50 Mbps；natural_end=`true`，`conservation_ok=true`，`receipt verify=verified`，461 offered / 440 `DELIVERED` / 20 `ACCESS_REJECTED` / 1 `IN_SYSTEM_AT_STOP`，0 queue overflow，wall=`267 s`；`link_available_windows=29,656`，ledgers=`93 MB`。结果证明同一 SHA 的非学习测量链可以在 VM 跑通，不证明正式 E0 或论文结论。
+- 当前边界：available-capacity 分母代码和 VM ledger 已有证据；逐窗口独立重算、每包 queue/tx/prop 三段时延和三段和 gate、D1 旧平台 MCS 对照、D2 长窗语义、R1-A1、学习 VM smoke、formal authorization cohort 仍是后续门禁。

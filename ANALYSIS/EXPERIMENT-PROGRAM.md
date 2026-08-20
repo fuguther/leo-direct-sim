@@ -1,6 +1,6 @@
 # LEO 拥塞控制与链路利用率实验总计划
 
-> CURRENT；最后核验：2026-08-21。当前 main `ac0d019` 已部署 VM；M-Lab measurement-proxy + burst 合同、receipt horizon 修复和非学习同 SHA smoke 已完成。R1-A1、可信 available-capacity 分母、V2 artifact→claim 闭环、学习 VM smoke、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
+> CURRENT；最后核验：2026-08-21。当前 main `b356d03` 已部署 VM；M-Lab measurement-proxy + burst 合同、receipt horizon 修复、physical available-capacity 分母和非学习同 SHA E0 工程校准已完成。R1-A1、V2 artifact→claim 闭环、学习 VM smoke、逐包三段时延正式 gate、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
 
 ## 1. 研究主线与工作方法
 
@@ -49,7 +49,7 @@ P0 的验收是“同一 SHA 的结果可以被重新算出来并拒绝篡改”
 
 在进入 E0 负载标定前，先用同一份不可变的 M-Lab measurement-proxy + burst trace，比较拓扑重算间隔 `0.5/1/2/5 s`。这一步只回答“更新太慢会不会改变当前负载下的结果、以及运行成本如何”，不把短 smoke 当成 D2 长窗语义已经完全证明。
 
-本轮证据：本地 140 星、60 s、MCS、同一 trace 的四档均自然结束、守恒通过、receipt 可重算，均为 461 offered、440 delivered、20 access rejected、1 in-system；拓扑重算次数分别为 119、59、29、11，墙钟约 118.9、79.9、60.5、48.9 s。VM 另完成 66 星、10 s 的四档 plumbing smoke，四档均 18/18 delivered、自然结束、守恒通过、receipt verified；5 s 档的 receipt 也确认无丢包。VM 短 smoke 只作为部署/合同证据，不能替代 140 星长窗比较。
+本轮证据：本地 140 星、60 s、MCS、同一 trace 的四档均自然结束、守恒通过、receipt 可重算，均为 461 offered、440 delivered、20 access rejected、1 in-system；拓扑重算次数分别为 119、59、29、11，墙钟约 118.9、79.9、60.5、48.9 s。VM 另完成 66 星、10 s 的四档 plumbing smoke，四档均 18/18 delivered、自然结束、守恒通过、receipt verified；5 s 档的 receipt 也确认无丢包。随后在合入 `b356d03` 的同 SHA VM 上完成 140 星、60 s、MCS、1 s cadence 的 E0 工程运行：461 offered、440 delivered、20 access rejected、1 in-system，natural end/conservation/receipt verify 均通过，墙钟约 267 s，产生 29,656 个 physical availability windows。该运行仍是工程校准，不是 formal E0 或论文结果。
 
 | cadence | 本地 140 星/60 s 结果 | 本地墙钟 | 工程判断 |
 |---:|---|---:|---|
@@ -70,7 +70,7 @@ P0 的验收是“同一 SHA 的结果可以被重新算出来并拒绝篡改”
 | 100 Mbps | 944 / 877 | 60 `ACCESS_REJECTED`，7 `HOLDING_QUEUE_OVERFLOW` | verified | verified |
 | 200 Mbps | 1940 / 1816 | 96 `ACCESS_REJECTED`，28 `HOLDING_QUEUE_OVERFLOW` | verified | verified |
 
-本地墙钟约为 78.7/79.0/79.3 s；VM 100/200 Mbps 分别约 265.9/264.5 s，说明正式训练和评估预算必须按 VM 实测而不是本机时间估计。当前候选解释是：`50` 作为低负载、`100` 作为中负载、`200` 作为高负载/压力档；最终冻结前还必须补 available-capacity 分母、逐包三段时延和正式授权 E0。`10 Mbps` 另作低负载 sanity（67/74 delivered，0 holding overflow），不作为主三档之一。
+本地墙钟约为 78.7/79.0/79.3 s；VM 100/200 Mbps 分别约 265.9/264.5 s，说明正式训练和评估预算必须按 VM 实测而不是本机时间估计。当前候选解释是：`50` 作为低负载、`100` 作为中负载、`200` 作为高负载/压力档；同 SHA VM 50 Mbps 工程 run 已自然结束且 receipt verified。最终冻结前还必须补 available-capacity 的独立重算、逐包三段时延和正式授权 E0。`10 Mbps` 另作低负载 sanity（67/74 delivered，0 holding overflow），不作为主三档之一。
 
 #### TRAFFIC-VALIDATE
 
