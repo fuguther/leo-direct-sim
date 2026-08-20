@@ -281,6 +281,69 @@ def test_paired_learning_cells_allow_different_seeds_and_external_checkpoints(tm
                                          project_root=tmp_path)
 
 
+def test_matrix_rejects_evaluation_cells_with_cyclic_checkpoint_lineage(tmp_path):
+    checkpoint = tmp_path / "EXPERIMENTS" / "checkpoint.keras"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"checkpoint")
+    metadata = checkpoint.parent / "metadata.json"
+    metadata.write_text("{\"contract\": \"C3\"}\n", encoding="utf-8")
+    import hashlib
+    checkpoint_sha = hashlib.sha256(checkpoint.read_bytes()).hexdigest()
+    metadata_sha = hashlib.sha256(metadata.read_bytes()).hexdigest()
+    request = _request()
+    request["common_config"]["routing"] = {
+        "policy": "hop", "learning_enabled": True, "contract": "C3",
+    }
+    request["common_config"]["control_plane"] = {"enabled": True}
+    request["common_config"]["learning"] = {
+        "algorithm": "ddqn", "mode": "eval",
+    }
+    run_ids = [
+        "EXP-LEO-V2-MATRIX-control-s42-l1",
+        "EXP-LEO-V2-MATRIX-treatment-s42-l2",
+    ]
+    for index, cell in enumerate(request["cells"]):
+        cell.update({
+            "run_id": run_ids[index],
+            "phase": "evaluation",
+            "learning_seed": index + 1,
+            "config_overrides": {"learning": {
+                "checkpoint_path": "EXPERIMENTS/checkpoint.keras",
+                "checkpoint_sha256": checkpoint_sha,
+                "checkpoint_metadata_sha256": metadata_sha,
+            }},
+            "checkpoint_lineage": {
+                "mode": "evaluation_only",
+                "source_run_id": run_ids[1 - index],
+                "source_sha256": checkpoint_sha,
+            },
+        })
+    source = tmp_path / "request.json"
+    source.write_text(json.dumps(request), encoding="utf-8")
+
+    with pytest.raises(matrix.MatrixError, match="planned training run"):
+        matrix.compile_matrix_experiment(
+            source, tmp_path / "EXPERIMENTS" / request["experiment_id"],
+            project_root=tmp_path)
+
+
+def test_matrix_rejects_duplicate_contrasts_for_same_arm_pair(tmp_path):
+    request = _request()
+    request["analysis"]["planned_contrasts"].append({
+        "name": "control_minus_treatment",
+        "left_arm": "control",
+        "right_arm": "treatment",
+        "estimand": "paired difference",
+    })
+    source = tmp_path / "request.json"
+    source.write_text(json.dumps(request), encoding="utf-8")
+
+    with pytest.raises(matrix.MatrixError, match="duplicate contrast arm pair"):
+        matrix.compile_matrix_experiment(
+            source, tmp_path / "EXPERIMENTS" / request["experiment_id"],
+            project_root=tmp_path)
+
+
 @pytest.mark.parametrize("mutation, message", [
     (lambda r: r["arms"][1]["config_overrides"].update(
         scenario={"duration_s": 2.0}),
@@ -315,6 +378,24 @@ def test_matrix_rejects_escape_and_symlink_output_paths(tmp_path):
     canonical.symlink_to(target, target_is_directory=True)
     with pytest.raises(matrix.MatrixError, match="symbolic"):
         matrix.compile_matrix_experiment(source, canonical, project_root=tmp_path)
+
+
+def test_matrix_accepts_macos_var_alias_for_same_project_root(tmp_path):
+    raw = str(tmp_path)
+    if not raw.startswith("/private/var/"):
+        pytest.skip("macOS /var alias is not present")
+    alias_root = Path(raw.replace("/private/var/", "/var/", 1))
+    if alias_root.resolve() != tmp_path.resolve():
+        pytest.skip("/var does not resolve to /private/var")
+    request = _request()
+    source = alias_root / "request.json"
+    source.write_text(json.dumps(request), encoding="utf-8")
+
+    report = matrix.compile_matrix_experiment(
+        source, alias_root / "EXPERIMENTS" / request["experiment_id"],
+        project_root=alias_root)
+
+    assert report["status"] == "COMPILED_REVIEW_REQUIRED"
 
 
 def test_matrix_verifier_rejects_symlinked_resolved_ancestor_and_report_rebind(tmp_path):

@@ -174,6 +174,7 @@ def _validate_analysis(value: Any) -> dict[str, Any]:
     if not isinstance(contrasts, list) or not contrasts:
         raise MatrixError("analysis.planned_contrasts must be non-empty")
     contrast_names: set[str] = set()
+    contrast_arm_pairs: set[frozenset[str]] = set()
     for i, contrast in enumerate(contrasts):
         item = _expect_keys(contrast, {"name", "left_arm", "right_arm", "estimand"},
                             f"analysis.planned_contrasts[{i}]")
@@ -183,6 +184,11 @@ def _validate_analysis(value: Any) -> dict[str, Any]:
         contrast_names.add(item["name"])
         _safe_id(item["left_arm"], f"analysis.planned_contrasts[{i}].left_arm")
         _safe_id(item["right_arm"], f"analysis.planned_contrasts[{i}].right_arm")
+        arm_pair = frozenset((item["left_arm"], item["right_arm"]))
+        if arm_pair in contrast_arm_pairs:
+            raise MatrixError(
+                f"duplicate contrast arm pair: {item['left_arm']}, {item['right_arm']}")
+        contrast_arm_pairs.add(arm_pair)
         if not isinstance(item["estimand"], str) or not item["estimand"]:
             raise MatrixError(f"analysis.planned_contrasts[{i}].estimand must be a string")
     return analysis
@@ -422,14 +428,19 @@ def _validate_pairing_contract(request: dict[str, Any],
     """
     contrasts = request["analysis"]["planned_contrasts"]
     by_pair: dict[str, list[dict[str, Any]]] = {}
-    planned_run_ids = {row["run_id"] for row in rows}
+    planned_rows = {row["run_id"]: row for row in rows}
     for row in rows:
         by_pair.setdefault(row["pairing_key"], []).append(row)
         source_run_id = row["checkpoint_lineage"]["source_run_id"]
         if source_run_id is not None and source_run_id == row["run_id"]:
             raise MatrixError(
                 f"cell {row['run_id']} checkpoint lineage cannot reference itself")
-        if source_run_id is not None and source_run_id not in planned_run_ids \
+        if source_run_id in planned_rows and \
+                planned_rows[source_run_id]["phase"] != "training":
+            raise MatrixError(
+                f"cell {row['run_id']} checkpoint lineage must reference a "
+                "planned training run or an external- source")
+        if source_run_id is not None and source_run_id not in planned_rows \
                 and not source_run_id.startswith("external-"):
             raise MatrixError(
                 f"cell {row['run_id']} external checkpoint source_run_id must use "
@@ -492,20 +503,22 @@ def _artifact_hashes(out_dir: Path, paths: list[str]) -> dict[str, str]:
 def _reject_symlink_ancestors(path: Path, stop: Path) -> None:
     """Reject caller-controlled symlink components up to a trusted root."""
     path = Path(path)
-    stop = Path(stop)
     if not path.is_absolute():
         path = Path.cwd() / path
+    stop = Path(stop)
     if not stop.is_absolute():
         stop = Path.cwd() / stop
+    resolved_path = path.resolve(strict=False)
+    resolved_stop = stop.resolve(strict=False)
     try:
-        path.relative_to(stop)
+        resolved_path.relative_to(resolved_stop)
     except ValueError as exc:
         raise MatrixError(f"path escapes project root: {path}") from exc
     current = path
     while True:
         if current.is_symlink():
             raise MatrixError(f"path contains a symbolic ancestor: {path}")
-        if current == stop:
+        if current.resolve(strict=False) == resolved_stop:
             break
         if current == current.parent:
             raise MatrixError(f"path is not below project root: {path}")
