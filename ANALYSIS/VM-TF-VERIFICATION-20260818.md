@@ -1,5 +1,7 @@
 # VM/TF 验证前置清单（正式实验门，2026-08-18）
 
+> **SUPPORTING PROTOCOL**：清单继续有效；未执行清单不能写成 VM 已通过，当前部署状态见 `CURRENT-EXPERIMENT-READINESS.md`。
+
 > 工作流优化 0.5：DDQN 动态负例与学习臂 profile 不再作为永远挂账的 open item，
 > 而是正式实验门（编译 → 审阅 → 授权 → 部署 → 跑实验）的固定一步。
 

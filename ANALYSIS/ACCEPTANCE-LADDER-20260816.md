@@ -1,5 +1,7 @@
 # 验收阶梯（Acceptance Ladder）v1
 
+> **SUPPORTING PROTOCOL**：验收方法继续有效；当前门禁状态见 `CURRENT-EXPERIMENT-READINESS.md`。
+
 > 日期：2026-08-16。判据来源：论文主线「路由状态信息的年龄对 LEO DRL 路由的影响」——一切验收以「是否服务信息年龄主线」为取舍标准。
 > 已有支撑资产：`test_analytic_scenarios.py`（解析锚点）、`test_reward_migration.py`（reward/观测 golden）、`acceptance.py`（五机制验收）、`comparison.py` + 决策快照（双臂差分）、`receipt.py`（回执）、`fates.py`（双账本守恒）。
 

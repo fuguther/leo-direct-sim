@@ -1,5 +1,7 @@
 # E0 选档定稿（140 星跨洋，hop 非学习，2026-08-15）
 
+> **HISTORICAL RESULT**：50/100/200 Mbps 是旧平台语义下的先验；D1/D2 和最终合同冻结后必须重跑 E0。
+
 > 依据 09 文档 §C 与 §I 的冻结阈值，把三档从 provisional 转正。原始扫描数据：
 > VM `/tmp/leo-e0-scan-140/scan-summary.json`；配置 `CODE/leo_sim/profiles/e0_load_scan.yaml`
 > （140 星 / 7 面、Malaga↔Tokyo、uniform、8 Mbit 包、60 s、hop、vis_k=12）。

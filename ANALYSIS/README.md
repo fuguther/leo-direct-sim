@@ -1,24 +1,48 @@
-# 分析区
+# 分析与实验文档入口
 
-分析必须从已验证 run ID 和 hash 开始，不从目录名、截图或手工汇总开始。每项正式分析只有三个核心产物：
+> 文档状态最后核验：2026-08-20。当前状态必须从本页列出的 `CURRENT` 文档进入；带日期的报告通常只是历史快照。
 
-- `manifest.json`：输入、脚本、命令、cohort、纳入/排除规则、指标定义和 hash；
-- `summary.csv`：arm/scenario/seed/n/metric/estimate/uncertainty 的整洁表；
-- `report.md`：问题、方法、结果、局限、替代解释、能支持与不能支持的 claim、科研价值。
+## 当前真相源
 
-分析不能直接写入 `ARCHIVE-20260803/GUIDANCE/`；只能提出 claim candidate。
+| 文档 | 地位 | 用途 |
+|---|---|---|
+| `CURRENT-EXPERIMENT-READINESS.md` | CURRENT | 平台两个目标、当前差距、门禁、时间估计和下一步 |
+| `PLATFORM-CAPABILITY-LEDGER.md` | CURRENT | 旧平台与 V2 能力对照、必须补/按 claim 补/后续研究臂 |
+| `Q0-INFORMATION-ABLATION-PROTOCOL.md` | CURRENT | Q0-F/Q0-I、从最优向下裁剪信息、从现实向上增加信息 |
+| `EXPERIMENT-PROGRAM.md` | CURRENT | 完整实验顺序、研究问题、依赖、统计和证据要求 |
+| `FINDINGS-REGISTRY.md` | CURRENT | 唯一问题台账；状态不能由其他报告覆盖 |
+| `../EXPERIMENTS/experiment-program.yaml` | CURRENT | 可机读的实验依赖与状态清单，不是运行授权 |
+| `../NOTES.md` | ROLLING LOG | 最近操作与证据索引，不承担当前状态真相源 |
 
-## 配对分析执行
+## 文档状态词
 
-`paired_analysis.py` 只接受 `run_id=结果目录` 的显式映射，并重新验证完整 v2 预注册、request/manifest 绑定、实际 config、controlled signature、seed、scenario、run identity、effective receipt、artifact manifest、每个产物 hash 与主指标。所有计划 run 必须到齐；缺失配对会 BLOCK，不会被填零或悄悄排除。
+- `CURRENT`：允许用于安排下一步和判断当前状态。
+- `SUPPORTING`：保留设计、数学、实测或审阅细节；状态以 CURRENT 文档为准。
+- `HISTORICAL`：只表示成文日期当时的事实，不允许据此判断现在。
+- `SUPERSEDED`：现行结论已经合并到稳定命名的新文档；旧文仅作证据来源。
 
-```bash
-python3 ANALYSIS/paired_analysis.py \
-  --analysis EXPERIMENTS/EXP-.../analysis-request.json \
-  --manifest EXPERIMENTS/EXP-.../run-manifest.json \
-  --run EXP-...-control-s41=/path/to/run \
-  --run EXP-...-treatment-s41=/path/to/run \
-  --out ANALYSIS/EXP-...
-```
+## 旧文档路由
 
-只有 `analysis-manifest.json.status=VERIFIED` 且当前论文入口重新执行后仍得到同一 cohort、contrast、统计量和输出时，才可作为 claim 的实验依据。每次分析还会保存 `analysis-code.py` 快照，保留当时的可复现代码；任意手写 `VERIFIED` 字符串没有效力。
+- Q0 日期稿：`Q0-ALGO-RESEARCH-*`、`Q0-INTERFACE-DESIGN-*` → 当前协议为
+  `Q0-INFORMATION-ABLATION-PROTOCOL.md`。
+- 平台迁移/旧平台审计：`MIGRATION-BACKLOG-*`、`LEGACY-DESIGN-AUDIT-*` →
+  当前结论为 `PLATFORM-CAPABILITY-LEDGER.md`。
+- 实验 07/08/09 与 E0/E1 历史结果 → 当前程序为 `EXPERIMENT-PROGRAM.md`；
+  历史数值不得自动继承到 D1/D2 后平台。
+- `MORNING-REPORT-*`、`OVERNIGHT-REPORT-*`、旧 handoff/implementation report →
+  只作历史证据。
+- `LINK-BUDGET-DESIGN-*`、`TEMPORAL-MULTISTEP-DESIGN-*`、`REWARD-DIFF-*`、
+  `VM-TF-VERIFICATION-*`、`ACCEPTANCE-LADDER-*` → supporting 设计或协议。
+
+## 正式实验事实边界
+
+正式分析必须从已验证 run ID、manifest、receipt 和 artifact hash 开始，不能从目录名、截图或手工汇总开始。当前仓库缺少历史文档曾引用的 `ANALYSIS/paired_analysis.py`，因此“编译 → 授权 → 运行 → 持久化分析 → claim”链目前是阻塞项；在实现并验证新的持久化分析入口之前，不得照抄旧命令或声称分析链可用。
+
+每个正式实验实例仍应保存：
+
+- `request.json`：预注册研究问题、arms、配置、seeds、指标和验收门；
+- 编译生成的 `run-manifest.json` 与授权产物；
+- VM 自然结束 receipt、artifact manifest 和原始产物；
+- 重新计算得到的 analysis manifest、整洁 summary 与 report。
+
+实验结果目录继续不入 Git。

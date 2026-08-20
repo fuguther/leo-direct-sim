@@ -10,10 +10,11 @@
 1. **台账优先**：任何审阅/挖问题轮次开始前，审阅提示词必须要求 reviewer 先读
    `ANALYSIS/FINDINGS-REGISTRY.md`（派发时给精确 commit 的台账路径），
    已存在编号的观察一律引用编号、禁止重复计为新发现。
-2. **轮次上限**：每个 PR 独立审阅最多 3 轮；第 1 轮审全量 diff，
-   第 2 轮起只审增量（相对上一被审 commit 的 diff）；连续两轮仅剩
-   minor/设计项时，不再自动开新轮 → 合并 + 在台账记 `follow-up`；
-   仅 blocking/major 触发下一轮。
+2. **轮次熔断**：每个 PR 每个连续审阅周期最多 3 轮；第 1 轮审全量 diff，
+   第 2 轮起只审相对上一被审 commit 的增量。3 轮后仍有 blocking/major，
+   必须停止“继续派一轮”，记录根因并重规划；只有形成实质性新候选后才能开启
+   新周期。D1/D2 历史总轮次已经超过 3，不能把“新周期”写成原周期内合规收敛。
+   连续两轮仅剩 minor/设计项时，不再自动开新轮，转 follow-up。
 3. **独立审阅真实性**：承重改动（kernel/routing/receipt/governance/learning）
    的独立复核 = 不同模型子代理冷启动（fork_turns=none，模型与主代理不同族）
    或 Codex 独立冷启动自审；禁止同模型多开冒充独立。
@@ -23,6 +24,9 @@
 
 | ID | 模块 | 严重度 | 判定 | 状态 | 摘要 | 证据 | 处置 |
 |---|---|---|---|---|---|---|---|
+| R1-A1 | learning/reward | blocking | INFERENCE | open | 正奖励按跳累积可能允许非交付循环获得净正收益，污染策略最优性与 Q0 对照 | `EXPERT-REVIEW-20260816.md` A1 | 构造最小正循环反例；若可复现，修奖励或动作约束并做改前/改后对照 |
+| R1-A2 | learning/information | blocking | INFERENCE | open | action mask 可能读取 `obs_hops` 外全局拓扑/路径信息，导致观测消融存在旁路 | `EXPERT-REVIEW-20260816.md` A2 | observation 与 mask 共用冻结信息合同；做两个局部观测相同、远端状态不同的不可区分测试 |
+| R7-F1 | experiment_platform/PAPER | blocking | FACT | open | 正式 compile→analysis→claim 链硬绑定缺失的 `ANALYSIS/paired_analysis.py` 等输入，且 CI 未覆盖完整链 | clean main：experiment_platform+work `21 passed, 5 failed, 3 subtests passed`；identity 单测因缺 paired_analysis 失败 | 恢复持久化分析入口/fixture，扩展 CI，做一条真实闭环 |
 | R4A2-F1 | learning | blocking | INFERENCE | fixed | sibling metadata 可重标 contract（C3/C4 同宽） | learning.py 校验链（#42 审阅） | #42 af4b115：metadata SHA 独立 config pin |
 | R4A2-F2 | learning | major | FACT | fixed | metadata 非法 UTF-8 未统一转 LearningUnavailable | learning.py read_text 路径 | #42 af4b115：_read_json_bytes 统一捕获 |
 | R4A2-F2i | learning | major | FACT | fixed | legacy TabularQ 不校验 state-key 宽度/表示 | test_qlearning_migration.py 16B fixture | #42 af4b115：key 宽度+有限性校验 |
@@ -37,7 +41,7 @@
 | R4B2-A3 | kernel (snapshot) | major | FACT | fixed | _in_flight 仅 kind/sat/arrival_at，planner 读不到完整包状态 | _in_flight 写入口 | #40 f64024c：保留 pkt 引用+投影全字段 |
 | R4B2-A3b | kernel (snapshot) | minor | INFERENCE | open(follow-up) | 控制包在途不跟踪；完整 checkpoint/resume 能力未做 | A3 审阅 | 设计 follow-up，不进 v1 |
 | R4C-F1 | learning | major | FACT | fixed | 同宽 learning contract checkpoint 可跨合同加载并被重标 | #42 前 main | #42（根因同 R4A2-F1，去重引用） |
-| R4C-F2 | kernel (reward) | major | FACT | fixed(待拍板) | ISL 服务开始后失败，_fail 把已实现 M1 奖励覆盖为 0 | kernel._fail + 复现测试 | #43（行为改变，留用户拍板） |
+| R4C-F2 | kernel (reward) | major | FACT | fixed | ISL 服务开始后失败，_fail 把已实现 M1 奖励覆盖为 0 | kernel._fail + 复现测试 | #43 已合入 main；不等同于关闭更广的 R1-A1 奖励正循环风险 |
 | R4C-F3 | learning | major | FACT | fixed | 结构无效 TabularQ checkpoint 被洗成 checkpoint_verified=true | #42 前 main | #42（与 R4A2-F2i/F3 同根，去重引用） |
 | R4C-F4 | learning | minor | FACT | fixed | 畸形 JSON/entry/hex 与部分 DDQN load_model 失败未统一包装 | #42 前 main | #42 2eabd72：load_model 异常统一 LearningUnavailable |
 | R4C-i-F4 | receipt | minor | FACT | fixed | field_authority 把 learning 标为 recomputed，实为 ledger_consistency | receipt.py FIELD_AUTHORITY | #42 2eabd72：改 ledger_consistency |
@@ -59,12 +63,15 @@
 
 ## Open / Follow-up 清单
 
+- R1-A1：奖励正循环风险，需最小反例和物理目标对照。
+- R1-A2：action mask 信息旁路，需与观测信息合同统一。
+- R7-F1：正式实验持久化分析与 claim 链损坏，是当前平台门禁。
 - R4B2-A3b：控制包在途跟踪、Q0 snapshot → 完整 checkpoint/resume（设计 follow-up）。
-- R4C-F2：等待用户拍板（保留已实现奖励 vs 设计上失败=0）。
-- R4C-F4 / R4C-i-F4：已改在 #42 分支工作区，随 #42 终审后并入。
-- R5-G1：修复分支已建，待完成+测试+PR。
-- R5-G2：治理链补 checkpoint 文件本体校验（建议下轮实现）。
-- 跨轮历史项（R1–R3、专家审阅 A–D）：见 `ANALYSIS/EXPERT-REVIEW-20260816.md` §A–I 与 NOTES.md，不在本台账重复编号。
+- R6-F1/R6-F3/R6-M1：Q0-I/J/F、物理目标和精确算法合同。
+- R6-A1/R6-A2/R6-A3/R6-B2/R6-P02b：已登记的 snapshot/holding/routing follow-up。
+- `EXPERT-REVIEW` 与 NOTES 只作证据来源；任何仍需处置的历史项必须先在本表分配 ID，
+  不允许只存在于其他文档的“隐形 open item”。本轮已先迁入 R1-A1/R1-A2；其余历史项
+  需逐条核验后再登记，不能批量假设仍 open 或已 fixed。
 
 ## 使用说明
 

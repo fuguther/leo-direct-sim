@@ -1,5 +1,7 @@
 # Q0 完全信息最优算法选型与信息裁剪（2026-08-18 网页双路终稿）
 
+> **SUPPORTING（现行结论已合并）**：算法调研与组合矩阵证据保留；执行协议见 `Q0-INFORMATION-ABLATION-PROTOCOL.md`。
+
 > 来源：僚机 op 13934832（web_chat 双 lane：primary + independent_review，均 EVIDENCE_READY，
 > 3 blocking + 9 major，判定 NEEDS_REWORK=设计合同未冻结，不是代码缺陷）。
 > 结论为候选证据，Codex 已完成交叉汇总；进入实现前需用户冻结 §5 的合同选项。
