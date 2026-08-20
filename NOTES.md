@@ -7,7 +7,7 @@
 
 ## 记录规则
 
-- 每个工作单元记录时间、分支/commit/PR、实际测试数字、风险和下一步。
+- 任务级证据放 PR；本文件只在合并改变当前平台状态、风险或下一步时更新。
 - 设计解释写入对应 CURRENT/SUPPORTING 文档，NOTES 只留链接。
 - 当前周期结束后原样归档；不得通过压缩删除失败、REQUEST_CHANGES 或未验证记录。
 - 实时问题状态只在 `ANALYSIS/FINDINGS-REGISTRY.md` 更新。
@@ -46,7 +46,9 @@
 
 ## 下一步
 
-1. 完成本分支文档状态标记、YAML/链接/测试校验并走 docs PR。
+1. 合入 Git 生命周期治理；随后按
+   `ANALYSIS/GIT-WORKTREE-RECONCILIATION-20260820.md` 对 24 个 clean+merged
+   worktree 候选逐条申请回收，保护 3 个 dirty、2 个 orphan 和 5 个 detached 项。
 2. D1/D2 合入后更新 CURRENT 文档中的精确 main/VM 状态。
 3. 修 R7-F1 正式分析链，再关闭 R1-A1/R1-A2 与 Q0 blocker。
 4. 最终冻结平台三轮审计后部署 VM，重跑 E0 与全臂 pilot。
