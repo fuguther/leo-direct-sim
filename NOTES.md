@@ -5,6 +5,15 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-21：研究执行顺序、训练闭环与拓扑 cadence 锁定
+
+- 决议文档：`docs/superpowers/specs/2026-08-21-research-execution-and-training-budget-design.md`。
+- 人类实验真相源 `ANALYSIS/EXPERIMENT-PROGRAM.md` 已锁定顺序：平台 → 拓扑 cadence → 真实测量驱动多 OD/突发 → E0 → 资源 profiling → 全臂 train/eval pilot → 拥塞诊断 → Q0/信息阶梯 → 新方案 → 正式矩阵。
+- “平台完成”新增硬定义：非学习基线、Q-learning、DDQN 必须在 VM 真实完成 train/checkpoint/eval；声称使用的 GAT/MPNN contract 也必须有同样回执；无 OOM、同 trace SHA、checkpoint 血缘和 V2 指标重算。
+- 时间预算：3–5 秒只用于 smoke；训练 episode 20 秒、正式评估 60–120 秒为起始候选，最终以 E0/VM profiling 决定。拓扑 cadence 扫 0.5/1/2/5 秒，1 秒仅为候选默认，不是预先假定事实。
+- 机器索引 `EXPERIMENTS/experiment-program.yaml` 新增 `TOPO-CADENCE`、`RESOURCE-PROFILE`、`LEARNING-RUNTIME-SMOKE` 及对应门禁。
+- T0 实现计划：`docs/superpowers/plans/2026-08-21-traffic-and-runtime-readiness.md`。
+
 ## 2026-08-20：D1/D2 合入与 VM 工程 smoke
 
 - PR #55（D1 动态链路速率）与 PR #56（D2 动态拓扑/holding）均已合入 main；当前 main

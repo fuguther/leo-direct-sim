@@ -3,11 +3,30 @@
 > 状态最后核验：2026-08-21；当前 main 为 `42ff519`。V2 结果适配器、trace provenance（含 burst/diurnal 变换参数）已合入；当前 SHA 已部署 VM，真实授权 cohort/E0 论文数据仍未完成。
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
+## 0. 本轮锁定的执行目标
+
+研究总目标是：在“拥塞控制 + 链路利用率”主线内，先把平台和真实测量驱动流量做到没有已知会改变主要结论的硬伤，再按实验顺序逐组实现、逐组运行，最终形成可从原始回执重算、可复现、可用于论文的结果。
+
+这里的“平台做好”有一个不可省略的硬含义：不仅非学习 kernel 能自然结束，
+而且当前实际接入的学习运行时也必须在 VM 上完成至少一次 train → checkpoint → eval
+闭环。最低闭环包括一个纯 NumPy 的 Q-learning 臂和一个 TensorFlow DDQN 臂；如果
+正式矩阵声称使用 GAT/MPNN 图状态，则每个被声称的 graph contract 也必须通过同样
+的 train/eval smoke。没有训练回执、checkpoint 重载回执、内存峰值和分析重算产物，
+只能叫“代码存在”或“测试通过”，不能叫“平台完成”。
+
+执行顺序已经锁定为：
+
+`平台底座 → 拓扑更新时间标定 → 真实流量/多 OD/突发 → E0 负载标定 → CPU/内存 profiling → 全臂 pilot → 拥塞诊断 → Q0-I/Q0-F 与信息阶梯 → 新方案 → 正式矩阵 → 敏感性实验`。
+
+硬规则：一次只推进一组；该组必须先完成小 smoke、资源检查、自然结束和指标重算，才允许进入下一组。3–5 秒只属于接线/冒烟；正式训练 episode 的候选起点为 20 秒，正式评估候选起点为 60–120 秒，最终值由 E0 和 VM profiling 决定，不能为了省训练时间把物理时间尺度压没。
+
+拓扑时间尺度暂定候选为：`scenario.time_step_s=0.1 s`、`topology.recompute_interval_s` 扫描 0.5/1/2/5 s、`control_plane.advertise_interval_s=1 s`；以同 trace/seed 下 0.5 s 与 1 s 的收敛和资源差异决定主实验值。详见 `ANALYSIS/EXPERIMENT-PROGRAM.md §2.1`。
+
 ## 1. 两个目标
 
 | 目标 | 完成定义 | 当前位置 | 剩余工作的性质 | 时间估计 |
 |---|---|---|---|---|
-| A. 可可信跑真实流量诊断/pilot | D1/D2 与核心语义冻结；V2 证据链闭合；真实流量、多 OD/突发、利用率和三段时延可重算；同一 SHA 经审阅部署 VM | **部分达到：D1/D2、奖励门和最小事件观测已合入；V2 适配器已有真实 receipt/paired 重算测试；仍缺真实 provenance、利用率正式分母、授权 cohort 与当前 SHA 的 VM/pilot** | 补 provenance/分母口径，部署 `2f577a5` 后跑授权 smoke、E0-REAL、基线 pilot | **ESTIMATE：3–7 个专注工作日**；当前测试/工程 smoke 不能当论文数据 |
+| A. 可稳定运行平台与工程 pilot | D1/D2 与核心语义冻结；真实流量、多 OD/突发、利用率和三段时延可重算；同一 SHA 经审阅部署 VM；至少一个 Q-learning 和一个 DDQN 完成 train→checkpoint→eval；资源 profiling 证明不 OOM | **部分达到：D1/D2、奖励门和最小事件观测已合入；仍缺真实 provenance、拓扑 cadence 标定、训练 VM 闭环、利用率正式分母、授权 cohort 与当前 pilot** | 补流量/分母口径，完成 TOPO-CADENCE、E0-REAL、RESOURCE-PROFILE、Q-learning/DDQN VM train/eval 和基线 pilot | **ESTIMATE：3–7 个专注工作日**；没有训练回执不能称平台完成 |
 | B. 可支撑论文主结论 | 目标 A 通过；完成 Q0-I/Q0-F、候选方向物理特征、逐字段 AoI、replay 续训；诊断后提出方案并完成配对正式矩阵 | **尚未达到；Q0 只有快照，信息/续训能力未闭合** | 理论归因、机制反例、长训恢复、正式统计与外部有效性 | **ESTIMATE：目标 A 后 4–10 周**；取决于诊断是否支持明确机制及训练成本 |
 
 目标 B 必须定义为“本研究范围内的 practical ceiling”，不能定义成所有卫星网络机制都完美。未校准的 Doppler、天线、ARQ、天气或链路参数即使代码存在，也不自动提高科研可信度。

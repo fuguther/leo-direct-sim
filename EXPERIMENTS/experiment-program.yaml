@@ -27,6 +27,9 @@ requirements:
   multi_od_and_burst_verified: {status: blocked}
   link_utilization_recomputation_verified: {status: blocked}
   packet_delay_decomposition_verified: {status: blocked}
+  topology_cadence_calibrated: {status: blocked}
+  training_resource_profile_verified: {status: blocked}
+  learning_train_eval_smoke_verified: {status: blocked}
   q0_minimum_loop_verified: {status: blocked}
   q0_replay_review_approved: {status: blocked}
   three_final_audit_rounds_no_new_major: {status: blocked}
@@ -47,6 +50,7 @@ gates:
       - v2_formal_evidence_chain_verified
       - three_final_audit_rounds_no_new_major
       - exact_main_deployed_to_vm
+      - topology_cadence_calibrated
   formal_analysis_available:
     status: blocked
     reason: generic_analysis_exists_but_v2_artifact_to_metrics_to_claim_chain_is_open
@@ -68,6 +72,12 @@ gates:
       - q0_replay_review_approved
       - per_action_physical_features_verified
       - field_age_provenance_verified
+  learning_formal_ready:
+    status: blocked
+    requires:
+      - training_resource_profile_verified
+      - learning_train_eval_smoke_verified
+      - replay_resume_verified
 
 experiments:
   - id: VAL-D1
@@ -94,6 +104,19 @@ experiments:
     arms: [csv_real_or_trace, mlab_measurement_proxy, population_gravity_proxy, uniform_control]
     purpose: Freeze source identity, units, time/OD mapping, burst transformation and offered-load recomputation.
     required_evidence: [source_hash, provenance_contract, od_mapping, offered_bits_recomputation]
+
+  - id: TOPO-CADENCE
+    class: platform_validation
+    title: topology_recompute_cadence_calibration
+    status: blocked
+    prerequisites: [platform_frozen]
+    arms: [recompute_0_5s, recompute_1s, recompute_2s, recompute_5s]
+    fixed: [trace, offered_load, topology_seed, evaluation_policy]
+    purpose: >-
+      Select the smallest topology rematch interval whose delivery and
+      utilization metrics converge while wall time and peak memory remain
+      bounded; 1s is only the starting candidate, not an assumed fact.
+    required_evidence: [topology_change_ledger, metric_convergence, walltime, peak_rss]
 
   - id: METRIC-VALIDATE
     class: platform_validation
@@ -136,6 +159,38 @@ experiments:
     purpose: Freeze informative low, medium and high loads on the final platform using primary real traffic and a synthetic control.
     required_evidence: [natural_end, conservation, provenance, load_table, frozen_thresholds]
 
+  - id: RESOURCE-PROFILE
+    class: engineering_validation
+    title: training_cpu_memory_budget_profile
+    status: blocked
+    prerequisites: [E0-REAL, TOPO-CADENCE]
+    arms: [cpu_1, cpu_2, cpu_4, cpu_8]
+    fixed: [trace, training_seed, episode_duration, learning_hyperparameters]
+    purpose: >-
+      Choose the fastest stable CPU/thread budget with at least 20 percent
+      memory headroom; this estimates cost and prevents OOM, but is not an
+      algorithm-effect comparison.
+    required_evidence: [steps_per_second, peak_rss, walltime, thread_environment]
+
+  - id: LEARNING-RUNTIME-SMOKE
+    class: engineering_validation
+    title: learning_train_checkpoint_eval_smoke
+    status: blocked
+    prerequisites: [RESOURCE-PROFILE]
+    arms: [qlearning_train_eval, ddqn_train_eval]
+    conditional_contracts: [GAT, MPNN]
+    purpose: >-
+      Prove that every learning arm claimed by the formal matrix can actually
+      train, save and reload a checkpoint, and evaluate the same immutable
+      trace on the deployed VM without OOM or silent fallback.
+    required_evidence:
+      - train_natural_end
+      - checkpoint_reload
+      - eval_natural_end
+      - same_trace_sha
+      - peak_rss
+      - v2_analysis_recomputed
+
   - id: DIAG-CONGESTION
     class: diagnostic
     title: baseline_congestion_and_link_utilization_diagnosis
@@ -154,7 +209,7 @@ experiments:
     class: engineering_pilot
     title: baseline_end_to_end_pilot
     status: blocked
-    prerequisites: [E0-REAL]
+    prerequisites: [E0-REAL, RESOURCE-PROFILE, LEARNING-RUNTIME-SMOKE]
     purpose: Verify every baseline arm and estimate wall time, variance, memory and sample size without making effect claims.
     required_evidence:
       - compile_authorize_run_analysis_chain
@@ -192,7 +247,7 @@ experiments:
     class: formal_effect
     title: congestion_control_on_real_traffic
     status: blocked
-    prerequisites: [NEW-SCHEME-TINY, current_load_levels_frozen]
+    prerequisites: [NEW-SCHEME-TINY, current_load_levels_frozen, RESOURCE-PROFILE, LEARNING-RUNTIME-SMOKE]
     traffic_mode: real_or_measurement_proxy_multi_od_with_bursts
     arms: [deterministic_anchor, strongest_existing_learning_baseline, new_scheme, mechanism_ablation]
     purpose: Test congestion-control effectiveness and explain link-utilization changes on paired real traffic.

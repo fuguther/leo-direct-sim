@@ -12,6 +12,7 @@
 | `EXPERIMENT-PROGRAM.md` | CURRENT | 完整实验顺序、研究问题、依赖、统计和证据要求 |
 | `FINDINGS-REGISTRY.md` | CURRENT | 唯一问题台账；状态不能由其他报告覆盖 |
 | `../EXPERIMENTS/experiment-program.yaml` | CURRENT | 可机读的实验依赖与状态清单，不是运行授权 |
+| `../docs/superpowers/specs/2026-08-21-research-execution-and-training-budget-design.md` | DECISION RECORD | 本轮锁定的总目标、执行顺序、训练闭环和拓扑时间尺度；详细人类计划仍以 `EXPERIMENT-PROGRAM.md` 为准 |
 | `../NOTES.md` | ROLLING LOG | 最近操作与证据索引，不承担当前状态真相源 |
 
 ## 文档状态词
