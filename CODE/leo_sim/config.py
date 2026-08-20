@@ -157,6 +157,7 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "reward": str,  # queue (corrected queue reward) — the ONLY v1 reward
         "reward_w1": (int, float),  # M1 queue reward weight (legacy w1=20)
         "reward_beta": (int, float),  # M1 decay rate s^-1 (legacy _M1_BETA=200)
+        "forward_step_penalty": (int, float),  # non-positive hop cost; must dominate reward_w1
         "arrive_reward": (int, float),  # terminal delivery reward (legacy 50)
         "qlearning_alpha": (int, float),  # tabular Q update rate (legacy 0.25)
         "epsilon_start": (int, float),
@@ -316,6 +317,10 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         # legacy ArriveReward (SimulationRL.py:579)
         "reward_w1": 20.0,
         "reward_beta": 200.0,
+        # The raw legacy queue reward is diagnostic; the learning objective
+        # adds this cost so an extra forwarding hop can never be profitable
+        # before delivery.  Validation keeps the invariant for overrides.
+        "forward_step_penalty": -20.0,
         "arrive_reward": 50.0,
         "qlearning_alpha": 0.25,
         "epsilon_start": 1.0,
@@ -666,6 +671,10 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
         raise ConfigError("learning.reward_w1 must be > 0")
     if lr["reward_beta"] <= 0:
         raise ConfigError("learning.reward_beta must be > 0")
+    if lr["forward_step_penalty"] > -lr["reward_w1"]:
+        raise ConfigError(
+            "learning.forward_step_penalty must be <= -reward_w1 so "
+            "an extra forwarding hop cannot have positive reward")
     if lr["arrive_reward"] < 0:
         raise ConfigError("learning.arrive_reward must be >= 0")
     if not 0 < lr["qlearning_alpha"] <= 1:

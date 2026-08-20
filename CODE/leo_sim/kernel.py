@@ -2074,13 +2074,16 @@ class Kernel:
             if (link_ref[0] == "isl" and isinstance(pkt, DataPacket)
                     and pkt.learning_state is not None
                     and pkt.isl_enqueued_at is not None):
-                # M1 queue reward: settle the packet's REALIZED queue wait at
-                # the instant its service actually starts (legacy analog:
-                # checkPointsSend - checkPoints, SimulationRL.py:2052).
-                pkt.learning_reward = _learning.queue_reward(
+                # Settle the realized M1 queue diagnostic plus the safe
+                # per-forward-step cost at the instant service starts.  The
+                # raw queue reward remains available through the diagnostic
+                # helper, while the training objective cannot profit from
+                # extra hops.
+                pkt.learning_reward = _learning.forward_reward(
                     t0 - pkt.isl_enqueued_at,
                     self.cfg_learning["reward_w1"],
-                    self.cfg_learning["reward_beta"])
+                    self.cfg_learning["reward_beta"],
+                    self.cfg_learning["forward_step_penalty"])
                 pkt.isl_enqueued_at = None
             fail_t, fail_kind = end, None
             if self.cfg_links["geometry_loss"]:

@@ -981,6 +981,21 @@ def queue_reward(wait_s: float, w1: float, beta: float) -> float:
     return float(w1) * math.exp(-float(beta) * max(float(wait_s), 0.0))
 
 
+def forward_reward(wait_s: float, w1: float, beta: float,
+                   step_penalty: float) -> float:
+    """Learning reward for one forward hop.
+
+    ``queue_reward`` remains the raw legacy M1 diagnostic.  The training
+    objective adds a configured per-hop cost.  Config validation requires
+    ``step_penalty <= -w1``, therefore every forward transition is <= 0 even
+    when the realized queue wait is zero; an agent cannot improve return by
+    taking an unnecessary extra hop before it reaches the terminal delivery
+    reward.
+    """
+    raw = queue_reward(wait_s, w1, beta)
+    return raw + float(step_penalty)
+
+
 def own_state(slots_used: int, slots_cap: int, isl_queue_bits: dict,
               isl_queue_cap: int, n_visible: int, n_cells: int) -> np.ndarray:
     """Own state: access-slot ratio + per-direction ISL egress queue
