@@ -109,11 +109,13 @@ Run: `git diff --check`
 
 Expected: 退出码 0，无 whitespace error。
 
-- [ ] **Step 2: 全量回归**
+- [ ] **Step 2: CI 范围回归与仓库根门禁分栏**
 
-Run: `python3 -m pytest -q`
+Run: `python3 -m pytest CODE/leo_sim/tests CODE/tests -q`
 
-Expected: 当前 main 基线测试全部通过；若数量变化，记录真实 passed/failed/skipped。
+Expected: 与 `.github/workflows/test.yml` 相同范围，当前基线为 `411 passed`；若数量变化，记录真实 passed/failed/skipped。
+
+另跑 `python3 -m pytest -q` 检查仓库根门禁。当前预期为收集阶段失败：`PAPER/tests/test_eligible_claims.py` 缺少已登记的 `ANALYSIS.paired_analysis`（R7-F1）。必须如实记录，不能把 CI 范围绿写成仓库根全量绿，也不能为本治理 PR 修改或绕过该测试。
 
 - [ ] **Step 3: 检查 diff 范围**
 
