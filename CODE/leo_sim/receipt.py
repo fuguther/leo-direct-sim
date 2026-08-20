@@ -202,6 +202,7 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
         "config_version", "input_sha256", "mode", "provenance",
         "rng_streams", "packet_id_contract", "offered_packets",
         "offered_bits", "ledger", "active_endpoints", "time_range_s",
+        "provenance_contract",
     }
     proxy_keys = {"not_calibrated_user_demand", "provenance_note"}
     population_keys = proxy_keys | {"population"}
@@ -221,6 +222,30 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
         errors.append("manifest trace schema mismatch")
     if manifest.get("packet_id_contract") != trace_mod.PACKET_ID_CONTRACT:
         errors.append("manifest packet_id_contract mismatch")
+    provenance_contract = manifest.get("provenance_contract")
+    if not isinstance(provenance_contract, dict) or set(provenance_contract) != {
+            "schema", "source", "units", "od_mapping", "offered_load"}:
+        errors.append("manifest provenance_contract keys mismatch")
+    else:
+        if provenance_contract.get("schema") != "leo-sim-trace-provenance/v1":
+            errors.append("manifest provenance_contract schema mismatch")
+        source = provenance_contract.get("source")
+        if not isinstance(source, dict) or set(source) != {"type", "path", "sha256"}:
+            errors.append("manifest provenance source keys mismatch")
+        units = provenance_contract.get("units")
+        if not isinstance(units, dict) or set(units) != {
+                "emit_time", "deadline", "coordinates", "bits"}:
+            errors.append("manifest provenance units keys mismatch")
+        od_mapping = provenance_contract.get("od_mapping")
+        if not isinstance(od_mapping, dict) or set(od_mapping) != {
+                "input_coordinate_fields", "output_fields", "grid_deg",
+                "aggregation_deg", "rule"}:
+            errors.append("manifest provenance OD mapping keys mismatch")
+        offered_load = provenance_contract.get("offered_load")
+        if not isinstance(offered_load, dict) or set(offered_load) != {
+                "load_mode", "target_offered_mbps", "realized_offered_mbps",
+                "horizon_s", "packet_bits", "offered_packets", "offered_bits"}:
+            errors.append("manifest provenance offered_load keys mismatch")
     if resolved_version is not None and manifest.get("config_version") != resolved_version:
         errors.append("manifest config_version mismatch")
     if resolved_cfg is None:
@@ -292,6 +317,34 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
             if not _is_nonneg_int(pop.get("candidate_regions")) \
                     or pop.get("candidate_regions", 0) < 2:
                 errors.append("population candidate_regions must be >= 2")
+    if isinstance(provenance_contract, dict):
+        source = provenance_contract.get("source", {})
+        units = provenance_contract.get("units", {})
+        od_mapping = provenance_contract.get("od_mapping", {})
+        offered_load = provenance_contract.get("offered_load", {})
+        if source.get("sha256") != manifest.get("input_sha256"):
+            errors.append("provenance source SHA != manifest input SHA")
+        expected_source_type = {
+            "csv": "csv_input", "mlab": "mlab_snapshot",
+            "population_gravity": "population_raster",
+        }.get(mode, "synthetic_generator")
+        if source.get("type") != expected_source_type:
+            errors.append("provenance source type mismatch")
+        if units != {
+                "emit_time": "seconds_since_run_start",
+                "deadline": "seconds_since_run_start_or_empty",
+                "coordinates": "degrees_wgs84", "bits": "bits"}:
+            errors.append("provenance units mismatch")
+        if od_mapping.get("grid_deg") != resolved_cfg["endpoints"]["grid_deg"] \
+                or od_mapping.get("aggregation_deg") != resolved_cfg["endpoints"]["aggregation_deg"]:
+            errors.append("provenance OD grid mapping mismatch")
+        if offered_load.get("horizon_s") != resolved_cfg["scenario"]["duration_s"]:
+            errors.append("provenance offered_load horizon mismatch")
+        if offered_load.get("packet_bits") != resolved_cfg["demand"]["packet_bits"]:
+            errors.append("provenance offered_load packet size mismatch")
+        if offered_load.get("offered_packets") != manifest.get("offered_packets") \
+                or offered_load.get("offered_bits") != manifest.get("offered_bits"):
+            errors.append("provenance offered_load ledger mismatch")
     return errors
 
 

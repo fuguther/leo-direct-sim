@@ -50,6 +50,15 @@ def test_compile_trace_byte_reproducible(tmp_path):
     assert m1["trace_identity_sha256"] == config.trace_identity_sha256(cfg)
     assert m1["offered_packets"] == m1["ledger"]["packets"]
     assert m1["offered_bits"] == m1["ledger"]["bits"]
+    contract = m1["provenance_contract"]
+    assert contract["schema"] == "leo-sim-trace-provenance/v1"
+    assert contract["source"] == {
+        "type": "synthetic_generator", "path": None, "sha256": ""
+    }
+    assert contract["units"]["emit_time"] == "seconds_since_run_start"
+    assert contract["units"]["bits"] == "bits"
+    assert contract["offered_load"]["offered_bits"] == m1["offered_bits"]
+    assert contract["offered_load"]["offered_packets"] == m1["offered_packets"]
     assert m1["active_endpoints"] == 3
     assert m1["time_range_s"][0] >= 0.0
     assert m1["time_range_s"][1] <= 5.0
@@ -80,6 +89,13 @@ def test_trace_csv_mode(tmp_path):
     cfg["config"]["demand"]["csv_path"] = str(src_csv)
     m = trace.compile_trace(cfg, str(tmp_path / "t"))
     assert m["offered_packets"] == 2
+    contract = m["provenance_contract"]
+    assert contract["source"]["type"] == "csv_input"
+    assert contract["source"]["sha256"] == hashlib.sha256(src_csv.read_bytes()).hexdigest()
+    assert contract["od_mapping"]["input_coordinate_fields"] == [
+        "src_lat", "src_lon", "dst_lat", "dst_lon"
+    ]
+    assert contract["offered_load"]["load_mode"] == "observed_trace"
     with open(tmp_path / "t" / "trace.csv") as fh:
         rows = list(csv.DictReader(fh))
     assert rows[0]["deadline_at_s"] == "3.5"

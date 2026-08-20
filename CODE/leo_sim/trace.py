@@ -242,6 +242,8 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
     rows: list[tuple] = []
     input_hash = ""
     provenance = "synthetic"
+    source_type = "synthetic_generator"
+    source_path: str | None = None
     endpoints: list[dict] = []  # csv mode fills this from the CSV itself
 
     if mode == "csv":
@@ -249,6 +251,8 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
         if not src_path or not os.path.exists(src_path):
             raise TraceError(f"csv input not found: {src_path}")
         input_hash = hashlib.sha256(Path(src_path).read_bytes()).hexdigest()
+        source_type = "csv_input"
+        source_path = str(Path(src_path).resolve())
         with open(src_path, newline="", encoding="utf-8") as fh:
             required = {"packet_id", "emit_time_s", "src_lat", "src_lon", "dst_lat", "dst_lon", "bits"}
             reader = csv.DictReader(fh)
@@ -335,6 +339,8 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
             ]
             provenance = "population_proxy"
             input_hash = population_table.source_sha256
+            source_type = "population_raster"
+            source_path = population_table.source_path
         else:
             endpoints = _endpoints(cfg)
         gen = rng.streams(sc["seed"])["demand"]
@@ -344,6 +350,8 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                 endpoints, ep["grid_deg"], ep["aggregation_deg"])
             provenance = "measurement_proxy"
             input_hash = hashlib.sha256(REPO_MLAB_CSV.read_bytes()).hexdigest()
+            source_type = "mlab_snapshot"
+            source_path = str(REPO_MLAB_CSV.resolve())
             # coverage contract (fail closed): every active source cell must
             # have positive measurement weight to at least one other active
             # cell; there is NO smoothing fallback into uniform demand.
@@ -422,6 +430,48 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
     trace_sha256 = hashlib.sha256(trace_path.read_bytes()).hexdigest()
 
     offered_bits = sum(r[4] for r in rows)
+    provenance_contract = {
+        "schema": "leo-sim-trace-provenance/v1",
+        "source": {
+            "type": source_type,
+            "path": source_path,
+            "sha256": input_hash,
+        },
+        "units": {
+            "emit_time": "seconds_since_run_start",
+            "deadline": "seconds_since_run_start_or_empty",
+            "coordinates": "degrees_wgs84",
+            "bits": "bits",
+        },
+        "od_mapping": {
+            "input_coordinate_fields": (
+                ["src_lat", "src_lon", "dst_lat", "dst_lon"]
+                if mode == "csv" else None
+            ),
+            "output_fields": ["src_grid_id", "dst_grid_id"],
+            "grid_deg": ep["grid_deg"],
+            "aggregation_deg": ep["aggregation_deg"],
+            "rule": (
+                "grid_id(lat,lon,grid_deg) then aggregate_id(...,aggregation_deg)"
+                if mode == "csv" else
+                "generated endpoint aggregate IDs"
+            ),
+        },
+        "offered_load": {
+            "load_mode": "observed_trace" if mode == "csv" else "target_rate_sampler",
+            "target_offered_mbps": (
+                None if mode == "csv" else float(dm["offered_mbps"])
+            ),
+            "realized_offered_mbps": (
+                float(offered_bits) / duration / 1_000_000.0
+                if duration > 0 else 0.0
+            ),
+            "horizon_s": duration,
+            "packet_bits": bits_per_pkt,
+            "offered_packets": len(rows),
+            "offered_bits": offered_bits,
+        },
+    }
     manifest = {
         "schema": TRACE_MANIFEST_SCHEMA,
         "trace_schema": TRACE_SCHEMA,
@@ -442,6 +492,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                                 | {r[3] for r in serialized_rows}),
         "time_range_s": [serialized_rows[0][1] if serialized_rows else 0.0,
                          serialized_rows[-1][1] if serialized_rows else 0.0],
+        "provenance_contract": provenance_contract,
     }
     if provenance == "measurement_proxy":
         manifest["not_calibrated_user_demand"] = True
