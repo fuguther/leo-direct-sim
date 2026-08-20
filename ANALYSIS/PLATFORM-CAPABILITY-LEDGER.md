@@ -26,10 +26,10 @@
 | Q0 计划注入与执行归因 | 无 | 候选分支存在，审阅未通过 | BLOCKER-THEORY | action_id 贯穿执行；receipt 持久化 verdict/errors/executed；不阻塞 E0/pilot |
 | Q0-I/Q0-F tiny | 无统一实现 | Q0-I 候选；Q0-F 未完成 | BLOCKER-THEORY | 独立穷举/第二算法交叉验证；从真实诊断窗口抽 tiny |
 | 真实流量 provenance、多 OD、突发 | 有多种模式 | V2 已有 CSV 多 OD、M-Lab/人口代理及 burst window；缺统一来源/单位/映射合同 | BLOCKER-DIAG | 绑定源 hash、source type、许可/时间/字段、OD/时间映射和 offered-load 重算；代理不得冒充原始 packet trace |
-| 逐向链路利用率可重算 | 聚合统计较多 | V2 有 occupied seconds/queue-area 聚合，但无可用容量分母与逐向/逐窗正式事件 | BLOCKER-DIAG | 加 opt-in per-link interval ledger，按 rate×available-time 与 served bits 重算并绑定 receipt |
+| 逐向链路利用率可重算 | 聚合统计较多 | `e68f265` 已加入逐服务窗原始事件：`rate×service-window` 容量、served bits、链路 ID，并在 `ledgers.json` 中由原始事件重算；这不是“整段可用时间”分母，尚未完成正式可用容量口径/VM 证据 | BLOCKER-DIAG | 先用服务窗容量做拥塞诊断；若论文声称可用时间利用率，再补几何/可用区间 ledger 并做分母对照 |
 | per-action 斜距/速率/方向特征 | RAAC 有 4×9 action_feats | V2 内部路由能访问相关量，但 decision sink 无逐动作等价物 | BLOCKER-THEORY | INFO-LADDER 前加入 distance/rate/availability/observed_at/source；不默认给所有臂 |
 | 逐字段 AoI | 旧有定时观测/年龄统计 | V2 是 cache-entry 级 age，未有字段级 generated/received/source age | BLOCKER-THEORY | AGE-LADDER 前完成并做 shuffle/fixed-fresh 负对照 |
-| 每包 queue/tx/prop 分解 | 有 | V2 可重算 delivered E2E，但现有事件不足以离线重算三段 | BLOCKER-DIAG | 加 per-packet queue enter、service start/end、prop start/arrival 与 link ID，校验分段和 |
+| 每包 queue/tx/prop 分解 | 有 | `e68f265` 已持久化 packet queue-enter/service-start、service-window、propagation start/arrival 和 delivered 事件；`metrics.summarize()` 重算 queue/holding、tx、prop、E2E，并由 receipt 校验 | BLOCKER-DIAG | 合入并部署后做多 OD/突发、失败/积压/在途负对照；三段之和仍需作为正式实验验收 |
 | replay buffer 持久化 | 有 | V2 只有 online model checkpoint；replay/optimizer/target/RNG 未持久化 | BLOCKER-LONGTRAIN | 正式长训前做中断续训 vs 不间断训练等价验收，绑定 schema/SHA/config |
 | 多步/TD-λ/temporal | 有 | V2 只有设计稿 | CONDITIONAL | 诊断若指向信用分配问题，再作为研究臂 |
 | path-credit | 有 | V2 未接运行时 | CONDITIONAL | 诊断若指向端到端信用分配，再立单独研究臂 |
