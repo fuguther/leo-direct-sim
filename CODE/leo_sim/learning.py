@@ -506,6 +506,17 @@ class TensorflowDDQN:
                 f"({type(exc).__name__}: {exc})") from exc
         self.op_determinism = True
         self.tf.keras.utils.set_random_seed(int(seed))
+        # TensorFlow refuses to lazily create its global generator after
+        # deterministic ops are enabled.  Install an explicit generator so
+        # its state can be included in an exact-resume bundle rather than
+        # silently omitting one of the training RNGs.
+        try:
+            self.tf.random.set_global_generator(
+                self.tf.random.Generator.from_seed(int(seed)))
+        except Exception as exc:
+            raise LearningUnavailable(
+                "TensorFlow global RNG could not be initialized for exact "
+                f"resume ({type(exc).__name__}: {exc})") from exc
         self.contract = contract
         self.input_dim = CONTRACT_DIMS[contract]
         self.cfg = dict(cfg)
