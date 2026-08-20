@@ -53,11 +53,23 @@
 - #62 head `614fd23` 独立冷启动复核 APPROVE；定向 `41 passed`、仿真内核全量
   `410 passed`、GitHub pytest SUCCESS；squash 合入 main `758b606`，R1-A2 已 fixed。
 
+## 2026-08-20：R7 generic 证据链部分恢复
+
+- PR #64 head `4e6d665` 经独立冷启动复核 APPROVE，Hosted CI pytest SUCCESS；
+  squash 合入 main `12bf306`。
+- main fresh 验证：当前 CI 范围 `425 passed`；无参数全量
+  `470 passed, 1 skipped, 3 subtests passed`。
+- 恢复范围仅为 generic `experiment-run-manifest/v2` 的持久化 paired analysis、
+  claim schema、严格重验和 CI bridge；`leo_sim_v2` 使用不同合同及结果布局，
+  因此 R7-F1 仍为 `open`（generic 部分恢复），不得据此授权正式 V2 实验。
+- V2 矩阵 Stage 1 候选 `4664a223` 已收到 REQUEST_CHANGES：真实 launch 授权路径、
+  acceptance、配对完整性、checkpoint 血缘、控制变量和 symlink containment 均需返工。
+
 ## 下一步
 
-1. 合入 Git 生命周期治理；随后按
-   `ANALYSIS/GIT-WORKTREE-RECONCILIATION-20260820.md` 对 24 个 clean+merged
-   worktree 候选逐条申请回收，保护 3 个 dirty、2 个 orphan 和 5 个 detached 项。
-2. D1/D2 合入后更新 CURRENT 文档中的精确 main/VM 状态。
-3. 修 R7-F1 正式分析链，再关闭 R1-A1 与 Q0 blocker；保留 R1-A2 回归。
-4. 最终冻结平台三轮审计后部署 VM，重跑 E0 与全臂 pilot。
+1. 关闭 R7-F1 的 V2 矩阵、artifact 指标重算、paired analysis 与 claim gate；
+   generic #64 只作为可复用基础，不代表 V2 完成。
+2. 获得所需语义/冲突授权后合入 D1/D2，并更新 CURRENT 中的精确 main/VM 状态。
+3. 关闭 R1-A1 与 Q0 replay/Q0-I/Q0-F blocker；保留 R1-A2 回归。
+4. 最终冻结平台三轮审计后部署同一 main SHA，重跑 E0 与全臂 pilot。
+5. 平台关键门禁不再被文档/Git 清理抢占；回收 worktree 时继续保护 dirty、orphan 与 detached 项。

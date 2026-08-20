@@ -19,7 +19,7 @@
 | 接入 FIFO / downlink 恢复 | 旧语义参照 | V2 #26/#25 已合入 main | 已关闭 | 保留回归 |
 | 奖励无正循环/物理目标一致 | 旧平台奖励族复杂 | 专家审阅 A1 未正式关闭；Q0 不得以 shaped reward 判最优 | BLOCKER-A | 构造正循环反例；冻结物理字典序目标 |
 | 动作 mask 与观测信息集一致 | 旧/新均需审 | #62 已修已知 cache-hop 旁路，独立冷审与不可区分反例通过 | 已关闭已知 blocker | 保留 C1/C3 与远端传播/队列指标回归；最终冻结平台继续找未知旁路 |
-| 正式证据链 | V2 目标更强 | 当前硬绑定分析文件/旧 request 缺失，CI 未覆盖全链 | BLOCKER-A | 恢复持久化分析器、fixture 和 CI 门 |
+| 正式证据链 | V2 目标更强 | #64 已恢复 generic paired analysis/claim 与 CI 门；该链不接受 `leo_sim_v2` 独立合同及正式结果布局 | BLOCKER-A | 复用严格重验原则，另实现 V2 矩阵、artifact 指标重算、paired analysis 与 claim gate；禁止以 generic 绿冒充 V2 完成 |
 | Q0 当前全局快照 | 无等价严格接口 | snapshot 已进 main | Q0 前置已完成 | 保留只读、因果和版本测试 |
 | Q0 计划注入与执行归因 | 无 | 候选分支存在，审阅未通过 | BLOCKER-A | action_id 贯穿执行；receipt 持久化 verdict/errors/executed |
 | Q0-I/Q0-F tiny | 无统一实现 | Q0-I 候选；Q0-F 未完成 | BLOCKER-A（按用户流程） | 独立穷举/第二算法交叉验证 |
