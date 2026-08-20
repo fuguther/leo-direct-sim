@@ -1,6 +1,6 @@
 # leo_sim V2 当前实验就绪状态
 
-> 状态最后核验：2026-08-21；当前 main 为 `42ff519`。V2 结果适配器、trace provenance（含 burst/diurnal 变换参数）已合入；当前 SHA 已部署 VM，真实授权 cohort/E0 论文数据仍未完成。
+> 状态最后核验：2026-08-21；当前 main 为 `70d95d0c0feaac54e56b8cefb5d81b3fb4b74907`。V2 结果适配器、trace provenance（含 burst/diurnal 变换参数）和高负载未完成传播指标修复已合入；当前 SHA 已部署 VM，真实授权 cohort/E0 论文数据仍未完成。
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
 ## 1. 两个目标
@@ -16,12 +16,12 @@
 
 | 项目 | 当前事实 | 判定 |
 |---|---|---|
-| GitHub main | `42ff519`（完整 SHA `42ff519...`）；本地完整套件 `565 passed, 1 skipped, 3 subtests passed` | FACT |
+| GitHub main | `70d95d0`（完整 SHA `70d95d0c0feaac54e56b8cefb5d81b3fb4b74907`）；本地修复分支完整套件 `566 passed, 1 skipped, 3 subtests passed`，PR #78 CI 通过 | FACT |
 | D1 动态链路速率 | PR #55 已合入 main；独立冷审 APPROVE；D1 定向 `51 passed`，合并后 CI 绿 | FACT |
 | D2 动态拓扑/holding 语义 | PR #56 已合入 main；合并提交前本地 `555 passed, 1 skipped, 3 subtests passed`，CI pytest SUCCESS | FACT |
-| 当前 VM | 已部署精确 main `42ff519`；deployment receipt `ab047f09...`，source tree SHA `a1e6a573...` | FACT |
+| 当前 VM | 已部署精确 main `70d95d0`；deployment receipt `662e45f7cc35642c0c399f866fac814a431e61eb4b2e5d5c73cb47cef53c0179`，source tree SHA `5f79bd14e9ae2aca03491fd7de3e1ce8478bbd9d987b6826b74ef52fa7c042c9` | FACT |
 | VM 工程 smoke | `CODE/Results/_codex_vm_smoke_499d2e6`（前一版）和 `CODE/Results/_codex_vm_burst_smoke_0c378a5`（修复版）自然结束；修复版 receipt verify=`verified`、85/85 delivered、burst 参数已写入 provenance | FACT；非正式、非授权运行 |
-| 真实流量/测量 | CSV 已支持 packet-level 多 OD；M-Lab 与 population-gravity 是代理；burst window 已有。trace manifest 绑定 source type/path/SHA、单位、OD 映射、目标/实际 offered load 及 burst/diurnal 变换参数；事件层由 `2f577a5` 合入并由 ledgers 重算；整段可用时间分母和正式 provenance 仍 open | FACT；当前 SHA 已部署 |
+| 真实流量/测量 | CSV 已支持 packet-level 多 OD；M-Lab 与 population-gravity 是代理；burst window 已有。M-Lab 文件 SHA 为 `f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437`；当前 V2 `mlab` 模式只使用空间 OD 权重，尚未消费 `hour_utc`；整段可用时间分母和正式 provenance 仍 open | FACT；当前 SHA 已部署 |
 | Q0 | snapshot 已在 main；planned-vs-executed、holding、Q0-I tiny 存在于未合入候选分支并收到 REQUEST_CHANGES；Q0-F 精确交叉验证未完成。Q0 不阻塞 E0/pilot，但阻塞理论归因和新方案冻结 | FACT |
 | 正式分析链 | generic 链已恢复；新增 `CODE/experiment_platform/v2_analysis.py`，可校验 V2 receipt/formal/governance/ledgers、重算指标并做 paired analysis，且 RUNBOOK 已生成入口；尚无真实授权 cohort 的持久化分析产物 | FACT，partial；R7-F1 仍 blocking |
 | 三轮三方无新问题 | 只完成局部 PR/局部模块审阅，没有在最终冻结平台上完成连续三轮 | FACT，未满足 |
@@ -36,7 +36,7 @@
 | A1 D1/D2 入 main | 精确 head 复核有效；CI 绿；合入后 main 全量与行为对照绿 | **已完成**：#55/#56 已合入；D1/D2 合入记录在 `66be0ad`，当前 main 继续保留 | 已完成 |
 | A2 已知科学 blocker | 奖励正循环、mask 信息泄漏、deadline/Q0 控制范围有明确修复或冻结决策 | mask 已由 #62 关闭；其余 open | 2–5 日 |
 | A3 正式证据链 | compile、review、authorize、run、receipt、analysis、claim 测试均存在并在 CI/本地通过 | V2 结果适配器与重算测试已存在；真实授权 cohort、持久化 output 和 claim review 仍 open | 1–2 日 |
-| A4 真实流量与测量 | provenance、多 OD/突发；逐向利用率分子/分母；每包 queue/tx/prop；拥塞指标可从 artifact 重算 | trace provenance 合同已实现（source/SHA、单位、OD 映射、offered-load）；服务窗事件与重算已合入；整段可用时间分母选择和 VM 验收仍 open | 1–2 日 |
+| A4 真实流量与测量 | provenance、多 OD/突发；逐向利用率分子/分母；每包 queue/tx/prop；拥塞指标可从 artifact 重算 | trace provenance 合同已实现；M-Lab 50/100 Mbps VM smoke 已自然结束且守恒；整段可用时间分母、`hour_utc` 变换和正式授权验收仍 open | 1–2 日 |
 | A5 最终平台审计 | 冻结 commit 上三轮 Codex/不同模型/网页 GPT 无新增 blocking/major | 未开始最终三轮 | 2–5 日 |
 | A6 VM 与 pilot | 部署同一 main SHA；VM/TF 门禁、真实 smoke、E0-REAL、基线诊断与 pilot 自然结束 | **当前 SHA VM 工程/MCS/burst smoke 已完成；E0-REAL/基线 pilot 尚未开始** | 1–3 日 |
 
@@ -60,8 +60,8 @@
 
 1. 完成本轮主线与机器清单收敛，不再让旧 EXP1→EXP3 顺序支配当前工作。
 2. D1/D2、奖励门和事件观测已合入；V2 适配器本地全量绿，但 R7-F1 仍要用真实授权结果收口。
-3. 合入并部署 trace provenance 合同；用 CSV 多 OD/突发样本验收 source/SHA、单位、OD 映射和 offered-load 重算，并在论文实验合同中明确服务窗容量或整段可用时间分母。
-4. 当前 `42ff519` 已部署；此前同代码的非正式/MCS/burst smoke 已通过，下一步用正式 trace/provenance 合同跑授权 smoke，再跑 E0-REAL、DIAG-CONGESTION 与基线 pilot。
+3. 用 CSV 多 OD/突发样本继续验收 source/SHA、单位、OD 映射和 offered-load 重算；决定是否把 M-Lab `hour_utc` 接入 V2 负载变换，并在论文实验合同中明确服务窗容量或整段可用时间分母。
+4. 当前 `70d95d0` 已部署；M-Lab 50/100 Mbps 仅为工程 smoke，下一步用正式 trace/provenance 合同跑授权 smoke，再跑 E0-REAL、DIAG-CONGESTION 与基线 pilot。
 5. 从诊断窗口实现并交叉验证 Q0-I/Q0-F tiny，再补候选方向物理特征和逐字段 age 信息阶梯。
 6. 根据诊断与 Q0 差距提出机制；长训前补 replay/optimizer/target/RNG 完整恢复。
 7. 小规模反例通过后冻结配对正式矩阵，运行 `EXP-CC-FORMAL`；旧 hops/aggregation 实验仅在能解释主机制时触发。
