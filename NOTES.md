@@ -251,3 +251,13 @@
   4 service windows，trace provenance contract 含 source/units/offered-load。
 - 边界：这不是 formal authorization、不是真实 CSV/E0、不是论文结果；下一步补正式授权
   cohort 与真实多 OD/突发 load calibration。
+
+## 2026-08-21：burst/diurnal provenance 补齐
+
+- VM burst plumbing smoke 暴露一个真实缺口：旧 `provenance_contract` 只记录 mode 和 realized load，
+  没有把 burst start/duration/multiplier（或 diurnal amplitude/phase）写入结果，因此无法仅凭 trace
+  artifact 复核负载变换。
+- 分支：`codex/20260821-burst-provenance`；代码提交 `eba3c97`。新增并校验
+  `traffic_transform`，burst/diurnal 参数与 resolved config 不一致时 receipt fail closed。
+- 验证：trace/receipt 定向 `119 passed`；全量 `565 passed, 1 skipped, 3 subtests passed`。
+- 之前 `499d2e6` 的 burst smoke 仍只算工程 plumbing，不能当已关闭证据；待本修复合入并重新部署后重跑。
