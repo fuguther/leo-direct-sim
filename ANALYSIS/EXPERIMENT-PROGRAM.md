@@ -1,6 +1,6 @@
 # LEO 拥塞控制与链路利用率实验总计划
 
-> CURRENT；最后核验：2026-08-21。当前 main `8e2f1df` 已部署 VM；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 工程校准、receipt horizon 修复、physical available-capacity 分母、新 profile 的 E0 工程负载标定、60 秒 D2 长窗和学习 train→eval 工程 smoke 已完成。50/100/200 Mbps 只冻结为下一阶段的低/中/压力候选，不是正式论文结果；V2 artifact→claim 闭环、逐包三段时延正式 gate、replay 续训、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
+> CURRENT；最后核验：2026-08-21。当前 main `0f7249f` 已部署 VM；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 工程校准、receipt horizon 修复、physical available-capacity 分母、新 profile 的 E0 工程负载标定、60 秒 D2 长窗、capacity 负对照和学习 train→eval 工程 smoke 已完成。50/100/200 Mbps 只冻结为下一阶段的低/中/压力候选，不是正式论文结果；V2 artifact→claim 闭环、逐包三段时延正式 gate、replay 续训、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
 
 ## 1. 研究主线与工作方法
 
@@ -36,10 +36,10 @@
 
 先关闭会改变任何后续结论的底层问题：
 
-- D1/D2 代码已合入并有回归测试；当前 `8e2f1df` VM 已跑 MCS/动态拓扑多 OD T0、三档负载标定、60 秒长窗和学习 smoke，但 D1 旧平台逐距离 MCS 对照仍缺；
+- D1/D2 代码已合入并有回归测试；当前 `0f7249f` VM 已跑 MCS/动态拓扑多 OD T0、三档负载标定、60 秒长窗和学习 smoke，但 D1 旧平台逐距离 MCS 对照仍缺；
 - 已知 R1-A1 额外跳数刷分风险已关闭；仍需把 shaped reward 与 Q0 物理目标分离，已修复的 mask 旁路也不能代表整体信息公平完成；
 - 闭合 V2 `compile → review → authorize → run → receipt → metric recomputation → paired analysis → claim`；当前只完成矩阵编译/授权 Stage 1，真实 artifact→claim 闭环仍缺；
-- 当前 `8e2f1df` 已完成非学习同 SHA 工程 T0/cadence smoke、E0 负载标定、资源剖析、60 秒 D2 长窗和 Q-learning/DDQN/GAT/MPNN train→eval 工程 smoke；正式授权 cohort、formal VM E0/PILOT 仍需按 runbook 执行。
+- 当前 `0f7249f` 已完成非学习同 SHA 工程 T0/cadence smoke、E0 负载标定、资源剖析、60 秒 D2 长窗、capacity 负对照和 Q-learning/DDQN/GAT/MPNN train→eval 工程 smoke；正式授权 cohort、formal VM E0/PILOT 仍需按 runbook 执行。
 
 P0 的验收是“同一 SHA 的结果可以被重新算出来并拒绝篡改”，不是仅有 pytest 绿。
 

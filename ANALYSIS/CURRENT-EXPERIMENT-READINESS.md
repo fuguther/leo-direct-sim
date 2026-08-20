@@ -1,6 +1,6 @@
 # leo_sim V2 当前实验就绪状态
 
-> 状态最后核验：2026-08-21；当前 main 为 `8e2f1dfe8ee39dacfb56d52d572d37046bb6b8a4`，已部署到 canonical VM。代码可做同 SHA 非学习工程 smoke 和学习训练—评估工程 pilot；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 校准、逐向 physical available-capacity 分母、三档 E0 工程负载标定、60 秒 D2 长窗、Q-learning/DDQN/GAT/MPNN checkpoint 闭环已有 VM receipt/重算证据。V2 artifact→claim 闭环、正式三段时延 gate、replay 续训和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
+> 状态最后核验：2026-08-21；当前 main 为 `0f7249fb085ea05576c04d8b2b1f9e55be9e12a0`，已部署到 canonical VM。代码可做同 SHA 非学习工程 smoke、capacity 负对照和学习训练—评估工程 pilot；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 校准、逐向 physical available-capacity 分母、三档 E0 工程负载标定、60 秒 D2 长窗、Q-learning/DDQN/GAT/MPNN checkpoint 闭环已有 VM receipt/重算证据。V2 artifact→claim 闭环、正式三段时延 gate、replay 续训和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
 ## 1. 两个目标
@@ -16,14 +16,14 @@
 
 | 项目 | 当前事实 | 判定 |
 |---|---|---|
-| GitHub main | `8e2f1df`（PR #93、#94、#95、#96 合入）；当前代码 CI 绿；1 秒拓扑/MCS/M-Lab 多 OD profile 本地和 VM 可跑 | FACT |
+| GitHub main | `0f7249f`（PR #93、#94、#95、#96、#97 合入）；当前代码 CI 绿；1 秒拓扑/MCS/M-Lab 多 OD profile 本地和 VM 可跑 | FACT |
 | D1 动态链路速率 | 已合入、测试通过；VM E0 使用 MCS 并已自然结束，但旧平台 MCS 表征与逐距离对照尚未完成 | FACT；正式论文支撑未确认 |
 | D2 动态拓扑/holding 语义 | 已合入；退役链路、在途包、等待语义有测试；60 秒、100 Mbps、56-cell M-Lab VM 长窗自然结束、守恒、receipt 和 raw metrics 重算通过 | FACT；正式论文支撑仍需跨负载/授权分析 |
 | 包守恒/FIFO/等待/在途 | 基础能力和回归测试已有，VM smoke 守恒通过；正式 artifact/分析链和长窗覆盖未闭合 | FACT；论文证据未闭合 |
 | 奖励/学习语义 | 已关闭额外跳数正回报风险（R1-A1/`ce2566b`）；Q0 物理目标和正式学习结论仍未冻结 | FACT；阻塞正式结论，不阻塞工程 pilot |
 | 信息公平 | 已修复明确 cache-hop 偷看；逐动作物理特征、逐字段 AoI 未完成 | FACT；硬阻塞信息归因 |
-| 当前 VM | 已部署精确 main `8e2f1dfe8ee39dacfb56d52d572d37046bb6b8a4`；本轮部署 receipt SHA=`4bd3ba95438379a88cb58f4e4c9fe6559fa924f04e0b901e4c122a4527c286d5`，source tree SHA=`78ec19d13664527375f56e5c9f7429620e59a8837604224fe6ad5ea2880c008a` | FACT |
-| VM 工程 smoke | 新 56-cell M-Lab 多 OD T0：20 s、1,299 offered、613 delivered、579 `ACCESS_REJECTED`、107 `IN_SYSTEM_AT_STOP`；另完成 50/100/200 Mbps 三档 20 s 工程标定、60 s D2 长窗和 20 s DDQN train→checkpoint→eval，均 natural end、conservation true、receipt verified、raw metrics `validation.ok=true` | FACT；非正式、非授权运行 |
+| 当前 VM | 已部署精确 main `0f7249fb085ea05576c04d8b2b1f9e55be9e12a0`；本轮部署 receipt SHA=`89e70f943ef7c19b4f615e56cbf7cf2c349d49f572b916a97d2f816e4a33a4a9`，source tree SHA=`6dc0afec1070002fe83c5ddd0955c40c7ba5a2316cffa01fe1d01f8bc047d2fd` | FACT |
+| VM 工程 smoke | 新 56-cell M-Lab 多 OD T0：20 s、1,299 offered、613 delivered、579 `ACCESS_REJECTED`、107 `IN_SYSTEM_AT_STOP`；另完成 50/100/200 Mbps 三档 20 s 工程标定、60 s D2 长窗、capacity 负对照和 20 s DDQN train→checkpoint→eval，均 natural end、conservation true、receipt verified、raw metrics `validation.ok=true` | FACT；非正式、非授权运行 |
 | 真实流量/测量 | M-Lab 快照 44,929 行、4,752 OD、2,604 聚合单元；PR #93 新增显式有界强连通多 OD 选择，manifest 记录选中 56-cell 规则和源 SHA；新三档 E0 工程标定已重跑 | FACT；不能当原始真实包回放 |
 | Q0 | snapshot 已在 main；计划注入/执行归因候选未通过审阅；Q0-I/Q0-F tiny 闭环未完成。Q0 不阻塞工程 smoke，但阻塞信息 vs 决策归因 | FACT |
 | 正式分析链 | 矩阵编译/授权 Stage 1 已完成；artifact→指标→配对分析→claim 的真实授权产物和闭环仍缺 | FACT，partial；仍 blocking |
@@ -43,7 +43,7 @@
 | A3 正式证据链 | compile、review、authorize、run、receipt、analysis、claim 全链路真实产物 | Stage 1 矩阵编译/授权已完成；artifact→paired analysis→claim 仍 open | 1–2 日 |
 | A4 真实流量与测量 | provenance、多 OD/突发；逐向利用率分子/分母；每包 queue/tx/prop；拥塞指标可从 artifact 重算 | 新 56-cell M-Lab/burst T0、cadence 四档、三档 E0 工程标定、60 s D2 长窗和 raw metrics 重算已在 `8e2f1df` VM 完成；正式三段时延 artifact、独立重算和授权 gate 仍 open | 1–2 日 |
 | A5 最终平台审计 | 冻结 commit 上三轮 Codex/不同模型/网页 GPT 无新增 blocking/major | 未开始最终三轮 | 2–5 日 |
-| A6 VM 与 pilot | 部署同一 main SHA；VM/TF 门禁、真实 smoke、E0-REAL、基线诊断与 pilot 自然结束 | `8e2f1df` 同 SHA 非学习多 OD/burst T0、cadence 校准、三档工程 E0、60 s D2 长窗、资源剖析及 Q-learning/DDQN/GAT/MPNN train→eval smoke 已完成；**formal VM E0、全基线 pilot 尚未开始** | 待执行 |
+| A6 VM 与 pilot | 部署同一 main SHA；VM/TF 门禁、真实 smoke、E0-REAL、基线诊断与 pilot 自然结束 | `0f7249f` 同 SHA 非学习多 OD/burst T0、cadence 校准、三档工程 E0、60 s D2 长窗、capacity 负对照、资源剖析及 Q-learning/DDQN/GAT/MPNN train→eval smoke 已完成；**formal VM E0、全基线 pilot 尚未开始** | 待执行 |
 
 最早的真实流量 smoke 会早于目标 A 完成，但它只能暴露工程问题。Q0 不阻塞这个 smoke 或 E0-REAL；V2 分析链、利用率分母和三段时延才是把诊断升级为论文证据的硬门。
 
