@@ -1,0 +1,68 @@
+{
+  "taskId": "offload:leo-direct-sim:PLAN-AUDIT:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "当前实验路线总体正确，但缺少真实拥塞诊断层。建议将 D1/D2、分析链、reward 合同作为硬平台门槛，随后先做 E0+多OD+burst+queue/tx/prop 分解，再用 Q0-I/F 建立信息边界，最后设计拥塞控制方案。Q0 不应作为 E0/pilot 默认前置。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "EXP1/EXP2 前缺少拥塞结构诊断阶段，可能导致信息消融结果无法归因",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L2"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "Q0 应作为信息上界诊断工具，不应成为真实流量实验前置平台门禁",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L2"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "正式拥塞研究需要明确queue/tx/prop和利用率重算合同",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L2"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "summary": "逐字段age应作为EXP3机制变量，不应升级为全部实验平台前置",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L2"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "新增DIAG-0拥塞诊断阶段",
+    "E0中加入multi-OD和burst场景",
+    "冻结queue/tx/prop和link utilization计算合同",
+    "保持Q0-I/F作为上界解释实验而非平台前置",
+    "在诊断完成后再设计拥塞控制方案"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L2",
+    "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L1-L2"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "未能在当前读取窗口内核验CODE/leo_sim具体实现中的queue、tx、prop字段来源，需要本地Agent继续绑定代码行审查",
+    "需要进一步核验experiment-program.yaml中各experiment dependency是否与本文推荐顺序一致"
+  ]
+}
