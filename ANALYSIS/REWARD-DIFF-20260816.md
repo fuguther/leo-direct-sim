@@ -1,5 +1,7 @@
 # REWARD-DIFF：reward + 观测路径逐分量对照（旧平台修正版 vs leo_sim V2）
 
+> **SUPPORTING EVIDENCE**：分量对照保留；奖励风险是否关闭只以 `FINDINGS-REGISTRY.md` 为准。
+
 > 日期：2026-08-16。锚点：`ANALYSIS/LEO-V2-ORIGINAL-PLAN.md:86`——「M1 的正确队列奖励和 M2 的本地出向队列观测吸收为统一基线；删除开关」。
 > 旧侧证据一律带 `SimulationRL.py` 行号（只读参照 `/Users/lge/Desktop/LEO-Research-Workspace/CODE/`，经 `ANALYSIS/PLATFORM-DOCUMENTATION/02-kimi-platform-spec.md` 索引核对）；新侧证据带本库 `CODE/leo_sim/` 行号。
 > 旧平台有 6 个距离奖励版本（V1–V5 + Potential，`distanceRew` 默认 4，SimulationRL.py:590-594 注释称 4 为论文所用）；实际生效路径经调用点确认：`DDQNAgent.makeDeepAction` 7247-7272（`distanceRew==4` → `getDistanceRewardV4`，7264）与到达分支 7169-7177。

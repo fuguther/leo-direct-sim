@@ -1,5 +1,7 @@
 # V2 人口重力流量设计合同
 
+> **SUPPORTING DESIGN**：流量设计细节保留；当前实验是否启用该模式以 `EXPERIMENT-PROGRAM.md` 为准。
+
 ## 目标与边界
 
 将仓库内 GPW 2020 人口栅格直接转换为卫星直连业务区域。人口只决定外生业务需求，不决定卫星关联、路由或链路状态，也不重新汇聚到 Gateway。
@@ -43,4 +45,3 @@
 3. 相同 seed 字节一致，修改 TIFF 字节或人口参数会改变 trace identity。
 4. 人口 trace 可进入真实卫星直连接入、守恒并通过 receipt。
 5. 一键 `platform check` 增加人口流量阶段并在完整 VM 环境通过。
-

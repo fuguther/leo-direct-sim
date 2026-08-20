@@ -1,5 +1,7 @@
 # Q0 最优算法选型调研（2026-08-17）
 
+> **SUPERSEDED（2026-08-20）**：现行 Q0 定义、算法边界与信息裁剪协议见 `Q0-INFORMATION-ABLATION-PROTOCOL.md`。
+
 > 状态：GPT 两路（primary + independent_review）已完成并交叉一致；Codex
 > 已交叉审阅并抽查文献真实性；Kimi 独立交叉审阅完成（2026-08-17），修正
 > 意见已并入 §6。结论供 Q0 实现前拍板使用，不预设最终实现。

@@ -1,5 +1,7 @@
 # 隔夜工作晨报（2026-08-16）
 
+> **HISTORICAL SNAPSHOT**：保留当夜执行证据；当前状态见 `CURRENT-EXPERIMENT-READINESS.md`。
+
 > 范围：任务队列 1–8。工作方式：每任务独立分支 + PR，CI 绿自动合并，NOTES.md 逐条留痕。无任务卡死；无用户授权事项触发停止条件。
 
 ## 1. 任务状态总览

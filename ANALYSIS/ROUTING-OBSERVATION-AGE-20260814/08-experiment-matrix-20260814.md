@@ -1,5 +1,7 @@
 # 实验矩阵（Codex × Kimi 共同设计，2026-08-14）
 
+> **SUPERSEDED（2026-08-20）**：矩阵现行版本见 `../EXPERIMENT-PROGRAM.md` 与 `../../EXPERIMENTS/experiment-program.yaml`；旧 E0 数据仅作历史先验。
+
 > 参与者：Codex（平台/实现/证据链）与 Kimi（设计/反例/统计），平等讨论。
 > 事实核实：流量校准 `EXP-20260715-TRAFFIC-CALIBRATION[-R02/R03/R04]` 只有
 > 编译产物与 manifest，**没有任何运行结果或决策字段**；V2 的缓存聚合契约

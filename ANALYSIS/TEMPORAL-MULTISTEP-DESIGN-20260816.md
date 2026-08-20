@@ -1,5 +1,7 @@
 # M2 temporal/multistep 迁移设计稿
 
+> **SUPPORTING DESIGN**：这是研究上限候选臂，不是当前实验就绪前置；优先级见 `PLATFORM-CAPABILITY-LEDGER.md`。
+
 > 日期：2026-08-16。状态：**只交设计稿**（任务 6 允许的降级路径），实现留后续工作包，理由见 §6 工作量评估。
 > 迁移依据：`MIGRATION-BACKLOG-20260816.md` M2 行——routing_multistep 三函数在旧平台无运行时调用（nstep 两函数纯参照；lambda_return_transitions 仅 `_tdl_flush` 调用），**以 SimulationRL.py:6980-7062 内联版为准**；temporal 以 `temporal_encoder.py` 为参照。迁移统一要求：先 golden 表征测试，再实现转绿；观测/奖励语义以任务 1 的 REWARD-DIFF 结论为基准。
 
