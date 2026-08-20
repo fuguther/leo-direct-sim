@@ -1,6 +1,6 @@
 # leo_sim V2 当前实验就绪状态
 
-> 状态最后核验：2026-08-21；当前 main 为 `70d95d0c0feaac54e56b8cefb5d81b3fb4b74907`。V2 结果适配器、trace provenance（含 burst/diurnal 变换参数）和高负载未完成传播指标修复已合入；当前 SHA 已部署 VM，真实授权 cohort/E0 论文数据仍未完成。
+> 状态最后核验：2026-08-21；当前 main 为 `59ee1195f224dae8812728d7b2351e81b1aa47d2`。V2 结果适配器、trace provenance（含 burst/diurnal 变换参数）和高负载未完成传播指标修复已合入；当前 SHA 已部署 VM，真实授权 cohort/E0 论文数据仍未完成。
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
 ## 1. 两个目标
@@ -16,10 +16,10 @@
 
 | 项目 | 当前事实 | 判定 |
 |---|---|---|
-| GitHub main | `70d95d0`（完整 SHA `70d95d0c0feaac54e56b8cefb5d81b3fb4b74907`）；本地修复分支完整套件 `566 passed, 1 skipped, 3 subtests passed`，PR #78 CI 通过 | FACT |
+| GitHub main | `59ee119`（完整 SHA `59ee1195f224dae8812728d7b2351e81b1aa47d2`）；修复分支完整套件 `566 passed, 1 skipped, 3 subtests passed`，PR #78/#79 CI 通过 | FACT |
 | D1 动态链路速率 | PR #55 已合入 main；独立冷审 APPROVE；D1 定向 `51 passed`，合并后 CI 绿 | FACT |
 | D2 动态拓扑/holding 语义 | PR #56 已合入 main；合并提交前本地 `555 passed, 1 skipped, 3 subtests passed`，CI pytest SUCCESS | FACT |
-| 当前 VM | 已部署精确 main `70d95d0`；deployment receipt `662e45f7cc35642c0c399f866fac814a431e61eb4b2e5d5c73cb47cef53c0179`，source tree SHA `5f79bd14e9ae2aca03491fd7de3e1ce8478bbd9d987b6826b74ef52fa7c042c9` | FACT |
+| 当前 VM | 已部署精确 main `59ee119`；deployment receipt `1572356fe4bf5928c4cb45c3d42f5dfcb9d75e4ae9fdf6a0d0943db133658273`，source tree SHA `86cea8711eff2a7d8b4d4aadb367a156b80b89f2177c16cf1306b4023cab5bf7` | FACT |
 | VM 工程 smoke | `CODE/Results/_codex_vm_smoke_499d2e6`（前一版）和 `CODE/Results/_codex_vm_burst_smoke_0c378a5`（修复版）自然结束；修复版 receipt verify=`verified`、85/85 delivered、burst 参数已写入 provenance | FACT；非正式、非授权运行 |
 | 真实流量/测量 | CSV 已支持 packet-level 多 OD；M-Lab 与 population-gravity 是代理；burst window 已有。M-Lab 文件 SHA 为 `f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437`；当前 V2 `mlab` 模式只使用空间 OD 权重，尚未消费 `hour_utc`；整段可用时间分母和正式 provenance 仍 open | FACT；当前 SHA 已部署 |
 | Q0 | snapshot 已在 main；planned-vs-executed、holding、Q0-I tiny 存在于未合入候选分支并收到 REQUEST_CHANGES；Q0-F 精确交叉验证未完成。Q0 不阻塞 E0/pilot，但阻塞理论归因和新方案冻结 | FACT |
@@ -61,7 +61,7 @@
 1. 完成本轮主线与机器清单收敛，不再让旧 EXP1→EXP3 顺序支配当前工作。
 2. D1/D2、奖励门和事件观测已合入；V2 适配器本地全量绿，但 R7-F1 仍要用真实授权结果收口。
 3. 用 CSV 多 OD/突发样本继续验收 source/SHA、单位、OD 映射和 offered-load 重算；决定是否把 M-Lab `hour_utc` 接入 V2 负载变换，并在论文实验合同中明确服务窗容量或整段可用时间分母。
-4. 当前 `70d95d0` 已部署；M-Lab 50/100 Mbps 仅为工程 smoke，下一步用正式 trace/provenance 合同跑授权 smoke，再跑 E0-REAL、DIAG-CONGESTION 与基线 pilot。
+4. 当前 `59ee119` 已部署；M-Lab 50/100 Mbps 仅为工程 smoke，下一步用正式 trace/provenance 合同跑授权 smoke，再跑 E0-REAL、DIAG-CONGESTION 与基线 pilot。
 5. 从诊断窗口实现并交叉验证 Q0-I/Q0-F tiny，再补候选方向物理特征和逐字段 age 信息阶梯。
 6. 根据诊断与 Q0 差距提出机制；长训前补 replay/optimizer/target/RNG 完整恢复。
 7. 小规模反例通过后冻结配对正式矩阵，运行 `EXP-CC-FORMAL`；旧 hops/aggregation 实验仅在能解释主机制时触发。
