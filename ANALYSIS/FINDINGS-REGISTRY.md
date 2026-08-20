@@ -25,7 +25,7 @@
 | ID | 模块 | 严重度 | 判定 | 状态 | 摘要 | 证据 | 处置 |
 |---|---|---|---|---|---|---|---|
 | R1-A1 | learning/reward | blocking | INFERENCE | open | 正奖励按跳累积可能允许非交付循环获得净正收益，污染策略最优性与 Q0 对照 | `EXPERT-REVIEW-20260816.md` A1 | 构造最小正循环反例；若可复现，修奖励或动作约束并做改前/改后对照 |
-| R1-A2 | learning/information | blocking | INFERENCE | open | action mask 可能读取 `obs_hops` 外全局拓扑/路径信息，导致观测消融存在旁路 | `EXPERT-REVIEW-20260816.md` A2 | observation 与 mask 共用冻结信息合同；做两个局部观测相同、远端状态不同的不可区分测试 |
+| R1-A2 | learning/information | blocking | FACT | open | action/decision gate 读取 `obs_hops` 外 cache：加入两跳目的地广告不改变 `obs_hops=1` 观测，却会开启 forward 动作 | `test_learning_routing_cannot_use_cache_beyond_obs_hops` 修前复现：`learner.decisions=1` | 候选修复让 routing 的目的地/远端路径指标与 observation 共用 cache hop 边界；待独立复核与 PR 后置 fixed |
 | R7-F1 | experiment_platform/PAPER | blocking | FACT | open | 正式 compile→analysis→claim 链硬绑定缺失的 `ANALYSIS/paired_analysis.py` 等输入，且 CI 未覆盖完整链 | clean main：experiment_platform+work `21 passed, 5 failed, 3 subtests passed`；identity 单测因缺 paired_analysis 失败 | 恢复持久化分析入口/fixture，扩展 CI，做一条真实闭环 |
 | R4A2-F1 | learning | blocking | INFERENCE | fixed | sibling metadata 可重标 contract（C3/C4 同宽） | learning.py 校验链（#42 审阅） | #42 af4b115：metadata SHA 独立 config pin |
 | R4A2-F2 | learning | major | FACT | fixed | metadata 非法 UTF-8 未统一转 LearningUnavailable | learning.py read_text 路径 | #42 af4b115：_read_json_bytes 统一捕获 |
