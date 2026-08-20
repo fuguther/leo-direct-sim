@@ -1,0 +1,610 @@
+拥塞与链路利用率研究路线冷审（RESULT_CANDIDATE）
+
+任务绑定：
+
+仓库：fuguther/leo-direct-sim
+
+commit：5b3ec5f35c5f193408b1800a769c2dca882a2559
+
+审查目标：当前实验计划是否服务于“真实流量诊断 → 理论边界 → 拥塞机制解释 → 新方案设计”的研究主线。
+
+总结结论
+
+当前路线整体方向正确，但存在一个核心风险：
+
+当前实验程序已经从“做算法效果”转向“解释拥塞来源”，但平台门禁仍然混入了一些研究增强能力，导致研究顺序容易被平台完善拖慢。
+
+冷审后的推荐主线：
+
+先保证 D1/D2 + 分析链 + reward/measurement 合同可信 → E0 重新标定真实拥塞 → 多 OD/突发验证拥塞结构 → queue/tx/prop 三段分解定位瓶颈 → Q0-I/F 建立信息价值边界 → 再设计拥塞控制方案。
+
+不建议：
+
+把 Q0 当 E0/pilot 默认前置。
+
+在没有真实流量诊断前直接设计 age-aware、GNN、拥塞奖励。
+
+先补齐所有数字孪生级真实性。
+
+原因：
+
+Q0 只能回答“如果信息更好，控制最多还能提升多少”，不能回答“当前系统为什么拥塞”。
+
+五阶段审查过程
+Stage 1：研究目标与实验程序一致性审查
+1. 当前研究目标是否已经转向拥塞诊断？
+
+结论：一致。
+
+实验总计划已经明确不是单纯比较算法：
+
+目标是解释性能受限来自网络无优化空间、信息不足、决策能力不足或训练/实验链失真。
+
+证据：
+
+EXPERIMENT-PROGRAM.md
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L2
+
+该定位与新的拥塞研究主线一致。
+
+但是当前计划仍然存在一个隐含假设：
+
+只要 E0 之后跑 EXP1/EXP2，就可以定位信息和聚合问题。
+
+这个假设不足。
+
+因为：
+
+拥塞现象 ≠ 信息不足。
+
+可能来源：
+
+来源	表现
+入口流量过高	queue 增长
+路径集中	热点链路利用率升高
+服务调度问题	tx 空闲但 queue 等待
+传播占主导	优化空间有限
+观测年龄问题	局部信息错误
+reward 错误	训练策略偏离目标
+
+因此必须先加入“拥塞结构诊断层”。
+
+Stage 2：平台必做项、阶段必做项、可以牺牲项
+A. 论文级正式实验前平台必做项
+
+这些不是增强功能，而是保证论文结论成立的最低条件。
+
+项目	判断	理由	证据
+D1 动态链路速率	必须	否则链路利用率和容量变化错误	github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L2
+D2 动态拓扑/holding	必须	否则拥塞路径稳定性不可信	github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L2
+reward 合同冻结	必须	否则算法比较没有意义	github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L2
+mask 信息边界	必须	否则信息消融失真	github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L2
+正式 analysis chain	必须	否则指标不能从 artifact 重算	github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L2
+receipt/provenance	必须	否则无法证明实验执行身份	github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L2
+
+其中：
+
+D1/D2 是硬门槛
+
+原因：
+
+如果链路容量、拓扑、holding 语义不稳定：
+
+利用率曲线无法解释；
+
+queue buildup 无法归因；
+
+congestion control 设计会优化 simulator artifact。
+
+B. 只在特定阶段做的项
+能力	阶段	是否阻塞首篇论文
+逐字段 age	EXP3 前	否
+Q0-I/F	信息价值分析阶段	否
+多 OD	E0/PILOT 后正式 congestion study	否
+突发流量	拥塞机制验证阶段	否
+queue/tx/prop 三段时延	需要解释 tail latency 时	部分阻塞
+replay 续训	长训练实验前	否
+FL/CKA	机制解释增强	否
+
+证据：
+
+当前 readiness 已区分：
+
+流量增强能力不阻塞目标 A；
+
+age 属于 EXP3；
+
+replay 属于训练韧性增强。
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L2
+
+C. 可以明确牺牲的真实性
+
+目前最大风险是“无限追求真实”。
+
+建议明确牺牲：
+
+真实性	是否保留	原因
+Doppler 精确模型	暂缓	除非研究 claim 依赖
+天线方向图	暂缓	不是当前拥塞核心变量
+天气衰减	暂缓	增加噪声
+ARQ	暂缓	改变控制闭环
+完整 TCP	暂缓	研究对象不是传输协议
+
+保留：
+
+真实性	原因
+动态容量	影响拥塞
+动态拓扑	影响路径
+queue evolution	核心研究对象
+deadline	尾延迟约束
+真实 OD 分布	决定拥塞结构
+
+readiness 文件已经明确：
+
+目标 B 是 practical ceiling，不要求所有卫星机制完美。
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L2
+
+Stage 3：真实流量 → 理论 → 新拥塞控制方案最短顺序
+
+推荐顺序如下。
+
+Phase 0：平台冻结
+
+目标：
+
+不是为了论文结果，而是保证实验可信。
+
+必须完成：
+
+D1
+
+D2
+
+reward freeze
+
+analysis chain
+
+receipt
+
+不要进入算法研究。
+
+原因：
+
+否则所有 congestion finding 都可能是平台 bug。
+
+Phase 1：E0 真实流量诊断
+
+这是当前计划缺少的研究核心层。
+
+当前 E0：
+
+重新扫描低/中/高负载。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L2
+
+但是建议扩大：
+
+E0 不应该只找负载档位。
+
+应该回答：
+
+Q1：拥塞在哪里产生？
+
+输出：
+
+link utilization heatmap
+
+queue growth
+
+packet waiting time
+
+OD pair congestion matrix
+
+hotspot persistence
+
+Q2：拥塞属于容量不足还是调度不足？
+
+需要：
+
+T
+e2e
+	​
+
+=T
+queue
+	​
+
++T
+tx
+	​
+
++T
+prop
+	​
+
+
+如果：
+
+T
+queue
+	​
+
+≫T
+tx
+	​
+
+,T
+prop
+	​
+
+
+说明是排队控制问题。
+
+如果：
+
+T
+prop
+	​
+
+≫T
+queue
+	​
+
+
+说明优化空间有限。
+
+Phase 2：多 OD + burst 诊断
+
+当前计划把：
+
+多 OD
+
+temporal
+
+burst
+
+放在补充实验。
+
+这个判断需要调整。
+
+原因：
+
+如果研究主题是拥塞控制，多 OD 不是 optional。
+
+单 OD 存在严重风险：
+
+一个热点可能只是人工构造。
+
+必须至少加入：
+
+场景	目的
+uniform	基础
+gravity	现实分布
+multi OD	竞争
+burst	动态拥塞
+
+当前计划已经承认 gravity 作为敏感性分析，但低估了 multi OD 的作用。
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L2
+
+Phase 3：理论边界 Q0-I/F
+
+这里需要重新定位。
+
+正确定位
+
+Q0-I：
+
+回答：
+
+在当前信息情况下，理论最优还能达到多少？
+
+Q0-F：
+
+回答：
+
+未来信息价值是多少？
+
+不应该：
+
+先做 Q0，再决定真实问题。
+
+原因：
+
+Q0 无法告诉：
+
+哪条链拥塞；
+
+为什么 queue 增长；
+
+reward 为什么失败。
+
+因此：
+
+Q0 是解释 gap 的工具，不是诊断工具。
+
+当前计划其实已经写明：
+
+Q0-I 是当前全局状态上限。
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L2
+
+Phase 4：设计拥塞控制方案
+
+只有完成前三阶段后才能设计：
+
+可能方向：
+
+方向 A：queue-aware routing
+
+依据：
+
+如果 queue delay 主导。
+
+加入：
+
+downstream queue
+
+expected waiting time
+
+utilization
+
+方向 B：age-aware congestion control
+
+依据：
+
+如果 stale information 导致错误路径选择。
+
+需要：
+
+逐字段 age provenance。
+
+当前 EXP3 已规划：
+
+G0-G4 age ablation。
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L2
+
+方向 C：credit-aware routing
+
+依据：
+
+如果局部 reward 无法反映 downstream congestion。
+
+需要：
+
+path-credit experiment。
+
+Stage 4：关键风险与反例检查
+F1：过早进入 EXP1/EXP2
+
+严重度：major
+
+问题：
+
+EXP1/EXP2 默认假设：
+
+“信息范围和聚合方式是主要瓶颈”。
+
+但如果：
+
+queue 占主导；
+
+reward 错；
+
+utilization 测量错；
+
+则 EXP1/EXP2 结果不可解释。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L2
+
+F2：Q0 被误认为平台前置
+
+严重度：major
+
+当前文档没有明确把 Q0 写成 E0 前置，但存在解释风险。
+
+正确：
+
+G0 → E0 → diagnosis → Q0
+
+不是：
+
+G0 → Q0 → E0
+
+理由：
+
+Q0 是 upper bound，不是 observation。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L2
+
+F3：利用率指标需要重算合同
+
+严重度：major
+
+链路利用率必须明确：
+
+U
+e
+	​
+
+(t)=
+available service time
+busy transmission time
+	​
+
+
+否则：
+
+不同链路：
+
+零速率；
+
+holding；
+
+down；
+
+可能产生错误利用率。
+
+需要和 D1/D2 同步。
+
+F4：逐字段 age 不应提前成为平台 blocker
+
+严重度：minor
+
+age 是机制实验变量。
+
+不是基础平台能力。
+
+否则：
+
+EXP1/EXP2 被不必要阻塞。
+
+Stage 5：文档矛盾与过时状态
+矛盾 1：实验路线已经拥塞诊断化，但实验矩阵仍偏算法比较
+
+影响：
+
+major
+
+处理：
+
+增加：
+
+DIAG-0 congestion characterization
+
+位于 E0 和 EXP1 之间。
+
+矛盾 2：目标 A 与目标 B边界需要更严格
+
+当前 readiness：
+
+目标 A：
+
+可信运行。
+
+目标 B：
+
+高保真上限。
+
+github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L2
+
+建议：
+
+所有“高保真增强”明确标记：
+
+research enhancement
+
+不要进入 platform gate。
+
+矛盾 3：D8 时延分解定位不清
+
+当前：
+
+queue/tx/prop 被放在 measurement enhancement。
+
+但如果论文 claim 是 congestion control：
+
+它应升级为首批诊断指标。
+
+最短可执行路线
+顺序	任务	产出
+1	D1/D2 + contracts	可信平台
+2	reward/mask/analysis freeze	可信比较
+3	E0 重新扫描负载	真实拥塞区间
+4	multi OD + burst	拥塞结构
+5	queue/tx/prop 分解	瓶颈归因
+6	Q0-I	当前信息上限
+7	Q0-F	未来信息价值
+8	设计控制方案	理论驱动改进
+9	EXP1/EXP2/EXP3	机制验证
+最终判断
+
+当前计划不是方向错误，而是：
+
+缺少一个“拥塞诊断层”。
+
+如果直接进入 EXP1/EXP2：
+
+最大风险是得到：
+
+“GAT 有提升 / age 有提升”
+
+但不知道：
+
+提升到底解决了什么。
+
+论文级路线应该从：
+
+“哪个信息帮助学习”
+
+改为：
+
+“什么机制导致拥塞 → 理论上限是多少 → 哪类控制能力可以突破。”
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:PLAN-AUDIT:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "当前实验路线总体正确，但缺少真实拥塞诊断层。建议将 D1/D2、分析链、reward 合同作为硬平台门槛，随后先做 E0+多OD+burst+queue/tx/prop 分解，再用 Q0-I/F 建立信息边界，最后设计拥塞控制方案。Q0 不应作为 E0/pilot 默认前置。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "EXP1/EXP2 前缺少拥塞结构诊断阶段，可能导致信息消融结果无法归因",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L2"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "Q0 应作为信息上界诊断工具，不应成为真实流量实验前置平台门禁",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L2"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "正式拥塞研究需要明确queue/tx/prop和利用率重算合同",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L2"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "summary": "逐字段age应作为EXP3机制变量，不应升级为全部实验平台前置",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L2"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "新增DIAG-0拥塞诊断阶段",
+    "E0中加入multi-OD和burst场景",
+    "冻结queue/tx/prop和link utilization计算合同",
+    "保持Q0-I/F作为上界解释实验而非平台前置",
+    "在诊断完成后再设计拥塞控制方案"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L2",
+    "github://fuguther/leo-direct-sim/blob/5b3ec5f35c5f193408b1800a769c2dca882a2559/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L1-L2"
+  ],
+  "open_items": [
+    "未能在当前读取窗口内核验CODE/leo_sim具体实现中的queue、tx、prop字段来源，需要本地Agent继续绑定代码行审查",
+    "需要进一步核验experiment-program.yaml中各experiment dependency是否与本文推荐顺序一致"
+  ]
+}
+===END_OFFLOAD_RESULT===
