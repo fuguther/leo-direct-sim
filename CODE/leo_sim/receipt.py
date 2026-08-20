@@ -50,7 +50,9 @@ TF_DEP_KEY = "tensorflow"
 REQUESTED_KEYS = {"policy", "association", "ge_enabled", "control_enabled", "monitor",
                   "learning_algorithm", "learning_mode",
                   "topology_recompute_interval_s", "topology_matching"}
-EFFECTIVE_KEYS = {"control_plane", "ge", "mbb", "learning", "dynamic_topology"}
+REQUESTED_KEYS |= {"rate_model"}
+EFFECTIVE_KEYS = {"control_plane", "mcs", "ge", "mbb", "learning",
+                   "dynamic_topology"}
 
 LEDGER_KEYS = {
     "packet_fates", "control_instances", "control_counters",
@@ -71,6 +73,8 @@ MECHANISM_COUNTER_KEYS = {
     "learning_decisions", "learning_transitions", "learning_train_steps",
     "learning_discarded_at_stop", "learning_discarded_at_rematch",
     "holding_queue_overflows", "topo_recomputes", "topo_dynamic_init",
+    "mcs_rate_samples",
+    "mcs_zero_rate_holds", "mcs_rate_min_bps", "mcs_rate_max_bps",
 }
 MECHANISM_COUNTER_BOOLS = {"control_initialized", "ge_initialized",
                            "learning_initialized", "topo_dynamic_init"}
@@ -132,6 +136,7 @@ def requested_from_config(cfg: dict) -> dict:
     return {
         "policy": cfg["routing"]["policy"],
         "association": cfg["access"]["association"],
+        "rate_model": cfg["links"]["rate_model"],
         "ge_enabled": bool(cfg["links"]["ge_enabled"]),
         "control_enabled": bool(cfg["control_plane"]["enabled"]),
         "monitor": bool(cfg["execution"]["monitor"]),
@@ -147,6 +152,8 @@ def effective_from_counters(counters: dict, requested: dict) -> dict:
     is effective only if it really entered the send path."""
     return {
         "control_plane": counters.get("control_entered_queue", 0) > 0,
+        "mcs": (counters.get("mcs_rate_samples", 0) > 0
+                or counters.get("mcs_zero_rate_holds", 0) > 0),
         "ge": requested.get("ge_enabled", False) and (
             counters.get("ge_gsl_queries", 0)
             + counters.get("ge_isl_queries", 0) > 0),

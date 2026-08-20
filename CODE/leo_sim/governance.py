@@ -23,6 +23,9 @@ REQUEST_SCHEMA = "leo-sim-experiment-request/v1"
 COMPILE_REPORT_SCHEMA = "leo-sim-experiment-compile-report/v1"
 RUN_MANIFEST_SCHEMA = "leo-sim-experiment-run-manifest/v1"
 ANALYSIS_REQUEST_SCHEMA = "leo-sim-analysis-request/v1"
+MATRIX_REQUEST_SCHEMA = "leo-sim-experiment-matrix-request/v1"
+MATRIX_MANIFEST_SCHEMA = "leo-sim-experiment-matrix-manifest/v1"
+MATRIX_ANALYSIS_SCHEMA = "leo-sim-matrix-analysis-request/v1"
 EXECUTION_CHAIN_PATHS = (
     "CODE/experiment_platform/authorize_experiment.py",
     "CODE/scripts/remote/deployment_guard.py",
@@ -369,3 +372,14 @@ def compile_experiment(request_path: Path, out_dir: Path,
     }
     _write_json(out_dir / "compile-report.json", report)
     return report
+
+
+def compile_matrix_experiment(request_path: Path, out_dir: Path,
+                              project_root: Path | None = None) -> dict:
+    """Compile the independent leo_sim V2 matrix contract.
+
+    Kept as a lazy wrapper so importing this module preserves the historical
+    single-run surface and does not introduce a circular import.
+    """
+    from .matrix import compile_matrix_experiment as _compile_matrix
+    return _compile_matrix(request_path, out_dir, project_root=project_root)

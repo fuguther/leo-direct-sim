@@ -34,8 +34,11 @@ def test_c3_to_c7_share_exactly_the_same_information_set():
     assert sets["C3"] == {1, 2, 3}
 
 
-def test_c1_sees_only_direct_neighbors():
-    cache = _entries([(1, 5.0, 1), (3, 5.0, 2)])
+def test_c1_sees_only_direct_neighbors_arriving_within_one_hop():
+    cache = _entries([(1, 5.0, 1), (2, 5.0, 2), (3, 5.0, 1)])
+    # Origin 2 is a current neighbour but its advertisement arrived via two
+    # control hops; origin 3 arrived in one hop but is not a current neighbour.
+    # Neither may enter the C1 observation/action information set.
     assert set(learning.information_set("C1", 0, cache, 6.0, TOPO)) == {1}
 
 

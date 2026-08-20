@@ -8,15 +8,14 @@ from CODE.experiment_platform.compile_experiment import PROJECT_ROOT, scenario_i
 
 
 class CompileScenarioIdentityTest(unittest.TestCase):
-    def test_formal_remote_runner_authorizer_and_graph_comparator_are_bound(self):
+    def test_formal_analysis_runner_and_authorizer_are_bound(self):
         catalog_path = PROJECT_ROOT / "CODE/experiment_platform/parameter-catalog.json"
         profiles_path = PROJECT_ROOT / "CODE/experiment_platform/profiles.json"
         catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
         identity = scenario_identity(catalog, profiles_path, catalog_path)
         hashes = identity["source_and_input_sha256"]
         for path in (
-            "ANALYSIS/compare_graph_execution_ab.py",
-            "CODE/tools/run_graph_cpu_ab.py",
+            "ANALYSIS/paired_analysis.py",
             "CODE/scripts/remote/deployment_guard.py",
             "CODE/scripts/remote/common.sh",
             "CODE/scripts/remote/remote_job.py",

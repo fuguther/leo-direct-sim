@@ -345,9 +345,6 @@ def scenario_identity(catalog: dict[str, Any], profiles_path: Path, catalog_path
     )
     files = code_files + [
         "ANALYSIS/paired_analysis.py",
-        "ANALYSIS/compare_graph_execution_ab.py",
-        "CODE/tools/run_graph_cpu_ab.py",
-        "CODE/inputRL.csv",
         "CODE/Gateways.csv",
         "CODE/population_map/gpw_v4_population_count_rev11_2020_15_min.tif",
         "CODE/scripts/remote/deployment_guard.py",
@@ -803,7 +800,8 @@ def render_runbook(request: dict[str, Any], manifest: dict[str, Any]) -> str:
     )
     analysis_command = (
         f"python3 ANALYSIS/paired_analysis.py --analysis EXPERIMENTS/{experiment_id}/analysis-request.json "
-        f"--manifest EXPERIMENTS/{experiment_id}/run-manifest.json {run_args} "
+        f"--manifest EXPERIMENTS/{experiment_id}/run-manifest.json "
+        f"--authorization EXPERIMENTS/{experiment_id}/authorization.json {run_args} "
         f"--out ANALYSIS/{experiment_id}"
     )
     lines.extend([

@@ -33,19 +33,61 @@
 ```yaml
 links:
   rate_model: "constant" | "mcs"      # 默认 constant（现状，不破坏既有回执）
-  rf:                                  # rate_model=mcs 时必填，缺省 fail-loud
+  mcs_table: "legacy-dvbs2x"          # 当前仅支持旧表
+  rf_isl:                              # 三组均为同一严格字段集合
     frequency_hz: 26e9
     bandwidth_hz: 500e6
     max_ptx_w: 10.0
-    antenna_diameter_m: 0.26
+    antenna_diameter_tx_m: 0.26
+    antenna_diameter_rx_m: 0.26
+    pointing_loss_db: 0.3
+    noise_figure_db: 2.0
+    noise_temperature_k: 290.0
+    min_rate_bps: 10000.0
+  rf_uplink:                           # legacy: 30 GHz, 20 W, Tx 0.33 m/Rx 0.26 m
+    frequency_hz: 30e9
+    bandwidth_hz: 500e6
+    max_ptx_w: 20.0
+    antenna_diameter_tx_m: 0.33
+    antenna_diameter_rx_m: 0.26
+    pointing_loss_db: 0.3
+    noise_figure_db: 2.0
+    noise_temperature_k: 290.0
+    min_rate_bps: 10000.0
+  rf_downlink:                         # legacy: 20 GHz, 10 W, Tx/Rx 0.26 m
+    frequency_hz: 20e9
+    bandwidth_hz: 500e6
+    max_ptx_w: 10.0
+    antenna_diameter_tx_m: 0.26
+    antenna_diameter_rx_m: 0.26
     pointing_loss_db: 0.3
     noise_figure_db: 2.0
     noise_temperature_k: 290.0
     min_rate_bps: 10000.0             # 低于此速率视为不可用（见 2.3）
-  mcs_table: "legacy-dvbs2x"          # 门限表选择；先只支持旧表（表征测试钉死）
 ```
 
-校验（fail-loud）：`rate_model=mcs` 时 rf 字段缺/非正 → ConfigError；`constant` 时忽略 rf。
+校验（fail-loud）：配置结构始终只接受上述精确字段；`rate_model=mcs` 时三组
+RF 数值必须有限且为正，否则 `ConfigError`；`constant` 时 RF/MCS 数值不参与
+运行语义，因而不做数值校验。
+
+### 2.5 实现调整（2026-08-19，D1 PR）
+
+- **三套 RF 参数（分级速率）**：旧平台实际是三套 RFlink 而不是一套：
+  `rf_isl`（26 GHz/500 MHz/10 W/0.26 m 收发，markovianMatchingTwo
+  SimulationRL.py:8353）、`rf_uplink`（30 GHz/500 MHz/20 W/0.33 m Tx/
+  0.26 m Rx，Gateway.gs2ngeo :2617）、`rf_downlink`（20 GHz/500 MHz/10 W/
+  0.26 m 收发，Satellite.ngeo2gt 全局参数 :297-310/:1935）。配置默认值即
+  这三套 legacy 参数；`mcs_table` 仅支持 `legacy-dvbs2x`。
+- **零速率/低速率恢复**：`rate < min_rate_bps` 视为链路 down。为不把包
+  干等到地平线，几何层新增两个调度专用查询 `next_isl_range_under` /
+  `next_slant_range_under`（限制 `RANGE_RATE_KM_S` 的认证穿越搜索），
+  恢复阈值由 `link_budget.max_rate_range_km(rf)` 解析（达到首个 MCS
+  线性门限的距离）。`_transmit` 增加 rate_fn/rate_recover_fn 两个参数：
+  服务每次真正开始时才按当时斜距采样速率，速率不足则与 deadline/硬退役
+  竞速等待，绝不直接 `dur=∞`。
+- **receipt**：`mechanisms.requested` 增 `rate_model`；`effective` 增
+  `mcs`（`mcs_rate_samples>0` 才生效）；mechanism counter 增
+  `mcs_rate_samples`。
 
 ### 2.3 零速率/低速率的语义（必须先拍板再实现）
 
