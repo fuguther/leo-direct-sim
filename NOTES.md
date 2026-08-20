@@ -407,3 +407,9 @@
 - 资源剖析：同一 2 s、100 Mbps、56-cell M-Lab/burst 配置，1/2/4/8 线程均 natural end、conservation true、事件数 286,671、trace SHA=`f69b73b3e8bd02ff2b9e22c05d0c369d2bf1c36e7c7f8eab0bbe5c22f5165b02`；墙钟约 `14.298/14.412/15.648/14.707 s`，峰值 RSS `465,996/461,260/459,948/461,652 KiB`。没有可重复的多线程加速，后续 pilot 采用 1 线程串行，避免空耗 CPU。
 - 学习工程闭环：同一 2 s、100 Mbps、seed=7/41、`fast_train=true` 配置完成 Q-learning、DDQN(C3)、GAT、MPNN 各自 train→checkpoint→eval；8 个 run 均 natural end、`conservation_ok=true`、`receipt verify=verified`，8 个 raw ledger 独立 `metrics.validation.ok=true`。训练步数：Q-learning 112、DDQN(C3) 104、GAT 102、MPNN 103；每个 eval 均记录实际加载的训练 checkpoint SHA。
 - 训练—评估不是论文效果结果，只证明当前 main/VM 的学习执行链可跑通。仍未完成 replay/optimizer/target/RNG 完整续训、formal authorization cohort、V2 artifact→claim、逐包三段时延正式 gate 和 Q0 物理上界。
+
+## 2026-08-21：D2 60 秒长窗与 20 秒 DDQN 训练起步
+
+- 长窗：main runtime code SHA=`d2247140312396cbf111e54239ec5274f22257c024d4f0909f50a6c4232454c0`，140 星、60 s、100 Mbps、56-cell M-Lab/burst、1 s cadence。VM 输出 `engineering-d2-long-60s-0fc9427`：`natural_end=true`、`conservation_ok=true`、`receipt verify=verified`、metrics `validation.ok=true`；8,510,023 events、216,243 packet events、7,908 service windows、33,137 availability windows、2,792 delivered、3,211 `ACCESS_REJECTED`、194 `HOLDING_QUEUE_OVERFLOW`、537 `IN_SYSTEM_AT_STOP`，输出约 139 MB。该轮是 D2 长窗工程验证，不是论文效果结果。
+- 20 s DDQN：同一 100 Mbps/56-cell M-Lab trace，训练与评估 trace SHA 均为 `e6e7bd329f6822046f5d57611690d609a3647e1dca7639e170e985d891000e09`。训练 natural/conservation/receipt/metrics 全通过，1,220 train steps、1,227 transitions、checkpoint SHA=`9554170451d2f1866bcc23e381772189014e3f9e64c8ba5e931a46ce19312e97`；评估重新加载该 checkpoint，natural/conservation/receipt/metrics 全通过，0 train steps。20 s 负载下 3 `HOLDING_QUEUE_OVERFLOW`、约 375 个 `IN_SYSTEM_AT_STOP`，说明起步时长已进入真实拥塞压力区。
+- 边界：本轮仍是 engineering/pilot；没有授权 cohort、paired claim、replay/optimizer/target/RNG 断点恢复或正式论文统计，不能直接写入论文结论。
