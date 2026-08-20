@@ -19,8 +19,8 @@ status_values:
   - historical_only
 
 requirements:
-  D1_merged_to_main: {status: completed_verified, evidence: main_b037b618_ci_and_vm_smoke}
-  D2_merged_to_main: {status: completed_verified, evidence: main_b037b618_ci_and_vm_smoke}
+  D1_merged_to_main: {status: completed_verified, evidence: main_66be0ad_ci_and_vm_smoke}
+  D2_merged_to_main: {status: completed_verified, evidence: main_66be0ad_ci_and_vm_smoke}
   reward_and_mask_blockers_closed: {status: blocked}
   v2_formal_evidence_chain_verified: {status: blocked}
   real_traffic_provenance_verified: {status: blocked}
@@ -30,7 +30,7 @@ requirements:
   q0_minimum_loop_verified: {status: blocked}
   q0_replay_review_approved: {status: blocked}
   three_final_audit_rounds_no_new_major: {status: blocked}
-  exact_main_deployed_to_vm: {status: completed_verified, evidence: deployment_4866768f_vm_smoke_receipt_verified}
+  exact_main_deployed_to_vm: {status: completed_verified, evidence: deployment_24b0a478_vm_smoke_receipt_verified}
   per_action_physical_features_verified: {status: blocked}
   field_age_provenance_verified: {status: blocked}
   replay_resume_verified: {status: blocked}

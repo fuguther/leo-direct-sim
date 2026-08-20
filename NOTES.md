@@ -20,6 +20,14 @@
 - 边界：仓库当前没有 R02 的合法 `finalization.json`/`authorization.json`，因此没有伪造正式授权；
   本 smoke 证明“已部署版本可运行”，不证明 V2 正式分析链、真实流量诊断或论文结论已就绪。
 
+## 2026-08-20：精确当前 main 部署复核
+
+- 文档 PR #68 合入后的当前 main 为 `66be0adedbf96bcdad722ca6720851904b256129`；该 SHA
+  已重新部署到 canonical VM。source tree SHA=`6291acba9c14d703c7758e7799fb51aae4a6a5eba0f84b16716cb846d1ba3345`，
+  deployment receipt SHA=`24b0a4783a22960cc703faff0f6e46b4a7e077af7c9c86d3826423ed7878b06e`。
+- 同一 SHA 的 `CODE/Results/_vm_smoke_66be0ad` 工程 smoke：自然结束、`DELIVERED=1`、
+  `conservation_ok=true`、`IN_SYSTEM_AT_STOP=0`，`receipt verify`=`verified`。
+
 ## 2026-08-19（有限 holding queue：容量/面积/WAIT 语义）
 
 - 分支：`codex/20260819-holding-queue`。
