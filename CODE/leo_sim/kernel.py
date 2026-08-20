@@ -769,6 +769,11 @@ class ISLLink:
         # queue/in-service packet (retired) and signals `drained` once the
         # direction slot is physically free again.
         self.retired = False
+        # Set when the retired generation has no queue or service left.  The
+        # timestamp lets the physical-capacity ledger include a just-drained
+        # generation in the interval that contains its final service, without
+        # counting that generation in later intervals.
+        self.drained_at: float | None = None
         self.drained = kern.env.event()
         ge_cfg = kern.cfg_links["ge_isl"]
         self.ge = outage.GilbertElliott(
@@ -1510,6 +1515,7 @@ class Kernel:
             if link._is_drained():
                 if not link.drained.triggered:
                     link.drained.succeed()
+                link.drained_at = float(self.env.now)
                 self._isl_dyn_drained += 1
                 self._retired_isls_done.append(link)
             else:
@@ -1662,8 +1668,12 @@ class Kernel:
         # edge, so the independent denominator cannot undercount that service.
         edges = {(sat, peer) for sat in range(self.num_sats)
                  for peer in self.topo[sat].values()}
+        # A just-drained generation belongs to the interval ending at its
+        # drain instant, but not to later windows.  Live retired generations
+        # remain candidates because they may still finish an in-flight service.
         for link in list(self._retired_isls) + list(self._retired_isls_done):
-            edges.add((link.sat, link.peer))
+            if link.drained_at is None or link.drained_at > start + 1e-12:
+                edges.add((link.sat, link.peer))
         for sat, peer in sorted(edges):
             for seg_start, seg_end, rate in self._metric_capacity_segments(
                     "isl", sat, start, end, peer=peer):
@@ -1681,9 +1691,19 @@ class Kernel:
         if configured is None:
             return
         interval = float(configured)
+        topo_interval = self.cfg_topo["recompute_interval_s"]
         start = 0.0
         while start < self.horizon:
             end = min(self.horizon, start + interval)
+            # Topology rematching is a real state transition.  A capacity
+            # window may not straddle it, otherwise the midpoint can describe
+            # the old generation while service in the second half uses the
+            # newly installed neighbor.
+            if topo_interval is not None:
+                next_topo = ((math.floor(start / topo_interval) + 1)
+                             * topo_interval)
+                if next_topo > start + 1e-12:
+                    end = min(end, next_topo)
             sample_at = start + (end - start) / 2.0
             self._record_available_capacity_sample(start, end, sample_at)
             yield self.env.timeout(max(0.0, end - self.env.now))

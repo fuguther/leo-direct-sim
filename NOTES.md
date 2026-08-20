@@ -359,7 +359,13 @@
 
 ## 2026-08-21：逐向物理可用容量分母（候选，待独立复核）
 
-- 分支：`codex/20260821-available-capacity`；新增可选的 `execution.available_capacity_interval_s`（默认关闭，E0/诊断 profile 显式设 1 s）和独立的 `link_available_windows` ledger。每个固定区间按已认证的几何上下线根和 MCS 距离阈值切成稳定片段，再在片段中点做速率积分；空闲链路也进入利用率分母；不把队列占用、服务窗口或学习观测混进容量定义。采样间隔下限为 0.01 s，且单次运行最多 100000 个区间，避免误配置造成 CPU/ledger 爆炸。
+- 分支：`codex/20260821-available-capacity`；新增可选的 `execution.available_capacity_interval_s`（默认关闭，E0/诊断 profile 显式设 1 s）和独立的 `link_available_windows` ledger。每个固定区间按拓扑重匹配、已认证的几何上下线根和 MCS 距离阈值切成稳定片段，再在片段中点做速率积分；空闲链路也进入利用率分母；不把队列占用、服务窗口或学习观测混进容量定义。采样间隔下限为 0.01 s，且按拓扑切分后的单次运行最多 100000 个区间，避免误配置造成 CPU/ledger 爆炸。
 - `metrics.summarize` 现在同时重算 service capacity 与 physical available capacity，输出 `available_capacity_bits`、`available_time_s`、`available_samples` 和 `utilization=served/available`；无新采样的手写旧 fixture 保持旧分母兼容。receipt 将原始 availability ledger 纳入 `ledgers_sha256`，验证时重新计算 metrics。
 - 验证：定向 `28 passed`；`pytest -q CODE/leo_sim/tests CODE/tests` = **530 passed**；新增回归覆盖窗口内 GSL 上下线和退役 ISL 代际。M-Lab 10 s smoke 仍需在本 SHA 重跑；先前 18/18 delivered、conservation true、receipt verified 的结果来自上一版候选实现，不能替代本次验证。
 - 边界：分母是明确的固定间隔、几何/MCS 分段物理机会估计，不是连续时间解析积分；GE outage 不从物理容量中扣除，而由独立 fate/队列指标解释。仍需独立冷审、长窗 MCS VM 验证和资源成本评估后才能合入主线。
+
+## 2026-08-21：容量窗口按拓扑事件切分（候选，待独立复核）
+
+- 独立冷审指出：容量间隔 1 s、拓扑重算 0.5 s 时，若只按中点记录会漏掉窗口后半段新装 ISL。修复后 ticker 按拓扑重算边界切分；已排空旧代只保留在包含其排空时刻的窗口，避免旧代跨窗口继续充当可用链路。
+- 验证：定向 `28 passed`；全量 `pytest -q CODE/leo_sim/tests CODE/tests` = **530 passed**。新增回归明确断言旧 `isl:0:1` 只在 `[0,0.5]`、新 `isl:0:2` 只在 `[0.5,1]`。
+- 独立冷审上一轮三项 blocker（退役 ISL、窗口内上下线/MCS 阈值、采样下限/上限）已关闭；本轮需复核拓扑事件切分后再决定合入。

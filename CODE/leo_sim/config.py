@@ -714,7 +714,12 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
             or not math.isfinite(interval))):
         raise ConfigError(
             "execution.available_capacity_interval_s must be null or finite and >= 0.01")
-    if interval is not None and sc["duration_s"] / interval > 100_000:
+    effective_interval = interval
+    topo_interval = tp["recompute_interval_s"]
+    if (effective_interval is not None and topo_interval is not None):
+        effective_interval = min(effective_interval, topo_interval)
+    if (effective_interval is not None
+            and sc["duration_s"] / effective_interval > 100_000):
         raise ConfigError(
             "execution.available_capacity_interval_s creates more than "
             "100000 sampling intervals")

@@ -206,6 +206,14 @@ def test_capacity_metric_includes_retired_isl_generation():
 
     cfg = _cfg()
     cfg["config"]["execution"]["available_capacity_interval_s"] = 1.0
-    result = kernel.run_simulation(cfg, [], geometry=_geometry())
-    assert any(w["link_id"] == "isl:0:1"
-               for w in result["link_available_windows"])
+    geo = _geometry()
+    # Keep the scripted rematch while making both generations physically
+    # usable, matching the in-flight retired-service case under review.
+    geo.isl_available = lambda _a, _b, _t: True
+    result = kernel.run_simulation(cfg, [], geometry=geo)
+    old = [w for w in result["link_available_windows"]
+           if w["link_id"] == "isl:0:1"]
+    new = [w for w in result["link_available_windows"]
+           if w["link_id"] == "isl:0:2"]
+    assert [(w["start"], w["end"]) for w in old] == [(0.0, 0.5)]
+    assert [(w["start"], w["end"]) for w in new] == [(0.5, 1.0)]
