@@ -483,3 +483,10 @@
 - DDQN/GAT：训练自然结束、守恒、receipt verified，4,975 train steps，checkpoint verified SHA=`59552ee9bafeb0051eb3fe7a49b143ef2cfd37eb3dbb2d5ecc3290b90f75dff6`；评估 0 train steps、3,252 decisions，加载 SHA 与训练一致，receipt verified。
 - DDQN/MPNN：训练自然结束、守恒、receipt verified，5,068 train steps，checkpoint verified SHA=`727cee5fd512962154c90f336202095f90b82c670038bfb9f8e5b0c489534da9`；评估 0 train steps、3,332 decisions，加载 SHA 与训练一致，receipt verified。
 - 这八个 run 是工程 pilot，不是正式授权矩阵，也不支持算法优越性或论文统计结论；它们证明当前 VM/依赖下四个学习路径在主负载上能真实训练、保存、重载、评估，且不会静默退化为无学习。下一步把同一 train/eval 证据装进正式 matrix/授权链，再进入拥塞/利用率诊断；正式评估仍需按 60--120 s 和多 seed 预算重新规划。
+
+## 2026-08-21：正式学习基线 evaluation-only pilot 完成
+
+- 授权矩阵：PR #120（矩阵/审阅/定案）与 PR #121（派生授权）均通过 pytest CI 并合入；执行主线 `b6175ab8022c0f17ee88b1f393780c510bd4018e`，VM deployment receipt SHA=`2747b95acd1819a446c566fe020c7a650e4708d20140bd215b64caa8d41ab61f`，authorization SHA=`7048dee403951d51db1005d217237f8a38ecd57a88c9b7fa2ef0c1f3b335f770`。cold-start、satellite-DRL、adversarial 三份独立审阅均 PASS；八个 cell 共享同一不可变 M-Lab trace（trace identity=`4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281`）。
+- VM 执行：八个 evaluation cell 串行、`--cpu-list 0` 完成；每个均 `status=success`、`exit_code=0`、`natural_end=true`、`conservation_ok=true`、`research_eligible=true`，逐个 `python -m CODE.leo_sim receipt verify` 通过。八个学习元数据均 `mode=eval`、`train_steps=0`、`checkpoint_verified=true`，实际加载 checkpoint SHA 与授权一致：Q-learning `943fda8d...`（两臂）；DDQN/C3 `4f3d9ef5...`、`e8c8e41c...`；GAT `40da0753...`、`b1fd2dc9...`；MPNN `aebf1664...`、`51fd1a3d...`。本轮记录了单核串行运行，但没有逐 run RSS 采样，不能把它当资源剖析证据。
+- V2 重算：VM `v2_analysis` 返回 `status=VERIFIED`、`verified_runs=8`；再次 `verify_persisted_analysis` 返回 `ok=true, errors=[]`。当前配对仅是同 checkpoint 的 duplicate consistency（四个 b-minus-a delivery-rate 差均为 `0.0`），claim gate 明确禁止算法优越性、因果拥塞控制效果、最终 E0 阈值、Q0 最优性和论文统计结论。
+- 独立拥塞诊断：20 s、100 Mbps 这轮的 546 条链路可用容量总和约 `10,804.261 Gb`，各臂已服务约 `3.503--7.245 Gb`；加权平均利用率约 `0.000324--0.000671`，最大链路利用率约 `0.015081`。因此这八臂只证明 train/eval 和证据链可运行，不能作为拥塞饱和或算法排序证据；后续拥塞主线应优先使用 E0 已出现 holding overflow 的 200 Mbps 压力档，并补正式多 seed/长窗及三段时延重算。
