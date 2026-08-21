@@ -583,3 +583,10 @@
 - 先写测试并确认未知 policy 失败，再实现；routing/config 定向测试 `28 passed`，相关全量 `554 passed, 1 skipped`，`git diff --check` 通过。代码提交 `65347d5`；独立冷审和 CI 尚未完成，不能称已合入或已部署。
 - 配对设计已写入 `ANALYSIS/INFO-LADDER-REAL-DESIGN-20260821.md`：固定 R03 200 Mbps M-Lab multi-OD + burst 合同，先以 hop/F0/F1 做双 seed 诊断；必须保留本地队列置换、第一跳物理字段固定/置换负对照；在正式 request/审阅/授权前不启动 VM，不产生数值结论。
 - 独立冷审发现并修正一个 P1：F1 所有第一跳暂时零速时不能返回空候选（否则内核会把等待误记为 `NO_ROUTE`）。`f65b3cb` 增加可达候选 deferred fallback 与 MCS/holding 集成回归；修复后相关全量为 `555 passed, 1 skipped`。本地 `info_physical` 20 s M-Lab smoke：1,299 offered、613 delivered、579 access rejected、107 in-system、`NO_ROUTE=0`，`natural_end=true`、`conservation_ok=true`、receipt verify=verified；这是候选分支 smoke，不是 VM/论文结果。
+
+## 2026-08-21：INFO-LADDER F0 正式矩阵完成三方复核并授权
+
+- 基于 exact candidate `058e5433ad14b7390028a542e4e86b3dbd2b0d15` 编译 `EXP-20260821-INFO-LADDER-FORMAL-R01`；本轮范围明确为 F0 `hop` vs `info_queue`，两个 trace seed（7/11）、4 个 non-learning cells、1 个 `info_queue_minus_hop` paired contrast；`info_physical` 延后为独立 R02，避免重复基线造成配对歧义。
+- 三份真实独立复核均 PASS：cold-start `3c66c8748275e6372e0b9ce68f9c2c7cf5e69b21dd399f402a8a062ef8c0e465`、satellite-DRL `c5f5e98acf34dc116b4c9913ab0ce26f562240d0c0be45dd5fc6ae7fc238c94c`、adversarial `835326e8e5d1b39bf799d2f5ff121831d14af13ff618480d0f373b8262f722b1`；三者均绑定同一 11-artifact hash map，`verify_compiled_matrix` 4 rows/9 hashes 通过，相关测试均绿。
+- `finalize_decision` 返回 `ACCEPTED`；`authorize_experiment` 返回 `AUTHORIZED`（4 runs）。授权仅表示可在合入后 exact main、干净部署的同一 SHA 上执行该 F0 诊断，不代表已部署、已运行或已有论文结果。
+- 当前待办：将本 package 经 PR/CI 合入 main；合入后部署 canonical VM，严格串行运行 4 cells，逐个核验 natural_end、conservation、research_eligible、资源边界和 receipt verify，再做 V2 paired analysis。任一 cell 失败即停止矩阵；F1 `info_physical` 另起 R02。

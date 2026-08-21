@@ -1,0 +1,116 @@
+{
+  "analysis": {
+    "analysis_id": "AN-INFO-LADDER-FORMAL-R01",
+    "estimand": "descriptive paired routing-policy differences under the fixed 200 Mbps M-Lab multi-OD burst, pooled over two trace seeds; no causal or superiority claim",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "descriptive paired pressure difference",
+        "left_arm": "info_queue",
+        "name": "info_queue_minus_hop",
+        "right_arm": "hop"
+      }
+    ],
+    "primary_metric": "delivery_rate"
+  },
+  "claim_boundary": {
+    "can_claim": [
+      "the two declared deterministic routing anchors execute under the same fixed 200 Mbps M-Lab multi-OD burst and two trace seeds",
+      "natural-end, conservation, packet-fate, backlog, latency and directional available-capacity records are produced and can be recomputed",
+      "the observed paired differences are descriptive diagnostics for information-ladder follow-up"
+    ],
+    "cannot_claim": [
+      "algorithm superiority or a causal information-value effect",
+      "learner observation equivalence or Q0 optimality",
+      "final E0 load threshold or paper-ready statistical conclusion"
+    ]
+  },
+  "experiment_id": "EXP-20260821-INFO-LADDER-FORMAL-R01",
+  "matrix_manifest_sha256": "1737d17eb9fdcbbd34c00d539958e623b16c6364be93fa9d1f7462cd9a7f5e8d",
+  "planned_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "hop",
+      "config_sha256": "219be8f2c1be0b93a5da37865dbab041ad28604b772277d6f155342b261f7927",
+      "controlled_signature": "16a23374ccc273b824f90f0d43c85bc637275b7e11018a35841d76c16438e635",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "queue-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-INFO-LADDER-FORMAL-R01-hop-s7",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "info_queue",
+      "config_sha256": "a97801f120cfd28b2e9c89a1ef026d3170a0f17f6820e13eeefec16d1edabb89",
+      "controlled_signature": "16a23374ccc273b824f90f0d43c85bc637275b7e11018a35841d76c16438e635",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "queue-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-INFO-LADDER-FORMAL-R01-info_queue-s7",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "hop",
+      "config_sha256": "0b34b575b5b85796b2374b6f7d6265910427360d4684ec47b0200a11dd79a08c",
+      "controlled_signature": "16a23374ccc273b824f90f0d43c85bc637275b7e11018a35841d76c16438e635",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "queue-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-INFO-LADDER-FORMAL-R01-hop-s11",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "info_queue",
+      "config_sha256": "32e60fef19a3a5069ebb3c97bd261f30a75dab9eccc76652af97e0e8fe23042b",
+      "controlled_signature": "16a23374ccc273b824f90f0d43c85bc637275b7e11018a35841d76c16438e635",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "queue-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-INFO-LADDER-FORMAL-R01-info_queue-s11",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    }
+  ],
+  "planned_run_ids": [
+    "EXP-20260821-INFO-LADDER-FORMAL-R01-hop-s7",
+    "EXP-20260821-INFO-LADDER-FORMAL-R01-info_queue-s7",
+    "EXP-20260821-INFO-LADDER-FORMAL-R01-hop-s11",
+    "EXP-20260821-INFO-LADDER-FORMAL-R01-info_queue-s11"
+  ],
+  "request_sha256": "7c4f404ba06a620564087bb1841bbd918e4437b41c2753a972b5edbf966dbe1d",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-matrix-analysis-request/v1",
+  "status": "WAITING_FOR_VERIFIED_RUNS"
+}

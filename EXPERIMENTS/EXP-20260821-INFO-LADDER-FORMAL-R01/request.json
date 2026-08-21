@@ -1,0 +1,197 @@
+{
+  "acceptance": {
+    "min_delivered_packets": 500,
+    "min_multisat_deliveries": 1,
+    "require_control_delivery": true,
+    "require_data_isl": true
+  },
+  "analysis": {
+    "analysis_id": "AN-INFO-LADDER-FORMAL-R01",
+    "estimand": "descriptive paired routing-policy differences under the fixed 200 Mbps M-Lab multi-OD burst, pooled over two trace seeds; no causal or superiority claim",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "descriptive paired pressure difference",
+        "left_arm": "info_queue",
+        "name": "info_queue_minus_hop",
+        "right_arm": "hop"
+      }
+    ],
+    "primary_metric": "delivery_rate"
+  },
+  "arms": [
+    {
+      "arm_id": "hop",
+      "config_overrides": {
+        "routing": {
+          "policy": "hop"
+        }
+      },
+      "intervention_paths": [
+        "routing.policy"
+      ]
+    },
+    {
+      "arm_id": "info_queue",
+      "config_overrides": {
+        "routing": {
+          "policy": "info_queue"
+        }
+      },
+      "intervention_paths": [
+        "routing.policy"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "arm_id": "hop",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "queue-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-INFO-LADDER-FORMAL-R01-hop-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "info_queue",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "queue-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-INFO-LADDER-FORMAL-R01-info_queue-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "hop",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "queue-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-INFO-LADDER-FORMAL-R01-hop-s11",
+      "trace_seed": 11
+    },
+    {
+      "arm_id": "info_queue",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "queue-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-INFO-LADDER-FORMAL-R01-info_queue-s11",
+      "trace_seed": 11
+    }
+  ],
+  "claim_boundary": {
+    "can_claim": [
+      "the two declared deterministic routing anchors execute under the same fixed 200 Mbps M-Lab multi-OD burst and two trace seeds",
+      "natural-end, conservation, packet-fate, backlog, latency and directional available-capacity records are produced and can be recomputed",
+      "the observed paired differences are descriptive diagnostics for information-ladder follow-up"
+    ],
+    "cannot_claim": [
+      "algorithm superiority or a causal information-value effect",
+      "learner observation equivalence or Q0 optimality",
+      "final E0 load threshold or paper-ready statistical conclusion"
+    ]
+  },
+  "common_config": {
+    "access": {
+      "acquisition_delay_s": 0.1,
+      "association": "bbm",
+      "downlink_queue_bits": 64000000,
+      "downlink_rate_mbps": 100,
+      "hysteresis_deg": 0,
+      "min_dwell_s": 0,
+      "slots_per_satellite": 4,
+      "uplink_queue_bits": 64000000,
+      "uplink_rate_mbps": 100
+    },
+    "control_plane": {
+      "advertise_interval_s": 1.0,
+      "enabled": true,
+      "packet_bits": 8000,
+      "ttl_s": 10,
+      "vis_k": 12
+    },
+    "demand": {
+      "burst_duration_s": 8,
+      "burst_multiplier": 2,
+      "burst_start_s": 8,
+      "deadline_s": null,
+      "mode": "mlab",
+      "offered_mbps": 200,
+      "packet_bits": 1000000
+    },
+    "endpoints": {
+      "aggregation_deg": 1.0,
+      "grid_deg": 0.25,
+      "mlab_auto": true,
+      "mlab_max_sites": 64,
+      "sites": []
+    },
+    "execution": {
+      "available_capacity_interval_s": 1.0,
+      "max_entities": 2000,
+      "max_events": 20000000,
+      "max_packets": 20000,
+      "monitor": false
+    },
+    "learning": {
+      "algorithm": "none",
+      "mode": "train"
+    },
+    "links": {
+      "ge_enabled": false,
+      "rate_model": "mcs"
+    },
+    "outputs": {
+      "out_dir": "CODE/Results",
+      "plotting": false
+    },
+    "routing": {
+      "contract": "C3",
+      "learning_enabled": false,
+      "max_hops": 64,
+      "policy": "hop"
+    },
+    "scenario": {
+      "altitude_km": 600,
+      "duration_s": 20,
+      "inclination_deg": 98.6,
+      "min_elevation_deg": 30,
+      "name": "info-ladder-formal-mlab-burst-r01",
+      "num_planes": 7,
+      "num_satellites": 140,
+      "time_step_s": 0.1
+    },
+    "topology": {
+      "matching": "markovian",
+      "recompute_interval_s": 1.0
+    }
+  },
+  "experiment_id": "EXP-20260821-INFO-LADDER-FORMAL-R01",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-matrix-request/v1",
+  "work_finalization": "CODE/work/WP-LEO-V2-INFO-LADDER-FORMAL/R01/finalization.json"
+}
