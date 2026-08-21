@@ -560,3 +560,10 @@
 - 原始 ledger 可重算的物理量：总可用容量约 `10,901.410 Gb`；最大单链路利用率约 `0.029719`；三类链路可用/服务容量（Gb）为 downlink `1050.270/2.216--2.310`、uplink `1827.995/2.954`、ISL `8023.145/1.428--7.917`。已交付包平均 `e2e_s` 约 `0.354--0.361`，其中 holding wait 约 `0.341--0.346`，queue wait 约 `0.0019--0.0020`，propagation 约 `0.0066--0.0149`，transmission 约 `0.0012--0.0024`；这些是诊断指标，不是最终统计结果。
 - VM V2 分析返回 `VERIFIED`、`verified_runs=6`；独立 `verify_persisted_analysis` 返回 `ok=True, errors=[]`。分析 manifest SHA=`bf19ffb07e306d2e2147207183d548d99a1882b23064b7709b21874b26580bea`，三个单 seed 描述性 paired differences 为 DDQN−Q-learning=`0.0169338858`、GAT−Q-learning=`0.0126103405`、MPNN−Q-learning=`0.0070257611`。
 - 结论边界：R02 现在闭合了“当前主线 → 授权 → 同 SHA VM → 6 个自然结束回执 → ledger/V2 重算”的工程证据链，可以作为拥塞诊断和下一步实验设计输入；仍不能作为论文统计、因果拥塞控制、算法 superiority、最终 E0 阈值或 Q0 最优性证据。下一步应先做多 seed/重复和真实信息阶梯，再提出新方案。
+
+## 2026-08-21：R03 两 seed pressure repeat 编译、复审与授权
+
+- 基于合入 R02 证据后的 main `3fa26956da44d03c8b94c3ec2dfed5afc1615eb5` 新建 `EXP-20260821-CONGESTION-PRESSURE-EVAL-R03`；seed=7/11，各有 DDQN/C3、GAT、MPNN 与同 checkpoint Q-learning copy，形成 12 cells / 6 个 seed-specific exact pairs。修正一次真实的 `work_finalization` 残留和 single-seed 文案后重新编译。
+- 三类独立审阅均 PASS，均绑定最新 19 artifact hashes：cold-start receipt SHA=`0e4eb66944268f0b4e5009e94840926d783b9ace303855e54cc69affa7eb0592`、satellite-DRL=`8ea089ad8792b3150a28c59316079ebfac8734ce96ec77e9410b40974b9b6c42`、adversarial=`14183f1d2139694e0b3579422102074573fc7a9dbcd5cbb4783f33d50ae67cc3`；`verify_compiled_matrix` 为 12 rows / 17 compiled artifacts，相关 schema/hash/定向测试通过。
+- `finalize_decision` 返回 `ACCEPTED`；`authorize_experiment` 返回 `AUTHORIZED`（12 runs）。R03 只授权同一压力合同下的两 seed 稳定性重复，不是论文效果或 superiority 授权；尚未部署和执行。
+- 下一步：R03 包经 PR/CI 合入后，用合入后的 exact main SHA 部署 VM，严格串行执行 12 cells；两 seed 若出现不稳定或资源问题，先修复/缩小实验，不进入新方案结论。
