@@ -1,0 +1,18 @@
+{
+  "artifact_hashes": {
+    "RUNBOOK.md": "0dc4491bf99463aa40c21e5d2cf67daf88f82204a44d4d457d8ad9965a73d5a4",
+    "analysis-request.json": "16ec2d00a8027e5c12bfc7d6a0ea2ca259538a0bcc6366b440a1cb815fd095c7",
+    "request.json": "ddcfaedecccdba72f65501bb6656eb541ad6e5ddf28df904216a5b2c5107187e",
+    "resolved/EXP-20260821-EXP1-CAPACITY-R01-capacity-s7.leo-sim.yaml": "4f498c67ae27918b4c140eaefbeb68c1910a3e6ba78457e15370d902e8e70e75",
+    "resolved/EXP-20260821-EXP1-CAPACITY-R01-control-s7.leo-sim.yaml": "1038e634130af6ad27b0095fa18307cf2a27540a6b1700c1392d8789f996e2fa",
+    "run-manifest.json": "f1d7a13648ae5edd5a676b4a39d8799b93e43e8c0750a9c52a191e40514281d6"
+  },
+  "errors": [],
+  "execution_authorized": false,
+  "experiment_id": "EXP-20260821-EXP1-CAPACITY-R01",
+  "launcher_generated": false,
+  "request_sha256": "ddcfaedecccdba72f65501bb6656eb541ad6e5ddf28df904216a5b2c5107187e",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-compile-report/v1",
+  "status": "COMPILED_REVIEW_REQUIRED"
+}
