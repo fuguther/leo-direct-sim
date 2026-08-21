@@ -1,0 +1,87 @@
+{
+  "acceptance": {
+    "min_delivered_packets": 1,
+    "min_multisat_deliveries": 1,
+    "require_control_delivery": true,
+    "require_data_isl": true
+  },
+  "config": {
+    "access": {
+      "acquisition_delay_s": 0.1,
+      "association": "bbm",
+      "downlink_queue_bits": 64000000,
+      "downlink_rate_mbps": 100,
+      "hysteresis_deg": 0,
+      "min_dwell_s": 0,
+      "slots_per_satellite": 4,
+      "uplink_queue_bits": 64000000,
+      "uplink_rate_mbps": 100
+    },
+    "control_plane": {
+      "advertise_interval_s": 1.0,
+      "enabled": true,
+      "packet_bits": 8000,
+      "ttl_s": 10,
+      "vis_k": 12
+    },
+    "demand": {
+      "burst_duration_s": 8,
+      "burst_multiplier": 2,
+      "burst_start_s": 8,
+      "deadline_s": null,
+      "mode": "mlab",
+      "offered_mbps": 50,
+      "packet_bits": 1000000
+    },
+    "endpoints": {
+      "aggregation_deg": 1.0,
+      "grid_deg": 0.25,
+      "mlab_auto": true,
+      "mlab_max_sites": 64,
+      "sites": []
+    },
+    "execution": {
+      "available_capacity_interval_s": 1.0,
+      "max_entities": 2000,
+      "max_events": 20000000,
+      "max_packets": 20000,
+      "monitor": false
+    },
+    "learning": {
+      "algorithm": "none"
+    },
+    "links": {
+      "ge_enabled": false,
+      "rate_model": "mcs"
+    },
+    "outputs": {
+      "out_dir": "CODE/Results/EXP-20260821-E0-FORMAL-R01",
+      "plotting": false
+    },
+    "routing": {
+      "contract": "C3",
+      "learning_enabled": false,
+      "max_hops": 64,
+      "policy": "hop"
+    },
+    "scenario": {
+      "altitude_km": 600,
+      "duration_s": 20,
+      "inclination_deg": 98.6,
+      "min_elevation_deg": 30,
+      "name": "e0-formal-mlab-multiod-burst-r01",
+      "num_planes": 7,
+      "num_satellites": 140,
+      "seed": 7,
+      "time_step_s": 0.1
+    },
+    "topology": {
+      "matching": "markovian",
+      "recompute_interval_s": 1.0
+    }
+  },
+  "experiment_id": "EXP-20260821-E0-FORMAL-R01",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-request/v1",
+  "work_finalization": "CODE/work/WP-LEO-V2-E0-FORMAL/R01/finalization.json"
+}

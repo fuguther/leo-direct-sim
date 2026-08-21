@@ -1,0 +1,11 @@
+{
+  "comparison_contract": "same trace identity, seed and resource config",
+  "experiment_id": "EXP-20260821-E0-FORMAL-R01",
+  "planned_run_ids": [
+    "EXP-20260821-E0-FORMAL-R01-main-s7"
+  ],
+  "request_sha256": "6e1979c17064b6b85d70eac9b70222f02a69b83faf9ab5ec3c0c1684e67fa447",
+  "run_manifest_sha256": "a4327abdeff3d9003671d332ffff48b5d2678ab319e0a68f5f6f8a2de37293a2",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-analysis-request/v1"
+}
