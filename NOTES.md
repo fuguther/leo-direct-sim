@@ -522,3 +522,11 @@
 - CLI 新增诊断参数 `--decision-log <new.jsonl>`；正式授权运行和 dry-run 明确拒绝该参数，避免未绑定 artifact 混入正式证据。普通诊断运行可保存逐决策 JSONL。
 - 验证：decision/CLI/Q0 定向 `42 passed`；相关全量 `575 passed, 1 skipped, 3 subtests passed in 7.04s`；`git diff --check` 通过。
 - 边界：当前只是把真实 decision audit 接通，尚未在 VM 生成 200 Mbps 压力窗口的完整 audit，也未证明 learner 向量逐字段等价或信息价值。下一步在同一已部署 SHA 上跑诊断性压力 trace，检查 audit 字段覆盖/年龄分布，再决定真实 INFO/AGE-LADDER 实验臂。
+
+## 2026-08-21：独立冷审修正 decision audit
+
+- 冷审在 exact `f2a8589` 发现并要求修正：日志路径必须在仿真前 fail-closed；父目录链不得含 symlink；长跑不能把 rows 全部存内存；日志必须有 config/trace/code/receipt SHA 血缘；truth 字段不能冒充 learner tensor。
+- 修正内容：`_DecisionLogWriter` 改为临时文件流式追加、内存 O(1)（只保留 row_count）；目标和 `.manifest.json` 在运行前检查且拒绝已有目标/任一父级 symlink；发布使用不替换现有目标的 hard-link；sidecar 绑定 config/trace/trace identity/code/result/receipt/log SHA 和 row_count；formal/dry-run 仍拒绝诊断日志。
+- 审计语义修正：记录所有候选方向而不只记录已通过 legal mask 的方向；将下游语义命名为 `peer_egress_queue_bits`，另保留 `reverse_link_queue_bits`；顶层明确 `mapping_status=truth_audit_not_learner_tensor`。
+- 新增回归：已有目标和 symlink 父目录均在仿真前拒绝且不留下运行 artifact；decision/CLI 定向 `10 passed`（修正后需重跑相关全量）。
+- 当前仍未宣称完成真实信息实验：需要在修正版合入并部署后生成 200 Mbps 压力 trace 的 audit，核对字段覆盖/年龄分布，再决定真实 INFO/AGE-LADDER 实验臂。

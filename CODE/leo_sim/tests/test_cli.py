@@ -84,6 +84,42 @@ def test_run_writes_optional_decision_log_with_info_audit(tmp_path, capsys):
     assert rows
     assert all(row["info_audit"]["schema"] == "leo-sim-decision-info/v1"
                for row in rows)
+    manifest = json.loads(
+        (tmp_path / "decision-snapshots.jsonl.manifest.json").read_text())
+    assert manifest["schema"] == "leo-sim-decision-log/v1"
+    assert manifest["row_count"] == len(rows)
+    assert len(manifest["config_sha256"]) == 64
+    assert len(manifest["trace_sha256"]) == 64
+    assert len(manifest["code_sha256"]) == 64
+    assert len(manifest["receipt_sha256"]) == 64
+
+
+def test_decision_log_rejects_existing_target_before_simulation(tmp_path, capsys):
+    cfg = _write_cfg(tmp_path)
+    decision_log = tmp_path / "already-there.jsonl"
+    decision_log.write_text("sentinel\n", encoding="utf-8")
+    out_dir = tmp_path / "out"
+    rc = main(["run", "--config", cfg, "--out", str(out_dir),
+               "--decision-log", str(decision_log)])
+    assert rc == 3
+    assert "destination" in capsys.readouterr().out
+    assert not out_dir.exists()
+    assert decision_log.read_text(encoding="utf-8") == "sentinel\n"
+
+
+def test_decision_log_rejects_symlink_parent_before_simulation(tmp_path, capsys):
+    cfg = _write_cfg(tmp_path)
+    real_parent = tmp_path / "real"
+    real_parent.mkdir()
+    linked_parent = tmp_path / "linked"
+    linked_parent.symlink_to(real_parent, target_is_directory=True)
+    out_dir = tmp_path / "out"
+    rc = main(["run", "--config", cfg, "--out", str(out_dir),
+               "--decision-log", str(linked_parent / "audit.jsonl")])
+    assert rc == 3
+    assert "symlink" in capsys.readouterr().out
+    assert not out_dir.exists()
+    assert not (real_parent / "audit.jsonl").exists()
 
 
 def test_receipt_verify_fails_on_tamper(tmp_path, capsys):

@@ -14,7 +14,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
+import tempfile
 from pathlib import Path
 
 from . import acceptance as acceptance_mod
@@ -28,29 +30,114 @@ def _load(path: str) -> dict:
     return config_mod.load_config_file(path)
 
 
-def _write_decision_log(path: str, rows: list[dict]) -> None:
-    """Write the optional output-only decision audit stream fail-closed."""
-    target = Path(path)
+def _check_new_destination(target: Path) -> None:
+    """Reject existing targets and every symlink in the parent chain."""
     if target.exists() or target.is_symlink():
         raise governance.IntentError(
             f"decision log destination must be new and non-symlink: {target}")
-    target.parent.mkdir(parents=True, exist_ok=True)
-    if target.is_symlink():
-        raise governance.IntentError("decision log destination became a symlink")
-    temporary = target.with_name(f".{target.name}.{Path(__file__).stem}.tmp")
-    if temporary.exists() or temporary.is_symlink():
-        raise governance.IntentError("decision log temporary path already exists")
+    parent = target.parent
+    if not parent.is_dir() or parent.is_symlink():
+        raise governance.IntentError(
+            f"decision log parent must be an existing non-symlink directory: {parent}")
+    cursor = parent
+    while True:
+        if cursor.is_symlink():
+            raise governance.IntentError(
+                f"decision log parent chain may not contain a symlink: {cursor}")
+        if cursor.parent == cursor:
+            break
+        cursor = cursor.parent
+
+
+def _publish_new_file(temporary: Path, target: Path) -> None:
+    """Publish without following/replacing an existing target."""
+    try:
+        os.link(str(temporary), str(target), follow_symlinks=False)
+    except FileExistsError as exc:
+        raise governance.IntentError(
+            f"decision log destination appeared during publish: {target}") from exc
+    finally:
+        if temporary.exists() and not temporary.is_symlink():
+            temporary.unlink()
+
+
+class _DecisionLogWriter:
+    """Bounded-memory streaming writer for diagnostic decision rows."""
+
+    def __init__(self, path: str):
+        self.target = Path(path)
+        _check_new_destination(self.target)
+        fd, temporary_name = tempfile.mkstemp(
+            prefix=f".{self.target.name}.", suffix=".tmp",
+            dir=str(self.target.parent))
+        os.close(fd)
+        self._temporary = Path(temporary_name)
+        self._handle = self._temporary.open("w", encoding="utf-8")
+        self.row_count = 0
+        self.log_sha256: str | None = None
+
+    def append(self, row: dict) -> None:
+        self._handle.write(json.dumps(row, ensure_ascii=False,
+                                      sort_keys=True) + "\n")
+        self.row_count += 1
+
+    def close(self) -> str:
+        if self._handle is None:
+            if self.log_sha256 is None:
+                raise governance.IntentError("decision log writer already closed")
+            return self.log_sha256
+        self._handle.flush()
+        os.fsync(self._handle.fileno())
+        self._handle.close()
+        self._handle = None
+        _publish_new_file(self._temporary, self.target)
+        self.log_sha256 = hashlib.sha256(self.target.read_bytes()).hexdigest()
+        return self.log_sha256
+
+    def abort(self) -> None:
+        if self._handle is not None:
+            self._handle.close()
+            self._handle = None
+        if self._temporary.exists() and not self._temporary.is_symlink():
+            self._temporary.unlink()
+
+
+def _write_decision_manifest(path: Path, resolved: dict, trace_manifest: dict,
+                             result: dict, receipt_payload: dict, out_dir: str,
+                             row_count: int, log_sha256: str) -> Path:
+    target = path.with_name(path.name + ".manifest.json")
+    _check_new_destination(target)
+    payload = {
+        "schema": "leo-sim-decision-log/v1",
+        "log_path": str(path.resolve()),
+        "log_sha256": log_sha256,
+        "row_count": row_count,
+        "config_sha256": resolved["sha256"],
+        "trace_sha256": trace_manifest["__trace_sha256"],
+        "trace_identity_sha256": trace_manifest.get("trace_identity_sha256", ""),
+        "code_sha256": receipt_mod.code_sha256(),
+        "result_dir": str(Path(out_dir).resolve()),
+        "natural_end": bool(result["natural_end"]),
+        "conservation_ok": bool(receipt_payload["conservation_ok"]),
+        "receipt_sha256": hashlib.sha256(
+            (Path(out_dir) / "receipt.json").read_bytes()).hexdigest(),
+    }
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{target.name}.", suffix=".tmp", dir=str(target.parent))
+    os.close(fd)
+    temporary = Path(temporary_name)
     try:
         with temporary.open("w", encoding="utf-8") as handle:
-            for row in rows:
-                handle.write(json.dumps(row, ensure_ascii=False,
-                                        sort_keys=True) + "\n")
+            handle.write(json.dumps(payload, ensure_ascii=False,
+                                    indent=2, sort_keys=True) + "\n")
             handle.flush()
-        temporary.replace(target)
+            os.fsync(handle.fileno())
+        _publish_new_file(temporary, target)
     except Exception:
         if temporary.exists() and not temporary.is_symlink():
             temporary.unlink()
         raise
+    return target
 
 
 def _cmd_config_validate(args) -> int:
@@ -234,6 +321,13 @@ def _cmd_run(args) -> int:
         if nonempty:
             print("RUN REFUSED (formal output): destination must be a new empty directory")
             return 3
+    decision_writer = None
+    if args.decision_log:
+        try:
+            decision_writer = _DecisionLogWriter(args.decision_log)
+        except Exception as exc:
+            print(f"RUN REFUSED (decision audit log): {exc}")
+            return 3
     tmp = None
     if args.dry_run and args.out is None:
         # dry-run never writes run artifacts into the workspace
@@ -247,10 +341,14 @@ def _cmd_run(args) -> int:
         else:
             manifest, trace_bytes, rows = _compile(resolved, out_dir)
     except (trace_mod.TraceError, FileNotFoundError) as exc:
+        if decision_writer is not None:
+            decision_writer.abort()
         print(f"TRACE COMPILE FAILED: {exc}")
         return 2
     if args.expect_trace_sha256 and \
             manifest["__trace_sha256"] != args.expect_trace_sha256:
+        if decision_writer is not None:
+            decision_writer.abort()
         print(f"TRACE COMPILE FAILED: trace sha256 {manifest['__trace_sha256']} "
               f"!= expected {args.expect_trace_sha256}")
         return 2
@@ -276,23 +374,41 @@ def _cmd_run(args) -> int:
         print(json.dumps({"status": "DRY RUN", **plan}, indent=2))
         return 0
     try:
-        decision_rows: list[dict] | None = [] if args.decision_log else None
         result = kernel.run_simulation(
             resolved, rows,
             learning_out_dir=(Path(out_dir) / cfg["learning"]["algorithm"])
             if cfg["learning"]["algorithm"] in ("ddqn", "qlearning") else None,
-            decision_sink=decision_rows,
+            decision_sink=decision_writer,
         )
     except learning.LearningUnavailable as exc:
+        if decision_writer is not None:
+            decision_writer.abort()
         print(f"RUN REFUSED (fail closed): {exc}")
         return 3
     except kernel.CapExceeded as exc:
+        if decision_writer is not None:
+            decision_writer.abort()
         print(f"RUN ABORTED (bounded execution): {exc}")
         return 4
+    except Exception:
+        if decision_writer is not None:
+            decision_writer.abort()
+        raise
+    decision_log_sha = None
+    if decision_writer is not None:
+        try:
+            decision_log_sha = decision_writer.close()
+        except Exception as exc:
+            decision_writer.abort()
+            print(f"RUN REFUSED (decision audit log): {exc}")
+            return 6
     rcp = receipt_mod.write_run(out_dir, resolved, trace_bytes, manifest, result, rows)
+    decision_manifest_path = None
     if args.decision_log:
         try:
-            _write_decision_log(args.decision_log, decision_rows or [])
+            decision_manifest_path = _write_decision_manifest(
+                Path(args.decision_log), resolved, manifest, result, rcp,
+                out_dir, decision_writer.row_count, decision_log_sha)
         except Exception as exc:
             print(f"RUN REFUSED (decision audit log): {exc}")
             return 6
@@ -307,7 +423,8 @@ def _cmd_run(args) -> int:
                       "natural_end": rcp["natural_end"],
                       "fate_counts": rcp["fate_counts"],
                       "conservation_ok": rcp["conservation_ok"],
-                      **({"decision_log": str(Path(args.decision_log).resolve())}
+                      **({"decision_log": str(Path(args.decision_log).resolve()),
+                          "decision_log_manifest": str(decision_manifest_path.resolve())}
                          if args.decision_log else {})}, indent=2))
     return 0 if rcp["natural_end"] else 5
 

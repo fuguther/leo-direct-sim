@@ -62,7 +62,8 @@ def test_decision_sink_records_per_action_physical_audit_fields():
     assert candidate["distance_km"] == 1000.0
     assert candidate["rate_bps"] == 1_000_000_000.0
     assert candidate["available"] is True
-    assert candidate["remote_queue_bits"] == 0
+    assert candidate["peer_egress_queue_bits"] == 0
+    assert candidate["reverse_link_queue_bits"] == 0
     assert candidate["topology_available"] is True
     source = candidate["field_sources"]["distance_km"]
     assert source["source"] == "direct_kernel_state"

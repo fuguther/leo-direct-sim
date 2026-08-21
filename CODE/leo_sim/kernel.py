@@ -3124,7 +3124,8 @@ class Kernel:
         return action
 
     def _record_decision(self, pkt: DataPacket, sat: int, kind: str,
-                         candidates: list, chosen: str) -> None:
+                         candidates: list, chosen: str,
+                         audit_candidates: list | None = None) -> None:
         """Append one per-hop decision snapshot to the optional decision sink.
 
         Output only: never influences routing, learning, timing, or fates.
@@ -3145,7 +3146,8 @@ class Kernel:
                 "sha256_16": hashlib.sha256(arr.tobytes()).hexdigest()[:16],
                 "l2_norm": float(np.linalg.norm(arr)),
             }
-        info_audit = self._decision_info_audit(pkt, sat, candidates)
+        info_audit = self._decision_info_audit(
+            pkt, sat, candidates if audit_candidates is None else audit_candidates)
         self.decision_sink.append({
             "t": float(self.env.now),
             "state_version": self._state_version,
@@ -3193,15 +3195,19 @@ class Kernel:
             reverse = next(
                 (candidate for candidate in self.isls[peer].values()
                  if candidate.peer == sat), None)
-            remote_queue = (
+            reverse_queue = (
                 int(reverse.data_bits + reverse.ctrl_bits)
                 if reverse is not None else None)
+            peer_egress_queue = int(sum(
+                candidate.data_bits + candidate.ctrl_bits
+                for candidate in self.isls[peer].values()))
             fields = {
                 "distance_km": distance,
                 "rate_bps": rate,
                 "available": bool(geom_up and ge_up and rate > 0
                                    and link.room(pkt.bits)),
-                "remote_queue_bits": remote_queue,
+                "peer_egress_queue_bits": peer_egress_queue,
+                "reverse_link_queue_bits": reverse_queue,
                 "topology_available": bool(
                     self.topo.get(sat, {}).get(direction) == peer),
             }
@@ -3236,13 +3242,14 @@ class Kernel:
                     "age_s": age,
                     "hops": int(entry.hops),
                     "source": "control_cache",
-                    "field_age_s": {
+                    "payload_field_age_s": {
                         str(field): age for field in sorted(payload)
                     },
                 }
         return {
             "schema": "leo-sim-decision-info/v1",
             "contract": contract,
+            "mapping_status": "truth_audit_not_learner_tensor",
             "candidate_truth": truth,
             "cache_entries": cache_entries,
         }
@@ -3394,7 +3401,8 @@ class Kernel:
                         f"legal mask {sorted(legal)}")
             else:
                 action = legal[0]
-            self._record_decision(pkt, sat, "forward", legal, action)
+            self._record_decision(pkt, sat, "forward", legal, action,
+                                  audit_candidates=cands)
             self.isls[sat][action].put_data(pkt)
             return
         if unavailable:
