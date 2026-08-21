@@ -1,0 +1,213 @@
+{
+  "analysis": {
+    "analysis_id": "AN-PILOT-BASELINES-EVAL-R01",
+    "estimand": "paired evaluation duplicate consistency under fixed medium M-Lab burst using checkpoints produced by the training pilot",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "paired evaluation duplicate consistency difference",
+        "left_arm": "qlearning_b_eval",
+        "name": "qlearning_b_minus_a",
+        "right_arm": "qlearning_a_eval"
+      },
+      {
+        "estimand": "paired evaluation duplicate consistency difference",
+        "left_arm": "ddqn_c3_b_eval",
+        "name": "ddqn_c3_b_minus_a",
+        "right_arm": "ddqn_c3_a_eval"
+      },
+      {
+        "estimand": "paired evaluation duplicate consistency difference",
+        "left_arm": "gat_b_eval",
+        "name": "gat_b_minus_a",
+        "right_arm": "gat_a_eval"
+      },
+      {
+        "estimand": "paired evaluation duplicate consistency difference",
+        "left_arm": "mpnn_b_eval",
+        "name": "mpnn_b_minus_a",
+        "right_arm": "mpnn_a_eval"
+      }
+    ],
+    "primary_metric": "delivery_rate"
+  },
+  "claim_boundary": {
+    "can_claim": [
+      "all authorized evaluation cells load their declared checkpoint bytes and metadata under the exact source SHA",
+      "all evaluation cells produce natural-end, conservation-verified V2 receipts",
+      "delivery_rate and raw congestion metrics are recomputable from evaluation receipts and ledgers",
+      "the four trained paths can be executed in evaluation mode on the fixed medium M-Lab burst"
+    ],
+    "cannot_claim": [
+      "algorithm superiority",
+      "causal congestion-control effect",
+      "final E0 threshold",
+      "Q0 optimality",
+      "paper-ready statistical conclusion"
+    ]
+  },
+  "experiment_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01",
+  "matrix_manifest_sha256": "21f1ebd8f069493cf3d6cd057676e9828e12979144a0724cace6f17634ec0d19",
+  "planned_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_a_eval",
+      "config_sha256": "49cd76e034be324e099846c44a5705c2919f3d5fbb4ccdf525401df5c7e053ed",
+      "controlled_signature": "63e2b16a72d7d62e93de20a4493b75ab442de996aec26d625a90fd989f72657f",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "eval-qlearning",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-qlearning_a_eval-s7-l7",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_b_eval",
+      "config_sha256": "14a19640243fef6e5df90350cdeabfc74a17abc3d4dcc9e9b3d7310de387fec1",
+      "controlled_signature": "63e2b16a72d7d62e93de20a4493b75ab442de996aec26d625a90fd989f72657f",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "eval-qlearning",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-qlearning_b_eval-s7-l7",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "ddqn_c3_a_eval",
+      "config_sha256": "da71f69da10634fe678e6381bd4c22dd99430c1159f3e8a5b8052e65e918e910",
+      "controlled_signature": "63e2b16a72d7d62e93de20a4493b75ab442de996aec26d625a90fd989f72657f",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "eval-ddqn_c3",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-ddqn_c3_a_eval-s7-l7",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "ddqn_c3_b_eval",
+      "config_sha256": "2bc84deb64b4847ca552de2ee5d2443c3cba6768ea50296db5f4936a91f288e6",
+      "controlled_signature": "63e2b16a72d7d62e93de20a4493b75ab442de996aec26d625a90fd989f72657f",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "eval-ddqn_c3",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-ddqn_c3_b_eval-s7-l7",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "gat_a_eval",
+      "config_sha256": "b3dc99b34cf8280dcf0de7a5ec38d7834bda699ae9bde6a961ce1364cf623465",
+      "controlled_signature": "63e2b16a72d7d62e93de20a4493b75ab442de996aec26d625a90fd989f72657f",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "eval-gat",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-gat_a_eval-s7-l7",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "gat_b_eval",
+      "config_sha256": "242ca337a8e95127fecaa0fad174f0aabec88397a39605e8e45d5d2cb9a186fd",
+      "controlled_signature": "63e2b16a72d7d62e93de20a4493b75ab442de996aec26d625a90fd989f72657f",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "eval-gat",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-gat_b_eval-s7-l7",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "mpnn_a_eval",
+      "config_sha256": "5f917d84cb99756d764ed23c706e72b35d8f4647def48315ddc339edaebc8ff1",
+      "controlled_signature": "63e2b16a72d7d62e93de20a4493b75ab442de996aec26d625a90fd989f72657f",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "eval-mpnn",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-mpnn_a_eval-s7-l7",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "mpnn_b_eval",
+      "config_sha256": "c202e9a333971ea465878db667f82dde92ff40ee58a4e388f9c7b14dfdc6df4d",
+      "controlled_signature": "63e2b16a72d7d62e93de20a4493b75ab442de996aec26d625a90fd989f72657f",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "eval-mpnn",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-mpnn_b_eval-s7-l7",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    }
+  ],
+  "planned_run_ids": [
+    "EXP-20260821-PILOT-BASELINES-EVAL-R01-qlearning_a_eval-s7-l7",
+    "EXP-20260821-PILOT-BASELINES-EVAL-R01-qlearning_b_eval-s7-l7",
+    "EXP-20260821-PILOT-BASELINES-EVAL-R01-ddqn_c3_a_eval-s7-l7",
+    "EXP-20260821-PILOT-BASELINES-EVAL-R01-ddqn_c3_b_eval-s7-l7",
+    "EXP-20260821-PILOT-BASELINES-EVAL-R01-gat_a_eval-s7-l7",
+    "EXP-20260821-PILOT-BASELINES-EVAL-R01-gat_b_eval-s7-l7",
+    "EXP-20260821-PILOT-BASELINES-EVAL-R01-mpnn_a_eval-s7-l7",
+    "EXP-20260821-PILOT-BASELINES-EVAL-R01-mpnn_b_eval-s7-l7"
+  ],
+  "request_sha256": "230d2d19f3bf497efdc85bca443a3b9202566c6067b054660c17a33b812b0df6",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-matrix-analysis-request/v1",
+  "status": "WAITING_FOR_VERIFIED_RUNS"
+}
