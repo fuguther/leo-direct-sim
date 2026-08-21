@@ -531,6 +531,13 @@
 - 新增回归：已有目标和 symlink 父目录均在仿真前拒绝且不留下运行 artifact；decision/CLI 定向 `10 passed`（修正后需重跑相关全量）。
 - 当前仍未宣称完成真实信息实验：需要在修正版合入并部署后生成 200 Mbps 压力 trace 的 audit，核对字段覆盖/年龄分布，再决定真实 INFO/AGE-LADDER 实验臂。
 
+## 2026-08-21：main bf625a9 的 VM 真实决策审计 smoke
+
+- PR #129 已合入 main，执行 SHA=`bf625a9a94bc7532bba86c2d0cad3eefedacdd87`；canonical VM 部署 receipt SHA=`485869b40f5e0901fb0c3f942838f36afe07c50ff250b7c8c5ac2baf2274e3d8`，本地/VM source tree SHA=`5638c366510d188c641e0ad25222167fa26e6fb0880429e80b24c42c90229b5c`。
+- 使用 VM 已配置的 `leo-i39` 环境运行 20 s、140 星、M-Lab 多 OD+burst、MCS、1 s 拓扑 smoke；默认系统 Python 缺 YAML 的首次尝试未启动仿真，未修改 VM 依赖；切换到 canonical 环境后成功。
+- VM 回执：`natural_end=true`、`conservation_ok=true`、1,299 offered、613 delivered、579 `ACCESS_REJECTED`、107 `IN_SYSTEM_AT_STOP`、0 queue overflow；`receipt verify=verified`。
+- 决策审计：929 行（316 forward、613 deliver），316/316 forward 含 candidate truth；schema 全为 `leo-sim-decision-info/v1`，`mapping_status=truth_audit_not_learner_tensor`，sidecar `row_count` 与日志 SHA 均核对一致。该结果是 VM 诊断 smoke，不是正式授权矩阵或论文数据；下一步需为当前 main 重新编译/审阅/授权正式压力矩阵。
+
 ## 2026-08-21：decision audit sidecar/hash 修正与本地真实流量 smoke
 
 - PR #129 最新候选 exact SHA=`b910e675187fa3c297994e577f1ce3b874270f16`；独立冷审终裁 `APPROVE`。修正两个 fail-closed 问题：`.manifest.json` 在 trace/simulation 前预检；decision log SHA 在 append 时增量计算，关闭时不再一次性 `read_bytes()` 整个日志。
