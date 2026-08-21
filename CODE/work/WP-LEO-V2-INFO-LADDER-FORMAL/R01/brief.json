@@ -34,6 +34,10 @@
     "The V2 analysis recomputes the single declared info_queue-minus-hop contrast from raw receipts; persisted verification returns ok=true with no errors.",
     "If any cell fails, the matrix is not complete until the failure is diagnosed and the affected cell is rerun under the same authorization."
   ],
+  "cannot_claim": [
+    "This four-cell F0 diagnostic does not establish algorithm superiority, causal information value, learner observation equivalence, Q0 optimality, a final E0 threshold or paper-ready statistical significance.",
+    "A failed, non-natural-end, non-conservative or unauthorized run cannot be counted as an experiment result."
+  ],
   "review_roles": ["cold_start", "satellite_drl", "adversarial"],
   "cost_tier": "high_judgment",
   "status": "REVIEW"
