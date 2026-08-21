@@ -1,0 +1,168 @@
+{
+  "analysis": {
+    "analysis_id": "AN-E0-LOAD-FORMAL-R01",
+    "estimand": "paired baseline-copy minus baseline difference within each offered-load tier",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "paired difference",
+        "left_arm": "low_copy",
+        "name": "low_copy_minus_low_control",
+        "right_arm": "low_control"
+      },
+      {
+        "estimand": "paired difference",
+        "left_arm": "medium_copy",
+        "name": "medium_copy_minus_medium_control",
+        "right_arm": "medium_control"
+      },
+      {
+        "estimand": "paired difference",
+        "left_arm": "high_copy",
+        "name": "high_copy_minus_high_control",
+        "right_arm": "high_control"
+      }
+    ],
+    "primary_metric": "delivery_rate"
+  },
+  "claim_boundary": {
+    "can_claim": [
+      "all six authorized cells produce independently verified V2 receipts",
+      "the delivery_rate metric can be recomputed from the receipt",
+      "the paired differences are descriptive load-tier consistency evidence under the fixed M-Lab burst profile",
+      "the offered-load tiers can be recomputed from the authorized resolved configurations"
+    ],
+    "cannot_claim": [
+      "algorithm superiority or a load-threshold claim",
+      "a causal congestion-control claim",
+      "Q0 optimality",
+      "paper-ready statistical conclusion"
+    ]
+  },
+  "experiment_id": "EXP-20260821-E0-LOAD-FORMAL-R01",
+  "matrix_manifest_sha256": "5c17647ff434716bf6687c3b4b9fa0a1ea5d00c27a4cfccbfbc593dd41b21cbd",
+  "planned_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "low_control",
+      "config_sha256": "882f1190da9355bed5c29a343477a16ef2755840a6514889cb51ff8571e53c8f",
+      "controlled_signature": "ad9150ddc9c73e993a33a0c74e454f9b268c08a6880fa3c52d5d7bdafaff8a5a",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "load-50",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-E0-LOAD-FORMAL-R01-low_control-s7",
+      "trace_identity_sha256": "c7a00b941a8629fa17e997c5e88bbaef2151e48c843a8d539daa0906640bfc52",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "low_copy",
+      "config_sha256": "882f1190da9355bed5c29a343477a16ef2755840a6514889cb51ff8571e53c8f",
+      "controlled_signature": "ad9150ddc9c73e993a33a0c74e454f9b268c08a6880fa3c52d5d7bdafaff8a5a",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "load-50",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-E0-LOAD-FORMAL-R01-low_copy-s7",
+      "trace_identity_sha256": "c7a00b941a8629fa17e997c5e88bbaef2151e48c843a8d539daa0906640bfc52",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "medium_control",
+      "config_sha256": "9621776e2ff7f5ab0bed424c82a74c9b6cd3dbc654c4c79f1ce86f204e62bc8f",
+      "controlled_signature": "ad9150ddc9c73e993a33a0c74e454f9b268c08a6880fa3c52d5d7bdafaff8a5a",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "load-100",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-E0-LOAD-FORMAL-R01-medium_control-s7",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "medium_copy",
+      "config_sha256": "9621776e2ff7f5ab0bed424c82a74c9b6cd3dbc654c4c79f1ce86f204e62bc8f",
+      "controlled_signature": "ad9150ddc9c73e993a33a0c74e454f9b268c08a6880fa3c52d5d7bdafaff8a5a",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "load-100",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-E0-LOAD-FORMAL-R01-medium_copy-s7",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "high_control",
+      "config_sha256": "2486131876c18eec4c297fbd6836d3ee714bfb8753932d7eedd82ed5ef37a8e6",
+      "controlled_signature": "ad9150ddc9c73e993a33a0c74e454f9b268c08a6880fa3c52d5d7bdafaff8a5a",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "load-200",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-E0-LOAD-FORMAL-R01-high_control-s7",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "high_copy",
+      "config_sha256": "2486131876c18eec4c297fbd6836d3ee714bfb8753932d7eedd82ed5ef37a8e6",
+      "controlled_signature": "ad9150ddc9c73e993a33a0c74e454f9b268c08a6880fa3c52d5d7bdafaff8a5a",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "load-200",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-E0-LOAD-FORMAL-R01-high_copy-s7",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    }
+  ],
+  "planned_run_ids": [
+    "EXP-20260821-E0-LOAD-FORMAL-R01-low_control-s7",
+    "EXP-20260821-E0-LOAD-FORMAL-R01-low_copy-s7",
+    "EXP-20260821-E0-LOAD-FORMAL-R01-medium_control-s7",
+    "EXP-20260821-E0-LOAD-FORMAL-R01-medium_copy-s7",
+    "EXP-20260821-E0-LOAD-FORMAL-R01-high_control-s7",
+    "EXP-20260821-E0-LOAD-FORMAL-R01-high_copy-s7"
+  ],
+  "request_sha256": "2f1b4a156f9d7b4b0378bc1fab46d037c7a1b684e4ab29e349b0f36876adfc33",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-matrix-analysis-request/v1",
+  "status": "WAITING_FOR_VERIFIED_RUNS"
+}

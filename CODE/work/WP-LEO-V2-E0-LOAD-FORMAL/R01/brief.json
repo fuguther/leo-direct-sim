@@ -1,0 +1,41 @@
+{
+  "schema": "agent-work-package/v2",
+  "work_id": "WP-LEO-V2-E0-LOAD-FORMAL",
+  "revision": 1,
+  "parent_revision": null,
+  "producer_id": "producer:codex",
+  "producer_session_id": "P-leo-v2-e0-load-formal-r01",
+  "objective": "Freeze the low, medium and pressure offered-load candidates on the canonical M-Lab multi-OD burst profile through one formally authorized six-cell consistency matrix.",
+  "context": [
+    "This is a load-contract and analysis-chain validation step, not an algorithm comparison.",
+    "Each load tier has two identical non-learning cells with the same trace seed and resolved demand override; the paired difference must be zero if the formal chain is deterministic.",
+    "The three tiers are 50, 100 and 200 Mbps; the result selects candidates for later baseline pilot and congestion diagnosis, but does not by itself establish final thresholds or paper effects."
+  ],
+  "allowed_inputs": [
+    "EXPERIMENTS/EXP-20260821-E0-LOAD-FORMAL-R01",
+    "CODE/leo_sim",
+    "CODE/experiment_platform",
+    "CODE/scripts/remote"
+  ],
+  "excluded_inputs": ["CODE/Results", "Unverified historical result claims"],
+  "deliverables": [
+    "A compiled and independently reviewed six-cell matrix",
+    "Receipt-verified VM outputs for all three load pairs",
+    "A persisted V2 paired analysis and load-tier evidence note"
+  ],
+  "cannot_claim": [
+    "Algorithm superiority",
+    "A causal congestion-control effect",
+    "A universal load threshold",
+    "Q0 optimality or a paper-ready statistical conclusion"
+  ],
+  "acceptance": [
+    "Matrix identity, exact demand intervention path and pair membership pass independent cold review.",
+    "All six cells complete naturally on one clean deployed SHA with conservation and acceptance true.",
+    "V2 analysis recomputes delivery_rate for all three paired differences and persists a VERIFIED analysis.",
+    "The resulting load table records offered packets, fates, wall time and raw metric validation for each tier."
+  ],
+  "review_roles": ["cold_start", "satellite_drl", "adversarial"],
+  "cost_tier": "medium_judgment",
+  "status": "REVIEW"
+}
