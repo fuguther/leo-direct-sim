@@ -2,6 +2,7 @@
   "schema": "agent-work-package/v2",
   "work_id": "WP-LEO-V2-E0-FORMAL",
   "revision": 1,
+  "parent_revision": null,
   "producer_id": "producer:codex",
   "producer_session_id": "P-leo-v2-e0-formal-r01",
   "objective": "Authorize one narrow leo_sim_v2 E0 run on the measurement-proxy multi-OD burst profile so the formal receipt and V2 analysis chain can be exercised without claiming algorithm effects.",
