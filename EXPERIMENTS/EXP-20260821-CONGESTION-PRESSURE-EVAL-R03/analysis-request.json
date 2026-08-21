@@ -1,0 +1,283 @@
+{
+  "analysis": {
+    "analysis_id": "AN-CONGESTION-PRESSURE-EVAL-R03",
+    "estimand": "descriptive algorithm-arm differences under the fixed high M-Lab measurement-proxy burst, pooled over two paired seeds; not a causal or superiority claim",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "descriptive paired pressure-load difference",
+        "left_arm": "ddqn_c3_pressure",
+        "name": "ddqn_minus_qlearning",
+        "right_arm": "qlearning_pressure_ddqn"
+      },
+      {
+        "estimand": "descriptive paired pressure-load difference",
+        "left_arm": "gat_pressure",
+        "name": "gat_minus_qlearning",
+        "right_arm": "qlearning_pressure_gat"
+      },
+      {
+        "estimand": "descriptive paired pressure-load difference",
+        "left_arm": "mpnn_pressure",
+        "name": "mpnn_minus_qlearning",
+        "right_arm": "qlearning_pressure_mpnn"
+      }
+    ],
+    "primary_metric": "delivery_rate"
+  },
+  "claim_boundary": {
+    "can_claim": [
+      "the four declared checkpoint policies execute in eval mode on the fixed 200 Mbps M-Lab measurement-proxy burst",
+      "natural-end and conservation-verified receipts are produced under the exact deployed SHA",
+      "directional available-capacity utilization, packet fates, backlog and latency fields can be recomputed from raw ledgers",
+      "the pressure trace exposes descriptive congestion and utilization patterns for follow-up design"
+    ],
+    "cannot_claim": [
+      "algorithm superiority",
+      "causal congestion-control effect",
+      "final E0 threshold",
+      "Q0 optimality",
+      "paper-ready statistical conclusion"
+    ]
+  },
+  "experiment_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03",
+  "matrix_manifest_sha256": "095341b87549dcd0e1ad26f1a03e04b5910e932698e1b307b89fb5327cdbeff0",
+  "planned_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_ddqn",
+      "config_sha256": "efcf2a83088727b6ec33bf3bdeff926704c3454994120406b3b215b37d2b6d40",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-ddqn-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_ddqn-s7-l7",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_gat",
+      "config_sha256": "efcf2a83088727b6ec33bf3bdeff926704c3454994120406b3b215b37d2b6d40",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-gat-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_gat-s7-l7",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_mpnn",
+      "config_sha256": "efcf2a83088727b6ec33bf3bdeff926704c3454994120406b3b215b37d2b6d40",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-mpnn-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_mpnn-s7-l7",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "ddqn_c3_pressure",
+      "config_sha256": "b50f760c410edc06555b1bd758dff80d19dc0492fddc0d521288ce773b9963f0",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-ddqn-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-ddqn_c3_pressure-s7-l7",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "gat_pressure",
+      "config_sha256": "327f6a1d302d0c76f2b1c8b30597487020bbb461449424ac8656e43d0b76d851",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-gat-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-gat_pressure-s7-l7",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "mpnn_pressure",
+      "config_sha256": "e89cfea39936808fef571c22cad34a2ef102d1ff73809ed3d46a992cce692ebe",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-mpnn-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-mpnn_pressure-s7-l7",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_ddqn",
+      "config_sha256": "90d8373751a9c8bc41af7b732adb7bca826ecce0d2eb36198dbef47328073988",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-ddqn-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_ddqn-s11-l11",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_gat",
+      "config_sha256": "90d8373751a9c8bc41af7b732adb7bca826ecce0d2eb36198dbef47328073988",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-gat-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_gat-s11-l11",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_mpnn",
+      "config_sha256": "90d8373751a9c8bc41af7b732adb7bca826ecce0d2eb36198dbef47328073988",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-mpnn-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_mpnn-s11-l11",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "ddqn_c3_pressure",
+      "config_sha256": "29a9a4742e2bc337c94018da052ed5f515f25bbd25c6b5693a11f7e923b11cda",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-ddqn-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-ddqn_c3_pressure-s11-l11",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "gat_pressure",
+      "config_sha256": "21f7699dcfc87beed7f3f53aa26b566e14354f5bf4f6370c0c7c2586db108f25",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-gat-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-gat_pressure-s11-l11",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "mpnn_pressure",
+      "config_sha256": "9d4d9b7783689109d7ee9a5322ea3a0a430bbfa5451edc3c3a5e8295a77ead5a",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-mpnn-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-mpnn_pressure-s11-l11",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    }
+  ],
+  "planned_run_ids": [
+    "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_ddqn-s7-l7",
+    "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_gat-s7-l7",
+    "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_mpnn-s7-l7",
+    "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-ddqn_c3_pressure-s7-l7",
+    "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-gat_pressure-s7-l7",
+    "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-mpnn_pressure-s7-l7",
+    "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_ddqn-s11-l11",
+    "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_gat-s11-l11",
+    "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_mpnn-s11-l11",
+    "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-ddqn_c3_pressure-s11-l11",
+    "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-gat_pressure-s11-l11",
+    "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-mpnn_pressure-s11-l11"
+  ],
+  "request_sha256": "53b4fe8fdbcac305c32d9151cbcc38a7539174bd685e5041c623bb8db40563c1",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-matrix-analysis-request/v1",
+  "status": "WAITING_FOR_VERIFIED_RUNS"
+}

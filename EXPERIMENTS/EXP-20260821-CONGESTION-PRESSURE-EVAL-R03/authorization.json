@@ -1,0 +1,816 @@
+{
+  "authorized_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_ddqn",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1",
+        "source_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_ddqn-s7-l7.leo-sim.yaml",
+      "config_sha256": "efcf2a83088727b6ec33bf3bdeff926704c3454994120406b3b215b37d2b6d40",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-ddqn-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_ddqn-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_gat",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1",
+        "source_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_gat-s7-l7.leo-sim.yaml",
+      "config_sha256": "efcf2a83088727b6ec33bf3bdeff926704c3454994120406b3b215b37d2b6d40",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-gat-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_gat-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_mpnn",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1",
+        "source_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_mpnn-s7-l7.leo-sim.yaml",
+      "config_sha256": "efcf2a83088727b6ec33bf3bdeff926704c3454994120406b3b215b37d2b6d40",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-mpnn-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_mpnn-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "ddqn_c3_pressure",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-4f3d9ef52fa8a3fc3b20be57575619c21f4ed8a028319e31046c02e6fa7fdd9d",
+        "source_sha256": "4f3d9ef52fa8a3fc3b20be57575619c21f4ed8a028319e31046c02e6fa7fdd9d"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-ddqn_c3_pressure-s7-l7.leo-sim.yaml",
+      "config_sha256": "b50f760c410edc06555b1bd758dff80d19dc0492fddc0d521288ce773b9963f0",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-ddqn-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-ddqn_c3_pressure-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "gat_pressure",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-40da075300aa278fe93c3551d5663fe99d7f36589cf64432db3a62b4c9c87976",
+        "source_sha256": "40da075300aa278fe93c3551d5663fe99d7f36589cf64432db3a62b4c9c87976"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-gat_pressure-s7-l7.leo-sim.yaml",
+      "config_sha256": "327f6a1d302d0c76f2b1c8b30597487020bbb461449424ac8656e43d0b76d851",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-gat-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-gat_pressure-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "mpnn_pressure",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-aebf16649df9cd2ba8f1c308b893cf3f50895c342f375486bba158b5d519aece",
+        "source_sha256": "aebf16649df9cd2ba8f1c308b893cf3f50895c342f375486bba158b5d519aece"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-mpnn_pressure-s7-l7.leo-sim.yaml",
+      "config_sha256": "e89cfea39936808fef571c22cad34a2ef102d1ff73809ed3d46a992cce692ebe",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-mpnn-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-mpnn_pressure-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_ddqn",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1",
+        "source_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_ddqn-s11-l11.leo-sim.yaml",
+      "config_sha256": "90d8373751a9c8bc41af7b732adb7bca826ecce0d2eb36198dbef47328073988",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-ddqn-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_ddqn-s11-l11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_gat",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1",
+        "source_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_gat-s11-l11.leo-sim.yaml",
+      "config_sha256": "90d8373751a9c8bc41af7b732adb7bca826ecce0d2eb36198dbef47328073988",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-gat-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_gat-s11-l11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_mpnn",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1",
+        "source_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_mpnn-s11-l11.leo-sim.yaml",
+      "config_sha256": "90d8373751a9c8bc41af7b732adb7bca826ecce0d2eb36198dbef47328073988",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-mpnn-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_mpnn-s11-l11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "ddqn_c3_pressure",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-4f3d9ef52fa8a3fc3b20be57575619c21f4ed8a028319e31046c02e6fa7fdd9d",
+        "source_sha256": "4f3d9ef52fa8a3fc3b20be57575619c21f4ed8a028319e31046c02e6fa7fdd9d"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-ddqn_c3_pressure-s11-l11.leo-sim.yaml",
+      "config_sha256": "29a9a4742e2bc337c94018da052ed5f515f25bbd25c6b5693a11f7e923b11cda",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-ddqn-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-ddqn_c3_pressure-s11-l11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "gat_pressure",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-40da075300aa278fe93c3551d5663fe99d7f36589cf64432db3a62b4c9c87976",
+        "source_sha256": "40da075300aa278fe93c3551d5663fe99d7f36589cf64432db3a62b4c9c87976"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-gat_pressure-s11-l11.leo-sim.yaml",
+      "config_sha256": "21f7699dcfc87beed7f3f53aa26b566e14354f5bf4f6370c0c7c2586db108f25",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-gat-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-gat_pressure-s11-l11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "mpnn_pressure",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-aebf16649df9cd2ba8f1c308b893cf3f50895c342f375486bba158b5d519aece",
+        "source_sha256": "aebf16649df9cd2ba8f1c308b893cf3f50895c342f375486bba158b5d519aece"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-mpnn_pressure-s11-l11.leo-sim.yaml",
+      "config_sha256": "9d4d9b7783689109d7ee9a5322ea3a0a430bbfa5451edc3c3a5e8295a77ead5a",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-mpnn-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-mpnn_pressure-s11-l11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    }
+  ],
+  "authorized_runs": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_ddqn",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1",
+        "source_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_ddqn-s7-l7.leo-sim.yaml",
+      "config_sha256": "efcf2a83088727b6ec33bf3bdeff926704c3454994120406b3b215b37d2b6d40",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-ddqn-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_ddqn-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_gat",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1",
+        "source_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_gat-s7-l7.leo-sim.yaml",
+      "config_sha256": "efcf2a83088727b6ec33bf3bdeff926704c3454994120406b3b215b37d2b6d40",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-gat-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_gat-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_mpnn",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1",
+        "source_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_mpnn-s7-l7.leo-sim.yaml",
+      "config_sha256": "efcf2a83088727b6ec33bf3bdeff926704c3454994120406b3b215b37d2b6d40",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-mpnn-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_mpnn-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "ddqn_c3_pressure",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-4f3d9ef52fa8a3fc3b20be57575619c21f4ed8a028319e31046c02e6fa7fdd9d",
+        "source_sha256": "4f3d9ef52fa8a3fc3b20be57575619c21f4ed8a028319e31046c02e6fa7fdd9d"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-ddqn_c3_pressure-s7-l7.leo-sim.yaml",
+      "config_sha256": "b50f760c410edc06555b1bd758dff80d19dc0492fddc0d521288ce773b9963f0",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-ddqn-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-ddqn_c3_pressure-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "gat_pressure",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-40da075300aa278fe93c3551d5663fe99d7f36589cf64432db3a62b4c9c87976",
+        "source_sha256": "40da075300aa278fe93c3551d5663fe99d7f36589cf64432db3a62b4c9c87976"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-gat_pressure-s7-l7.leo-sim.yaml",
+      "config_sha256": "327f6a1d302d0c76f2b1c8b30597487020bbb461449424ac8656e43d0b76d851",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-gat-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-gat_pressure-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "mpnn_pressure",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-aebf16649df9cd2ba8f1c308b893cf3f50895c342f375486bba158b5d519aece",
+        "source_sha256": "aebf16649df9cd2ba8f1c308b893cf3f50895c342f375486bba158b5d519aece"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-mpnn_pressure-s7-l7.leo-sim.yaml",
+      "config_sha256": "e89cfea39936808fef571c22cad34a2ef102d1ff73809ed3d46a992cce692ebe",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pressure-mpnn-s7",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-mpnn_pressure-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_ddqn",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1",
+        "source_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_ddqn-s11-l11.leo-sim.yaml",
+      "config_sha256": "90d8373751a9c8bc41af7b732adb7bca826ecce0d2eb36198dbef47328073988",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-ddqn-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_ddqn-s11-l11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_gat",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1",
+        "source_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_gat-s11-l11.leo-sim.yaml",
+      "config_sha256": "90d8373751a9c8bc41af7b732adb7bca826ecce0d2eb36198dbef47328073988",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-gat-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_gat-s11-l11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_pressure_mpnn",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1",
+        "source_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_mpnn-s11-l11.leo-sim.yaml",
+      "config_sha256": "90d8373751a9c8bc41af7b732adb7bca826ecce0d2eb36198dbef47328073988",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-mpnn-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_mpnn-s11-l11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "ddqn_c3_pressure",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-4f3d9ef52fa8a3fc3b20be57575619c21f4ed8a028319e31046c02e6fa7fdd9d",
+        "source_sha256": "4f3d9ef52fa8a3fc3b20be57575619c21f4ed8a028319e31046c02e6fa7fdd9d"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-ddqn_c3_pressure-s11-l11.leo-sim.yaml",
+      "config_sha256": "29a9a4742e2bc337c94018da052ed5f515f25bbd25c6b5693a11f7e923b11cda",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-ddqn-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-ddqn_c3_pressure-s11-l11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "gat_pressure",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-40da075300aa278fe93c3551d5663fe99d7f36589cf64432db3a62b4c9c87976",
+        "source_sha256": "40da075300aa278fe93c3551d5663fe99d7f36589cf64432db3a62b4c9c87976"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-gat_pressure-s11-l11.leo-sim.yaml",
+      "config_sha256": "21f7699dcfc87beed7f3f53aa26b566e14354f5bf4f6370c0c7c2586db108f25",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-gat-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-gat_pressure-s11-l11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "mpnn_pressure",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-aebf16649df9cd2ba8f1c308b893cf3f50895c342f375486bba158b5d519aece",
+        "source_sha256": "aebf16649df9cd2ba8f1c308b893cf3f50895c342f375486bba158b5d519aece"
+      },
+      "code_sha256": "eed8ce3dccd23b9871fcb307ccbd0f883379362aab20bcaec1fa1b70341beff5",
+      "config_path": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-mpnn_pressure-s11-l11.leo-sim.yaml",
+      "config_sha256": "9d4d9b7783689109d7ee9a5322ea3a0a430bbfa5451edc3c3a5e8295a77ead5a",
+      "controlled_signature": "9121469be41664746e641351d262799bed031cb9da359c93aaac91e09535b750",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 11,
+      "pairing_key": "pressure-mpnn-s11",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-mpnn_pressure-s11-l11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    }
+  ],
+  "experiment_artifact_hashes": {
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/RUNBOOK.md": "be797fa926f53a0d397d2e907aecf2474c62728d6881260fec3345290341a0d2",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/analysis-request.json": "e333f7d78a5e6530a778d6139fa30f5cce04dc0fac5d140373e6cb1d36e68028",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/compile-report.json": "5c02cc0a5cb514cd1deb5f8deca6b44d3e36828a737a76f167f39d3d048fa637",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/request.json": "53b4fe8fdbcac305c32d9151cbcc38a7539174bd685e5041c623bb8db40563c1",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-ddqn_c3_pressure-s11-l11.leo-sim.yaml": "a3c4d1878133c0f4504200f98d8572e19f2a079fd1ba0c2377e06c69877b16dd",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-ddqn_c3_pressure-s7-l7.leo-sim.yaml": "fbaa2b7469ccdd1fd0596bc11f7194264e7710f1a3ab0cfe7dddb1cb92d779d3",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-gat_pressure-s11-l11.leo-sim.yaml": "887f4535ab31be83c36b6a09166dd06441cf7938d42c948ac7f810efc8e3a034",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-gat_pressure-s7-l7.leo-sim.yaml": "5a99e2dfa5eeff97535039612ce434dd8b8dc822a64332e11807ad785171ddb2",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-mpnn_pressure-s11-l11.leo-sim.yaml": "c521745f753c7a4ddd0693d943f4108f3ce1b3dc50e8e507ad4512947cbf08d9",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-mpnn_pressure-s7-l7.leo-sim.yaml": "c56e1d44d72b23b7af3bef5b776d76de1b7251e0462a49c1d2e9d1284ad78641",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_ddqn-s11-l11.leo-sim.yaml": "31c1d244cd347d4ab31d097d979d91873a8a76bd3c4cc29b75298925a54866c5",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_ddqn-s7-l7.leo-sim.yaml": "c50b08ab86fa7837e5ea30959d290642589fa666c589573e68f189fd04f82b35",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_gat-s11-l11.leo-sim.yaml": "31c1d244cd347d4ab31d097d979d91873a8a76bd3c4cc29b75298925a54866c5",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_gat-s7-l7.leo-sim.yaml": "c50b08ab86fa7837e5ea30959d290642589fa666c589573e68f189fd04f82b35",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_mpnn-s11-l11.leo-sim.yaml": "31c1d244cd347d4ab31d097d979d91873a8a76bd3c4cc29b75298925a54866c5",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/resolved/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03-qlearning_pressure_mpnn-s7-l7.leo-sim.yaml": "c50b08ab86fa7837e5ea30959d290642589fa666c589573e68f189fd04f82b35",
+    "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03/run-manifest.json": "095341b87549dcd0e1ad26f1a03e04b5910e932698e1b307b89fb5327cdbeff0"
+  },
+  "experiment_dir": "EXPERIMENTS/EXP-20260821-CONGESTION-PRESSURE-EVAL-R03",
+  "experiment_id": "EXP-20260821-CONGESTION-PRESSURE-EVAL-R03",
+  "payload_sha256": "e0704646cf1ed08ca3091817cbc07faaca1b0a2e45b732203a8ed3f7c949a85e",
+  "schema": "experiment-execution-authorization/v1",
+  "status": "AUTHORIZED",
+  "verification_policy": {
+    "recompute_work_finalization": true,
+    "require_all_bound_artifact_hashes": true,
+    "require_current_scenario_source_hashes": true,
+    "require_current_trace_input_hashes": true,
+    "require_exact_matrix_cohort": true,
+    "require_exact_run_config_hash": true
+  },
+  "work_finalization": {
+    "brief_path": "CODE/work/WP-LEO-V2-CONGESTION-PRESSURE-EVAL/R03/brief.json",
+    "brief_sha256": "4e40273a8d79564da43dbf61b1e9d80dec56b541a839ccaea19fc66652d1a25c",
+    "decision_path": "CODE/work/WP-LEO-V2-CONGESTION-PRESSURE-EVAL/R03/decision.json",
+    "decision_sha256": "f3b857945dcd07092dfd809b8fbf1e8480573d8e0eacdec1a1fb4dece8c9d498",
+    "path": "CODE/work/WP-LEO-V2-CONGESTION-PRESSURE-EVAL/R03/finalization.json",
+    "revision": 1,
+    "sha256": "1a750609e82a47ae501f1eeeeba075e03783fea95428a7f664b63c49991e8796",
+    "work_id": "WP-LEO-V2-CONGESTION-PRESSURE-EVAL"
+  }
+}
