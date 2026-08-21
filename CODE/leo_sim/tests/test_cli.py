@@ -1,11 +1,12 @@
 """End-to-end CLI tests: validate, compile, dry-run, run, receipt verify."""
+import hashlib
 import json
 import importlib.util
 from pathlib import Path
 
 import pytest
 
-from CODE.leo_sim.__main__ import main
+from CODE.leo_sim.__main__ import _DecisionLogWriter, main
 
 SMOKE = str(Path(__file__).resolve().parent.parent / "profiles" / "smoke.yaml")
 
@@ -65,6 +66,94 @@ def test_full_run_and_receipt_verify(tmp_path, capsys):
     assert rc == 0 and out["natural_end"] is True and out["conservation_ok"] is True
     rc2 = main(["receipt", "verify", out_dir])
     assert rc2 == 0, capsys.readouterr().out
+
+
+def test_run_writes_optional_decision_log_with_info_audit(tmp_path, capsys):
+    cfg = _write_cfg(tmp_path)
+    cfg_path = Path(cfg)
+    cfg_path.write_text(
+        cfg_path.read_text(encoding="utf-8").replace(
+            "num_satellites: 1", "num_satellites: 2"),
+        encoding="utf-8")
+    out_dir = tmp_path / "out"
+    decision_log = tmp_path / "decision-snapshots.jsonl"
+    rc = main(["run", "--config", cfg, "--out", str(out_dir),
+               "--decision-log", str(decision_log)])
+    assert rc == 0
+    capsys.readouterr()
+    rows = [json.loads(line) for line in decision_log.read_text().splitlines()]
+    assert rows
+    assert all(row["info_audit"]["schema"] == "leo-sim-decision-info/v1"
+               for row in rows)
+    manifest = json.loads(
+        (tmp_path / "decision-snapshots.jsonl.manifest.json").read_text())
+    assert manifest["schema"] == "leo-sim-decision-log/v1"
+    assert manifest["row_count"] == len(rows)
+    assert len(manifest["config_sha256"]) == 64
+    assert len(manifest["trace_sha256"]) == 64
+    assert len(manifest["code_sha256"]) == 64
+    assert len(manifest["receipt_sha256"]) == 64
+
+
+def test_decision_log_rejects_existing_target_before_simulation(tmp_path, capsys):
+    cfg = _write_cfg(tmp_path)
+    decision_log = tmp_path / "already-there.jsonl"
+    decision_log.write_text("sentinel\n", encoding="utf-8")
+    out_dir = tmp_path / "out"
+    rc = main(["run", "--config", cfg, "--out", str(out_dir),
+               "--decision-log", str(decision_log)])
+    assert rc == 3
+    assert "destination" in capsys.readouterr().out
+    assert not out_dir.exists()
+    assert decision_log.read_text(encoding="utf-8") == "sentinel\n"
+
+
+def test_decision_log_rejects_existing_manifest_before_simulation(tmp_path, capsys):
+    cfg = _write_cfg(tmp_path)
+    decision_log = tmp_path / "audit.jsonl"
+    manifest = tmp_path / "audit.jsonl.manifest.json"
+    manifest.write_text("sentinel manifest\n", encoding="utf-8")
+    out_dir = tmp_path / "out"
+    rc = main(["run", "--config", cfg, "--out", str(out_dir),
+               "--decision-log", str(decision_log)])
+    assert rc == 3
+    assert "destination" in capsys.readouterr().out
+    assert not out_dir.exists()
+    assert not decision_log.exists()
+    assert manifest.read_text(encoding="utf-8") == "sentinel manifest\n"
+
+
+def test_decision_log_hash_is_incremental_on_close(tmp_path, monkeypatch):
+    decision_log = tmp_path / "audit.jsonl"
+    writer = _DecisionLogWriter(str(decision_log))
+    row = {"kind": "forward", "value": 1}
+    writer.append(row)
+    encoded = (json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n").encode()
+
+    original_read_bytes = Path.read_bytes
+
+    def reject_target_read_bytes(path):
+        if path == decision_log:
+            raise AssertionError("close must not read the published log into memory")
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", reject_target_read_bytes)
+    assert writer.close() == hashlib.sha256(encoded).hexdigest()
+
+
+def test_decision_log_rejects_symlink_parent_before_simulation(tmp_path, capsys):
+    cfg = _write_cfg(tmp_path)
+    real_parent = tmp_path / "real"
+    real_parent.mkdir()
+    linked_parent = tmp_path / "linked"
+    linked_parent.symlink_to(real_parent, target_is_directory=True)
+    out_dir = tmp_path / "out"
+    rc = main(["run", "--config", cfg, "--out", str(out_dir),
+               "--decision-log", str(linked_parent / "audit.jsonl")])
+    assert rc == 3
+    assert "symlink" in capsys.readouterr().out
+    assert not out_dir.exists()
+    assert not (real_parent / "audit.jsonl").exists()
 
 
 def test_receipt_verify_fails_on_tamper(tmp_path, capsys):

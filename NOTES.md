@@ -515,3 +515,25 @@
 - 验证结果：每一级只暴露协议声明的字段；修改隐藏远端队列/拓扑/年龄不影响低级视图及动作；远端队列 shuffle 保持多重集合但改变归属；fixed-age 负对照把所有年龄设为 1.0；未知等级和不适用负对照 fail-loud。定向 `5 passed`。
 - 运行证据：`python3 -m CODE.leo_sim.info_ladder_tiny` 选择轨迹为 `(0,1) → (0,2) → (0,2) → (0,1)`，shuffle/fixed-age 均为真。source SHA=`865d9a8bfe9944f66a8b3750e9f1eee25e43a0eb76317c8673d4fbcfae263925`，test SHA=`dfc63280baac0bed90b8b943d7df84c22d4f95bf9ebd97b6d0fd31e11019c7d2`，机器证据 `ANALYSIS/INFO-LADDER-TINY-20260821.json`。
 - 边界：这是信息 mask/负对照合同，不是训练、真实 trace、Q0 信息价值或拥塞控制效果。真实 V2 decision sink 的逐动作物理字段和逐字段年龄仍未实现；下一步必须接 200 Mbps 压力窗口/不可变 trace 后再做真实信息阶梯。
+
+## 2026-08-21：真实决策信息审计通道实现候选
+
+- 在 kernel 的可选 decision sink 中加入 `leo-sim-decision-info/v1`：每个合法转发方向记录 direct kernel truth（edge、distance_km、rate_bps、available、remote_queue_bits、topology_available）及字段 `source/observed_at/age_s`；learning 决策另记录实际可见 control-cache entry 的 generated/received/age/hops 和 payload 字段年龄。审计流只读输出，不改变 learner 输入或路由行为。
+- CLI 新增诊断参数 `--decision-log <new.jsonl>`；正式授权运行和 dry-run 明确拒绝该参数，避免未绑定 artifact 混入正式证据。普通诊断运行可保存逐决策 JSONL。
+- 验证：decision/CLI/Q0 定向 `42 passed`；相关全量 `575 passed, 1 skipped, 3 subtests passed in 7.04s`；`git diff --check` 通过。
+- 边界：当前只是把真实 decision audit 接通，尚未在 VM 生成 200 Mbps 压力窗口的完整 audit，也未证明 learner 向量逐字段等价或信息价值。下一步在同一已部署 SHA 上跑诊断性压力 trace，检查 audit 字段覆盖/年龄分布，再决定真实 INFO/AGE-LADDER 实验臂。
+
+## 2026-08-21：独立冷审修正 decision audit
+
+- 冷审在 exact `f2a8589` 发现并要求修正：日志路径必须在仿真前 fail-closed；父目录链不得含 symlink；长跑不能把 rows 全部存内存；日志必须有 config/trace/code/receipt SHA 血缘；truth 字段不能冒充 learner tensor。
+- 修正内容：`_DecisionLogWriter` 改为临时文件流式追加、内存 O(1)（只保留 row_count）；目标和 `.manifest.json` 在运行前检查且拒绝已有目标/任一父级 symlink；发布使用不替换现有目标的 hard-link；sidecar 绑定 config/trace/trace identity/code/result/receipt/log SHA 和 row_count；formal/dry-run 仍拒绝诊断日志。
+- 审计语义修正：记录所有候选方向而不只记录已通过 legal mask 的方向；将下游语义命名为 `peer_egress_queue_bits`，另保留 `reverse_link_queue_bits`；顶层明确 `mapping_status=truth_audit_not_learner_tensor`。
+- 新增回归：已有目标和 symlink 父目录均在仿真前拒绝且不留下运行 artifact；decision/CLI 定向 `10 passed`（修正后需重跑相关全量）。
+- 当前仍未宣称完成真实信息实验：需要在修正版合入并部署后生成 200 Mbps 压力 trace 的 audit，核对字段覆盖/年龄分布，再决定真实 INFO/AGE-LADDER 实验臂。
+
+## 2026-08-21：decision audit sidecar/hash 修正与本地真实流量 smoke
+
+- PR #129 最新候选 exact SHA=`b910e675187fa3c297994e577f1ce3b874270f16`；独立冷审终裁 `APPROVE`。修正两个 fail-closed 问题：`.manifest.json` 在 trace/simulation 前预检；decision log SHA 在 append 时增量计算，关闭时不再一次性 `read_bytes()` 整个日志。
+- 验证：新增回归后 decision/CLI/Q0 定向 `29 passed`；相关 `CODE/leo_sim/tests CODE/tests` 为 `550 passed, 1 skipped`；`git diff --check` 通过。
+- 同一 SHA 本地真实 M-Lab 多 OD+burst smoke：140 星、20 s、55 个活动端点、1,299 offered packets、MCS、1 s 拓扑；`natural_end=true`、`conservation_ok=true`、receipt verify 通过；613 delivered、579 access rejected、107 in-system-at-stop、0 queue overflow。
+- 同一运行的 decision audit：929 行，其中 316 条 forward、613 条 deliver；全部 `leo-sim-decision-info/v1`，316/316 forward 行含 candidate truth；sidecar `row_count=929`，日志 SHA 与实际文件一致。该运行是本地诊断 smoke，不是 VM 正式论文结果；最新 SHA 尚未确认合入 main/部署。
