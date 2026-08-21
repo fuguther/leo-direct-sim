@@ -462,3 +462,15 @@
 - 两臂结果：均为 2,756 offered、1,253 `DELIVERED`、1,270 `ACCESS_REJECTED`、233 `IN_SYSTEM_AT_STOP`、0 queue overflow；`delivery_rate=0.454644412191582`，预注册 `capacity-control` 配对差=`0.0`。两臂 ledger SHA 不同，说明策略确实走了不同的服务/时序路径，但在这一负载、这一 seed 和这一单配对下，交付数量没有变化。
 - 从原始 ledger 独立重算：已交付包平均 `e2e_s` 为 control `0.294096`、capacity `0.292419`；平均 `total_queue_wait_s` 两臂均 `0.281647`；平均 propagation 为 `0.010584/0.009209`，平均 transmission 为 `0.001865/0.001563`。546 条链路的平均物理可用容量利用率为 `0.0002409/0.0002063`，最大值两臂均约 `0.01508`；metrics validation 均为 `ok=true`。
 - VM `v2_analysis` 生成并验证 `ANALYSIS/EXP-20260821-EXP1-CAPACITY-R01/v2-paired/`，`verify_persisted_analysis` 返回 `ok=true, errors=[]`。这组证据可支持“固定 M-Lab burst profile 下的描述性零差异”，不能支持算法优越性、因果拥塞控制结论、Q0 最优性或论文统计结论；仍需多 seed/多负载和独立 claim review。
+
+## 2026-08-21：正式 E0 低/中/高负载矩阵完成并闭合 V2 重算
+
+- 正式包 PR #113（矩阵）与 PR #114（授权）已合入；六个 cell 使用同一授权 cohort、同一 VM 部署主线 `b39f0a72f4b02d34ccbf3592a4e68113795904dc`，deployment receipt SHA=`6d3b6ca1f6681248fe5881ac08102eb7d211a00b3430a25cd0b31af9214c855c`，authorization SHA=`d0337c35b247d6f548936cf7495bf2584352b7f644f8b5ada5e4bdd92779dcb3`。六次均自然结束、`research_eligible=true`，逐次 `receipt verify=verified`。
+- 设计含义：50/100/200 Mbps 是 burst 前的 base offered rate；20 s 运行在 8--16 s 施加 2x burst，因此时间平均目标分别是 70/140/280 Mbps。每档 control/copy 是完全相同的非学习重复单元，不是算法比较。
+- 六个原始回执的成对结果（control 与 copy 完全一致）：
+  - low/load-50：1,299 offered，613 delivered，579 `ACCESS_REJECTED`，107 `IN_SYSTEM_AT_STOP`，0 overflow，delivery rate=`0.4719014626635874`；墙钟约 121/120 s。
+  - medium/load-100：2,756 offered，1,253 delivered，1,270 `ACCESS_REJECTED`，233 `IN_SYSTEM_AT_STOP`，0 overflow，delivery rate=`0.454644412191582`；墙钟约 123/126 s。
+  - high/load-200：5,551 offered，2,382 delivered，2,597 `ACCESS_REJECTED`，167 `HOLDING_QUEUE_OVERFLOW`，405 `IN_SYSTEM_AT_STOP`，delivery rate=`0.42911187173482257`；墙钟约 131/134 s。
+- 原始 ledger 独立重算均通过；低/中/高档平均物理可用容量利用率约为 `0.00011595/0.00024093/0.00044596`，最大链路利用率约为 `0.00782/0.01508/0.02972`。中档已交付包平均 `e2e_s=0.294096`、排队等待=`0.281647`、传播=`0.010584`、传输=`0.001865`；其余档位同样保留逐包三段字段。
+- 首次 V2 分析发现分析器把低档 contrast 错套到所有 pairing key，正确拒绝了该错误分析。PR #115 修复为“每个 contrast 只计算包含其左右臂的 pairing key；若某 key 只有一侧则继续 fail-loud”，CI 为 `546 passed, 1 skipped, 3 subtests passed`。合入主线 `e83653c907427f6b6bd2410119b914a330808755` 后重新部署，VM `v2_analysis` 返回 `VERIFIED`（6 runs），`verify_persisted_analysis` 返回 `ok=true, errors=[]`。
+- 本组可支持：三档负载的重复一致性、原始负载/突发/端点选择/包命运和指标可重算证据；200 Mbps 已出现 holding overflow，可作为压力档。不能支持：最终 E0 阈值、跨档因果拥塞结论、算法优越性、Q0 最优性或论文统计结论。下一步是基于这张负载表冻结 E0 主档/压力档，再运行真实学习算法的正式 pilot。
