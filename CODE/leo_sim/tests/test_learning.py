@@ -283,6 +283,18 @@ def test_ddqn_exact_resume_restores_replay_optimizer_target_and_rng(tmp_path):
         assert np.array_equal(left, right)
     for left, right in zip(resumed.target.get_weights(), learner.target.get_weights()):
         assert np.array_equal(left, right)
+    # Continue both instances with the same transition.  Equal state at the
+    # checkpoint must produce the same next action, update count and weights.
+    action_a = learner.choose(np.zeros(dim), mask, 1.0)
+    action_b = resumed.choose(np.zeros(dim), mask, 1.0)
+    assert action_a == action_b
+    learner.remember(np.zeros(dim), action_a, 3.0, np.ones(dim), mask, False)
+    resumed.remember(np.zeros(dim), action_b, 3.0, np.ones(dim), mask, False)
+    assert resumed.train_steps == learner.train_steps
+    for left, right in zip(resumed.online.get_weights(), learner.online.get_weights()):
+        assert np.array_equal(left, right)
+    for left, right in zip(resumed.target.get_weights(), learner.target.get_weights()):
+        assert np.array_equal(left, right)
 
 
 def test_learning_rejects_oracle_information():
@@ -381,4 +393,3 @@ def test_c5_c7_reject_queue_bits_after_direction_removed():
         o = learning.build_observation(contract, 0, c, 6.0, topo, own)
         q = o[learning.OWN_FEATURES]
         assert q == 0.0, f"{contract} must reject a removed-direction record"
-
