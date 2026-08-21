@@ -551,3 +551,12 @@
 - 三份独立冷审均 PASS，且均绑定同一组 13 个 R02 artifact hashes：cold-start `eeb409a05c21f252eb8aba23fe9411321f385b4335ffc1157c82cad195576317`、satellite-DRL `91bb9071fcdf8c46897a7de8d1ad9beb2c4ddddef01f789f5e5e97c09f3ffc84`、adversarial `acc1bae734cf8e8fc44c085a100f834b577a9c50f6bac72c83d3b743eabb44e1`；`verify_compiled_matrix` 为 6 cells / 3 exact pairs，相关测试与 schema/hash 校验通过。
 - `finalize_decision` 返回 `ACCEPTED`；`authorize_experiment` 返回 `AUTHORIZED`（6 runs）。该授权只覆盖同一干净主线上的一次 200 Mbps 描述性 pressure diagnostic，不代表 VM 已运行，也不代表算法优越性、因果拥塞结论、最终 E0、Q0 或论文统计结论。
 - 下一步：将 R02 包经 PR/CI 合入后，以合入后的 exact main SHA 部署 canonical VM，再串行跑 6 个 evaluation cells；逐个核验 natural end、守恒、checkpoint lineage、资源边界和 V2 paired analysis，任一 cell 失败即停止矩阵。
+
+## 2026-08-21：R02 200 Mbps pressure matrix 已在 VM 串行完成并重算
+
+- PR #131 已合入，执行主线 exact SHA=`00813e9570bb6a0bdeb6c38562c2e95b519ae8a9`；canonical VM deployment receipt SHA=`2da5be1df5515b62ae65de05d3026530a01478e0814704e72db1ebc77db6eab5`，source tree SHA=`ca098c0a8c4e30cf3bd24719962037859060e22b3b38a350873ff1834c417d82`，authorization SHA=`a3395cc3435112cff6299e577f862575daf57197ccf30297f8053a0ccd038886`。
+- 6/6 evaluation cells 严格串行执行；每个 remote status 为 `success`、`natural_end=true`、`conservation_ok=true`、治理回执 `research_eligible=true`，六个 `python -m CODE.leo_sim receipt verify <dir>` 均返回 `verified`。没有发生训练、静默回退或资源错误。
+- 固定 5,551 offered packets、200 Mbps base + 8--16 s 2x burst、140 星、M-Lab multi-OD/burst、MCS、1 s 动态拓扑、seed=7。Q-learning 三个 copy 臂的 delivery rate 均 `0.3990272023`；DDQN/C3=`0.4159610881`、GAT=`0.4116375428`、MPNN=`0.4060529634`。所有臂均有 167 `HOLDING_QUEUE_OVERFLOW`，`IN_SYSTEM_AT_STOP` 为 468--562；这确认压力档会暴露积压和长尾，但不证明算法优越性。
+- 原始 ledger 可重算的物理量：总可用容量约 `10,901.410 Gb`；最大单链路利用率约 `0.029719`；三类链路可用/服务容量（Gb）为 downlink `1050.270/2.216--2.310`、uplink `1827.995/2.954`、ISL `8023.145/1.428--7.917`。已交付包平均 `e2e_s` 约 `0.354--0.361`，其中 holding wait 约 `0.341--0.346`，queue wait 约 `0.0019--0.0020`，propagation 约 `0.0066--0.0149`，transmission 约 `0.0012--0.0024`；这些是诊断指标，不是最终统计结果。
+- VM V2 分析返回 `VERIFIED`、`verified_runs=6`；独立 `verify_persisted_analysis` 返回 `ok=True, errors=[]`。分析 manifest SHA=`bf19ffb07e306d2e2147207183d548d99a1882b23064b7709b21874b26580bea`，三个单 seed 描述性 paired differences 为 DDQN−Q-learning=`0.0169338858`、GAT−Q-learning=`0.0126103405`、MPNN−Q-learning=`0.0070257611`。
+- 结论边界：R02 现在闭合了“当前主线 → 授权 → 同 SHA VM → 6 个自然结束回执 → ledger/V2 重算”的工程证据链，可以作为拥塞诊断和下一步实验设计输入；仍不能作为论文统计、因果拥塞控制、算法 superiority、最终 E0 阈值或 Q0 最优性证据。下一步应先做多 seed/重复和真实信息阶梯，再提出新方案。
