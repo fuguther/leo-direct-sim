@@ -582,3 +582,4 @@
 - 在独立分支 `codex/20260821-info-ladder-policy` 实现两个确定性诊断 policy：`info_queue`（F0：本星各方向队列 + 已到达目的地服务广告 + 剩余跳数）和 `info_physical`（F1：再加入本星第一跳斜距、几何可用性、动态速率）。两者均禁止远端当前队列、未来几何和 oracle 真值，不改变学习器 observation tensor。
 - 先写测试并确认未知 policy 失败，再实现；routing/config 定向测试 `28 passed`，相关全量 `554 passed, 1 skipped`，`git diff --check` 通过。代码提交 `65347d5`；独立冷审和 CI 尚未完成，不能称已合入或已部署。
 - 配对设计已写入 `ANALYSIS/INFO-LADDER-REAL-DESIGN-20260821.md`：固定 R03 200 Mbps M-Lab multi-OD + burst 合同，先以 hop/F0/F1 做双 seed 诊断；必须保留本地队列置换、第一跳物理字段固定/置换负对照；在正式 request/审阅/授权前不启动 VM，不产生数值结论。
+- 独立冷审发现并修正一个 P1：F1 所有第一跳暂时零速时不能返回空候选（否则内核会把等待误记为 `NO_ROUTE`）。`f65b3cb` 增加可达候选 deferred fallback 与 MCS/holding 集成回归；修复后相关全量为 `555 passed, 1 skipped`。本地 `info_physical` 20 s M-Lab smoke：1,299 offered、613 delivered、579 access rejected、107 in-system、`NO_ROUTE=0`，`natural_end=true`、`conservation_ok=true`、receipt verify=verified；这是候选分支 smoke，不是 VM/论文结果。
