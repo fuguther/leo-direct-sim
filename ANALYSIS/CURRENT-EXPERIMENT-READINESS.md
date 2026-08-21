@@ -25,7 +25,7 @@
 | 当前 VM | 已部署精确 main `7f29ea3ee21280722885bedc3efda3d98c56bd98`；本轮部署 receipt SHA=`6b916fbfab1debb0a65113d3c78be47f619463683ac0d4017791b4e72a8d0289`，source tree SHA=`b0fb2db50d30338a68351eb0ea754332d43144624bf39bdfab655e7ca282644f` | FACT |
 | VM 工程 smoke | 新 56-cell M-Lab 多 OD T0：20 s、1,299 offered、613 delivered、579 `ACCESS_REJECTED`、107 `IN_SYSTEM_AT_STOP`；另完成 50/100/200 Mbps 三档 20 s 工程标定、60 s D2 长窗、capacity 负对照和 20 s DDQN train→checkpoint→eval，均 natural end、conservation true、receipt verified、raw metrics `validation.ok=true` | FACT；非正式、非授权运行 |
 | 真实流量/测量 | M-Lab 快照 44,929 行、4,752 OD、2,604 聚合单元；PR #93 新增显式有界强连通多 OD 选择，manifest 记录选中 56-cell 规则和源 SHA；新三档 E0 工程标定已重跑 | FACT；不能当原始真实包回放 |
-| Q0 | snapshot 与 kernel `JointPlan` 原子校验/注入接口已有；本次新增依赖无关 Q0-I/Q0-F tiny 交叉验证候选（见 `Q0-TINY-20260821.*`），但尚未合入/部署，真实 trace planned-vs-executed 归因和信息阶梯仍未完成。Q0 不阻塞工程 smoke，但阻塞信息 vs 决策归因 | FACT |
+| Q0 | snapshot 与 kernel `JointPlan` 原子校验/注入接口已有；Q0-I/Q0-F tiny 已合入 main；信息阶梯 tiny 合同候选见 `INFO-LADDER-TINY-20260821.*`，但真实 trace planned-vs-executed 归因、真实逐字段信息和信息价值实验仍未完成。Q0 不阻塞工程 smoke，但阻塞信息 vs 决策归因 | FACT |
 | 正式分析链 | 矩阵编译/授权 Stage 1 已完成；artifact→指标→配对分析→claim 的真实授权产物和闭环仍缺 | FACT，partial；仍 blocking |
 | 测量层 | 新多 OD trace 的 0.5/1/2/5 s VM cadence 四档均自然结束、receipt verified、raw metrics 重算通过；1/2/5 s packet/link metrics 逐项相同，1 s 暂定主候选。三档 E0 工程标定已完成；正式逐包三段时延 artifact、独立重算和三段和 gate 仍未完成 | FACT；阻塞拥塞论文诊断 |
 | 续训 | continuation bundle 已绑定 replay、optimizer、target network、训练计数器、NumPy/TF RNG、schema/config/SHA；VM 已验证恢复后继续一步的动作/计数/权重一致；完整长窗中断/不间断等价仍未跑 | FACT；完整长训前仍需等价门 |

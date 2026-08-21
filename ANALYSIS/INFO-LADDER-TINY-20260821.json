@@ -1,0 +1,53 @@
+{
+  "schema": "leo-sim-information-ladder-tiny/v1",
+  "date": "2026-08-21",
+  "source_sha256": "865d9a8bfe9944f66a8b3750e9f1eee25e43a0eb76317c8673d4fbcfae263925",
+  "test_sha256": "dfc63280baac0bed90b8b943d7df84c22d4f95bf9ebd97b6d0fd31e11019c7d2",
+  "information_levels": [
+    "local_queue_direction",
+    "link_rate_availability",
+    "remote_queue_topology",
+    "field_age"
+  ],
+  "scenario": {
+    "edges": [[0, 1], [0, 2]],
+    "local_queue_bits": [8, 8],
+    "rate_mbps": [100.0, 200.0],
+    "remote_queue_bits": [60, 20],
+    "field_age_s": [0.2, 3.0],
+    "all_links_available": true
+  },
+  "selected_edges": [[0, 1], [0, 2], [0, 2], [0, 1]],
+  "visible_fields": {
+    "local_queue_direction": ["edge", "direction", "local_queue_bits"],
+    "link_rate_availability": ["edge", "direction", "local_queue_bits", "rate_mbps", "available"],
+    "remote_queue_topology": ["edge", "direction", "local_queue_bits", "rate_mbps", "available", "remote_queue_bits", "topology_available"],
+    "field_age": ["edge", "direction", "local_queue_bits", "rate_mbps", "available", "remote_queue_bits", "topology_available", "field_age_s"]
+  },
+  "negative_controls": {
+    "shuffle_remote_queue": {
+      "preserves_multiset": true,
+      "changed_assignment": true
+    },
+    "fixed_age": {
+      "fixed_age_s": 1.0,
+      "all_age_s": [1.0, 1.0]
+    }
+  },
+  "tests": {
+    "targeted": "5 passed",
+    "full_relevant_before_this_change": "568 passed, 1 skipped, 3 subtests passed"
+  },
+  "claim_boundary": {
+    "supports": [
+      "visible-field masks are explicit and deterministic",
+      "lower levels cannot react to hidden-field changes",
+      "shuffle/fixed-age negative controls are executable"
+    ],
+    "cannot_conclude": [
+      "training convergence or algorithm superiority",
+      "a real-trace information value or Q0 upper bound",
+      "causal congestion-control effectiveness"
+    ]
+  }
+}

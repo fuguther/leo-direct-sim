@@ -508,3 +508,10 @@
 - 产物：`ANALYSIS/Q0-TINY-20260821.json` SHA=`f076c650a6a754a5f7d11c5955ddc90ab6022c8c456c0695818970ab25bcf5c8`；说明 `ANALYSIS/Q0-TINY-20260821.md` SHA=`4755a07ea1b699fab3dc2ecfc1776f7447fc82b25a588083290d6f13a76b2d1b`；source SHA=`74792731f074fd6869969f1655bc2a59a943645a7d2780df3213c0260e96c11c`；test SHA=`175be5019ee51f2eec35cf83098fcd8f9caa6e2fe7cdb8242994abeef224c177`。
 - 验证：Q0/tiny/contract/snapshot/topology 定向 `28 passed`；相关全量 `568 passed, 1 skipped, 3 subtests passed in 7.37s`（文档修改后需重跑）；`git diff --check` 需在提交前复核。
 - 边界与下一步：这是 tiny 正确性/因果信息合同证据，不是真实 M-Lab trace 的 Q0 上界、不是可扩展 CP-SAT/MILP，也没有闭合真实 kernel 的逐事件 planned-vs-executed receipt。下一工作单元继续实现信息阶梯 tiny 负对照，然后接真实压力窗口抽取；在真实 Q0/信息阶梯完成前不提出新方案、不写论文优越性结论。
+
+## 2026-08-21：信息阶梯 tiny 合同候选
+
+- 新增 `CODE/leo_sim/info_ladder_tiny.py` 与 `CODE/leo_sim/tests/test_info_ladder_tiny.py`，把四级视图固定为：本地队列+方向 → 速率/可用性 → 远端队列/拓扑 → 逐字段年龄。
+- 验证结果：每一级只暴露协议声明的字段；修改隐藏远端队列/拓扑/年龄不影响低级视图及动作；远端队列 shuffle 保持多重集合但改变归属；fixed-age 负对照把所有年龄设为 1.0；未知等级和不适用负对照 fail-loud。定向 `5 passed`。
+- 运行证据：`python3 -m CODE.leo_sim.info_ladder_tiny` 选择轨迹为 `(0,1) → (0,2) → (0,2) → (0,1)`，shuffle/fixed-age 均为真。source SHA=`865d9a8bfe9944f66a8b3750e9f1eee25e43a0eb76317c8673d4fbcfae263925`，test SHA=`dfc63280baac0bed90b8b943d7df84c22d4f95bf9ebd97b6d0fd31e11019c7d2`，机器证据 `ANALYSIS/INFO-LADDER-TINY-20260821.json`。
+- 边界：这是信息 mask/负对照合同，不是训练、真实 trace、Q0 信息价值或拥塞控制效果。真实 V2 decision sink 的逐动作物理字段和逐字段年龄仍未实现；下一步必须接 200 Mbps 压力窗口/不可变 trace 后再做真实信息阶梯。

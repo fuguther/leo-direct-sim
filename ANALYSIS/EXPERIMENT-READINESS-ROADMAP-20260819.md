@@ -45,7 +45,7 @@
 ### R2：Q0 最小闭环
 
 - 完成规划结果注入接口。
-- tiny 场景完成依赖无关的 Q0-F 精确枚举、Q0-I 当前窗口求解、独立枚举和 planned replay 交叉核验；后续再接真实 trace，不能用 tiny 结果代替论文上界。
+- tiny 场景完成依赖无关的 Q0-F 精确枚举、Q0-I 当前窗口求解、独立枚举和 planned replay 交叉核验；信息阶梯另有四级字段 mask 与负对照 tiny 合同。后续再接真实 trace，不能用 tiny 结果代替论文上界或信息价值。
 - planned-vs-executed 逐事件核对，失败回到 R0。
 
 ### R3：正式实验

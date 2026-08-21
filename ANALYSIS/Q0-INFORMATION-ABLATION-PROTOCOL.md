@@ -88,6 +88,6 @@ Q0 只放松调度器的信息与可选控制能力，不取消传播时延、�
 ## 8. 当前状态
 
 - FACT：snapshot 已合入 main。
-- FACT：计划注入、holding、planned-vs-executed、Q0-I tiny 有未合入候选；双路审阅要求修改执行归因、持久化证据、FIFO 与 tiny 正确性。
-- FACT：Q0-F tiny 和双算法交叉验证未完成。
-- 判定：协议足以指导实现，不需要继续无边界扩展算法家族调研；下一轮研究只审冻结合同、数学对应和来源持久化。
+- FACT：kernel 已有计划版本校验、原子注入/执行接口；真实 receipt 的逐事件 planned-vs-executed 归因仍未闭合。
+- FACT：依赖无关 Q0-I/Q0-F tiny 已有独立枚举与 replay 交叉验证；信息阶梯 tiny 已把四级字段 mask、隐藏字段不变性、shuffle/fixed-age 负对照做成可执行合同。
+- 判定：这些 tiny 证据只关闭“合同可执行”这一层，不等于真实 trace 的 Q0 上界或信息价值实验。下一轮只接真实压力窗口、冻结字段来源/年龄和持久化归因，不继续无边界扩展算法家族调研。
