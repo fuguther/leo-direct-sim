@@ -454,3 +454,11 @@
 - matrix `EXP-20260821-E0-PAIRED-R01` 的 control 与 baseline_copy 两个 cell 均在同一部署、同一 config SHA=`7ede74b936ad49e7a8e9b21779a6f6afc54cc2671f3e5f87670c14aed13c123d`、同一 trace identity、seed=7 下正式运行；两次均 `natural_end=true`、`conservation_ok=true`、`research_eligible=true`、VM `receipt verify=verified`。
 - VM `v2_analysis` 已生成 `ANALYSIS/EXP-20260821-E0-PAIRED-R01/v2-paired/analysis-manifest.json`、`summary.json`、`claim-gate.json`；再次 `verify_persisted_analysis` 返回 `ok=true, errors=[]`。两臂 `delivery_rate=0.4719014626635874`，预注册 `baseline_copy-control` 配对差=`0.0`。
 - 这一步正式闭合了“授权 cell → 原始 receipt/ledger → 主指标重算 → paired analysis → claim boundary”链，但仍只是同配置一致性校验；claim gate 明确禁止算法优越性、拥塞控制效果、Q0 最优性和论文统计结论。下一步才进入第一组有真实处理差异的算法/策略对照。
+
+## 2026-08-21：PR #111 EXP1 capacity-routing 正式配对运行完成
+
+- PR #111 已通过 CI 并 squash 合入，当前 main=`b6b975f5230c86460076b1549d2b680f23c79994`；canonical VM 已部署同一 SHA，deployment receipt SHA=`8fcbbd3f2a466ae718634a51439e281656c048de871c36f0224a66a5eb8b1701`，source tree SHA=`f6a11148ac25388f1e67957b2f5813689e233edca4d53324f26b0fa93bce31d5`。
+- 矩阵 `EXP-20260821-EXP1-CAPACITY-R01` 固定同一 M-Lab measurement-proxy trace、100 Mbps（20 s、140 星、MCS、1 s 拓扑重匹配、control plane、seed=7），只改变 `routing.policy`：control=`hop`，treatment=`capacity`。授权 SHA=`9d0e189504bbd2669a88721bb92c58cfb36ead2154afb424b4cd452fbd58fa28`；两 cell 均在 VM 上自然结束、守恒通过、`research_eligible=true`，且 VM `receipt verify=verified`。
+- 两臂结果：均为 2,756 offered、1,253 `DELIVERED`、1,270 `ACCESS_REJECTED`、233 `IN_SYSTEM_AT_STOP`、0 queue overflow；`delivery_rate=0.454644412191582`，预注册 `capacity-control` 配对差=`0.0`。两臂 ledger SHA 不同，说明策略确实走了不同的服务/时序路径，但在这一负载、这一 seed 和这一单配对下，交付数量没有变化。
+- 从原始 ledger 独立重算：已交付包平均 `e2e_s` 为 control `0.294096`、capacity `0.292419`；平均 `total_queue_wait_s` 两臂均 `0.281647`；平均 propagation 为 `0.010584/0.009209`，平均 transmission 为 `0.001865/0.001563`。546 条链路的平均物理可用容量利用率为 `0.0002409/0.0002063`，最大值两臂均约 `0.01508`；metrics validation 均为 `ok=true`。
+- VM `v2_analysis` 生成并验证 `ANALYSIS/EXP-20260821-EXP1-CAPACITY-R01/v2-paired/`，`verify_persisted_analysis` 返回 `ok=true, errors=[]`。这组证据可支持“固定 M-Lab burst profile 下的描述性零差异”，不能支持算法优越性、因果拥塞控制结论、Q0 最优性或论文统计结论；仍需多 seed/多负载和独立 claim review。
