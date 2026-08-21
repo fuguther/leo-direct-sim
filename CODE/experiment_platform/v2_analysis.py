@@ -171,6 +171,42 @@ def _verify_result(root: Path, results_root: Path, row: dict[str, Any],
     }
 
 
+def _compute_planned_contrasts(
+        results: list[dict[str, Any]], contrasts: list[dict[str, Any]],
+        primary: str) -> list[dict[str, Any]]:
+    """Compute each registered contrast only over its own arm pairs.
+
+    A matrix may contain several independent pairing keys (for example one
+    pair per offered-load tier).  An unrelated pair must not be treated as a
+    missing arm for every contrast; only a pairing key that contains exactly
+    one side of the requested contrast is malformed.
+    """
+    by_pair: dict[str, dict[str, dict[str, Any]]] = {}
+    for result in results:
+        by_pair.setdefault(result["pairing_key"], {})[result["arm_id"]] = result
+    output: list[dict[str, Any]] = []
+    for contrast in contrasts:
+        left, right = contrast.get("left_arm"), contrast.get("right_arm")
+        diffs: list[float] = []
+        for pair_key in sorted(by_pair):
+            pair = by_pair[pair_key]
+            has_left, has_right = left in pair, right in pair
+            if has_left != has_right:
+                raise V2AnalysisError(
+                    f"contrast {contrast.get('name')} missing arm at pair {pair_key}")
+            if has_left:
+                diffs.append(pair[left]["primary_metric"] -
+                             pair[right]["primary_metric"])
+        if not diffs:
+            raise V2AnalysisError(f"contrast {contrast.get('name')} has no pairs")
+        output.append({
+            "name": contrast.get("name"), "left_arm": left, "right_arm": right,
+            "metric": primary, "n_pairs": len(diffs),
+            "differences": diffs, "mean_difference": sum(diffs) / len(diffs),
+        })
+    return output
+
+
 def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
             results_root: Path | None = None) -> dict[str, Any]:
     """Verify an authorized V2 cohort and return a persisted analysis manifest."""
@@ -216,27 +252,8 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
         _verify_result(root, results_root, cell, auth_by_id[cell["run_id"]], primary)
         for cell in cells
     ]
-    by_pair: dict[str, dict[str, dict[str, Any]]] = {}
-    for result in results:
-        by_pair.setdefault(result["pairing_key"], {})[result["arm_id"]] = result
     contrasts = analysis_request.get("analysis", {}).get("planned_contrasts", [])
-    output_contrasts = []
-    for contrast in contrasts:
-        left, right = contrast.get("left_arm"), contrast.get("right_arm")
-        diffs = []
-        for pair_key in sorted(by_pair):
-            pair = by_pair[pair_key]
-            if left not in pair or right not in pair:
-                raise V2AnalysisError(
-                    f"contrast {contrast.get('name')} missing arm at pair {pair_key}")
-            diffs.append(pair[left]["primary_metric"] - pair[right]["primary_metric"])
-        if not diffs:
-            raise V2AnalysisError(f"contrast {contrast.get('name')} has no pairs")
-        output_contrasts.append({
-            "name": contrast.get("name"), "left_arm": left, "right_arm": right,
-            "metric": primary, "n_pairs": len(diffs),
-            "differences": diffs, "mean_difference": sum(diffs) / len(diffs),
-        })
+    output_contrasts = _compute_planned_contrasts(results, contrasts, primary)
     input_paths = [experiment_dir / name for name in (
         "request.json", "run-manifest.json", "analysis-request.json")]
     input_paths.append(Path(authorization_path).resolve())

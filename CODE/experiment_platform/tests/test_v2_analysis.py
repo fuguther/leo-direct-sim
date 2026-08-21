@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 from CODE.experiment_platform import v2_analysis
 from CODE.leo_sim import kernel, receipt, trace
 from CODE.leo_sim.tests.helpers import StaticGeometry, cell, make_cfg, row
@@ -74,6 +76,29 @@ def test_primary_metric_is_derived_from_v2_receipt_and_ledgers():
         receipt_payload, ledgers, "e2e_delay_mean_s") == 1.0
     assert v2_analysis._metric_from_result(
         receipt_payload, ledgers, "link_utilization_mean") == 0.5
+
+
+def test_planned_contrasts_scope_each_contrast_to_its_own_pairing_key():
+    results = [
+        {"pairing_key": "load-50", "arm_id": "low_control",
+         "primary_metric": 0.40},
+        {"pairing_key": "load-50", "arm_id": "low_copy",
+         "primary_metric": 0.45},
+        {"pairing_key": "load-100", "arm_id": "medium_control",
+         "primary_metric": 0.50},
+        {"pairing_key": "load-100", "arm_id": "medium_copy",
+         "primary_metric": 0.55},
+    ]
+    contrasts = [
+        {"name": "low_copy_minus_low_control", "left_arm": "low_copy",
+         "right_arm": "low_control"},
+        {"name": "medium_copy_minus_medium_control",
+         "left_arm": "medium_copy", "right_arm": "medium_control"},
+    ]
+    output = v2_analysis._compute_planned_contrasts(
+        results, contrasts, "delivery_rate")
+    assert [item["n_pairs"] for item in output] == [1, 1]
+    assert [item["mean_difference"] for item in output] == pytest.approx([0.05, 0.05])
 
 
 def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
