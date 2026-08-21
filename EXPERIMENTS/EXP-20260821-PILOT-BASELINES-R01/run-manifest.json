@@ -1,0 +1,412 @@
+{
+  "arms": [
+    {
+      "arm_id": "qlearning_a",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "qlearning"
+        },
+        "routing": {
+          "contract": "C3",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    },
+    {
+      "arm_id": "qlearning_b",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "qlearning"
+        },
+        "routing": {
+          "contract": "C3",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    },
+    {
+      "arm_id": "ddqn_c3_a",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn"
+        },
+        "routing": {
+          "contract": "C3",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    },
+    {
+      "arm_id": "ddqn_c3_b",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn"
+        },
+        "routing": {
+          "contract": "C3",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    },
+    {
+      "arm_id": "gat_a",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn"
+        },
+        "routing": {
+          "contract": "GAT",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    },
+    {
+      "arm_id": "gat_b",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn"
+        },
+        "routing": {
+          "contract": "GAT",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    },
+    {
+      "arm_id": "mpnn_a",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn"
+        },
+        "routing": {
+          "contract": "MPNN",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    },
+    {
+      "arm_id": "mpnn_b",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn"
+        },
+        "routing": {
+          "contract": "MPNN",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_a",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "c0b6c65efcef8e5d7191aac1dd037dc0d91569a976a279b9f10f47da1e6d53b4",
+      "config_overrides": {},
+      "config_path": "resolved/EXP-20260821-PILOT-BASELINES-R01-qlearning_a-s7-l7.leo-sim.yaml",
+      "config_sha256": "0280d04740674d4a2947308af80b10005dcaa89df70b62e4c1280766de6cb84c",
+      "controlled_signature": "aff30d5c8f61268001613ed31c7f8e1aa57ba99695fe0d6dd02627c9cc6e06d3",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pilot-qlearning",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-qlearning_a-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "qlearning_b",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "c0b6c65efcef8e5d7191aac1dd037dc0d91569a976a279b9f10f47da1e6d53b4",
+      "config_overrides": {},
+      "config_path": "resolved/EXP-20260821-PILOT-BASELINES-R01-qlearning_b-s7-l7.leo-sim.yaml",
+      "config_sha256": "0280d04740674d4a2947308af80b10005dcaa89df70b62e4c1280766de6cb84c",
+      "controlled_signature": "aff30d5c8f61268001613ed31c7f8e1aa57ba99695fe0d6dd02627c9cc6e06d3",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pilot-qlearning",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-qlearning_b-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "ddqn_c3_a",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "c0b6c65efcef8e5d7191aac1dd037dc0d91569a976a279b9f10f47da1e6d53b4",
+      "config_overrides": {},
+      "config_path": "resolved/EXP-20260821-PILOT-BASELINES-R01-ddqn_c3_a-s7-l7.leo-sim.yaml",
+      "config_sha256": "316130a3109b8ad2cd8ac9728d897f92503b0ed5520f596295bbe7b17e0c09ff",
+      "controlled_signature": "aff30d5c8f61268001613ed31c7f8e1aa57ba99695fe0d6dd02627c9cc6e06d3",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pilot-ddqn_c3",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-ddqn_c3_a-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "ddqn_c3_b",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "c0b6c65efcef8e5d7191aac1dd037dc0d91569a976a279b9f10f47da1e6d53b4",
+      "config_overrides": {},
+      "config_path": "resolved/EXP-20260821-PILOT-BASELINES-R01-ddqn_c3_b-s7-l7.leo-sim.yaml",
+      "config_sha256": "316130a3109b8ad2cd8ac9728d897f92503b0ed5520f596295bbe7b17e0c09ff",
+      "controlled_signature": "aff30d5c8f61268001613ed31c7f8e1aa57ba99695fe0d6dd02627c9cc6e06d3",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pilot-ddqn_c3",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-ddqn_c3_b-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "gat_a",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "c0b6c65efcef8e5d7191aac1dd037dc0d91569a976a279b9f10f47da1e6d53b4",
+      "config_overrides": {},
+      "config_path": "resolved/EXP-20260821-PILOT-BASELINES-R01-gat_a-s7-l7.leo-sim.yaml",
+      "config_sha256": "56e5a8b2a37dbcd42383594d3e8984e863b6c04044d3b164963a3651ee46c9f9",
+      "controlled_signature": "aff30d5c8f61268001613ed31c7f8e1aa57ba99695fe0d6dd02627c9cc6e06d3",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pilot-gat",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-gat_a-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "gat_b",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "c0b6c65efcef8e5d7191aac1dd037dc0d91569a976a279b9f10f47da1e6d53b4",
+      "config_overrides": {},
+      "config_path": "resolved/EXP-20260821-PILOT-BASELINES-R01-gat_b-s7-l7.leo-sim.yaml",
+      "config_sha256": "56e5a8b2a37dbcd42383594d3e8984e863b6c04044d3b164963a3651ee46c9f9",
+      "controlled_signature": "aff30d5c8f61268001613ed31c7f8e1aa57ba99695fe0d6dd02627c9cc6e06d3",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pilot-gat",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-gat_b-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "mpnn_a",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "c0b6c65efcef8e5d7191aac1dd037dc0d91569a976a279b9f10f47da1e6d53b4",
+      "config_overrides": {},
+      "config_path": "resolved/EXP-20260821-PILOT-BASELINES-R01-mpnn_a-s7-l7.leo-sim.yaml",
+      "config_sha256": "09f047e4101edf95633bb36f70dd2089524e782fee63dfff0e01d856f1cfb951",
+      "controlled_signature": "aff30d5c8f61268001613ed31c7f8e1aa57ba99695fe0d6dd02627c9cc6e06d3",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pilot-mpnn",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-mpnn_a-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "mpnn_b",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "c0b6c65efcef8e5d7191aac1dd037dc0d91569a976a279b9f10f47da1e6d53b4",
+      "config_overrides": {},
+      "config_path": "resolved/EXP-20260821-PILOT-BASELINES-R01-mpnn_b-s7-l7.leo-sim.yaml",
+      "config_sha256": "09f047e4101edf95633bb36f70dd2089524e782fee63dfff0e01d856f1cfb951",
+      "controlled_signature": "aff30d5c8f61268001613ed31c7f8e1aa57ba99695fe0d6dd02627c9cc6e06d3",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": 7,
+      "pairing_key": "pilot-mpnn",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-mpnn_b-s7-l7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    }
+  ],
+  "common_config_sha256": "54393f4d22f7f2c01428a00037975a9bea59b24bece64a5ab6a264a95e87a165",
+  "execution_authorized": false,
+  "experiment_id": "EXP-20260821-PILOT-BASELINES-R01",
+  "request_sha256": "1f17ef6c0ebc79df15c9577772843cac192d1b25e1e068cf01d5b98036aeb46a",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-matrix-manifest/v1"
+}
