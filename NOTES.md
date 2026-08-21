@@ -544,3 +544,10 @@
 - 验证：新增回归后 decision/CLI/Q0 定向 `29 passed`；相关 `CODE/leo_sim/tests CODE/tests` 为 `550 passed, 1 skipped`；`git diff --check` 通过。
 - 同一 SHA 本地真实 M-Lab 多 OD+burst smoke：140 星、20 s、55 个活动端点、1,299 offered packets、MCS、1 s 拓扑；`natural_end=true`、`conservation_ok=true`、receipt verify 通过；613 delivered、579 access rejected、107 in-system-at-stop、0 queue overflow。
 - 同一运行的 decision audit：929 行，其中 316 条 forward、613 条 deliver；全部 `leo-sim-decision-info/v1`，316/316 forward 行含 candidate truth；sidecar `row_count=929`，日志 SHA 与实际文件一致。该运行是本地诊断 smoke，不是 VM 正式论文结果；最新 SHA 尚未确认合入 main/部署。
+
+## 2026-08-21：R02 200 Mbps pressure matrix 编译、三方审阅与授权
+
+- 基于当前 main `40bc27bcd2097bc64a77ea0ffc70970ff295ca2d` 新建 `EXP-20260821-CONGESTION-PRESSURE-EVAL-R02`，避免复用旧 R01 授权。修正一次真实发现的 R01/R02 `analysis_id` 残留后重新编译，source/request/analysis-request 统一为 `AN-CONGESTION-PRESSURE-EVAL-R02`。
+- 三份独立冷审均 PASS，且均绑定同一组 13 个 R02 artifact hashes：cold-start `eeb409a05c21f252eb8aba23fe9411321f385b4335ffc1157c82cad195576317`、satellite-DRL `91bb9071fcdf8c46897a7de8d1ad9beb2c4ddddef01f789f5e5e97c09f3ffc84`、adversarial `acc1bae734cf8e8fc44c085a100f834b577a9c50f6bac72c83d3b743eabb44e1`；`verify_compiled_matrix` 为 6 cells / 3 exact pairs，相关测试与 schema/hash 校验通过。
+- `finalize_decision` 返回 `ACCEPTED`；`authorize_experiment` 返回 `AUTHORIZED`（6 runs）。该授权只覆盖同一干净主线上的一次 200 Mbps 描述性 pressure diagnostic，不代表 VM 已运行，也不代表算法优越性、因果拥塞结论、最终 E0、Q0 或论文统计结论。
+- 下一步：将 R02 包经 PR/CI 合入后，以合入后的 exact main SHA 部署 canonical VM，再串行跑 6 个 evaluation cells；逐个核验 natural end、守恒、checkpoint lineage、资源边界和 V2 paired analysis，任一 cell 失败即停止矩阵。
