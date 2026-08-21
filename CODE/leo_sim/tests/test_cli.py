@@ -107,6 +107,21 @@ def test_decision_log_rejects_existing_target_before_simulation(tmp_path, capsys
     assert decision_log.read_text(encoding="utf-8") == "sentinel\n"
 
 
+def test_decision_log_rejects_existing_manifest_before_simulation(tmp_path, capsys):
+    cfg = _write_cfg(tmp_path)
+    decision_log = tmp_path / "audit.jsonl"
+    manifest = tmp_path / "audit.jsonl.manifest.json"
+    manifest.write_text("sentinel manifest\n", encoding="utf-8")
+    out_dir = tmp_path / "out"
+    rc = main(["run", "--config", cfg, "--out", str(out_dir),
+               "--decision-log", str(decision_log)])
+    assert rc == 3
+    assert "destination" in capsys.readouterr().out
+    assert not out_dir.exists()
+    assert not decision_log.exists()
+    assert manifest.read_text(encoding="utf-8") == "sentinel manifest\n"
+
+
 def test_decision_log_rejects_symlink_parent_before_simulation(tmp_path, capsys):
     cfg = _write_cfg(tmp_path)
     real_parent = tmp_path / "real"

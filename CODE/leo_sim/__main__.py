@@ -102,10 +102,14 @@ class _DecisionLogWriter:
             self._temporary.unlink()
 
 
+def _decision_manifest_target(path: Path) -> Path:
+    return path.with_name(path.name + ".manifest.json")
+
+
 def _write_decision_manifest(path: Path, resolved: dict, trace_manifest: dict,
                              result: dict, receipt_payload: dict, out_dir: str,
                              row_count: int, log_sha256: str) -> Path:
-    target = path.with_name(path.name + ".manifest.json")
+    target = _decision_manifest_target(path)
     _check_new_destination(target)
     payload = {
         "schema": "leo-sim-decision-log/v1",
@@ -324,6 +328,11 @@ def _cmd_run(args) -> int:
     decision_writer = None
     if args.decision_log:
         try:
+            # The sidecar is a separate published artifact.  Preflight it
+            # before trace compilation/simulation as well as the JSONL target,
+            # so a collision cannot leave a partial run behind.
+            _check_new_destination(
+                _decision_manifest_target(Path(args.decision_log)))
             decision_writer = _DecisionLogWriter(args.decision_log)
         except Exception as exc:
             print(f"RUN REFUSED (decision audit log): {exc}")
