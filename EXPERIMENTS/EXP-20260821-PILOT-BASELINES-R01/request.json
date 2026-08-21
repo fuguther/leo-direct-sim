@@ -1,0 +1,388 @@
+{
+  "acceptance": {
+    "min_delivered_packets": 500,
+    "min_multisat_deliveries": 1,
+    "require_control_delivery": true,
+    "require_data_isl": true
+  },
+  "analysis": {
+    "analysis_id": "AN-PILOT-BASELINES-R01",
+    "estimand": "paired duplicate consistency for each learning arm under fixed medium M-Lab burst",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "paired duplicate consistency difference",
+        "left_arm": "qlearning_b",
+        "name": "qlearning_b_minus_a",
+        "right_arm": "qlearning_a"
+      },
+      {
+        "estimand": "paired duplicate consistency difference",
+        "left_arm": "ddqn_c3_b",
+        "name": "ddqn_c3_b_minus_a",
+        "right_arm": "ddqn_c3_a"
+      },
+      {
+        "estimand": "paired duplicate consistency difference",
+        "left_arm": "gat_b",
+        "name": "gat_b_minus_a",
+        "right_arm": "gat_a"
+      },
+      {
+        "estimand": "paired duplicate consistency difference",
+        "left_arm": "mpnn_b",
+        "name": "mpnn_b_minus_a",
+        "right_arm": "mpnn_a"
+      }
+    ],
+    "primary_metric": "delivery_rate"
+  },
+  "arms": [
+    {
+      "arm_id": "qlearning_a",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "qlearning"
+        },
+        "routing": {
+          "contract": "C3",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    },
+    {
+      "arm_id": "qlearning_b",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "qlearning"
+        },
+        "routing": {
+          "contract": "C3",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    },
+    {
+      "arm_id": "ddqn_c3_a",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn"
+        },
+        "routing": {
+          "contract": "C3",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    },
+    {
+      "arm_id": "ddqn_c3_b",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn"
+        },
+        "routing": {
+          "contract": "C3",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    },
+    {
+      "arm_id": "gat_a",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn"
+        },
+        "routing": {
+          "contract": "GAT",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    },
+    {
+      "arm_id": "gat_b",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn"
+        },
+        "routing": {
+          "contract": "GAT",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    },
+    {
+      "arm_id": "mpnn_a",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn"
+        },
+        "routing": {
+          "contract": "MPNN",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    },
+    {
+      "arm_id": "mpnn_b",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn"
+        },
+        "routing": {
+          "contract": "MPNN",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "routing.learning_enabled",
+        "routing.contract",
+        "learning.algorithm"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "arm_id": "qlearning_a",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": 7,
+      "pairing_key": "pilot-qlearning",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-qlearning_a-s7-l7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "qlearning_b",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": 7,
+      "pairing_key": "pilot-qlearning",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-qlearning_b-s7-l7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "ddqn_c3_a",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": 7,
+      "pairing_key": "pilot-ddqn_c3",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-ddqn_c3_a-s7-l7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "ddqn_c3_b",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": 7,
+      "pairing_key": "pilot-ddqn_c3",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-ddqn_c3_b-s7-l7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "gat_a",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": 7,
+      "pairing_key": "pilot-gat",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-gat_a-s7-l7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "gat_b",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": 7,
+      "pairing_key": "pilot-gat",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-gat_b-s7-l7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "mpnn_a",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": 7,
+      "pairing_key": "pilot-mpnn",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-mpnn_a-s7-l7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "mpnn_b",
+      "checkpoint_lineage": {
+        "mode": "new_training",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": 7,
+      "pairing_key": "pilot-mpnn",
+      "phase": "training",
+      "run_id": "EXP-20260821-PILOT-BASELINES-R01-mpnn_b-s7-l7",
+      "trace_seed": 7
+    }
+  ],
+  "claim_boundary": {
+    "can_claim": [
+      "all authorized training cells produce natural-end, conservation-verified V2 receipts",
+      "each training cell saves a verified checkpoint for the subsequent evaluation matrix",
+      "delivery_rate and raw congestion metrics can be recomputed from receipts and ledgers",
+      "the pilot estimates execution cost and duplicate consistency under the fixed medium M-Lab burst profile"
+    ],
+    "cannot_claim": [
+      "algorithm superiority",
+      "causal congestion-control effect",
+      "final E0 threshold",
+      "Q0 optimality",
+      "paper-ready statistical conclusion"
+    ]
+  },
+  "common_config": {
+    "access": {
+      "acquisition_delay_s": 0.1,
+      "association": "bbm",
+      "downlink_queue_bits": 64000000,
+      "downlink_rate_mbps": 100,
+      "hysteresis_deg": 0,
+      "min_dwell_s": 0,
+      "slots_per_satellite": 4,
+      "uplink_queue_bits": 64000000,
+      "uplink_rate_mbps": 100
+    },
+    "control_plane": {
+      "advertise_interval_s": 1.0,
+      "enabled": true,
+      "packet_bits": 8000,
+      "ttl_s": 10,
+      "vis_k": 12
+    },
+    "demand": {
+      "burst_duration_s": 8,
+      "burst_multiplier": 2,
+      "burst_start_s": 8,
+      "deadline_s": null,
+      "mode": "mlab",
+      "offered_mbps": 100,
+      "packet_bits": 1000000
+    },
+    "endpoints": {
+      "aggregation_deg": 1.0,
+      "grid_deg": 0.25,
+      "mlab_auto": true,
+      "mlab_max_sites": 64,
+      "sites": []
+    },
+    "execution": {
+      "available_capacity_interval_s": 1.0,
+      "max_entities": 2000,
+      "max_events": 20000000,
+      "max_packets": 20000,
+      "monitor": false
+    },
+    "learning": {
+      "algorithm": "none",
+      "mode": "train"
+    },
+    "links": {
+      "ge_enabled": false,
+      "rate_model": "mcs"
+    },
+    "outputs": {
+      "out_dir": "CODE/Results",
+      "plotting": false
+    },
+    "routing": {
+      "contract": "C3",
+      "learning_enabled": false,
+      "max_hops": 64,
+      "policy": "hop"
+    },
+    "scenario": {
+      "altitude_km": 600,
+      "duration_s": 20,
+      "inclination_deg": 98.6,
+      "min_elevation_deg": 30,
+      "name": "pilot-baselines-mlab-medium-r01",
+      "num_planes": 7,
+      "num_satellites": 140,
+      "time_step_s": 0.1
+    },
+    "topology": {
+      "matching": "markovian",
+      "recompute_interval_s": 1.0
+    }
+  },
+  "experiment_id": "EXP-20260821-PILOT-BASELINES-R01",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-matrix-request/v1",
+  "work_finalization": "CODE/work/WP-LEO-V2-PILOT-BASELINES/R01/finalization.json"
+}
