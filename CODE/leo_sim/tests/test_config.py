@@ -29,6 +29,12 @@ def test_profile_and_overrides_resolve():
         config.resolve_config(profile="nope")
 
 
+@pytest.mark.parametrize("policy", ["info_queue", "info_physical"])
+def test_information_ladder_policies_are_valid_config_values(policy):
+    resolved = config.resolve_config({"routing": {"policy": policy}})
+    assert resolved["config"]["routing"]["policy"] == policy
+
+
 def test_invalid_combinations_rejected():
     with pytest.raises(config.ConfigError, match="dual_connect"):
         config.resolve_config({"access": {"association": "mbb"}})

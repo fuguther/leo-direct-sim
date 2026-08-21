@@ -141,7 +141,7 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "priority": str,  # nonpreemptive_priority (only supported mode)
     },
     "routing": {
-        "policy": str,  # hop|delay|capacity|oracle
+        "policy": str,  # hop|delay|capacity|oracle|info_queue|info_physical
         "max_hops": int,  # data-packet loop cap
         "learning_enabled": bool,
         "contract": str,  # C1|C3|C4|C5|C6|C7 (observation contracts)
@@ -201,7 +201,9 @@ VALID_DEMAND_MODES = {
     "diurnal", "csv", "mlab",
 }
 VALID_ASSOCIATION = {"bbm", "mbb"}
-VALID_POLICIES = {"hop", "delay", "capacity", "oracle"}
+VALID_POLICIES = {
+    "hop", "delay", "capacity", "oracle", "info_queue", "info_physical",
+}
 VALID_CONTRACTS = {"C1", "C3", "C4", "C5", "C6", "C7", "GAT", "MPNN"}
 VALID_ALGORITHMS = {"none", "ddqn", "qlearning"}
 VALID_ISL_DIRS = {"N", "S", "E", "W"}

@@ -162,6 +162,27 @@ def test_mcs_zero_rate_waits_then_expires_at_deadline():
     assert res["mechanism_counters"]["mcs_rate_samples"] > 0
 
 
+def test_info_physical_zero_rate_keeps_waiting_semantics():
+    """F1 filtering must not turn a temporary zero-rate link into NO_ROUTE."""
+    topo = {0: {"E": 1}, 1: {"W": 0}}
+    geo = _Scripted(
+        2, neighbors_map=topo,
+        isl_range_fn=lambda a, b, t: 5900.0,
+        visible=lambda s, lat, lon, t: (
+            (s == 0 and (lat, lon) == AC)
+            or (s == 1 and (lat, lon) == BC)))
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0},
+        "links": {"rate_model": "mcs"},
+        "control_plane": {"enabled": True},
+        "routing": {"policy": "info_physical"},
+    })
+    res = kernel.run_simulation(
+        cfg, [row(1, 0.0, A, B, deadline=1.0)], geometry=geo)
+    assert res["fates"][1] == "DATA_DEADLINE_EXPIRED"
+    assert res["fates"][1] != "NO_ROUTE"
+
+
 def test_mcs_zero_rate_head_does_not_bypass_endpoint_fifo():
     topo = {0: {"E": 1}, 1: {"W": 0}}
     geo = _Scripted(
