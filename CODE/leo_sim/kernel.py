@@ -3145,6 +3145,7 @@ class Kernel:
                 "sha256_16": hashlib.sha256(arr.tobytes()).hexdigest()[:16],
                 "l2_norm": float(np.linalg.norm(arr)),
             }
+        info_audit = self._decision_info_audit(sat, candidates)
         self.decision_sink.append({
             "t": float(self.env.now),
             "state_version": self._state_version,
@@ -3160,7 +3161,90 @@ class Kernel:
             "own_queue_bits": {d: int(lnk.data_bits + lnk.ctrl_bits)
                                for d, lnk in self.isls[sat].items()},
             "obs": obs_summary,
+            "info_audit": info_audit,
         })
+
+    def _decision_info_audit(self, sat: int, candidates: list) -> dict:
+        """Record decision-time physical truth without feeding it to a policy.
+
+        The learner still receives exactly the vector built by
+        ``_learning_observation``.  This optional sink is an audit stream for
+        information-ladder experiments: it binds each legal direction to the
+        direct geometry/rate/queue values available at that instant and, for
+        learning runs, records the control-cache entry ages that contributed
+        to the configured observation contract.  The method is called only
+        when a decision sink is enabled, so normal runs retain the old path.
+        """
+        now = float(self.env.now)
+        truth: dict[str, dict] = {}
+        for direction in candidates:
+            if direction == "deliver" or direction not in self.isls[sat]:
+                continue
+            link = self.isls[sat][direction]
+            peer = link.peer
+            if peer is None:
+                continue
+            distance = float(self.geometry.isl_range_km(sat, peer, now))
+            rate = float(self._link_rate("isl", now, sat, peer=peer))
+            geom_up = (not self.cfg_links["geometry_loss"]
+                       or self.geometry.isl_available(sat, peer, now))
+            ge_up = (not self.ge_enabled or not link.ge.is_down(now))
+            reverse = next(
+                (candidate for candidate in self.isls[peer].values()
+                 if candidate.peer == sat), None)
+            remote_queue = (
+                int(reverse.data_bits + reverse.ctrl_bits)
+                if reverse is not None else None)
+            fields = {
+                "distance_km": distance,
+                "rate_bps": rate,
+                "available": bool(geom_up and ge_up and rate > 0
+                                   and link.room(0)),
+                "remote_queue_bits": remote_queue,
+                "topology_available": bool(
+                    self.topo.get(sat, {}).get(direction) == peer),
+            }
+            truth[direction] = {
+                "edge": [int(sat), int(peer)],
+                **fields,
+                "field_sources": {
+                    field: {
+                        "source": "direct_kernel_state",
+                        "observed_at": now,
+                        "age_s": 0.0,
+                    }
+                    for field in fields
+                },
+            }
+
+        cache_entries: dict[str, dict] = {}
+        contract = None
+        if self.learner is not None:
+            contract = self.cfg_rt["contract"]
+            entries = _learning.information_set(
+                contract, sat, self.caches[sat], now, self.topo,
+                obs_hops=(1 if contract == "C1"
+                          else self.cfg_learning.get("obs_hops")),
+            )
+            for origin, entry in sorted(entries.items()):
+                age = float(max(0.0, entry.aoi(now)))
+                payload = entry.payload if isinstance(entry.payload, dict) else {}
+                cache_entries[str(origin)] = {
+                    "generated_at": float(entry.generated_at),
+                    "received_at": float(entry.received_at),
+                    "age_s": age,
+                    "hops": int(entry.hops),
+                    "source": "control_cache",
+                    "field_age_s": {
+                        str(field): age for field in sorted(payload)
+                    },
+                }
+        return {
+            "schema": "leo-sim-decision-info/v1",
+            "contract": contract,
+            "candidate_truth": truth,
+            "cache_entries": cache_entries,
+        }
 
     def _decide(self, pkt: DataPacket, sat: int) -> None:
         now = self.env.now

@@ -67,6 +67,25 @@ def test_full_run_and_receipt_verify(tmp_path, capsys):
     assert rc2 == 0, capsys.readouterr().out
 
 
+def test_run_writes_optional_decision_log_with_info_audit(tmp_path, capsys):
+    cfg = _write_cfg(tmp_path)
+    cfg_path = Path(cfg)
+    cfg_path.write_text(
+        cfg_path.read_text(encoding="utf-8").replace(
+            "num_satellites: 1", "num_satellites: 2"),
+        encoding="utf-8")
+    out_dir = tmp_path / "out"
+    decision_log = tmp_path / "decision-snapshots.jsonl"
+    rc = main(["run", "--config", cfg, "--out", str(out_dir),
+               "--decision-log", str(decision_log)])
+    assert rc == 0
+    capsys.readouterr()
+    rows = [json.loads(line) for line in decision_log.read_text().splitlines()]
+    assert rows
+    assert all(row["info_audit"]["schema"] == "leo-sim-decision-info/v1"
+               for row in rows)
+
+
 def test_receipt_verify_fails_on_tamper(tmp_path, capsys):
     cfg = _write_cfg(tmp_path)
     out_dir = tmp_path / "out"
