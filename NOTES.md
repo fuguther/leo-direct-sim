@@ -447,3 +447,10 @@
 - canonical VM 已部署同一 main；deployment receipt SHA=`6f9ad082a15e372fe93ce16dbabfaeaa7009e7c9e08cbaa7598e9946c076171a`，source tree SHA=`ecc2e3a03c4237115e8821d7c6669acbfbf3b8f766cdd88123574362bfc50956`。授权 SHA=`19917bd8bc0e88c50b7c2e54c8e69c4360bb3edd53f88cccf09d549cde1492ca`，run id=`EXP-20260821-E0-FORMAL-R01-main-s7`。
 - VM 正式回执：`natural_end=true`、`conservation_ok=true`、`research_eligible=true`、治理 `verification_errors=[]`、`receipt verify=verified`；1,299 offered、613 `DELIVERED`、579 `ACCESS_REJECTED`、107 `IN_SYSTEM_AT_STOP`、0 queue overflow；正式运行 wall-clock 约 123 s。原始结果目录为 `CODE/Results/EXP-20260821-E0-FORMAL-R01-main-s7`（不入库）。
 - 当前明确边界：单运行 E0 使用 `leo-sim-experiment-run-manifest/v1`，而 `CODE/experiment_platform/v2_analysis.py` 的 paired analyzer 只接受 matrix manifest；因此本次正式回执链已闭合到自然结束/守恒/授权，但 **V2 artifact→paired-analysis→claim** 仍未闭合。下一组比较实验必须使用 matrix contract（至少一对受控 cells），不能把本次单运行直接写成论文对比。
+
+## 2026-08-21：PR #109 paired V2 analysis bridge 完成
+
+- PR #109 已通过 CI 并 squash 合入，当前 main=`40dfa39c50964c0f271ca428810f03865dc54290`；canonical VM 部署 receipt SHA=`c2a998ddd74866bcc706ae4f139050768e4a90cf95bb90a78d2489da1884e3b2`，source tree SHA=`b145900fbd80386ed75f9762666122a1d92242f92df1f978301b216dbc10a32e`。
+- matrix `EXP-20260821-E0-PAIRED-R01` 的 control 与 baseline_copy 两个 cell 均在同一部署、同一 config SHA=`7ede74b936ad49e7a8e9b21779a6f6afc54cc2671f3e5f87670c14aed13c123d`、同一 trace identity、seed=7 下正式运行；两次均 `natural_end=true`、`conservation_ok=true`、`research_eligible=true`、VM `receipt verify=verified`。
+- VM `v2_analysis` 已生成 `ANALYSIS/EXP-20260821-E0-PAIRED-R01/v2-paired/analysis-manifest.json`、`summary.json`、`claim-gate.json`；再次 `verify_persisted_analysis` 返回 `ok=true, errors=[]`。两臂 `delivery_rate=0.4719014626635874`，预注册 `baseline_copy-control` 配对差=`0.0`。
+- 这一步正式闭合了“授权 cell → 原始 receipt/ledger → 主指标重算 → paired analysis → claim boundary”链，但仍只是同配置一致性校验；claim gate 明确禁止算法优越性、拥塞控制效果、Q0 最优性和论文统计结论。下一步才进入第一组有真实处理差异的算法/策略对照。
