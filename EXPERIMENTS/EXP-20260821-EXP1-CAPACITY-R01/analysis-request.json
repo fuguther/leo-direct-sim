@@ -1,0 +1,79 @@
+{
+  "analysis": {
+    "analysis_id": "AN-EXP1-CAPACITY-R01",
+    "estimand": "paired capacity-routing minus hop-routing difference",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "paired difference",
+        "left_arm": "capacity",
+        "name": "capacity_minus_control",
+        "right_arm": "control"
+      }
+    ],
+    "primary_metric": "delivery_rate"
+  },
+  "claim_boundary": {
+    "can_claim": [
+      "both authorized cells produce independently verified V2 receipts",
+      "the delivery_rate metric can be recomputed from the receipt",
+      "the paired difference is descriptive evidence under the fixed M-Lab burst profile"
+    ],
+    "cannot_claim": [
+      "algorithm superiority",
+      "a causal congestion-control claim",
+      "Q0 optimality",
+      "paper-ready statistical conclusion"
+    ]
+  },
+  "experiment_id": "EXP-20260821-EXP1-CAPACITY-R01",
+  "matrix_manifest_sha256": "f1d7a13648ae5edd5a676b4a39d8799b93e43e8c0750a9c52a191e40514281d6",
+  "planned_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "control",
+      "config_sha256": "a13035256612ec6c3223737d2f128eb06ed659479f57edfaf4da20547c343cf8",
+      "controlled_signature": "1c0988bc05a66abbf403fd03b1c85602a5359c17cafc0defa203210d2b0138b7",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "pair-7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-EXP1-CAPACITY-R01-control-s7",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "capacity",
+      "config_sha256": "b927931d425f9a301c27d4712301a25ebddeae9afec7e272dff5d23a6ef92465",
+      "controlled_signature": "1c0988bc05a66abbf403fd03b1c85602a5359c17cafc0defa203210d2b0138b7",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "pair-7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-EXP1-CAPACITY-R01-capacity-s7",
+      "trace_identity_sha256": "4b726ee1370d1762d15275bd8f4965925b840548d2880db37296ebb4b32ac281",
+      "trace_seed": 7
+    }
+  ],
+  "planned_run_ids": [
+    "EXP-20260821-EXP1-CAPACITY-R01-control-s7",
+    "EXP-20260821-EXP1-CAPACITY-R01-capacity-s7"
+  ],
+  "request_sha256": "ddcfaedecccdba72f65501bb6656eb541ad6e5ddf28df904216a5b2c5107187e",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-matrix-analysis-request/v1",
+  "status": "WAITING_FOR_VERIFIED_RUNS"
+}

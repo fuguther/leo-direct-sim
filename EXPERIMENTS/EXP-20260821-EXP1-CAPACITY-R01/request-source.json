@@ -1,0 +1,114 @@
+{
+  "schema": "leo-sim-experiment-matrix-request/v1",
+  "experiment_id": "EXP-20260821-EXP1-CAPACITY-R01",
+  "runtime_kind": "leo_sim_v2",
+  "work_finalization": "CODE/work/WP-LEO-V2-EXP1-CAPACITY/R01/finalization.json",
+  "common_config": {
+    "scenario": {
+      "name": "exp1-capacity-mlab-multiod-burst-r01",
+      "duration_s": 20,
+      "time_step_s": 0.1,
+      "num_satellites": 140,
+      "num_planes": 7,
+      "altitude_km": 600,
+      "inclination_deg": 98.6,
+      "min_elevation_deg": 30
+    },
+    "endpoints": {
+      "grid_deg": 0.25,
+      "aggregation_deg": 1.0,
+      "sites": [],
+      "mlab_auto": true,
+      "mlab_max_sites": 64
+    },
+    "demand": {
+      "mode": "mlab",
+      "offered_mbps": 100,
+      "packet_bits": 1000000,
+      "deadline_s": null,
+      "burst_start_s": 8,
+      "burst_duration_s": 8,
+      "burst_multiplier": 2
+    },
+    "access": {
+      "slots_per_satellite": 4,
+      "uplink_rate_mbps": 100,
+      "downlink_rate_mbps": 100,
+      "uplink_queue_bits": 64000000,
+      "downlink_queue_bits": 64000000,
+      "association": "bbm",
+      "hysteresis_deg": 0,
+      "min_dwell_s": 0,
+      "acquisition_delay_s": 0.1
+    },
+    "links": {"rate_model": "mcs", "ge_enabled": false},
+    "topology": {"recompute_interval_s": 1.0, "matching": "markovian"},
+    "control_plane": {
+      "enabled": true,
+      "advertise_interval_s": 1.0,
+      "ttl_s": 10,
+      "vis_k": 12,
+      "packet_bits": 8000
+    },
+    "routing": {
+      "policy": "hop",
+      "max_hops": 64,
+      "learning_enabled": false,
+      "contract": "C3"
+    },
+    "learning": {"algorithm": "none"},
+    "execution": {
+      "max_events": 20000000,
+      "max_entities": 2000,
+      "max_packets": 20000,
+      "monitor": false,
+      "available_capacity_interval_s": 1.0
+    },
+    "outputs": {"plotting": false}
+  },
+  "arms": [
+    {"arm_id": "control", "config_overrides": {}, "intervention_paths": []},
+    {"arm_id": "capacity", "config_overrides": {"routing": {"policy": "capacity"}}, "intervention_paths": ["routing.policy"]}
+  ],
+  "cells": [
+    {
+      "run_id": "EXP-20260821-EXP1-CAPACITY-R01-control-s7",
+      "arm_id": "control",
+      "phase": "non_learning",
+      "trace_seed": 7,
+      "learning_seed": null,
+      "pairing_key": "pair-7",
+      "config_overrides": {},
+      "checkpoint_lineage": {"mode": "not_applicable", "source_run_id": null, "source_sha256": null}
+    },
+    {
+      "run_id": "EXP-20260821-EXP1-CAPACITY-R01-capacity-s7",
+      "arm_id": "capacity",
+      "phase": "non_learning",
+      "trace_seed": 7,
+      "learning_seed": null,
+      "pairing_key": "pair-7",
+      "config_overrides": {},
+      "checkpoint_lineage": {"mode": "not_applicable", "source_run_id": null, "source_sha256": null}
+    }
+  ],
+  "acceptance": {
+    "min_delivered_packets": 1,
+    "min_multisat_deliveries": 1,
+    "require_data_isl": true,
+    "require_control_delivery": true
+  },
+  "analysis": {
+    "analysis_id": "AN-EXP1-CAPACITY-R01",
+    "primary_metric": "delivery_rate",
+    "estimand": "paired capacity-routing minus hop-routing difference",
+    "paired_by": ["pairing_key"],
+    "planned_contrasts": [
+      {"name": "capacity_minus_control", "left_arm": "capacity", "right_arm": "control", "estimand": "paired difference"}
+    ]
+  },
+  "claim_boundary": {
+    "can_claim": ["both authorized cells produce independently verified V2 receipts", "the delivery_rate metric can be recomputed from the receipt", "the paired difference is descriptive evidence under the fixed M-Lab burst profile"],
+    "cannot_claim": ["algorithm superiority", "a causal congestion-control claim", "Q0 optimality", "paper-ready statistical conclusion"]
+  }
+}
