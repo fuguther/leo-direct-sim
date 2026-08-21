@@ -310,6 +310,16 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
         total = w + dist.get(n, float("inf"))
         if total < float("inf"):
             scored.append((total, d))
+    if not scored and policy == "info_physical":
+        # A temporary zero-rate/geometry outage must still enter the kernel's
+        # holding/re-decision path. Returning no candidates would be decoded
+        # as NO_ROUTE, changing packet-fate semantics relative to hop. Keep
+        # every topologically reachable first hop as a deferred fallback;
+        # the kernel performs the authoritative availability check.
+        scored = [
+            (1e300, d) for d, n in sorted(topo.get(sat, {}).items())
+            if dist.get(n, float("inf")) < float("inf")
+        ]
     scored.sort(key=lambda x: (x[0], x[1]))
     if best_only and scored:
         best = scored[0][0]
