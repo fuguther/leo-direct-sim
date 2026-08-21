@@ -1,0 +1,24 @@
+{
+  "artifact_hashes": {
+    "RUNBOOK.md": "8785e0ee061bdb0b74ac7b8639ce20a9af0078bc34dd243321b3120b120f86f3",
+    "analysis-request.json": "aeb5862cf9da941efd2b9130725f59f6e1db2259fe25227be4a3c95730c6633f",
+    "request.json": "230d2d19f3bf497efdc85bca443a3b9202566c6067b054660c17a33b812b0df6",
+    "resolved/EXP-20260821-PILOT-BASELINES-EVAL-R01-ddqn_c3_a_eval-s7-l7.leo-sim.yaml": "b6e7ddb299c04813307442cfd3b1058648945cd35b13bf2eefb95a151afcdac6",
+    "resolved/EXP-20260821-PILOT-BASELINES-EVAL-R01-ddqn_c3_b_eval-s7-l7.leo-sim.yaml": "9bd36c7c896eb3526a5b01926bc9800ed47a7794d8be25854fab045c58daba20",
+    "resolved/EXP-20260821-PILOT-BASELINES-EVAL-R01-gat_a_eval-s7-l7.leo-sim.yaml": "0225484181b5f543217b53be0086e5120452db7cf8ba087d918794bae32ca308",
+    "resolved/EXP-20260821-PILOT-BASELINES-EVAL-R01-gat_b_eval-s7-l7.leo-sim.yaml": "4d8639271c8f52cb6abcbd4bf68e2583cf5825c1b69c05ed84ee5b49968de925",
+    "resolved/EXP-20260821-PILOT-BASELINES-EVAL-R01-mpnn_a_eval-s7-l7.leo-sim.yaml": "9ef19e85b7553d3d215cc327e9cdba4cd7af6c222967bb9e8f0238a0d2c65727",
+    "resolved/EXP-20260821-PILOT-BASELINES-EVAL-R01-mpnn_b_eval-s7-l7.leo-sim.yaml": "2b7741adb3a0bad4d84ab8642d410a03484332293da6234fc929f1c9da1624ff",
+    "resolved/EXP-20260821-PILOT-BASELINES-EVAL-R01-qlearning_a_eval-s7-l7.leo-sim.yaml": "3cf9d3dfcc488384ff3a39c28af2c3dada4b2e65905732dd24b36c432dcb384a",
+    "resolved/EXP-20260821-PILOT-BASELINES-EVAL-R01-qlearning_b_eval-s7-l7.leo-sim.yaml": "32512647ab4dcaaadb30cf4202aa43cf22fa36dc205da8d3a139d8fb31b65947",
+    "run-manifest.json": "21f1ebd8f069493cf3d6cd057676e9828e12979144a0724cace6f17634ec0d19"
+  },
+  "errors": [],
+  "execution_authorized": false,
+  "experiment_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01",
+  "launcher_generated": false,
+  "request_sha256": "230d2d19f3bf497efdc85bca443a3b9202566c6067b054660c17a33b812b0df6",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-compile-report/v1",
+  "status": "COMPILED_REVIEW_REQUIRED"
+}

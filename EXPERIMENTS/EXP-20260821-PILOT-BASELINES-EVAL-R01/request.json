@@ -1,0 +1,452 @@
+{
+  "acceptance": {
+    "min_delivered_packets": 500,
+    "min_multisat_deliveries": 1,
+    "require_control_delivery": true,
+    "require_data_isl": true
+  },
+  "analysis": {
+    "analysis_id": "AN-PILOT-BASELINES-EVAL-R01",
+    "estimand": "paired evaluation duplicate consistency under fixed medium M-Lab burst using checkpoints produced by the training pilot",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "paired evaluation duplicate consistency difference",
+        "left_arm": "qlearning_b_eval",
+        "name": "qlearning_b_minus_a",
+        "right_arm": "qlearning_a_eval"
+      },
+      {
+        "estimand": "paired evaluation duplicate consistency difference",
+        "left_arm": "ddqn_c3_b_eval",
+        "name": "ddqn_c3_b_minus_a",
+        "right_arm": "ddqn_c3_a_eval"
+      },
+      {
+        "estimand": "paired evaluation duplicate consistency difference",
+        "left_arm": "gat_b_eval",
+        "name": "gat_b_minus_a",
+        "right_arm": "gat_a_eval"
+      },
+      {
+        "estimand": "paired evaluation duplicate consistency difference",
+        "left_arm": "mpnn_b_eval",
+        "name": "mpnn_b_minus_a",
+        "right_arm": "mpnn_a_eval"
+      }
+    ],
+    "primary_metric": "delivery_rate"
+  },
+  "arms": [
+    {
+      "arm_id": "qlearning_a_eval",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "qlearning",
+          "mode": "eval"
+        },
+        "routing": {
+          "contract": "C3",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "learning.algorithm",
+        "learning.mode",
+        "routing.contract",
+        "routing.learning_enabled"
+      ]
+    },
+    {
+      "arm_id": "qlearning_b_eval",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "qlearning",
+          "mode": "eval"
+        },
+        "routing": {
+          "contract": "C3",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "learning.algorithm",
+        "learning.mode",
+        "routing.contract",
+        "routing.learning_enabled"
+      ]
+    },
+    {
+      "arm_id": "ddqn_c3_a_eval",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn",
+          "mode": "eval"
+        },
+        "routing": {
+          "contract": "C3",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "learning.algorithm",
+        "learning.mode",
+        "routing.contract",
+        "routing.learning_enabled"
+      ]
+    },
+    {
+      "arm_id": "ddqn_c3_b_eval",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn",
+          "mode": "eval"
+        },
+        "routing": {
+          "contract": "C3",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "learning.algorithm",
+        "learning.mode",
+        "routing.contract",
+        "routing.learning_enabled"
+      ]
+    },
+    {
+      "arm_id": "gat_a_eval",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn",
+          "mode": "eval"
+        },
+        "routing": {
+          "contract": "GAT",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "learning.algorithm",
+        "learning.mode",
+        "routing.contract",
+        "routing.learning_enabled"
+      ]
+    },
+    {
+      "arm_id": "gat_b_eval",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn",
+          "mode": "eval"
+        },
+        "routing": {
+          "contract": "GAT",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "learning.algorithm",
+        "learning.mode",
+        "routing.contract",
+        "routing.learning_enabled"
+      ]
+    },
+    {
+      "arm_id": "mpnn_a_eval",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn",
+          "mode": "eval"
+        },
+        "routing": {
+          "contract": "MPNN",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "learning.algorithm",
+        "learning.mode",
+        "routing.contract",
+        "routing.learning_enabled"
+      ]
+    },
+    {
+      "arm_id": "mpnn_b_eval",
+      "config_overrides": {
+        "learning": {
+          "algorithm": "ddqn",
+          "mode": "eval"
+        },
+        "routing": {
+          "contract": "MPNN",
+          "learning_enabled": true
+        }
+      },
+      "intervention_paths": [
+        "learning.algorithm",
+        "learning.mode",
+        "routing.contract",
+        "routing.learning_enabled"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "arm_id": "qlearning_a_eval",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1",
+        "source_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+      },
+      "config_overrides": {
+        "learning": {
+          "checkpoint_metadata_sha256": "24f4ae9e91b3c8825c5ff2aa3a07362c71b44c474af2d7ea55d157ce7f62d282",
+          "checkpoint_path": "CODE/Results/EXP-20260821-PILOT-BASELINES-R01-qlearning_a-s7-l7/qlearning/q_table.json",
+          "checkpoint_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+        }
+      },
+      "learning_seed": 7,
+      "pairing_key": "eval-qlearning",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-qlearning_a_eval-s7-l7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "qlearning_b_eval",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1",
+        "source_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+      },
+      "config_overrides": {
+        "learning": {
+          "checkpoint_metadata_sha256": "7b3d03bb86fe3b8b3e1b00e0a0f7a032f4e8ecc1e81cfcf327fc3905d7264b4d",
+          "checkpoint_path": "CODE/Results/EXP-20260821-PILOT-BASELINES-R01-qlearning_b-s7-l7/qlearning/q_table.json",
+          "checkpoint_sha256": "943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1"
+        }
+      },
+      "learning_seed": 7,
+      "pairing_key": "eval-qlearning",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-qlearning_b_eval-s7-l7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "ddqn_c3_a_eval",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-4f3d9ef52fa8a3fc3b20be57575619c21f4ed8a028319e31046c02e6fa7fdd9d",
+        "source_sha256": "4f3d9ef52fa8a3fc3b20be57575619c21f4ed8a028319e31046c02e6fa7fdd9d"
+      },
+      "config_overrides": {
+        "learning": {
+          "checkpoint_metadata_sha256": "f3ce8bb0f9942bf93fc2c38d13875b7a2b4e7a7f9b6b6ce726298d254cecfa24",
+          "checkpoint_path": "CODE/Results/EXP-20260821-PILOT-BASELINES-R01-ddqn_c3_a-s7-l7/ddqn/online.keras",
+          "checkpoint_sha256": "4f3d9ef52fa8a3fc3b20be57575619c21f4ed8a028319e31046c02e6fa7fdd9d"
+        }
+      },
+      "learning_seed": 7,
+      "pairing_key": "eval-ddqn_c3",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-ddqn_c3_a_eval-s7-l7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "ddqn_c3_b_eval",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-e8c8e41c36406000e74cde9bc80574493d1bf9f09a73a6d57e52279a67633d0e",
+        "source_sha256": "e8c8e41c36406000e74cde9bc80574493d1bf9f09a73a6d57e52279a67633d0e"
+      },
+      "config_overrides": {
+        "learning": {
+          "checkpoint_metadata_sha256": "221bbd42524c8988c4d8b9b61c035669b7bcfff910bb79f7268e1fb58faaa041",
+          "checkpoint_path": "CODE/Results/EXP-20260821-PILOT-BASELINES-R01-ddqn_c3_b-s7-l7/ddqn/online.keras",
+          "checkpoint_sha256": "e8c8e41c36406000e74cde9bc80574493d1bf9f09a73a6d57e52279a67633d0e"
+        }
+      },
+      "learning_seed": 7,
+      "pairing_key": "eval-ddqn_c3",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-ddqn_c3_b_eval-s7-l7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "gat_a_eval",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-40da075300aa278fe93c3551d5663fe99d7f36589cf64432db3a62b4c9c87976",
+        "source_sha256": "40da075300aa278fe93c3551d5663fe99d7f36589cf64432db3a62b4c9c87976"
+      },
+      "config_overrides": {
+        "learning": {
+          "checkpoint_metadata_sha256": "9aac59e05f86511fceb653b9307e6f38d3c10a252d91ad0b24ea7dacc1178a21",
+          "checkpoint_path": "CODE/Results/EXP-20260821-PILOT-BASELINES-R01-gat_a-s7-l7/ddqn/online.keras",
+          "checkpoint_sha256": "40da075300aa278fe93c3551d5663fe99d7f36589cf64432db3a62b4c9c87976"
+        }
+      },
+      "learning_seed": 7,
+      "pairing_key": "eval-gat",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-gat_a_eval-s7-l7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "gat_b_eval",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-b1fd2dc9aebc14fec50c2827c509b91dbc8051ab6280700bedae9e9efd557479",
+        "source_sha256": "b1fd2dc9aebc14fec50c2827c509b91dbc8051ab6280700bedae9e9efd557479"
+      },
+      "config_overrides": {
+        "learning": {
+          "checkpoint_metadata_sha256": "c497cc56a33c57a9bc15aa9514806b7522f2abc81adc6bb4e95ee6ee57f3c5ba",
+          "checkpoint_path": "CODE/Results/EXP-20260821-PILOT-BASELINES-R01-gat_b-s7-l7/ddqn/online.keras",
+          "checkpoint_sha256": "b1fd2dc9aebc14fec50c2827c509b91dbc8051ab6280700bedae9e9efd557479"
+        }
+      },
+      "learning_seed": 7,
+      "pairing_key": "eval-gat",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-gat_b_eval-s7-l7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "mpnn_a_eval",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-aebf16649df9cd2ba8f1c308b893cf3f50895c342f375486bba158b5d519aece",
+        "source_sha256": "aebf16649df9cd2ba8f1c308b893cf3f50895c342f375486bba158b5d519aece"
+      },
+      "config_overrides": {
+        "learning": {
+          "checkpoint_metadata_sha256": "96f529c8b69d8d9a4d0b3d70570d0d3baf4c63368b4fe81845d45f46a87e9a40",
+          "checkpoint_path": "CODE/Results/EXP-20260821-PILOT-BASELINES-R01-mpnn_a-s7-l7/ddqn/online.keras",
+          "checkpoint_sha256": "aebf16649df9cd2ba8f1c308b893cf3f50895c342f375486bba158b5d519aece"
+        }
+      },
+      "learning_seed": 7,
+      "pairing_key": "eval-mpnn",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-mpnn_a_eval-s7-l7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "mpnn_b_eval",
+      "checkpoint_lineage": {
+        "mode": "evaluation_only",
+        "source_run_id": "external-51fd1a3d38eecdf3fc69a6edd23de70d9e5ae3f4653f23028ef32146ed15498c",
+        "source_sha256": "51fd1a3d38eecdf3fc69a6edd23de70d9e5ae3f4653f23028ef32146ed15498c"
+      },
+      "config_overrides": {
+        "learning": {
+          "checkpoint_metadata_sha256": "0ea975e8bf0c56d4c94d801f65af3d8d96cb8dbae4efc1660dcfa5903b7bdc4f",
+          "checkpoint_path": "CODE/Results/EXP-20260821-PILOT-BASELINES-R01-mpnn_b-s7-l7/ddqn/online.keras",
+          "checkpoint_sha256": "51fd1a3d38eecdf3fc69a6edd23de70d9e5ae3f4653f23028ef32146ed15498c"
+        }
+      },
+      "learning_seed": 7,
+      "pairing_key": "eval-mpnn",
+      "phase": "evaluation",
+      "run_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01-mpnn_b_eval-s7-l7",
+      "trace_seed": 7
+    }
+  ],
+  "claim_boundary": {
+    "can_claim": [
+      "all authorized evaluation cells load their declared checkpoint bytes and metadata under the exact source SHA",
+      "all evaluation cells produce natural-end, conservation-verified V2 receipts",
+      "delivery_rate and raw congestion metrics are recomputable from evaluation receipts and ledgers",
+      "the four trained paths can be executed in evaluation mode on the fixed medium M-Lab burst"
+    ],
+    "cannot_claim": [
+      "algorithm superiority",
+      "causal congestion-control effect",
+      "final E0 threshold",
+      "Q0 optimality",
+      "paper-ready statistical conclusion"
+    ]
+  },
+  "common_config": {
+    "access": {
+      "acquisition_delay_s": 0.1,
+      "association": "bbm",
+      "downlink_queue_bits": 64000000,
+      "downlink_rate_mbps": 100,
+      "hysteresis_deg": 0,
+      "min_dwell_s": 0,
+      "slots_per_satellite": 4,
+      "uplink_queue_bits": 64000000,
+      "uplink_rate_mbps": 100
+    },
+    "control_plane": {
+      "advertise_interval_s": 1.0,
+      "enabled": true,
+      "packet_bits": 8000,
+      "ttl_s": 10,
+      "vis_k": 12
+    },
+    "demand": {
+      "burst_duration_s": 8,
+      "burst_multiplier": 2,
+      "burst_start_s": 8,
+      "deadline_s": null,
+      "mode": "mlab",
+      "offered_mbps": 100,
+      "packet_bits": 1000000
+    },
+    "endpoints": {
+      "aggregation_deg": 1.0,
+      "grid_deg": 0.25,
+      "mlab_auto": true,
+      "mlab_max_sites": 64,
+      "sites": []
+    },
+    "execution": {
+      "available_capacity_interval_s": 1.0,
+      "max_entities": 2000,
+      "max_events": 20000000,
+      "max_packets": 20000,
+      "monitor": false
+    },
+    "learning": {
+      "algorithm": "none",
+      "mode": "train"
+    },
+    "links": {
+      "ge_enabled": false,
+      "rate_model": "mcs"
+    },
+    "outputs": {
+      "out_dir": "CODE/Results",
+      "plotting": false
+    },
+    "routing": {
+      "contract": "C3",
+      "learning_enabled": false,
+      "max_hops": 64,
+      "policy": "hop"
+    },
+    "scenario": {
+      "altitude_km": 600,
+      "duration_s": 20,
+      "inclination_deg": 98.6,
+      "min_elevation_deg": 30,
+      "name": "pilot-baselines-mlab-medium-r01",
+      "num_planes": 7,
+      "num_satellites": 140,
+      "time_step_s": 0.1
+    },
+    "topology": {
+      "matching": "markovian",
+      "recompute_interval_s": 1.0
+    }
+  },
+  "experiment_id": "EXP-20260821-PILOT-BASELINES-EVAL-R01",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-matrix-request/v1",
+  "work_finalization": "CODE/work/WP-LEO-V2-PILOT-BASELINES-EVAL/R01/finalization.json"
+}
