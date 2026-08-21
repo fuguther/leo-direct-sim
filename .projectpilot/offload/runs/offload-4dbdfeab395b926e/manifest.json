@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "planId": "offload-4dbdfeab395b926e",
+  "relayManifest": {
+    "planId": "offload-4dbdfeab395b926e",
+    "projectId": "leo-direct-sim",
+    "backend": "web_chat",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:Q0-CROSS-DOMAIN-RESEARCH",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+        "paths": [
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+          "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+          "CODE/leo_sim/q0_tiny.py",
+          "CODE/leo_sim/tests/test_q0_contract.py"
+        ],
+        "promptHash": "3557c1134824df2e8faebb248cd68437ec4b78698db5d1deb1938c4cfdc0dc16"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:Q0-CROSS-DOMAIN-RESEARCH:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+        "paths": [
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+          "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+          "CODE/leo_sim/q0_tiny.py",
+          "CODE/leo_sim/tests/test_q0_contract.py"
+        ],
+        "promptHash": "4c9a1e0d350286aca25d9670a538098decc7aee04628a3178fabe64e4da555f2"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:EXPERIMENT-DESIGN-OPTIMIZATION",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+        "paths": [
+          "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+          "ANALYSIS/LEGACY-FEATURE-LEDGER-20260819.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/",
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+          "CODE/leo_sim/q0_tiny.py",
+          "CODE/leo_sim/tests/test_q0_contract.py"
+        ],
+        "promptHash": "6e66482140bbbb42dc64ab4bc175564a41a3ec2d51fb4df966ff91a8ab3669ac"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:EXPERIMENT-DESIGN-OPTIMIZATION:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+        "paths": [
+          "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+          "ANALYSIS/LEGACY-FEATURE-LEDGER-20260819.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/",
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+          "CODE/leo_sim/q0_tiny.py",
+          "CODE/leo_sim/tests/test_q0_contract.py"
+        ],
+        "promptHash": "63ddc2938a1f8f4682871b797fb44b50fcfa92437325c23aeeff2ee6934ccf82"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "4dbdfeab395b926ea8e566302778a09a20a88b5066e19f4e738c21171184766e"
+  },
+  "sourceBaseCommit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:Q0-CROSS-DOMAIN-RESEARCH",
+      "promptHash": "3557c1134824df2e8faebb248cd68437ec4b78698db5d1deb1938c4cfdc0dc16",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+        "paths": [
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+          "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+          "CODE/leo_sim/q0_tiny.py",
+          "CODE/leo_sim/tests/test_q0_contract.py"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:Q0-CROSS-DOMAIN-RESEARCH:independent_review",
+      "promptHash": "4c9a1e0d350286aca25d9670a538098decc7aee04628a3178fabe64e4da555f2",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+        "paths": [
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+          "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+          "CODE/leo_sim/q0_tiny.py",
+          "CODE/leo_sim/tests/test_q0_contract.py"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:EXPERIMENT-DESIGN-OPTIMIZATION",
+      "promptHash": "6e66482140bbbb42dc64ab4bc175564a41a3ec2d51fb4df966ff91a8ab3669ac",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+        "paths": [
+          "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+          "ANALYSIS/LEGACY-FEATURE-LEDGER-20260819.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/",
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+          "CODE/leo_sim/q0_tiny.py",
+          "CODE/leo_sim/tests/test_q0_contract.py"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:EXPERIMENT-DESIGN-OPTIMIZATION:independent_review",
+      "promptHash": "63ddc2938a1f8f4682871b797fb44b50fcfa92437325c23aeeff2ee6934ccf82",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+        "paths": [
+          "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+          "ANALYSIS/LEGACY-FEATURE-LEDGER-20260819.md",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/",
+          "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+          "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+          "CODE/leo_sim/q0_tiny.py",
+          "CODE/leo_sim/tests/test_q0_contract.py"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
