@@ -115,6 +115,45 @@ def test_capacity_policy_avoids_advertised_congestion():
     assert dirs[0] == "N"  # path via 2: sat1's E queue is advertised congested
 
 
+def test_info_queue_policy_uses_only_local_first_hop_queue():
+    """F0 must be a local queue/direction arm, not a remote-cache arm."""
+    geo = StaticGeometry(4, neighbors_map=DIVERGE)
+    topo = _topo(geo)
+    cache = _cache_with([
+        (3, {"visible_cells": [B], "isl_queue_bits": {}}, 0.0, 0.01, 10.0),
+    ])
+    dirs, status = routing.choose_next_hop(
+        "info_queue", 0, B, 1.0, geo, topo, cache,
+        {"E": 900_000_000, "N": 0}, 1e9,
+        lambda km: km / 299_792.458,
+    )
+    assert status == "ok"
+    assert dirs[0] == "N"
+
+
+def test_info_physical_policy_rejects_zero_rate_first_hop():
+    """F1 must use current candidate distance/rate/availability, not a
+    fixed-rate tie-break when the direct MCS rate is zero."""
+    ranges = {(0, 1): 5900.0, (0, 2): 1000.0,
+              (1, 3): 1000.0, (2, 3): 1000.0}
+    geo = StaticGeometry(
+        4, neighbors_map=DIVERGE,
+        isl_range_fn=lambda a, b, _t: ranges.get(
+            (a, b), ranges.get((b, a), 1000.0)),
+    )
+    topo = _topo(geo)
+    cache = _cache_with([
+        (3, {"visible_cells": [B], "isl_queue_bits": {}}, 0.0, 0.01, 10.0),
+    ])
+    dirs, status = routing.choose_next_hop(
+        "info_physical", 0, B, 1.0, geo, topo, cache, {}, 1e9,
+        lambda km: km / 299_792.458,
+        rate_from_propagation=lambda prop_s: 0.0 if prop_s > 0.01 else 1e9,
+    )
+    assert status == "ok"
+    assert dirs[0] == "N"
+
+
 def test_capacity_policy_uses_observed_dynamic_mcs_rate():
     """D1: capacity cost uses the rate implied by the same current/cached
     propagation observation, not the legacy constant service rate.  The E

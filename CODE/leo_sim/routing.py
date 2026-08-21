@@ -18,6 +18,13 @@ Information boundary (binding):
 - oracle is explicitly labeled an ANALYSIS UPPER BOUND: it may use global
   current knowledge (and may decide to wait). It never feeds learning.
 
+The ``info_queue`` and ``info_physical`` policies are diagnostic anchors for
+the information ladder. They use the same arrived destination advertisements
+as ``hop`` but differ only in first-hop information: ``info_queue`` adds the
+current satellite's own egress queue, while ``info_physical`` additionally
+uses current first-hop distance, availability and derived rate. Neither reads
+remote current queues or future geometry.
+
 No policy reads future ephemeris or hidden global queues.
 """
 from __future__ import annotations
@@ -173,7 +180,9 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
     Only satellites advertising CURRENT service capability for dst_cell
     (serve_cells) count as legal egress; mere visibility is not enough.
     """
-    if policy not in ("hop", "delay", "capacity", "oracle"):
+    if policy not in (
+            "hop", "delay", "capacity", "oracle",
+            "info_queue", "info_physical"):
         raise ValueError(f"unknown routing policy {policy!r}")
 
     if policy == "oracle":
@@ -221,7 +230,7 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
             return None
         return float(value)
 
-    if policy == "hop":
+    if policy in ("hop", "info_queue", "info_physical"):
         # unit-cost policy: multi-source BFS over the reverse adjacency is
         # exactly Dijkstra with weight 1.0, with no heap/tolerance overhead
         bfs_dist = _multi_source_bfs(adj, targets)
@@ -269,7 +278,7 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
                 return float("inf")
             return c + qb / rate
 
-    if policy != "hop":
+    if policy not in ("hop", "info_queue", "info_physical"):
         # dist[x] = forward cost from x to the nearest target; the search
         # expands backward from targets, so the forward edge cost is evaluated
         # reversed.
@@ -279,7 +288,25 @@ def choose_next_hop(policy: str, sat: int, dst_cell: str, now: float,
         return [], "unreachable"
     scored = []
     for d, n in sorted(topo.get(sat, {}).items()):
-        w = 1.0 if policy == "hop" else fwd_cost(sat, n)
+        if policy == "hop":
+            w = 1.0
+        elif policy == "info_queue":
+            # F0: only the current satellite's own direction queue is
+            # visible. The remainder of the path is a hop-count anchor.
+            w = 1.0 + own_queue_bits.get(d, 0) / max(1.0, isl_rate_bps)
+        elif policy == "info_physical":
+            # F1: add current first-hop physical facts. A zero derived rate
+            # or unavailable geometry is fail-closed for this candidate.
+            if not geometry.isl_available(sat, n, now):
+                continue
+            propagation = prop_delay(geometry.isl_range_km(sat, n, now))
+            rate = (isl_rate_bps if rate_from_propagation is None
+                    else rate_from_propagation(propagation))
+            if rate <= 0:
+                continue
+            w = propagation + own_queue_bits.get(d, 0) / max(1.0, rate)
+        else:
+            w = fwd_cost(sat, n)
         total = w + dist.get(n, float("inf"))
         if total < float("inf"):
             scored.append((total, d))
