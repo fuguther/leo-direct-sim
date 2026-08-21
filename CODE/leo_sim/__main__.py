@@ -74,11 +74,13 @@ class _DecisionLogWriter:
         self._temporary = Path(temporary_name)
         self._handle = self._temporary.open("w", encoding="utf-8")
         self.row_count = 0
+        self._log_hasher = hashlib.sha256()
         self.log_sha256: str | None = None
 
     def append(self, row: dict) -> None:
-        self._handle.write(json.dumps(row, ensure_ascii=False,
-                                      sort_keys=True) + "\n")
+        line = json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n"
+        self._handle.write(line)
+        self._log_hasher.update(line.encode("utf-8"))
         self.row_count += 1
 
     def close(self) -> str:
@@ -91,7 +93,7 @@ class _DecisionLogWriter:
         self._handle.close()
         self._handle = None
         _publish_new_file(self._temporary, self.target)
-        self.log_sha256 = hashlib.sha256(self.target.read_bytes()).hexdigest()
+        self.log_sha256 = self._log_hasher.hexdigest()
         return self.log_sha256
 
     def abort(self) -> None:

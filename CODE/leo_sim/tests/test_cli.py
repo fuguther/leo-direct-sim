@@ -1,11 +1,12 @@
 """End-to-end CLI tests: validate, compile, dry-run, run, receipt verify."""
+import hashlib
 import json
 import importlib.util
 from pathlib import Path
 
 import pytest
 
-from CODE.leo_sim.__main__ import main
+from CODE.leo_sim.__main__ import _DecisionLogWriter, main
 
 SMOKE = str(Path(__file__).resolve().parent.parent / "profiles" / "smoke.yaml")
 
@@ -120,6 +121,24 @@ def test_decision_log_rejects_existing_manifest_before_simulation(tmp_path, caps
     assert not out_dir.exists()
     assert not decision_log.exists()
     assert manifest.read_text(encoding="utf-8") == "sentinel manifest\n"
+
+
+def test_decision_log_hash_is_incremental_on_close(tmp_path, monkeypatch):
+    decision_log = tmp_path / "audit.jsonl"
+    writer = _DecisionLogWriter(str(decision_log))
+    row = {"kind": "forward", "value": 1}
+    writer.append(row)
+    encoded = (json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n").encode()
+
+    original_read_bytes = Path.read_bytes
+
+    def reject_target_read_bytes(path):
+        if path == decision_log:
+            raise AssertionError("close must not read the published log into memory")
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", reject_target_read_bytes)
+    assert writer.close() == hashlib.sha256(encoded).hexdigest()
 
 
 def test_decision_log_rejects_symlink_parent_before_simulation(tmp_path, capsys):
