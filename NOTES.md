@@ -576,3 +576,9 @@
 - 两 seed 的 delivery-rate 配对差（seed 7、seed 11）分别为：DDQN−Q-learning=`0.0169338858`、`0.0182436058`（均值=`0.0175887458`）；GAT−Q-learning=`0.0126103405`、`0.0150241459`（均值=`0.0138172432`）；MPNN−Q-learning=`0.0070257611`、`0.0089429440`（均值=`0.0079843526`）。这些只是同一 200 Mbps 压力合同下的两 seed 描述性重复，不做显著性或 superiority 解释。
 - 两 seed 均保持压力现象：5,551 offered、167 `HOLDING_QUEUE_OVERFLOW`/臂，保留 `IN_SYSTEM_AT_STOP`、`NO_ROUTE` 和逐包 queue/transmission/propagation/holding 时延字段；可从 raw ledger 重新计算。资源仍只保留工程边界，未形成逐 run CPU/RSS 正式 profiling。
 - 结论边界：R03 闭合了“同一 exact SHA → 授权 → VM 双 seed 运行 → 12 个自然结束/守恒回执 → V2 配对与持久化重算”的稳定性证据链；仍不能支持算法 superiority、因果拥塞控制效果、最终 E0 阈值、Q0 最优性或论文统计结论。下一步进入 Q0-F→Q0-I→信息裁剪阶梯的真实压力窗口设计，不在压力重复结果上直接提出新方案。
+
+## 2026-08-21：信息阶梯 F0/F1 诊断锚点候选
+
+- 在独立分支 `codex/20260821-info-ladder-policy` 实现两个确定性诊断 policy：`info_queue`（F0：本星各方向队列 + 已到达目的地服务广告 + 剩余跳数）和 `info_physical`（F1：再加入本星第一跳斜距、几何可用性、动态速率）。两者均禁止远端当前队列、未来几何和 oracle 真值，不改变学习器 observation tensor。
+- 先写测试并确认未知 policy 失败，再实现；routing/config 定向测试 `28 passed`，相关全量 `554 passed, 1 skipped`，`git diff --check` 通过。代码提交 `65347d5`；独立冷审和 CI 尚未完成，不能称已合入或已部署。
+- 配对设计已写入 `ANALYSIS/INFO-LADDER-REAL-DESIGN-20260821.md`：固定 R03 200 Mbps M-Lab multi-OD + burst 合同，先以 hop/F0/F1 做双 seed 诊断；必须保留本地队列置换、第一跳物理字段固定/置换负对照；在正式 request/审阅/授权前不启动 VM，不产生数值结论。
