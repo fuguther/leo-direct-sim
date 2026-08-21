@@ -530,3 +530,10 @@
 - 审计语义修正：记录所有候选方向而不只记录已通过 legal mask 的方向；将下游语义命名为 `peer_egress_queue_bits`，另保留 `reverse_link_queue_bits`；顶层明确 `mapping_status=truth_audit_not_learner_tensor`。
 - 新增回归：已有目标和 symlink 父目录均在仿真前拒绝且不留下运行 artifact；decision/CLI 定向 `10 passed`（修正后需重跑相关全量）。
 - 当前仍未宣称完成真实信息实验：需要在修正版合入并部署后生成 200 Mbps 压力 trace 的 audit，核对字段覆盖/年龄分布，再决定真实 INFO/AGE-LADDER 实验臂。
+
+## 2026-08-21：decision audit sidecar/hash 修正与本地真实流量 smoke
+
+- PR #129 最新候选 exact SHA=`b910e675187fa3c297994e577f1ce3b874270f16`；独立冷审终裁 `APPROVE`。修正两个 fail-closed 问题：`.manifest.json` 在 trace/simulation 前预检；decision log SHA 在 append 时增量计算，关闭时不再一次性 `read_bytes()` 整个日志。
+- 验证：新增回归后 decision/CLI/Q0 定向 `29 passed`；相关 `CODE/leo_sim/tests CODE/tests` 为 `550 passed, 1 skipped`；`git diff --check` 通过。
+- 同一 SHA 本地真实 M-Lab 多 OD+burst smoke：140 星、20 s、55 个活动端点、1,299 offered packets、MCS、1 s 拓扑；`natural_end=true`、`conservation_ok=true`、receipt verify 通过；613 delivered、579 access rejected、107 in-system-at-stop、0 queue overflow。
+- 同一运行的 decision audit：929 行，其中 316 条 forward、613 条 deliver；全部 `leo-sim-decision-info/v1`，316/316 forward 行含 candidate truth；sidecar `row_count=929`，日志 SHA 与实际文件一致。该运行是本地诊断 smoke，不是 VM 正式论文结果；最新 SHA 尚未确认合入 main/部署。
