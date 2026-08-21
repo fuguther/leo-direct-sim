@@ -1,0 +1,54 @@
+{
+  "authorized_runs": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "code_sha256": "c0b6c65efcef8e5d7191aac1dd037dc0d91569a976a279b9f10f47da1e6d53b4",
+      "config_path": "EXPERIMENTS/EXP-20260821-E0-FORMAL-R01/resolved/EXP-20260821-E0-FORMAL-R01-main-s7.leo-sim.yaml",
+      "config_sha256": "e2a0af82161a7295939c39f29554b40fa2f5558476ba5286ad000259e479ad1b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "run_id": "EXP-20260821-E0-FORMAL-R01-main-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "c7a00b941a8629fa17e997c5e88bbaef2151e48c843a8d539daa0906640bfc52"
+    }
+  ],
+  "experiment_artifact_hashes": {
+    "EXPERIMENTS/EXP-20260821-E0-FORMAL-R01/RUNBOOK.md": "b364d0d1921042c75aa16fdbb8abfe118e3f28e44d4a73911ef0bc7b23813335",
+    "EXPERIMENTS/EXP-20260821-E0-FORMAL-R01/analysis-request.json": "60ebb601346e80a4090e740979a6923e071cdfb829fc86bd747d0613357a4175",
+    "EXPERIMENTS/EXP-20260821-E0-FORMAL-R01/compile-report.json": "6961a923f49503ba2edeb2f58aa7957a518025c686a84a55668b103319b9fd11",
+    "EXPERIMENTS/EXP-20260821-E0-FORMAL-R01/request.json": "6e1979c17064b6b85d70eac9b70222f02a69b83faf9ab5ec3c0c1684e67fa447",
+    "EXPERIMENTS/EXP-20260821-E0-FORMAL-R01/resolved/EXP-20260821-E0-FORMAL-R01-main-s7.leo-sim.yaml": "393e3a95e167b22413115341dfb99a2f39d9451133c60f5a43de8e8c4f4980c5",
+    "EXPERIMENTS/EXP-20260821-E0-FORMAL-R01/run-manifest.json": "a4327abdeff3d9003671d332ffff48b5d2678ab319e0a68f5f6f8a2de37293a2"
+  },
+  "experiment_dir": "EXPERIMENTS/EXP-20260821-E0-FORMAL-R01",
+  "experiment_id": "EXP-20260821-E0-FORMAL-R01",
+  "payload_sha256": "96ac688ab316286ddbf5ca00a0890b5c2d100efabcd379d796b958e0a94fec5a",
+  "schema": "experiment-execution-authorization/v1",
+  "status": "AUTHORIZED",
+  "verification_policy": {
+    "recompute_work_finalization": true,
+    "require_all_bound_artifact_hashes": true,
+    "require_current_scenario_source_hashes": true,
+    "require_current_trace_input_hashes": true,
+    "require_exact_run_config_hash": true
+  },
+  "work_finalization": {
+    "brief_path": "CODE/work/WP-LEO-V2-E0-FORMAL/R01/brief.json",
+    "brief_sha256": "87c3e2a8de7030c5b22d2e50aae68a0dcdd0fb41e4e945263178b80a40791830",
+    "decision_path": "CODE/work/WP-LEO-V2-E0-FORMAL/R01/decision.json",
+    "decision_sha256": "d1f21c6d45317667bebcc56a8f5da754805196641bcdfbbff4bcaec31ed2950a",
+    "path": "CODE/work/WP-LEO-V2-E0-FORMAL/R01/finalization.json",
+    "revision": 1,
+    "sha256": "8b6eab57f9a8d33a0180cacdc1b64683840b1c112baa5437d69d41408c67334a",
+    "work_id": "WP-LEO-V2-E0-FORMAL"
+  }
+}
