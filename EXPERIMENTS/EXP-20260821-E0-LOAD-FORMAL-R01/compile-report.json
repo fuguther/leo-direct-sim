@@ -1,0 +1,22 @@
+{
+  "artifact_hashes": {
+    "RUNBOOK.md": "2151d7c681ffe78e07f2cbd71aa72e2027d5a32a9c4bc6493630278056cd0f3a",
+    "analysis-request.json": "5164d0d160dca4bf326cd6ad66c759f5cc4735729547e5746f24d589703e6a5f",
+    "request.json": "134942135fee7e0c7ece331c8b0b843422346ef85567ca6c6518789a019f1b15",
+    "resolved/EXP-20260821-E0-LOAD-FORMAL-R01-high_control-s7.leo-sim.yaml": "dbd8246c6d7ae1c5f0ad05a38f366996faa10e9ea87d43be92217d13b33db55b",
+    "resolved/EXP-20260821-E0-LOAD-FORMAL-R01-high_copy-s7.leo-sim.yaml": "dbd8246c6d7ae1c5f0ad05a38f366996faa10e9ea87d43be92217d13b33db55b",
+    "resolved/EXP-20260821-E0-LOAD-FORMAL-R01-low_control-s7.leo-sim.yaml": "8a75485cd1596702f3c7485c77cbe2e85bb00abd0b0375254c3e5797ff47a2bf",
+    "resolved/EXP-20260821-E0-LOAD-FORMAL-R01-low_copy-s7.leo-sim.yaml": "8a75485cd1596702f3c7485c77cbe2e85bb00abd0b0375254c3e5797ff47a2bf",
+    "resolved/EXP-20260821-E0-LOAD-FORMAL-R01-medium_control-s7.leo-sim.yaml": "0da19bb085e691542a0ee1efd1973c34c9dc5f2b60f98eedbc9ac801927b6bad",
+    "resolved/EXP-20260821-E0-LOAD-FORMAL-R01-medium_copy-s7.leo-sim.yaml": "0da19bb085e691542a0ee1efd1973c34c9dc5f2b60f98eedbc9ac801927b6bad",
+    "run-manifest.json": "cdb03d7c71cbd7c665b295cb91722933131e5484b19cf1601cb85a9ef5a2b7dd"
+  },
+  "errors": [],
+  "execution_authorized": false,
+  "experiment_id": "EXP-20260821-E0-LOAD-FORMAL-R01",
+  "launcher_generated": false,
+  "request_sha256": "134942135fee7e0c7ece331c8b0b843422346ef85567ca6c6518789a019f1b15",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-compile-report/v1",
+  "status": "COMPILED_REVIEW_REQUIRED"
+}
