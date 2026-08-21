@@ -38,6 +38,6 @@
     "For every tier, the post-run evidence table re-derives the resolved base rate, integrated burst-average target, M-Lab source and endpoint-selection identity, burst transform, offered bits, fates, wall time and raw metric validation from immutable artifacts."
   ],
   "review_roles": ["cold_start", "satellite_drl", "adversarial"],
-  "cost_tier": "medium_judgment",
+  "cost_tier": "high_judgment",
   "status": "REVIEW"
 }
