@@ -1,0 +1,64 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:EXPERIMENT-DESIGN-OPTIMIZATION:independent_review",
+    "title": "现有实验矩阵审查与快速反馈优化",
+    "goal": "只读审查当前提交中的实验路线、观测年龄/信息裁剪矩阵、E0 选档、pilot 和正式实验安排，找出可以在长时间正式实验并行期间立即优化的地方。重点不是替代码跑结果，而是回答：哪些小规模 pilot、配对 seed、分层/阻塞、因子筛选、缓存或停止规则能更快区分研究假设；哪些实验存在混杂、伪重复、信息集不等价、指标与目标不一致或把工程测试当科研证据的风险；如何设计一个今天能汇报、随后能落地的优先级路线。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+      "paths": [
+        "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+        "ANALYSIS/LEGACY-FEATURE-LEDGER-20260819.md",
+        "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/",
+        "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+        "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+        "CODE/leo_sim/q0_tiny.py",
+        "CODE/leo_sim/tests/test_q0_contract.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result",
+      "web_research"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "按事实、推断、未验证三态列出现有实验已完成、设计中和阻塞项，并引用具体项目路径",
+      "给出至少 5 个可执行的实验优化建议，按今天、两天内、后续阶段分级；每项说明预期减少的等待或混杂、代价、风险和验收信号",
+      "审查随机化、配对单位、seed 池、负载/拓扑阻塞、pilot 与正式实验边界、主指标、统计门槛和停止规则",
+      "特别检查信息裁剪是否只改变信息权限而意外改变物理转移律、动作空间或控制合同",
+      "给出一份可直接放进组会的实验推进页：已做、正在跑、并行优化、下一步和不能声称的内容"
+    ],
+    "requiredEvidence": [
+      "现有实验文档和脚本的具体路径/章节定位",
+      "实验设计方法的权威来源或方法学原始资料",
+      "每个建议的可验证验收条件，不接受只有口号的优化建议"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "63ddc2938a1f8f4682871b797fb44b50fcfa92437325c23aeeff2ee6934ccf82"
+}
