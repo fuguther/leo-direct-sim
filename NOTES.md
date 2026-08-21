@@ -567,3 +567,12 @@
 - 三类独立审阅均 PASS，均绑定最新 19 artifact hashes：cold-start receipt SHA=`0e4eb66944268f0b4e5009e94840926d783b9ace303855e54cc69affa7eb0592`、satellite-DRL=`8ea089ad8792b3150a28c59316079ebfac8734ce96ec77e9410b40974b9b6c42`、adversarial=`14183f1d2139694e0b3579422102074573fc7a9dbcd5cbb4783f33d50ae67cc3`；`verify_compiled_matrix` 为 12 rows / 17 compiled artifacts，相关 schema/hash/定向测试通过。
 - `finalize_decision` 返回 `ACCEPTED`；`authorize_experiment` 返回 `AUTHORIZED`（12 runs）。R03 只授权同一压力合同下的两 seed 稳定性重复，不是论文效果或 superiority 授权；尚未部署和执行。
 - 下一步：R03 包经 PR/CI 合入后，用合入后的 exact main SHA 部署 VM，严格串行执行 12 cells；两 seed 若出现不稳定或资源问题，先修复/缩小实验，不进入新方案结论。
+
+## 2026-08-21：R03 两 seed pressure repeat 已在 VM 完成并通过 V2 重算
+
+- 执行主线 exact SHA=`a3fb1d7a42bbc330ac8dd33ef524894efbdc3f95`；canonical VM deployment receipt SHA=`0ca9f09632ecea678665c0fd7889479c12410acb6258301099bbdef57f7429e2`，source tree SHA=`67ff7e6e2e96207c6779917b51e84a6dd71e4aa1293b8bc675c9b05f1a4282ca`，authorization SHA=`dfd8269e98f0694c9a21560645379a31a2a6f4140d303992aab74a71044fdd12`。
+- 12/12 cells 严格串行执行；每个 remote status 为 `success`、`exit_code=0`、`natural_end=true`、`conservation_ok=true`、治理回执 `research_eligible=true`，12 个 `python -m CODE.leo_sim receipt verify <dir>` 均返回 `verified`。没有发生失败、重跑、训练静默退化或依赖错误。
+- VM V2 配对分析返回 `VERIFIED`、`verified_runs=12`；分析摘要状态为 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`，独立 `verify_persisted_analysis` 返回 `{'ok': True, 'errors': []}`。analysis manifest SHA=`643f8df7a92b6269ca6575fb90d13c17bced9ae5d2763515caaa229631ad24d3`。
+- 两 seed 的 delivery-rate 配对差（seed 7、seed 11）分别为：DDQN−Q-learning=`0.0169338858`、`0.0182436058`（均值=`0.0175887458`）；GAT−Q-learning=`0.0126103405`、`0.0150241459`（均值=`0.0138172432`）；MPNN−Q-learning=`0.0070257611`、`0.0089429440`（均值=`0.0079843526`）。这些只是同一 200 Mbps 压力合同下的两 seed 描述性重复，不做显著性或 superiority 解释。
+- 两 seed 均保持压力现象：5,551 offered、167 `HOLDING_QUEUE_OVERFLOW`/臂，保留 `IN_SYSTEM_AT_STOP`、`NO_ROUTE` 和逐包 queue/transmission/propagation/holding 时延字段；可从 raw ledger 重新计算。资源仍只保留工程边界，未形成逐 run CPU/RSS 正式 profiling。
+- 结论边界：R03 闭合了“同一 exact SHA → 授权 → VM 双 seed 运行 → 12 个自然结束/守恒回执 → V2 配对与持久化重算”的稳定性证据链；仍不能支持算法 superiority、因果拥塞控制效果、最终 E0 阈值、Q0 最优性或论文统计结论。下一步进入 Q0-F→Q0-I→信息裁剪阶梯的真实压力窗口设计，不在压力重复结果上直接提出新方案。
