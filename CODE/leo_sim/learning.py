@@ -816,10 +816,10 @@ class TensorflowDDQN:
                 # save_counter, while a fresh Checkpoint object creates it.
                 # Require every real model/optimizer object to match, and
                 # tolerate only that one TensorFlow bookkeeping variable.
-                status.assert_existing_objects_matched()
                 message = str(exc)
                 if ("Found 1 Python objects" not in message
-                        or "save_counter" not in message):
+                        or "save_counter" not in message
+                        or "not assigned a value" in message):
                     raise
         except Exception as exc:
             raise LearningUnavailable(
