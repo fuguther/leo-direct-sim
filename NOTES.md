@@ -440,3 +440,10 @@
 - PR #105 已合入；当前 main=`7f29ea3ee21280722885bedc3efda3d98c56bd98`。
 - canonical VM 已部署同一 main；deployment receipt SHA=`6b916fbfab1debb0a65113d3c78be47f619463683ac0d4017791b4e72a8d0289`，source tree SHA=`b0fb2db50d30338a68351eb0ea754332d43144624bf39bdfab655e7ca282644f`。
 - 本次为文档同步部署，不改变 exact-resume 运行行为；完整长窗中断/不间断等价、formal E0/PILOT、V2 artifact→claim 和 Q0 仍是后续门。
+
+## 2026-08-21：PR #107 formal E0 桥接运行完成
+
+- 正式包 PR #107 已通过 CI 并 squash 合入，当前 main=`c6c18d0122b7251abe3a8b30b07e0dee746e0405`。该包绑定单个 `leo_sim_v2` 非学习 E0：140 星、20 s、M-Lab measurement-proxy 多 OD、50 Mbps、8--16 s burst、MCS、1 s 拓扑重匹配、control plane、seed 7；它是工程到正式链的桥接，不是算法比较或论文结果。
+- canonical VM 已部署同一 main；deployment receipt SHA=`6f9ad082a15e372fe93ce16dbabfaeaa7009e7c9e08cbaa7598e9946c076171a`，source tree SHA=`ecc2e3a03c4237115e8821d7c6669acbfbf3b8f766cdd88123574362bfc50956`。授权 SHA=`19917bd8bc0e88c50b7c2e54c8e69c4360bb3edd53f88cccf09d549cde1492ca`，run id=`EXP-20260821-E0-FORMAL-R01-main-s7`。
+- VM 正式回执：`natural_end=true`、`conservation_ok=true`、`research_eligible=true`、治理 `verification_errors=[]`、`receipt verify=verified`；1,299 offered、613 `DELIVERED`、579 `ACCESS_REJECTED`、107 `IN_SYSTEM_AT_STOP`、0 queue overflow；正式运行 wall-clock 约 123 s。原始结果目录为 `CODE/Results/EXP-20260821-E0-FORMAL-R01-main-s7`（不入库）。
+- 当前明确边界：单运行 E0 使用 `leo-sim-experiment-run-manifest/v1`，而 `CODE/experiment_platform/v2_analysis.py` 的 paired analyzer 只接受 matrix manifest；因此本次正式回执链已闭合到自然结束/守恒/授权，但 **V2 artifact→paired-analysis→claim** 仍未闭合。下一组比较实验必须使用 matrix contract（至少一对受控 cells），不能把本次单运行直接写成论文对比。
