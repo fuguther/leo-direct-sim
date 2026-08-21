@@ -1,6 +1,6 @@
 # LEO 拥塞控制与链路利用率实验总计划
 
-> CURRENT；最后核验：2026-08-21。当前 main `69c40b1` 已部署 VM；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 工程校准、receipt horizon 修复、physical available-capacity 分母、新 profile 的 E0 工程负载标定、60 秒 D2 长窗、capacity 负对照和学习 train→eval 工程 smoke 已完成。50/100/200 Mbps 只冻结为下一阶段的低/中/压力候选，不是正式论文结果；V2 artifact→claim 闭环、逐包三段时延正式 gate、replay 续训、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
+> CURRENT；最后核验：2026-08-21。当前 main `bfae761` 已部署 VM；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 工程校准、receipt horizon 修复、physical available-capacity 分母、新 profile 的 E0 工程负载标定、60 秒 D2 长窗、capacity 负对照和学习 train→eval 工程 smoke 已完成。continuation bundle 已通过 VM 单步恢复等价；50/100/200 Mbps 只冻结为下一阶段的低/中/压力候选，不是正式论文结果；V2 artifact→claim 闭环、逐包三段时延正式 gate、完整长窗中断/不间断等价、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
 
 ## 1. 研究主线与工作方法
 
@@ -39,7 +39,7 @@
 - D1/D2 代码已合入并有回归测试；当前 `69c40b1` VM 已部署，MCS/动态拓扑多 OD T0、三档负载标定、60 秒长窗和学习 smoke 均已有同代码系列工程证据，但 D1 旧平台逐距离 MCS 对照仍缺；
 - 已知 R1-A1 额外跳数刷分风险已关闭；仍需把 shaped reward 与 Q0 物理目标分离，已修复的 mask 旁路也不能代表整体信息公平完成；
 - 闭合 V2 `compile → review → authorize → run → receipt → metric recomputation → paired analysis → claim`；当前只完成矩阵编译/授权 Stage 1，真实 artifact→claim 闭环仍缺；
-- 当前 `69c40b1` 已部署并承接非学习同 SHA 工程 T0/cadence smoke、E0 负载标定、资源剖析、60 秒 D2 长窗、capacity 负对照和 Q-learning/DDQN/GAT/MPNN train→eval 工程 smoke；正式授权 cohort、formal VM E0/PILOT 仍需按 runbook 执行。
+- 当前 `bfae761` 已部署并承接非学习同 SHA 工程 T0/cadence smoke、E0 负载标定、资源剖析、60 秒 D2 长窗、capacity 负对照和 Q-learning/DDQN/GAT/MPNN train→eval 工程 smoke；continuation bundle 已做 VM 单步恢复等价；正式授权 cohort、formal VM E0/PILOT 和完整长窗等价仍需按 runbook 执行。
 
 P0 的验收是“同一 SHA 的结果可以被重新算出来并拒绝篡改”，不是仅有 pytest 绿。
 
@@ -141,7 +141,7 @@ Q0 tiny 通过后，可从真实诊断 trace 中截取代表性小窗口，估�
 
 只有 P2/P3 指向明确缺口后，才写机制假设。例如“瓶颈在热点队列且局部算法因容量/新鲜度不可见而误分流”必须同时有指标、反例和 Q0 差距支持。
 
-进入长训前完成 replay 续训：持久化 replay transitions、online/target、optimizer、训练计数器、RNG、schema/config/SHA，并用“中断续训 vs 不间断训练”对照验证。
+进入长训前必须完成中断续训 vs 不间断训练对照。当前 continuation bundle 已持久化 replay transitions、online/target、optimizer、训练计数器、NumPy/TF RNG，并在 VM 通过恢复后继续一步等价；完整长窗对照仍是未闭合门。
 
 先跑 NEW-SCHEME-TINY 和压力反例；失败则回到诊断，不直接扩大矩阵。
 

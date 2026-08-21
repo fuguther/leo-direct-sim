@@ -33,13 +33,14 @@ requirements:
   q0_minimum_loop_verified: {status: blocked}
   q0_replay_review_approved: {status: blocked}
   three_final_audit_rounds_no_new_major: {status: blocked}
-  exact_main_deployed_to_vm: {status: completed_verified, evidence: main_69c40b1_deployment_76244c2f62a49d748f213f6aa1544a122bd01d978ea53037bdc76ac46499e22c_source_b5a95f4d253cd6bb154fc22d590c8331d2a5c4e835b0f1d8ac2a3a653a21f578}
-  learning_vm_smoke_verified: {status: completed_verified, evidence: main_0f7249f_vm_qlearning_ddqn_gat_mpnn_train_eval_ddqn20_capacity_anchor_receipts_metrics_recompute}
+  exact_main_deployed_to_vm: {status: completed_verified, evidence: main_bfae761_deployment_279522bf75404f16d4041bdb23539a71f4bb4b801fcb961de32af64b26b0360d_source_261c185f59d7019ecc9e1bc546e7f441470be5c7ef09d8590d817eea3d1bd3ad}
+  learning_vm_smoke_verified: {status: completed_verified, evidence: main_bfae761_vm_qlearning_ddqn_gat_mpnn_train_eval_ddqn20_capacity_anchor_receipts_metrics_recompute}
   mcs_vm_comparison_verified: {status: blocked, reason: basic_smoke_only_no_legacy_mcs_comparison}
   d2_long_window_vm_verified: {status: completed_verified, evidence: main_0f7249f_vm_60s_100mbps_multiod_long_window_receipt_metrics_recompute}
   per_action_physical_features_verified: {status: blocked}
   field_age_provenance_verified: {status: blocked}
-  replay_resume_verified: {status: blocked}
+  resume_bundle_restore_verified: {status: completed_verified, evidence: main_bfae761_vm_ddqn_qlearning_resume_restore_and_post_resume_step_equivalence}
+  replay_resume_verified: {status: blocked, reason: full_long_window_interrupted_vs_uninterrupted_equivalence_pending}
   interaction_triggered: {status: planned, conditional: true}
   congestion_mechanism_identified: {status: blocked}
 

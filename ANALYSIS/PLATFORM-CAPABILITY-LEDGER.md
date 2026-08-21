@@ -32,7 +32,7 @@
 | per-action 斜距/速率/方向特征 | RAAC 有 4×9 action_feats | V2 内部路由能访问相关量，但 decision sink 无逐动作等价物 | BLOCKER-THEORY | INFO-LADDER 前加入 distance/rate/availability/observed_at/source；不默认给所有臂 |
 | 逐字段 AoI | 旧有定时观测/年龄统计 | V2 是 cache-entry 级 age，未有字段级 generated/received/source age | BLOCKER-THEORY | AGE-LADDER 前完成并做 shuffle/fixed-fresh 负对照 |
 | 每包 queue/tx/prop 分解 | 有 | 内部事件和本地重算已有；receipt 已修复合法 horizon in-flight 传播的重算，正式 VM artifact、三段和校验及失败/积压覆盖仍未完成 | BLOCKER-DIAG | 在正式 receipt/analysis 中逐包持久化 queue/tx/prop/e2e，并完成三段和 gate |
-| replay buffer 持久化 | 有 | V2 只有 online model checkpoint；replay、optimizer、target network、RNG 尚未完整持久化 | BLOCKER-LONGTRAIN | 正式长训前做中断续训 vs 不间断训练等价验收，绑定 schema/SHA/config |
+| replay buffer 持久化 | 有 | `leo-sim-ddqn-resume/v1` / `leo-sim-qlearning-resume/v1` continuation bundle 已绑定 replay（DDQN）、online/target、optimizer、训练计数器、NumPy/TF RNG、schema/config/SHA；VM 已验证恢复后继续一步等价；完整长窗中断/不间断对照仍缺 | BLOCKER-LONGTRAIN | 正式长训前完成跨长窗中断/不间断等价，保留当前 VM 单步证据 |
 | 学习算法 VM smoke | 有 | `8e2f1df` canonical VM 已完成 Q-learning、DDQN(C3)、GAT、MPNN 各自 train→checkpoint→eval；8 个产物均 natural end、conservation true、receipt verified，独立 metrics 重算 `validation.ok=true`；另有 20 s DDQN 训练 1,220 步并完成 eval | **工程门已通过；正式实验仍受分析链/长训门禁约束** | 资源剖析显示 1/2/4/8 线程墙钟约 14.3/14.4/15.6/14.7 s、峰值 RSS 约 450--455 MiB；先用 1 线程串行 pilot，再补 replay/optimizer/target/RNG 续训 |
 | 多步/TD-λ/temporal | 有 | V2 只有设计稿 | CONDITIONAL | 诊断若指向信用分配问题，再作为研究臂 |
 | path-credit | 有 | V2 未接运行时 | CONDITIONAL | 诊断若指向端到端信用分配，再立单独研究臂 |
