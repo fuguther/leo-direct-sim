@@ -474,3 +474,12 @@
 - 原始 ledger 独立重算均通过；低/中/高档平均物理可用容量利用率约为 `0.00011595/0.00024093/0.00044596`，最大链路利用率约为 `0.00782/0.01508/0.02972`。中档已交付包平均 `e2e_s=0.294096`、排队等待=`0.281647`、传播=`0.010584`、传输=`0.001865`；其余档位同样保留逐包三段字段。
 - 首次 V2 分析发现分析器把低档 contrast 错套到所有 pairing key，正确拒绝了该错误分析。PR #115 修复为“每个 contrast 只计算包含其左右臂的 pairing key；若某 key 只有一侧则继续 fail-loud”，CI 为 `546 passed, 1 skipped, 3 subtests passed`。合入主线 `e83653c907427f6b6bd2410119b914a330808755` 后重新部署，VM `v2_analysis` 返回 `VERIFIED`（6 runs），`verify_persisted_analysis` 返回 `ok=true, errors=[]`。
 - 本组可支持：三档负载的重复一致性、原始负载/突发/端点选择/包命运和指标可重算证据；200 Mbps 已出现 holding overflow，可作为压力档。不能支持：最终 E0 阈值、跨档因果拥塞结论、算法优越性、Q0 最优性或论文统计结论。下一步是基于这张负载表冻结 E0 主档/压力档，再运行真实学习算法的正式 pilot。
+
+## 2026-08-21：中负载真实流量四学习臂 train→checkpoint→eval 工程 pilot
+
+- 运行范围：canonical VM 上已部署主线 `e83653c907427f6b6bd2410119b914a330808755`，deployment receipt SHA=`d7baa84dda74501132130f7b9aaf84a844b0336e1fb4a695e35668423adf096f`；固定 140 星、20 s、100 Mbps base + 8--16 s 2x burst、MCS、1 s 拓扑重算、M-Lab 56-cell measurement-proxy、seed=7，训练和评估均使用 trace SHA=`e6e7bd329f6822046f5d57611690d609a3647e1dca7639e170e985d891000e09`。
+- DDQN/C3：训练自然结束、守恒、receipt verified，4,716 train steps，checkpoint verified SHA=`17ee9ae7b89a416f6fd667c4a168cdf4e4cb75ea6a973391bb4858326a989862`；评估 0 train steps、2,017 decisions，加载 SHA 与训练一致，receipt verified。
+- Q-learning/C3：训练自然结束、守恒、receipt verified，5,086 train steps，checkpoint verified SHA=`943fda8cd60817040b7af9dd0e6680cfaf66e904344eb1a7a680c7145d7fd8b1`；评估 0 train steps、加载 SHA 与训练一致，receipt verified。
+- DDQN/GAT：训练自然结束、守恒、receipt verified，4,975 train steps，checkpoint verified SHA=`59552ee9bafeb0051eb3fe7a49b143ef2cfd37eb3dbb2d5ecc3290b90f75dff6`；评估 0 train steps、3,252 decisions，加载 SHA 与训练一致，receipt verified。
+- DDQN/MPNN：训练自然结束、守恒、receipt verified，5,068 train steps，checkpoint verified SHA=`727cee5fd512962154c90f336202095f90b82c670038bfb9f8e5b0c489534da9`；评估 0 train steps、3,332 decisions，加载 SHA 与训练一致，receipt verified。
+- 这八个 run 是工程 pilot，不是正式授权矩阵，也不支持算法优越性或论文统计结论；它们证明当前 VM/依赖下四个学习路径在主负载上能真实训练、保存、重载、评估，且不会静默退化为无学习。下一步把同一 train/eval 证据装进正式 matrix/授权链，再进入拥塞/利用率诊断；正式评估仍需按 60--120 s 和多 seed 预算重新规划。
