@@ -809,7 +809,18 @@ class TensorflowDDQN:
             online=self.online, target=self.target, optimizer=self.optimizer)
         try:
             status = checkpoint.restore(str(prefix))
-            status.assert_consumed()
+            try:
+                status.assert_consumed()
+            except AssertionError as exc:
+                # ``Checkpoint.write`` does not persist the synthetic
+                # save_counter, while a fresh Checkpoint object creates it.
+                # Require every real model/optimizer object to match, and
+                # tolerate only that one TensorFlow bookkeeping variable.
+                status.assert_existing_objects_matched()
+                message = str(exc)
+                if ("Found 1 Python objects" not in message
+                        or "save_counter" not in message):
+                    raise
         except Exception as exc:
             raise LearningUnavailable(
                 f"DDQN TensorFlow resume checkpoint could not be restored: {exc}") from exc
