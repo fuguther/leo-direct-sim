@@ -1,0 +1,155 @@
+{
+  "acceptance": {
+    "min_delivered_packets": 1,
+    "min_multisat_deliveries": 1,
+    "require_control_delivery": true,
+    "require_data_isl": true
+  },
+  "analysis": {
+    "analysis_id": "AN-E0-PAIRED-R01",
+    "estimand": "paired difference of identical baseline copies",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "paired difference",
+        "left_arm": "baseline_copy",
+        "name": "baseline_copy_minus_control",
+        "right_arm": "control"
+      }
+    ],
+    "primary_metric": "delivery_rate"
+  },
+  "arms": [
+    {
+      "arm_id": "control",
+      "config_overrides": {},
+      "intervention_paths": []
+    },
+    {
+      "arm_id": "baseline_copy",
+      "config_overrides": {},
+      "intervention_paths": []
+    }
+  ],
+  "cells": [
+    {
+      "arm_id": "control",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "pair-7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-E0-PAIRED-R01-control-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "baseline_copy",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "pair-7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-E0-PAIRED-R01-baseline_copy-s7",
+      "trace_seed": 7
+    }
+  ],
+  "claim_boundary": {
+    "can_claim": [
+      "both authorized cells produce independently verified V2 receipts",
+      "the delivery_rate metric can be recomputed from the receipt"
+    ],
+    "cannot_claim": [
+      "algorithm superiority",
+      "congestion-control effect",
+      "Q0 optimality",
+      "paper-ready statistical conclusion"
+    ]
+  },
+  "common_config": {
+    "access": {
+      "acquisition_delay_s": 0.1,
+      "association": "bbm",
+      "downlink_queue_bits": 64000000,
+      "downlink_rate_mbps": 100,
+      "hysteresis_deg": 0,
+      "min_dwell_s": 0,
+      "slots_per_satellite": 4,
+      "uplink_queue_bits": 64000000,
+      "uplink_rate_mbps": 100
+    },
+    "control_plane": {
+      "advertise_interval_s": 1.0,
+      "enabled": true,
+      "packet_bits": 8000,
+      "ttl_s": 10,
+      "vis_k": 12
+    },
+    "demand": {
+      "burst_duration_s": 8,
+      "burst_multiplier": 2,
+      "burst_start_s": 8,
+      "deadline_s": null,
+      "mode": "mlab",
+      "offered_mbps": 50,
+      "packet_bits": 1000000
+    },
+    "endpoints": {
+      "aggregation_deg": 1.0,
+      "grid_deg": 0.25,
+      "mlab_auto": true,
+      "mlab_max_sites": 64,
+      "sites": []
+    },
+    "execution": {
+      "available_capacity_interval_s": 1.0,
+      "max_entities": 2000,
+      "max_events": 20000000,
+      "max_packets": 20000,
+      "monitor": false
+    },
+    "learning": {
+      "algorithm": "none"
+    },
+    "links": {
+      "ge_enabled": false,
+      "rate_model": "mcs"
+    },
+    "outputs": {
+      "plotting": false
+    },
+    "routing": {
+      "contract": "C3",
+      "learning_enabled": false,
+      "max_hops": 64,
+      "policy": "hop"
+    },
+    "scenario": {
+      "altitude_km": 600,
+      "duration_s": 20,
+      "inclination_deg": 98.6,
+      "min_elevation_deg": 30,
+      "name": "e0-paired-mlab-multiod-burst-r01",
+      "num_planes": 7,
+      "num_satellites": 140,
+      "time_step_s": 0.1
+    },
+    "topology": {
+      "matching": "markovian",
+      "recompute_interval_s": 1.0
+    }
+  },
+  "experiment_id": "EXP-20260821-E0-PAIRED-R01",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-matrix-request/v1",
+  "work_finalization": "CODE/work/WP-LEO-V2-E0-PAIRED/R01/finalization.json"
+}

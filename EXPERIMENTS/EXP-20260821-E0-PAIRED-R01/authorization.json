@@ -1,0 +1,166 @@
+{
+  "authorized_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "control",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "c0b6c65efcef8e5d7191aac1dd037dc0d91569a976a279b9f10f47da1e6d53b4",
+      "config_path": "EXPERIMENTS/EXP-20260821-E0-PAIRED-R01/resolved/EXP-20260821-E0-PAIRED-R01-control-s7.leo-sim.yaml",
+      "config_sha256": "7ede74b936ad49e7a8e9b21779a6f6afc54cc2671f3e5f87670c14aed13c123d",
+      "controlled_signature": "d526cb867e16f24cbf9b1396b4e501391da608056846c4e8ebed689c71952803",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "pair-7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-E0-PAIRED-R01-control-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "c7a00b941a8629fa17e997c5e88bbaef2151e48c843a8d539daa0906640bfc52",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "baseline_copy",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "c0b6c65efcef8e5d7191aac1dd037dc0d91569a976a279b9f10f47da1e6d53b4",
+      "config_path": "EXPERIMENTS/EXP-20260821-E0-PAIRED-R01/resolved/EXP-20260821-E0-PAIRED-R01-baseline_copy-s7.leo-sim.yaml",
+      "config_sha256": "7ede74b936ad49e7a8e9b21779a6f6afc54cc2671f3e5f87670c14aed13c123d",
+      "controlled_signature": "d526cb867e16f24cbf9b1396b4e501391da608056846c4e8ebed689c71952803",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "pair-7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-E0-PAIRED-R01-baseline_copy-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "c7a00b941a8629fa17e997c5e88bbaef2151e48c843a8d539daa0906640bfc52",
+      "trace_seed": 7
+    }
+  ],
+  "authorized_runs": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "control",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "c0b6c65efcef8e5d7191aac1dd037dc0d91569a976a279b9f10f47da1e6d53b4",
+      "config_path": "EXPERIMENTS/EXP-20260821-E0-PAIRED-R01/resolved/EXP-20260821-E0-PAIRED-R01-control-s7.leo-sim.yaml",
+      "config_sha256": "7ede74b936ad49e7a8e9b21779a6f6afc54cc2671f3e5f87670c14aed13c123d",
+      "controlled_signature": "d526cb867e16f24cbf9b1396b4e501391da608056846c4e8ebed689c71952803",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "pair-7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-E0-PAIRED-R01-control-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "c7a00b941a8629fa17e997c5e88bbaef2151e48c843a8d539daa0906640bfc52",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "baseline_copy",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "c0b6c65efcef8e5d7191aac1dd037dc0d91569a976a279b9f10f47da1e6d53b4",
+      "config_path": "EXPERIMENTS/EXP-20260821-E0-PAIRED-R01/resolved/EXP-20260821-E0-PAIRED-R01-baseline_copy-s7.leo-sim.yaml",
+      "config_sha256": "7ede74b936ad49e7a8e9b21779a6f6afc54cc2671f3e5f87670c14aed13c123d",
+      "controlled_signature": "d526cb867e16f24cbf9b1396b4e501391da608056846c4e8ebed689c71952803",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "57e045c7ac2b7e1ff84807b8f18b4edc28d81d5237d1c7feeadd526c41e2b248",
+        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "pair-7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260821-E0-PAIRED-R01-baseline_copy-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "c7a00b941a8629fa17e997c5e88bbaef2151e48c843a8d539daa0906640bfc52",
+      "trace_seed": 7
+    }
+  ],
+  "experiment_artifact_hashes": {
+    "EXPERIMENTS/EXP-20260821-E0-PAIRED-R01/RUNBOOK.md": "3f0be8a9c7fb18ceb7e8790e75ee08f2a8e37ac1489a7c4a2ffe78843e239a8e",
+    "EXPERIMENTS/EXP-20260821-E0-PAIRED-R01/analysis-request.json": "12997029b831be7e97d96eebee010c1134db741658386712bcddae8d24e48082",
+    "EXPERIMENTS/EXP-20260821-E0-PAIRED-R01/compile-report.json": "8ea60959a02d1bc3bdcb3b9013288280e0b4a165a3ea535770c419071344e548",
+    "EXPERIMENTS/EXP-20260821-E0-PAIRED-R01/request.json": "b116e4a53074dad9ef8880e64f340b6c9474367eb9a553f0e0270cc801585829",
+    "EXPERIMENTS/EXP-20260821-E0-PAIRED-R01/resolved/EXP-20260821-E0-PAIRED-R01-baseline_copy-s7.leo-sim.yaml": "86a2e8b5930113a4ee346eff5451d20e3918c1fdd66528da24e4be5d447cd624",
+    "EXPERIMENTS/EXP-20260821-E0-PAIRED-R01/resolved/EXP-20260821-E0-PAIRED-R01-control-s7.leo-sim.yaml": "86a2e8b5930113a4ee346eff5451d20e3918c1fdd66528da24e4be5d447cd624",
+    "EXPERIMENTS/EXP-20260821-E0-PAIRED-R01/run-manifest.json": "0753fbf48581a01639d63446704fe57e0575768fdf3754aee291a3946fefbef8"
+  },
+  "experiment_dir": "EXPERIMENTS/EXP-20260821-E0-PAIRED-R01",
+  "experiment_id": "EXP-20260821-E0-PAIRED-R01",
+  "payload_sha256": "6b75a47bb135dac550a6f467d3d4407d99bc74cb23099657d9bc26d1af6840fa",
+  "schema": "experiment-execution-authorization/v1",
+  "status": "AUTHORIZED",
+  "verification_policy": {
+    "recompute_work_finalization": true,
+    "require_all_bound_artifact_hashes": true,
+    "require_current_scenario_source_hashes": true,
+    "require_current_trace_input_hashes": true,
+    "require_exact_matrix_cohort": true,
+    "require_exact_run_config_hash": true
+  },
+  "work_finalization": {
+    "brief_path": "CODE/work/WP-LEO-V2-E0-PAIRED/R01/brief.json",
+    "brief_sha256": "3b2de42756fc0dd3a8fd86fa3aa9443f7dfec15b887d237702b9f21e968c2e1c",
+    "decision_path": "CODE/work/WP-LEO-V2-E0-PAIRED/R01/decision.json",
+    "decision_sha256": "c48c6b418fba6d0fe8b6dae4163404bf51d4716c174f8163b7ef7edb42283213",
+    "path": "CODE/work/WP-LEO-V2-E0-PAIRED/R01/finalization.json",
+    "revision": 1,
+    "sha256": "f50e9d5d542fa24c92486f2856715c74fbd70a141c3c0d94ee0a00e52e09d57e",
+    "work_id": "WP-LEO-V2-E0-PAIRED"
+  }
+}
