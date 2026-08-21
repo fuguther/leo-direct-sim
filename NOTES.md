@@ -499,3 +499,12 @@
 - 逐向物理可用容量分母存在且验证通过：downlink 可用约 `1,050.270 Gb`、uplink `1,827.995 Gb`、ISL `8,023.145 Gb`；各臂最大链路利用率约 `0.029719`，最高链路为 `gsl:downlink:128:G1:125:319`。压力档已经真实暴露 holding overflow、在系统积压和长尾等待，适合进入下一步拥塞机制/Q0 归因；但它仍不是最终论文样本。
 - 资源边界：本次 formal receipt 没有逐 run CPU/RSS 字段；运行中人工观察到单核约 99% CPU，RSS 约 0.56--0.88 GB，不能冒充完整资源 profiling。已有 1/2/4/8 线程 profiling 仍是资源选择证据；正式长训前仍需按同一方法保存逐 run wall/CPU/RSS/steps/s。
 - 结论边界：本组只证明高负载压力可复现、拥塞指标/利用率/逐包三段时延可从原始 ledger 重算；claim gate 继续禁止算法优越性、因果拥塞控制效果、最终 E0 阈值、Q0 最优性和论文统计结论。下一步进入 Q0-I/Q0-F 与信息阶梯，不先提出新方案。
+
+## 2026-08-21：Q0-I/Q0-F 有界 tiny 交叉验证候选
+
+- 基线：`fd3ef5d496d42a77553de29d2288cbd476968d71`（当前 main，候选改动尚未合入或部署）；工作内容仅在独立候选工作区完成，未修改用户主工作区。
+- 新增 `CODE/leo_sim/q0_tiny.py` 与 `CODE/leo_sim/tests/test_q0_tiny.py`：依赖无关的离散 tick 小场景。Q0-F 使用完整未来可用边日历做精确枚举；Q0-I 每个 tick 只接收当前窗口并滚动求解，不读取未来日历；另有独立无记忆枚举器、planned replay 和 online replay。
+- 证据：Q0-I 首动作 `(0, 1)`、目标 `(0, 0, -1, -4)`；Q0-F 首动作 `(0, 2)`、目标 `(1, 0, 0, -2)`；`V_F >= V_I`；Q0-F 与独立枚举目标和动作轨迹一致；两种 replay 均无违规，Q0-F delivered packet 为 `(1,)`。CLI 输出为 `{'q0_i': (0, 0, -1, -4), 'q0_f': (1, 0, 0, -2), 'q0_i_first': (1, (0, 1)), 'q0_f_first': (1, (0, 2)), 'vf_ge_vi': True}`。
+- 产物：`ANALYSIS/Q0-TINY-20260821.json` SHA=`f076c650a6a754a5f7d11c5955ddc90ab6022c8c456c0695818970ab25bcf5c8`；说明 `ANALYSIS/Q0-TINY-20260821.md` SHA=`4755a07ea1b699fab3dc2ecfc1776f7447fc82b25a588083290d6f13a76b2d1b`；source SHA=`74792731f074fd6869969f1655bc2a59a943645a7d2780df3213c0260e96c11c`；test SHA=`175be5019ee51f2eec35cf83098fcd8f9caa6e2fe7cdb8242994abeef224c177`。
+- 验证：Q0/tiny/contract/snapshot/topology 定向 `28 passed`；相关全量 `568 passed, 1 skipped, 3 subtests passed in 7.37s`（文档修改后需重跑）；`git diff --check` 需在提交前复核。
+- 边界与下一步：这是 tiny 正确性/因果信息合同证据，不是真实 M-Lab trace 的 Q0 上界、不是可扩展 CP-SAT/MILP，也没有闭合真实 kernel 的逐事件 planned-vs-executed receipt。下一工作单元继续实现信息阶梯 tiny 负对照，然后接真实压力窗口抽取；在真实 Q0/信息阶梯完成前不提出新方案、不写论文优越性结论。

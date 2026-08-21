@@ -1,6 +1,6 @@
 # leo_sim V2 平台能力账本
 
-> CURRENT；最后核验：2026-08-21，runtime main `0f7249f`，已部署 canonical VM。本文只记录已经有当前代码、测试或 VM 证据支撑的状态；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移决策见 `MIGRATION-BACKLOG-20260816.md`。
+> CURRENT；最后核验：2026-08-21，代码基线 main `fd3ef5d`，已部署 canonical VM。Q0 tiny 本次为待合入候选，不能把候选证据冒充已部署证据。本文只记录已经有当前代码、测试或 VM 证据支撑的状态；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移决策见 `MIGRATION-BACKLOG-20260816.md`。
 
 ## 判定与优先级
 
@@ -25,8 +25,8 @@
 | 动作 mask 与观测信息集一致 | 旧/新均需审 | 已修复明确的 cache-hop 偷看问题；仍缺逐动作物理特征和逐字段 AoI，不能宣称整体信息公平已完成 | BLOCKER-THEORY | 保留已通过的旁路回归；完成 per-action distance/rate/availability 与 field-age 合同 |
 | 正式证据链 | V2 目标更强 | **矩阵编译/授权 Stage 1 已完成**；artifact→指标重算→配对分析→claim 的真实授权闭环仍缺，当前没有正式 cohort 产物 | BLOCKER-P0 | 用当前 main 跑真实授权 cohort，核验持久化 analysis manifest、paired output 和 claim gate；禁止用 fixture 冒充论文数据 |
 | Q0 当前全局快照 | 无等价严格接口 | snapshot 已进 main | Q0 前置已完成 | 保留只读、因果和版本测试 |
-| Q0 计划注入与执行归因 | 无 | 候选分支存在但审阅未通过，尚未形成可用于正式结论的执行归因闭环 | BLOCKER-THEORY | action_id 贯穿执行；receipt 持久化 verdict/errors/executed；不阻塞工程 smoke，但阻塞 Q0 结论 |
-| Q0-I/Q0-F tiny | 无统一实现 | Q0-I/Q0-F tiny 尚未完成可接受的交叉验证闭环 | BLOCKER-THEORY | 独立穷举/第二算法交叉验证；从真实诊断窗口抽 tiny |
+| Q0 计划注入与执行归因 | 无 | kernel 已有 `JointPlan` 版本校验、原子注入/执行接口和回归测试；但每个真实运行的 planned-vs-executed 持久化归因仍未闭合 | BLOCKER-THEORY | action_id 贯穿真实执行；receipt 持久化 verdict/errors/executed；不阻塞工程 smoke，但阻塞 Q0 正式结论 |
+| Q0-I/Q0-F tiny | 无统一实现 | 已有依赖无关的有界离散原型：Q0-F 精确枚举、Q0-I 当前窗口滚动求解、独立无记忆枚举和 replay 均通过；不等同于真实 trace 或可扩展 MILP/CP-SAT | BLOCKER-THEORY | 保留 `Q0-TINY-20260821.*` 证据；继续完成真实诊断窗口抽取、planned-vs-executed 和信息阶梯 |
 | 真实流量 provenance、多 OD、突发 | 有多种模式 | M-Lab 快照 44,929 行/4,752 OD/2,604 聚合单元；PR #93 新增显式 `mlab_auto`，`8e2f1df` T0 按最大强连通子图选 56-cell、有界 manifest、burst 和 VM receipt/重算均通过；50/100/200 Mbps 工程标定已完成。M-Lab/人口仍是代理，不能冒充原始 packet trace | BLOCKER-DIAG | 在正式授权 cohort 前绑定新 profile 的 offered-load、available-capacity 和分析链 |
 | 逐向链路利用率可重算 | 聚合统计较多 | **physical available-capacity 分母已合入**；新多 OD VM T0 产生 10,932 个 1 s availability samples，四档 cadence raw metrics 独立重算通过；正式授权 cohort、负对照和三段时延仍未完成 | BLOCKER-DIAG | 对正式 VM artifact 按方向/窗口核对 available/served/utilization，并补 queue/tx/prop 三段和 gate |
 | per-action 斜距/速率/方向特征 | RAAC 有 4×9 action_feats | V2 内部路由能访问相关量，但 decision sink 无逐动作等价物 | BLOCKER-THEORY | INFO-LADDER 前加入 distance/rate/availability/observed_at/source；不默认给所有臂 |

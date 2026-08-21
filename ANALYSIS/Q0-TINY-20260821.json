@@ -1,0 +1,50 @@
+{
+  "schema": "leo-sim-q0-tiny-evidence/v1",
+  "information_contract": {
+    "q0_i": "current link window only; the next availability realization is hidden",
+    "q0_f": "complete realized link availability calendar",
+    "control": "one non-preemptive packet action per tick; wait or one available directed edge; one packet per edge"
+  },
+  "scenario": {
+    "nodes": [0, 1, 2, 3],
+    "edges": [[0, 1], [1, 3], [0, 2], [2, 3]],
+    "availability_by_tick": [
+      [[0, 1], [1, 3], [0, 2], [2, 3]],
+      [[2, 3]],
+      [[1, 3], [2, 3]]
+    ],
+    "packets": [{"pid": 1, "src": 0, "dst": 3, "deadline": 2}],
+    "horizon": 3
+  },
+  "results": {
+    "q0_i": {
+      "objective": [0, 0, -1, -4],
+      "first_action": [1, [0, 1]],
+      "replay_violations": []
+    },
+    "q0_f": {
+      "objective": [1, 0, 0, -2],
+      "first_action": [1, [0, 2]],
+      "replay_violations": [],
+      "delivered": [1]
+    },
+    "independent_enumeration": {
+      "objective": [1, 0, 0, -2],
+      "action_trace_equal_to_q0_f": true
+    },
+    "future_value_order": "V_F >= V_I"
+  },
+  "claim_boundary": {
+    "supports": [
+      "future information is not used by Q0-I",
+      "Q0-F exact tiny enumeration and independent enumeration agree",
+      "the selected Q0-F plan replays without a physics violation"
+    ],
+    "does_not_support": [
+      "a large-scale strict upper bound",
+      "CP-SAT/MILP scalability",
+      "a real M-Lab trace Q0 result",
+      "algorithm superiority or a paper statistical conclusion"
+    ]
+  }
+}

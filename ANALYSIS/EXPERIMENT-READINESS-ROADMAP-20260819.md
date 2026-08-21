@@ -23,8 +23,8 @@
 | P2 设计稿 | 部分完成 | reward、temporal、link budget、Q0 文档已有；组合矩阵尚未正式定稿 |
 | 旧平台全面差距枚举 | 进行中 | D1-D10 已有；本文件补充目录，但三轮审计尚未完成 |
 | Q0 快照接口 | 已完成 | #40 已合入且有独立复核 |
-| Q0 规划注入接口 | 未完成 | 尚未实现 |
-| Q0 tiny 原型 | 未完成 | CP-SAT/event DP 尚未实现 |
+| Q0 规划注入接口 | 部分完成 | kernel 已有 `JointPlan` 校验与原子注入/执行回归；真实 receipt 的 planned-vs-executed 逐事件归因仍未闭合 |
+| Q0 tiny 原型 | 有界原型完成 | `Q0-TINY-20260821.*`：依赖无关精确枚举/当前窗口求解、独立无记忆枚举和 replay 通过；不宣称可扩展 CP-SAT/MILP 或真实 trace 结果 |
 | 正式实验闭环 | 有历史验证，当前合同未冻结 | 旧基线链可跑；D1/D2 新语义尚未形成正式可用 commit |
 
 ## 推荐目标拆分
@@ -45,7 +45,7 @@
 ### R2：Q0 最小闭环
 
 - 完成规划结果注入接口。
-- tiny 场景实现 event DP 与 future CP-SAT/MILP 交叉验证。
+- tiny 场景完成依赖无关的 Q0-F 精确枚举、Q0-I 当前窗口求解、独立枚举和 planned replay 交叉核验；后续再接真实 trace，不能用 tiny 结果代替论文上界。
 - planned-vs-executed 逐事件核对，失败回到 R0。
 
 ### R3：正式实验
@@ -62,7 +62,7 @@
 - 平台验收/机制线：`EXPERIMENTS/`、`ACCEPTANCE-LADDER-20260816.md`，用于 direct/k-hop/BBM/MBB/GE
   等机制验收，不等同于算法效果实验。
 
-Q0 线当前只有算法选型和接口设计，规划注入与 tiny 原型尚未完成，不能把它写成“已有正式实验结果”。
+Q0 线当前已有有界 tiny 交叉验证原型，但仍没有真实 trace 的正式上界结果、逐事件持久化执行归因或可扩展 CP-SAT/MILP 结果，不能把 tiny 结果写成“已有正式实验结果”。
 
 ## 2026-08-19 当前执行状态
 
