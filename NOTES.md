@@ -515,3 +515,10 @@
 - 验证结果：每一级只暴露协议声明的字段；修改隐藏远端队列/拓扑/年龄不影响低级视图及动作；远端队列 shuffle 保持多重集合但改变归属；fixed-age 负对照把所有年龄设为 1.0；未知等级和不适用负对照 fail-loud。定向 `5 passed`。
 - 运行证据：`python3 -m CODE.leo_sim.info_ladder_tiny` 选择轨迹为 `(0,1) → (0,2) → (0,2) → (0,1)`，shuffle/fixed-age 均为真。source SHA=`865d9a8bfe9944f66a8b3750e9f1eee25e43a0eb76317c8673d4fbcfae263925`，test SHA=`dfc63280baac0bed90b8b943d7df84c22d4f95bf9ebd97b6d0fd31e11019c7d2`，机器证据 `ANALYSIS/INFO-LADDER-TINY-20260821.json`。
 - 边界：这是信息 mask/负对照合同，不是训练、真实 trace、Q0 信息价值或拥塞控制效果。真实 V2 decision sink 的逐动作物理字段和逐字段年龄仍未实现；下一步必须接 200 Mbps 压力窗口/不可变 trace 后再做真实信息阶梯。
+
+## 2026-08-21：真实决策信息审计通道实现候选
+
+- 在 kernel 的可选 decision sink 中加入 `leo-sim-decision-info/v1`：每个合法转发方向记录 direct kernel truth（edge、distance_km、rate_bps、available、remote_queue_bits、topology_available）及字段 `source/observed_at/age_s`；learning 决策另记录实际可见 control-cache entry 的 generated/received/age/hops 和 payload 字段年龄。审计流只读输出，不改变 learner 输入或路由行为。
+- CLI 新增诊断参数 `--decision-log <new.jsonl>`；正式授权运行和 dry-run 明确拒绝该参数，避免未绑定 artifact 混入正式证据。普通诊断运行可保存逐决策 JSONL。
+- 验证：decision/CLI/Q0 定向 `42 passed`；相关全量 `575 passed, 1 skipped, 3 subtests passed in 7.04s`；`git diff --check` 通过。
+- 边界：当前只是把真实 decision audit 接通，尚未在 VM 生成 200 Mbps 压力窗口的完整 audit，也未证明 learner 向量逐字段等价或信息价值。下一步在同一已部署 SHA 上跑诊断性压力 trace，检查 audit 字段覆盖/年龄分布，再决定真实 INFO/AGE-LADDER 实验臂。

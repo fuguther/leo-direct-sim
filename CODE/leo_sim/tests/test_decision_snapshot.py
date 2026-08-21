@@ -48,6 +48,29 @@ def test_direct_arm_decision_sink_records_every_hop():
     assert all(r["pid"] == 1 for r in sink)
 
 
+def test_decision_sink_records_per_action_physical_audit_fields():
+    rows = [row(1, 0.0, A, B)]
+    sink: list[dict] = []
+    kernel.run_simulation(make_cfg(), rows, geometry=_two_sat_geo(),
+                           decision_sink=sink)
+    forward = sink[0]
+    audit = forward["info_audit"]
+    assert audit["schema"] == "leo-sim-decision-info/v1"
+    assert audit["contract"] is None
+    candidate = audit["candidate_truth"]["E"]
+    assert candidate["edge"] == [0, 1]
+    assert candidate["distance_km"] == 1000.0
+    assert candidate["rate_bps"] == 1_000_000_000.0
+    assert candidate["available"] is True
+    assert candidate["remote_queue_bits"] == 0
+    assert candidate["topology_available"] is True
+    source = candidate["field_sources"]["distance_km"]
+    assert source["source"] == "direct_kernel_state"
+    assert source["observed_at"] == forward["t"]
+    assert source["age_s"] == 0.0
+    assert audit["cache_entries"] == {}
+
+
 def test_decision_sink_does_not_change_behavior():
     rows = [row(i, 0.0, A, B) for i in (1, 2, 3)]
     base = kernel.run_simulation(make_cfg(), rows, geometry=_two_sat_geo())

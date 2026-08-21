@@ -28,6 +28,31 @@ def _load(path: str) -> dict:
     return config_mod.load_config_file(path)
 
 
+def _write_decision_log(path: str, rows: list[dict]) -> None:
+    """Write the optional output-only decision audit stream fail-closed."""
+    target = Path(path)
+    if target.exists() or target.is_symlink():
+        raise governance.IntentError(
+            f"decision log destination must be new and non-symlink: {target}")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.is_symlink():
+        raise governance.IntentError("decision log destination became a symlink")
+    temporary = target.with_name(f".{target.name}.{Path(__file__).stem}.tmp")
+    if temporary.exists() or temporary.is_symlink():
+        raise governance.IntentError("decision log temporary path already exists")
+    try:
+        with temporary.open("w", encoding="utf-8") as handle:
+            for row in rows:
+                handle.write(json.dumps(row, ensure_ascii=False,
+                                        sort_keys=True) + "\n")
+            handle.flush()
+        temporary.replace(target)
+    except Exception:
+        if temporary.exists() and not temporary.is_symlink():
+            temporary.unlink()
+        raise
+
+
 def _cmd_config_validate(args) -> int:
     try:
         resolved = _load(args.file)
@@ -192,6 +217,13 @@ def _cmd_run(args) -> int:
     except Exception as exc:
         print(f"RUN REFUSED (formal authorization): {exc}")
         return 3
+    if args.decision_log and formal is not None:
+        print("RUN REFUSED: decision audit log is diagnostic-only and cannot "
+              "be attached to a formal authorized run")
+        return 3
+    if args.decision_log and args.dry_run:
+        print("RUN REFUSED: decision audit log is unavailable in dry-run mode")
+        return 3
     out_dir = args.out or cfg["outputs"]["out_dir"]
     if formal is not None and Path(out_dir).exists():
         try:
@@ -244,10 +276,12 @@ def _cmd_run(args) -> int:
         print(json.dumps({"status": "DRY RUN", **plan}, indent=2))
         return 0
     try:
+        decision_rows: list[dict] | None = [] if args.decision_log else None
         result = kernel.run_simulation(
             resolved, rows,
             learning_out_dir=(Path(out_dir) / cfg["learning"]["algorithm"])
             if cfg["learning"]["algorithm"] in ("ddqn", "qlearning") else None,
+            decision_sink=decision_rows,
         )
     except learning.LearningUnavailable as exc:
         print(f"RUN REFUSED (fail closed): {exc}")
@@ -256,6 +290,12 @@ def _cmd_run(args) -> int:
         print(f"RUN ABORTED (bounded execution): {exc}")
         return 4
     rcp = receipt_mod.write_run(out_dir, resolved, trace_bytes, manifest, result, rows)
+    if args.decision_log:
+        try:
+            _write_decision_log(args.decision_log, decision_rows or [])
+        except Exception as exc:
+            print(f"RUN REFUSED (decision audit log): {exc}")
+            return 6
     if formal is not None and rcp["natural_end"]:
         try:
             _write_formal_witness(out_dir, formal, rcp)
@@ -266,7 +306,9 @@ def _cmd_run(args) -> int:
                       **plan,
                       "natural_end": rcp["natural_end"],
                       "fate_counts": rcp["fate_counts"],
-                      "conservation_ok": rcp["conservation_ok"]}, indent=2))
+                      "conservation_ok": rcp["conservation_ok"],
+                      **({"decision_log": str(Path(args.decision_log).resolve())}
+                         if args.decision_log else {})}, indent=2))
     return 0 if rcp["natural_end"] else 5
 
 
@@ -343,6 +385,8 @@ def main(argv=None) -> int:
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--expect-trace-sha256", default=None,
                    help="fail closed unless the consumed trace has this SHA256")
+    p.add_argument("--decision-log", default=None,
+                   help="diagnostic-only JSONL decision/info audit path; forbidden for formal runs")
     p.add_argument("--authorization", default=None)
     p.add_argument("--launch-nonce", default=None)
     p.add_argument("--expect-run-id", default=None)
