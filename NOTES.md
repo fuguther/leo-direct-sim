@@ -426,3 +426,11 @@
 - PR #98 已通过 pytest CI 并 squash 合入，当前 main=`69c40b158abeabd6c7ccd0bbbead5ab646b51905`。
 - canonical VM 已重新部署同一 main；deployment receipt SHA=`76244c2f62a49d748f213f6aa1544a122bd01d978ea53037bdc76ac46499e22c`，source tree SHA=`b5a95f4d253cd6bb154fc22d590c8331d2a5c4e835b0f1d8ac2a3a653a21f578`。
 - 本次仍是文档同步和部署，不改变仿真行为；formal E0/PILOT、replay 续训、V2 artifact→claim 和 Q0 闭环继续保持未完成状态。
+
+## 2026-08-21：exact-resume 实现与 VM 恢复验证
+
+- PR #100--#104 已通过 CI 合入；当前 main=`bfae7616897bb56c92c87904427926f78c93d666`。
+- 新增 `leo-sim-ddqn-resume/v1` 与 `leo-sim-qlearning-resume/v1` continuation bundle：DDQN 保存 replay、online/target、optimizer、训练计数器、NumPy/TF RNG；Q-learning 保存 Q 表、计数器和 NumPy RNG；manifest 绑定 schema、身份和每个 artifact SHA。
+- canonical VM 部署 receipt SHA=`279522bf75404f16d4041bdb23539a71f4bb4b801fcb961de32af64b26b0360d`，source tree SHA=`261c185f59d7019ecc9e1bc546e7f441470be5c7ef09d8590d817eea3d1bd3ad`。
+- VM 验证：DDQN exact-resume 恢复 replay/optimizer/target/RNG 后，继续同一 transition 的下一动作、训练步数、online/target 权重一致；Q-learning 恢复测试通过。相关定向测试 `2 passed`，学习/Q-learning VM 回归 `51 passed`。
+- 边界：这是状态恢复和短续接证据，不是完整长窗“中断续训 vs 不间断”论文等价；该门仍未关闭。

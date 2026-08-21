@@ -1,6 +1,6 @@
 # leo_sim V2 当前实验就绪状态
 
-> 状态最后核验：2026-08-21；当前 main 为 `69c40b158abeabd6c7ccd0bbbead5ab646b51905`，已部署到 canonical VM。代码可做同 SHA 非学习工程 smoke、capacity 负对照和学习训练—评估工程 pilot；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 校准、逐向 physical available-capacity 分母、三档 E0 工程负载标定、60 秒 D2 长窗、Q-learning/DDQN/GAT/MPNN checkpoint 闭环已有 VM receipt/重算证据。V2 artifact→claim 闭环、正式三段时延 gate、replay 续训和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
+> 状态最后核验：2026-08-21；当前 main 为 `bfae7616897bb56c92c87904427926f78c93d666`，已部署到 canonical VM。代码可做同 SHA 非学习工程 smoke、capacity 负对照和学习训练—评估工程 pilot；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 校准、逐向 physical available-capacity 分母、三档 E0 工程负载标定、60 秒 D2 长窗、Q-learning/DDQN/GAT/MPNN checkpoint 闭环已有 VM receipt/重算证据。replay/optimizer/target/RNG continuation bundle 已实现并通过 VM 恢复后继续一步等价测试；V2 artifact→claim 闭环、正式三段时延 gate、完整长窗中断/不间断等价和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
 ## 1. 两个目标
@@ -16,19 +16,19 @@
 
 | 项目 | 当前事实 | 判定 |
 |---|---|---|
-| GitHub main | `69c40b1`（PR #93、#94、#95、#96、#97、#98 合入）；当前代码 CI 绿；1 秒拓扑/MCS/M-Lab 多 OD profile 本地和 VM 可跑 | FACT |
+| GitHub main | `bfae761`（PR #93、#94、#95、#96、#97、#98、#99、#100、#101、#102、#103、#104 合入）；当前代码 CI 绿；1 秒拓扑/MCS/M-Lab 多 OD profile 本地和 VM 可跑 | FACT |
 | D1 动态链路速率 | 已合入、测试通过；VM E0 使用 MCS 并已自然结束，但旧平台 MCS 表征与逐距离对照尚未完成 | FACT；正式论文支撑未确认 |
 | D2 动态拓扑/holding 语义 | 已合入；退役链路、在途包、等待语义有测试；60 秒、100 Mbps、56-cell M-Lab VM 长窗自然结束、守恒、receipt 和 raw metrics 重算通过 | FACT；正式论文支撑仍需跨负载/授权分析 |
 | 包守恒/FIFO/等待/在途 | 基础能力和回归测试已有，VM smoke 守恒通过；正式 artifact/分析链和长窗覆盖未闭合 | FACT；论文证据未闭合 |
 | 奖励/学习语义 | 已关闭额外跳数正回报风险（R1-A1/`ce2566b`）；Q0 物理目标和正式学习结论仍未冻结 | FACT；阻塞正式结论，不阻塞工程 pilot |
 | 信息公平 | 已修复明确 cache-hop 偷看；逐动作物理特征、逐字段 AoI 未完成 | FACT；硬阻塞信息归因 |
-| 当前 VM | 已部署精确 main `69c40b158abeabd6c7ccd0bbbead5ab646b51905`；本轮部署 receipt SHA=`76244c2f62a49d748f213f6aa1544a122bd01d978ea53037bdc76ac46499e22c`，source tree SHA=`b5a95f4d253cd6bb154fc22d590c8331d2a5c4e835b0f1d8ac2a3a653a21f578` | FACT |
+| 当前 VM | 已部署精确 main `bfae7616897bb56c92c87904427926f78c93d666`；本轮部署 receipt SHA=`279522bf75404f16d4041bdb23539a71f4bb4b801fcb961de32af64b26b0360d`，source tree SHA=`261c185f59d7019ecc9e1bc546e7f441470be5c7ef09d8590d817eea3d1bd3ad` | FACT |
 | VM 工程 smoke | 新 56-cell M-Lab 多 OD T0：20 s、1,299 offered、613 delivered、579 `ACCESS_REJECTED`、107 `IN_SYSTEM_AT_STOP`；另完成 50/100/200 Mbps 三档 20 s 工程标定、60 s D2 长窗、capacity 负对照和 20 s DDQN train→checkpoint→eval，均 natural end、conservation true、receipt verified、raw metrics `validation.ok=true` | FACT；非正式、非授权运行 |
 | 真实流量/测量 | M-Lab 快照 44,929 行、4,752 OD、2,604 聚合单元；PR #93 新增显式有界强连通多 OD 选择，manifest 记录选中 56-cell 规则和源 SHA；新三档 E0 工程标定已重跑 | FACT；不能当原始真实包回放 |
 | Q0 | snapshot 已在 main；计划注入/执行归因候选未通过审阅；Q0-I/Q0-F tiny 闭环未完成。Q0 不阻塞工程 smoke，但阻塞信息 vs 决策归因 | FACT |
 | 正式分析链 | 矩阵编译/授权 Stage 1 已完成；artifact→指标→配对分析→claim 的真实授权产物和闭环仍缺 | FACT，partial；仍 blocking |
 | 测量层 | 新多 OD trace 的 0.5/1/2/5 s VM cadence 四档均自然结束、receipt verified、raw metrics 重算通过；1/2/5 s packet/link metrics 逐项相同，1 s 暂定主候选。三档 E0 工程标定已完成；正式逐包三段时延 artifact、独立重算和三段和 gate 仍未完成 | FACT；阻塞拥塞论文诊断 |
-| 续训 | replay、optimizer、target network、RNG 完整恢复未实现 | FACT；阻塞昂贵长训 |
+| 续训 | continuation bundle 已绑定 replay、optimizer、target network、训练计数器、NumPy/TF RNG、schema/config/SHA；VM 已验证恢复后继续一步的动作/计数/权重一致；完整长窗中断/不间断等价仍未跑 | FACT；完整长训前仍需等价门 |
 | 三轮三方无新问题 | 只完成局部 PR/局部模块审阅，没有在最终冻结平台上完成连续三轮 | FACT，未满足 |
 
 ## 3. 目标 A：真实流量诊断/pilot 就绪门禁
@@ -55,7 +55,7 @@
 | 信息 | 每类信息来源、传播、年龄、预测性与 mask 完全一致 | #62 已关闭已知 cache-hop 旁路；逐候选物理特征和逐字段 AoI 未完成 | 不阻塞 E0；阻塞信息归因/相应学习臂 |
 | 控制 | 路由、等待、服务顺序、接入分配的权限分层 | Q0-I/Q0-J 控制范围未完全冻结 | 不阻塞诊断；阻塞理论归因 |
 | 流量 | 真实/代理 trace 为主，uniform 为控制；多 OD 与突发 | 基础 M-Lab/CSV 骨架和 proxy smoke 已有；正式 provenance 合同、多 OD/突发、`hour_utc` 尚未闭合 | 阻塞 E0-REAL |
-| 学习 | 公平训练/评估、收敛诊断、完整断点恢复 | 已完成同 SHA 的 Q-learning、DDQN、GAT、MPNN 工程 smoke；DDQN 20 s 训练 1,220 步并完成 eval；replay/optimizer/target/RNG 恢复和长训收敛仍未完成 | 阻塞正式学习实验 |
+| 学习 | 公平训练/评估、收敛诊断、完整断点恢复 | 已完成同 SHA 的 Q-learning、DDQN、GAT、MPNN 工程 smoke；DDQN 20 s 训练 1,220 步并完成 eval；continuation bundle 与 VM 单步等价已通过；长窗中断/不间断等价和收敛仍未完成 | 阻塞正式学习实验 |
 | 测量 | 端到端指标、丢包/积压、逐向利用率、queue/tx/prop 分解、V2 可重算分析 | 局部事件骨架已有；可信利用率分母、正式逐包三段时延、artifact→claim 闭环未完成 | 阻塞论文级拥塞诊断 |
 | 校准/反驳 | 旧新行为对照、极端反例、参数敏感性、外部数据校准 | 尚未形成覆盖各层的校准套件 | 部分在目标 A 后进行 |
 
@@ -68,4 +68,4 @@
 3. 在已部署 `8e2f1df` 上完成 D1 VM MCS 对照；D2 60 s 长窗已通过，仍需正式 cohort 的跨负载语义对照。
 4. 闭合 V2 artifact→指标→配对分析→claim；学习训练/评估 VM smoke 已完成，下一步补正式授权 cohort。
 5. 在已完成标定的新 56-cell M-Lab profile 上先做 CPU/内存剖析和非学习诊断，再跑 formal VM E0-REAL；之后进入全算法 pilot。Q0-I/Q0-F、逐动作物理特征、逐字段 AoI 按信息归因阶段完成。
-7. 长训前补 replay/optimizer/target/RNG 完整恢复；通过后才冻结论文正式矩阵。
+7. 长训前完成中断/不间断长窗等价和收敛门；continuation bundle 的实现与 VM 单步恢复已通过，但尚未替代该门。
