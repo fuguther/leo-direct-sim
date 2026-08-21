@@ -1,6 +1,6 @@
 {
   "acceptance": {
-    "min_delivered_packets": 1,
+    "min_delivered_packets": 500,
     "min_multisat_deliveries": 1,
     "require_control_delivery": true,
     "require_data_isl": true
@@ -191,11 +191,14 @@
     "can_claim": [
       "all six authorized cells produce independently verified V2 receipts",
       "the delivery_rate metric can be recomputed from the receipt",
-      "the paired differences are descriptive load-tier consistency evidence under the fixed M-Lab burst profile",
-      "the offered-load tiers can be recomputed from the authorized resolved configurations"
+      "each tier's duplicate pair is descriptive consistency evidence under the fixed M-Lab burst profile",
+      "the base offered rate and integrated burst-average target can be recomputed from the authorized resolved configurations",
+      "the raw artifacts preserve source, endpoint-selection, burst and fate evidence for a later E0 load decision"
     ],
     "cannot_claim": [
-      "algorithm superiority or a load-threshold claim",
+      "algorithm superiority",
+      "a universal or final E0 load threshold",
+      "a cross-tier causal load-response claim",
       "a causal congestion-control claim",
       "Q0 optimality",
       "paper-ready statistical conclusion"

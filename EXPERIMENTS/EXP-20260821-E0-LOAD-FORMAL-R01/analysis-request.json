@@ -31,22 +31,25 @@
     "can_claim": [
       "all six authorized cells produce independently verified V2 receipts",
       "the delivery_rate metric can be recomputed from the receipt",
-      "the paired differences are descriptive load-tier consistency evidence under the fixed M-Lab burst profile",
-      "the offered-load tiers can be recomputed from the authorized resolved configurations"
+      "each tier's duplicate pair is descriptive consistency evidence under the fixed M-Lab burst profile",
+      "the base offered rate and integrated burst-average target can be recomputed from the authorized resolved configurations",
+      "the raw artifacts preserve source, endpoint-selection, burst and fate evidence for a later E0 load decision"
     ],
     "cannot_claim": [
-      "algorithm superiority or a load-threshold claim",
+      "algorithm superiority",
+      "a universal or final E0 load threshold",
+      "a cross-tier causal load-response claim",
       "a causal congestion-control claim",
       "Q0 optimality",
       "paper-ready statistical conclusion"
     ]
   },
   "experiment_id": "EXP-20260821-E0-LOAD-FORMAL-R01",
-  "matrix_manifest_sha256": "5c17647ff434716bf6687c3b4b9fa0a1ea5d00c27a4cfccbfbc593dd41b21cbd",
+  "matrix_manifest_sha256": "cdb03d7c71cbd7c665b295cb91722933131e5484b19cf1601cb85a9ef5a2b7dd",
   "planned_cells": [
     {
       "acceptance": {
-        "min_delivered_packets": 1,
+        "min_delivered_packets": 500,
         "min_multisat_deliveries": 1,
         "require_control_delivery": true,
         "require_data_isl": true
@@ -64,7 +67,7 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 1,
+        "min_delivered_packets": 500,
         "min_multisat_deliveries": 1,
         "require_control_delivery": true,
         "require_data_isl": true
@@ -82,7 +85,7 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 1,
+        "min_delivered_packets": 500,
         "min_multisat_deliveries": 1,
         "require_control_delivery": true,
         "require_data_isl": true
@@ -100,7 +103,7 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 1,
+        "min_delivered_packets": 500,
         "min_multisat_deliveries": 1,
         "require_control_delivery": true,
         "require_data_isl": true
@@ -118,7 +121,7 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 1,
+        "min_delivered_packets": 500,
         "min_multisat_deliveries": 1,
         "require_control_delivery": true,
         "require_data_isl": true
@@ -136,7 +139,7 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 1,
+        "min_delivered_packets": 500,
         "min_multisat_deliveries": 1,
         "require_control_delivery": true,
         "require_data_isl": true
@@ -161,7 +164,7 @@
     "EXP-20260821-E0-LOAD-FORMAL-R01-high_control-s7",
     "EXP-20260821-E0-LOAD-FORMAL-R01-high_copy-s7"
   ],
-  "request_sha256": "2f1b4a156f9d7b4b0378bc1fab46d037c7a1b684e4ab29e349b0f36876adfc33",
+  "request_sha256": "134942135fee7e0c7ece331c8b0b843422346ef85567ca6c6518789a019f1b15",
   "runtime_kind": "leo_sim_v2",
   "schema": "leo-sim-matrix-analysis-request/v1",
   "status": "WAITING_FOR_VERIFIED_RUNS"

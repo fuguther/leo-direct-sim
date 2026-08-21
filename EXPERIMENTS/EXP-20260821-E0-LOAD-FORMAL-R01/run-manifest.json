@@ -70,7 +70,7 @@
   "cells": [
     {
       "acceptance": {
-        "min_delivered_packets": 1,
+        "min_delivered_packets": 500,
         "min_multisat_deliveries": 1,
         "require_control_delivery": true,
         "require_data_isl": true
@@ -103,7 +103,7 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 1,
+        "min_delivered_packets": 500,
         "min_multisat_deliveries": 1,
         "require_control_delivery": true,
         "require_data_isl": true
@@ -136,7 +136,7 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 1,
+        "min_delivered_packets": 500,
         "min_multisat_deliveries": 1,
         "require_control_delivery": true,
         "require_data_isl": true
@@ -169,7 +169,7 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 1,
+        "min_delivered_packets": 500,
         "min_multisat_deliveries": 1,
         "require_control_delivery": true,
         "require_data_isl": true
@@ -202,7 +202,7 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 1,
+        "min_delivered_packets": 500,
         "min_multisat_deliveries": 1,
         "require_control_delivery": true,
         "require_data_isl": true
@@ -235,7 +235,7 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 1,
+        "min_delivered_packets": 500,
         "min_multisat_deliveries": 1,
         "require_control_delivery": true,
         "require_data_isl": true
@@ -270,7 +270,7 @@
   "common_config_sha256": "13e42e0c32244902a1036a0b7019fcddc5e8e7de03f397917c183b7e57e3e223",
   "execution_authorized": false,
   "experiment_id": "EXP-20260821-E0-LOAD-FORMAL-R01",
-  "request_sha256": "2f1b4a156f9d7b4b0378bc1fab46d037c7a1b684e4ab29e349b0f36876adfc33",
+  "request_sha256": "134942135fee7e0c7ece331c8b0b843422346ef85567ca6c6518789a019f1b15",
   "runtime_kind": "leo_sim_v2",
   "schema": "leo-sim-experiment-matrix-manifest/v1"
 }
