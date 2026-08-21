@@ -1,0 +1,62 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:Q0-CROSS-DOMAIN-RESEARCH:independent_review",
+    "title": "跨领域理论与可迁移方法调研：受限信息随机网络决策",
+    "goal": "以当前项目的 Q0-F、Q0-I、受限信息参照和实际策略为锚点，开展真正能推动项目的跨领域调研，而不是泛泛罗列卫星路由论文。研究核心问题是：在相同物理网络和动作约束下，性能差距如何区分为未来信息价值、信息结构损失和算法/优化损失；哪些已有理论可以严格支持，哪些只是类比；这些理论如何转化为当前 leo_sim 的可检验命题、实验臂和实现路线。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "bfa08982e30924cb913ac4a23f5de26f7a0a6668",
+      "paths": [
+        "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+        "ANALYSIS/Q0-TINY-DP-DESIGN-20260819.md",
+        "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+        "CODE/leo_sim/q0_tiny.py",
+        "CODE/leo_sim/tests/test_q0_contract.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result",
+      "web_research"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "至少覆盖随机规划 EVPI/VSS、在线/离线差距、信息结构与 value of information、POMDP/分散控制、队列/Backpressure/AoI、动态网络流或 DTN 中的结构相似理论",
+      "给出 8-12 个可核验的一手来源或权威资料，每项写清标题、作者/机构、年份、稳定链接或 DOI、核心结论、假设、与本项目的精确映射和不能支持的结论",
+      "至少提出 4 个可证伪项目命题，并为每个命题给出对应实验对照、所需指标和可能反例",
+      "明确区分 FACT、INFERENCE、UNVERIFIED；不能把 Q0-F/Q0-I 的直觉分解直接包装成新定理",
+      "最后给出一份今天组会可用的调研进展摘要，以及一份后续两周的理论—实验并行任务清单"
+    ],
+    "requiredEvidence": [
+      "论文原文、官方标准、官方文档或作者/机构原始页面",
+      "每条关键判断对应至少一个可定位来源和一个项目文件路径",
+      "明确记录未访问全文、引用不确定或理论不适配的条目"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "4c9a1e0d350286aca25d9670a538098decc7aee04628a3178fabe64e4da555f2"
+}
