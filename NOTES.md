@@ -434,3 +434,9 @@
 - canonical VM 部署 receipt SHA=`279522bf75404f16d4041bdb23539a71f4bb4b801fcb961de32af64b26b0360d`，source tree SHA=`261c185f59d7019ecc9e1bc546e7f441470be5c7ef09d8590d817eea3d1bd3ad`。
 - VM 验证：DDQN exact-resume 恢复 replay/optimizer/target/RNG 后，继续同一 transition 的下一动作、训练步数、online/target 权重一致；Q-learning 恢复测试通过。相关定向测试 `2 passed`，学习/Q-learning VM 回归 `51 passed`。
 - 边界：这是状态恢复和短续接证据，不是完整长窗“中断续训 vs 不间断”论文等价；该门仍未关闭。
+
+## 2026-08-21：PR #105 后主线文档同步部署
+
+- PR #105 已合入；当前 main=`7f29ea3ee21280722885bedc3efda3d98c56bd98`。
+- canonical VM 已部署同一 main；deployment receipt SHA=`6b916fbfab1debb0a65113d3c78be47f619463683ac0d4017791b4e72a8d0289`，source tree SHA=`b0fb2db50d30338a68351eb0ea754332d43144624bf39bdfab655e7ca282644f`。
+- 本次为文档同步部署，不改变 exact-resume 运行行为；完整长窗中断/不间断等价、formal E0/PILOT、V2 artifact→claim 和 Q0 仍是后续门。

@@ -1,6 +1,6 @@
 # leo_sim V2 当前实验就绪状态
 
-> 状态最后核验：2026-08-21；当前 main 为 `bfae7616897bb56c92c87904427926f78c93d666`，已部署到 canonical VM。代码可做同 SHA 非学习工程 smoke、capacity 负对照和学习训练—评估工程 pilot；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 校准、逐向 physical available-capacity 分母、三档 E0 工程负载标定、60 秒 D2 长窗、Q-learning/DDQN/GAT/MPNN checkpoint 闭环已有 VM receipt/重算证据。replay/optimizer/target/RNG continuation bundle 已实现并通过 VM 恢复后继续一步等价测试；V2 artifact→claim 闭环、正式三段时延 gate、完整长窗中断/不间断等价和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
+> 状态最后核验：2026-08-21；当前 main 为 `7f29ea3ee21280722885bedc3efda3d98c56bd98`，已部署到 canonical VM。代码可做同 SHA 非学习工程 smoke、capacity 负对照和学习训练—评估工程 pilot；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 校准、逐向 physical available-capacity 分母、三档 E0 工程负载标定、60 秒 D2 长窗、Q-learning/DDQN/GAT/MPNN checkpoint 闭环已有 VM receipt/重算证据。replay/optimizer/target/RNG continuation bundle 已实现并通过 VM 恢复后继续一步等价测试；V2 artifact→claim 闭环、正式三段时延 gate、完整长窗中断/不间断等价和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
 ## 1. 两个目标
@@ -16,13 +16,13 @@
 
 | 项目 | 当前事实 | 判定 |
 |---|---|---|
-| GitHub main | `bfae761`（PR #93、#94、#95、#96、#97、#98、#99、#100、#101、#102、#103、#104 合入）；当前代码 CI 绿；1 秒拓扑/MCS/M-Lab 多 OD profile 本地和 VM 可跑 | FACT |
+| GitHub main | `7f29ea3`（PR #93、#94、#95、#96、#97、#98、#99、#100、#101、#102、#103、#104、#105 合入）；当前代码 CI 绿；1 秒拓扑/MCS/M-Lab 多 OD profile 本地和 VM 可跑 | FACT |
 | D1 动态链路速率 | 已合入、测试通过；VM E0 使用 MCS 并已自然结束，但旧平台 MCS 表征与逐距离对照尚未完成 | FACT；正式论文支撑未确认 |
 | D2 动态拓扑/holding 语义 | 已合入；退役链路、在途包、等待语义有测试；60 秒、100 Mbps、56-cell M-Lab VM 长窗自然结束、守恒、receipt 和 raw metrics 重算通过 | FACT；正式论文支撑仍需跨负载/授权分析 |
 | 包守恒/FIFO/等待/在途 | 基础能力和回归测试已有，VM smoke 守恒通过；正式 artifact/分析链和长窗覆盖未闭合 | FACT；论文证据未闭合 |
 | 奖励/学习语义 | 已关闭额外跳数正回报风险（R1-A1/`ce2566b`）；Q0 物理目标和正式学习结论仍未冻结 | FACT；阻塞正式结论，不阻塞工程 pilot |
 | 信息公平 | 已修复明确 cache-hop 偷看；逐动作物理特征、逐字段 AoI 未完成 | FACT；硬阻塞信息归因 |
-| 当前 VM | 已部署精确 main `bfae7616897bb56c92c87904427926f78c93d666`；本轮部署 receipt SHA=`279522bf75404f16d4041bdb23539a71f4bb4b801fcb961de32af64b26b0360d`，source tree SHA=`261c185f59d7019ecc9e1bc546e7f441470be5c7ef09d8590d817eea3d1bd3ad` | FACT |
+| 当前 VM | 已部署精确 main `7f29ea3ee21280722885bedc3efda3d98c56bd98`；本轮部署 receipt SHA=`6b916fbfab1debb0a65113d3c78be47f619463683ac0d4017791b4e72a8d0289`，source tree SHA=`b0fb2db50d30338a68351eb0ea754332d43144624bf39bdfab655e7ca282644f` | FACT |
 | VM 工程 smoke | 新 56-cell M-Lab 多 OD T0：20 s、1,299 offered、613 delivered、579 `ACCESS_REJECTED`、107 `IN_SYSTEM_AT_STOP`；另完成 50/100/200 Mbps 三档 20 s 工程标定、60 s D2 长窗、capacity 负对照和 20 s DDQN train→checkpoint→eval，均 natural end、conservation true、receipt verified、raw metrics `validation.ok=true` | FACT；非正式、非授权运行 |
 | 真实流量/测量 | M-Lab 快照 44,929 行、4,752 OD、2,604 聚合单元；PR #93 新增显式有界强连通多 OD 选择，manifest 记录选中 56-cell 规则和源 SHA；新三档 E0 工程标定已重跑 | FACT；不能当原始真实包回放 |
 | Q0 | snapshot 已在 main；计划注入/执行归因候选未通过审阅；Q0-I/Q0-F tiny 闭环未完成。Q0 不阻塞工程 smoke，但阻塞信息 vs 决策归因 | FACT |
