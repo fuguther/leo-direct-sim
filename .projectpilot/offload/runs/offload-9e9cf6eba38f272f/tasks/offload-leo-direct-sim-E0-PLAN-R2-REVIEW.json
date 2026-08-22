@@ -1,0 +1,71 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:E0-PLAN-R2-REVIEW",
+    "title": "Adversarial review of revised E0 calibration design",
+    "goal": "Review the exact-main implementation surfaces and identify blocking flaws in this proposed design: pre-scan feasibility must compare load multiplier, physically interpretable ISL capacity scaling, and a separate long-distance corridor stress scenario; fixed observation and drain audits must be separated; vis_k=17 is only a full-graph-reach cache reference and needs cache coverage/age/TTL/field integrity evidence; ISL pressure must be hierarchical per-link-over-time then across exposed links; seed 7 is not enough at a boundary, with two-seed boundary confirmation and three-seed final confirmation; define scenario-invariant SHA and cell-plan SHA separately; all VM cells must use the canonical deploy/authorize/run-remote/status/receipt chain; governance changes must be a separate exact-SHA cold-reviewed PR. Attack feasibility math, false pairing, semantic drift, artifact gaps, and unrealistic claims. Return concise FACT/INFERENCE/open_items with exact GitHub line references.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "063542e3528ecb97a76d05f36fe9356d5c9c074c",
+      "paths": [
+        "CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue_280x14_e25.yaml",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/trace.py",
+        "CODE/leo_sim/control.py",
+        "CODE/leo_sim/metrics.py",
+        "CODE/leo_sim/link_budget.py",
+        "CODE/leo_sim/kernel.py",
+        "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py",
+        "CODE/experiment_platform/compile_experiment.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/experiment_platform/metric-catalog.json",
+        "CODE/scripts/remote/push-remote.sh",
+        "CODE/scripts/remote/run-remote.sh",
+        "CODE/scripts/remote/status-remote.sh",
+        "PAPER/eligible_claims.py",
+        "EXPERIMENTS/contracts/run-artifact-contract.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Every blocking finding cites exact GitHub lines",
+      "Separates measurement-proxy baseline from controlled pressure scenarios",
+      "Checks that adaptive cells can use the existing canonical launcher without dynamic uncommitted configs",
+      "Does not claim pressure will be found or that three seeds support significance"
+    ],
+    "requiredEvidence": [
+      "At least two independent exact-line evidence anchors",
+      "Explicit open_items list",
+      "A final verdict PASS or REQUEST_CHANGES"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "d472a0761f47eb65f336158ff340a57a01e8990de3346e28e0d4cad3f726482f"
+}
