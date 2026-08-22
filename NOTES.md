@@ -12,7 +12,9 @@
 - RED→GREEN：第一轮冷审对精确 `befb39f` 为 `REQUEST_CHANGES`；本轮新增的无 uplink arrival、v4/v1 downgrade、ACCESS_REJECTED 伪 ingress 反例先失败后通过，旧 v3 v1 fixture 和合法 v4 v2 flow 仍通过。
 - 当前验证事实：receipt/metrics/access targeted 与全量均通过；全量 `622 passed, 2 skipped, 3 subtests passed`；同轨迹 A/B reject=`offered 1/admitted 0/delivered 0/pending 0/rejected 1`，queue=`offered 1/admitted 0/delivered 0/pending 1/rejected 0`。
 - 风险：queue 改变访问语义，旧 20 s 50/100/200 结果仅保留历史证据，不能 paper-ready；需 coverage/horizon audit、VM 小样、重新 E0/训练和独立冷启动复核。coverage audit 只报告几何证据，不决定加星或容量充分性。
-- 冷审状态：第一轮 `REQUEST_CHANGES` 已修复；二次独立检查发现 historical v1 delivered compatibility 缺口，本轮已修复，当前精确新 HEAD 待复审；仍未做 VM 小样或第二轮冷启动复核。PR：pending；不 push，不伪造 PR。
+- 冷审状态：第一轮对 `befb39f` 为 `REQUEST_CHANGES`；修复 receipt v4 合同、事件/终局交叉约束及 historical v1 delivered compatibility 后，第二轮对精确 `80bc237d67bb9df4fa516e47c81b6013f3b04956` 为 `PASS`。独立复核 targeted `41 passed`、全量 `622 passed, 2 skipped, 3 subtests passed`，两个伪造/降级反例均被拒绝。
+- 本地真实流量诊断（非 VM、非论文证据）：在 `80bc237` 用新增 queue profile 消费既有 M-Lab trace `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`，20 s、1,299 包自然结束且 receipt verified、守恒通过；762 包入网、656 包送达、39 `ACCESS_QUEUE_OVERFLOW`、604 `IN_SYSTEM_AT_STOP`，因此 `access_admission_rate=0.5866050808`、`network_delivery_rate_by_horizon=0.8608923885`。该结果只证明阶段拆分和运行链可执行，不关闭 coverage/horizon 或 E0 门禁。
+- 几何诊断（非容量结论）：同 55 端点、6000 s/5 s 扫描下，140 星/7 面/30° 全端点最终均可见，但可见比例中位数约 0.476、最大无覆盖间隔约 5710 s；粗粒度候选扫描显示增加轨道面比只向原 7 面加星更有效。正式星座/仰角选择仍需 VM 成本与容量联合校准。PR：pending；VM 尚未执行。
 
 ## 2026-08-20：D1/D2 合入与 VM 工程 smoke
 
