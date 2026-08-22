@@ -46,6 +46,11 @@ def test_summarize_recomputes_queue_tx_propagation_and_link_utilization():
 def test_summarize_v2_recomputes_admission_and_pre_ingress_wait():
     events = [
         {"kind": "packet_emitted", "pid": 1, "at": 0.0, "bits": 100},
+        {"kind": "propagation_start", "pid": 1, "at": 1.0,
+         "stage": "uplink", "link_id": "gsl:uplink:2:src",
+         "prop_id": 4, "delay_s": 0.5},
+        {"kind": "propagation_arrival", "pid": 1, "at": 1.5,
+         "prop_id": 4},
         {"kind": "satellite_ingress", "pid": 1, "at": 1.5,
          "endpoint": "src", "satellite": 2, "bits": 100},
         {"kind": "delivered", "pid": 1, "at": 2.0},
@@ -64,6 +69,11 @@ def test_summarize_v2_recomputes_admission_and_pre_ingress_wait():
 
 @pytest.mark.parametrize("events, message", [
     ([{"kind": "packet_emitted", "pid": 1, "at": 0.0, "bits": 1},
+      {"kind": "propagation_start", "pid": 1, "at": 0.5,
+       "stage": "uplink", "link_id": "gsl:uplink:0:a",
+       "prop_id": 2, "delay_s": 0.5},
+      {"kind": "propagation_arrival", "pid": 1, "at": 1.0,
+       "prop_id": 2},
       {"kind": "satellite_ingress", "pid": 1, "at": 1.0,
        "endpoint": "a", "satellite": 0, "bits": 1},
       {"kind": "satellite_ingress", "pid": 1, "at": 1.1,
@@ -78,6 +88,16 @@ def test_summarize_v2_rejects_invalid_ingress_order(events, message):
         metrics.summarize(events, [])
 
 
+def test_summarize_v2_rejects_ingress_without_completed_uplink_arrival():
+    events = [
+        {"kind": "packet_emitted", "pid": 1, "at": 0.0, "bits": 1},
+        {"kind": "satellite_ingress", "pid": 1, "at": 1.0,
+         "endpoint": "a", "satellite": 0, "bits": 1},
+    ]
+    with pytest.raises(metrics.MetricsError, match="uplink propagation"):
+        metrics.summarize(events, [])
+
+
 def test_summarize_v2_uses_zero_for_no_admitted_denominators():
     got = metrics.summarize([
         {"kind": "packet_emitted", "pid": 1, "at": 0.0, "bits": 8},
@@ -86,7 +106,7 @@ def test_summarize_v2_uses_zero_for_no_admitted_denominators():
     assert got["network_delivery_rate_by_horizon"] == 0.0
 
 
-def test_receipt_reverifies_stored_v1_metrics_without_ingress_event(tmp_path):
+def test_receipt_v4_rejects_v1_but_legacy_v3_reverifies(tmp_path):
     import hashlib
     import json
 
@@ -117,8 +137,113 @@ def test_receipt_reverifies_stored_v1_metrics_without_ingress_event(tmp_path):
         non_arrival_pids=set())
     assert result["congestion_metrics"]["schema"] == "leo-sim-congestion-metrics/v1"
     out = tmp_path / "run"
+    written = receipt.write_run(str(out), cfg, trace_bytes, manifest, result, rows)
+    assert written["schema"] == "leo-sim-receipt/v4"
+    assert written["congestion_metrics_contract"] == "leo-sim-congestion-metrics/v2"
+    errors = receipt.verify_receipt_dir(str(out))
+    assert any("schema != receipt contract" in error for error in errors)
+    legacy = json.loads((out / "receipt.json").read_text(encoding="utf-8"))
+    legacy["schema"] = "leo-sim-receipt/v3"
+    del legacy["congestion_metrics_contract"]
+    (out / "receipt.json").write_text(
+        json.dumps(legacy, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    assert receipt.verify_receipt_dir(str(out)) == []
+
+
+def test_v4_zero_ingress_downgrade_to_v1_is_rejected_at_receipt_level(tmp_path):
+    import hashlib
+    import json
+
+    from CODE.leo_sim import receipt, trace
+
+    cfg = make_cfg({
+        "scenario": {"duration_s": 0.2},
+        "demand": {"mode": "csv", "csv_path": str(tmp_path / "input.csv")},
+    })
+    (tmp_path / "input.csv").write_text(
+        "packet_id,emit_time_s,src_lat,src_lon,dst_lat,dst_lon,bits,deadline_at_s\n"
+        "1,0.0,0.0,0.0,0.0,10.0,8000000,\n", encoding="utf-8")
+    trace_dir = tmp_path / "trace"
+    manifest = trace.compile_trace(cfg, str(trace_dir))
+    trace_bytes = (trace_dir / "trace.csv").read_bytes()
+    manifest["__trace_sha256"] = hashlib.sha256(trace_bytes).hexdigest()
+    manifest["__sha256"] = hashlib.sha256(
+        (trace_dir / "manifest.json").read_bytes()).hexdigest()
+    rows = trace.load_trace(str(trace_dir / "trace.csv"), horizon_s=0.2,
+                            max_packets=cfg["config"]["execution"]["max_packets"])
+    result = kernel.run_simulation(
+        cfg, rows, geometry=StaticGeometry(1, visible=lambda *_: False))
+    out = tmp_path / "run"
     receipt.write_run(str(out), cfg, trace_bytes, manifest, result, rows)
     assert receipt.verify_receipt_dir(str(out)) == []
+    ledgers = json.loads((out / "ledgers.json").read_text(encoding="utf-8"))
+    ledgers["congestion_metrics"] = metrics.summarize(
+        ledgers["packet_events"], ledgers["link_service_windows"],
+        available_capacity_windows=ledgers["link_available_windows"],
+        non_arrival_pids=set())
+    (out / "ledgers.json").write_text(
+        json.dumps(ledgers, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    receipt_doc = json.loads((out / "receipt.json").read_text(encoding="utf-8"))
+    receipt_doc["ledgers_sha256"] = hashlib.sha256(
+        (out / "ledgers.json").read_bytes()).hexdigest()
+    (out / "receipt.json").write_text(
+        json.dumps(receipt_doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    errors = receipt.verify_receipt_dir(str(out))
+    assert errors
+    assert any("schema != receipt contract" in error for error in errors)
+
+
+def test_v4_access_rejected_packet_fake_ingress_is_rejected_at_receipt_level(tmp_path):
+    import hashlib
+    import json
+
+    from CODE.leo_sim import receipt, trace
+
+    cfg = make_cfg({
+        "scenario": {"duration_s": 0.2},
+        "demand": {"mode": "csv", "csv_path": str(tmp_path / "input.csv")},
+    })
+    (tmp_path / "input.csv").write_text(
+        "packet_id,emit_time_s,src_lat,src_lon,dst_lat,dst_lon,bits,deadline_at_s\n"
+        "1,0.0,0.0,0.0,0.0,10.0,8000000,\n", encoding="utf-8")
+    trace_dir = tmp_path / "trace"
+    manifest = trace.compile_trace(cfg, str(trace_dir))
+    trace_bytes = (trace_dir / "trace.csv").read_bytes()
+    manifest["__trace_sha256"] = hashlib.sha256(trace_bytes).hexdigest()
+    manifest["__sha256"] = hashlib.sha256(
+        (trace_dir / "manifest.json").read_bytes()).hexdigest()
+    rows = trace.load_trace(str(trace_dir / "trace.csv"), horizon_s=0.2,
+                            max_packets=cfg["config"]["execution"]["max_packets"])
+    result = kernel.run_simulation(
+        cfg, rows, geometry=StaticGeometry(1, visible=lambda *_: False))
+    assert result["fates"][1] == "ACCESS_REJECTED"
+    out = tmp_path / "run"
+    receipt.write_run(str(out), cfg, trace_bytes, manifest, result, rows)
+    ledgers = json.loads((out / "ledgers.json").read_text(encoding="utf-8"))
+    ledgers["packet_events"].extend([
+        {"kind": "propagation_start", "pid": 1, "at": 0.0,
+         "stage": "uplink", "link_id": "gsl:uplink:0:fake",
+         "prop_id": 999, "delay_s": 0.0},
+        {"kind": "propagation_arrival", "pid": 1, "at": 0.0,
+         "prop_id": 999},
+        {"kind": "satellite_ingress", "pid": 1, "at": 0.0,
+         "endpoint": rows[0]["src_grid_id"], "satellite": 0,
+         "bits": rows[0]["bits"]},
+    ])
+    ledgers["congestion_metrics"] = metrics.summarize(
+        ledgers["packet_events"], ledgers["link_service_windows"],
+        available_capacity_windows=ledgers["link_available_windows"],
+        non_arrival_pids=set(), access_boundary=True)
+    (out / "ledgers.json").write_text(
+        json.dumps(ledgers, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    receipt_doc = json.loads((out / "receipt.json").read_text(encoding="utf-8"))
+    receipt_doc["ledgers_sha256"] = hashlib.sha256(
+        (out / "ledgers.json").read_bytes()).hexdigest()
+    (out / "receipt.json").write_text(
+        json.dumps(receipt_doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    errors = receipt.verify_receipt_dir(str(out))
+    assert errors
+    assert any("terminal access fate ACCESS_REJECTED" in error for error in errors)
     stored = json.loads((out / "ledgers.json").read_text(encoding="utf-8"))
     assert stored["congestion_metrics"] == metrics.summarize(
         stored["packet_events"], stored["link_service_windows"],

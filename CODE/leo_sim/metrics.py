@@ -78,6 +78,8 @@ def summarize(
     queue_wait: defaultdict[int, float] = defaultdict(float)
     service_starts: dict[tuple[int, int], dict] = {}
     prop_starts: dict[tuple[int, int], dict] = {}
+    completed_uplink_arrivals: defaultdict[int, list[dict]] = defaultdict(list)
+    consumed_uplink_arrivals: defaultdict[int, int] = defaultdict(int)
     prop_durations: defaultdict[int, float] = defaultdict(float)
     delivered: dict[int, float] = {}
     tx_durations: defaultdict[int, float] = defaultdict(float)
@@ -127,6 +129,16 @@ def summarize(
                 raise MetricsError(f"satellite_ingress bits mismatch for {pid}")
             if pid in delivered and delivered[pid] < at:
                 raise MetricsError(f"delivered before satellite_ingress for {pid}")
+            arrivals = completed_uplink_arrivals.get(pid, [])
+            used = consumed_uplink_arrivals[pid]
+            candidates = [item for index, item in enumerate(arrivals)
+                          if index >= used and item["at"] == at
+                          and item["satellite"] == satellite]
+            if not candidates:
+                raise MetricsError(
+                    f"satellite_ingress for {pid} has no completed uplink propagation "
+                    "arrival at the same time and satellite")
+            consumed_uplink_arrivals[pid] += 1
             ingress[pid] = {"at": at, "endpoint": endpoint,
                             "satellite": satellite, "bits": bits}
         elif kind == "service_start":
@@ -155,7 +167,7 @@ def summarize(
             }
         elif kind == "propagation_start":
             stage = _nonempty(event, "stage")
-            _nonempty(event, "link_id")
+            link_id = _nonempty(event, "link_id")
             prop_id = event.get("prop_id")
             if isinstance(prop_id, bool) or not isinstance(prop_id, int) or prop_id < 0:
                 raise MetricsError("propagation_start.prop_id must be a non-negative integer")
@@ -165,7 +177,8 @@ def summarize(
             key = (pid, prop_id)
             if key in prop_starts:
                 raise MetricsError(f"duplicate propagation start {key}")
-            prop_starts[key] = {"at": at, "stage": stage, "delay_s": delay}
+            prop_starts[key] = {"at": at, "stage": stage,
+                                "link_id": link_id, "delay_s": delay}
         elif kind == "propagation_arrival":
             prop_id = event.get("prop_id")
             key = (pid, prop_id)
@@ -178,6 +191,22 @@ def summarize(
             if not math.isclose(realized, start["delay_s"], rel_tol=1e-9, abs_tol=1e-12):
                 raise MetricsError(f"propagation delay mismatch for {key}")
             prop_durations[pid] += realized
+            if start["stage"] == "uplink":
+                parts = start["link_id"].split(":")
+                if len(parts) < 3 or parts[0] != "gsl" or parts[1] != "uplink":
+                    raise MetricsError(
+                        f"uplink propagation link malformed for {key}")
+                try:
+                    satellite = int(parts[2])
+                except ValueError as exc:
+                    raise MetricsError(
+                        f"uplink propagation satellite malformed for {key}") from exc
+                if satellite < 0:
+                    raise MetricsError(
+                        f"uplink propagation satellite malformed for {key}")
+                completed_uplink_arrivals[pid].append(
+                    {"at": at, "satellite": satellite,
+                     "link_id": start["link_id"]})
             del prop_starts[key]
         elif kind == "delivered":
             if pid in delivered:
@@ -194,6 +223,14 @@ def summarize(
     }
     if unmatched:
         raise MetricsError(f"unmatched propagation starts: {sorted(unmatched)}")
+    unmatched_ingress = [
+        pid for pid, arrivals in completed_uplink_arrivals.items()
+        if consumed_uplink_arrivals[pid] != len(arrivals)
+    ]
+    if unmatched_ingress:
+        raise MetricsError(
+            f"uplink propagation arrivals missing satellite_ingress: "
+            f"{sorted(unmatched_ingress)}")
 
     # Holding is a real queue, but it has no service_start of its own.  Its
     # residence is therefore paired with the next downstream queue admission

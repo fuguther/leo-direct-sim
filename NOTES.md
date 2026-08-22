@@ -5,14 +5,14 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
-## 2026-08-22：access boundary 候选实现（pending）
+## 2026-08-22：access boundary 冷审修复（pending）
 
 - 分支：`codex/20260822-access-boundary`，基线 `main@339a1f4`；PR：pending。
-- 候选提交：`d34ae0a`（配置/有限 queue/kernel）、`5bcab85`（satellite ingress/raw metrics v2/analysis）、`0e55cac`（coverage/文档）及当前 HEAD 的复核修复提交（profile diff、coverage 预算、E0 状态、v1 receipt 回归）。
-- RED→GREEN：未知策略/默认 reject/queue 恢复与停止/有限 overflow、metrics+V2 analysis、coverage 静态几何均通过；新增 profile diff、预算、receipt-level v1 回归也通过。
-- 当前验证事实：targeted `27 passed`；全量 `618 passed, 2 skipped, 3 subtests passed`；同轨迹 A/B reject=`offered 1/admitted 0/delivered 0/pending 0/rejected 1`，queue=`offered 1/admitted 0/delivered 0/pending 1/rejected 0`。
+- 提交：`d34ae0a`（配置/有限 queue/kernel）、`5bcab85`（satellite ingress/raw metrics v2/analysis）、`0e55cac`（coverage/文档）、`befb39f`（profile diff、coverage 预算、E0 状态、v1 receipt 回归）及本轮独立 fix（receipt v4 合同、入网交叉约束、历史文档边界、冷审反例）。
+- RED→GREEN：第一轮冷审对精确 `befb39f` 为 `REQUEST_CHANGES`；本轮新增的无 uplink arrival、v4/v1 downgrade、ACCESS_REJECTED 伪 ingress 反例先失败后通过，旧 v3 v1 fixture 和合法 v4 v2 flow 仍通过。
+- 当前验证事实：receipt/metrics/access targeted 与全量均通过；全量 `621 passed, 2 skipped, 3 subtests passed`；同轨迹 A/B reject=`offered 1/admitted 0/delivered 0/pending 0/rejected 1`，queue=`offered 1/admitted 0/delivered 0/pending 1/rejected 0`。
 - 风险：queue 改变访问语义，旧 20 s 50/100/200 结果仅保留历史证据，不能 paper-ready；需 coverage/horizon audit、VM 小样、重新 E0/训练和独立冷启动复核。coverage audit 只报告几何证据，不决定加星或容量充分性。
-- 下一步：完成本轮 targeted/full pytest、`git diff --check` 和 handoff；仍未做 VM 小样或独立冷启动复核，不 push，不伪造 PR。
+- 冷审状态：第一轮 `REQUEST_CHANGES` 已修复，当前精确新 HEAD 待复审；仍未做 VM 小样或第二轮冷启动复核。PR：pending；不 push，不伪造 PR。
 
 ## 2026-08-20：D1/D2 合入与 VM 工程 smoke
 

@@ -1,6 +1,6 @@
 # leo_sim V2 当前实验就绪状态
 
-> **2026-08-22 当前快照（覆盖下方旧快照）**：平台已经达到“可做真实流量、可审计、可重复的工程 pilot”门槛，但还没有达到“学习算法正式论文数据可直接采信”的门槛。最新 GitHub main 为 `d3806ee`；最近一次 E0 VM 代码执行绑定的部署 SHA 为 `54f277e68576725b1386c86690940961f2ca5db9`，deployment receipt SHA=`f201ae6773fec97d85651b97e59f9c42997ba3721c26f123a0aac31921615bf8`。E0 R02 的 50/100/200 Mbps × control/copy 六个 cell 已全部自然结束、守恒通过、receipt verified，V2 analysis=`VERIFIED`；当前 VM 资源已按 cgroup 核实为 24 vCPU/64 GiB，非学习资源诊断支持先按 1 vCPU/job、12 jobs 并行的候选调度。真实流量映射链已固定为 M-Lab measurement-proxy 多 OD + burst，端点选择规则和 trace provenance 已写入 manifest。
+> **2026-08-22 historical diagnostic snapshot（非当前可用状态）**：平台当时达到“可做真实流量、可审计、可重复的工程 pilot”门槛，但还没有达到“学习算法正式论文数据可直接采信”的门槛。以下 main/VM/E0 数字均为历史诊断证据，不是 access boundary 变更后的当前可用性声明；由于接入语义已改变，E0 R02 必须 `rerun_required`。
 >
 > **当前不能混淆的两件事**：50/100/200 只是第一轮负载扫描，不是最终冻结值；三档实测交付率约 `0.472/0.455/0.429`，按预注册规则都落入 medium，机械候选为 50 Mbps，但必须补两个 seed，必要时扩大低端 bracket。学习正式矩阵、学习专用 CPU/RSS profile、完整三段时延 gate、Q0 真实 kernel 闭环和最终论文 claim 仍未完成。因此现在可以开始小规模非学习诊断和工程 pilot；不能把当前结果直接写成论文算法优越性或因果拥塞结论。
 
@@ -8,6 +8,7 @@
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
 > **Access boundary（E0 前门禁）**：当前默认 `access.unavailable_policy=reject` 保持历史兼容；新增显式 `queue` 仅是工程诊断语义，使用有限源端/上行队列，停止时未入网包记为 `IN_SYSTEM_AT_STOP`。新运行可由 raw events 重算 `access_admission_rate` 与 `network_delivery_rate_by_horizon`。旧 20 s 50/100/200 诊断保留原证据但不是 paper-ready；切换 queue 后必须重新做 coverage/horizon audit、VM 小样、E0 标定和训练，不能沿用旧曲线。
+> 因此 access boundary 是 E0 重标定的前门禁：coverage/horizon audit、queue 阶段指标和 VM 小样完成前，E0 仍为 `rerun_required`，不能按上方历史快照关闭。
 
 ## 1. 两个目标
 
