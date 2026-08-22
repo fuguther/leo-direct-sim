@@ -1,5 +1,9 @@
 # leo_sim V2 当前实验就绪状态
 
+> **2026-08-22 当前快照（覆盖下方旧快照）**：平台已经达到“可做真实流量、可审计、可重复的工程 pilot”门槛，但还没有达到“学习算法正式论文数据可直接采信”的门槛。最新 GitHub main 为 `d3806ee`；最近一次 E0 VM 代码执行绑定的部署 SHA 为 `54f277e68576725b1386c86690940961f2ca5db9`，deployment receipt SHA=`f201ae6773fec97d85651b97e59f9c42997ba3721c26f123a0aac31921615bf8`。E0 R02 的 50/100/200 Mbps × control/copy 六个 cell 已全部自然结束、守恒通过、receipt verified，V2 analysis=`VERIFIED`；当前 VM 资源已按 cgroup 核实为 24 vCPU/64 GiB，非学习资源诊断支持先按 1 vCPU/job、12 jobs 并行的候选调度。真实流量映射链已固定为 M-Lab measurement-proxy 多 OD + burst，端点选择规则和 trace provenance 已写入 manifest。
+>
+> **当前不能混淆的两件事**：50/100/200 只是第一轮负载扫描，不是最终冻结值；三档实测交付率约 `0.472/0.455/0.429`，按预注册规则都落入 medium，机械候选为 50 Mbps，但必须补两个 seed，必要时扩大低端 bracket。学习正式矩阵、学习专用 CPU/RSS profile、完整三段时延 gate、Q0 真实 kernel 闭环和最终论文 claim 仍未完成。因此现在可以开始小规模非学习诊断和工程 pilot；不能把当前结果直接写成论文算法优越性或因果拥塞结论。
+
 > 状态最后核验：2026-08-21；当前代码基线 main 为 `fd3ef5d496d42a77553de29d2288cbd476968d71`，已部署到 canonical VM。Q0 tiny 候选尚未合入/部署。代码可做同 SHA 非学习工程 smoke、capacity 负对照和学习训练—评估工程 pilot；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 校准、逐向 physical available-capacity 分母、三档 E0 工程负载标定、60 秒 D2 长窗、Q-learning/DDQN/GAT/MPNN checkpoint 闭环已有 VM receipt/重算证据。replay/optimizer/target/RNG continuation bundle 已实现并通过 VM 恢复后继续一步等价测试；V2 artifact→claim 闭环、正式三段时延 gate、完整长窗中断/不间断等价和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 

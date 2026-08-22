@@ -1,5 +1,7 @@
 # LEO 拥塞控制与链路利用率实验总计划
 
+> **2026-08-22 当前执行快照（覆盖下方旧状态说明）**：先做工程 pilot，再做正式论文实验。当前平台已经可以在 VM 上运行真实的 M-Lab measurement-proxy 多 OD + burst、动态 MCS/拓扑和可审计 receipt；E0 R02 六个负载 cell 已跑完并完成 V2 重算。50/100/200 Mbps 仍是扫描档，不是最终冻结：实测三档都落入预注册 medium，暂定最低候选 50 Mbps，需补两个 seed 和低端 bracket。非学习资源候选为 1 vCPU/job、12 jobs 并行；学习训练必须单独做 CPU/RSS profile。学习正式 cohort、三段时延正式 gate、Q0 真实闭环和论文 claim 仍未关闭，故当前顺序是“负载确认 → 非学习诊断 → 学习 pilot → Q0/信息归因 → 新方案”，而不是直接收集论文 headline 数据。
+
 > CURRENT；最后核验：2026-08-21。当前 main `bfae761` 已部署 VM；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 工程校准、receipt horizon 修复、physical available-capacity 分母、新 profile 的 E0 工程负载标定、60 秒 D2 长窗、capacity 负对照和学习 train→eval 工程 smoke 已完成。continuation bundle 已通过 VM 单步恢复等价；50/100/200 Mbps 只冻结为下一阶段的低/中/压力候选，不是正式论文结果；V2 artifact→claim 闭环、逐包三段时延正式 gate、完整长窗中断/不间断等价、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
 
 ## 1. 研究主线与工作方法
