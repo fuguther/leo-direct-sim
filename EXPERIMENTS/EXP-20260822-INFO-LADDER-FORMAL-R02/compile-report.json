@@ -1,0 +1,20 @@
+{
+  "artifact_hashes": {
+    "RUNBOOK.md": "c45e4fd4af7896b105ee9c005f476c637ae15b57b31fdaba9cb5acbcbc64d4ab",
+    "analysis-request.json": "171089fefc423496848352e861dde3563d14c09ba063c363e38cf18b39cace35",
+    "request.json": "a03295525783d13d583856c402d7cc37c181c35e9ec874487b4f227335c6e192",
+    "resolved/EXP-20260822-INFO-LADDER-FORMAL-R02-info_physical-s11.leo-sim.yaml": "bab963939f8e2bb8ad8948e19becaf7942ac75de3804c5488cd77d443b26eb8c",
+    "resolved/EXP-20260822-INFO-LADDER-FORMAL-R02-info_physical-s7.leo-sim.yaml": "4b549dac0c092aaa5ebffb67290b45ddf51b071e4811ff1f1401548716db78c4",
+    "resolved/EXP-20260822-INFO-LADDER-FORMAL-R02-info_queue-s11.leo-sim.yaml": "cf4783977fac563498495e18080e4475e76e8301ea20bb98c13f71831752c29f",
+    "resolved/EXP-20260822-INFO-LADDER-FORMAL-R02-info_queue-s7.leo-sim.yaml": "2e352223e231fc59c91f7a87aee8ac95dc819ce753039ceb7da6602372e368c6",
+    "run-manifest.json": "8eb381a78be8484079358fdd65ddb79f505cc8d7aa8fd57352f539f61e642052"
+  },
+  "errors": [],
+  "execution_authorized": false,
+  "experiment_id": "EXP-20260822-INFO-LADDER-FORMAL-R02",
+  "launcher_generated": false,
+  "request_sha256": "a03295525783d13d583856c402d7cc37c181c35e9ec874487b4f227335c6e192",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-compile-report/v1",
+  "status": "COMPILED_REVIEW_REQUIRED"
+}
