@@ -78,6 +78,23 @@ def test_primary_metric_is_derived_from_v2_receipt_and_ledgers():
         receipt_payload, ledgers, "link_utilization_mean") == 0.5
 
 
+def test_access_boundary_metrics_are_explicit_v2_metrics():
+    receipt_payload = {"totals": {"delivered_bits": 10},
+                       "fate_counts": {"DELIVERED": 1}}
+    ledgers = {"congestion_metrics": {
+        "schema": "leo-sim-congestion-metrics/v2",
+        "offered_packets": 4,
+        "admitted_at_satellite_ingress_packets": 2,
+        "access_admission_rate": 0.5,
+        "network_delivery_rate_by_horizon": 0.25,
+        "packets": {}, "links": {}}}
+    assert v2_analysis._metric_from_result(
+        receipt_payload, ledgers, "access_admission_rate") == 0.5
+    assert v2_analysis._metric_from_result(
+        receipt_payload, ledgers,
+        "network_delivery_rate_by_horizon") == 0.25
+
+
 def test_planned_contrasts_scope_each_contrast_to_its_own_pairing_key():
     results = [
         {"pairing_key": "load-50", "arm_id": "low_control",

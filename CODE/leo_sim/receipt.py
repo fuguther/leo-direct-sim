@@ -620,7 +620,10 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
         recomputed_metrics = metrics.summarize(
             raw_events, raw_windows,
             available_capacity_windows=raw_available,
-            non_arrival_pids=non_arrival_pids)
+            non_arrival_pids=non_arrival_pids,
+            access_boundary=(isinstance(stored_metrics, dict)
+                             and stored_metrics.get("schema")
+                             == "leo-sim-congestion-metrics/v2"))
     except metrics.MetricsError as exc:
         errors.append(f"congestion metrics invalid: {exc}")
     else:

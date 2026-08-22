@@ -3694,7 +3694,8 @@ class Kernel:
         congestion_metrics = metrics.summarize(
             self.packet_events, self.link_service_windows,
             available_capacity_windows=self.link_available_windows,
-            non_arrival_pids=non_arrival_pids)
+            non_arrival_pids=non_arrival_pids,
+            access_boundary=True)
         result = {
             "natural_end": not interrupted,
             "interrupted": interrupted,

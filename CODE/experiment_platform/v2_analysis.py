@@ -87,6 +87,10 @@ def _metric_from_result(receipt: dict[str, Any], ledgers: dict[str, Any],
     congestion = ledgers.get("congestion_metrics")
     if not isinstance(congestion, dict):
         raise V2AnalysisError("ledgers.congestion_metrics is missing")
+    if primary in {"access_admission_rate",
+                   "network_delivery_rate_by_horizon"}:
+        value = congestion.get(primary)
+        return _finite(value, f"congestion metrics.{primary}")
     packets = congestion.get("packets")
     links = congestion.get("links")
     if not isinstance(packets, dict) or not isinstance(links, dict):

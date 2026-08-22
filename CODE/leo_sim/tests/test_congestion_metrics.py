@@ -43,6 +43,53 @@ def test_summarize_recomputes_queue_tx_propagation_and_link_utilization():
     assert got["validation"]["ok"] is True
 
 
+def test_summarize_v2_recomputes_admission_and_pre_ingress_wait():
+    events = [
+        {"kind": "packet_emitted", "pid": 1, "at": 0.0, "bits": 100},
+        {"kind": "satellite_ingress", "pid": 1, "at": 1.5,
+         "endpoint": "src", "satellite": 2, "bits": 100},
+        {"kind": "delivered", "pid": 1, "at": 2.0},
+        {"kind": "packet_emitted", "pid": 2, "at": 0.5, "bits": 200},
+    ]
+    got = metrics.summarize(events, [])
+    assert got["schema"] == "leo-sim-congestion-metrics/v2"
+    assert got["offered_packets"] == 2
+    assert got["admitted_at_satellite_ingress_packets"] == 1
+    assert got["delivered_packets"] == 1
+    assert got["access_admission_rate"] == pytest.approx(0.5)
+    assert got["network_delivery_rate_by_horizon"] == pytest.approx(1.0)
+    assert got["packets"]["1"]["admitted_at"] == pytest.approx(1.5)
+    assert got["packets"]["1"]["access_wait_s"] == pytest.approx(1.5)
+
+
+@pytest.mark.parametrize("events, message", [
+    ([{"kind": "packet_emitted", "pid": 1, "at": 0.0, "bits": 1},
+      {"kind": "satellite_ingress", "pid": 1, "at": 1.0,
+       "endpoint": "a", "satellite": 0, "bits": 1},
+      {"kind": "satellite_ingress", "pid": 1, "at": 1.1,
+       "endpoint": "a", "satellite": 0, "bits": 1}], "duplicate satellite_ingress"),
+    ([{"kind": "packet_emitted", "pid": 1, "at": 0.0, "bits": 1},
+      {"kind": "delivered", "pid": 1, "at": 0.5},
+      {"kind": "satellite_ingress", "pid": 1, "at": 1.0,
+       "endpoint": "a", "satellite": 0, "bits": 1}], "before satellite_ingress"),
+])
+def test_summarize_v2_rejects_invalid_ingress_order(events, message):
+    with pytest.raises(metrics.MetricsError, match=message):
+        metrics.summarize(events, [])
+
+
+def test_summarize_v2_uses_zero_for_no_admitted_denominators():
+    got = metrics.summarize([
+        {"kind": "packet_emitted", "pid": 1, "at": 0.0, "bits": 8},
+    ], [], access_boundary=True)
+    assert got["schema"] == "leo-sim-congestion-metrics/v2"
+    got = metrics.summarize([
+        {"kind": "packet_emitted", "pid": 1, "at": 0.0, "bits": 8},
+    ], [], access_boundary=True)
+    assert got["access_admission_rate"] == 0.0
+    assert got["network_delivery_rate_by_horizon"] == 0.0
+
+
 def test_summarize_uses_idle_physical_capacity_as_utilization_denominator():
     windows = [{
         "pid": 1, "stage": "isl", "link_id": "isl:0:1",
