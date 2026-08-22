@@ -1,0 +1,57 @@
+{
+  "taskId": "offload:leo-direct-sim:E0-PLAN-REVIEW:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "E0 计划方向正确，但正式 Q0 replay 前必须优先关闭 artifact-claim 闭环、E0 阈值冻结、拥塞归因测量和语义保持审计。当前最大风险是后验阈值选择、伪配对和将工程诊断过度解释为论文结论。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "E0 负载分类仍存在 post-hoc threshold 风险，旧扫描结果不能直接作为正式结论。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L20"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "正式 claim 前必须保持 artifact 到 paired analysis 的 fail-closed 闭环。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/paired_analysis.py#L1-L15"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "拥塞诊断必须先闭合 queue/tx/prop 三段归因，否则无法区分容量、传播和排队瓶颈。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/EXPERIMENT-PROGRAM.md#L100-L130"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "先执行 WP1 冻结 E0 calibration 规则。",
+    "随后执行 WP2 完成 artifact→paired analysis→claim 链。",
+    "再执行 WP3 完成 congestion attribution。",
+    "最后进行语义保持优化审计。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L1-L20",
+    "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/paired_analysis.py#L1-L15"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "未执行 VM/CI 验收。",
+    "未读取合同允许路径之外内容。",
+    "无法确认后续未提交本地状态。"
+  ]
+}
