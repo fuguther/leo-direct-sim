@@ -66,3 +66,35 @@ claim boundary 全部可重算，才进入 V2 编译/独立审阅/授权。
   队列信息没有价值。路线事件审计显示它确实改变了少量决策：seed 7
   有 3/352 个出现 ISL 路径差异，seed 11 有 4/401 个；但交付率和主要
   终态没有改变。下一步先记录该路线/队列诊断，再做 F1；不启动学习长训。
+
+## 2026-08-22：INFO-LADDER F1 R02 已完成三方复核、授权、VM 实跑与 V2 重算
+
+- R02 比较 `info_queue`（F0）与 `info_physical`（F1），只改变
+  `routing.policy`，trace seed=7/11，各一对 non-learning cell；M-Lab
+  输入仍是 measurement proxy，不称真实运营商流量。
+- 三方独立复核均 PASS，finalization=`ACCEPTED`；PR #138 合入后，
+  authorization PR #139 合入。执行主线 exact SHA=
+  `fead4a594a916258b1063ea63621b58076a60b51`，部署 receipt SHA=
+  `636a535ce44824998b4e9fd3cad7dc268f76f4321ce1b47a5e701e737aca3233`，
+  source tree SHA=`39da2af8a3a499675f487ea93dff8b1210080d3762b9a28033eecf500a0a47f6`，
+  authorization SHA=`4d896398c475f461fc8402301fbc1f8de160cb76051825f1abbfe6eea92ad9cc`。
+- 4/4 cells 严格串行自然结束，exit=0、`conservation_ok=true`、receipt
+  verify 全部为 `verified`，治理回执全部 `research_eligible=true`。运行时
+  观察到单进程约满 1 个 CPU 核，RSS 约 556--657 MB；这是工程观察值，
+  不是正式资源 profile。
+- V2 分析返回 `VERIFIED`、`verified_runs=4`；正确的持久化 verifier（传入
+  `analysis-manifest.json`）返回 `(True, [])`。analysis-manifest SHA=
+  `86133383ae3b18fdcc6990aeb938a22bcb54893540781e625d277335a4c0d491`，
+  summary SHA=`d166e19044028233a81d8b9f31ddc9b27e90b57380fb24c633968b707fd57ae6`。
+- 主指标 `delivery_rate` 的 `info_physical - info_queue` paired differences
+  为 `[0.0, 0.0]`，均值 `0.0`。路线事件审计表明 F1 并非没有改变决策：
+  seed 7 有 `125/352=0.3551` 的包路径不同，seed 11 有
+  `146/401=0.3641`；但两 seed 的包命运计数完全一致：seed 7
+  delivered=2382、access_rejected=2597、holding_overflow=167、
+  in_system=405；seed 11 delivered=2465、access_rejected=2557、
+  holding_overflow=180、in_system=389。
+- 解释边界：在这个固定 20 s、200 Mbps M-Lab burst 压力合同下，F1 改变了
+  约三分之一有 ISL 路径的包的路线，但当前接入/持有瓶颈使交付率和终态
+  没变。这是可复核的诊断，不是“物理信息无价值”、不是因果拥塞控制效果，
+  也不是论文 superiority 结果。下一步应转向队列/利用率逐向差异与负对照，
+  再进入学习器观测或 Q0 归因实验。

@@ -597,3 +597,12 @@
 - 4/4 cells 严格串行执行并自然结束，receipt verify 全部为 `verified`，守恒通过，治理回执 `research_eligible=true`。本地运行 receipt 的 `research_eligible=false` 是预期语义，不是失败。
 - seed 7：hop 与 info_queue 均 delivery rate=`0.4291118717`（2,382 delivered，167 holding overflow，405 in-system）；seed 11：两臂均=`0.4408871400`（2,465 delivered，180 holding overflow，389 in-system）。V2 `VERIFIED`、4 runs；manifest SHA=`a5bba6f34b66700bf9e356723aaa615b1c8040b43914de0ea064371b4b1fd4f2`；paired differences `[0.0, 0.0]`；V2 persisted verifier `ok=True`。
 - 路线审计补充：该零差异不是证明 `info_queue` 没有作用。seed 7 有 3/352 个出现 ISL 路径差异，seed 11 有 4/401 个；只是当前压力瓶颈由 access/holding 终态主导，尚未改变聚合交付率。下一步检查路线选择与队列占用，随后另起 F1，保留负对照；F0 仍仅作诊断，不进入论文 claim。
+
+## 2026-08-22：INFO-LADDER F1 R02 已完成同 SHA VM 实跑与 V2 重算
+
+- R02 为 `info_queue`（F0）vs `info_physical`（F1）的四格非学习诊断，seed=7/11，唯一干预为 `routing.policy`。三方复核 PASS，PR #138 与 authorization PR #139 均已合入。
+- 执行 main exact SHA=`fead4a594a916258b1063ea63621b58076a60b51`；deployment receipt SHA=`636a535ce44824998b4e9fd3cad7dc268f76f4321ce1b47a5e701e737aca3233`；source tree SHA=`39da2af8a3a499675f487ea93dff8b1210080d3762b9a28033eecf500a0a47f6`；authorization SHA=`4d896398c475f461fc8402301fbc1f8de160cb76051825f1abbfe6eea92ad9cc`。
+- 4/4 cells 严格串行运行并自然结束，exit=0、守恒通过、receipt verify=`verified`、治理回执 `research_eligible=true`。单进程约满 1 CPU 核，观察 RSS 约 556--657 MB；未形成正式 resource profile。
+- V2 `VERIFIED`、`verified_runs=4`；`verify_persisted_analysis(.../analysis-manifest.json)` 返回 `(True, [])`；analysis-manifest SHA=`86133383ae3b18fdcc6990aeb938a22bcb54893540781e625d277335a4c0d491`，summary SHA=`d166e19044028233a81d8b9f31ddc9b27e90b57380fb24c633968b707fd57ae6`。
+- delivery-rate paired differences `info_physical - info_queue`=`[0.0, 0.0]`。路线审计：seed 7 路径差异 `125/352=0.3551`，seed 11 `146/401=0.3641`；但两臂包命运完全相同：seed 7 delivered/access_rejected/holding_overflow/in_system=`2382/2597/167/405`，seed 11=`2465/2557/180/389`。
+- 边界：F1 确实改变了约三分之一包的 ISL 路线，但在当前压力合同下未改变交付终态；这不是物理字段无效、因果拥塞控制或论文 superiority 结论。下一步是逐向利用率/队列差异与负对照，再做 learner/Q0 归因。
