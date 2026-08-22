@@ -94,15 +94,25 @@ def test_invalid_emission_end_fails_closed(value):
 
 
 def test_same_emission_window_is_trace_byte_identical_across_drain_horizon(tmp_path):
-    short = _cfg(scenario={"duration_s": 20.0},
-                 demand={"emission_end_s": 20.0})
-    long = _cfg(scenario={"duration_s": 30.0},
-                demand={"emission_end_s": 20.0})
-    trace.compile_trace(short, str(tmp_path / "short"))
+    short = _cfg()
+    short["config"]["scenario"]["duration_s"] = 20.0
+    long = _cfg()
+    long["config"]["scenario"]["duration_s"] = 30.0
+    long["config"]["demand"]["emission_end_s"] = 20.0
+    short_manifest = trace.compile_trace(short, str(tmp_path / "short"))
     long_manifest = trace.compile_trace(long, str(tmp_path / "long"))
     assert ((tmp_path / "short" / "trace.csv").read_bytes() ==
             (tmp_path / "long" / "trace.csv").read_bytes())
+    assert short_manifest["trace_sha256"] == long_manifest["trace_sha256"]
+    assert (short_manifest["trace_identity_sha256"] ==
+            long_manifest["trace_identity_sha256"])
     assert long_manifest["drain_s"] == 10.0
+    changed = _cfg()
+    changed["config"]["scenario"]["duration_s"] = 30.0
+    changed["config"]["demand"]["emission_end_s"] = 19.0
+    changed_manifest = trace.compile_trace(changed, str(tmp_path / "changed"))
+    assert changed_manifest["trace_identity_sha256"] != long_manifest[
+        "trace_identity_sha256"]
 
 
 def test_receipt_manifest_v2_fields_are_strict_and_v1_remains_legacy(tmp_path):
@@ -131,6 +141,8 @@ def test_receipt_manifest_v2_fields_are_strict_and_v1_remains_legacy(tmp_path):
     for field in ("simulation_horizon_s", "emission_end_s", "drain_s"):
         legacy["provenance_contract"].pop(field)
     legacy["provenance_contract"]["schema"] = trace.TRACE_PROVENANCE_SCHEMA_V1
+    legacy["trace_identity_sha256"] = config.legacy_trace_identity_sha256(
+        cfg, manifest["input_sha256"])
     assert receipt._validate_manifest(
         legacy, cfg["config"], cfg["version"]) == []
 

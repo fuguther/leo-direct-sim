@@ -1191,7 +1191,10 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
     # trace identity: rebuilt from resolved config + manifest input hash
     if manifest is not None and resolved_cfg is not None and resolved_version:
         from . import config as _config
-        expected_identity = _config.trace_identity_sha256(
+        identity_fn = (_config.legacy_trace_identity_sha256
+                       if manifest.get("schema") == trace_mod.TRACE_MANIFEST_SCHEMA_V1
+                       else _config.trace_identity_sha256)
+        expected_identity = identity_fn(
             {"version": resolved_version, "config": resolved_cfg},
             manifest.get("input_sha256", ""))
         if manifest.get("trace_identity_sha256") != expected_identity:
