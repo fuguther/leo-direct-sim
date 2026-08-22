@@ -4,7 +4,7 @@
 >
 > **当前不能混淆的两件事**：50/100/200 只是第一轮负载扫描，不是最终冻结值；三档实测交付率约 `0.472/0.455/0.429`，按预注册规则都落入 medium，机械候选为 50 Mbps，但必须补两个 seed，必要时扩大低端 bracket。学习正式矩阵、学习专用 CPU/RSS profile、完整三段时延 gate、Q0 真实 kernel 闭环和最终论文 claim 仍未完成。因此现在可以开始小规模非学习诊断和工程 pilot；不能把当前结果直接写成论文算法优越性或因果拥塞结论。
 
-> 状态最后核验：2026-08-22；当前代码基线 main 为 `29e41c8`，已部署到 canonical VM。280/14/25° 已完成 exact-main VM trial 并登记为 E0 工程基线，但不是 paper-ready 全局冻结；10/25 Mbps 两个同 trace E0 cell 待执行。M-Lab measurement-proxy 的有界多 OD + burst T0、coverage/RF 联合校准与当前 E0 工程基线已有 VM receipt；V2 artifact→claim 闭环、正式三段时延 gate、完整长窗中断/不间断等价、10/25 负载复核和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
+> 状态最后核验：2026-08-22；当前代码基线 main 为 `29e41c8`，已部署到 canonical VM。20 s 10/25/50 Mbps 运行均为 `diagnostic_truncated_horizon`，不能用于负载分类；新 drain-aware profiles 使用 emission window 20 s、simulation horizon 30 s。280/14/25° 仍是 E0 工程基线而非 paper-ready 全局冻结；下一步须完成同 trace 的 10/25/50 drain-aware VM 三 cell。V2 artifact→claim 闭环、正式三段时延 gate 和正式授权 cohort 仍未完成。
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
 > **Access boundary（E0 前门禁）**：当前默认 `access.unavailable_policy=reject` 保持历史兼容；新增显式 `queue` 仅是工程诊断语义，使用有限源端/上行队列，停止时未入网包记为 `IN_SYSTEM_AT_STOP`。新运行可由 raw events 重算 `access_admission_rate` 与 `network_delivery_rate_by_horizon`。旧 20 s 50/100/200 诊断保留原证据但不是 paper-ready；切换 queue 后必须重新做 coverage/horizon audit、VM 小样、E0 标定和训练，不能沿用旧曲线。

@@ -31,7 +31,13 @@ VM 资源为 wall/user/sys `424.1882/429.4386/2.0247 s`、max RSS `1869052 KiB`�
 改为同口径的 10/25/50 Mbps 三 cell，旧 50/100/200 仅保留为 `historical_only`。下一步 VM 只需跑 10 和 25 Mbps；
 三档结果齐全后再按预注册规则判定负载区间。
 
-> CURRENT；最后核验：2026-08-22。当前 main `29e41c8` 已部署 VM；280/14/25° 已完成 exact-main VM trial 并登记为 E0 工程基线，10/25 两个同 trace E0 cell 待执行。50 Mbps 是较高负载/扫描上界候选，不预设 low/medium/high；旧 50/100/200 仅 historical-only，不是正式论文结果。V2 artifact→claim 闭环、逐包三段时延正式 gate、完整长窗中断/不间断等价、10/25 负载复核和 formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
+> CURRENT；最后核验：2026-08-22。20 s 10/25/50 Mbps 运行被标为 `diagnostic_truncated_horizon`：scenario.duration_s 同时承担发包窗和停止窗，尾部排空/覆盖等待被截断，不能用于负载分类。已新增 `emission_end_s=20`、`scenario.duration_s=30` 的 drain-aware profiles；下一步须在同一 trace 上完成 10/25/50 三个 VM cell。旧 50/100/200 仅 historical-only，不是正式论文结果；V2 artifact→claim、正式三段时延 gate、正式授权 cohort 仍未完成。
+
+### Emission window 与 drain-aware E0（工程诊断，非论文结果）
+
+当前 trace 合同将 `demand.emission_end_s` 与 `scenario.duration_s` 分离：前者控制新包生成，后者是仿真停止窗；`null` 向后兼容为全程发包。此前 20 s 的 10/25/50 Mbps 运行均标记为 `diagnostic_truncated_horizon`，不可用于 low/medium/high 判定。10 Mbps 为 250 offered/192 delivered/58 in-system，25 Mbps 为 685/527/156；二者 natural end、conservation、receipt verified，但只能作为截断诊断。
+
+新的 E0 profiles 固定 emission window 20 s、simulation horizon 30 s，manifest 明确记录 `simulation_horizon_s`、`emission_end_s` 和 `drain_s=10`。下一步 VM 只跑同一 trace 的 10/25/50 三个 drain-aware cell，再依据完整尾部指标判定负载区间。
 
 ## 1. 研究主线与工作方法
 

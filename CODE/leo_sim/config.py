@@ -79,6 +79,7 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
     "demand": {
         "mode": str,  # uniform|gravity|hotspot|burst|diurnal|csv|mlab
         "offered_mbps": (int, float),
+        "emission_end_s": (int, float, type(None)),
         "packet_bits": int,
         "deadline_s": (int, float, type(None)),
         "csv_path": (str, type(None)),
@@ -241,6 +242,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
     "demand": {
         "mode": "uniform",
         "offered_mbps": 1.0,
+        "emission_end_s": None,
         "packet_bits": 8_000_000,
         "deadline_s": None,
         "csv_path": None,
@@ -503,6 +505,11 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
         raise ConfigError(f"demand.mode must be one of {sorted(VALID_DEMAND_MODES)}")
     if dm["offered_mbps"] <= 0:
         raise ConfigError("demand.offered_mbps must be > 0")
+    emission_end = dm["emission_end_s"]
+    if emission_end is not None and not (0 < emission_end <= sc["duration_s"]):
+        raise ConfigError(
+            "demand.emission_end_s must be finite, > 0 and <= "
+            "scenario.duration_s")
     if dm["packet_bits"] <= 0:
         raise ConfigError("demand.packet_bits must be > 0")
     if dm["mode"] == "csv" and not dm["csv_path"]:
@@ -785,7 +792,7 @@ def trace_identity_payload(resolved: dict) -> dict:
     learning, outputs, operational execution limits) MUST consume the same
     immutable trace, so none of them appear here. Included:
       - trace identity/schema versions;
-      - scenario.duration_s (emission window) and scenario.seed (demand RNG);
+      - scenario.duration_s, demand.emission_end_s and scenario.seed (demand RNG);
       - the full endpoints group (grid, aggregation, sites);
       - the full demand group (generator parameters, csv/mlab inputs by path);
       - execution.max_packets (the compile-time bound).

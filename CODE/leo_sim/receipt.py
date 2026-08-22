@@ -213,6 +213,11 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
         "offered_bits", "ledger", "active_endpoints", "time_range_s",
         "provenance_contract",
     }
+    manifest_schema = manifest.get("schema")
+    is_v1 = manifest_schema == trace_mod.TRACE_MANIFEST_SCHEMA_V1
+    is_v2 = manifest_schema == trace_mod.TRACE_MANIFEST_SCHEMA
+    if is_v2:
+        base_keys |= {"simulation_horizon_s", "emission_end_s", "drain_s"}
     proxy_keys = {"not_calibrated_user_demand", "provenance_note"}
     population_keys = proxy_keys | {"population"}
     if manifest.get("mode") == "mlab":
@@ -225,19 +230,24 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
         errors.append(
             f"manifest keys mismatch: unknown={sorted(set(manifest) - expected_keys)} "
             f"missing={sorted(expected_keys - set(manifest))}")
-    if manifest.get("schema") != trace_mod.TRACE_MANIFEST_SCHEMA:
+    if not (is_v1 or is_v2):
         errors.append("manifest schema mismatch")
     if manifest.get("trace_schema") != trace_mod.TRACE_SCHEMA:
         errors.append("manifest trace schema mismatch")
     if manifest.get("packet_id_contract") != trace_mod.PACKET_ID_CONTRACT:
         errors.append("manifest packet_id_contract mismatch")
     provenance_contract = manifest.get("provenance_contract")
-    if not isinstance(provenance_contract, dict) or set(provenance_contract) != {
-            "schema", "source", "units", "od_mapping", "offered_load",
-            "traffic_transform", "measurement_summary"}:
+    provenance_schema = (trace_mod.TRACE_PROVENANCE_SCHEMA
+                         if is_v2 else trace_mod.TRACE_PROVENANCE_SCHEMA_V1)
+    provenance_keys = {
+        "schema", "source", "units", "od_mapping", "offered_load",
+        "traffic_transform", "measurement_summary"}
+    if is_v2:
+        provenance_keys |= {"simulation_horizon_s", "emission_end_s", "drain_s"}
+    if not isinstance(provenance_contract, dict) or set(provenance_contract) != provenance_keys:
         errors.append("manifest provenance_contract keys mismatch")
     else:
-        if provenance_contract.get("schema") != "leo-sim-trace-provenance/v1":
+        if provenance_contract.get("schema") != provenance_schema:
             errors.append("manifest provenance_contract schema mismatch")
         source = provenance_contract.get("source")
         if not isinstance(source, dict) or set(source) != {"type", "path", "sha256"}:
@@ -274,6 +284,20 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
         errors.append("manifest config_version mismatch")
     if resolved_cfg is None:
         return errors
+    if is_v2:
+        simulation_horizon = manifest.get("simulation_horizon_s")
+        emission_end = manifest.get("emission_end_s")
+        drain = manifest.get("drain_s")
+        expected_horizon = float(resolved_cfg["scenario"]["duration_s"])
+        expected_emission = resolved_cfg["demand"]["emission_end_s"]
+        expected_emission = (expected_horizon if expected_emission is None
+                             else float(expected_emission))
+        if simulation_horizon != expected_horizon:
+            errors.append("manifest simulation_horizon_s mismatch")
+        if emission_end != expected_emission:
+            errors.append("manifest emission_end_s mismatch")
+        if drain != expected_horizon - expected_emission:
+            errors.append("manifest drain_s mismatch")
     mode = resolved_cfg["demand"]["mode"]
     if manifest.get("mode") != mode:
         errors.append("manifest mode != resolved config demand mode")
@@ -366,6 +390,28 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
             errors.append("provenance OD grid mapping mismatch")
         if offered_load.get("horizon_s") != resolved_cfg["scenario"]["duration_s"]:
             errors.append("provenance offered_load horizon mismatch")
+        if is_v2:
+            expected_emission_for_rate = resolved_cfg["demand"]["emission_end_s"]
+            expected_emission_for_rate = (
+                resolved_cfg["scenario"]["duration_s"]
+                if expected_emission_for_rate is None
+                else expected_emission_for_rate)
+            expected_realized = (float(manifest.get("offered_bits", 0))
+                                 / float(expected_emission_for_rate)
+                                 / 1_000_000.0)
+            if offered_load.get("realized_offered_mbps") != expected_realized:
+                errors.append("provenance realized_offered_mbps mismatch")
+        if is_v2:
+            if provenance_contract.get("simulation_horizon_s") != resolved_cfg["scenario"]["duration_s"]:
+                errors.append("provenance simulation_horizon_s mismatch")
+            expected_emission = resolved_cfg["demand"]["emission_end_s"]
+            expected_emission = (resolved_cfg["scenario"]["duration_s"]
+                                 if expected_emission is None else expected_emission)
+            if provenance_contract.get("emission_end_s") != expected_emission:
+                errors.append("provenance emission_end_s mismatch")
+            if provenance_contract.get("drain_s") != (
+                    resolved_cfg["scenario"]["duration_s"] - expected_emission):
+                errors.append("provenance drain_s mismatch")
         if offered_load.get("packet_bits") != resolved_cfg["demand"]["packet_bits"]:
             errors.append("provenance offered_load packet size mismatch")
         if offered_load.get("offered_packets") != manifest.get("offered_packets") \

@@ -13,6 +13,12 @@
 - 新增 10 Mbps 与 25 Mbps 工程 E0 profiles；E0-LOAD-CALIBRATION arms 改为 10/25/50，状态 `in_progress`。50 Mbps 只是较高负载/扫描上界候选，不能预标 high；low/medium/high 等三档结果齐全后再判定。旧 50/100/200 标为 `historical_only`。
 - 下一步 VM 仅执行同 trace 的 10/25 两个 cell；不创建正式授权矩阵，不改变 kernel/routing/receipt/governance/learning。
 
+## 2026-08-22：emission window 与 drain-aware E0 重标定（本分支）
+
+- 证据边界：此前 20 s 10/25/50 Mbps 的 `scenario.duration_s` 同时承担发包窗和停止窗，标记为 `diagnostic_truncated_horizon`，不能用于负载分类。10 Mbps：250 offered、240 admitted、192 delivered、58 in-system，wall/user/sys `401.3503/405.0936/2.3318 s`、max RSS `1775096 KiB`；25 Mbps：685/684/527/156，wall/user/sys `414.9082/418.2221/2.7069 s`、max RSS `1836412 KiB`；均 natural end、conservation、receipt verified。
+- 新合同：`demand.emission_end_s: null` 向后兼容为 `scenario.duration_s`；显式值必须 finite、>0、≤ simulation horizon。trace 仅生成 `[0, emission_end_s]` 的新包，仍按 simulation horizon 验证/运行；manifest/provenance 记录 `simulation_horizon_s`、`emission_end_s`、`drain_s`。
+- 新 E0 profiles 固定 `emission_end_s=20`、`scenario.duration_s=30`，下一步 VM 只跑同一 trace 的 10/25/50 三个 drain-aware cell。10/25/50 标签待完整排空窗口结果后判定。
+
 ## 2026-08-22：access boundary 冷审修复（pending）
 
 - 分支：`codex/20260822-access-boundary`，基线 `main@339a1f4`；PR：pending。
