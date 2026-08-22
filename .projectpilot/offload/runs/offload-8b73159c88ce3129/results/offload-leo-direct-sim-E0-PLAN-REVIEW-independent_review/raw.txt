@@ -1,0 +1,723 @@
+E0 calibration plan adversarial review（independent review）
+0. 审查边界
+
+FACT
+
+本审查仅基于绑定 commit 063542e3528ecb97a76d05f36fe9356d5c9c074c 与合同允许路径。
+
+当前 E0 文档已经明确区分：
+
+工程诊断证据；
+
+paper-ready 结果；
+
+后续 Q0/正式 claim 所需证据链。
+
+当前实验主线定义为：
+
+先实验诊断 → 再理论归因 → 最后方案设计。
+
+而不是先提出拥塞控制算法再寻找支持性实验。
+
+证据：
+
+CURRENT-EXPERIMENT-READINESS.md：E0 单 seed 结果不能直接宣称普遍因果；25M/50M 尚需完成后重新标定。
+
+EXPERIMENT-PROGRAM.md：研究顺序固定为诊断、理论解释、方案提出。
+
+一、总体判断
+结论
+
+当前 E0 计划方向正确，但存在五类主要风险：
+
+负载阈值存在 post-hoc 风险
+
+旧 50/100/200 Mbps 已被识别为 historical-only；
+
+10/25/50 Mbps 三档尚未形成冻结规则前，不允许根据结果调整 low/medium/high。
+
+配对分析虽然已有 fail-closed 设计，但实验身份绑定仍必须作为前置门禁
+
+不能依赖目录名、运行成功或人工匹配。
+
+利用率和拥塞诊断仍存在“看到瓶颈但无法归因”的风险
+
+必须保证 queue / tx / propagation 三段时延闭环。
+
+任何优化必须先证明 semantic-preserving
+
+特别是缓存、预计算、剪枝类优化；
+
+不允许通过减少模拟事件改变物理语义。
+
+Q0 real replay 前必须关闭信息边界和 artifact→claim 闭环
+
+否则无法解释性能差来自：
+
+物理容量；
+
+信息限制；
+
+决策算法。
+
+二、建议的 overnight 原子工作包（最多四个）
+WP1 — E0 calibration statistical lock
+Purpose
+
+冻结 E0 负载标定协议，避免后验选择压力区间。
+
+Why now
+
+当前 10/25/50 Mbps drain-aware E0 仍处于重新标定阶段。
+
+已有文档明确：
+
+旧 50/100/200 不作为正式结果；
+
+三档返回后才冻结负载区间。
+
+证据：
+
+ANALYSIS/EXPERIMENT-PROGRAM.md
+
+github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L20
+
+Exclusions
+
+禁止：
+
+修改 simulator kernel；
+
+调整星座规模；
+
+根据结果修改 traffic trace；
+
+增加新的负载档位直到预注册规则完成。
+
+Allowed paths
+
+仅允许：
+
+CODE/leo_sim/profiles/e0_load_scan.yaml
+
+CODE/leo_sim/profiles/mlab_e0_calibration.yaml
+
+EXPERIMENTS/EXP-20260822-E0-LOAD-FORMAL-R02/request.json
+
+Implementation
+
+建立固定：
+
+offered demand；
+
+trace SHA；
+
+horizon；
+
+drain window；
+
+seed 集合；
+
+classification rule。
+
+输出：
+
+calibration table；
+
+accepted load labels。
+
+Tests
+
+必须覆盖：
+
+Access bottleneck counterexample
+
+场景：
+
+access capacity 降低；
+
+ISL capacity 足够。
+
+预期：
+
+不能错误归因为 ISL congestion。
+
+Horizon truncation counterexample
+
+场景：
+
+emission 结束后仍有大量 in-flight packet。
+
+预期：
+
+20s truncated run 不得进入分类。
+
+Acceptance
+
+Local:
+
+三档均产生完整 artifact。
+
+CI:
+
+schema validation pass。
+
+VM:
+
+natural end；
+
+conservation；
+
+receipt verify。
+
+Stop conditions
+
+发现：
+
+seed 后阈值变化；
+
+classification rule 修改；
+
+trace SHA 不一致；
+
+立即停止，不进入后续论文矩阵。
+
+Executor prompt
+Freeze E0 calibration protocol only.
+Do not modify simulator semantics.
+Produce auditable load classification artifacts.
+Reject post-hoc threshold changes.
+Allowed conclusions
+
+允许：
+
+“该配置产生某压力等级”。
+
+禁止：
+
+“该负载代表真实互联网拥塞等级”。
+
+WP2 — Artifact → paired analysis → claim closure
+Purpose
+
+关闭正式实验可信链。
+
+Why now
+
+已有 paired analysis 明确采用 fail-closed：
+
+不根据目录推断身份；
+
+不把 process success 当证据；
+
+要求 manifest/config/artifact/metrics 一致。
+
+证据：
+
+ANALYSIS/paired_analysis.py
+
+github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/paired_analysis.py#L1-L15
+
+Exclusions
+
+禁止：
+
+新增分析框架；
+
+绕过现有 analyzer；
+
+手工生成 claim 输入。
+
+Allowed paths
+
+ANALYSIS/paired_analysis.py
+
+ANALYSIS/tests/test_paired_analysis.py
+
+PAPER/eligible_claims.py
+
+PAPER/tests/test_eligible_claims.py
+
+Implementation
+
+补齐：
+
+planned contrast；
+
+verified run ids；
+
+artifact hashes；
+
+claim boundary。
+
+Tests
+
+反例：
+
+Fake pairing
+
+两个不同 trace SHA：
+
+A baseline
+B proposed method
+
+即使指标存在，也必须拒绝。
+
+Information truncation
+
+同一 trace：
+
+full observation；
+
+stale observation。
+
+不能合并成一个 claim cohort。
+
+Acceptance
+
+必须证明：
+
+输入 hash 一致；
+
+run identity 一致；
+
+claim 只能来自 authorized artifact。
+
+Stop conditions
+
+如果任何指标来自：
+
+手工 CSV；
+
+未验证 artifact；
+
+非授权 run；
+
+停止。
+
+Executor prompt
+Strengthen existing fail-closed analysis only.
+Do not add alternative pipelines.
+The output must prevent invalid scientific claims.
+Allowed conclusions
+
+允许：
+
+“该 claim 对应这些 artifact”。
+
+禁止：
+
+“算法优越性已证明”。
+
+WP3 — Congestion attribution measurement closure
+Purpose
+
+让 E0 能回答“为什么拥塞”。
+
+Why now
+
+当前研究目标不是只报告 delivery ratio，而是解释：
+
+queue；
+
+transmission；
+
+propagation。
+
+证据：
+
+EXPERIMENT-PROGRAM.md
+
+github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/EXPERIMENT-PROGRAM.md#L100-L130
+
+Exclusions
+
+禁止：
+
+改 reward；
+
+改 routing；
+
+添加新 congestion controller。
+
+Allowed paths
+
+CODE/leo_sim/metrics.py
+
+CODE/leo_sim/tests/test_congestion_metrics.py
+
+CODE/experiment_platform/metric-catalog.json
+
+Implementation
+
+保证：
+
+每 packet：
+
+T
+e2e
+	​
+
+=T
+queue
+	​
+
++T
+tx
+	​
+
++T
+prop
+	​
+
+
+可重算。
+
+同时输出：
+
+link utilization numerator；
+
+denominator；
+
+direction；
+
+time window。
+
+Tests
+Non-ISL pressure counterexample
+
+增加：
+
+access bottleneck；
+
+uplink bottleneck。
+
+预期：
+
+诊断必须识别非 ISL 压力。
+
+Propagation-only counterexample
+
+保持 queue=0：
+
+增加距离。
+
+预期：
+
+不能标记 congestion。
+
+Acceptance
+
+必须：
+
+raw metrics 可重算；
+
+summary metrics 与 raw metrics 一致。
+
+Stop conditions
+
+若 utilization 没有明确：
+
+分母；
+
+时间窗；
+
+方向；
+
+停止。
+
+Executor prompt
+Close congestion attribution metrics.
+Preserve simulator semantics.
+Only improve observability.
+Allowed conclusions
+
+允许：
+
+“该瓶颈主要来自 queue/tx/prop”。
+
+禁止：
+
+“提出的新算法解决拥塞”。
+
+WP4 — Semantic-preserving optimization audit
+Purpose
+
+提前阻止性能优化污染实验。
+
+Why now
+
+当前平台进入正式实验阶段后，任何速度优化都可能改变：
+
+event ordering；
+
+queue behavior；
+
+decision timing。
+
+Exclusions
+
+禁止：
+
+修改动作空间；
+
+修改 reward；
+
+修改 routing semantics；
+
+修改 packet lifecycle。
+
+Allowed paths
+
+优先：
+
+已有 metrics / experiment platform 文件。
+
+若必须新增：
+
+仅新增 profiling/test 文件。
+
+Implementation
+
+所有优化必须证明：
+
+Output
+optimized
+	​
+
+=Output
+reference
+	​
+
+
+在：
+
+same trace；
+
+same seed；
+
+same config。
+
+Tests
+
+反例：
+
+Information leakage counterexample
+
+优化缓存不能提前暴露未来 topology。
+
+ISL pressure counterexample
+
+优化不能跳过 link capacity event。
+
+Acceptance
+
+必须：
+
+metric equivalence；
+
+receipt equivalence；
+
+conservation unchanged。
+
+Stop conditions
+
+任何：
+
+latency 降低但 metrics 改变；
+
+event 数减少但原因未知；
+
+停止。
+
+Executor prompt
+Audit optimization candidates only.
+Any speedup must preserve experiment semantics exactly.
+三、Q0 real replay 前必须关闭事项
+Blocking
+1. V2 artifact→claim
+
+原因：
+
+没有闭环无法证明实验结果来源。
+
+证据：
+
+CURRENT-EXPERIMENT-READINESS.md
+
+github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L1-L20
+
+2. 信息边界
+
+必须区分：
+
+simulator knows；
+
+controller observes；
+
+learner receives。
+
+否则 Q0-I/L 差异不可解释。
+
+3. 逐字段 AoI
+
+禁止：
+
+单 cache age 替代所有字段 age。
+
+4. replay identity
+
+必须绑定：
+
+action identity；
+
+state identity；
+
+execution receipt。
+
+四、允许牺牲的真实性
+可以牺牲
+1. 低层无线细节
+
+例如：
+
+天线模式；
+
+天气；
+
+ARQ。
+
+前提：
+
+明确声明不是研究对象。
+
+2. 真实 IP packet
+
+可以使用：
+
+chunk；
+
+flow；
+
+aggregated queue unit。
+
+3. 大规模星座
+
+280/14 可以作为 E0 工程基线。
+
+不能声明：
+
+所有 LEO。
+
+不允许牺牲
+
+topology dynamics；
+
+queue semantics；
+
+capacity constraint；
+
+information boundary；
+
+trace reproducibility。
+
+五、最终研究依赖链
+Traffic provenance
+        ↓
+E0 calibration
+        ↓
+Congestion attribution
+        ↓
+Q0-I / Q0-F information gap
+        ↓
+Mechanism diagnosis
+        ↓
+Controller proposal
+        ↓
+Formal paired evaluation
+        ↓
+Paper claim
+
+不能跳过：
+
+诊断 → 理论 → 方法
+
+直接：
+
+方法 → 实验 → 解释
+六、FACT / INFERENCE / open_items
+FACT
+
+E0 当前仍区分工程诊断与 paper-ready。
+
+旧负载扫描不能直接作为正式分类。
+
+paired analysis 已设计为 fail-closed。
+
+Q0 目标是信息价值与性能归因，而不是简单 global shortest path。
+
+INFERENCE
+
+最大风险不是代码不能运行，而是实验解释失效。
+
+当前最短路径不是继续加算法，而是补闭环测量和证据链。
+
+任何优化必须先成为“等价变换”。
+
+open_items
+
+当前无法在受限读取范围内确认所有指定测试文件的完整 adversarial coverage。
+
+当前无法执行 VM/CI 实际验收。
+
+当前无法确认 commit 后续未授权变更。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:E0-PLAN-REVIEW:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "E0 计划方向正确，但正式 Q0 replay 前必须优先关闭 artifact-claim 闭环、E0 阈值冻结、拥塞归因测量和语义保持审计。当前最大风险是后验阈值选择、伪配对和将工程诊断过度解释为论文结论。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "E0 负载分类仍存在 post-hoc threshold 风险，旧扫描结果不能直接作为正式结论。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L20"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "正式 claim 前必须保持 artifact 到 paired analysis 的 fail-closed 闭环。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/paired_analysis.py#L1-L15"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "拥塞诊断必须先闭合 queue/tx/prop 三段归因，否则无法区分容量、传播和排队瓶颈。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/EXPERIMENT-PROGRAM.md#L100-L130"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "先执行 WP1 冻结 E0 calibration 规则。",
+    "随后执行 WP2 完成 artifact→paired analysis→claim 链。",
+    "再执行 WP3 完成 congestion attribution。",
+    "最后进行语义保持优化审计。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L1-L20",
+    "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/paired_analysis.py#L1-L15"
+  ],
+  "open_items": [
+    "未执行 VM/CI 验收。",
+    "未读取合同允许路径之外内容。",
+    "无法确认后续未提交本地状态。"
+  ]
+}
+===END_OFFLOAD_RESULT===
