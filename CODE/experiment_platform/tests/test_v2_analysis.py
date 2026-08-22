@@ -53,8 +53,14 @@ def _run_fixture(root: Path, run_id: str, arm_id: str, pair: str) -> dict:
         "natural_end": True, "conservation_ok": True,
     })
     _write(out / "governance_receipt.json", {
-        "schema": "leo-sim-governance-receipt/v1", "research_eligible": True,
+        "schema": "leo-sim-governance-receipt/v2", "research_eligible": True,
         "run_id": run_id, "verification_errors": [],
+        "receipt_schema": receipt_payload["schema"],
+        "resolved_config_sha256": v2_analysis.file_sha256(
+            out / "resolved_config.json"),
+        "trace_manifest_schema": manifest["schema"],
+        "trace_identity_contract": receipt_payload["trace_identity_contract"],
+        "trace_manifest_sha256": v2_analysis.file_sha256(out / "manifest.json"),
         "run_receipt_sha256": hashlib.sha256(
             (out / "receipt.json").read_bytes()).hexdigest(),
     })
@@ -174,3 +180,45 @@ def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
     assert manifest["status"] == "VERIFIED"
     assert manifest["claim_status"] == "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
     assert manifest["planned_contrasts"][0]["n_pairs"] == 1
+
+
+def test_v2_analysis_rejects_governance_witness_contract_mismatch(tmp_path):
+    root = tmp_path
+    row = _run_fixture(root, "EXP-V2-ANALYSIS-witness-s1", "control", "pair-1")
+    experiment = root / "EXPERIMENTS" / "EXP-V2-ANALYSIS-WITNESS"
+    experiment.mkdir(parents=True)
+    row = {**row, "trace_seed": 1}
+    _write(experiment / "request.json", {
+        "experiment_id": experiment.name,
+        "claim_boundary": {"can_claim": [], "cannot_claim": []},
+    })
+    _write(experiment / "run-manifest.json", {
+        "schema": v2_analysis.MATRIX_SCHEMA,
+        "experiment_id": experiment.name, "cells": [row],
+    })
+    _write(experiment / "analysis-request.json", {
+        "schema": v2_analysis.ANALYSIS_SCHEMA,
+        "experiment_id": experiment.name,
+        "planned_run_ids": [row["run_id"]],
+        "analysis": {"analysis_id": "AN-WITNESS", "primary_metric": "delivery_rate",
+                     "planned_contrasts": []},
+    })
+    auth = {"status": "AUTHORIZED", "experiment_id": experiment.name,
+            "authorized_cells": [row]}
+    auth_path = experiment / "authorization.json"
+    _write(auth_path, auth)
+    auth_sha = v2_analysis.file_sha256(auth_path)
+    result_dir = root / "CODE" / "Results" / row["run_id"]
+    formal_path = result_dir / "formal_run.json"
+    formal = json.loads(formal_path.read_text(encoding="utf-8"))
+    formal["authorization_sha256"] = auth_sha
+    _write(formal_path, formal)
+    governed_path = result_dir / "governance_receipt.json"
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    governed["authorization_sha256"] = auth_sha
+    governed["trace_manifest_schema"] = "leo-sim-trace-manifest/v1"
+    _write(governed_path, governed)
+    with mock.patch.object(v2_analysis.authorize_experiment,
+                           "verify_authorization", return_value=auth):
+        with pytest.raises(v2_analysis.V2AnalysisError, match="witness"):
+            v2_analysis.analyze(root, experiment, auth_path)

@@ -244,3 +244,32 @@ def test_run_consumes_precompiled_trace_with_sha_check(tmp_path, capsys):
     rc2 = main(["run", "--config", str(p2), "--out", str(tmp_path / "out4")])
     assert rc2 == 2
     assert "TRACE COMPILE FAILED" in capsys.readouterr().out
+
+
+def test_run_rejects_valid_legacy_v1_precompiled_trace_for_current_runtime(
+        tmp_path, capsys):
+    """A current run may not select identity by a self-reported v1 manifest."""
+    cfg = _write_cfg(tmp_path)
+    tdir = tmp_path / "legacy-trace"
+    assert main(["trace", "compile", "--config", cfg, "--out", str(tdir)]) == 0
+    capsys.readouterr()
+    manifest = json.loads((tdir / "manifest.json").read_text(encoding="utf-8"))
+    manifest["schema"] = "leo-sim-trace-manifest/v1"
+    for field in ("simulation_horizon_s", "emission_end_s", "drain_s"):
+        manifest.pop(field, None)
+    manifest["provenance_contract"] = dict(manifest["provenance_contract"])
+    manifest["provenance_contract"]["schema"] = "leo-sim-trace-provenance/v1"
+    for field in ("simulation_horizon_s", "emission_end_s", "drain_s"):
+        manifest["provenance_contract"].pop(field, None)
+    # Make the downgrade internally valid for the legacy verifier.  It must
+    # still be refused by the current precompiled-trace entry point.
+    manifest["trace_identity_sha256"] = config.legacy_trace_identity_sha256(
+        config.load_config_file(cfg), manifest["input_sha256"])
+    (tdir / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    text = (tmp_path / "cfg.yaml").read_text(encoding="utf-8")
+    p2 = tmp_path / "cfg-v1-trace.yaml"
+    p2.write_text(text + f"  trace_path: {tdir}\n")
+    rc = main(["run", "--config", str(p2), "--out", str(tmp_path / "out-v1")])
+    assert rc == 2
+    assert "TRACE COMPILE FAILED" in capsys.readouterr().out

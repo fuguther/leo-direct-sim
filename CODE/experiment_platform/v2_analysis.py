@@ -24,6 +24,8 @@ SCHEMA = "leo-sim-v2-analysis/v1"
 CLAIM_GATE_SCHEMA = "leo-sim-v2-claim-gate/v1"
 MATRIX_SCHEMA = "leo-sim-experiment-matrix-manifest/v1"
 ANALYSIS_SCHEMA = "leo-sim-matrix-analysis-request/v1"
+GOVERNANCE_SCHEMA_V1 = "leo-sim-governance-receipt/v1"
+GOVERNANCE_SCHEMA_V2 = "leo-sim-governance-receipt/v2"
 
 
 class V2AnalysisError(ValueError):
@@ -145,7 +147,19 @@ def _verify_result(root: Path, results_root: Path, row: dict[str, Any],
             "authorization_sha256": authorized.get("authorization_sha256", formal.get("authorization_sha256")),
     }.items() if expected is not None):
         raise V2AnalysisError(f"{run_id} formal witness identity mismatch")
-    if not isinstance(governed, dict) or governed.get("schema") != "leo-sim-governance-receipt/v1":
+    if not isinstance(governed, dict):
+        raise V2AnalysisError(f"{run_id} governance receipt schema mismatch")
+    receipt_schema = receipt.get("schema")
+    if receipt_schema == receipt_mod.RECEIPT_SCHEMA:
+        expected_governance_schema = GOVERNANCE_SCHEMA_V2
+    elif receipt_schema in {receipt_mod.LEGACY_RECEIPT_SCHEMA,
+                            receipt_mod.LEGACY_RECEIPT_SCHEMA_V4}:
+        # Historical v3/v4 artifacts remain readable, but never inherit the
+        # v2 external witness contract by self-reporting extra fields.
+        expected_governance_schema = GOVERNANCE_SCHEMA_V1
+    else:
+        raise V2AnalysisError(f"{run_id} receipt schema is not a supported formal branch")
+    if governed.get("schema") != expected_governance_schema:
         raise V2AnalysisError(f"{run_id} governance receipt schema mismatch")
     if governed.get("run_id") != run_id or governed.get("research_eligible") is not True \
             or governed.get("verification_errors") != []:
@@ -158,6 +172,17 @@ def _verify_result(root: Path, results_root: Path, row: dict[str, Any],
         raise V2AnalysisError(f"{run_id} receipt hash is not bound by witnesses")
     if receipt.get("config_sha256") != authorized.get("config_sha256"):
         raise V2AnalysisError(f"{run_id} receipt config hash mismatch")
+    if expected_governance_schema == GOVERNANCE_SCHEMA_V2:
+        expected_binding = {
+            "receipt_schema": receipt_mod.RECEIPT_SCHEMA,
+            "resolved_config_sha256": file_sha256(paths["resolved_config.json"]),
+            "trace_manifest_schema": docs["manifest.json"].get("schema"),
+            "trace_identity_contract": receipt.get("trace_identity_contract"),
+            "trace_manifest_sha256": file_sha256(paths["manifest.json"]),
+        }
+        if any(governed.get(key) != value
+               for key, value in expected_binding.items()):
+            raise V2AnalysisError(f"{run_id} governance witness binding mismatch")
     metric = _metric_from_result(receipt, ledgers, primary)
     artifacts = [{
         "path": str(path.relative_to(root)),
