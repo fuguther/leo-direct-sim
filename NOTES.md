@@ -614,3 +614,12 @@
 - R03 brief 将 R01/R02 不混算、validity gate、`HOLDING_QUEUE_OVERFLOW / sum(fate_counts)` 分母、pair min-delivery/max-overflow 聚合、互斥穷尽的 load labels 和两 additional-seed confirmation 规则写入 schema 允许字段；R02 request/manifest/config 未改变。
 - 三角色 review 已重新绑定 R03 brief 与 R02 matrix 工件；本地 `evaluate_decision` 与 `_load_verified_finalization` 均通过。R02 编译矩阵 authorization 使用 R02 request 固定的 finalization 路径，由 R02 finalization shim 指向 schema-valid R03 brief/decision；不得把 R01 结果混入。
 - 当前工作树仍在授权分支，待 commit→PR→CI→合入后，部署 main exact SHA，再严格串行执行六 cell；authorization 尚未作为 VM 运行证据，不能宣称 E0 已完成或已冻结论文负载。
+
+## 2026-08-22：E0 load R02 六 cell VM 扫描完成（候选，不冻结）
+
+- 授权链已修复并合入：当前 main exact SHA=`54f277e68576725b1386c86690940961f2ca5db9`；canonical VM deployment receipt SHA=`f201ae6773fec97d85651b97e59f9c42997ba3721c26f123a0aac31921615bf8`；authorization SHA=`fc1ba2532cd4a02050addf298ec69fd78b9103052843500a2fa38741ee964d59`。本轮使用同一 SHA、同一授权、同一 M-Lab multi-OD + 8--16 s 2x burst 合同，140 星、20 s、MCS、1 s 拓扑重匹配、seed=7。
+- 六个 cell 严格串行完成：`low_control`、`low_copy`、`medium_control`、`medium_copy`、`high_control`、`high_copy` 均 remote status=`success`、`exit_code=0`、`natural_end=true`、`conservation_ok=true`、治理回执 `research_eligible=true`，逐个 `receipt verify` 均返回 `verified`。运行中单个 Python 进程约占一个 CPU 核；观察 RSS 约 `0.55--0.80 GB`，这只是工程观察，不是正式逐 run resource profile。
+- V2 分析状态=`VERIFIED`、`verified_runs=6`；`verify_persisted_analysis(.../analysis-manifest.json)` 返回 `(True, [])`。analysis manifest SHA=`b57f6bdab64382cff907edeaae566c8629374b4a7c5a1cbe44b81a907413a799`，summary SHA=`e116e86a158129640dc145e76973e6e6a0762401f9024e1d26abb585a089918b`，report SHA=`c856ba4bd0d814089a0e86d567f70ad514ddb9b169b55d6130369acbbd3e9c32`。三组 copy/control 的 paired delivery-rate difference 均为 `0.0`，仅是同 seed/同配置的重复一致性证据。
+- 从六个原始 receipt 独立重算的 pair 聚合如下（两臂数值相同）：50 Mbps：`613/1299=0.4719014627`，`HOLDING_QUEUE_OVERFLOW=0`，溢出率 `0`；100 Mbps：`1253/2756=0.4546444122`，溢出率 `0`；200 Mbps：`2382/5551=0.4291118717`，`HOLDING_QUEUE_OVERFLOW=167`，溢出率 `0.0300846694`。所有 cell 均通过 validity gate，未出现零分母、命运计数不一致或守恒失败。
+- 预注册分档结果：没有一档达到“低负载”交付率 `>=0.80`；50/100/200 三档均落入“中负载”区间（`0.20--0.80` 且溢出率 `<=0.20`）。按机械规则，最低有效中档是名义 50 Mbps；但因为低负载区没有被扫描出来，不能把这个结果说成最终 E0 边界，也不能用名义 low/medium/high 标签冒充真实三段。下一步先用至少两个新 trace seed 复核 50 Mbps；若仍低于 0.80，再扩大低端 bracket，而不是直接冻结。
+- 结论边界：本轮证明了真实 M-Lab 多 OD + burst 合同在当前主线可授权、可在 VM 串行自然结束、可由 receipt/V2 分析重算，且 200 Mbps 开始出现 holding overflow；仍不能支持最终负载阈值、算法优越性、因果拥塞结论、Q0 最优性或论文统计结论。R02 原始结果留在 VM `CODE/Results/`，不入库；本记录只保存可追溯哈希与聚合摘要。
