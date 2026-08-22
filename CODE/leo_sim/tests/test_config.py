@@ -14,6 +14,13 @@ def test_defaults_resolve_and_hash_stable():
         assert group in r1["config"]
 
 
+def test_access_unavailable_policy_defaults_to_reject_and_has_enum():
+    assert config.resolve_config()["config"]["access"]["unavailable_policy"] == "reject"
+    assert config.resolve_config({"access": {"unavailable_policy": "queue"}})["config"]["access"]["unavailable_policy"] == "queue"
+    with pytest.raises(config.ConfigError, match="unavailable_policy"):
+        config.resolve_config({"access": {"unavailable_policy": "later"}})
+
+
 def test_unknown_field_rejected():
     with pytest.raises(config.ConfigError, match="unknown field"):
         config.resolve_config({"scenario": {"bogus": 1}})
