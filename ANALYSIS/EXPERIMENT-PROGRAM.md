@@ -14,10 +14,24 @@
 2.532845e9/1.317618e9 bps，故本扫描未发现 MCS=0。该记录是工程几何/RF 可用性证据，**不是容量证明或 paper-ready 结果**。
 
 本地 20 s 真实运行自然结束且守恒通过（1299 offered、978 delivered、16 holding overflow、1 no-route、304
-in-system；wall/user/sys=133.93/132.47/1.06 s）；macOS max RSS 因权限未核验。候选仍须在同一 trace 上完成 VM
-资源与阶段指标小样，随后才能冻结并重跑 E0；VM trial pending。
+in-system；wall/user/sys=133.93/132.47/1.06 s）；macOS max RSS 因权限未核验。该候选阶段已由 exact-main VM
+trial 关闭，并在下一节升级为 E0 工程基线；仍非容量证明或 paper-ready 全局冻结。
 
-> CURRENT；最后核验：2026-08-21。当前 main `bfae761` 已部署 VM；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 工程校准、receipt horizon 修复、physical available-capacity 分母、新 profile 的 E0 工程负载标定、60 秒 D2 长窗、capacity 负对照和学习 train→eval 工程 smoke 已完成。continuation bundle 已通过 VM 单步恢复等价；50/100/200 Mbps 只冻结为下一阶段的低/中/压力候选，不是正式论文结果；V2 artifact→claim 闭环、逐包三段时延正式 gate、完整长窗中断/不间断等价、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
+### 当前 E0 工程基线（非 paper-ready 全局冻结）
+
+基于 exact-main `29e41c8` 的 VM 部署 receipt
+`11688f2f2fae23c250b535aa439057c01eebd8b386f132c00ba654c4003b31a8`，
+`280/14/25°` 现登记为 **E0 工程基线**，不是 paper-ready 全局冻结。`SMOKE-20260822-COVERAGE-280X14-E25-29e41c8`
+使用 trace `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`，
+1299 offered、1233 admitted、978 delivered、16 holding overflow、1 no-route、304 in-system；
+access admission `0.9491916859`、network delivery by horizon `0.7931873479`，natural end、conservation、VM receipt verified。
+VM 资源为 wall/user/sys `424.1882/429.4386/2.0247 s`、max RSS `1869052 KiB`、`9618761` events。
+
+50 Mbps 仅是当前扫描上界/较高负载候选，已不是无损低负载；不预设 low/medium/high 标签。E0-LOAD-CALIBRATION
+改为同口径的 10/25/50 Mbps 三 cell，旧 50/100/200 仅保留为 `historical_only`。下一步 VM 只需跑 10 和 25 Mbps；
+三档结果齐全后再按预注册规则判定负载区间。
+
+> CURRENT；最后核验：2026-08-22。当前 main `29e41c8` 已部署 VM；280/14/25° 已完成 exact-main VM trial 并登记为 E0 工程基线，10/25 两个同 trace E0 cell 待执行。50 Mbps 是较高负载/扫描上界候选，不预设 low/medium/high；旧 50/100/200 仅 historical-only，不是正式论文结果。V2 artifact→claim 闭环、逐包三段时延正式 gate、完整长窗中断/不间断等价、10/25 负载复核和 formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
 
 ## 1. 研究主线与工作方法
 
@@ -56,7 +70,7 @@ in-system；wall/user/sys=133.93/132.47/1.06 s）；macOS max RSS 因权限未�
 - D1/D2 代码已合入并有回归测试；当前 `69c40b1` VM 已部署，MCS/动态拓扑多 OD T0、三档负载标定、60 秒长窗和学习 smoke 均已有同代码系列工程证据，但 D1 旧平台逐距离 MCS 对照仍缺；
 - 已知 R1-A1 额外跳数刷分风险已关闭；仍需把 shaped reward 与 Q0 物理目标分离，已修复的 mask 旁路也不能代表整体信息公平完成；
 - 闭合 V2 `compile → review → authorize → run → receipt → metric recomputation → paired analysis → claim`；当前只完成矩阵编译/授权 Stage 1，真实 artifact→claim 闭环仍缺；
-- 当前 `bfae761` 已部署并承接非学习同 SHA 工程 T0/cadence smoke、E0 负载标定、资源剖析、60 秒 D2 长窗、capacity 负对照和 Q-learning/DDQN/GAT/MPNN train→eval 工程 smoke；continuation bundle 已做 VM 单步恢复等价；正式授权 cohort、formal VM E0/PILOT 和完整长窗等价仍需按 runbook 执行。
+- 历史 `bfae761` 已承接非学习同 SHA 工程 T0/cadence smoke、E0 负载标定、资源剖析、60 秒 D2 长窗、capacity 负对照和 Q-learning/DDQN/GAT/MPNN train→eval 工程 smoke；continuation bundle 已做 VM 单步恢复等价。当前 `29e41c8` 的 E0 工程基线已完成 VM trial；正式授权 cohort、10/25 负载复核、formal VM E0/PILOT 和完整长窗等价仍需按 runbook 执行。
 
 P0 的验收是“同一 SHA 的结果可以被重新算出来并拒绝篡改”，不是仅有 pytest 绿。
 

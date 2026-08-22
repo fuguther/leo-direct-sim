@@ -181,7 +181,7 @@ experiments:
     required_evidence: [coverage_scan_json, horizon_audit, positive_rate_usable_coverage]
     decision: coverage_scan_does_not_automatically_select_added_satellites
     provisional_vm_candidate:
-      status: provisional_vm_candidate
+      status: frozen_e0_engineering_baseline
       profile: CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue_280x14_e25.yaml
       constellation: {num_satellites: 280, num_planes: 14, satellites_per_plane: 20, min_elevation_deg: 25}
       trace_sha256: f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4
@@ -189,23 +189,27 @@ experiments:
       coverage_6000s_20s: {endpoints: 55, never_visible: 0, threshold_met_fraction: 1.0, min_visible_fraction: 0.6345514950, median_visible_fraction: 0.9734219269, max_gap_s: 1760}
       rf_visible_samples: {max_slant_km: 1213.2078115, min_uplink_rate_bps: 2532845000, min_downlink_rate_bps: 1317618000, uplink_positive_range_km: 12067.9044812, downlink_positive_range_km: 4482.1358470}
       local_run: {natural_end: true, conservation_ok: true, offered: 1299, delivered: 978, holding_overflow: 16, no_route: 1, in_system_at_stop: 304, wall_s: 133.93, user_s: 132.47, sys_s: 1.06, max_rss: unverified_macos_permission}
-      provisional: true
+      provisional: false
       capacity_proof: false
       paper_ready: false
-      vm_trial: pending
-      freeze_condition: same_trace_vm_resources_stage_metrics_then_recalibrate_e0
+      vm_trial: completed_exact_main
+      vm_run: SMOKE-20260822-COVERAGE-280X14-E25-29e41c8
+      deployment_receipt_sha: 11688f2f2fae23c250b535aa439057c01eebd8b386f132c00ba654c4003b31a8
+      vm_stage_metrics: {offered: 1299, admitted: 1233, delivered: 978, holding_overflow: 16, no_route: 1, in_system_at_stop: 304, access_admission_rate: 0.9491916859, network_delivery_rate_by_horizon: 0.7931873479}
+      global_freeze: false
+      freeze_condition: e0_engineering_baseline_only; complete_10_25_same_trace_vm_cells_before_load_band_decision
 
   - id: E0-LOAD-CALIBRATION
     class: engineering_calibration
     title: mlab_multi_od_burst_load_calibration
-    status: rerun_required
+    status: in_progress
     prerequisites: [D1_merged_to_main, D2_merged_to_main, TRAFFIC-T0, TOPOLOGY-CADENCE-CALIBRATION, exact_main_deployed_to_vm, ACCESS-BOUNDARY]
-    arms: [offered_50_mbps, offered_100_mbps, offered_200_mbps]
+    arms: [offered_10_mbps, offered_25_mbps, offered_50_mbps]
     traffic_mode: mlab_measurement_proxy_multi_od_with_20s_burst
     purpose: Select low, medium and high load candidates before formal E0 on the new bounded multi-OD profile; this engineering calibration is not a paper effect result.
-    decision: rerun_required_after_access_boundary_gate
-    reason: historical_diagnostic_only; queue_semantics_changed_access_boundary_and_requires_coverage_horizon_audit_vm_smoke_and_new_e0_training
-    evidence: {historical: true, main_sha: 8e2f1dfe8ee39dacfb56d52d572d37046bb6b8a4, deployment_receipt_sha: 4bd3ba95438379a88cb58f4e4c9fe6559fa924f04e0b901e4c122a4527c286d5, loads_mbps: [50, 100, 200], offered_packets: {50: 1299, 100: 2756, 200: 5551}, delivered_packets: {200: 2382}, holding_overflow: {50: 0, 100: 0, 200: 167}, natural_end: true, conservation_ok: true, receipt_verified: true, metrics_recomputed: true, paper_ready: false}
+    decision: pending_same_trace_vm_10_25_cells
+    reason: historical_50_100_200_only; access_boundary_changed_and_280x14x25_requires_same_trace_e0_recalibration
+    evidence: {historical_only: true, historical_loads_mbps: [50, 100, 200], historical_main_sha: 8e2f1dfe8ee39dacfb56d52d572d37046bb6b8a4, historical_deployment_receipt_sha: 4bd3ba95438379a88cb58f4e4c9fe6559fa924f04e0b901e4c122a4527c286d5, current_profile: CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue_280x14_e25.yaml, current_vm_run: SMOKE-20260822-COVERAGE-280X14-E25-29e41c8, deployment_receipt_sha: 11688f2f2fae23c250b535aa439057c01eebd8b386f132c00ba654c4003b31a8, trace_sha256: f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4, offered_packets: 1299, admitted_packets: 1233, delivered_packets: 978, holding_overflow: 16, no_route: 1, in_system_at_stop: 304, access_admission_rate: 0.9491916859, network_delivery_rate_by_horizon: 0.7931873479, natural_end: true, conservation_ok: true, receipt_verified: true, wall_s: 424.1882, user_s: 429.4386, sys_s: 2.0247, max_rss_kib: 1869052, events: 9618761, paper_ready: false, global_freeze: false, vm_10_25_pending: true}
     required_evidence: [same_trace_identity_per_arm, natural_end, conservation, receipt_verified, fate_counts, vm_wall_time, raw_metrics_recompute]
 
   - id: DIAG-CONGESTION

@@ -4,17 +4,23 @@
 >
 > **当前不能混淆的两件事**：50/100/200 只是第一轮负载扫描，不是最终冻结值；三档实测交付率约 `0.472/0.455/0.429`，按预注册规则都落入 medium，机械候选为 50 Mbps，但必须补两个 seed，必要时扩大低端 bracket。学习正式矩阵、学习专用 CPU/RSS profile、完整三段时延 gate、Q0 真实 kernel 闭环和最终论文 claim 仍未完成。因此现在可以开始小规模非学习诊断和工程 pilot；不能把当前结果直接写成论文算法优越性或因果拥塞结论。
 
-> 状态最后核验：2026-08-21；当前代码基线 main 为 `fd3ef5d496d42a77553de29d2288cbd476968d71`，已部署到 canonical VM。Q0 tiny 候选尚未合入/部署。代码可做同 SHA 非学习工程 smoke、capacity 负对照和学习训练—评估工程 pilot；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 校准、逐向 physical available-capacity 分母、三档 E0 工程负载标定、60 秒 D2 长窗、Q-learning/DDQN/GAT/MPNN checkpoint 闭环已有 VM receipt/重算证据。replay/optimizer/target/RNG continuation bundle 已实现并通过 VM 恢复后继续一步等价测试；V2 artifact→claim 闭环、正式三段时延 gate、完整长窗中断/不间断等价和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
+> 状态最后核验：2026-08-22；当前代码基线 main 为 `29e41c8`，已部署到 canonical VM。280/14/25° 已完成 exact-main VM trial 并登记为 E0 工程基线，但不是 paper-ready 全局冻结；10/25 Mbps 两个同 trace E0 cell 待执行。M-Lab measurement-proxy 的有界多 OD + burst T0、coverage/RF 联合校准与当前 E0 工程基线已有 VM receipt；V2 artifact→claim 闭环、正式三段时延 gate、完整长窗中断/不间断等价、10/25 负载复核和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
 > **Access boundary（E0 前门禁）**：当前默认 `access.unavailable_policy=reject` 保持历史兼容；新增显式 `queue` 仅是工程诊断语义，使用有限源端/上行队列，停止时未入网包记为 `IN_SYSTEM_AT_STOP`。新运行可由 raw events 重算 `access_admission_rate` 与 `network_delivery_rate_by_horizon`。旧 20 s 50/100/200 诊断保留原证据但不是 paper-ready；切换 queue 后必须重新做 coverage/horizon audit、VM 小样、E0 标定和训练，不能沿用旧曲线。
-> 因此 access boundary 是 E0 重标定的前门禁：queue 阶段指标和 exact-main VM 小样已完成；coverage/horizon 与可用速率联合校准仍未完成，所以 E0 仍为 `rerun_required`，不能按上方历史快照关闭。
+> 因此 access boundary 的 coverage/horizon 与可用速率联合校准已支持 280/14/25° E0 工程基线；E0-LOAD-CALIBRATION 仍 `in_progress`，待 10/25 两个同 trace VM cell 后再判定负载区间，不能按历史扫描关闭正式门禁。
 
-> **2026-08-22 provisional coverage candidate（非冻结、非 paper-ready）**：旧 140/7/30° VM smoke 已完成但覆盖不足；
-> 当前登记 280/14/25°（每面 20 星）作为最小有希望的 VM 候选。固定 trace 的 20 s/1 s 与 6000 s/20 s 扫描均 55/55
-> 端点达标，长窗最小可见比例约 0.6346、最大无覆盖间隔 1760 s。可见样本最大斜距约 1213.21 km，当前 RF/MCS
-> 最小正 uplink/downlink 速率约 2.532845e9/1.317618e9 bps；这不是容量证明。候选必须先完成同 trace VM 资源/阶段指标
-> trial，再冻结并重跑 E0；当前 `VM trial pending`、`paper_ready=false`。
+> **2026-08-22 coverage candidate → E0 engineering baseline（非 paper-ready）**：旧 140/7/30° VM smoke 已完成但覆盖不足；
+> 280/14/25°（每面 20 星）的 20 s/1 s 与 6000 s/20 s 几何/RF 条件已由 exact-main VM trial 复核，现升级为 E0 工程基线。
+> 它仍不是容量证明或 paper-ready 全局冻结；50 Mbps 仅为较高负载候选，10/25/50 结果齐全后再判定负载区间。
+
+> **E0 工程基线（非 paper-ready 全局冻结）**：exact-main `29e41c8` 已有 deployment receipt
+> `11688f2f2fae23c250b535aa439057c01eebd8b386f132c00ba654c4003b31a8` 与
+> `SMOKE-20260822-COVERAGE-280X14-E25-29e41c8` VM 回执。该 run 为 1299 offered、1233 admitted、978 delivered、
+> 16 holding overflow、1 no-route、304 in-system，access admission `0.9491916859`、network delivery by horizon
+> `0.7931873479`，natural end/conservation/receipt verified；wall/user/sys `424.1882/429.4386/2.0247 s`，max RSS
+> `1869052 KiB`，events `9618761`。50 Mbps 是较高负载候选而非无损低负载；10/25/50 的 low/medium/high 标签待同口径 VM
+> 结果后判定，旧 50/100/200 仅 historical-only。
 
 ## 1. 两个目标
 
