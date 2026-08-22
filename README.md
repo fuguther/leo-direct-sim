@@ -3,6 +3,8 @@
 卫星直连架构的 LEO 网络路由仿真平台：不可变需求 trace、有界 SimPy 离散事件内核、显式控制平面、
 位守恒 fate 账本、fail-closed 运行回执、C1/C3–C7 学习合同与 canonical Double-DQN（可选 GAT/MPNN 图编码器）。
 
+Agent 或维护者开始工作前先读 `AGENT-START-HERE.md`；文档权威、替代关系和复核周期以 `ANALYSIS/DOCUMENT-STATUS.json` 为准。
+
 ## 谱系与引用
 
 本平台是第三代实现：第一代为公开仓库
@@ -43,7 +45,7 @@ python -m CODE.leo_sim platform check --out out/platform-check
   （为无许可证第三方仓库的衍生作品，存于私有旧仓库），`compare` 的 legacy 臂需外部指向它
 - `CODE/data/`、`CODE/population_map/` — M-Lab 流量、geoip 站点、GPW 人口数据
 - `EXPERIMENTS/` — 实验合同与正式 smoke 治理产物（原始结果永不入库）
-- `ANALYSIS/` — 平台说明书、差异对照、当前科研线（路由信息年龄）分析
+- `ANALYSIS/` — 文档治理入口、当前研究/实验合同、平台说明书和历史证据；旧日期目录不自动代表当前科研线
 - `PAPER/` — claim 门禁设施；`LITERATURE/` — 文献登记与笔记
 
 ## 硬规则

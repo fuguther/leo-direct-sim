@@ -1,6 +1,6 @@
 # Q0 信息裁剪与双向实验协议
 
-> CURRENT；最后核验：2026-08-20。本文合并 Q0 研究目的、算法选型、接口与 tiny 验证要求；旧版 Q0 日期文档仅作 supporting evidence。
+> **CURRENT-CONTRACT**；最后核验：2026-08-20。本文合并 Q0 研究目的、算法选型、接口与 tiny 验证要求；旧版 Q0 日期文档仅作 supporting evidence。具体实现与运行状态仍须按当前 checkout 和回执核验。
 
 ## 1. 研究问题
 

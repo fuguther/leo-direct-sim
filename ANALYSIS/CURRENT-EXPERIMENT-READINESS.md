@@ -1,5 +1,7 @@
 # leo_sim V2 当前实验就绪状态
 
+> **CURRENT-VOLATILE**：本文是最近一次仓库内状态快照，不是外部实时查询结果。引用其中的 branch、SHA、PR、CI、VM、run、完成状态或时间估计前，必须在当前 checkout、GitHub 和 VM 重新核验；过期检查由 `DOCUMENT-STATUS.json` 与 `scripts/check_document_governance.py` fail-loud。
+
 ## 2026-08-22：280/14 E0 完整信息参考诊断（10M 已完成）
 
 这是一项配置/证据边界修正，不是内核或 trace schema 变更。动态 280/14 图在

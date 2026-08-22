@@ -1,23 +1,25 @@
 # 分析与实验文档入口
 
-> 文档状态最后核验：2026-08-20。当前状态必须从本页列出的 `CURRENT` 文档进入；带日期的报告通常只是历史快照。
+> 文档状态最后核验：2026-08-23。机器可读状态以 `DOCUMENT-STATUS.json` 为准；仓库统一入口为 `../AGENT-START-HERE.md`。带日期的报告、旧工作包和旧实验目录不得自动解释为当前状态。
 
 ## 当前真相源
 
 | 文档 | 地位 | 用途 |
 |---|---|---|
-| `CURRENT-EXPERIMENT-READINESS.md` | CURRENT | 平台两个目标、当前差距、门禁、时间估计和下一步 |
-| `PLATFORM-CAPABILITY-LEDGER.md` | CURRENT | 旧平台与 V2 能力对照、必须补/按 claim 补/后续研究臂 |
-| `Q0-INFORMATION-ABLATION-PROTOCOL.md` | CURRENT | Q0-F/Q0-I、从最优向下裁剪信息、从现实向上增加信息 |
-| `EXPERIMENT-PROGRAM.md` | CURRENT | 完整实验顺序、研究问题、依赖、统计和证据要求 |
-| `FINDINGS-REGISTRY.md` | CURRENT | 唯一问题台账；状态不能由其他报告覆盖 |
-| `../EXPERIMENTS/experiment-program.yaml` | CURRENT | 可机读的实验依赖与状态清单，不是运行授权 |
+| `CURRENT-EXPERIMENT-READINESS.md` | CURRENT-VOLATILE | 最近一次平台差距与门禁快照；外部状态需实时复核 |
+| `PLATFORM-CAPABILITY-LEDGER.md` | CURRENT-VOLATILE | 旧平台与 V2 能力对照、当前迁移取舍 |
+| `Q0-INFORMATION-ABLATION-PROTOCOL.md` | CURRENT-CONTRACT | Q0-F/Q0-I、从最优向下裁剪信息、从现实向上增加信息 |
+| `EXPERIMENT-PROGRAM.md` | CURRENT-VOLATILE | 实验顺序、研究问题、依赖、统计和最近诊断状态 |
+| `FINDINGS-REGISTRY.md` | CURRENT-VOLATILE | 唯一问题台账；处置状态会继续变化 |
+| `../EXPERIMENTS/experiment-program.yaml` | CURRENT-VOLATILE | 可机读的实验依赖与状态快照，不是运行授权 |
 | `../NOTES.md` | ROLLING LOG | 最近操作与证据索引，不承担当前状态真相源 |
 
 ## 文档状态词
 
-- `CURRENT`：允许用于安排下一步和判断当前状态。
+- `CURRENT-CONTRACT`：允许决定现行定义、边界和流程。
+- `CURRENT-VOLATILE`：允许提供最近状态，但 SHA、PR、CI、VM、run 和完成进度必须实时复核。
 - `SUPPORTING`：保留设计、数学、实测或审阅细节；状态以 CURRENT 文档为准。
+- `ROLLING-LOG` / `EVIDENCE-SNAPSHOT`：按时间或 revision 保存证据，不能判断当前状态。
 - `HISTORICAL`：只表示成文日期当时的事实，不允许据此判断现在。
 - `SUPERSEDED`：现行结论已经合并到稳定命名的新文档；旧文仅作证据来源。
 
@@ -36,7 +38,7 @@
 
 ## 正式实验事实边界
 
-正式分析必须从已验证 run ID、manifest、receipt 和 artifact hash 开始，不能从目录名、截图或手工汇总开始。当前仓库缺少历史文档曾引用的 `ANALYSIS/paired_analysis.py`，因此“编译 → 授权 → 运行 → 持久化分析 → claim”链目前是阻塞项；在实现并验证新的持久化分析入口之前，不得照抄旧命令或声称分析链可用。
+正式分析必须从已验证 run ID、manifest、receipt 和 artifact hash 开始，不能从目录名、截图或手工汇总开始。仓库当前存在 `ANALYSIS/paired_analysis.py`，但文件存在或单测通过不等于真实授权 cohort 的“编译 → 授权 → 运行 → 持久化分析 → claim”链已经闭合；是否就绪仍以当前 checkout、真实产物和 `CURRENT-EXPERIMENT-READINESS.md` 的实时复核为准。
 
 每个正式实验实例仍应保存：
 

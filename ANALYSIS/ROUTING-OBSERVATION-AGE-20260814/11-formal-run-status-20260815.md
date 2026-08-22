@@ -1,5 +1,7 @@
 # 正式实验运行状态（2026-08-15 凌晨）
 
+> **SUPERSEDED**：本文中的进程、PID、命令和运行状态全部失效。当前状态见 `../CURRENT-EXPERIMENT-READINESS.md` 并实时核对 VM。
+
 > **HISTORICAL SNAPSHOT**：后台进程和运行状态早已失效；不得按本文命令判断当前任务。
 
 ## 已在跑
