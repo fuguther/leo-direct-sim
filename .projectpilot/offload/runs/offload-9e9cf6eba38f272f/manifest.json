@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "planId": "offload-9e9cf6eba38f272f",
+  "relayManifest": {
+    "planId": "offload-9e9cf6eba38f272f",
+    "projectId": "leo-direct-sim",
+    "backend": "web_chat",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:E0-PLAN-R2-REVIEW",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "063542e3528ecb97a76d05f36fe9356d5c9c074c",
+        "paths": [
+          "CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue_280x14_e25.yaml",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/link_budget.py",
+          "CODE/leo_sim/kernel.py",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py",
+          "CODE/experiment_platform/compile_experiment.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/metric-catalog.json",
+          "CODE/scripts/remote/push-remote.sh",
+          "CODE/scripts/remote/run-remote.sh",
+          "CODE/scripts/remote/status-remote.sh",
+          "PAPER/eligible_claims.py",
+          "EXPERIMENTS/contracts/run-artifact-contract.md"
+        ],
+        "promptHash": "d472a0761f47eb65f336158ff340a57a01e8990de3346e28e0d4cad3f726482f"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:E0-PLAN-R2-REVIEW:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "063542e3528ecb97a76d05f36fe9356d5c9c074c",
+        "paths": [
+          "CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue_280x14_e25.yaml",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/link_budget.py",
+          "CODE/leo_sim/kernel.py",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py",
+          "CODE/experiment_platform/compile_experiment.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/metric-catalog.json",
+          "CODE/scripts/remote/push-remote.sh",
+          "CODE/scripts/remote/run-remote.sh",
+          "CODE/scripts/remote/status-remote.sh",
+          "PAPER/eligible_claims.py",
+          "EXPERIMENTS/contracts/run-artifact-contract.md"
+        ],
+        "promptHash": "010fb155f064bb254f015110c6f73948e1ab4b9ca3091b62ee856c81a5b67cde"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "9e9cf6eba38f272ff5ee3f19419d2aa2fb623c17dea10d42d766e0d55e60a5d6"
+  },
+  "sourceBaseCommit": "063542e3528ecb97a76d05f36fe9356d5c9c074c",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:E0-PLAN-R2-REVIEW",
+      "promptHash": "d472a0761f47eb65f336158ff340a57a01e8990de3346e28e0d4cad3f726482f",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "063542e3528ecb97a76d05f36fe9356d5c9c074c",
+        "paths": [
+          "CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue_280x14_e25.yaml",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/link_budget.py",
+          "CODE/leo_sim/kernel.py",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py",
+          "CODE/experiment_platform/compile_experiment.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/metric-catalog.json",
+          "CODE/scripts/remote/push-remote.sh",
+          "CODE/scripts/remote/run-remote.sh",
+          "CODE/scripts/remote/status-remote.sh",
+          "PAPER/eligible_claims.py",
+          "EXPERIMENTS/contracts/run-artifact-contract.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:E0-PLAN-R2-REVIEW:independent_review",
+      "promptHash": "010fb155f064bb254f015110c6f73948e1ab4b9ca3091b62ee856c81a5b67cde",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "063542e3528ecb97a76d05f36fe9356d5c9c074c",
+        "paths": [
+          "CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue_280x14_e25.yaml",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/control.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/link_budget.py",
+          "CODE/leo_sim/kernel.py",
+          "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py",
+          "CODE/experiment_platform/compile_experiment.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/metric-catalog.json",
+          "CODE/scripts/remote/push-remote.sh",
+          "CODE/scripts/remote/run-remote.sh",
+          "CODE/scripts/remote/status-remote.sh",
+          "PAPER/eligible_claims.py",
+          "EXPERIMENTS/contracts/run-artifact-contract.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
