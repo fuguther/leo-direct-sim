@@ -16,6 +16,14 @@
 > 最小正 uplink/downlink 速率约 2.532845e9/1.317618e9 bps；这不是容量证明。候选必须先完成同 trace VM 资源/阶段指标
 > trial，再冻结并重跑 E0；当前 `VM trial pending`、`paper_ready=false`。
 
+> **E0 工程基线（非 paper-ready 全局冻结）**：exact-main `29e41c8` 已有 deployment receipt
+> `11688f2f2fae23c250b535aa439057c01eebd8b386f132c00ba654c4003b31a8` 与
+> `SMOKE-20260822-COVERAGE-280X14-E25-29e41c8` VM 回执。该 run 为 1299 offered、1233 admitted、978 delivered、
+> 16 holding overflow、1 no-route、304 in-system，access admission `0.9491916859`、network delivery by horizon
+> `0.7931873479`，natural end/conservation/receipt verified；wall/user/sys `424.1882/429.4386/2.0247 s`，max RSS
+> `1869052 KiB`，events `9618761`。50 Mbps 是较高负载候选而非无损低负载；10/25/50 的 low/medium/high 标签待同口径 VM
+> 结果后判定，旧 50/100/200 仅 historical-only。
+
 ## 1. 两个目标
 
 | 目标 | 完成定义 | 当前位置 | 剩余工作的性质 | 时间估计 |

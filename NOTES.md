@@ -5,6 +5,14 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-22：280/14/25° E0 工程基线与负载重标定（本分支）
+
+- 分支 `codex/20260822-e0-recalibration`，基线 `main@29e41c84dfe7353f484e36596f00f49508d0bdb2`；profile `mlab_multiod_burst_t0_queue_280x14_e25.yaml` 登记为 **E0 工程基线**，不是 paper-ready 全局冻结。
+- exact-main VM deployment receipt：`11688f2f2fae23c250b535aa439057c01eebd8b386f132c00ba654c4003b31a8`；run `SMOKE-20260822-COVERAGE-280X14-E25-29e41c8`，trace `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`。
+- VM FACT：1299 offered、1233 admitted、978 delivered、16 holding overflow、1 no-route、304 in-system；access admission `0.9491916859`、network delivery by horizon `0.7931873479`；natural end、conservation、VM receipt verified；wall/user/sys `424.1882/429.4386/2.0247 s`、max RSS `1869052 KiB`、events `9618761`。
+- 新增 10 Mbps 与 25 Mbps 工程 E0 profiles；E0-LOAD-CALIBRATION arms 改为 10/25/50，状态 `in_progress`。50 Mbps 只是较高负载/扫描上界候选，不能预标 high；low/medium/high 等三档结果齐全后再判定。旧 50/100/200 标为 `historical_only`。
+- 下一步 VM 仅执行同 trace 的 10/25 两个 cell；不创建正式授权矩阵，不改变 kernel/routing/receipt/governance/learning。
+
 ## 2026-08-22：access boundary 冷审修复（pending）
 
 - 分支：`codex/20260822-access-boundary`，基线 `main@339a1f4`；PR：pending。

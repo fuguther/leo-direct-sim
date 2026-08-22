@@ -17,6 +17,20 @@
 in-system；wall/user/sys=133.93/132.47/1.06 s）；macOS max RSS 因权限未核验。候选仍须在同一 trace 上完成 VM
 资源与阶段指标小样，随后才能冻结并重跑 E0；VM trial pending。
 
+### 当前 E0 工程基线（非 paper-ready 全局冻结）
+
+基于 exact-main `29e41c8` 的 VM 部署 receipt
+`11688f2f2fae23c250b535aa439057c01eebd8b386f132c00ba654c4003b31a8`，
+`280/14/25°` 现登记为 **E0 工程基线**，不是 paper-ready 全局冻结。`SMOKE-20260822-COVERAGE-280X14-E25-29e41c8`
+使用 trace `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`，
+1299 offered、1233 admitted、978 delivered、16 holding overflow、1 no-route、304 in-system；
+access admission `0.9491916859`、network delivery by horizon `0.7931873479`，natural end、conservation、VM receipt verified。
+VM 资源为 wall/user/sys `424.1882/429.4386/2.0247 s`、max RSS `1869052 KiB`、`9618761` events。
+
+50 Mbps 仅是当前扫描上界/较高负载候选，已不是无损低负载；不预设 low/medium/high 标签。E0-LOAD-CALIBRATION
+改为同口径的 10/25/50 Mbps 三 cell，旧 50/100/200 仅保留为 `historical_only`。下一步 VM 只需跑 10 和 25 Mbps；
+三档结果齐全后再按预注册规则判定负载区间。
+
 > CURRENT；最后核验：2026-08-21。当前 main `bfae761` 已部署 VM；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 工程校准、receipt horizon 修复、physical available-capacity 分母、新 profile 的 E0 工程负载标定、60 秒 D2 长窗、capacity 负对照和学习 train→eval 工程 smoke 已完成。continuation bundle 已通过 VM 单步恢复等价；50/100/200 Mbps 只冻结为下一阶段的低/中/压力候选，不是正式论文结果；V2 artifact→claim 闭环、逐包三段时延正式 gate、完整长窗中断/不间断等价、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
 
 ## 1. 研究主线与工作方法
