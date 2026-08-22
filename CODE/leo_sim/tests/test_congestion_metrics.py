@@ -244,6 +244,11 @@ def test_v4_access_rejected_packet_fake_ingress_is_rejected_at_receipt_level(tmp
     errors = receipt.verify_receipt_dir(str(out))
     assert errors
     assert any("terminal access fate ACCESS_REJECTED" in error for error in errors)
+    receipt_doc["schema"] = "leo-sim-receipt/v3"
+    del receipt_doc["congestion_metrics_contract"]
+    (out / "receipt.json").write_text(
+        json.dumps(receipt_doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    assert receipt.verify_receipt_dir(str(out))
     stored = json.loads((out / "ledgers.json").read_text(encoding="utf-8"))
     assert stored["congestion_metrics"] == metrics.summarize(
         stored["packet_events"], stored["link_service_windows"],
@@ -450,3 +455,46 @@ def test_capacity_metric_cuts_a_retired_generation_at_drain_time():
     assert max(w["end"] for w in old_windows) <= old.drained_at + 1e-9
     assert any(w["end"] == pytest.approx(old.drained_at)
                for w in old_windows)
+
+
+def test_legacy_v3_v1_delivered_run_without_new_ingress_event_reverifies(tmp_path):
+    import hashlib
+    import json
+
+    from CODE.leo_sim import receipt, trace
+
+    cfg = make_cfg({
+        "scenario": {"duration_s": 2.0},
+        "demand": {"mode": "csv", "csv_path": str(tmp_path / "input.csv")},
+    })
+    (tmp_path / "input.csv").write_text(
+        "packet_id,emit_time_s,src_lat,src_lon,dst_lat,dst_lon,bits,deadline_at_s\n"
+        "1,0.0,0.0,0.0,0.0,10.0,8000000,\n", encoding="utf-8")
+    trace_dir = tmp_path / "trace"
+    manifest = trace.compile_trace(cfg, str(trace_dir))
+    trace_bytes = (trace_dir / "trace.csv").read_bytes()
+    manifest["__trace_sha256"] = hashlib.sha256(trace_bytes).hexdigest()
+    manifest["__sha256"] = hashlib.sha256(
+        (trace_dir / "manifest.json").read_bytes()).hexdigest()
+    rows = trace.load_trace(str(trace_dir / "trace.csv"), horizon_s=2.0,
+                            max_packets=cfg["config"]["execution"]["max_packets"])
+    result = kernel.run_simulation(
+        cfg, rows, geometry=StaticGeometry(1, visible=lambda *_: True))
+    assert result["fate_counts"]["DELIVERED"] == 1
+    assert any(e["kind"] == "satellite_ingress" for e in result["packet_events"])
+    result["packet_events"] = [
+        e for e in result["packet_events"] if e["kind"] != "satellite_ingress"
+    ]
+    result["congestion_metrics"] = metrics.summarize(
+        result["packet_events"], result["link_service_windows"],
+        available_capacity_windows=result["link_available_windows"],
+        non_arrival_pids=set())
+    assert result["congestion_metrics"]["schema"] == "leo-sim-congestion-metrics/v1"
+    out = tmp_path / "run"
+    receipt.write_run(str(out), cfg, trace_bytes, manifest, result, rows)
+    receipt_doc = json.loads((out / "receipt.json").read_text(encoding="utf-8"))
+    receipt_doc["schema"] = "leo-sim-receipt/v3"
+    del receipt_doc["congestion_metrics_contract"]
+    (out / "receipt.json").write_text(
+        json.dumps(receipt_doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    assert receipt.verify_receipt_dir(str(out)) == []

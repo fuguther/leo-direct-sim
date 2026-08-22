@@ -223,14 +223,15 @@ def summarize(
     }
     if unmatched:
         raise MetricsError(f"unmatched propagation starts: {sorted(unmatched)}")
-    unmatched_ingress = [
-        pid for pid, arrivals in completed_uplink_arrivals.items()
-        if consumed_uplink_arrivals[pid] != len(arrivals)
-    ]
-    if unmatched_ingress:
-        raise MetricsError(
-            f"uplink propagation arrivals missing satellite_ingress: "
-            f"{sorted(unmatched_ingress)}")
+    if access_boundary:
+        unmatched_ingress = [
+            pid for pid, arrivals in completed_uplink_arrivals.items()
+            if consumed_uplink_arrivals[pid] != len(arrivals)
+        ]
+        if unmatched_ingress:
+            raise MetricsError(
+                f"uplink propagation arrivals missing satellite_ingress: "
+                f"{sorted(unmatched_ingress)}")
 
     # Holding is a real queue, but it has no service_start of its own.  Its
     # residence is therefore paired with the next downstream queue admission
