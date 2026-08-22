@@ -47,8 +47,22 @@ claim boundary 全部可重算，才进入 V2 编译/独立审阅/授权。
 
 ## 当前状态
 
-- F0/F1 路由锚点已实现并有 routing/config 定向测试；相关全量测试为
-  `554 passed, 1 skipped`（提交前仍需在最终合并 SHA 重跑）。
-- 尚未编译、审阅、授权或在 VM 执行 INFO-LADDER；没有任何 F0/F1 数值结果。
-- 下一工作单元是为上述配对和负对照生成正式 request/matrix，而不是直接
-  启动学习长训。
+- F0/F1 路由锚点已实现并有 routing/config 定向测试；F0 正式矩阵已完成
+  编译、三方复核、授权、合入、同 SHA VM 部署和 4 个串行实跑。
+- 合入主线为 `c34fac937e865cb2f5543bacba2223eb4f34477e`；部署 receipt
+  SHA=`2d5535cea66aa3bac4065ace991d5cccdced5d3813df72902947cd3bf6378ce0`，
+  source tree SHA=`1d4830e0a8f4850d333dce5f4d01fdd50e98ee369f8e26d6c0f225d9eedcd17a`，
+  authorization SHA=`69019af696ff81e7ebeb3e35a3a3527c9590082de1e00beae11ef659e2181d77`。
+- 4/4 cells 均 `success`、`natural_end=true`、守恒通过、receipt verify 为
+  `verified`；治理回执 `research_eligible=true`。运行目录中的本地
+  `receipt.json` 保持 `research_eligible=false` 是设计语义：本地工件不能
+  自行授予研究资格，资格由外部治理回执授予。
+- seed 7 两臂交付率均为 `0.4291118717`（2,382 delivered）；seed 11
+  两臂均为 `0.4408871400`（2,465 delivered）。V2 分析为 `VERIFIED`，
+  `verified_runs=4`，manifest SHA=`a5bba6f34b66700bf9e356723aaa615b1c8040b43914de0ea064371b4b1fd4f2`，
+  `info_queue_minus_hop` 差值为 `[0.0, 0.0]`；持久化 verifier 返回
+  `ok=True, errors=[]`。
+- 这只是“当前压力合同下 F0 的诊断结果”，不是论文结论，也不能解释为
+  队列信息没有价值。路线事件审计显示它确实改变了少量决策：seed 7
+  有 3/352 个出现 ISL 路径差异，seed 11 有 4/401 个；但交付率和主要
+  终态没有改变。下一步先记录该路线/队列诊断，再做 F1；不启动学习长训。
