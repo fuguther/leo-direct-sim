@@ -79,6 +79,10 @@ def test_280x14_e25_candidate_only_changes_declared_geometry_fields():
         ("scenario", "num_satellites"),
         ("scenario", "num_planes"),
         ("scenario", "min_elevation_deg"),
+        # The 280/14 graph has registered diameter 17.  This candidate is the
+        # full-information reference profile, so its propagation radius is an
+        # intentional exception to the historical queue profile.
+        ("control_plane", "vis_k"),
         ("demand", "emission_end_s"),
         ("outputs", "out_dir"),
     }
@@ -96,6 +100,29 @@ def test_280x14_e25_candidate_only_changes_declared_geometry_fields():
     assert candidate["config"]["scenario"]["min_elevation_deg"] == 25
     assert candidate["config"]["scenario"]["duration_s"] == 30
     assert candidate["config"]["demand"]["emission_end_s"] == 20
+
+
+@pytest.mark.parametrize("profile_name", [
+    "mlab_multiod_burst_t0_queue_280x14_e25.yaml",
+    "mlab_multiod_burst_t0_queue_280x14_e25_10mbps.yaml",
+    "mlab_multiod_burst_t0_queue_280x14_e25_25mbps.yaml",
+])
+def test_e0_280x14_full_information_reference_covers_registered_diameter(
+        profile_name):
+    """The E0 reference arm must not inherit vis_k=12 from the old profile.
+
+    The full dynamic-graph diameter (17) is registered by the E0 diagnostic
+    evidence.  Information-ablation experiments may intentionally use a
+    smaller radius, but these three E0 load arms are not ablations.
+    """
+    root = Path(__file__).resolve().parents[3]
+    resolved = config.load_config_file(
+        str(root / "CODE/leo_sim/profiles" / profile_name))
+    cfg = resolved["config"]
+    assert cfg["scenario"]["num_satellites"] == 280
+    assert cfg["scenario"]["num_planes"] == 14
+    registered_diameter = 17
+    assert cfg["control_plane"]["vis_k"] == registered_diameter
 
 
 @pytest.mark.parametrize(("arm", "offered_mbps"), [("10mbps", 10), ("25mbps", 25)])

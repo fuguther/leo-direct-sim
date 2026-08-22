@@ -202,7 +202,7 @@ experiments:
   - id: E0-LOAD-CALIBRATION
     class: engineering_calibration
     title: mlab_multi_od_burst_load_calibration
-    status: in_progress
+    status: rerun_required
     prerequisites: [D1_merged_to_main, D2_merged_to_main, TRAFFIC-T0, TOPOLOGY-CADENCE-CALIBRATION, exact_main_deployed_to_vm, ACCESS-BOUNDARY]
     arms: [offered_10_mbps, offered_25_mbps, offered_50_mbps]
     traffic_mode: mlab_measurement_proxy_multi_od_with_20s_burst
@@ -210,7 +210,22 @@ experiments:
     decision: drain_aware_vm_recalibration_required
     reason: historical_50_100_200_only; prior_20s_runs_are_diagnostic_truncated_horizon; emission_window_must_be_separate_from_simulation_horizon
     evidence: {historical_only: true, historical_loads_mbps: [50, 100, 200], historical_main_sha: 8e2f1dfe8ee39dacfb56d52d572d37046bb6b8a4, historical_deployment_receipt_sha: 4bd3ba95438379a88cb58f4e4c9fe6559fa924f04e0b901e4c122a4527c286d5, current_profile: CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue_280x14_e25.yaml, current_vm_run: SMOKE-20260822-COVERAGE-280X14-E25-29e41c8, deployment_receipt_sha: 11688f2f2fae23c250b535aa439057c01eebd8b386f132c00ba654c4003b31a8, trace_sha256: f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4, offered_packets: 1299, admitted_packets: 1233, delivered_packets: 978, holding_overflow: 16, no_route: 1, in_system_at_stop: 304, access_admission_rate: 0.9491916859, network_delivery_rate_by_horizon: 0.7931873479, natural_end: true, conservation_ok: true, receipt_verified: true, wall_s: 424.1882, user_s: 429.4386, sys_s: 2.0247, max_rss_kib: 1869052, events: 9618761, paper_ready: false, global_freeze: false, diagnostic_truncated_horizon: true, prior_simulation_horizon_s: 20, prior_emission_end_s: 20, drain_aware_vm_pending: true, prior_10mbps: {offered: 250, admitted: 240, delivered: 192, in_system_at_stop: 58, access_admission_rate: 0.96, network_delivery_rate_by_horizon: 0.8, natural_end: true, conservation_ok: true, receipt_verified: true, wall_s: 401.3503, user_s: 405.0936, sys_s: 2.3318, max_rss_kib: 1775096}, prior_25mbps: {offered: 685, admitted: 684, delivered: 527, in_system_at_stop: 156, access_admission_rate: 0.998540146, network_delivery_rate_by_horizon: 0.7704678363, natural_end: true, conservation_ok: true, receipt_verified: true, wall_s: 414.9082, user_s: 418.2221, sys_s: 2.7069, max_rss_kib: 1836412}}
+    information_reference: {graph_connected_at_s: [0, 1, 5, 10, 20, 30], degree: 4, diameter: 17, old_vis_k: 12, old_result_status: diagnostic_info_truncated, old_result_paper_use: false, old_result_congestion_binning: false}
+    current_f328e85_drain_diagnostic: {trace_shas: {10: e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23, 25: 22d341d9a5f8028f91ca8bb32f6a580a4a28a08dd6409a774e76690e31937193, 50: f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4}, results: {10: {offered: 250, admitted: 240, delivered: 192, in_system: 58, access_admission_rate: 0.96, delivery_rate: 0.768, last_event_holding: 48, last_event_uplink: 10, isl_max_utilization: 0.00080674}, 25: {offered: 685, admitted: 685, delivered: 541, in_system: 142, no_route: 2, last_event_holding: 142, isl_max_utilization: 0.00188239}, 50: {offered: 1299, admitted: 1299, delivered: 1057, in_system: 222, holding_overflow: 16, no_route: 4, last_event_holding: 222, isl_max_utilization: 0.00389923}}, status: diagnostic_info_truncated, paper_use: false}
+    next_preregistered_cell: {id: E0-VIS-K17-DIAGNOSTIC, load_mbps: 10, trace_sha256: e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23, vis_k: 17, compare_against: old_vis_k_12, required_evidence: [receipt_verified, natural_end, conservation_ok, holding, in_system, total_delivery]}
     required_evidence: [same_trace_identity_per_arm, natural_end, conservation, receipt_verified, fate_counts, vm_wall_time, raw_metrics_recompute]
+
+  - id: E0-VIS-K17-DIAGNOSTIC
+    class: engineering_calibration
+    title: full_information_reference_radius_check
+    status: preregistered
+    prerequisites: [E0-LOAD-CALIBRATION]
+    fixed: [main_f328e85, trace_e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23, offered_10_mbps, emission_end_20s, horizon_30s, topology_recompute_1s]
+    arms: [vis_k_17]
+    negative_control: [historical_vis_k_12]
+    purpose: Determine whether the old 10M holding/in-system result was confounded by control-plane information truncation below the registered 280/14 graph diameter.
+    claim_boundary: diagnostic_only; no_congestion_load_bin_or_paper_claim
+    required_evidence: [same_trace_sha, receipt_verified, natural_end, conservation_ok, holding_comparison, in_system_comparison, total_delivery_comparison]
 
   - id: DIAG-CONGESTION
     class: diagnostic

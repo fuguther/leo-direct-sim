@@ -52,7 +52,9 @@ control_plane:
   enabled: true
   advertise_interval_s: 1
   ttl_s: 10
-  vis_k: 12
+  # Full-information E0 reference for the 280/14 dynamic graph (registered
+  # diameter 17); information-ablation experiments may use a smaller k.
+  vis_k: 17
   packet_bits: 8000
 routing:
   policy: hop

@@ -5,6 +5,14 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-22：E0 vis_k 完整信息参考修正（本分支）
+
+- 分支 `codex/20260822-e0-full-info`，基线 `main@f328e855857c60c4c87860a4eabb550d58636618`；只改三份 280/14 E0 profile 的 `control_plane.vis_k`，不改 kernel、trace schema 或 nested trace。
+- 诊断事实：动态图在 `t=0,1,5,10,20,30` 均连通、degree=4、diameter=17；旧 `vis_k=12` 低于完整传播半径。当前三份 f328e85 drain 结果登记为 `diagnostic_info_truncated`，不用于拥塞分档：10/25/50M offered/admitted/delivered/in-system=`250/240/192/58`、`685/685/541/142`、`1299/1299/1057/222`；50M 有 16 holding overflow、4 no-route；ISL 最大利用率均 <0.4%。
+- 旧结果最后事件：10M 的 58 个末端包中 48 个在 holding、10 个在 uplink；25M 的 142 个均在 holding；50M 的 222 个均在 holding。该证据不足以把 holding 等待归因于物理拥塞，必须先补 vis17 对照。
+- 下一步只预注册 10M、同 trace `e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23` 的 `vis_k=17` 诊断；验收：receipt verified、natural end、conservation、holding/in-system/total delivery 与 vis12 对照。nested、不改内核。
+- 本地 RED→GREEN：新增 profile/diameter contract 测试在 `vis_k=12` 时先失败（3 failed, 1 passed, 7 deselected），改为 17 后 targeted `4 passed, 7 deselected`。完整 pytest、YAML parse、diff-check 待提交前执行。
+
 ## 2026-08-22：280/14/25° E0 工程基线与负载重标定（本分支）
 
 - 分支 `codex/20260822-e0-recalibration`，基线 `main@29e41c84dfe7353f484e36596f00f49508d0bdb2`；profile `mlab_multiod_burst_t0_queue_280x14_e25.yaml` 登记为 **E0 工程基线**，不是 paper-ready 全局冻结。
