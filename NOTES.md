@@ -16,6 +16,14 @@
 - 本地真实流量诊断（非 VM、非论文证据）：在 `80bc237` 用新增 queue profile 消费既有 M-Lab trace `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`，20 s、1,299 包自然结束且 receipt verified、守恒通过；762 包入网、656 包送达、39 `ACCESS_QUEUE_OVERFLOW`、604 `IN_SYSTEM_AT_STOP`，因此 `access_admission_rate=0.5866050808`、`network_delivery_rate_by_horizon=0.8608923885`。该结果只证明阶段拆分和运行链可执行，不关闭 coverage/horizon 或 E0 门禁。
 - 几何诊断（非容量结论）：同 55 端点、6000 s/5 s 扫描下，140 星/7 面/30° 全端点最终均可见，但可见比例中位数约 0.476、最大无覆盖间隔约 5710 s；粗粒度候选扫描显示增加轨道面比只向原 7 面加星更有效。正式星座/仰角选择仍需 VM 成本与容量联合校准。PR：pending；VM 尚未执行。
 
+### 合并与 VM 工程 smoke
+
+- PR #150 已由 CI `pytest` 绿后自动 squash 合入；main=`63a10990f63f5529c14594ce47bafcda64022f10`。部署到 canonical VM 后，deployment receipt SHA=`8f31142bbf6a80b764fe66cd27e36b6e805ccad8de48b585a8436dae66b3f7a9`，远端回执确认 source clean、branch=main。
+- VM 工程 smoke（非 formal、非论文证据）：`SMOKE-20260822-ACCESS-QUEUE-63a1099` 使用 M-Lab trace `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`，20 s、1,299 offered、762 admitted、656 delivered、39 `ACCESS_QUEUE_OVERFLOW`、604 `IN_SYSTEM_AT_STOP`；natural end、conservation true、VM receipt verified，receipt v4/metrics v2。
+- 阶段指标：`access_admission_rate=0.5866050808314087`，`network_delivery_rate_by_horizon=0.8608923884514436`。由终局与入网事件交叉可得：498 包仍在入网前等待、106 包已入网但在停止时仍在系统。总交付率低不能再直接归因于网络拥塞。
+- VM 资源：wall `127.7769 s`、user `133.9099 s`、sys `1.0053 s`、max RSS `869,920 KiB`（约 850 MiB）。在 24 vCPU/64 GiB 下，非学习 cell 仍按 1 vCPU/job、先 10--12 jobs 并行；学习 cell 另做 profile，不能沿用该内存数字。
+- 结果已拉回本地 ignored `CODE/Results/SMOKE-20260822-ACCESS-QUEUE-63a1099/`。VM 同环境复核通过；Mac 本地严格 verifier 因 Python/NumPy/SimPy/PyYAML 版本不同而按设计拒绝，不能把该拒绝误写成 artifact 损坏。
+
 ## 2026-08-20：D1/D2 合入与 VM 工程 smoke
 
 - PR #55（D1 动态链路速率）与 PR #56（D2 动态拓扑/holding）均已合入 main；当前 main
