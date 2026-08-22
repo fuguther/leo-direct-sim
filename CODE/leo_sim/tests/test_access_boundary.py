@@ -65,3 +65,30 @@ def test_queue_profile_only_changes_declared_access_boundary_fields():
         for key in base["config"][group]:
             if (group, key) not in allowed:
                 assert queue["config"][group][key] == base["config"][group][key]
+
+
+def test_280x14_e25_candidate_only_changes_declared_geometry_fields():
+    root = Path(__file__).resolve().parents[3]
+    baseline = config.load_config_file(
+        str(root / "CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue.yaml"))
+    candidate = config.load_config_file(
+        str(root / "CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue_280x14_e25.yaml"))
+    allowed = {
+        ("scenario", "name"),
+        ("scenario", "num_satellites"),
+        ("scenario", "num_planes"),
+        ("scenario", "min_elevation_deg"),
+        ("outputs", "out_dir"),
+    }
+    assert set(candidate["config"]) == set(baseline["config"])
+    for group in baseline["config"]:
+        assert set(candidate["config"][group]) == set(baseline["config"][group])
+        for key, expected in baseline["config"][group].items():
+            if (group, key) not in allowed:
+                assert candidate["config"][group][key] == expected
+    assert candidate["config"]["scenario"]["num_satellites"] == 280
+    assert candidate["config"]["scenario"]["num_planes"] == 14
+    assert candidate["config"]["scenario"]["num_satellites"] % candidate["config"]["scenario"]["num_planes"] == 0
+    assert (candidate["config"]["scenario"]["num_satellites"] //
+            candidate["config"]["scenario"]["num_planes"]) == 20
+    assert candidate["config"]["scenario"]["min_elevation_deg"] == 25

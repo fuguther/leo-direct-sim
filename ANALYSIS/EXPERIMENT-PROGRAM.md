@@ -4,6 +4,19 @@
 
 > **当前门禁**：access boundary 是 E0 重标定前门禁；必须先完成 coverage/horizon audit、有限 queue 阶段指标和 VM 小样，随后重新执行 E0，不能沿用下方历史曲线。
 
+### 当前 coverage 候选（工程诊断，非论文结果）
+
+旧 140 星/7 面/30° VM smoke 已完成但覆盖不足。固定 M-Lab trace
+`f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4` 的几何扫描登记
+`280 satellites / 14 planes / min elevation 25°` 为 **provisional VM candidate**：20 s/1 s
+和 6000 s/20 s 均为 55/55 端点达标，最小可见比例分别为 0.6190 和 0.6346，长窗最大无覆盖间隔 1760 s。
+可见样本最大斜距 1213.21 km；按当前 RF/MCS，最小正 uplink/downlink 速率分别为
+2.532845e9/1.317618e9 bps，故本扫描未发现 MCS=0。该记录是工程几何/RF 可用性证据，**不是容量证明或 paper-ready 结果**。
+
+本地 20 s 真实运行自然结束且守恒通过（1299 offered、978 delivered、16 holding overflow、1 no-route、304
+in-system；wall/user/sys=133.93/132.47/1.06 s）；macOS max RSS 因权限未核验。候选仍须在同一 trace 上完成 VM
+资源与阶段指标小样，随后才能冻结并重跑 E0；VM trial pending。
+
 > CURRENT；最后核验：2026-08-21。当前 main `bfae761` 已部署 VM；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 工程校准、receipt horizon 修复、physical available-capacity 分母、新 profile 的 E0 工程负载标定、60 秒 D2 长窗、capacity 负对照和学习 train→eval 工程 smoke 已完成。continuation bundle 已通过 VM 单步恢复等价；50/100/200 Mbps 只冻结为下一阶段的低/中/压力候选，不是正式论文结果；V2 artifact→claim 闭环、逐包三段时延正式 gate、完整长窗中断/不间断等价、formal VM E0/PILOT 仍未完成。本文是实验路线的人类真相源，机器可执行索引见 `../EXPERIMENTS/experiment-program.yaml`。
 
 ## 1. 研究主线与工作方法
