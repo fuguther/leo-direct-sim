@@ -137,6 +137,8 @@ summary = {
     "source_git_dirty": payload.get("source_git_dirty"),
     "deployment_receipt_sha256": payload.get("deployment_receipt_sha256"),
     "governance_receipt": safe_path(payload.get("governance_receipt"), results),
+    "governance_receipt_sha256": payload.get("governance_receipt_sha256"),
+    "governance_witness": payload.get("governance_witness"),
     "research_eligible": payload.get("research_eligible"),
 }
 print(json.dumps(summary, ensure_ascii=False, indent=2))

@@ -24,7 +24,10 @@ from pathlib import Path
 from . import config, grid, population, rng
 
 TRACE_SCHEMA = "leo-sim-trace/v1"
-TRACE_MANIFEST_SCHEMA = "leo-sim-trace-manifest/v1"
+TRACE_MANIFEST_SCHEMA_V1 = "leo-sim-trace-manifest/v1"
+TRACE_MANIFEST_SCHEMA = "leo-sim-trace-manifest/v2"
+TRACE_PROVENANCE_SCHEMA_V1 = "leo-sim-trace-provenance/v1"
+TRACE_PROVENANCE_SCHEMA = "leo-sim-trace-provenance/v2"
 PACKET_ID_CONTRACT = (
     "synthetic: sequential 1..N in emission order; "
     "csv: source packet_id preserved verbatim")
@@ -437,6 +440,9 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
     sc, dm, ep = cfg["scenario"], cfg["demand"], cfg["endpoints"]
     mode = dm["mode"]
     duration = float(sc["duration_s"])
+    emission_end = (duration if dm["emission_end_s"] is None
+                    else float(dm["emission_end_s"]))
+    drain_s = duration - emission_end
     bits_per_pkt = int(dm["packet_bits"])
     deadline = dm["deadline_s"]
     out = Path(out_dir)
@@ -497,13 +503,17 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                     raise TraceError(
                         f"csv row {src_id}: emit_time_s must be a number: "
                         f"{row['emit_time_s']!r}")
-                if not math.isfinite(t) or t < 0.0 or t > duration:
+                if not math.isfinite(t) or t < 0.0 or t > emission_end:
                     # out-of-horizon records are never silently dropped; an
                     # explicitly approved separate filtering stage would be
                     # required to drop demand, and none exists
+                    if dm["emission_end_s"] is None:
+                        raise TraceError(
+                            f"csv row {src_id}: emit_time_s {t} outside run horizon "
+                            f"[0, {duration}]")
                     raise TraceError(
-                        f"csv row {src_id}: emit_time_s {t} outside run horizon "
-                        f"[0, {duration}]")
+                        f"csv row {src_id}: emit_time_s {t} outside emission window "
+                        f"[0, {emission_end}]")
                 try:
                     s = grid.aggregate_id(grid.grid_id(float(row["src_lat"]), float(row["src_lon"]), ep["grid_deg"]), ep["aggregation_deg"])
                     d = grid.aggregate_id(grid.grid_id(float(row["dst_lat"]), float(row["dst_lon"]), ep["grid_deg"]), ep["aggregation_deg"])
@@ -606,7 +616,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
             t = 0.0
             while True:
                 t += float(gen.exponential(1.0 / (base_rate * max_mult)))
-                if t > duration:
+                if t > emission_end:
                     break
                 if gen.random() > _rate_multiplier(mode, t, e["lon"], dm) / max_mult:
                     continue
@@ -650,7 +660,10 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
 
     offered_bits = sum(r[4] for r in rows)
     provenance_contract = {
-        "schema": "leo-sim-trace-provenance/v1",
+        "schema": TRACE_PROVENANCE_SCHEMA,
+        "simulation_horizon_s": duration,
+        "emission_end_s": emission_end,
+        "drain_s": drain_s,
         "source": {
             "type": source_type,
             "path": source_path,
@@ -686,8 +699,8 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                 None if mode == "csv" else float(dm["offered_mbps"])
             ),
             "realized_offered_mbps": (
-                float(offered_bits) / duration / 1_000_000.0
-                if duration > 0 else 0.0
+                float(offered_bits) / emission_end / 1_000_000.0
+                if emission_end > 0 else 0.0
             ),
             "horizon_s": duration,
             "packet_bits": bits_per_pkt,
@@ -717,6 +730,9 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
         "input_sha256": input_hash,
         "mode": mode,
         "provenance": provenance,
+        "simulation_horizon_s": duration,
+        "emission_end_s": emission_end,
+        "drain_s": drain_s,
         "rng_streams": rng.stream_mapping(sc["seed"], ["demand"]),
         "packet_id_contract": PACKET_ID_CONTRACT,
         "offered_packets": len(rows),

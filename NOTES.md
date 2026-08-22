@@ -13,6 +13,12 @@
 - 新增 10 Mbps 与 25 Mbps 工程 E0 profiles；E0-LOAD-CALIBRATION arms 改为 10/25/50，状态 `in_progress`。50 Mbps 只是较高负载/扫描上界候选，不能预标 high；low/medium/high 等三档结果齐全后再判定。旧 50/100/200 标为 `historical_only`。
 - 下一步 VM 仅执行同 trace 的 10/25 两个 cell；不创建正式授权矩阵，不改变 kernel/routing/receipt/governance/learning。
 
+## 2026-08-22：emission window 与 drain-aware E0 重标定（本分支）
+
+- 证据边界：此前 20 s 10/25/50 Mbps 的 `scenario.duration_s` 同时承担发包窗和停止窗，标记为 `diagnostic_truncated_horizon`，不能用于负载分类。10 Mbps：250 offered、240 admitted、192 delivered、58 in-system，wall/user/sys `401.3503/405.0936/2.3318 s`、max RSS `1775096 KiB`；25 Mbps：685/684/527/156，wall/user/sys `414.9082/418.2221/2.7069 s`、max RSS `1836412 KiB`；均 natural end、conservation、receipt verified。
+- 新合同：`demand.emission_end_s: null` 向后兼容为 `scenario.duration_s`；显式值必须 finite、>0、≤ simulation horizon。trace 仅生成 `[0, emission_end_s]` 的新包，仍按 simulation horizon 验证/运行；manifest/provenance 记录 `simulation_horizon_s`、`emission_end_s`、`drain_s`。
+- 新 E0 profiles 固定 `emission_end_s=20`、`scenario.duration_s=30`，下一步 VM 只跑同一 trace 的 10/25/50 三个 drain-aware cell。10/25/50 标签待完整排空窗口结果后判定。
+
 ## 2026-08-22：access boundary 冷审修复（pending）
 
 - 分支：`codex/20260822-access-boundary`，基线 `main@339a1f4`；PR：pending。
@@ -666,3 +672,9 @@
 - 同配置、不同 CPU 绑定的并行诊断：2/4/8/12 个进程均约各占一个核，单进程中后段 RSS 约 `0.43--0.63 GB`；12 并行时 cgroup 总内存约 7 GB 级别、CPU `nr_throttled` 无新增。输出在 VM `/tmp/leo-resource-profile-*`，不属于 formal results。
 - 当前工程建议：非学习先采用 `cpu_per_job=1`、`max_parallel_jobs=12` 的候选调度；学习任务必须另测 TensorFlow 线程池/模型 RSS 后再定，暂不能套用 12 并发。正式资源合同还需对 8/12 并发各做至少三次精确 wall/CPU/RSS/throttle 重复。
 - 详细口径、采样值、内存 guard 和边界见 `ANALYSIS/RESOURCE-PROFILE-20260822.md`。本轮不得把宿主机资源、一次性诊断 wall time 或非学习并发结论写成论文性能结论。
+
+## 2026-08-22：V2 外部 launch witness 成为论文分析硬门
+
+- 当前分支继续修复 cold review P1：`pull-results-remote.sh --run/--plan/--all-latest` 对包含 `formal_run.json` 的 V2 结果，按其中的 nonce 从 canonical VM `.remote_runtime/launches/<nonce>.json` 单独取外部状态，保存为 `CODE/Results/_external_launch_witness/<run_id>.json`；不从结果目录生成或替代，且对 nonce、run_id、符号链接和路径穿越 fail-loud。
+- `v2_analysis` 对 receipt/v5 + governance/v2 强制读取该外部 witness，验证成功状态、exit code、nonce/run/auth、远端 `last_results_dir`、governance receipt SHA 和五项 governance witness 绑定。v3/v4 只走显式 `legacy_v3_v4_internal_only` 分支，混合 cohort 拒绝，不能冒充 v5 正式证据。
+- 本轮 targeted tests 覆盖 external witness 缺失、nonce/run/auth/receipt-SHA 错配、五个 witness 字段各自错配和正常路径；仍需在本分支完成全量测试、cold review、CI/PR 后再部署。

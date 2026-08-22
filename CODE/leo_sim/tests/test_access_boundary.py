@@ -75,9 +75,11 @@ def test_280x14_e25_candidate_only_changes_declared_geometry_fields():
         str(root / "CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue_280x14_e25.yaml"))
     allowed = {
         ("scenario", "name"),
+        ("scenario", "duration_s"),
         ("scenario", "num_satellites"),
         ("scenario", "num_planes"),
         ("scenario", "min_elevation_deg"),
+        ("demand", "emission_end_s"),
         ("outputs", "out_dir"),
     }
     assert set(candidate["config"]) == set(baseline["config"])
@@ -92,6 +94,8 @@ def test_280x14_e25_candidate_only_changes_declared_geometry_fields():
     assert (candidate["config"]["scenario"]["num_satellites"] //
             candidate["config"]["scenario"]["num_planes"]) == 20
     assert candidate["config"]["scenario"]["min_elevation_deg"] == 25
+    assert candidate["config"]["scenario"]["duration_s"] == 30
+    assert candidate["config"]["demand"]["emission_end_s"] == 20
 
 
 @pytest.mark.parametrize(("arm", "offered_mbps"), [("10mbps", 10), ("25mbps", 25)])
@@ -101,7 +105,8 @@ def test_e0_recalibration_profiles_only_change_declared_load_fields(arm, offered
         str(root / "CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue_280x14_e25.yaml"))
     candidate = config.load_config_file(
         str(root / f"CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue_280x14_e25_{arm}.yaml"))
-    allowed = {("scenario", "name"), ("demand", "offered_mbps"),
+    allowed = {("scenario", "name"), ("scenario", "duration_s"),
+               ("demand", "offered_mbps"), ("demand", "emission_end_s"),
                ("outputs", "out_dir")}
     assert set(candidate["config"]) == set(baseline["config"])
     for group in baseline["config"]:
@@ -110,3 +115,5 @@ def test_e0_recalibration_profiles_only_change_declared_load_fields(arm, offered
             if (group, key) not in allowed:
                 assert candidate["config"][group][key] == expected
     assert candidate["config"]["demand"]["offered_mbps"] == offered_mbps
+    assert candidate["config"]["scenario"]["duration_s"] == 30
+    assert candidate["config"]["demand"]["emission_end_s"] == 20

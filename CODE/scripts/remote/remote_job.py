@@ -27,6 +27,11 @@ CANONICAL_STATUS = CANONICAL_RUNTIME / "current_status.json"
 CANONICAL_LOGS = CANONICAL_RESULTS / "_overnight_logs"
 CANONICAL_EXPERIMENTS = CANONICAL_WORKSPACE / "EXPERIMENTS"
 CPU_LIST_LIMIT = 64
+V2_GOVERNANCE_SCHEMA = "leo-sim-governance-receipt/v2"
+V2_WITNESS_FIELDS = (
+    "receipt_schema", "resolved_config_sha256", "trace_manifest_schema",
+    "trace_identity_contract", "trace_manifest_sha256",
+)
 
 
 def now_iso() -> str:
@@ -122,6 +127,52 @@ def v2_governance_errors(receipt: dict[str, Any], ledgers: dict[str, Any],
             and not (receipt.get("control", {}).get("counters", {}).get("arrived", 0) > 0):
         errors.append("authorized smoke requires at least one arrived control packet")
     return errors
+
+
+def build_v2_governance_receipt(
+        *, receipt: dict[str, Any], ledgers: dict[str, Any],
+        verification_errors: list[str], acceptance: dict[str, Any],
+        run_id: str, launch_nonce: str, authorization_sha256: str,
+        deployment: dict[str, Any], deployment_receipt_sha256: str,
+        execution_chain_sha256: str, receipt_path: Path,
+        resolved_config_path: Path, manifest_path: Path) -> dict[str, Any]:
+    """Build the V2 witness and the values copied to external launch status.
+
+    The result directory is only an internally self-consistent artifact.  The
+    launch-scoped status file is the separate VM witness that carries these
+    bindings outside that directory.
+    """
+    if receipt.get("schema") != "leo-sim-receipt/v5":
+        raise ValueError("leo_sim_v2 formal runs must produce receipt/v5")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict):
+        raise ValueError("manifest.json must contain an object")
+    governed = {
+        "schema": V2_GOVERNANCE_SCHEMA,
+        "research_eligible": not verification_errors,
+        "run_id": run_id,
+        "launch_nonce": launch_nonce,
+        "authorization_sha256": authorization_sha256,
+        "source_git_commit": deployment["source_git_commit"],
+        "source_tree_sha256": deployment["source_tree_sha256"],
+        "deployment_receipt_sha256": deployment_receipt_sha256,
+        "execution_chain_sha256": execution_chain_sha256,
+        "acceptance": acceptance,
+        "run_receipt_sha256": file_sha256(receipt_path),
+        "natural_end": receipt.get("natural_end"),
+        "conservation_ok": receipt.get("conservation_ok"),
+        "verification_errors": verification_errors,
+        # These are the external witness contract.  In particular, the
+        # resolved-config hash is the raw file hash, not only its canonical
+        # config identity, so a byte-level rewrite is visible.
+        "receipt_schema": receipt["schema"],
+        "resolved_config_sha256": file_sha256(resolved_config_path),
+        "trace_manifest_schema": manifest.get("schema"),
+        "trace_identity_contract": receipt.get("trace_identity_contract"),
+        "trace_manifest_sha256": file_sha256(manifest_path),
+    }
+    governed["payload_sha256"] = canonical_sha(governed)
+    return governed
 
 
 def parse_cpu_list(value: str) -> list[int]:
@@ -304,6 +355,8 @@ def base_launch_payload(args: argparse.Namespace) -> dict[str, Any]:
         "status_file": str(args.status_file),
         "last_results_dir": "",
         "run_attempt_id": "",
+        "governance_witness": None,
+        "governance_receipt_sha256": None,
         "requested_cpu_affinity": parse_cpu_list(getattr(args, "cpu_list", "")),
         "cpu_preflight_busy_fraction": None,
     }
@@ -580,23 +633,22 @@ def run_formal(args: argparse.Namespace) -> int:
                     receipt_errors = v2_governance_errors(
                         receipt_payload, ledgers_payload,
                         authorized_row["acceptance"], receipt_errors)
-                    governed = {
-                        "schema": "leo-sim-governance-receipt/v1",
-                        "research_eligible": not receipt_errors,
-                        "run_id": args.expected_run_id,
-                        "launch_nonce": args.launch_nonce,
-                        "authorization_sha256": args.expected_authorization_sha256,
-                        "source_git_commit": deployment["source_git_commit"],
-                        "source_tree_sha256": deployment["source_tree_sha256"],
-                        "deployment_receipt_sha256": deployment["receipt_sha256"],
-                        "execution_chain_sha256": authorized_row[
+                    governed = build_v2_governance_receipt(
+                        receipt=receipt_payload,
+                        ledgers=ledgers_payload,
+                        verification_errors=receipt_errors,
+                        acceptance=authorized_row["acceptance"],
+                        run_id=args.expected_run_id,
+                        launch_nonce=args.launch_nonce,
+                        authorization_sha256=args.expected_authorization_sha256,
+                        deployment=deployment,
+                        deployment_receipt_sha256=deployment["receipt_sha256"],
+                        execution_chain_sha256=authorized_row[
                             "execution_chain_sha256"],
-                        "acceptance": authorized_row["acceptance"],
-                        "run_receipt_sha256": file_sha256(receipt_path),
-                        "natural_end": receipt_payload.get("natural_end"),
-                        "conservation_ok": receipt_payload.get("conservation_ok"),
-                        "verification_errors": receipt_errors,
-                    }
+                        receipt_path=receipt_path,
+                        resolved_config_path=Path(payload["last_results_dir"]) / "resolved_config.json",
+                        manifest_path=Path(payload["last_results_dir"]) / "manifest.json",
+                    )
                     if receipt_errors:
                         payload["status"] = "failed"
                         payload["exit_code"] = 2
@@ -607,6 +659,10 @@ def run_formal(args: argparse.Namespace) -> int:
                     governed_path = Path(payload["last_results_dir"]) / "governance_receipt.json"
                     write_json(governed_path, governed)
                     payload["governance_receipt"] = str(governed_path)
+                    payload["governance_receipt_sha256"] = file_sha256(governed_path)
+                    payload["governance_witness"] = {
+                        key: governed[key] for key in V2_WITNESS_FIELDS
+                    }
                     payload["research_eligible"] = governed["research_eligible"]
             except Exception as exc:
                 payload["status"] = "failed"

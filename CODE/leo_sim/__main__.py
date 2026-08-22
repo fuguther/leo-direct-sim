@@ -279,6 +279,17 @@ def _load_precompiled(resolved: dict, trace_dir: str) -> tuple[dict, bytes, list
     if not isinstance(manifest, dict):
         raise trace_mod.TraceError("precompiled manifest must be a JSON object")
     from . import config as _config
+    manifest_schema = manifest.get("schema")
+    if manifest_schema != trace_mod.TRACE_MANIFEST_SCHEMA:
+        raise trace_mod.TraceError(
+            "precompiled trace manifest must use manifest/v2; legacy traces "
+            "require explicit recompilation")
+    provenance = manifest.get("provenance_contract")
+    if (not isinstance(provenance, dict)
+            or provenance.get("schema") != trace_mod.TRACE_PROVENANCE_SCHEMA):
+        raise trace_mod.TraceError(
+            "precompiled trace provenance must use provenance/v2; legacy "
+            "traces require explicit recompilation")
     expected_identity = _config.trace_identity_sha256(
         resolved, manifest.get("input_sha256", ""))
     if manifest.get("trace_identity_sha256") != expected_identity:
@@ -289,11 +300,19 @@ def _load_precompiled(resolved: dict, trace_dir: str) -> tuple[dict, bytes, list
     sha = hashlib.sha256(trace_bytes).hexdigest()
     if manifest.get("trace_sha256") and manifest["trace_sha256"] != sha:
         raise trace_mod.TraceError("trace.csv sha != manifest trace_sha256")
+    cfg = resolved["config"]
+    emission_end = cfg["demand"]["emission_end_s"]
+    emission_end = (cfg["scenario"]["duration_s"]
+                    if emission_end is None else float(emission_end))
+    if (manifest.get("simulation_horizon_s") != cfg["scenario"]["duration_s"]
+            or manifest.get("emission_end_s") != emission_end
+            or manifest.get("drain_s") != cfg["scenario"]["duration_s"] - emission_end):
+        raise trace_mod.TraceError("precompiled trace emission contract mismatch")
     manifest["__trace_sha256"] = sha
     manifest["__sha256"] = hashlib.sha256(mpath.read_bytes()).hexdigest()
     rows = trace_mod.load_trace(
         str(tpath),
-        horizon_s=resolved["config"]["scenario"]["duration_s"],
+        horizon_s=emission_end,
         max_packets=resolved["config"]["execution"]["max_packets"])
     return manifest, trace_bytes, rows
 

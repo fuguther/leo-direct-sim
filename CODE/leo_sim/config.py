@@ -19,7 +19,8 @@ import yaml
 from . import link_budget
 
 CONFIG_SCHEMA_VERSION = "leo-sim-config/v1"
-TRACE_IDENTITY_VERSION = "leo-sim-trace-identity/v1"
+TRACE_IDENTITY_VERSION_V1 = "leo-sim-trace-identity/v1"
+TRACE_IDENTITY_VERSION = "leo-sim-trace-identity/v2"
 
 
 class ConfigError(ValueError):
@@ -79,6 +80,7 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
     "demand": {
         "mode": str,  # uniform|gravity|hotspot|burst|diurnal|csv|mlab
         "offered_mbps": (int, float),
+        "emission_end_s": (int, float, type(None)),
         "packet_bits": int,
         "deadline_s": (int, float, type(None)),
         "csv_path": (str, type(None)),
@@ -241,6 +243,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
     "demand": {
         "mode": "uniform",
         "offered_mbps": 1.0,
+        "emission_end_s": None,
         "packet_bits": 8_000_000,
         "deadline_s": None,
         "csv_path": None,
@@ -503,6 +506,11 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
         raise ConfigError(f"demand.mode must be one of {sorted(VALID_DEMAND_MODES)}")
     if dm["offered_mbps"] <= 0:
         raise ConfigError("demand.offered_mbps must be > 0")
+    emission_end = dm["emission_end_s"]
+    if emission_end is not None and not (0 < emission_end <= sc["duration_s"]):
+        raise ConfigError(
+            "demand.emission_end_s must be finite, > 0 and <= "
+            "scenario.duration_s")
     if dm["packet_bits"] <= 0:
         raise ConfigError("demand.packet_bits must be > 0")
     if dm["mode"] == "csv" and not dm["csv_path"]:
@@ -785,19 +793,39 @@ def trace_identity_payload(resolved: dict) -> dict:
     learning, outputs, operational execution limits) MUST consume the same
     immutable trace, so none of them appear here. Included:
       - trace identity/schema versions;
-      - scenario.duration_s (emission window) and scenario.seed (demand RNG);
+      - effective demand.emission_end_s and scenario.seed (demand RNG);
       - the full endpoints group (grid, aggregation, sites);
       - the full demand group (generator parameters, csv/mlab inputs by path);
       - execution.max_packets (the compile-time bound).
     """
     c = resolved["config"]
+    demand = copy.deepcopy(c["demand"])
+    emission_end = demand.pop("emission_end_s")
+    if emission_end is None:
+        emission_end = c["scenario"]["duration_s"]
     return {
         "identity_version": TRACE_IDENTITY_VERSION,
         "config_version": resolved["version"],
-        "scenario": {"duration_s": c["scenario"]["duration_s"],
+        "scenario": {"emission_end_s": emission_end,
                      "seed": c["scenario"]["seed"]},
         "endpoints": c["endpoints"],
-        "demand": c["demand"],
+        "demand": demand,
+        "execution": {"max_packets": c["execution"]["max_packets"]},
+    }
+
+
+def legacy_trace_identity_payload(resolved: dict) -> dict:
+    """Rebuild the closed v1 trace identity contract for old manifests."""
+    c = resolved["config"]
+    demand = copy.deepcopy(c["demand"])
+    demand.pop("emission_end_s", None)
+    return {
+        "identity_version": TRACE_IDENTITY_VERSION_V1,
+        "config_version": resolved["version"],
+        "scenario": {"duration_s": c["scenario"]["duration_s"],
+                      "seed": c["scenario"]["seed"]},
+        "endpoints": c["endpoints"],
+        "demand": demand,
         "execution": {"max_packets": c["execution"]["max_packets"]},
     }
 
@@ -806,6 +834,13 @@ def trace_identity_sha256(resolved: dict, input_sha256: str = "") -> str:
     """SHA256 of the trace identity payload plus the demand input content
     hash (csv/mlab file bytes; empty for synthetic modes)."""
     payload = trace_identity_payload(resolved)
+    payload["input_sha256"] = input_sha256
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def legacy_trace_identity_sha256(resolved: dict, input_sha256: str = "") -> str:
+    payload = legacy_trace_identity_payload(resolved)
     payload["input_sha256"] = input_sha256
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

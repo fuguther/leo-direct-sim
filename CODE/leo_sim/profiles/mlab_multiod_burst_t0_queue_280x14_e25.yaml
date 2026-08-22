@@ -5,7 +5,7 @@
 config_version: leo-sim-config/v1
 scenario:
   name: mlab-multiod-burst-t0-queue-280x14-e25
-  duration_s: 20
+  duration_s: 30
   time_step_s: 0.1
   num_satellites: 280
   num_planes: 14
@@ -24,6 +24,7 @@ endpoints:
 demand:
   mode: mlab
   offered_mbps: 50
+  emission_end_s: 20
   # One-megabit packets keep the 20 s T0 large enough to exercise multiple OD sources without turning the first VM run into an hours-long batch.
   packet_bits: 1000000
   deadline_s: null

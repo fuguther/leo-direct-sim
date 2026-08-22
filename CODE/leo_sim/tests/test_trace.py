@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from CODE.leo_sim import config, population, rng, trace
+from CODE.leo_sim import config, population, receipt, rng, trace
 
 
 POPULATION_TIFF = (Path(__file__).resolve().parents[2] / "population_map"
@@ -51,7 +51,7 @@ def test_compile_trace_byte_reproducible(tmp_path):
     assert m1["offered_packets"] == m1["ledger"]["packets"]
     assert m1["offered_bits"] == m1["ledger"]["bits"]
     contract = m1["provenance_contract"]
-    assert contract["schema"] == "leo-sim-trace-provenance/v1"
+    assert contract["schema"] == trace.TRACE_PROVENANCE_SCHEMA
     assert contract["source"] == {
         "type": "synthetic_generator", "path": None, "sha256": ""
     }
@@ -62,6 +62,89 @@ def test_compile_trace_byte_reproducible(tmp_path):
     assert m1["active_endpoints"] == 3
     assert m1["time_range_s"][0] >= 0.0
     assert m1["time_range_s"][1] <= 5.0
+
+
+def test_emission_end_defaults_to_simulation_horizon(tmp_path):
+    cfg = _cfg()
+    assert cfg["config"]["demand"]["emission_end_s"] is None
+    manifest = trace.compile_trace(cfg, str(tmp_path / "default"))
+    assert manifest["simulation_horizon_s"] == 5.0
+    assert manifest["emission_end_s"] == 5.0
+    assert manifest["drain_s"] == 0.0
+
+
+def test_explicit_emission_end_bounds_generated_trace_and_records_drain(tmp_path):
+    cfg = _cfg(scenario={"duration_s": 30.0},
+               demand={"emission_end_s": 20.0})
+    manifest = trace.compile_trace(cfg, str(tmp_path / "bounded"))
+    rows = trace.load_trace(str(tmp_path / "bounded" / "trace.csv"),
+                            horizon_s=30.0, max_packets=20_000)
+    assert rows and max(row["emit_time_s"] for row in rows) <= 20.0
+    assert manifest["simulation_horizon_s"] == 30.0
+    assert manifest["emission_end_s"] == 20.0
+    assert manifest["drain_s"] == 10.0
+    assert manifest["provenance_contract"]["emission_end_s"] == 20.0
+
+
+@pytest.mark.parametrize("value", [0, -1, float("inf"), float("nan"), 31.0])
+def test_invalid_emission_end_fails_closed(value):
+    with pytest.raises(config.ConfigError, match="emission_end_s"):
+        _cfg(scenario={"duration_s": 30.0},
+             demand={"emission_end_s": value})
+
+
+def test_same_emission_window_is_trace_byte_identical_across_drain_horizon(tmp_path):
+    short = _cfg()
+    short["config"]["scenario"]["duration_s"] = 20.0
+    long = _cfg()
+    long["config"]["scenario"]["duration_s"] = 30.0
+    long["config"]["demand"]["emission_end_s"] = 20.0
+    short_manifest = trace.compile_trace(short, str(tmp_path / "short"))
+    long_manifest = trace.compile_trace(long, str(tmp_path / "long"))
+    assert ((tmp_path / "short" / "trace.csv").read_bytes() ==
+            (tmp_path / "long" / "trace.csv").read_bytes())
+    assert short_manifest["trace_sha256"] == long_manifest["trace_sha256"]
+    assert (short_manifest["trace_identity_sha256"] ==
+            long_manifest["trace_identity_sha256"])
+    assert long_manifest["drain_s"] == 10.0
+    changed = _cfg()
+    changed["config"]["scenario"]["duration_s"] = 30.0
+    changed["config"]["demand"]["emission_end_s"] = 19.0
+    changed_manifest = trace.compile_trace(changed, str(tmp_path / "changed"))
+    assert changed_manifest["trace_identity_sha256"] != long_manifest[
+        "trace_identity_sha256"]
+
+
+def test_receipt_manifest_v2_fields_are_strict_and_v1_remains_legacy(tmp_path):
+    cfg = _cfg(scenario={"duration_s": 30.0},
+               demand={"emission_end_s": 20.0})
+    manifest = trace.compile_trace(cfg, str(tmp_path / "v2"))
+    assert receipt._validate_manifest(
+        manifest, cfg["config"], cfg["version"]) == []
+    for field in ("simulation_horizon_s", "emission_end_s", "drain_s"):
+        tampered = dict(manifest)
+        tampered[field] = float(tampered[field]) + 1.0
+        assert any(field in error for error in receipt._validate_manifest(
+            tampered, cfg["config"], cfg["version"]))
+    downgraded = dict(manifest)
+    downgraded["schema"] = trace.TRACE_MANIFEST_SCHEMA_V1
+    downgraded["provenance_contract"] = dict(manifest["provenance_contract"])
+    downgraded["provenance_contract"]["schema"] = trace.TRACE_PROVENANCE_SCHEMA_V1
+    errors = receipt._validate_manifest(downgraded, cfg["config"], cfg["version"])
+    assert any("manifest keys mismatch" in error for error in errors)
+    assert any("provenance_contract keys mismatch" in error for error in errors)
+    legacy = dict(manifest)
+    for field in ("simulation_horizon_s", "emission_end_s", "drain_s"):
+        legacy.pop(field)
+    legacy["schema"] = trace.TRACE_MANIFEST_SCHEMA_V1
+    legacy["provenance_contract"] = dict(manifest["provenance_contract"])
+    for field in ("simulation_horizon_s", "emission_end_s", "drain_s"):
+        legacy["provenance_contract"].pop(field)
+    legacy["provenance_contract"]["schema"] = trace.TRACE_PROVENANCE_SCHEMA_V1
+    legacy["trace_identity_sha256"] = config.legacy_trace_identity_sha256(
+        cfg, manifest["input_sha256"])
+    assert receipt._validate_manifest(
+        legacy, cfg["config"], cfg["version"]) == []
 
 
 def test_trace_columns_and_sorted(tmp_path):
@@ -100,6 +183,18 @@ def test_trace_csv_mode(tmp_path):
         rows = list(csv.DictReader(fh))
     assert rows[0]["deadline_at_s"] == "3.5"
     assert rows[1]["deadline_at_s"] == ""
+
+
+def test_csv_row_after_emission_end_fails_loud(tmp_path):
+    src_csv = tmp_path / "late.csv"
+    src_csv.write_text(
+        "packet_id,emit_time_s,src_lat,src_lon,dst_lat,dst_lon,bits,deadline_at_s\n"
+        "1,25.0,31.0,121.0,40.0,116.0,8000000,\n")
+    cfg = _cfg(scenario={"duration_s": 30.0},
+               demand={"mode": "csv", "csv_path": str(src_csv),
+                       "emission_end_s": 20.0})
+    with pytest.raises(trace.TraceError, match="emission window"):
+        trace.compile_trace(cfg, str(tmp_path / "late-out"))
 
 
 def test_trace_csv_mode_preserves_zero_deadline(tmp_path):

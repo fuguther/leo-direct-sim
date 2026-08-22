@@ -4,17 +4,17 @@
 >
 > **当前不能混淆的两件事**：50/100/200 只是第一轮负载扫描，不是最终冻结值；三档实测交付率约 `0.472/0.455/0.429`，按预注册规则都落入 medium，机械候选为 50 Mbps，但必须补两个 seed，必要时扩大低端 bracket。学习正式矩阵、学习专用 CPU/RSS profile、完整三段时延 gate、Q0 真实 kernel 闭环和最终论文 claim 仍未完成。因此现在可以开始小规模非学习诊断和工程 pilot；不能把当前结果直接写成论文算法优越性或因果拥塞结论。
 
-> 状态最后核验：2026-08-22；当前代码基线 main 为 `29e41c8`，已部署到 canonical VM。280/14/25° 已完成 exact-main VM trial 并登记为 E0 工程基线，但不是 paper-ready 全局冻结；10/25 Mbps 两个同 trace E0 cell 待执行。M-Lab measurement-proxy 的有界多 OD + burst T0、coverage/RF 联合校准与当前 E0 工程基线已有 VM receipt；V2 artifact→claim 闭环、正式三段时延 gate、完整长窗中断/不间断等价、10/25 负载复核和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
+> 状态最后核验：2026-08-22；当前代码基线 main 为 `66c5a68`，已部署到 canonical VM。20 s 10/25/50 Mbps 运行均为 `diagnostic_truncated_horizon`，不能用于负载分类；新 drain-aware profiles 使用 emission window 20 s、simulation horizon 30 s。280/14/25° 仍是 E0 工程基线而非 paper-ready 全局冻结；下一步须完成各负载分别复用其 20 s run 精确 trace 的 10/25/50 drain-aware VM 三 cell。V2 artifact→claim 闭环、正式三段时延 gate 和正式授权 cohort 仍未完成。
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
 > **Access boundary（E0 前门禁）**：当前默认 `access.unavailable_policy=reject` 保持历史兼容；新增显式 `queue` 仅是工程诊断语义，使用有限源端/上行队列，停止时未入网包记为 `IN_SYSTEM_AT_STOP`。新运行可由 raw events 重算 `access_admission_rate` 与 `network_delivery_rate_by_horizon`。旧 20 s 50/100/200 诊断保留原证据但不是 paper-ready；切换 queue 后必须重新做 coverage/horizon audit、VM 小样、E0 标定和训练，不能沿用旧曲线。
-> 因此 access boundary 的 coverage/horizon 与可用速率联合校准已支持 280/14/25° E0 工程基线；E0-LOAD-CALIBRATION 仍 `in_progress`，待 10/25 两个同 trace VM cell 后再判定负载区间，不能按历史扫描关闭正式门禁。
+> 因此 access boundary 的 coverage/horizon 与可用速率联合校准已支持 280/14/25° E0 工程基线；E0-LOAD-CALIBRATION 仍 `in_progress`，待 10/25/50 各负载分别复用其 20 s run 精确 trace 的 drain-aware VM cell 后再判定负载区间，不能按历史扫描关闭正式门禁。
 
 > **2026-08-22 coverage candidate → E0 engineering baseline（非 paper-ready）**：旧 140/7/30° VM smoke 已完成但覆盖不足；
 > 280/14/25°（每面 20 星）的 20 s/1 s 与 6000 s/20 s 几何/RF 条件已由 exact-main VM trial 复核，现升级为 E0 工程基线。
 > 它仍不是容量证明或 paper-ready 全局冻结；50 Mbps 仅为较高负载候选，10/25/50 结果齐全后再判定负载区间。
 
-> **E0 工程基线（非 paper-ready 全局冻结）**：exact-main `29e41c8` 已有 deployment receipt
+> **E0 工程基线（非 paper-ready 全局冻结）**：当前 exact-main `66c5a68`；此前 `29e41c8` 的 VM trial 已有 deployment receipt
 > `11688f2f2fae23c250b535aa439057c01eebd8b386f132c00ba654c4003b31a8` 与
 > `SMOKE-20260822-COVERAGE-280X14-E25-29e41c8` VM 回执。该 run 为 1299 offered、1233 admitted、978 delivered、
 > 16 holding overflow、1 no-route、304 in-system，access admission `0.9491916859`、network delivery by horizon

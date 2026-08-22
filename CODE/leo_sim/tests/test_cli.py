@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from CODE.leo_sim.__main__ import _DecisionLogWriter, main
+from CODE.leo_sim import config, trace
 
 SMOKE = str(Path(__file__).resolve().parent.parent / "profiles" / "smoke.yaml")
 
@@ -66,6 +67,36 @@ def test_full_run_and_receipt_verify(tmp_path, capsys):
     assert rc == 0 and out["natural_end"] is True and out["conservation_ok"] is True
     rc2 = main(["receipt", "verify", out_dir])
     assert rc2 == 0, capsys.readouterr().out
+
+
+def test_v5_receipt_rejects_complete_manifest_downgrade_attack(tmp_path, capsys):
+    cfg_path = _write_cfg(tmp_path)
+    out = tmp_path / "out"
+    assert main(["run", "--config", cfg_path, "--out", str(out)]) == 0
+    capsys.readouterr()
+    manifest_path = out / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    for key in ("simulation_horizon_s", "emission_end_s", "drain_s"):
+        manifest.pop(key)
+    manifest["schema"] = trace.TRACE_MANIFEST_SCHEMA_V1
+    contract = manifest["provenance_contract"]
+    for key in ("simulation_horizon_s", "emission_end_s", "drain_s"):
+        contract.pop(key)
+    contract["schema"] = trace.TRACE_PROVENANCE_SCHEMA_V1
+    resolved = json.loads((out / "resolved_config.json").read_text())
+    manifest["trace_identity_sha256"] = config.legacy_trace_identity_sha256(
+        resolved, manifest["input_sha256"])
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    receipt_path = out / "receipt.json"
+    receipt = json.loads(receipt_path.read_text())
+    receipt["trace_manifest_sha256"] = hashlib.sha256(
+        manifest_path.read_bytes()).hexdigest()
+    receipt["trace_identity_sha256"] = manifest["trace_identity_sha256"]
+    receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+    errors = __import__("CODE.leo_sim.receipt", fromlist=["verify_receipt_dir"]).verify_receipt_dir(str(out))
+    assert errors
+    assert any("v5 receipt requires trace manifest contract v2" in error
+               for error in errors)
 
 
 def test_run_writes_optional_decision_log_with_info_audit(tmp_path, capsys):
@@ -212,4 +243,33 @@ def test_run_consumes_precompiled_trace_with_sha_check(tmp_path, capsys):
         (tdir / "trace.csv").read_text().replace("1000000", "1000001", 1))
     rc2 = main(["run", "--config", str(p2), "--out", str(tmp_path / "out4")])
     assert rc2 == 2
+    assert "TRACE COMPILE FAILED" in capsys.readouterr().out
+
+
+def test_run_rejects_valid_legacy_v1_precompiled_trace_for_current_runtime(
+        tmp_path, capsys):
+    """A current run may not select identity by a self-reported v1 manifest."""
+    cfg = _write_cfg(tmp_path)
+    tdir = tmp_path / "legacy-trace"
+    assert main(["trace", "compile", "--config", cfg, "--out", str(tdir)]) == 0
+    capsys.readouterr()
+    manifest = json.loads((tdir / "manifest.json").read_text(encoding="utf-8"))
+    manifest["schema"] = "leo-sim-trace-manifest/v1"
+    for field in ("simulation_horizon_s", "emission_end_s", "drain_s"):
+        manifest.pop(field, None)
+    manifest["provenance_contract"] = dict(manifest["provenance_contract"])
+    manifest["provenance_contract"]["schema"] = "leo-sim-trace-provenance/v1"
+    for field in ("simulation_horizon_s", "emission_end_s", "drain_s"):
+        manifest["provenance_contract"].pop(field, None)
+    # Make the downgrade internally valid for the legacy verifier.  It must
+    # still be refused by the current precompiled-trace entry point.
+    manifest["trace_identity_sha256"] = config.legacy_trace_identity_sha256(
+        config.load_config_file(cfg), manifest["input_sha256"])
+    (tdir / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    text = (tmp_path / "cfg.yaml").read_text(encoding="utf-8")
+    p2 = tmp_path / "cfg-v1-trace.yaml"
+    p2.write_text(text + f"  trace_path: {tdir}\n")
+    rc = main(["run", "--config", str(p2), "--out", str(tmp_path / "out-v1")])
+    assert rc == 2
     assert "TRACE COMPILE FAILED" in capsys.readouterr().out
