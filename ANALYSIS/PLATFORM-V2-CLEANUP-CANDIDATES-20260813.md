@@ -1,5 +1,7 @@
 # LEO 平台 V2 旧机制清理候选清单（2026-08-13)
 
+> **HISTORICAL CANDIDATES**：本文不是当前删除清单，任何路径都不得按本文自动移动或删除。当前能力取舍见 `PLATFORM-CAPABILITY-LEDGER.md`，实际清理仍须重新核对引用并逐路径取得用户批准。
+
 **本文件只列候选，不执行任何删除。** 依据冻结任务书：新平台未通过正式 VM 验收前，旧 Gateway 运行时只冻结、不删除；任何 `git rm` 必须等用户逐路径批准。恢复依据对所有候选相同：tag `pre-platform-v2-20260812`(commit `4fe918f`）与已验证 bundle `~/Desktop/LEO-Research-Workspace-backups/LEO-Research-Workspace-pre-platform-v2-20260812.bundle`；更早还有 `legacy-baseline-20260803` 与其 bundle。
 
 引用计数命令（工作树根目录）:`grep -rl "<name>" CODE --include='*.py'`。A/B 节引用簇于 2026-08-13 三轮修复后复核更新（排除被引文件自身、`__pycache__` 与 `CODE/leo_sim/`)。

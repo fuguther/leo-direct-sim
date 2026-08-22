@@ -1,5 +1,7 @@
 # Agent 工作区
 
+> `WP-*` 中的 brief、review、decision 和 finalization 只绑定各自 revision 与产物哈希，不是当前 Agent 任务书。安排新工作前先读 `../../AGENT-START-HERE.md`，并针对当前产物建立或核验对应 revision。
+
 你以导师/领导身份提出目标、边界和决策；Agent 用可交接的版本化工作包执行。
 
 ```text

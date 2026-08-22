@@ -1,5 +1,7 @@
 # E1 初步观察（进行中，非最终结论，2026-08-15 凌晨）
 
+> **SUPERSEDED**：本文只保留旧平台候选的中途观察，不得据此安排当前实验。现行路线见 `../EXPERIMENT-PROGRAM.md`。
+
 > **HISTORICAL RESULT**：仅记录旧平台候选的中途观察；当前正式矩阵状态见 `../EXPERIMENT-PROGRAM.md`。
 
 > 状态：E1 30/90 cell 完成、0 失败。本文件只记录已实观测到的现象，等 E1

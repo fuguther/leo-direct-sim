@@ -1,5 +1,7 @@
 # 旧平台功能差距账本（V2 可实验门禁版）
 
+> **SUPERSEDED**：本文的实现状态已经过期，只保留旧平台差距证据。当前迁移状态与取舍见 `PLATFORM-CAPABILITY-LEDGER.md`。
+
 日期：2026-08-19。参照：`ANALYSIS/LEGACY-DESIGN-AUDIT-20260819.md`、
 `ANALYSIS/PLATFORM-DOCUMENTATION/02-kimi-platform-spec.md`、
 `ANALYSIS/MIGRATION-BACKLOG-20260816.md` 及当前 `CODE/leo_sim/`。

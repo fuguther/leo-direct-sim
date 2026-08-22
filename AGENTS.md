@@ -3,6 +3,8 @@
 本仓库是 LEO 直连仿真平台（leo_sim V2）的干净基线，2026-08-16 从旧科研工作区分拆建立。
 旧仓库（私有 `fuguther/leo-research-workspace`）保留全部历史与旧平台代码，本库不带 git 历史。
 
+Agent 开工前必须先读 `AGENT-START-HERE.md` 并运行其中的文档治理检查。本文件只保存稳定规则，不记录当前 SHA、VM、实验进度或归档候选。
+
 ## 硬事实
 
 1. 科研结论必须可复现、可反驳、可核验；未经当前平台回执验证的结论不得进入论文。
@@ -45,7 +47,7 @@
 13. **禁止入库**：`CODE/Results/`、`leo_sim_out/`、`out/`、`remote.env`、`.env`、`__pycache__/`、`.DS_Store`（.gitignore 已配；发现漏网先补 gitignore 再提交）。GitHub 备份代码，不替代 VM 原始实验数据和回执保存链。
 14. **VM 部署**：只允许 `main` 上的 clean commit，经 `CODE/scripts/remote/push-remote.sh` 执行；跑实验前必须已部署，部署后记录回执 SHA。
 15. **矛盾处理**：发现历史/文档/代码互相矛盾时，并列报告出处与影响，禁止静默融合或擅自覆盖。
-16. **旧平台参照**：旧平台（Gateway 汇聚）在 `/Users/lge/Desktop/LEO-Research-Workspace`（私有 `fuguther/leo-research-workspace`），只读引用、禁止修改、**禁止复制进本库**（无 LICENSE 第三方仓库的衍生作品，本库公开）。先查 `ANALYSIS/PLATFORM-DOCUMENTATION/02-kimi-platform-spec.md` 行号索引与不一致清单，迁移取舍以 `ANALYSIS/MIGRATION-BACKLOG-20260816.md` 为准。
+16. **旧平台参照**：旧平台（Gateway 汇聚）在 `/Users/lge/Desktop/LEO-Research-Workspace`（私有 `fuguther/leo-research-workspace`），只读引用、禁止修改、**禁止复制进本库**（无 LICENSE 第三方仓库的衍生作品，本库公开）。先查 `ANALYSIS/PLATFORM-DOCUMENTATION/02-kimi-platform-spec.md` 行号索引与不一致清单；当前迁移状态与取舍以 `ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md` 为准，日期稿只作 supporting evidence。
 
 ## 防失控护栏
 
@@ -66,4 +68,4 @@
 
 ## 当前状态
 
-- 见 `NOTES.md`。平台来源与谱系见 `README.md`。
+- 统一入口见 `AGENT-START-HERE.md`；平台来源与谱系见 `README.md`。

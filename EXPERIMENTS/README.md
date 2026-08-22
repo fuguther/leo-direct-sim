@@ -1,5 +1,7 @@
 # 实验区
 
+> 本目录下的 `EXP-*` 是逐 revision 生成的不可变证据快照，不是“当前实验仍获授权”或“当前应继续运行”的状态入口。执行前必须对当前 checkout 重算 manifest、finalization、authorization 和 receipt；当前路线从 `../AGENT-START-HERE.md` 进入。
+
 Agent 不在这里手写完整配置。先提交一个紧凑请求，再由 `CODE/experiment_platform/compile_experiment.py` 生成完整配置、run manifest 和分析请求。
 
 ```text

@@ -1,5 +1,7 @@
 # E0 选档定稿（140 星跨洋，hop 非学习，2026-08-15）
 
+> **SUPERSEDED**：旧 50/100/200 Mbps 选档不能指导当前负载标定。现行实验路线见 `../EXPERIMENT-PROGRAM.md`。
+
 > **HISTORICAL RESULT**：50/100/200 Mbps 是旧平台语义下的先验；D1/D2 和最终合同冻结后必须重跑 E0。
 
 > 依据 09 文档 §C 与 §I 的冻结阈值，把三档从 provisional 转正。原始扫描数据：

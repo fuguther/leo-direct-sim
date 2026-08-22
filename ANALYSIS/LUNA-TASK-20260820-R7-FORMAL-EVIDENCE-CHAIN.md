@@ -1,5 +1,7 @@
 # Luna 任务书：关闭 R7-F1 正式证据链阻断
 
+> **HISTORICAL TASK**：该任务书只绑定下列旧基线和分支，不是当前 Agent 指令。现行任务从 `../AGENT-START-HERE.md` 进入，并重新核对 finding、SHA 和授权链。
+
 > 状态：`FROZEN TASK CONTRACT`  
 > 任务 owner：Luna（唯一代码写入者）  
 > 总控与终判：Codex  
