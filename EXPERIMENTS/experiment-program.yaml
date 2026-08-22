@@ -181,7 +181,7 @@ experiments:
     required_evidence: [coverage_scan_json, horizon_audit, positive_rate_usable_coverage]
     decision: coverage_scan_does_not_automatically_select_added_satellites
     provisional_vm_candidate:
-      status: provisional_vm_candidate
+      status: frozen_e0_engineering_baseline
       profile: CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue_280x14_e25.yaml
       constellation: {num_satellites: 280, num_planes: 14, satellites_per_plane: 20, min_elevation_deg: 25}
       trace_sha256: f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4
@@ -189,11 +189,15 @@ experiments:
       coverage_6000s_20s: {endpoints: 55, never_visible: 0, threshold_met_fraction: 1.0, min_visible_fraction: 0.6345514950, median_visible_fraction: 0.9734219269, max_gap_s: 1760}
       rf_visible_samples: {max_slant_km: 1213.2078115, min_uplink_rate_bps: 2532845000, min_downlink_rate_bps: 1317618000, uplink_positive_range_km: 12067.9044812, downlink_positive_range_km: 4482.1358470}
       local_run: {natural_end: true, conservation_ok: true, offered: 1299, delivered: 978, holding_overflow: 16, no_route: 1, in_system_at_stop: 304, wall_s: 133.93, user_s: 132.47, sys_s: 1.06, max_rss: unverified_macos_permission}
-      provisional: true
+      provisional: false
       capacity_proof: false
       paper_ready: false
-      vm_trial: pending
-      freeze_condition: same_trace_vm_resources_stage_metrics_then_recalibrate_e0
+      vm_trial: completed_exact_main
+      vm_run: SMOKE-20260822-COVERAGE-280X14-E25-29e41c8
+      deployment_receipt_sha: 11688f2f2fae23c250b535aa439057c01eebd8b386f132c00ba654c4003b31a8
+      vm_stage_metrics: {offered: 1299, admitted: 1233, delivered: 978, holding_overflow: 16, no_route: 1, in_system_at_stop: 304, access_admission_rate: 0.9491916859, network_delivery_rate_by_horizon: 0.7931873479}
+      global_freeze: false
+      freeze_condition: e0_engineering_baseline_only; complete_10_25_same_trace_vm_cells_before_load_band_decision
 
   - id: E0-LOAD-CALIBRATION
     class: engineering_calibration
