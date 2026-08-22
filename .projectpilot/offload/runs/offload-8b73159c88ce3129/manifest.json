@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "planId": "offload-8b73159c88ce3129",
+  "relayManifest": {
+    "planId": "offload-8b73159c88ce3129",
+    "projectId": "leo-direct-sim",
+    "backend": "web_chat",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:E0-PLAN-REVIEW",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "063542e3528ecb97a76d05f36fe9356d5c9c074c",
+        "paths": [
+          "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+          "ANALYSIS/EXPERIMENT-PROGRAM.md",
+          "ANALYSIS/paired_analysis.py",
+          "ANALYSIS/tests/test_paired_analysis.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/tests/test_congestion_metrics.py",
+          "CODE/leo_sim/profiles/e0_load_scan.yaml",
+          "CODE/leo_sim/profiles/mlab_e0_calibration.yaml",
+          "CODE/experiment_platform/metric-catalog.json",
+          "CODE/experiment_platform/compile_experiment.py",
+          "CODE/experiment_platform/experiment-request.schema.json",
+          "EXPERIMENTS/contracts/run-artifact-contract.md",
+          "EXPERIMENTS/EXP-20260822-E0-LOAD-FORMAL-R02/request.json",
+          "PAPER/eligible_claims.py",
+          "PAPER/tests/test_eligible_claims.py"
+        ],
+        "promptHash": "4f1254cb159fa158b095b77afc859ae73de8c2f4aab7db59785b1fcd65dd8206"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:E0-PLAN-REVIEW:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "063542e3528ecb97a76d05f36fe9356d5c9c074c",
+        "paths": [
+          "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+          "ANALYSIS/EXPERIMENT-PROGRAM.md",
+          "ANALYSIS/paired_analysis.py",
+          "ANALYSIS/tests/test_paired_analysis.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/tests/test_congestion_metrics.py",
+          "CODE/leo_sim/profiles/e0_load_scan.yaml",
+          "CODE/leo_sim/profiles/mlab_e0_calibration.yaml",
+          "CODE/experiment_platform/metric-catalog.json",
+          "CODE/experiment_platform/compile_experiment.py",
+          "CODE/experiment_platform/experiment-request.schema.json",
+          "EXPERIMENTS/contracts/run-artifact-contract.md",
+          "EXPERIMENTS/EXP-20260822-E0-LOAD-FORMAL-R02/request.json",
+          "PAPER/eligible_claims.py",
+          "PAPER/tests/test_eligible_claims.py"
+        ],
+        "promptHash": "2d8610bd99211026825e11d4cfe7ba0197cee1bf4e9539da2c3162a067bc9fe4"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "8b73159c88ce31297babfd144707e81d34e204dd52b8509f1a375ee62db8bc0c"
+  },
+  "sourceBaseCommit": "063542e3528ecb97a76d05f36fe9356d5c9c074c",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:E0-PLAN-REVIEW",
+      "promptHash": "4f1254cb159fa158b095b77afc859ae73de8c2f4aab7db59785b1fcd65dd8206",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "063542e3528ecb97a76d05f36fe9356d5c9c074c",
+        "paths": [
+          "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+          "ANALYSIS/EXPERIMENT-PROGRAM.md",
+          "ANALYSIS/paired_analysis.py",
+          "ANALYSIS/tests/test_paired_analysis.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/tests/test_congestion_metrics.py",
+          "CODE/leo_sim/profiles/e0_load_scan.yaml",
+          "CODE/leo_sim/profiles/mlab_e0_calibration.yaml",
+          "CODE/experiment_platform/metric-catalog.json",
+          "CODE/experiment_platform/compile_experiment.py",
+          "CODE/experiment_platform/experiment-request.schema.json",
+          "EXPERIMENTS/contracts/run-artifact-contract.md",
+          "EXPERIMENTS/EXP-20260822-E0-LOAD-FORMAL-R02/request.json",
+          "PAPER/eligible_claims.py",
+          "PAPER/tests/test_eligible_claims.py"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:E0-PLAN-REVIEW:independent_review",
+      "promptHash": "2d8610bd99211026825e11d4cfe7ba0197cee1bf4e9539da2c3162a067bc9fe4",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "063542e3528ecb97a76d05f36fe9356d5c9c074c",
+        "paths": [
+          "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+          "ANALYSIS/EXPERIMENT-PROGRAM.md",
+          "ANALYSIS/paired_analysis.py",
+          "ANALYSIS/tests/test_paired_analysis.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/tests/test_congestion_metrics.py",
+          "CODE/leo_sim/profiles/e0_load_scan.yaml",
+          "CODE/leo_sim/profiles/mlab_e0_calibration.yaml",
+          "CODE/experiment_platform/metric-catalog.json",
+          "CODE/experiment_platform/compile_experiment.py",
+          "CODE/experiment_platform/experiment-request.schema.json",
+          "EXPERIMENTS/contracts/run-artifact-contract.md",
+          "EXPERIMENTS/EXP-20260822-E0-LOAD-FORMAL-R02/request.json",
+          "PAPER/eligible_claims.py",
+          "PAPER/tests/test_eligible_claims.py"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
