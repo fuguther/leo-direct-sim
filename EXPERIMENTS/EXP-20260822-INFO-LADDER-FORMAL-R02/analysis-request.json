@@ -1,0 +1,116 @@
+{
+  "analysis": {
+    "analysis_id": "AN-INFO-LADDER-FORMAL-R02",
+    "estimand": "descriptive paired routing-policy differences between F1 info_physical and F0 info_queue under the fixed 200 Mbps M-Lab multi-OD burst, pooled over two trace seeds; no causal or superiority claim",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "descriptive paired pressure difference",
+        "left_arm": "info_physical",
+        "name": "info_physical_minus_info_queue",
+        "right_arm": "info_queue"
+      }
+    ],
+    "primary_metric": "delivery_rate"
+  },
+  "claim_boundary": {
+    "can_claim": [
+      "the declared F0 and F1 deterministic routing anchors execute under the same fixed 200 Mbps M-Lab multi-OD burst and two trace seeds",
+      "natural-end, conservation, packet-fate, backlog, latency and directional available-capacity records are produced and can be recomputed",
+      "the observed paired differences are descriptive diagnostics for whether first-hop physical information changes routing outcomes"
+    ],
+    "cannot_claim": [
+      "algorithm superiority or a causal information-value effect",
+      "learner observation equivalence or Q0 optimality",
+      "final E0 load threshold or paper-ready statistical conclusion"
+    ]
+  },
+  "experiment_id": "EXP-20260822-INFO-LADDER-FORMAL-R02",
+  "matrix_manifest_sha256": "8eb381a78be8484079358fdd65ddb79f505cc8d7aa8fd57352f539f61e642052",
+  "planned_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "info_queue",
+      "config_sha256": "52d8f717f28796f0988fa0e8afae468b207e5d64063c9f867f956f685eb419fa",
+      "controlled_signature": "13e858d4a1ad86739db8c33be9aee00a46e5bfc9140e2d04b51c70be6a365fa3",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "queue-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260822-INFO-LADDER-FORMAL-R02-info_queue-s7",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "info_physical",
+      "config_sha256": "37704fe95c7994429fadb195849983b7cce7ddfa4fcdaeb2150c0ef2d061a2c1",
+      "controlled_signature": "13e858d4a1ad86739db8c33be9aee00a46e5bfc9140e2d04b51c70be6a365fa3",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "queue-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260822-INFO-LADDER-FORMAL-R02-info_physical-s7",
+      "trace_identity_sha256": "78a04d488323519e91ac9e1941a9680c48a9cd4eb3fc5ea8860dcfce23e9a1c3",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "info_queue",
+      "config_sha256": "69469e58bfd8d6eef2d5b68d327c5d879bb66c9e0d5fb9e8bea9c657bcd9c4d8",
+      "controlled_signature": "13e858d4a1ad86739db8c33be9aee00a46e5bfc9140e2d04b51c70be6a365fa3",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "queue-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260822-INFO-LADDER-FORMAL-R02-info_queue-s11",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "info_physical",
+      "config_sha256": "0342355ffb3671b3e6932695c1f57fd457e7028b9e400975956d71327c0927b3",
+      "controlled_signature": "13e858d4a1ad86739db8c33be9aee00a46e5bfc9140e2d04b51c70be6a365fa3",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "queue-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260822-INFO-LADDER-FORMAL-R02-info_physical-s11",
+      "trace_identity_sha256": "d95fc8713e73f3caf24fbd9ad8ee0841983dfa595561eebabf43a918229ce3a0",
+      "trace_seed": 11
+    }
+  ],
+  "planned_run_ids": [
+    "EXP-20260822-INFO-LADDER-FORMAL-R02-info_queue-s7",
+    "EXP-20260822-INFO-LADDER-FORMAL-R02-info_physical-s7",
+    "EXP-20260822-INFO-LADDER-FORMAL-R02-info_queue-s11",
+    "EXP-20260822-INFO-LADDER-FORMAL-R02-info_physical-s11"
+  ],
+  "request_sha256": "a03295525783d13d583856c402d7cc37c181c35e9ec874487b4f227335c6e192",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-matrix-analysis-request/v1",
+  "status": "WAITING_FOR_VERIFIED_RUNS"
+}
