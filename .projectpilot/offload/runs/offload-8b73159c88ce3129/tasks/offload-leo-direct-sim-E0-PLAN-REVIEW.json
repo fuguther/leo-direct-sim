@@ -1,0 +1,69 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:E0-PLAN-REVIEW",
+    "title": "Adversarial E0 calibration plan review",
+    "goal": "Read the exact GitHub main files, propose at most four atomic dependency-ordered overnight work packages, and attack the plan for confounding, post-hoc thresholds, fake pairing, semantic-changing optimizations, and claim overreach. Each package must include purpose, why now, exclusions, exact allowed paths, implementation, tests and counterexamples, local/CI/VM acceptance, stop conditions, a complete executor prompt, allowed conclusions, and forbidden conclusions. Prefer extension of existing components over a parallel framework. Explicitly identify what must close before Q0 real replay and which optimizations are semantics-preserving only.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "063542e3528ecb97a76d05f36fe9356d5c9c074c",
+      "paths": [
+        "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+        "ANALYSIS/EXPERIMENT-PROGRAM.md",
+        "ANALYSIS/paired_analysis.py",
+        "ANALYSIS/tests/test_paired_analysis.py",
+        "CODE/leo_sim/metrics.py",
+        "CODE/leo_sim/tests/test_congestion_metrics.py",
+        "CODE/leo_sim/profiles/e0_load_scan.yaml",
+        "CODE/leo_sim/profiles/mlab_e0_calibration.yaml",
+        "CODE/experiment_platform/metric-catalog.json",
+        "CODE/experiment_platform/compile_experiment.py",
+        "CODE/experiment_platform/experiment-request.schema.json",
+        "EXPERIMENTS/contracts/run-artifact-contract.md",
+        "EXPERIMENTS/EXP-20260822-E0-LOAD-FORMAL-R02/request.json",
+        "PAPER/eligible_claims.py",
+        "PAPER/tests/test_eligible_claims.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "At most four work packages with strict dependencies and overnight atomic scope",
+      "Every proposed change names existing exact paths or clearly justified new files",
+      "At least one counterexample each for access bottleneck, horizon truncation, information truncation, and non-ISL pressure",
+      "No claim of algorithm superiority, Q0 optimality, or paper readiness"
+    ],
+    "requiredEvidence": [
+      "GitHub file and line references for every repository-dependent claim",
+      "Explicit FACT, INFERENCE, and open_items separation"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "4f1254cb159fa158b095b77afc859ae73de8c2f4aab7db59785b1fcd65dd8206"
+}
