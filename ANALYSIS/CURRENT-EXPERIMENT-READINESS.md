@@ -1,5 +1,29 @@
 # leo_sim V2 当前实验就绪状态
 
+## 2026-08-22：280/14 E0 完整信息参考修正（当前诊断登记）
+
+这是一项配置/证据边界修正，不是内核或 trace schema 变更。基于 main
+`f328e855857c60c4c87860a4eabb550d58636618`，动态 280/14 图在
+`t={0,1,5,10,20,30}` 的独立诊断均为连通、每星 degree=4、diameter=17；原
+E0 三个 profile 的 `control_plane.vis_k=12` 只能看到截断的信息半径，不能作为
+完整信息参考臂。三份 E0 profile 现改为 `vis_k=17`；这不是所有实验的默认值，
+信息裁剪实验仍可显式使用较小的 `k`。
+
+f328e85 的旧 `E0DRAIN-20260822-{10,25,50}M` 结果必须标记为
+`diagnostic_info_truncated`，不得用于拥塞负载分档或论文结论：10/25/50M
+分别为 `250/240/192/58`、`685/685/541/142`、`1299/1299/1057/222`
+（offered/admitted/delivered/in-system）；50M 另有 16 个 holding overflow 和
+4 个 no-route。未交付包在停止前最后事件显示为 holding（10M: 48、25M: 142、
+50M: 222；10M 另有 10 个 uplink 等待），而不是 ISL 队列；三组 ISL 最大利用率
+均低于 0.4%（50M 为约 0.390%）。这些事实说明 `vis_k=12` 可能是 holding/no-route
+诊断的混杂因素，不能直接把旧结果解释为拥塞控制或 ISL 容量结论。
+
+下一步只预注册一个 10M、同一 trace SHA
+`e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23` 的 `vis_k=17`
+对照，验收为 `receipt verified`、`natural_end=true`、`conservation_ok=true`，并与
+旧 `vis_k=12` 结果比较 holding、in-system 和 total delivery。该诊断完成前，
+不重新解释旧三档，也不启动新的拥塞负载分档。
+
 > **2026-08-22 historical diagnostic snapshot（非当前可用状态）**：平台当时达到“可做真实流量、可审计、可重复的工程 pilot”门槛，但还没有达到“学习算法正式论文数据可直接采信”的门槛。以下 main/VM/E0 数字均为历史诊断证据，不是 access boundary 变更后的当前可用性声明；由于接入语义已改变，E0 R02 必须 `rerun_required`。
 >
 > **当前不能混淆的两件事**：50/100/200 只是第一轮负载扫描，不是最终冻结值；三档实测交付率约 `0.472/0.455/0.429`，按预注册规则都落入 medium，机械候选为 50 Mbps，但必须补两个 seed，必要时扩大低端 bracket。学习正式矩阵、学习专用 CPU/RSS profile、完整三段时延 gate、Q0 真实 kernel 闭环和最终论文 claim 仍未完成。因此现在可以开始小规模非学习诊断和工程 pilot；不能把当前结果直接写成论文算法优越性或因果拥塞结论。

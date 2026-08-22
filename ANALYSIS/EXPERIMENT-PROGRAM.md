@@ -1,5 +1,24 @@
 # LEO 拥塞控制与链路利用率实验总计划
 
+## 2026-08-22：E0 完整信息参考修正（当前诊断登记）
+
+基于 main `f328e855857c60c4c87860a4eabb550d58636618` 的动态 280/14 图诊断：
+在 `t=0,1,5,10,20,30`，图均连通、每星 degree=4、diameter=17。原 E0
+10/25/50 profile 沿用了 `control_plane.vis_k=12`，因此并非完整信息参考臂。
+三份 profile 现统一改为 `vis_k=17`；该值只表示当前 280/14 E0 的完整信息
+参考半径，不是所有实验的默认值，信息裁剪实验仍可使用更小 `k`。
+
+main `f328e85` 的 `E0DRAIN-20260822-{10,25,50}M` 旧结果统一标记为
+`diagnostic_info_truncated`，不用于拥塞分档：其 offered/admitted/delivered/
+in-system 分别为 `250/240/192/58`、`685/685/541/142`、`1299/1299/1057/222`；
+50M 有 16 holding overflow、4 no-route。停止前未交付包的最后事件主要在 holding
+（10M 48、25M 142、50M 222），三组 ISL 最大利用率均低于 0.4%。
+
+下一步只做一个 10M、同 trace SHA
+`e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23` 的 `vis_k=17`
+诊断，要求 receipt verified、natural end、conservation，并与旧 vis_k=12
+比较 holding、in-system、total delivery。nested trace 和内核修改不属于本任务。
+
 > **2026-08-22 historical diagnostic snapshot（非当前可用状态）**：先做工程 pilot，再做正式论文实验。以下“平台可运行”和 E0 R02 六个 cell 均为 access boundary 变更前的历史诊断证据，不是当前可用性声明；接入语义变化后必须 `rerun_required`。50/100/200 Mbps 仍是历史扫描档，不是最终冻结或论文结果；学习正式 cohort、三段时延正式 gate、Q0 真实闭环和论文 claim 仍未关闭。
 
 > **当前门禁**：access boundary 是 E0 重标定前门禁；必须先完成 coverage/horizon audit、有限 queue 阶段指标和 VM 小样，随后重新执行 E0，不能沿用下方历史曲线。
