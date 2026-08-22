@@ -270,7 +270,7 @@
   "common_config_sha256": "4ec76d30102cc25a757ccdc66e0cda3ffe5ca8de9f2726b358b878b415105d57",
   "execution_authorized": false,
   "experiment_id": "EXP-20260822-E0-LOAD-FORMAL-R02",
-  "request_sha256": "156edffa7e531e758ac43debe102aced773515d39b88d65cf88485b8ea11ce2d",
+  "request_sha256": "44ce6a5f1ecdff07004c8209a41b4dee5a8fc1d3d0a69b7af767041f0d8c3aee",
   "runtime_kind": "leo_sim_v2",
   "schema": "leo-sim-experiment-matrix-manifest/v1"
 }

@@ -31,9 +31,10 @@
     ],
     "tier_labels": {
       "low": "non-congested control point when delivery_rate >= 0.80 and holding-overflow fraction <= 0.05",
-      "medium": "target operating point when delivery_rate is between 0.20 and 0.80 inclusive and holding-overflow fraction <= 0.20",
+      "medium": "target operating point when delivery_rate >= 0.20 and < 0.80 and holding-overflow fraction <= 0.20",
       "high": "stress point when delivery_rate < 0.20 or holding-overflow fraction > 0.20, while still passing the validity gate"
     },
+    "measurement": "For each cell, holding-overflow fraction = count(fate=HOLDING_QUEUE_OVERFLOW) / total offered packets, where total offered packets is the sum of all packet-fate counts in that receipt. For a tier pair, use the lower delivery_rate and higher overflow fraction across its control/copy cells. The pair is invalid if either cell fails the validity gate or the duplicate receipt fate counts/primary metric disagree.",
     "selection": "Select the lowest valid tier labelled medium as the provisional E0 main-load candidate. If no tier is labelled medium, do not freeze a main load; run a bracket follow-up between the nearest valid tiers (or add 25 Mbps around the nearest boundary) and apply the same rule.",
     "confirmation": "The provisional candidate is not paper-frozen after this one-seed scan. Re-run it with at least two additional trace seeds; freeze only if the same label holds for both and the paired duplicate checks remain exact."
   },

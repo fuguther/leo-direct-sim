@@ -142,7 +142,8 @@
       "each tier's duplicate pair is descriptive consistency evidence under the fixed M-Lab burst profile",
       "the base offered rate and integrated burst-average target can be recomputed from the authorized resolved configurations",
       "the raw artifacts preserve source, endpoint-selection, burst and fate evidence for a later E0 load decision",
-      "load_selection_rule: after the validity gate (natural_end, conservation, governance and acceptance), label low when delivery_rate >= 0.80 and holding-overflow fraction <= 0.05, medium when delivery_rate is 0.20-0.80 inclusive and holding-overflow fraction <= 0.20, and high otherwise",
+      "load_selection_rule: after the validity gate (natural_end, conservation, governance and acceptance), label low when delivery_rate >= 0.80 and holding-overflow fraction <= 0.05, medium when delivery_rate >= 0.20 and < 0.80 and holding-overflow fraction <= 0.20, and high when delivery_rate < 0.20 or holding-overflow fraction > 0.20",
+      "load_selection_rule: holding-overflow fraction is HOLDING_QUEUE_OVERFLOW fate count divided by total offered packets (the sum of all fate counts); aggregate each pair conservatively with the lower delivery_rate and higher overflow fraction, and invalidate the tier if either cell fails validity or the duplicate fate counts/primary metric disagree",
       "load_selection_rule: choose the lowest valid medium tier as the provisional E0 candidate; if none qualifies, run a bracket follow-up rather than freezing a load",
       "load_selection_rule: confirm the provisional tier with at least two additional trace seeds before paper-facing load freeze"
     ],
