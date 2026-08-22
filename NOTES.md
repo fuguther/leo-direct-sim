@@ -590,3 +590,10 @@
 - 三份真实独立复核均 PASS：cold-start `3c66c8748275e6372e0b9ce68f9c2c7cf5e69b21dd399f402a8a062ef8c0e465`、satellite-DRL `c5f5e98acf34dc116b4c9913ab0ce26f562240d0c0be45dd5fc6ae7fc238c94c`、adversarial `835326e8e5d1b39bf799d2f5ff121831d14af13ff618480d0f373b8262f722b1`；三者均绑定同一 11-artifact hash map，`verify_compiled_matrix` 4 rows/9 hashes 通过，相关测试均绿。
 - `finalize_decision` 返回 `ACCEPTED`；`authorize_experiment` 返回 `AUTHORIZED`（4 runs）。授权仅表示可在合入后 exact main、干净部署的同一 SHA 上执行该 F0 诊断，不代表已部署、已运行或已有论文结果。
 - 当前待办：将本 package 经 PR/CI 合入 main；合入后部署 canonical VM，严格串行运行 4 cells，逐个核验 natural_end、conservation、research_eligible、资源边界和 receipt verify，再做 V2 paired analysis。任一 cell 失败即停止矩阵；F1 `info_physical` 另起 R02。
+
+## 2026-08-22：INFO-LADDER F0 已完成同 SHA VM 实跑与 V2 重算
+
+- PR #136 已合入；执行主线 exact SHA=`c34fac937e865cb2f5543bacba2223eb4f34477e`。canonical VM deployment receipt SHA=`2d5535cea66aa3bac4065ace991d5cccdced5d3813df72902947cd3bf6378ce0`，source tree SHA=`1d4830e0a8f4850d333dce5f4d01fdd50e98ee369f8e26d6c0f225d9eedcd17a`，authorization SHA=`69019af696ff81e7ebeb3e35a3a3527c9590082de1e00beae11ef659e2181d77`。
+- 4/4 cells 严格串行执行并自然结束，receipt verify 全部为 `verified`，守恒通过，治理回执 `research_eligible=true`。本地运行 receipt 的 `research_eligible=false` 是预期语义，不是失败。
+- seed 7：hop 与 info_queue 均 delivery rate=`0.4291118717`（2,382 delivered，167 holding overflow，405 in-system）；seed 11：两臂均=`0.4408871400`（2,465 delivered，180 holding overflow，389 in-system）。V2 `VERIFIED`、4 runs；manifest SHA=`a5bba6f34b66700bf9e356723aaa615b1c8040b43914de0ea064371b4b1fd4f2`；paired differences `[0.0, 0.0]`；V2 persisted verifier `ok=True`。
+- 路线审计补充：该零差异不是证明 `info_queue` 没有作用。seed 7 有 3/352 个出现 ISL 路径差异，seed 11 有 4/401 个；只是当前压力瓶颈由 access/holding 终态主导，尚未改变聚合交付率。下一步检查路线选择与队列占用，随后另起 F1，保留负对照；F0 仍仅作诊断，不进入论文 claim。
