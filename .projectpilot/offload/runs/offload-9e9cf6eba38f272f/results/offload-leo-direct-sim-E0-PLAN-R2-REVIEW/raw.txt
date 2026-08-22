@@ -1,0 +1,290 @@
+E0 PLAN-R2 adversarial review
+Verdict
+
+REQUEST_CHANGES
+
+当前设计方向比上一版更接近可审计实验，但仍存在几个阻塞性证据缺口：配置身份、压力场景语义、VM canonical chain、vis_k cache 证据链和统计确认规则尚未在现有实现面闭环。不能据此声明 E0 calibration design ready。
+
+FACT
+F1 — 已有配置 SHA 机制，但 scenario-invariant SHA 与 cell-plan SHA 尚未形成双层身份
+
+现有配置系统明确要求生成单一 canonical object 并绑定 SHA256 identity；未知字段和非法组合 fail closed。说明平台已有 config identity 基础。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/CODE/leo_sim/config.py#L1-L6
+
+但 E0 R2 要求：
+
+scenario-invariant SHA：描述物理/实验语义不随 cell 参数变化的身份；
+
+cell-plan SHA：描述具体 load multiplier、seed、scenario cell、runtime plan。
+
+当前证据不足以证明二者存在，若继续只使用 config SHA，会混淆：
+
+实验定义变化；
+
+参数扫描变化；
+
+runtime artifact 变化。
+
+F2 — load scan 当前属于 measurement-proxy baseline，不足以证明 physical pressure scenario
+
+现有扫描脚本明确说明目标是：
+
+非学习 hop policy；
+
+低成本扫描；
+
+确认 completion/latency/backlog/load 数据管道。
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py#L1-L12
+
+并且实际改变的是：
+
+demand.offered_mbps
+
+输出目录
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py#L45-L60
+
+因此：
+
+允许结论：
+
+可以作为负载敏感性预扫描；
+
+可以帮助选择后续 cell。
+
+禁止结论：
+
+证明真实拥塞机制已出现；
+
+证明 ISL bottleneck 已被激活；
+
+证明新的压力场景有效。
+
+R2 提出的“ISL capacity scaling + long-distance corridor stress”必须作为独立 controlled pressure scenario，而不是替代 baseline scan。
+
+F3 — vis_k=17 作为 full graph reach cache reference 的要求未被当前代码证实
+
+配置 schema 中 vis_k 被定义为 control-plane observation hop contract：
+
+证据：
+
+github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/CODE/leo_sim/config.py#L130-L150
+
+但目前缺少以下可审计证据：
+
+cache 是否覆盖全部 graph reach；
+
+cache entry age；
+
+TTL expiration；
+
+field-level integrity；
+
+stale value rejection。
+
+因此：
+
+vis_k=17 只能作为配置参数存在，不能作为 observation completeness claim。
+
+Findings
+JSON
+[
+  {
+    "id": "F1",
+    "severity": "major",
+    "summary": "当前只有统一 config SHA 证据，没有证明 scenario-invariant SHA 与 cell-plan SHA 分离。",
+    "evidence": [
+      "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/CODE/leo_sim/config.py#L1-L6"
+    ]
+  },
+  {
+    "id": "F2",
+    "severity": "blocking",
+    "summary": "load scan 实现只能作为 measurement-proxy baseline，不能支撑 physical ISL pressure claim。",
+    "evidence": [
+      "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py#L1-L12",
+      "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py#L45-L60"
+    ]
+  },
+  {
+    "id": "F3",
+    "severity": "major",
+    "summary": "vis_k=17 缺少 cache coverage、age、TTL 和 field integrity 证据链。",
+    "evidence": [
+      "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/CODE/leo_sim/config.py#L130-L150"
+    ]
+  }
+]
+INFERENCE
+
+两阶段压力设计是正确方向
+
+推荐保持：
+
+Phase A：
+
+load multiplier scan；
+
+fixed observation；
+
+drain audit。
+
+Phase B：
+
+ISL capacity scaling；
+
+long-distance corridor stress；
+
+adaptive observation cells。
+
+否则容易把“更多流量导致性能下降”误写成“链路容量机制导致拥塞”。
+
+ISL pressure metric 必须保持层级结构
+
+应采用：
+
+per-link over time
+        ↓
+exposed-link aggregation
+        ↓
+scenario-level summary
+
+禁止：
+
+all links average utilization
+
+原因：
+平均值会稀释少数关键 corridor/link 的 queue buildup。
+
+seed 策略合理但不能用于显著性声明
+
+边界确认：
+
+seed 7 不足；
+
+boundary point 至少 two-seed confirmation；
+
+final selected cells three-seed confirmation。
+
+但三 seed 仍不能支持统计显著性，只能支持：
+
+reproducibility evidence；
+
+robustness check。
+
+open_items
+
+未发现允许读取路径内已有实现证明：
+
+scenario-invariant SHA；
+
+cell-plan SHA；
+
+二者关系。
+
+未发现允许读取路径内已有实现证明：
+
+adaptive cells 可以通过 canonical deploy/authorize/run-remote/status/receipt 链执行；
+
+不依赖未提交动态 config。
+
+未发现允许读取路径内已有实现证明：
+
+governance changes 已隔离为独立 exact-SHA cold-reviewed PR。
+
+未发现允许读取路径内已有实现证明：
+
+fixed observation audit 与 drain audit 已物理分离。
+
+Recommended actions
+
+保留当前 load scan，仅标记为 measurement-proxy baseline。
+
+新增独立 pressure scenario contract：
+
+capacity scaling 参数；
+
+corridor topology selection；
+
+不改变 baseline semantics。
+
+增加 artifact contract：
+
+scenario SHA；
+
+cell-plan SHA；
+
+seed set；
+
+observation cache receipt；
+
+TTL/age audit。
+
+在任何 claim 前增加：
+
+two-seed boundary confirmation；
+
+three-seed final confirmation。
+
+governance 变化单独 PR，并绑定 exact SHA review。
+
+JSON
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:E0-PLAN-R2-REVIEW",
+  "status": "EVIDENCE_READY",
+  "summary": "E0 R2 设计方向正确，但当前证据不足以进入 READY。load scan 只能作为 measurement-proxy baseline，不能证明 ISL pressure；需要补充 scenario/cell SHA 分离、cache integrity、canonical remote receipt 以及独立 pressure scenario 证据。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "缺少 scenario-invariant SHA 与 cell-plan SHA 分离证据。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/CODE/leo_sim/config.py#L1-L6"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "blocking",
+      "summary": "load scan 只能作为 measurement-proxy baseline，不能支撑 physical pressure claim。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py#L1-L12",
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py#L45-L60"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "vis_k=17 缺少 cache coverage、age、TTL、field integrity 证据。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/CODE/leo_sim/config.py#L130-L150"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "将 load scan 明确降级为 measurement-proxy baseline。",
+    "增加独立 ISL capacity scaling 和 long-distance corridor stress contract。",
+    "补充 scenario SHA/cell-plan SHA 双身份 artifact。",
+    "补充 observation cache integrity 与 remote receipt 证据。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/CODE/leo_sim/config.py#L1-L6",
+    "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py#L1-L12"
+  ],
+  "open_items": [
+    "scenario-invariant SHA 与 cell-plan SHA 实现证据缺失",
+    "canonical deploy/authorize/run-remote/status/receipt 链证据缺失",
+    "fixed observation audit 与 drain audit 分离证据缺失",
+    "governance separate exact-SHA cold-reviewed PR 证据缺失"
+  ],
+  "verdict": "REQUEST_CHANGES"
+}
+===END_OFFLOAD_RESULT===
