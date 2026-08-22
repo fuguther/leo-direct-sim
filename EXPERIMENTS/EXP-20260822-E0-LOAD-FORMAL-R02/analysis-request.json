@@ -35,7 +35,7 @@
       "the base offered rate and integrated burst-average target can be recomputed from the authorized resolved configurations",
       "the raw artifacts preserve source, endpoint-selection, burst and fate evidence for a later E0 load decision",
       "load_selection_rule: after the validity gate (natural_end, conservation, governance and acceptance), label low when delivery_rate >= 0.80 and holding-overflow fraction <= 0.05, medium when delivery_rate >= 0.20 and < 0.80 and holding-overflow fraction <= 0.20, and high when delivery_rate < 0.20 or holding-overflow fraction > 0.20",
-      "load_selection_rule: holding-overflow fraction is HOLDING_QUEUE_OVERFLOW fate count divided by total offered packets (the sum of all fate counts); aggregate each pair conservatively with the lower delivery_rate and higher overflow fraction, and invalidate the tier if either cell fails validity or the duplicate fate counts/primary metric disagree",
+      "load_selection_rule: holding-overflow fraction is HOLDING_QUEUE_OVERFLOW fate count divided by total offered packets (the sum of all fate counts); a zero denominator invalidates the cell; aggregate each pair conservatively with the lower delivery_rate and higher overflow fraction, and invalidate the tier if either cell fails validity or the duplicate fate counts/primary metric disagree",
       "load_selection_rule: choose the lowest valid medium tier as the provisional E0 candidate; if none qualifies, run a bracket follow-up rather than freezing a load",
       "load_selection_rule: confirm the provisional tier with at least two additional trace seeds before paper-facing load freeze"
     ],
@@ -50,7 +50,7 @@
     ]
   },
   "experiment_id": "EXP-20260822-E0-LOAD-FORMAL-R02",
-  "matrix_manifest_sha256": "a9852e9f40d071eddc511ead7eafccac471d71d011dd0948e760f22549665dda",
+  "matrix_manifest_sha256": "7c7531ec95903a9f5f851b5588cd18d7b09a635604bc79036bf95a8d2c77611e",
   "planned_cells": [
     {
       "acceptance": {
@@ -169,7 +169,7 @@
     "EXP-20260822-E0-LOAD-FORMAL-R02-high_control-s7",
     "EXP-20260822-E0-LOAD-FORMAL-R02-high_copy-s7"
   ],
-  "request_sha256": "44ce6a5f1ecdff07004c8209a41b4dee5a8fc1d3d0a69b7af767041f0d8c3aee",
+  "request_sha256": "cbe662c3738c854b287cbca730e6b04bcc52305c0c49399f44bddc19d6794f02",
   "runtime_kind": "leo_sim_v2",
   "schema": "leo-sim-matrix-analysis-request/v1",
   "status": "WAITING_FOR_VERIFIED_RUNS"
