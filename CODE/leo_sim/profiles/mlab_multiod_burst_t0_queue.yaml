@@ -1,0 +1,78 @@
+# Engineering diagnostic only; not a paper-ready result profile.
+# Explicitly changes only the access boundary policy from the historical
+# mlab_multiod_burst_t0 profile. Re-run E0 calibration before any formal use.
+config_version: leo-sim-config/v1
+scenario:
+  name: mlab-multiod-burst-t0-queue-engineering
+  duration_s: 20
+  time_step_s: 0.1
+  num_satellites: 140
+  num_planes: 7
+  altitude_km: 600
+  inclination_deg: 98.6
+  min_elevation_deg: 30
+  seed: 7
+endpoints:
+  grid_deg: 0.25
+  aggregation_deg: 1.0
+  sites: []
+  mlab_auto: true
+  mlab_max_sites: 64
+demand:
+  mode: mlab
+  offered_mbps: 50
+  packet_bits: 1000000
+  deadline_s: null
+  burst_start_s: 8
+  burst_duration_s: 8
+  burst_multiplier: 2
+access:
+  unavailable_policy: queue
+  slots_per_satellite: 4
+  uplink_rate_mbps: 100
+  downlink_rate_mbps: 100
+  uplink_queue_bits: 64000000
+  downlink_queue_bits: 64000000
+  drr_quantum_bits: 1000000
+  association: bbm
+  hysteresis_deg: 0
+  min_dwell_s: 0
+  acquisition_delay_s: 0.1
+  retiring_link_limit: 4
+  retirement_deadline_s: 5
+  dual_connect: false
+  slot_lease_s: 10
+  idle_release_s: 1
+  holding_queue_bits: 64000000
+links:
+  rate_model: mcs
+  mcs_table: legacy-dvbs2x
+  ge_enabled: false
+  isl_dirs: [N, S, E, W]
+topology:
+  recompute_interval_s: 1
+  matching: markovian
+control_plane:
+  enabled: true
+  advertise_interval_s: 1
+  ttl_s: 10
+  vis_k: 12
+  packet_bits: 8000
+routing:
+  policy: hop
+  max_hops: 64
+  learning_enabled: false
+  contract: C3
+learning:
+  algorithm: none
+execution:
+  max_events: 20000000
+  max_entities: 2000
+  max_packets: 20000
+  monitor: false
+  dry_run: false
+  available_capacity_interval_s: 1
+outputs:
+  out_dir: leo_sim_out/mlab-multiod-burst-t0-queue
+  trace_path: null
+  plotting: false

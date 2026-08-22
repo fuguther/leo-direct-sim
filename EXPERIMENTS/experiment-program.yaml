@@ -1,5 +1,5 @@
 schema: leo-experiment-program/v1
-updated_at: "2026-08-21"
+updated_at: "2026-08-22"
 authority:
   human_plan: ANALYSIS/EXPERIMENT-PROGRAM.md
   readiness: ANALYSIS/CURRENT-EXPERIMENT-READINESS.md
@@ -43,6 +43,7 @@ requirements:
   replay_resume_verified: {status: blocked, reason: full_long_window_interrupted_vs_uninterrupted_equivalence_pending}
   interaction_triggered: {status: planned, conditional: true}
   congestion_mechanism_identified: {status: blocked}
+  access_boundary_e0_gate: {status: rerun_required, reason: queue_semantics_require_coverage_horizon_audit_vm_smoke_and_new_e0_training}
 
 gates:
   platform_frozen:
@@ -166,17 +167,26 @@ experiments:
     purpose: Freeze informative low, medium and high loads on the final platform using primary real traffic and a synthetic control.
     required_evidence: [natural_end, conservation, provenance, load_table, frozen_thresholds]
 
+  - id: ACCESS-BOUNDARY
+    class: engineering_gate
+    title: access_boundary_coverage_and_ingress_recalibration
+    status: rerun_required
+    prerequisites: [real_traffic_provenance_verified]
+    purpose: Distinguish access coverage loss from post-ingress congestion before E0 load freeze.
+    required_evidence: [explicit_unavailable_policy, coverage_scan_json, horizon_audit, vm_smoke, raw_ingress_metrics]
+    decision: coverage_scan_does_not_automatically_select_added_satellites
+
   - id: E0-LOAD-CALIBRATION
     class: engineering_calibration
     title: mlab_multi_od_burst_load_calibration
     status: completed_verified
-    prerequisites: [D1_merged_to_main, D2_merged_to_main, TRAFFIC-T0, TOPOLOGY-CADENCE-CALIBRATION, exact_main_deployed_to_vm]
+    prerequisites: [D1_merged_to_main, D2_merged_to_main, TRAFFIC-T0, TOPOLOGY-CADENCE-CALIBRATION, exact_main_deployed_to_vm, ACCESS-BOUNDARY]
     arms: [offered_50_mbps, offered_100_mbps, offered_200_mbps]
     traffic_mode: mlab_measurement_proxy_multi_od_with_20s_burst
     purpose: Select low, medium and high load candidates before formal E0 on the new bounded multi-OD profile; this engineering calibration is not a paper effect result.
     decision: null
     reason: rerun completed on main_8e2f1df with mlab_auto and cadence_1s; candidates identified but formal load freeze remains after resource/pilot gates
-    evidence: {main_sha: 8e2f1dfe8ee39dacfb56d52d572d37046bb6b8a4, deployment_receipt_sha: 4bd3ba95438379a88cb58f4e4c9fe6559fa924f04e0b901e4c122a4527c286d5, loads_mbps: [50, 100, 200], offered_packets: {50: 1299, 100: 2756, 200: 2382}, holding_overflow: {50: 0, 100: 0, 200: 167}, natural_end: true, conservation_ok: true, receipt_verified: true, metrics_recomputed: true}
+    evidence: {main_sha: 8e2f1dfe8ee39dacfb56d52d572d37046bb6b8a4, deployment_receipt_sha: 4bd3ba95438379a88cb58f4e4c9fe6559fa924f04e0b901e4c122a4527c286d5, loads_mbps: [50, 100, 200], offered_packets: {50: 1299, 100: 2756, 200: 5551}, delivered_packets: {200: 2382}, holding_overflow: {50: 0, 100: 0, 200: 167}, natural_end: true, conservation_ok: true, receipt_verified: true, metrics_recomputed: true, paper_ready: false}
     required_evidence: [same_trace_identity_per_arm, natural_end, conservation, receipt_verified, fate_counts, vm_wall_time, raw_metrics_recompute]
 
   - id: DIAG-CONGESTION

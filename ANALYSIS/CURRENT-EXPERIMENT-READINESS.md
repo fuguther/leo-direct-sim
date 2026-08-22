@@ -7,6 +7,8 @@
 > 状态最后核验：2026-08-21；当前代码基线 main 为 `fd3ef5d496d42a77553de29d2288cbd476968d71`，已部署到 canonical VM。Q0 tiny 候选尚未合入/部署。代码可做同 SHA 非学习工程 smoke、capacity 负对照和学习训练—评估工程 pilot；M-Lab measurement-proxy 的有界多 OD + burst T0、topology cadence 校准、逐向 physical available-capacity 分母、三档 E0 工程负载标定、60 秒 D2 长窗、Q-learning/DDQN/GAT/MPNN checkpoint 闭环已有 VM receipt/重算证据。replay/optimizer/target/RNG continuation bundle 已实现并通过 VM 恢复后继续一步等价测试；V2 artifact→claim 闭环、正式三段时延 gate、完整长窗中断/不间断等价和正式授权 cohort 仍未完成，不能把当前状态称为论文实验就绪。
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
+> **Access boundary（E0 前门禁）**：当前默认 `access.unavailable_policy=reject` 保持历史兼容；新增显式 `queue` 仅是工程诊断语义，使用有限源端/上行队列，停止时未入网包记为 `IN_SYSTEM_AT_STOP`。新运行可由 raw events 重算 `access_admission_rate` 与 `network_delivery_rate_by_horizon`。旧 20 s 50/100/200 诊断保留原证据但不是 paper-ready；切换 queue 后必须重新做 coverage/horizon audit、VM 小样、E0 标定和训练，不能沿用旧曲线。
+
 ## 1. 两个目标
 
 | 目标 | 完成定义 | 当前位置 | 剩余工作的性质 | 时间估计 |
@@ -32,6 +34,7 @@
 | Q0 | snapshot 与 kernel `JointPlan` 原子校验/注入接口已有；Q0-I/Q0-F tiny 已合入 main；信息阶梯 tiny 合同已合入；可选 `--decision-log` 会流式输出带 config/trace/code/receipt SHA sidecar 的 `leo-sim-decision-info/v1` truth/cache-age 审计。真实 trace planned-vs-executed 归因、实际 learner 向量逐字段映射和信息价值实验仍未完成。Q0 不阻塞工程 smoke，但阻塞信息 vs 决策归因 | FACT |
 | 正式分析链 | 矩阵编译/授权 Stage 1 已完成；artifact→指标→配对分析→claim 的真实授权产物和闭环仍缺 | FACT，partial；仍 blocking |
 | 测量层 | 新多 OD trace 的 0.5/1/2/5 s VM cadence 四档均自然结束、receipt verified、raw metrics 重算通过；1/2/5 s packet/link metrics 逐项相同，1 s 暂定主候选。三档 E0 工程标定已完成；正式逐包三段时延 artifact、独立重算和三段和 gate 仍未完成 | FACT；阻塞拥塞论文诊断 |
+| 接入边界 | 默认 reject 与显式 queue 已实现并有有限队列/覆盖恢复/停止语义回归；`satellite_ingress` 与阶段指标 v2 可从 raw events 重算；coverage audit 已有确定性静态几何测试 | FACT；仍需 coverage/horizon audit + VM 小样才能关闭 E0 前门禁 |
 | 续训 | continuation bundle 已绑定 replay、optimizer、target network、训练计数器、NumPy/TF RNG、schema/config/SHA；VM 已验证恢复后继续一步的动作/计数/权重一致；完整长窗中断/不间断等价仍未跑 | FACT；完整长训前仍需等价门 |
 | 三轮三方无新问题 | 只完成局部 PR/局部模块审阅，没有在最终冻结平台上完成连续三轮 | FACT，未满足 |
 
@@ -71,5 +74,5 @@
 2. available-capacity 分母代码已合入并有新多 OD VM T0 ledger；三档 E0 工程标定已完成。下一步补齐逐窗口独立重算、每包 queue/tx/prop 三段时延及三段和校验，并在资源剖析后冻结低/中/压力档。
 3. 在已部署 `8e2f1df` 上完成 D1 VM MCS 对照；D2 60 s 长窗已通过，仍需正式 cohort 的跨负载语义对照。
 4. 闭合 V2 artifact→指标→配对分析→claim；学习训练/评估 VM smoke 已完成，下一步补正式授权 cohort。
-5. 在已完成标定的新 56-cell M-Lab profile 上先做 CPU/内存剖析和非学习诊断，再跑 formal VM E0-REAL；之后进入全算法 pilot。Q0-I/Q0-F、逐动作物理特征、逐字段 AoI 按信息归因阶段完成。
+5. 先完成 access boundary 的 coverage/horizon audit 和 VM 小样，再在新 profile 上做 CPU/内存剖析和非学习诊断，随后重新标定 E0-REAL；之后才进入全算法 pilot。Q0-I/Q0-F、逐动作物理特征、逐字段 AoI 按信息归因阶段完成。
 7. 长训前完成中断/不间断长窗等价和收敛门；continuation bundle 的实现与 VM 单步恢复已通过，但尚未替代该门。

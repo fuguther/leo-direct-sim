@@ -5,6 +5,14 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-22：access boundary 候选实现（pending）
+
+- 分支：`codex/20260822-access-boundary`，基线 `main@339a1f4`；PR：pending。
+- 候选提交：`d34ae0a`（配置/有限 queue/kernel）、`3df4c73`（satellite ingress/raw metrics v2/analysis），当前 coverage/文档仍在工作树。
+- RED→GREEN：未知策略/默认 reject/queue 恢复与停止/有限 overflow `18 passed`；metrics+V2 analysis `18 passed`；coverage 静态几何 `2 passed`。全量与 A/B 尚未执行。
+- 风险：queue 改变访问语义，旧 20 s 50/100/200 结果仅保留历史证据，不能 paper-ready；需 coverage/horizon audit、VM 小样、重新 E0/训练和独立冷启动复核。coverage audit 只报告几何证据，不决定加星或容量充分性。
+- 下一步：完成 YAML/文档校验，运行 targeted/full pytest、同轨迹 reject/queue A/B，检查 `git diff main...HEAD`、status 和 handoff；不 push。
+
 ## 2026-08-20：D1/D2 合入与 VM 工程 smoke
 
 - PR #55（D1 动态链路速率）与 PR #56（D2 动态拓扑/holding）均已合入 main；当前 main

@@ -157,6 +157,10 @@ Q0 tiny 通过后，可从真实诊断 trace 中截取代表性小窗口，估�
 - 主指标优先为按时交付/完成率与 backlog，链路利用率、吞吐、公平性、三段时延用于解释；
 - 正式样本量由 pilot 的配对差方差和最小有意义效果确定。
 
+E0 的 access boundary 是重标定前门禁：先用有限、显式的 access policy 完成
+coverage/horizon audit 和 VM 小样，再冻结 offered load。历史 20 s 50/100/200
+诊断只作为工程证据，不是 paper-ready；queue 语义下必须重新 E0 和训练。
+
 #### SENSITIVITY（补充）
 
 - uniform、gravity、不同 burst 强度、多 OD 结构和负载区间；
