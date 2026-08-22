@@ -35,3 +35,15 @@ def test_coverage_scan_rejects_bad_bounds_and_marks_never_visible():
     assert item["never_visible"] is True
     assert item["first_visible_wait_s"] is None
     assert item["max_no_coverage_gap_s"] is None
+
+
+def test_coverage_scan_rejects_unbounded_work_before_allocating_samples():
+    geo = StaticGeometry(140, visible=lambda *_: False)
+    with pytest.raises(coverage.CoverageAuditError, match="sample_count.*limit"):
+        coverage.scan_coverage(geo, [{"name": "a", "lat": 0.0, "lon": 0.0}],
+                               horizon_s=2_000_000.0, step_s=0.001)
+    with pytest.raises(coverage.CoverageAuditError, match="coverage checks.*limit"):
+        coverage.scan_coverage(
+            geo,
+            [{"name": str(i), "lat": 0.0, "lon": 0.0} for i in range(400)],
+            horizon_s=400.0, step_s=0.1)

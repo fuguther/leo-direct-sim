@@ -82,12 +82,48 @@ def test_summarize_v2_uses_zero_for_no_admitted_denominators():
     got = metrics.summarize([
         {"kind": "packet_emitted", "pid": 1, "at": 0.0, "bits": 8},
     ], [], access_boundary=True)
-    assert got["schema"] == "leo-sim-congestion-metrics/v2"
-    got = metrics.summarize([
-        {"kind": "packet_emitted", "pid": 1, "at": 0.0, "bits": 8},
-    ], [], access_boundary=True)
     assert got["access_admission_rate"] == 0.0
     assert got["network_delivery_rate_by_horizon"] == 0.0
+
+
+def test_receipt_reverifies_stored_v1_metrics_without_ingress_event(tmp_path):
+    import hashlib
+    import json
+
+    from CODE.leo_sim import receipt, trace
+
+    cfg = make_cfg({
+        "scenario": {"duration_s": 0.2},
+        "demand": {"mode": "csv", "csv_path": str(tmp_path / "input.csv")},
+    })
+    (tmp_path / "input.csv").write_text(
+        "packet_id,emit_time_s,src_lat,src_lon,dst_lat,dst_lon,bits,deadline_at_s\n"
+        "1,0.0,0.0,0.0,0.0,10.0,8000000,\n", encoding="utf-8")
+    trace_dir = tmp_path / "trace"
+    manifest = trace.compile_trace(cfg, str(trace_dir))
+    trace_bytes = (trace_dir / "trace.csv").read_bytes()
+    manifest["__trace_sha256"] = hashlib.sha256(trace_bytes).hexdigest()
+    manifest["__sha256"] = hashlib.sha256(
+        (trace_dir / "manifest.json").read_bytes()).hexdigest()
+    rows = trace.load_trace(
+        str(trace_dir / "trace.csv"), horizon_s=0.2,
+        max_packets=cfg["config"]["execution"]["max_packets"])
+    result = kernel.run_simulation(
+        cfg, rows, geometry=StaticGeometry(1, visible=lambda *_: False))
+    assert result["congestion_metrics"]["schema"] == "leo-sim-congestion-metrics/v2"
+    result["congestion_metrics"] = metrics.summarize(
+        result["packet_events"], result["link_service_windows"],
+        available_capacity_windows=result["link_available_windows"],
+        non_arrival_pids=set())
+    assert result["congestion_metrics"]["schema"] == "leo-sim-congestion-metrics/v1"
+    out = tmp_path / "run"
+    receipt.write_run(str(out), cfg, trace_bytes, manifest, result, rows)
+    assert receipt.verify_receipt_dir(str(out)) == []
+    stored = json.loads((out / "ledgers.json").read_text(encoding="utf-8"))
+    assert stored["congestion_metrics"] == metrics.summarize(
+        stored["packet_events"], stored["link_service_windows"],
+        available_capacity_windows=stored["link_available_windows"],
+        non_arrival_pids=set())
 
 
 def test_summarize_uses_idle_physical_capacity_as_utilization_denominator():

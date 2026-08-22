@@ -15,12 +15,18 @@ scenario:
 endpoints:
   grid_deg: 0.25
   aggregation_deg: 1.0
+  # Explicitly derive a bounded endpoint set from the complete checked-in
+  # M-Lab snapshot. The compiler records the selected cells and rule in the
+  # immutable trace manifest; it does not pretend to model every raw row as a
+  # satellite gateway.
   sites: []
   mlab_auto: true
   mlab_max_sites: 64
 demand:
   mode: mlab
   offered_mbps: 50
+  # One-megabit packets keep the 20 s T0 large enough to exercise multiple
+  # OD sources without turning the first VM run into an hours-long batch.
   packet_bits: 1000000
   deadline_s: null
   burst_start_s: 8
@@ -33,22 +39,13 @@ access:
   downlink_rate_mbps: 100
   uplink_queue_bits: 64000000
   downlink_queue_bits: 64000000
-  drr_quantum_bits: 1000000
   association: bbm
   hysteresis_deg: 0
   min_dwell_s: 0
   acquisition_delay_s: 0.1
-  retiring_link_limit: 4
-  retirement_deadline_s: 5
-  dual_connect: false
-  slot_lease_s: 10
-  idle_release_s: 1
-  holding_queue_bits: 64000000
 links:
   rate_model: mcs
-  mcs_table: legacy-dvbs2x
   ge_enabled: false
-  isl_dirs: [N, S, E, W]
 topology:
   recompute_interval_s: 1
   matching: markovian
@@ -62,17 +59,13 @@ routing:
   policy: hop
   max_hops: 64
   learning_enabled: false
-  contract: C3
 learning:
   algorithm: none
 execution:
   max_events: 20000000
   max_entities: 2000
   max_packets: 20000
-  monitor: false
-  dry_run: false
   available_capacity_interval_s: 1
 outputs:
   out_dir: leo_sim_out/mlab-multiod-burst-t0-queue
-  trace_path: null
   plotting: false

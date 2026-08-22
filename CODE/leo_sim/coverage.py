@@ -18,6 +18,14 @@ class CoverageAuditError(ValueError):
     """Coverage audit input or geometry contract is invalid."""
 
 
+# The 56-endpoint x 140-satellite x 3,601-sample audit is about 28.2M
+# visibility checks. Keep a generous but finite headroom without allowing an
+# accidental tiny step to allocate unbounded time samples.
+MAX_COVERAGE_CHECKS = 50_000_000
+MAX_COVERAGE_SAMPLES = 1_000_001
+MAX_COVERAGE_ENDPOINTS = 10_000
+
+
 def _finite(value: Any, name: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise CoverageAuditError(f"{name} must be finite numeric")
@@ -71,15 +79,27 @@ def scan_coverage(geometry, endpoints, *, horizon_s: float, step_s: float,
     n_sat = geometry.num_satellites
     if isinstance(n_sat, bool) or not isinstance(n_sat, int) or n_sat < 1:
         raise CoverageAuditError("geometry.num_satellites must be a positive integer")
-    eps = min(1e-9, step * 1e-8)
-    times = []
-    t = 0.0
-    while t < horizon - eps:
-        times.append(float(t))
-        t += step
+    endpoint_specs = _endpoints(endpoints)
+    if len(endpoint_specs) > MAX_COVERAGE_ENDPOINTS:
+        raise CoverageAuditError(
+            f"endpoint_count {len(endpoint_specs)} exceeds limit "
+            f"{MAX_COVERAGE_ENDPOINTS}")
+    interval_count = max(1, math.ceil(horizon / step - 1e-12))
+    sample_count = interval_count + 1
+    if sample_count > MAX_COVERAGE_SAMPLES:
+        raise CoverageAuditError(
+            f"sample_count {sample_count} exceeds limit "
+            f"{MAX_COVERAGE_SAMPLES}")
+    checks = len(endpoint_specs) * sample_count * n_sat
+    if checks > MAX_COVERAGE_CHECKS:
+        raise CoverageAuditError(
+            f"coverage checks {checks} exceeds limit {MAX_COVERAGE_CHECKS} "
+            f"(endpoints={len(endpoint_specs)}, samples={sample_count}, "
+            f"satellites={n_sat})")
+    times = [min(float(i * step), horizon) for i in range(interval_count)]
     times.append(float(horizon))
     results = []
-    for endpoint in _endpoints(endpoints):
+    for endpoint in endpoint_specs:
         counts = []
         for at in times:
             count = sum(bool(geometry.ground_visible(

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from CODE.leo_sim import config, kernel
@@ -45,3 +47,21 @@ def test_queue_policy_keeps_existing_finite_uplink_overflow():
         geometry=StaticGeometry(1, visible=lambda *_: False))
     assert result["fates"][1] == "IN_SYSTEM_AT_STOP"
     assert result["fates"][2] == "ACCESS_QUEUE_OVERFLOW"
+
+
+def test_queue_profile_only_changes_declared_access_boundary_fields():
+    root = Path(__file__).resolve().parents[3]
+    base = config.load_config_file(
+        str(root / "CODE/leo_sim/profiles/mlab_multiod_burst_t0.yaml"))
+    queue = config.load_config_file(
+        str(root / "CODE/leo_sim/profiles/mlab_multiod_burst_t0_queue.yaml"))
+    allowed = {
+        ("scenario", "name"),
+        ("access", "unavailable_policy"),
+        ("outputs", "out_dir"),
+    }
+    for group in base["config"]:
+        assert set(queue["config"][group]) == set(base["config"][group])
+        for key in base["config"][group]:
+            if (group, key) not in allowed:
+                assert queue["config"][group][key] == base["config"][group][key]
