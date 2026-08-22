@@ -607,3 +607,10 @@
 - delivery-rate paired differences `info_physical - info_queue`=`[0.0, 0.0]`。路线审计：seed 7 路径差异 `125/352=0.3551`，seed 11 `146/401=0.3641`；但两臂包命运完全相同：seed 7 delivered/access_rejected/holding_overflow/in_system=`2382/2597/167/405`，seed 11=`2465/2557/180/389`。
 - 边界：F1 确实改变了约三分之一包的 ISL 路线，但在当前压力合同下未改变交付终态；这不是物理字段无效、因果拥塞控制或论文 superiority 结论。下一步是逐向利用率/队列差异与负对照，再做 learner/Q0 归因。
 - raw ledger 瓶颈聚合：holding queue area=`5.125385/5.068272` Gbit·s（seed 7/11），ISL data queue area=`0.002320--0.002373` Gbit·s；seed 7 ISL max utilization F0/F1=`0.004831/0.004831`，seed 11=`0.005056/0.005636`，downlink/uplink max utilization 未变（约 `0.0292--0.0297` / `0.0183--0.0184`）。这说明当前压力主要在 holding/access，不足以单独检验 ISL 拥塞控制；下一实验需拆分接入压力与 ISL 压力合同。
+
+## 2026-08-22：E0 load R02 schema-valid authorization chain prepared
+
+- PR #143 合入当前 M-Lab multi-OD + burst 六 cell 矩阵，main merge SHA=`06e195a76639ee33a166b1ea2b8c523ac2b903f2`；PR #144 修复 R02 work brief 的 JSON 尾逗号，main merge SHA=`07e914f4a29375103af548b46fd8bb0a1949cb7b`；PR #145 新增严格 schema 兼容的 R03 authorization brief，main merge SHA=`1ec9a71449c83dbd58c07dc1c7ed4b2bccd73d4c`。
+- R03 brief 将 R01/R02 不混算、validity gate、`HOLDING_QUEUE_OVERFLOW / sum(fate_counts)` 分母、pair min-delivery/max-overflow 聚合、互斥穷尽的 load labels 和两 additional-seed confirmation 规则写入 schema 允许字段；R02 request/manifest/config 未改变。
+- 三角色 review 已重新绑定 R03 brief 与 R02 matrix 工件；本地 `evaluate_decision` 与 `_load_verified_finalization` 均通过。R02 编译矩阵 authorization 使用 R02 request 固定的 finalization 路径，由 R02 finalization shim 指向 schema-valid R03 brief/decision；不得把 R01 结果混入。
+- 当前工作树仍在授权分支，待 commit→PR→CI→合入后，部署 main exact SHA，再严格串行执行六 cell；authorization 尚未作为 VM 运行证据，不能宣称 E0 已完成或已冻结论文负载。
