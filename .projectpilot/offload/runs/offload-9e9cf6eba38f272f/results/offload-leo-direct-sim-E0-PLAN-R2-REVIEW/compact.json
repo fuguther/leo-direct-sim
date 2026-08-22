@@ -1,0 +1,59 @@
+{
+  "taskId": "offload:leo-direct-sim:E0-PLAN-R2-REVIEW",
+  "status": "EVIDENCE_READY",
+  "summary": "E0 R2 设计方向正确，但当前证据不足以进入 READY。load scan 只能作为 measurement-proxy baseline，不能证明 ISL pressure；需要补充 scenario/cell SHA 分离、cache integrity、canonical remote receipt 以及独立 pressure scenario 证据。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "缺少 scenario-invariant SHA 与 cell-plan SHA 分离证据。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/CODE/leo_sim/config.py#L1-L6"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "blocking",
+      "summary": "load scan 只能作为 measurement-proxy baseline，不能支撑 physical pressure claim。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py#L1-L12",
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py#L45-L60"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "vis_k=17 缺少 cache coverage、age、TTL、field integrity 证据。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/CODE/leo_sim/config.py#L130-L150"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "将 load scan 明确降级为 measurement-proxy baseline。",
+    "增加独立 ISL capacity scaling 和 long-distance corridor stress contract。",
+    "补充 scenario SHA/cell-plan SHA 双身份 artifact。",
+    "补充 observation cache integrity 与 remote receipt 证据。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/CODE/leo_sim/config.py#L1-L6",
+    "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/scan_load_levels.py#L1-L12"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "scenario-invariant SHA 与 cell-plan SHA 实现证据缺失",
+    "canonical deploy/authorize/run-remote/status/receipt 链证据缺失",
+    "fixed observation audit 与 drain audit 分离证据缺失",
+    "governance separate exact-SHA cold-reviewed PR 证据缺失"
+  ]
+}
