@@ -10,6 +10,12 @@
 > **Access boundary（E0 前门禁）**：当前默认 `access.unavailable_policy=reject` 保持历史兼容；新增显式 `queue` 仅是工程诊断语义，使用有限源端/上行队列，停止时未入网包记为 `IN_SYSTEM_AT_STOP`。新运行可由 raw events 重算 `access_admission_rate` 与 `network_delivery_rate_by_horizon`。旧 20 s 50/100/200 诊断保留原证据但不是 paper-ready；切换 queue 后必须重新做 coverage/horizon audit、VM 小样、E0 标定和训练，不能沿用旧曲线。
 > 因此 access boundary 是 E0 重标定的前门禁：queue 阶段指标和 exact-main VM 小样已完成；coverage/horizon 与可用速率联合校准仍未完成，所以 E0 仍为 `rerun_required`，不能按上方历史快照关闭。
 
+> **2026-08-22 provisional coverage candidate（非冻结、非 paper-ready）**：旧 140/7/30° VM smoke 已完成但覆盖不足；
+> 当前登记 280/14/25°（每面 20 星）作为最小有希望的 VM 候选。固定 trace 的 20 s/1 s 与 6000 s/20 s 扫描均 55/55
+> 端点达标，长窗最小可见比例约 0.6346、最大无覆盖间隔 1760 s。可见样本最大斜距约 1213.21 km，当前 RF/MCS
+> 最小正 uplink/downlink 速率约 2.532845e9/1.317618e9 bps；这不是容量证明。候选必须先完成同 trace VM 资源/阶段指标
+> trial，再冻结并重跑 E0；当前 `VM trial pending`、`paper_ready=false`。
+
 ## 1. 两个目标
 
 | 目标 | 完成定义 | 当前位置 | 剩余工作的性质 | 时间估计 |

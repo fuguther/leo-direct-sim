@@ -225,6 +225,14 @@
 
 ## 下一步
 
+### 2026-08-22：280/14/25° coverage provisional candidate（本分支）
+
+- 分支 `codex/20260822-coverage-candidate`，基线 `main@392d972`；新增候选 profile 与 resolved-diff 回归。
+- 固定 trace `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`：20 s/1 s、6000 s/20 s 均 55/55 达标；长窗 min visible fraction `0.6345514950`、median `0.9734219269`、max gap `1760 s`。
+- 可见样本最大 slant `1213.2078115 km`；min positive MCS uplink/downlink `2532845000/1317618000 bps`，均未出现 0 速率；positive range `12067.9044812/4482.1358470 km`。
+- 本地真实 run 已自然结束、守恒通过：1299 offered、978 delivered、16 holding overflow、1 no-route、304 in-system；wall/user/sys `133.93/132.47/1.06 s`。macOS max RSS 因 `/usr/bin/time -l` 权限限制未核验。
+- 结论边界：仅 provisional VM candidate；不是 capacity proof、不是 paper-ready；VM trial pending，须同 trace 资源/阶段指标后冻结并重跑 E0。旧 140/7/30° VM smoke 已完成但覆盖不足。
+
 1. 关闭 R7-F1 的 V2 矩阵、artifact 指标重算、paired analysis 与 claim gate；
    generic #64 只作为可复用基础，不代表 V2 完成。
 2. 获得所需语义/冲突授权后合入 D1/D2，关闭 R1-A1，并更新 CURRENT 中的精确 main/VM 状态。
