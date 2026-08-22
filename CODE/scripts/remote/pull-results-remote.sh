@@ -14,6 +14,9 @@ Usage:
 Purpose:
   One-shot tar-over-ssh pull fallback for summary, trace, deep-analysis, and control
   files when Mutagen is unavailable or when Results/ is excluded from continuous sync.
+  V2 formal runs also pull their nonce-bound external launch witness from
+  .remote_runtime/launches into Results/_external_launch_witness; it is never
+  synthesized from files inside the result directory.
 
 Defaults:
   Pulls the latest remote run's summary/diagnostic files plus Results/_last_run_dir.txt and
@@ -173,6 +176,8 @@ expected_code = Path("/data/论文/leo-direct-sim/CODE")
 if project_lexical != expected_code or project_lexical.is_symlink() or project_lexical.resolve(strict=True) != project_lexical:
     die(f"canonical CODE path is missing, linked, or resolves elsewhere: {project_lexical}")
 project_dir = project_lexical
+workspace_dir = project_dir.parent
+launch_root = workspace_dir / ".remote_runtime" / "launches"
 selected_run_raw = sys.argv[2].strip()
 with_trace = sys.argv[3] == "1"
 with_deep = sys.argv[4] == "1"
@@ -206,6 +211,43 @@ def add_file(path: Path) -> None:
     resolved = within(path, results_dir, "pull file")
     rel = resolved.relative_to(project_dir)
     files[str(rel)] = resolved
+
+
+def add_external_witness(run_dir: Path) -> None:
+    """Pull the nonce-bound launch status from .remote_runtime, never Results."""
+    formal_path = run_dir / "formal_run.json"
+    if formal_path.is_symlink() or not formal_path.is_file():
+        return  # legacy Gateway result: no V2 external witness is expected
+    if (launch_root.is_symlink() or not launch_root.is_dir()
+            or launch_root.resolve(strict=True) != launch_root):
+        die(f"canonical launch witness directory is missing or unsafe: {launch_root}")
+    try:
+        formal = json.loads(formal_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        die(f"formal_run.json is unreadable for {run_dir.name}: {exc}")
+    if not isinstance(formal, dict):
+        die(f"formal_run.json must be an object for {run_dir.name}")
+    nonce = formal.get("launch_nonce")
+    if (not isinstance(nonce, str) or len(nonce) != 32
+            or any(char not in "0123456789abcdef" for char in nonce)):
+        die(f"formal V2 run has invalid launch nonce: {run_dir.name}")
+    if formal.get("run_id") != run_dir.name:
+        die(f"formal V2 run id does not match result directory: {run_dir.name}")
+    witness_path = launch_root / f"{nonce}.json"
+    if witness_path.is_symlink() or not witness_path.is_file():
+        die(f"canonical external launch witness is missing: {witness_path}")
+    witness = within(witness_path, launch_root, "external launch witness")
+    try:
+        payload = json.loads(witness.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        die(f"external launch witness is unreadable: {witness}: {exc}")
+    if (not isinstance(payload, dict) or payload.get("launch_nonce") != nonce
+            or payload.get("run_id") != run_dir.name):
+        die(f"external launch witness identity mismatch: {witness}")
+    if "/" in run_dir.name or run_dir.name in {".", ".."}:
+        die(f"unsafe result directory name for external witness: {run_dir.name}")
+    arcname = Path("Results") / "_external_launch_witness" / f"{run_dir.name}.json"
+    files[arcname.as_posix()] = witness
 
 
 def add_tree(path: Path, suffixes=None) -> None:
@@ -247,6 +289,7 @@ def add_run_dir(run_dir: Path) -> None:
     ]
     for candidate in default_files:
         add_file(candidate)
+    add_external_witness(run_dir)
 
     if with_trace:
         trace_dir = run_dir / "run_trace"

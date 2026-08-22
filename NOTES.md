@@ -672,3 +672,9 @@
 - 同配置、不同 CPU 绑定的并行诊断：2/4/8/12 个进程均约各占一个核，单进程中后段 RSS 约 `0.43--0.63 GB`；12 并行时 cgroup 总内存约 7 GB 级别、CPU `nr_throttled` 无新增。输出在 VM `/tmp/leo-resource-profile-*`，不属于 formal results。
 - 当前工程建议：非学习先采用 `cpu_per_job=1`、`max_parallel_jobs=12` 的候选调度；学习任务必须另测 TensorFlow 线程池/模型 RSS 后再定，暂不能套用 12 并发。正式资源合同还需对 8/12 并发各做至少三次精确 wall/CPU/RSS/throttle 重复。
 - 详细口径、采样值、内存 guard 和边界见 `ANALYSIS/RESOURCE-PROFILE-20260822.md`。本轮不得把宿主机资源、一次性诊断 wall time 或非学习并发结论写成论文性能结论。
+
+## 2026-08-22：V2 外部 launch witness 成为论文分析硬门
+
+- 当前分支继续修复 cold review P1：`pull-results-remote.sh --run/--plan/--all-latest` 对包含 `formal_run.json` 的 V2 结果，按其中的 nonce 从 canonical VM `.remote_runtime/launches/<nonce>.json` 单独取外部状态，保存为 `CODE/Results/_external_launch_witness/<run_id>.json`；不从结果目录生成或替代，且对 nonce、run_id、符号链接和路径穿越 fail-loud。
+- `v2_analysis` 对 receipt/v5 + governance/v2 强制读取该外部 witness，验证成功状态、exit code、nonce/run/auth、远端 `last_results_dir`、governance receipt SHA 和五项 governance witness 绑定。v3/v4 只走显式 `legacy_v3_v4_internal_only` 分支，混合 cohort 拒绝，不能冒充 v5 正式证据。
+- 本轮 targeted tests 覆盖 external witness 缺失、nonce/run/auth/receipt-SHA 错配、五个 witness 字段各自错配和正常路径；仍需在本分支完成全量测试、cold review、CI/PR 后再部署。

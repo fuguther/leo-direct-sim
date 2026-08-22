@@ -19,6 +19,24 @@ def _write(path: Path, value: object) -> None:
                     encoding="utf-8")
 
 
+def _write_external_witness(root: Path, run_id: str, governed: dict,
+                            *, authorization_sha256: str) -> None:
+    witness = {
+        "schema": "leo-remote-launch-status/v2",
+        "status": "success", "exit_code": 0,
+        "launch_nonce": "b" * 32, "run_id": run_id,
+        "authorization_sha256": authorization_sha256,
+        "last_results_dir": f"/data/论文/leo-direct-sim/CODE/Results/{run_id}",
+        "governance_receipt_sha256": v2_analysis.file_sha256(
+            root / "CODE" / "Results" / run_id / "governance_receipt.json"),
+        "governance_witness": {
+            key: governed[key] for key in v2_analysis.GOVERNANCE_WITNESS_FIELDS
+        },
+    }
+    _write(root / "CODE" / "Results" / "_external_launch_witness" / f"{run_id}.json",
+           witness)
+
+
 def _run_fixture(root: Path, run_id: str, arm_id: str, pair: str) -> dict:
     cfg = make_cfg({"scenario": {"duration_s": 1.0, "num_satellites": 1,
                                   "num_planes": 1},
@@ -54,7 +72,8 @@ def _run_fixture(root: Path, run_id: str, arm_id: str, pair: str) -> dict:
     })
     _write(out / "governance_receipt.json", {
         "schema": "leo-sim-governance-receipt/v2", "research_eligible": True,
-        "run_id": run_id, "verification_errors": [],
+        "run_id": run_id, "launch_nonce": "b" * 32,
+        "verification_errors": [],
         "receipt_schema": receipt_payload["schema"],
         "resolved_config_sha256": v2_analysis.file_sha256(
             out / "resolved_config.json"),
@@ -64,6 +83,9 @@ def _run_fixture(root: Path, run_id: str, arm_id: str, pair: str) -> dict:
         "run_receipt_sha256": hashlib.sha256(
             (out / "receipt.json").read_bytes()).hexdigest(),
     })
+    governed = json.loads((out / "governance_receipt.json").read_text(encoding="utf-8"))
+    _write_external_witness(root, run_id, governed,
+                            authorization_sha256=auth_sha)
     return {"run_id": run_id, "arm_id": arm_id, "pairing_key": pair,
             "config_sha256": receipt_payload["config_sha256"]}
 
@@ -169,6 +191,8 @@ def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
         governed = json.loads(governed_path.read_text(encoding="utf-8"))
         governed["authorization_sha256"] = auth_sha
         _write(governed_path, governed)
+        _write_external_witness(root, row["run_id"], governed,
+                                authorization_sha256=auth_sha)
     with mock.patch.object(v2_analysis.authorize_experiment,
                            "verify_authorization", return_value=auth):
         manifest = v2_analysis.analyze(root, experiment, auth_path)
@@ -180,6 +204,7 @@ def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
     assert manifest["status"] == "VERIFIED"
     assert manifest["claim_status"] == "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
     assert manifest["planned_contrasts"][0]["n_pairs"] == 1
+    assert json.loads((out / "claim-gate.json").read_text())["status"] == manifest["claim_status"]
 
 
 def test_v2_analysis_rejects_governance_witness_contract_mismatch(tmp_path):
@@ -221,4 +246,103 @@ def test_v2_analysis_rejects_governance_witness_contract_mismatch(tmp_path):
     with mock.patch.object(v2_analysis.authorize_experiment,
                            "verify_authorization", return_value=auth):
         with pytest.raises(v2_analysis.V2AnalysisError, match="witness"):
+            v2_analysis.analyze(root, experiment, auth_path)
+
+
+def _single_run_analysis_fixture(tmp_path):
+    root = tmp_path
+    row = _run_fixture(root, "EXP-V2-ANALYSIS-external-s1", "control", "pair-1")
+    experiment = root / "EXPERIMENTS" / "EXP-V2-ANALYSIS-EXTERNAL"
+    experiment.mkdir(parents=True)
+    row = {**row, "trace_seed": 1}
+    _write(experiment / "request.json", {
+        "experiment_id": experiment.name,
+        "claim_boundary": {"can_claim": [], "cannot_claim": []},
+    })
+    _write(experiment / "run-manifest.json", {
+        "schema": v2_analysis.MATRIX_SCHEMA,
+        "experiment_id": experiment.name, "cells": [row],
+    })
+    _write(experiment / "analysis-request.json", {
+        "schema": v2_analysis.ANALYSIS_SCHEMA,
+        "experiment_id": experiment.name,
+        "planned_run_ids": [row["run_id"]],
+        "analysis": {"analysis_id": "AN-EXTERNAL", "primary_metric": "delivery_rate",
+                     "planned_contrasts": []},
+    })
+    auth = {"status": "AUTHORIZED", "experiment_id": experiment.name,
+            "authorized_cells": [row]}
+    auth_path = experiment / "authorization.json"
+    _write(auth_path, auth)
+    auth_sha = v2_analysis.file_sha256(auth_path)
+    result_dir = root / "CODE" / "Results" / row["run_id"]
+    formal_path = result_dir / "formal_run.json"
+    formal = json.loads(formal_path.read_text(encoding="utf-8"))
+    formal["authorization_sha256"] = auth_sha
+    _write(formal_path, formal)
+    governed_path = result_dir / "governance_receipt.json"
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    governed["authorization_sha256"] = auth_sha
+    _write(governed_path, governed)
+    _write_external_witness(root, row["run_id"], governed,
+                            authorization_sha256=auth_sha)
+    return root, experiment, auth_path, row
+
+
+def test_v2_analysis_requires_external_launch_witness(tmp_path):
+    root, experiment, auth_path, row = _single_run_analysis_fixture(tmp_path)
+    witness = root / "CODE" / "Results" / "_external_launch_witness" / f"{row['run_id']}.json"
+    witness.unlink()
+    with mock.patch.object(v2_analysis.authorize_experiment,
+                           "verify_authorization", return_value=json.loads(auth_path.read_text())):
+        with pytest.raises(v2_analysis.V2AnalysisError, match="external launch witness"):
+            v2_analysis.analyze(root, experiment, auth_path)
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("status", "failed"), ("exit_code", 1),
+    ("last_results_dir", "/tmp/not-the-canonical-result"),
+])
+def test_v2_analysis_rejects_external_launch_witness_terminal_identity(
+        tmp_path, field, value):
+    root, experiment, auth_path, row = _single_run_analysis_fixture(tmp_path)
+    witness_path = root / "CODE" / "Results" / "_external_launch_witness" / f"{row['run_id']}.json"
+    witness = json.loads(witness_path.read_text(encoding="utf-8"))
+    witness[field] = value
+    _write(witness_path, witness)
+    auth = json.loads(auth_path.read_text(encoding="utf-8"))
+    with mock.patch.object(v2_analysis.authorize_experiment,
+                           "verify_authorization", return_value=auth):
+        with pytest.raises(v2_analysis.V2AnalysisError, match="external launch witness"):
+            v2_analysis.analyze(root, experiment, auth_path)
+
+
+@pytest.mark.parametrize("field", [
+    "launch_nonce", "run_id", "authorization_sha256",
+    "governance_receipt_sha256",
+])
+def test_v2_analysis_rejects_external_launch_witness_identity_mismatch(tmp_path, field):
+    root, experiment, auth_path, row = _single_run_analysis_fixture(tmp_path)
+    witness_path = root / "CODE" / "Results" / "_external_launch_witness" / f"{row['run_id']}.json"
+    witness = json.loads(witness_path.read_text(encoding="utf-8"))
+    witness[field] = "wrong" if field != "launch_nonce" else "c" * 32
+    _write(witness_path, witness)
+    auth = json.loads(auth_path.read_text(encoding="utf-8"))
+    with mock.patch.object(v2_analysis.authorize_experiment,
+                           "verify_authorization", return_value=auth):
+        with pytest.raises(v2_analysis.V2AnalysisError, match="external launch witness"):
+            v2_analysis.analyze(root, experiment, auth_path)
+
+
+@pytest.mark.parametrize("field", v2_analysis.GOVERNANCE_WITNESS_FIELDS)
+def test_v2_analysis_rejects_external_launch_witness_field_mismatch(tmp_path, field):
+    root, experiment, auth_path, row = _single_run_analysis_fixture(tmp_path)
+    witness_path = root / "CODE" / "Results" / "_external_launch_witness" / f"{row['run_id']}.json"
+    witness = json.loads(witness_path.read_text(encoding="utf-8"))
+    witness["governance_witness"][field] = "wrong"
+    _write(witness_path, witness)
+    auth = json.loads(auth_path.read_text(encoding="utf-8"))
+    with mock.patch.object(v2_analysis.authorize_experiment,
+                           "verify_authorization", return_value=auth):
+        with pytest.raises(v2_analysis.V2AnalysisError, match="external launch witness"):
             v2_analysis.analyze(root, experiment, auth_path)

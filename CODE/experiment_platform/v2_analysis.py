@@ -5,7 +5,10 @@ V2 has a different, stricter result contract (receipt/ledgers/formal witness),
 so this adapter verifies that contract directly and only then computes paired
 metrics.  A VERIFIED analysis is still not a paper claim: ``claim-gate.json``
 records the boundary and requires the normal independent claim-support/value
-reviews before any claim can be promoted.
+reviews before any claim can be promoted.  Receipt/v5 results additionally
+require the nonce-bound launch status pulled from the canonical VM
+``.remote_runtime/launches`` directory; historical receipt/v3/v4 results use
+an explicit legacy/internal-only branch and cannot masquerade as v5 evidence.
 """
 from __future__ import annotations
 
@@ -26,6 +29,12 @@ MATRIX_SCHEMA = "leo-sim-experiment-matrix-manifest/v1"
 ANALYSIS_SCHEMA = "leo-sim-matrix-analysis-request/v1"
 GOVERNANCE_SCHEMA_V1 = "leo-sim-governance-receipt/v1"
 GOVERNANCE_SCHEMA_V2 = "leo-sim-governance-receipt/v2"
+EXTERNAL_STATUS_SCHEMA = "leo-remote-launch-status/v2"
+GOVERNANCE_WITNESS_FIELDS = (
+    "receipt_schema", "resolved_config_sha256", "trace_manifest_schema",
+    "trace_identity_contract", "trace_manifest_sha256",
+)
+REMOTE_RESULTS_ROOT = Path("/data/论文/leo-direct-sim/CODE/Results")
 
 
 class V2AnalysisError(ValueError):
@@ -71,6 +80,56 @@ def _finite(value: Any, label: str) -> float:
             or not math.isfinite(float(value)):
         raise V2AnalysisError(f"{label} must be finite numeric")
     return float(value)
+
+
+def _external_witness_path(witness_root: Path, run_id: str) -> Path:
+    if witness_root.is_symlink() or not witness_root.is_dir():
+        raise V2AnalysisError(f"external launch witness directory is missing or unsafe: {witness_root}")
+    path = witness_root / f"{run_id}.json"
+    if path.is_symlink() or not path.is_file() or path.parent != witness_root:
+        raise V2AnalysisError(f"external launch witness is missing or unsafe: {path}")
+    try:
+        path.resolve(strict=True).relative_to(witness_root.resolve(strict=True))
+    except ValueError as exc:
+        raise V2AnalysisError(f"external launch witness escapes its directory: {path}") from exc
+    return path
+
+
+def _verify_external_witness(
+        *, witness_root: Path, run_id: str,
+        formal: dict[str, Any], governed: dict[str, Any],
+        paths: dict[str, Path], authorized: dict[str, Any]) -> dict[str, Any]:
+    """Verify the launch-scoped status pulled from the canonical VM runtime."""
+    path = _external_witness_path(witness_root, run_id)
+    witness = _read_json(path)
+    if not isinstance(witness, dict) or witness.get("schema") != EXTERNAL_STATUS_SCHEMA:
+        raise V2AnalysisError(f"{run_id} external launch witness schema mismatch")
+    if witness.get("status") != "success" or witness.get("exit_code") != 0:
+        raise V2AnalysisError(f"{run_id} external launch witness is not successful")
+    expected_nonce = formal.get("launch_nonce")
+    expected_auth = authorized.get("authorization_sha256")
+    if any(witness.get(key) != expected for key, expected in {
+            "launch_nonce": expected_nonce,
+            "run_id": run_id,
+            "authorization_sha256": expected_auth,
+    }.items()):
+        raise V2AnalysisError(f"{run_id} external launch witness identity mismatch")
+    remote_result = witness.get("last_results_dir")
+    expected_remote_result = REMOTE_RESULTS_ROOT / run_id
+    if (not isinstance(remote_result, str)
+            or Path(remote_result) != expected_remote_result
+            or Path(remote_result).is_symlink()):
+        raise V2AnalysisError(f"{run_id} external launch witness result identity mismatch")
+    governed_path = paths["governance_receipt.json"]
+    if witness.get("governance_receipt_sha256") != file_sha256(governed_path):
+        raise V2AnalysisError(f"{run_id} external launch witness receipt hash mismatch")
+    expected_fields = {key: governed.get(key) for key in GOVERNANCE_WITNESS_FIELDS}
+    if witness.get("governance_witness") != expected_fields:
+        raise V2AnalysisError(f"{run_id} external launch witness binding mismatch")
+    if governed.get("launch_nonce") != expected_nonce \
+            or governed.get("authorization_sha256") != expected_auth:
+        raise V2AnalysisError(f"{run_id} governance/external witness identity mismatch")
+    return witness
 
 
 def _metric_from_result(receipt: dict[str, Any], ledgers: dict[str, Any],
@@ -121,8 +180,9 @@ def _metric_from_result(receipt: dict[str, Any], ledgers: dict[str, Any],
     raise V2AnalysisError(f"unsupported V2 primary metric: {primary}")
 
 
-def _verify_result(root: Path, results_root: Path, row: dict[str, Any],
-                   authorized: dict[str, Any], primary: str) -> dict[str, Any]:
+def _verify_result(root: Path, results_root: Path, witness_root: Path,
+                   row: dict[str, Any], authorized: dict[str, Any],
+                   primary: str) -> dict[str, Any]:
     run_id = row.get("run_id")
     result_dir = _direct_result(results_root, run_id)
     required = (
@@ -183,11 +243,22 @@ def _verify_result(root: Path, results_root: Path, row: dict[str, Any],
         if any(governed.get(key) != value
                for key, value in expected_binding.items()):
             raise V2AnalysisError(f"{run_id} governance witness binding mismatch")
+        external_witness = _verify_external_witness(
+            witness_root=witness_root, run_id=run_id, formal=formal,
+            governed=governed, paths=paths, authorized=authorized)
+    else:
+        external_witness = None
     metric = _metric_from_result(receipt, ledgers, primary)
     artifacts = [{
         "path": str(path.relative_to(root)),
         "sha256": file_sha256(path),
     } for path in paths.values()]
+    if external_witness is not None:
+        witness_path = witness_root / f"{run_id}.json"
+        artifacts.append({
+            "path": str(witness_path.relative_to(root)),
+            "sha256": file_sha256(witness_path),
+        })
     return {
         "run_id": run_id,
         "arm_id": row.get("arm_id"),
@@ -196,6 +267,8 @@ def _verify_result(root: Path, results_root: Path, row: dict[str, Any],
         "config_sha256": receipt.get("config_sha256"),
         "primary_metric": metric,
         "result_path": str(result_dir.relative_to(root)),
+        "evidence_class": ("v2_external_witness" if external_witness is not None
+                            else "legacy_v3_v4_internal_only"),
         "artifacts": artifacts,
     }
 
@@ -237,12 +310,20 @@ def _compute_planned_contrasts(
 
 
 def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
-            results_root: Path | None = None) -> dict[str, Any]:
+            results_root: Path | None = None,
+            external_witness_root: Path | None = None) -> dict[str, Any]:
     """Verify an authorized V2 cohort and return a persisted analysis manifest."""
     root = Path(root).resolve()
     experiment_dir = Path(experiment_dir).resolve()
     results_root = (Path(results_root) if results_root is not None
                     else root / "CODE" / "Results").resolve()
+    external_witness_root = (Path(external_witness_root)
+                             if external_witness_root is not None
+                             else results_root / "_external_launch_witness").resolve()
+    try:
+        external_witness_root.relative_to(root)
+    except ValueError as exc:
+        raise V2AnalysisError("external witness root must be inside analysis root") from exc
     request = _read_json(experiment_dir / "request.json")
     matrix = _read_json(experiment_dir / "run-manifest.json")
     analysis_request = _read_json(experiment_dir / "analysis-request.json")
@@ -278,9 +359,14 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
     if not isinstance(primary, str) or not primary:
         raise V2AnalysisError("V2 primary metric is missing")
     results = [
-        _verify_result(root, results_root, cell, auth_by_id[cell["run_id"]], primary)
+        _verify_result(root, results_root, external_witness_root, cell,
+                       auth_by_id[cell["run_id"]], primary)
         for cell in cells
     ]
+    evidence_classes = {result["evidence_class"] for result in results}
+    if len(evidence_classes) > 1:
+        raise V2AnalysisError("analysis cohort mixes v5 external and v3/v4 legacy evidence")
+    legacy_only = evidence_classes == {"legacy_v3_v4_internal_only"}
     contrasts = analysis_request.get("analysis", {}).get("planned_contrasts", [])
     output_contrasts = _compute_planned_contrasts(results, contrasts, primary)
     input_paths = [experiment_dir / name for name in (
@@ -306,7 +392,9 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
         "experiment_dir": str(experiment_dir.relative_to(root)),
         "authorization_path": str(Path(authorization_path).resolve().relative_to(root)),
         "results_root": str(results_root.relative_to(root)),
-        "claim_status": "READY_FOR_INDEPENDENT_CLAIM_REVIEW",
+        "external_witness_root": str(external_witness_root.relative_to(root)),
+        "claim_status": ("LEGACY_INTERNAL_ONLY" if legacy_only
+                          else "READY_FOR_INDEPENDENT_CLAIM_REVIEW"),
     }
 
 
@@ -348,7 +436,7 @@ def write_outputs(root: Path, out_dir: Path, manifest: dict[str, Any]) -> dict[s
         json.dumps(persisted, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     claim_gate = {
         "schema": CLAIM_GATE_SCHEMA,
-        "status": "READY_FOR_INDEPENDENT_CLAIM_REVIEW",
+        "status": manifest["claim_status"],
         "analysis_manifest": str((out_dir / "analysis-manifest.json").relative_to(root)),
         "analysis_manifest_sha256": file_sha256(out_dir / "analysis-manifest.json"),
         "cannot_claim": manifest.get("claim_boundary", {}).get("cannot_claim", []),
@@ -385,6 +473,7 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
             root / manifest["experiment_dir"],
             root / manifest["authorization_path"],
             root / manifest["results_root"],
+            root / manifest["external_witness_root"],
         )
         for key in ("experiment_id", "primary_metric", "verified_run_ids",
                     "run_results", "planned_contrasts", "claim_boundary",
@@ -404,11 +493,12 @@ def main() -> int:
     parser.add_argument("--experiment", type=Path, required=True)
     parser.add_argument("--authorization", type=Path, required=True)
     parser.add_argument("--results-root", type=Path)
+    parser.add_argument("--external-witness-root", type=Path)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     try:
         manifest = analyze(args.root, args.experiment, args.authorization,
-                           args.results_root)
+                           args.results_root, args.external_witness_root)
         write_outputs(args.root, args.out, manifest)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"V2 ANALYSIS BLOCKED: {exc}")
