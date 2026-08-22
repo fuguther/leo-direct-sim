@@ -623,3 +623,11 @@
 - 从六个原始 receipt 独立重算的 pair 聚合如下（两臂数值相同）：50 Mbps：`613/1299=0.4719014627`，`HOLDING_QUEUE_OVERFLOW=0`，溢出率 `0`；100 Mbps：`1253/2756=0.4546444122`，溢出率 `0`；200 Mbps：`2382/5551=0.4291118717`，`HOLDING_QUEUE_OVERFLOW=167`，溢出率 `0.0300846694`。所有 cell 均通过 validity gate，未出现零分母、命运计数不一致或守恒失败。
 - 预注册分档结果：没有一档达到“低负载”交付率 `>=0.80`；50/100/200 三档均落入“中负载”区间（`0.20--0.80` 且溢出率 `<=0.20`）。按机械规则，最低有效中档是名义 50 Mbps；但因为低负载区没有被扫描出来，不能把这个结果说成最终 E0 边界，也不能用名义 low/medium/high 标签冒充真实三段。下一步先用至少两个新 trace seed 复核 50 Mbps；若仍低于 0.80，再扩大低端 bracket，而不是直接冻结。
 - 结论边界：本轮证明了真实 M-Lab 多 OD + burst 合同在当前主线可授权、可在 VM 串行自然结束、可由 receipt/V2 分析重算，且 200 Mbps 开始出现 holding overflow；仍不能支持最终负载阈值、算法优越性、因果拥塞结论、Q0 最优性或论文统计结论。R02 原始结果留在 VM `CODE/Results/`，不入库；本记录只保存可追溯哈希与聚合摘要。
+
+## 2026-08-22：按 VM cgroup 做 CPU/内存资源标定（诊断，不是论文结果）
+
+- 纠正资源口径：宿主机可见 256 CPU/约 628 GB，不能代表用户 VM。canonical VM cgroup v1 实测 `cpu.cfs_quota_us=2400000`、`cpu.cfs_period_us=100000`，即 24 vCPU；`memory.limit_in_bytes=68719476736`，即 64 GiB；`cpuset.cpus=0-255` 仅是宿主机编号集合，不是可用核数。
+- 单个非学习 20 s 高负载诊断进程约 14/44/83/122 s 时 RSS=`406/456/524/608 MB`，CPU 约 `100%`；说明 RSS 会随事件/包记录增长，但进程退出后匿名 RSS 回落，未观察到本轮进程级持续泄漏。
+- 同配置、不同 CPU 绑定的并行诊断：2/4/8/12 个进程均约各占一个核，单进程中后段 RSS 约 `0.43--0.63 GB`；12 并行时 cgroup 总内存约 7 GB 级别、CPU `nr_throttled` 无新增。输出在 VM `/tmp/leo-resource-profile-*`，不属于 formal results。
+- 当前工程建议：非学习先采用 `cpu_per_job=1`、`max_parallel_jobs=12` 的候选调度；学习任务必须另测 TensorFlow 线程池/模型 RSS 后再定，暂不能套用 12 并发。正式资源合同还需对 8/12 并发各做至少三次精确 wall/CPU/RSS/throttle 重复。
+- 详细口径、采样值、内存 guard 和边界见 `ANALYSIS/RESOURCE-PROFILE-20260822.md`。本轮不得把宿主机资源、一次性诊断 wall time 或非学习并发结论写成论文性能结论。
