@@ -1,28 +1,28 @@
 # leo_sim V2 当前实验就绪状态
 
-## 2026-08-22：280/14 E0 完整信息参考修正（当前诊断登记）
+## 2026-08-22：280/14 E0 完整信息参考诊断（10M 已完成）
 
-这是一项配置/证据边界修正，不是内核或 trace schema 变更。基于 main
-`f328e855857c60c4c87860a4eabb550d58636618`，动态 280/14 图在
-`t={0,1,5,10,20,30}` 的独立诊断均为连通、每星 degree=4、diameter=17；原
-E0 三个 profile 的 `control_plane.vis_k=12` 只能看到截断的信息半径，不能作为
-完整信息参考臂。三份 E0 profile 现改为 `vis_k=17`；这不是所有实验的默认值，
-信息裁剪实验仍可显式使用较小的 `k`。
+这是一项配置/证据边界修正，不是内核或 trace schema 变更。动态 280/14 图在
+`t={0,1,5,10,20,30}` 均连通、每星 degree=4、diameter=17；因此 E0 完整信息参考
+使用 `control_plane.vis_k=17`。该值只适用于当前 280/14 E0 参考臂，不是所有实验的
+默认值，信息裁剪实验仍可显式使用较小的 `k`。
 
-f328e85 的旧 `E0DRAIN-20260822-{10,25,50}M` 结果必须标记为
-`diagnostic_info_truncated`，不得用于拥塞负载分档或论文结论：10/25/50M
-分别为 `250/240/192/58`、`685/685/541/142`、`1299/1299/1057/222`
-（offered/admitted/delivered/in-system）；50M 另有 16 个 holding overflow 和
-4 个 no-route。未交付包在停止前最后事件显示为 holding（10M: 48、25M: 142、
-50M: 222；10M 另有 10 个 uplink 等待），而不是 ISL 队列；三组 ISL 最大利用率
-均低于 0.4%（50M 为约 0.390%）。这些事实说明 `vis_k=12` 可能是 holding/no-route
-诊断的混杂因素，不能直接把旧结果解释为拥塞控制或 ISL 容量结论。
+已完成同一 trace 的 10M 对照：trace SHA 为
+`e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23`，两次
+`resolved_config` 唯一差异为 `/config/control_plane/vis_k: 12 → 17`。旧
+`vis_k=12` 与新 `vis_k=17` 的 offered/admitted/delivered/in-system 分别为
+`250/240/192/58` 与 `250/240/233/17`；total delivery `0.768 → 0.932`，
+conditional delivery `0.8 → 0.9708333`。停止时 holding 包 `48 → 7`，uplink 包
+均为 `10`；holding queue area `930416301.5258671 → 124326178.47600535 bit*s`，
+uplink area 完全相同；vis17 ISL 最大利用率为 `0.0011653`。两次均 natural end、
+conservation 通过，VM receipt verify 通过，vis17 wall time 为 `649.276 s`。
 
-下一步只预注册一个 10M、同一 trace SHA
-`e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23` 的 `vis_k=17`
-对照，验收为 `receipt verified`、`natural_end=true`、`conservation_ok=true`，并与
-旧 `vis_k=12` 结果比较 holding、in-system 和 total delivery。该诊断完成前，
-不重新解释旧三档，也不启动新的拥塞负载分档。
+该结果是单 seed、同 trace 的诊断证据：它支持“`vis_k=12` 会显著混淆 10M
+holding/in-system 诊断”的判断，但不能单独宣称普遍因果结论。vis17 的
+`research_eligible=false`，且没有 external launch witness，因此不是正式论文结果。
+25M/50M 的 vis17 运行正在 VM 并行执行，结果尚未返回，不提前填写数字；三档完成后
+才重新标定 E0。完成三档前不把旧 `vis_k=12` 曲线用于拥塞分档，也不因低交付率直接
+加星；只有在完整信息参考下仍暴露容量压力时，才进入 long-haul/容量压力轴。
 
 > **2026-08-22 historical diagnostic snapshot（非当前可用状态）**：平台当时达到“可做真实流量、可审计、可重复的工程 pilot”门槛，但还没有达到“学习算法正式论文数据可直接采信”的门槛。以下 main/VM/E0 数字均为历史诊断证据，不是 access boundary 变更后的当前可用性声明；由于接入语义已改变，E0 R02 必须 `rerun_required`。
 >
@@ -32,7 +32,7 @@ f328e85 的旧 `E0DRAIN-20260822-{10,25,50}M` 结果必须标记为
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
 > **Access boundary（E0 前门禁）**：当前默认 `access.unavailable_policy=reject` 保持历史兼容；新增显式 `queue` 仅是工程诊断语义，使用有限源端/上行队列，停止时未入网包记为 `IN_SYSTEM_AT_STOP`。新运行可由 raw events 重算 `access_admission_rate` 与 `network_delivery_rate_by_horizon`。旧 20 s 50/100/200 诊断保留原证据但不是 paper-ready；切换 queue 后必须重新做 coverage/horizon audit、VM 小样、E0 标定和训练，不能沿用旧曲线。
-> 因此 access boundary 的 coverage/horizon 与可用速率联合校准已支持 280/14/25° E0 工程基线；E0-LOAD-CALIBRATION 仍 `in_progress`，待 10/25/50 各负载分别复用其 20 s run 精确 trace 的 drain-aware VM cell 后再判定负载区间，不能按历史扫描关闭正式门禁。
+> 因此 access boundary 的 coverage/horizon 与可用速率联合校准已支持 280/14/25° E0 工程基线；E0-LOAD-CALIBRATION 仍 `in_progress`。10M 的 vis17 同 trace 诊断已完成，25M/50M vis17 正在 VM 并行执行；三档 drain-aware cell 全部返回后再判定负载区间，不能按历史扫描关闭正式门禁。
 
 > **2026-08-22 coverage candidate → E0 engineering baseline（非 paper-ready）**：旧 140/7/30° VM smoke 已完成但覆盖不足；
 > 280/14/25°（每面 20 星）的 20 s/1 s 与 6000 s/20 s 几何/RF 条件已由 exact-main VM trial 复核，现升级为 E0 工程基线。
@@ -108,8 +108,8 @@ f328e85 的旧 `E0DRAIN-20260822-{10,25,50}M` 结果必须标记为
 ## 5. 下一步顺序
 
 1. 已知 R1-A1 额外跳数刷分风险已关闭；下一硬门是把 shaped reward 与 Q0 的物理目标分离，并在正式实验前冻结 claim 目标。
-2. available-capacity 分母代码已合入并有新多 OD VM T0 ledger；三档 E0 工程标定已完成。下一步补齐逐窗口独立重算、每包 queue/tx/prop 三段时延及三段和校验，并在资源剖析后冻结低/中/压力档。
+2. available-capacity 分母代码已合入并有新多 OD VM T0 ledger；10M vis17 已证明完整信息参考会改变 holding/in-system 诊断，25M/50M vis17 正在运行。待三档完成后再补齐逐窗口独立重算、每包 queue/tx/prop 三段时延及三段和校验，并冻结低/中/压力档。
 3. 在已部署 `8e2f1df` 上完成 D1 VM MCS 对照；D2 60 s 长窗已通过，仍需正式 cohort 的跨负载语义对照。
 4. 闭合 V2 artifact→指标→配对分析→claim；学习训练/评估 VM smoke 已完成，下一步补正式授权 cohort。
-5. 先完成 access boundary 的 coverage/horizon audit 和 VM 小样，再在新 profile 上做 CPU/内存剖析和非学习诊断，随后重新标定 E0-REAL；之后才进入全算法 pilot。Q0-I/Q0-F、逐动作物理特征、逐字段 AoI 按信息归因阶段完成。
+5. 先完成 access boundary 的 coverage/horizon audit 和 VM 小样，再在完整信息参考 profile 上做 CPU/内存剖析和非学习诊断，随后依据 10/25/50 vis17 结果重新标定 E0-REAL；之后才进入全算法 pilot。Q0-I/Q0-F、逐动作物理特征、逐字段 AoI 按信息归因阶段完成。
 7. 长训前完成中断/不间断长窗等价和收敛门；continuation bundle 的实现与 VM 单步恢复已通过，但尚未替代该门。

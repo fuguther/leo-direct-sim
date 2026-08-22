@@ -1,23 +1,26 @@
 # LEO 拥塞控制与链路利用率实验总计划
 
-## 2026-08-22：E0 完整信息参考修正（当前诊断登记）
+## 2026-08-22：E0 完整信息参考诊断（10M 已完成）
 
-基于 main `f328e855857c60c4c87860a4eabb550d58636618` 的动态 280/14 图诊断：
-在 `t=0,1,5,10,20,30`，图均连通、每星 degree=4、diameter=17。原 E0
-10/25/50 profile 沿用了 `control_plane.vis_k=12`，因此并非完整信息参考臂。
-三份 profile 现统一改为 `vis_k=17`；该值只表示当前 280/14 E0 的完整信息
-参考半径，不是所有实验的默认值，信息裁剪实验仍可使用更小 `k`。
+动态 280/14 图在 `t=0,1,5,10,20,30` 均连通、每星 degree=4、diameter=17，
+因此当前 E0 完整信息参考臂使用 `control_plane.vis_k=17`。这不是所有实验的默认值；
+信息裁剪实验仍可显式使用更小的 `k`。
 
-main `f328e85` 的 `E0DRAIN-20260822-{10,25,50}M` 旧结果统一标记为
-`diagnostic_info_truncated`，不用于拥塞分档：其 offered/admitted/delivered/
-in-system 分别为 `250/240/192/58`、`685/685/541/142`、`1299/1299/1057/222`；
-50M 有 16 holding overflow、4 no-route。停止前未交付包的最后事件主要在 holding
-（10M 48、25M 142、50M 222），三组 ISL 最大利用率均低于 0.4%。
+10M 同 trace 对照已完成。trace SHA 为
+`e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23`，两次
+`resolved_config` 唯一差异为 `/config/control_plane/vis_k: 12 → 17`。vis12 与
+vis17 的 offered/admitted/delivered/in-system 为 `250/240/192/58` 与
+`250/240/233/17`；total delivery `0.768 → 0.932`，conditional delivery
+`0.8 → 0.9708333`；holding-at-stop `48 → 7`，uplink-at-stop 均为 `10`；holding
+area `930416301.5258671 → 124326178.47600535 bit*s`，uplink area 完全相同；
+vis17 ISL max utilization `0.0011653`。两次均 natural end、conservation 和 VM
+receipt verify 通过，vis17 wall time `649.276 s`。
 
-下一步只做一个 10M、同 trace SHA
-`e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23` 的 `vis_k=17`
-诊断，要求 receipt verified、natural end、conservation，并与旧 vis_k=12
-比较 holding、in-system、total delivery。nested trace 和内核修改不属于本任务。
+这只是单 seed 的同 trace 诊断证据：它支持 vis12 会混淆 holding/in-system 诊断，
+不能单独宣称普遍因果结论。vis17 `research_eligible=false` 且没有 external launch
+witness，因此不是正式论文结果。25M/50M vis17 正在 VM 并行执行，结果返回前不填写
+数字；三档完成后再重标 E0。之后才考虑 long-haul/容量压力轴，不能因旧 vis12 的低
+交付率直接加星。nested trace 和内核修改不属于本任务。
 
 > **2026-08-22 historical diagnostic snapshot（非当前可用状态）**：先做工程 pilot，再做正式论文实验。以下“平台可运行”和 E0 R02 六个 cell 均为 access boundary 变更前的历史诊断证据，不是当前可用性声明；接入语义变化后必须 `rerun_required`。50/100/200 Mbps 仍是历史扫描档，不是最终冻结或论文结果；学习正式 cohort、三段时延正式 gate、Q0 真实闭环和论文 claim 仍未关闭。
 
@@ -47,10 +50,11 @@ access admission `0.9491916859`、network delivery by horizon `0.7931873479`，n
 VM 资源为 wall/user/sys `424.1882/429.4386/2.0247 s`、max RSS `1869052 KiB`、`9618761` events。
 
 50 Mbps 仅是当前扫描上界/较高负载候选，已不是无损低负载；不预设 low/medium/high 标签。E0-LOAD-CALIBRATION
-改为同口径的 10/25/50 Mbps 三 cell，旧 50/100/200 仅保留为 `historical_only`。下一步 VM 需为每个负载分别复用其 20 s run 的精确 trace，完成 drain-aware 三 cell；
-三档结果齐全后再按预注册规则判定负载区间。
+改为同口径的 10/25/50 Mbps 三 cell，旧 50/100/200 仅保留为 `historical_only`。10M 的
+vis17 同 trace 诊断已完成，25M/50M vis17 正在 VM 并行执行；三档结果齐全后再按预注册规则
+判定负载区间。完成前不进入 long-haul/容量压力轴，也不因低交付率直接修改星座规模。
 
-> CURRENT；最后核验：2026-08-22。当前 main/deployed 为 `66c5a68`。20 s 10/25/50 Mbps 运行被标为 `diagnostic_truncated_horizon`：scenario.duration_s 同时承担发包窗和停止窗，尾部排空/覆盖等待被截断，不能用于负载分类。已新增 `emission_end_s=20`、`scenario.duration_s=30` 的 drain-aware profiles；下一步须为每个负载分别复用其 20 s run 的精确 trace，完成 10/25/50 三个 VM cell。旧 50/100/200 仅 historical-only，不是正式论文结果；V2 artifact→claim、正式三段时延 gate、正式授权 cohort 仍未完成。
+> CURRENT；最后核验：2026-08-22。20 s 10/25/50 Mbps 旧运行被标为 `diagnostic_truncated_horizon`，不能用于负载分类；`emission_end_s=20`、`scenario.duration_s=30` 的 drain-aware profiles 已执行 10M vis17 同 trace 诊断，25M/50M vis17 正在 VM 并行执行。三档返回后再冻结负载区间；旧 50/100/200 仅 historical-only，不是正式论文结果；V2 artifact→claim、正式三段时延 gate、正式授权 cohort 仍未完成。
 
 ### Emission window 与 drain-aware E0（工程诊断，非论文结果）
 

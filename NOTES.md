@@ -5,13 +5,13 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
-## 2026-08-22：E0 vis_k 完整信息参考修正（本分支）
+## 2026-08-22：E0 vis17 同 trace 诊断登记（当前工作单元）
 
-- 分支 `codex/20260822-e0-full-info`，基线 `main@f328e855857c60c4c87860a4eabb550d58636618`；只改三份 280/14 E0 profile 的 `control_plane.vis_k`，不改 kernel、trace schema 或 nested trace。
-- 诊断事实：动态图在 `t=0,1,5,10,20,30` 均连通、degree=4、diameter=17；旧 `vis_k=12` 低于完整传播半径。当前三份 f328e85 drain 结果登记为 `diagnostic_info_truncated`，不用于拥塞分档：10/25/50M offered/admitted/delivered/in-system=`250/240/192/58`、`685/685/541/142`、`1299/1299/1057/222`；50M 有 16 holding overflow、4 no-route；ISL 最大利用率均 <0.4%。
-- 旧结果最后事件：10M 的 58 个末端包中 48 个在 holding、10 个在 uplink；25M 的 142 个均在 holding；50M 的 222 个均在 holding。该证据不足以把 holding 等待归因于物理拥塞，必须先补 vis17 对照。
-- 下一步只预注册 10M、同 trace `e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23` 的 `vis_k=17` 诊断；验收：receipt verified、natural end、conservation、holding/in-system/total delivery 与 vis12 对照。nested、不改内核。
-- 本地 RED→GREEN：新增 profile/diameter contract 测试在 `vis_k=12` 时先失败（3 failed, 1 passed, 7 deselected），改为 17 后 targeted `4 passed, 7 deselected`；提交前全量 `655 passed, 2 skipped, 3 subtests passed`，YAML parse 4 files、`git diff --check` 均通过。
+- docs-only 分支 `codex/20260822-e0-vis17-result`，基线 `main@34c68b4bdc5e5d91a3b5e5ccdf2c3e339473db18`；不改 kernel、trace schema、nested trace 或历史目录。
+- 已核证 10M 同 trace 对照：trace SHA=`e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23`；`resolved_config` 唯一差异为 `/config/control_plane/vis_k` `12→17`。vis12/vis17 offered/admitted/delivered/in-system=`250/240/192/58`、`250/240/233/17`；total delivery `.768→.932`，conditional delivery `.8→.9708333`；holding-at-stop `48→7`，uplink-at-stop `10→10`；holding area `930416301.5258671→124326178.47600535 bit*s`，uplink area完全相同；vis17 ISL max util=`0.0011653`。
+- 两次均 `natural_end=true`、`conservation_ok=true`、VM `receipt verify` 通过；vis17 wall=`649.276 s`。该结果是单 seed 同 trace 诊断证据，支持 vis12 混淆 holding/in-system 的判断，但不能宣称普遍因果。vis17 `research_eligible=false` 且无 external launch witness，不是正式论文结果。
+- 25M/50M vis17 正在 VM 并行执行，结果未返回，不填入未核证数字；三档完成后重标 E0，再决定是否进入 long-haul/容量压力轴，不能因旧 vis12 低交付率直接加星。
+- 历史 f328e85 `E0DRAIN-20260822-{10,25,50}M` 继续标记 `diagnostic_info_truncated`，不用于拥塞分档。此前 profile/diameter contract 的 RED→GREEN 和全量 `655 passed, 2 skipped, 3 subtests passed` 证据保留在下方历史记录。
 
 ## 2026-08-22：280/14/25° E0 工程基线与负载重标定（本分支）
 
@@ -19,7 +19,7 @@
 - exact-main VM deployment receipt：`11688f2f2fae23c250b535aa439057c01eebd8b386f132c00ba654c4003b31a8`；run `SMOKE-20260822-COVERAGE-280X14-E25-29e41c8`，trace `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`。
 - VM FACT：1299 offered、1233 admitted、978 delivered、16 holding overflow、1 no-route、304 in-system；access admission `0.9491916859`、network delivery by horizon `0.7931873479`；natural end、conservation、VM receipt verified；wall/user/sys `424.1882/429.4386/2.0247 s`、max RSS `1869052 KiB`、events `9618761`。
 - 新增 10 Mbps 与 25 Mbps 工程 E0 profiles；E0-LOAD-CALIBRATION arms 改为 10/25/50，状态 `in_progress`。50 Mbps 只是较高负载/扫描上界候选，不能预标 high；low/medium/high 等三档结果齐全后再判定。旧 50/100/200 标为 `historical_only`。
-- 下一步 VM 仅执行同 trace 的 10/25 两个 cell；不创建正式授权矩阵，不改变 kernel/routing/receipt/governance/learning。
+- 该条历史计划已由本文件顶部的 vis17 诊断登记 supersede；不创建正式授权矩阵，不改变 kernel/routing/receipt/governance/learning。
 
 ## 2026-08-22：emission window 与 drain-aware E0 重标定（本分支）
 
