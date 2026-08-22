@@ -33,10 +33,13 @@ from pathlib import Path
 from . import (config as config_mod, fates, metrics, rng as rng_mod,
                trace as trace_mod)
 
-RECEIPT_SCHEMA = "leo-sim-receipt/v3"
+LEGACY_RECEIPT_SCHEMA = "leo-sim-receipt/v3"
+RECEIPT_SCHEMA = "leo-sim-receipt/v4"
+METRICS_V1_SCHEMA = "leo-sim-congestion-metrics/v1"
+METRICS_V2_SCHEMA = "leo-sim-congestion-metrics/v2"
 
 # exact top-level receipt key set (unknown or missing keys fail verification)
-RECEIPT_KEYS = {
+RECEIPT_KEYS_V3 = {
     "schema", "config_sha256", "config_version", "trace_manifest_sha256",
     "trace_sha256", "trace_identity_sha256", "code_sha256", "ledgers_sha256",
     "deps", "seed", "horizon_s", "natural_end", "interrupted", "error",
@@ -44,6 +47,10 @@ RECEIPT_KEYS = {
     "totals", "fate_counts", "packet_fates", "control", "occupied",
     "handover_event_count", "conservation_ok",
 }
+RECEIPT_KEYS_V4 = RECEIPT_KEYS_V3 | {"congestion_metrics_contract"}
+# New runs use v4.  Keep the v4 set as the public strict key set while the
+# verifier retains an explicit v3 compatibility branch for historical runs.
+RECEIPT_KEYS = RECEIPT_KEYS_V4
 DEP_KEYS = {"python", "simpy", "numpy", "pyyaml"}
 # DDQN runs additionally pin the TensorFlow build: the training path depends
 # on it, so its version is part of the run identity (and its absence on the
@@ -486,6 +493,7 @@ def build_receipt(resolved: dict, manifest: dict, result: dict,
     effective = {k: result["mechanisms"]["effective"][k] for k in EFFECTIVE_KEYS}
     return {
         "schema": RECEIPT_SCHEMA,
+        "congestion_metrics_contract": METRICS_V2_SCHEMA,
         "config_sha256": resolved["sha256"],
         "config_version": resolved["version"],
         "trace_manifest_sha256": manifest["__sha256"],
@@ -576,8 +584,90 @@ def _learning_transition_accounting(mc: dict) -> list[str]:
     return []
 
 
+def _validate_v2_event_authority(errors: list[str], ledgers: dict,
+                                 trace_rows: dict, raw_events,
+                                 stored_metrics) -> None:
+    """Cross-bind v2 event claims to the authoritative fate/delivery ledgers."""
+    if not isinstance(raw_events, list):
+        return
+    if not isinstance(stored_metrics, dict):
+        errors.append("v2 congestion metrics must be a mapping")
+        return
+    packet_fates = ledgers.get("packet_fates")
+    deliveries = ledgers.get("deliveries")
+    if not isinstance(packet_fates, dict):
+        errors.append("v2 validation requires packet_fates mapping")
+        packet_fates = {}
+    if not isinstance(deliveries, dict):
+        errors.append("v2 validation requires deliveries mapping")
+        deliveries = {}
+    ingress_events = [e for e in raw_events
+                      if isinstance(e, dict) and e.get("kind") == "satellite_ingress"]
+    delivered_events = [e for e in raw_events
+                        if isinstance(e, dict) and e.get("kind") == "delivered"]
+    ingress_pids = {str(e.get("pid")) for e in ingress_events}
+    delivered_event_pids = {str(e.get("pid")) for e in delivered_events}
+    trace_bits = {str(pid): item.get("bits") for pid, item in trace_rows.items()}
+    offered_bits = sum(bits for bits in trace_bits.values()
+                       if isinstance(bits, int) and not isinstance(bits, bool))
+    if stored_metrics.get("offered_packets") != len(trace_rows):
+        errors.append("v2 offered_packets != trace row count")
+    if stored_metrics.get("offered_bits") != offered_bits:
+        errors.append("v2 offered_bits != trace bit sum")
+    for event in ingress_events:
+        pid_s = str(event.get("pid"))
+        pair = packet_fates.get(pid_s)
+        if pid_s not in trace_rows:
+            errors.append(f"satellite_ingress pid {pid_s} is not in trace")
+        if not isinstance(pair, list) or len(pair) != 2:
+            errors.append(f"satellite_ingress pid {pid_s} has no authoritative fate")
+            continue
+        if pair[0] in {"ACCESS_REJECTED", "ACCESS_QUEUE_OVERFLOW"}:
+            errors.append(f"satellite_ingress pid {pid_s} has terminal access fate {pair[0]}")
+        if pid_s in trace_bits and event.get("bits") != trace_bits[pid_s]:
+            errors.append(f"satellite_ingress bits != trace bits for {pid_s}")
+    admitted_bits = sum(trace_bits[pid] for pid in ingress_pids
+                        if pid in trace_bits and isinstance(trace_bits[pid], int))
+    if stored_metrics.get("admitted_at_satellite_ingress_packets") != len(ingress_pids):
+        errors.append("v2 admitted packet count != satellite_ingress events")
+    if stored_metrics.get("admitted_at_satellite_ingress_bits") != admitted_bits:
+        errors.append("v2 admitted bits != satellite_ingress trace bits")
+
+    delivered_fate_pids = {pid for pid, pair in packet_fates.items()
+                           if isinstance(pair, list) and len(pair) == 2
+                           and pair[0] == "DELIVERED"}
+    if delivered_event_pids != set(deliveries):
+        errors.append("delivered raw event ids != deliveries ids")
+    if delivered_event_pids != delivered_fate_pids:
+        errors.append("delivered raw event ids != DELIVERED fate ids")
+    if not delivered_event_pids <= ingress_pids:
+        errors.append("delivered packets must be a satellite_ingress subset")
+    for event in delivered_events:
+        pid_s = str(event.get("pid"))
+        delivery = deliveries.get(pid_s)
+        if not isinstance(delivery, dict):
+            continue
+        if event.get("at") != delivery.get("delivered_at"):
+            errors.append(f"delivered event time != delivery time for {pid_s}")
+        pair = packet_fates.get(pid_s)
+        if not isinstance(pair, list) or len(pair) != 2 or pair[0] != "DELIVERED":
+            errors.append(f"delivered event has non-DELIVERED fate for {pid_s}")
+    delivered_bits = sum(pair[1] for pid, pair in packet_fates.items()
+                         if pid in delivered_fate_pids and isinstance(pair, list)
+                         and len(pair) == 2 and isinstance(pair[1], int))
+    if stored_metrics.get("delivered_packets") != len(delivered_fate_pids):
+        errors.append("v2 delivered packet count != DELIVERED fates")
+    if stored_metrics.get("delivered_bits") != delivered_bits:
+        errors.append("v2 delivered bits != DELIVERED fate bits")
+    if stored_metrics.get("delivered_by_horizon_given_ingress_packets") != len(delivered_fate_pids):
+        errors.append("v2 horizon delivery packet count != DELIVERED fates")
+    if stored_metrics.get("delivered_by_horizon_given_ingress_bits") != delivered_bits:
+        errors.append("v2 horizon delivery bits != DELIVERED fate bits")
+
+
 def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
-                      verify_root: Path, resolved_cfg: dict | None) -> list[str]:
+                      verify_root: Path, resolved_cfg: dict | None,
+                      metrics_contract: str) -> list[str]:
     """Schema/type/range and internal-relation checks for ledgers.json.
 
     Defensive throughout: malformed content appends error strings, never
@@ -616,16 +706,26 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
                         "IN_SYSTEM_AT_STOP", "GEOMETRY_LOSS_IN_FLIGHT",
                         "RANDOM_OUTAGE_IN_FLIGHT", "DATA_DEADLINE_EXPIRED"}):
                 non_arrival_pids.add(int(pid_s))
+    if metrics_contract not in {METRICS_V1_SCHEMA, METRICS_V2_SCHEMA}:
+        errors.append(f"unsupported congestion metrics contract: {metrics_contract!r}")
     try:
         recomputed_metrics = metrics.summarize(
             raw_events, raw_windows,
             available_capacity_windows=raw_available,
-            non_arrival_pids=non_arrival_pids)
+            non_arrival_pids=non_arrival_pids,
+            access_boundary=(metrics_contract == METRICS_V2_SCHEMA))
     except metrics.MetricsError as exc:
         errors.append(f"congestion metrics invalid: {exc}")
     else:
         if stored_metrics != recomputed_metrics:
             errors.append("congestion_metrics != recomputed raw event metrics")
+        if (isinstance(stored_metrics, dict)
+                and stored_metrics.get("schema") != metrics_contract):
+            errors.append("congestion_metrics schema != receipt contract")
+
+    if metrics_contract == METRICS_V2_SCHEMA:
+        _validate_v2_event_authority(
+            errors, ledgers, trace_rows, raw_events, stored_metrics)
 
     # Learning artifact: the ledger SHA binds the metadata and verification
     # recomputes the actual checkpoint hash.  This prevents a saved/loaded
@@ -905,13 +1005,25 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
     if not isinstance(receipt, dict):
         return ["receipt.json must be a JSON object"]
 
-    # 0. strict key set and schema
+    # 0. strict versioned receipt contract.  The metrics contract comes from
+    # this receipt schema, never from mutable ledgers.congestion_metrics.
+    receipt_schema = receipt.get("schema")
+    if receipt_schema == LEGACY_RECEIPT_SCHEMA:
+        expected_receipt_keys = RECEIPT_KEYS_V3
+        metrics_contract = METRICS_V1_SCHEMA
+    elif receipt_schema == RECEIPT_SCHEMA:
+        expected_receipt_keys = RECEIPT_KEYS_V4
+        metrics_contract = METRICS_V2_SCHEMA
+        if receipt.get("congestion_metrics_contract") != metrics_contract:
+            errors.append("v4 congestion_metrics_contract must be v2")
+    else:
+        expected_receipt_keys = RECEIPT_KEYS_V4
+        metrics_contract = METRICS_V2_SCHEMA
+        errors.append(f"receipt schema mismatch: {receipt_schema}")
     keys = set(receipt)
-    if keys != RECEIPT_KEYS:
-        errors.append(f"receipt keys mismatch: unknown={sorted(keys - RECEIPT_KEYS)} "
-                      f"missing={sorted(RECEIPT_KEYS - keys)}")
-    if receipt.get("schema") != RECEIPT_SCHEMA:
-        errors.append(f"receipt schema mismatch: {receipt.get('schema')}")
+    if keys != expected_receipt_keys:
+        errors.append(f"receipt keys mismatch: unknown={sorted(keys - expected_receipt_keys)} "
+                      f"missing={sorted(expected_receipt_keys - keys)}")
     for bf in ("natural_end", "interrupted", "research_eligible", "conservation_ok"):
         if not isinstance(receipt.get(bf), bool):
             errors.append(f"{bf} must be bool")
@@ -1082,7 +1194,8 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
     if ledgers is not None:
         try:
             errors.extend(_validate_ledgers(
-                ledgers, receipt, trace_rows, out, resolved_cfg))
+                ledgers, receipt, trace_rows, out, resolved_cfg,
+                metrics_contract))
         except Exception as exc:  # never let malformed content crash verify
             errors.append(f"ledgers validation failure (fail closed): {exc}")
         lg_pf = ledgers.get("packet_fates", {})

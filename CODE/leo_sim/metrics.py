@@ -46,6 +46,7 @@ def summarize(
     *,
     available_capacity_windows: list[dict] | None = None,
     non_arrival_pids: set[int] | frozenset[int] | None = None,
+    access_boundary: bool = False,
 ) -> dict:
     """Return metrics rebuilt from raw packet and service-window events.
 
@@ -77,11 +78,14 @@ def summarize(
     queue_wait: defaultdict[int, float] = defaultdict(float)
     service_starts: dict[tuple[int, int], dict] = {}
     prop_starts: dict[tuple[int, int], dict] = {}
+    completed_uplink_arrivals: defaultdict[int, list[dict]] = defaultdict(list)
+    consumed_uplink_arrivals: defaultdict[int, int] = defaultdict(int)
     prop_durations: defaultdict[int, float] = defaultdict(float)
     delivered: dict[int, float] = {}
     tx_durations: defaultdict[int, float] = defaultdict(float)
     holding_wait: defaultdict[int, float] = defaultdict(float)
     packet_bits: dict[int, int] = {}
+    ingress: dict[int, dict] = {}
 
     for event in packet_events:
         if not isinstance(event, dict):
@@ -106,6 +110,37 @@ def summarize(
             if qid in queue_entries:
                 raise MetricsError(f"duplicate queue_id {qid}")
             queue_entries[qid] = (pid, at, _nonempty(event, "queue"))
+        elif kind == "satellite_ingress":
+            if pid in ingress:
+                raise MetricsError(f"duplicate satellite_ingress for {pid}")
+            endpoint = _nonempty(event, "endpoint")
+            satellite = event.get("satellite")
+            if (isinstance(satellite, bool) or not isinstance(satellite, int)
+                    or satellite < 0):
+                raise MetricsError("satellite_ingress.satellite must be a non-negative integer")
+            bits = event.get("bits")
+            if isinstance(bits, bool) or not isinstance(bits, int) or bits <= 0:
+                raise MetricsError("satellite_ingress.bits must be a positive integer")
+            if pid not in emitted:
+                raise MetricsError(f"satellite_ingress packet {pid} was never emitted")
+            if at < emitted[pid]:
+                raise MetricsError("satellite_ingress precedes packet_emitted")
+            if pid in packet_bits and bits != packet_bits[pid]:
+                raise MetricsError(f"satellite_ingress bits mismatch for {pid}")
+            if pid in delivered and delivered[pid] < at:
+                raise MetricsError(f"delivered before satellite_ingress for {pid}")
+            arrivals = completed_uplink_arrivals.get(pid, [])
+            used = consumed_uplink_arrivals[pid]
+            candidates = [item for index, item in enumerate(arrivals)
+                          if index >= used and item["at"] == at
+                          and item["satellite"] == satellite]
+            if not candidates:
+                raise MetricsError(
+                    f"satellite_ingress for {pid} has no completed uplink propagation "
+                    "arrival at the same time and satellite")
+            consumed_uplink_arrivals[pid] += 1
+            ingress[pid] = {"at": at, "endpoint": endpoint,
+                            "satellite": satellite, "bits": bits}
         elif kind == "service_start":
             stage = _nonempty(event, "stage")
             link_id = _nonempty(event, "link_id")
@@ -132,7 +167,7 @@ def summarize(
             }
         elif kind == "propagation_start":
             stage = _nonempty(event, "stage")
-            _nonempty(event, "link_id")
+            link_id = _nonempty(event, "link_id")
             prop_id = event.get("prop_id")
             if isinstance(prop_id, bool) or not isinstance(prop_id, int) or prop_id < 0:
                 raise MetricsError("propagation_start.prop_id must be a non-negative integer")
@@ -142,7 +177,8 @@ def summarize(
             key = (pid, prop_id)
             if key in prop_starts:
                 raise MetricsError(f"duplicate propagation start {key}")
-            prop_starts[key] = {"at": at, "stage": stage, "delay_s": delay}
+            prop_starts[key] = {"at": at, "stage": stage,
+                                "link_id": link_id, "delay_s": delay}
         elif kind == "propagation_arrival":
             prop_id = event.get("prop_id")
             key = (pid, prop_id)
@@ -155,11 +191,29 @@ def summarize(
             if not math.isclose(realized, start["delay_s"], rel_tol=1e-9, abs_tol=1e-12):
                 raise MetricsError(f"propagation delay mismatch for {key}")
             prop_durations[pid] += realized
+            if start["stage"] == "uplink":
+                parts = start["link_id"].split(":")
+                if len(parts) < 3 or parts[0] != "gsl" or parts[1] != "uplink":
+                    raise MetricsError(
+                        f"uplink propagation link malformed for {key}")
+                try:
+                    satellite = int(parts[2])
+                except ValueError as exc:
+                    raise MetricsError(
+                        f"uplink propagation satellite malformed for {key}") from exc
+                if satellite < 0:
+                    raise MetricsError(
+                        f"uplink propagation satellite malformed for {key}")
+                completed_uplink_arrivals[pid].append(
+                    {"at": at, "satellite": satellite,
+                     "link_id": start["link_id"]})
             del prop_starts[key]
         elif kind == "delivered":
             if pid in delivered:
                 raise MetricsError(f"duplicate delivered event for {pid}")
             delivered[pid] = at
+            if pid in ingress and at < ingress[pid]["at"]:
+                raise MetricsError(f"delivered before satellite_ingress for {pid}")
         else:
             raise MetricsError(f"unknown packet event kind {kind!r}")
 
@@ -169,6 +223,15 @@ def summarize(
     }
     if unmatched:
         raise MetricsError(f"unmatched propagation starts: {sorted(unmatched)}")
+    if access_boundary:
+        unmatched_ingress = [
+            pid for pid, arrivals in completed_uplink_arrivals.items()
+            if consumed_uplink_arrivals[pid] != len(arrivals)
+        ]
+        if unmatched_ingress:
+            raise MetricsError(
+                f"uplink propagation arrivals missing satellite_ingress: "
+                f"{sorted(unmatched_ingress)}")
 
     # Holding is a real queue, but it has no service_start of its own.  Its
     # residence is therefore paired with the next downstream queue admission
@@ -296,7 +359,43 @@ def summarize(
             item["e2e_s"] = delivered[pid] - emitted[pid]
             if item["e2e_s"] < 0:
                 raise MetricsError(f"negative e2e delay for packet {pid}")
+        if ingress or access_boundary:
+            admitted = ingress.get(pid)
+            item["admitted_at"] = admitted["at"] if admitted else None
+            item["access_wait_s"] = (
+                admitted["at"] - emitted[pid] if admitted else None)
+            item["pre_ingress_s"] = item["access_wait_s"]
         packets[str(pid)] = item
+
+    if ingress or access_boundary:
+        missing = sorted(pid for pid in delivered if pid not in ingress)
+        if missing:
+            raise MetricsError(
+                f"delivered packets missing satellite_ingress: {missing}")
+        offered_packets = len(emitted)
+        admitted_packets = len(ingress)
+        delivered_packets = len(delivered)
+        offered_bits = sum(packet_bits.values())
+        admitted_bits = sum(item["bits"] for item in ingress.values())
+        delivered_bits = sum(packet_bits[pid] for pid in delivered)
+        return {
+            "schema": "leo-sim-congestion-metrics/v2",
+            "offered_packets": offered_packets,
+            "offered_bits": offered_bits,
+            "admitted_at_satellite_ingress_packets": admitted_packets,
+            "admitted_at_satellite_ingress_bits": admitted_bits,
+            "delivered_packets": delivered_packets,
+            "delivered_bits": delivered_bits,
+            "access_admission_rate": (
+                admitted_packets / offered_packets if offered_packets else 0.0),
+            "network_delivery_rate_by_horizon": (
+                delivered_packets / admitted_packets if admitted_packets else 0.0),
+            "delivered_by_horizon_given_ingress_packets": delivered_packets,
+            "delivered_by_horizon_given_ingress_bits": delivered_bits,
+            "packets": packets,
+            "links": links,
+            "validation": {"ok": True, "errors": []},
+        }
 
     return {
         "schema": "leo-sim-congestion-metrics/v1",

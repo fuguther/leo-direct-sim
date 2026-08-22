@@ -19,6 +19,7 @@
 | 动态 ISL 对端重匹配 | 有 | **代码已合入、退役/在途/holding 测试通过**；60 s、100 Mbps、56-cell M-Lab VM 长窗自然结束、守恒、receipt 和 raw metrics 重算通过 | BLOCKER-P0（跨负载/正式分析前） | 在正式 cohort 中继续绑定重匹配、退役链路、在途包归属和等待队列 |
 | 拓扑重算间隔 | 旧平台按较长窗口重匹配 | `8e2f1df` VM 同一 56-cell M-Lab/burst trace 的 0.5/1/2/5 s 四档均自然结束、receipt verified、raw metrics 重算通过；1/2/5 s packet/link metrics 逐项相同。**当前 E0 候选为 1 s，尚非正式冻结** | BLOCKER-P0（冻结前校准） | 在低/中/高 E0 负载和长窗复核交付、积压、利用率、切换事件后再冻结；2 s 仅作为成本敏感性候选 |
 | 包守恒、FIFO、等待、在途语义 | 有 | 基础内核与回归测试已有，VM 基础 smoke 守恒通过；正式结果中的持久化分析和长窗覆盖尚未完成 | BLOCKER-P0 | 用长窗、多 OD、失败/积压/在途负对照完成 VM 与 receipt 验收 |
+| 接入覆盖边界与阶段指标 | 旧行为在无可见卫星时直接拒绝 | 默认 reject 保持兼容；显式 queue 进入现有有限 endpoint/uplink queue，停止时未入网为 `IN_SYSTEM_AT_STOP`；`satellite_ingress`、access wait 和 admission/network rates 可从 raw events 重算；确定性 coverage audit 已提供几何证据 | BLOCKER-DIAG | 先完成 coverage/horizon audit + VM 小样，再重新做 E0 标定/训练；coverage 不自动决定加星 |
 | 未来端点惰性激活 | 旧行为曾泄漏 | V2 #28 已合入 main | 已关闭 | 保留回归 |
 | 接入 FIFO / downlink 恢复 | 旧语义参照 | V2 #26/#25 已合入 main | 已关闭 | 保留回归 |
 | 奖励无正循环/物理目标一致 | 旧平台奖励族复杂 | **已关闭已知“额外转发跳数刷分”风险**（`ce2566b`/R1-A1，非正逐跳成本、反例和配置门禁）；仍不能把 shaped reward 当 Q0 物理最优目标 | BLOCKER-THEORY（Q0/正式结论） | 工程学习 pilot 已允许运行；正式上界和新方案仍须冻结 delivered/deadline/backlog/utilization 等物理目标 |

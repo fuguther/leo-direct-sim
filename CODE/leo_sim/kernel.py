@@ -68,7 +68,7 @@ class DataPacket:
     __slots__ = ("pid", "src", "dst", "bits", "deadline", "emitted_at", "path",
                  "assigned_sat", "learning_state", "learning_action",
                  "learning_reward", "isl_enqueued_at", "holding_until",
-                 "metric_queue_id", "metric_prop_id")
+                 "metric_queue_id", "metric_prop_id", "metric_ingress_at")
 
     def __init__(self, pid, src, dst, bits, deadline, emitted_at):
         self.pid = pid
@@ -88,6 +88,7 @@ class DataPacket:
         self.holding_until = None
         self.metric_queue_id = None
         self.metric_prop_id = None
+        self.metric_ingress_at = None
 
 
 class QueueArea:
@@ -1481,6 +1482,17 @@ class Kernel:
         })
         pkt.metric_prop_id = None
 
+    def _metric_satellite_ingress(self, pkt: DataPacket, sat: int) -> None:
+        """Record the one physical uplink admission boundary exactly once."""
+        if pkt.metric_ingress_at is not None:
+            raise KernelError(f"packet {pkt.pid} duplicate satellite ingress")
+        pkt.metric_ingress_at = float(self.env.now)
+        self.packet_events.append({
+            "kind": "satellite_ingress", "pid": pkt.pid,
+            "at": float(self.env.now), "endpoint": pkt.src,
+            "satellite": int(sat), "bits": int(pkt.bits),
+        })
+
     def _metric_delivered(self, pkt: DataPacket) -> None:
         self.packet_events.append({
             "kind": "delivered", "pid": pkt.pid,
@@ -2527,10 +2539,14 @@ class Kernel:
                 continue
             link = ep.primary_link()
             if link is None and not self._visible_sats(ep):
-                # no satellite is visible at all at emission time: the
-                # endpoint is not part of the network for this packet
-                self._fail(pkt, "ACCESS_REJECTED")
-                continue
+                # Access coverage is a boundary condition, not a network
+                # congestion outcome.  The historical default rejects at
+                # emission; the explicit research queue profile keeps the
+                # packet in the existing finite endpoint uplink queue so the
+                # normal access ticker can retry when coverage returns.
+                if self.cfg_access["unavailable_policy"] == "reject":
+                    self._fail(pkt, "ACCESS_REJECTED")
+                    continue
             if ep.queued_bits + pkt.bits > self.cfg_access["uplink_queue_bits"]:
                 self._fail(pkt, "ACCESS_QUEUE_OVERFLOW")
                 continue
@@ -3448,6 +3464,7 @@ class Kernel:
         yield self.env.timeout(prop)
         self._in_flight.pop(pkt.pid, None)
         self._metric_propagation_arrival(pkt)
+        self._metric_satellite_ingress(pkt, sat)
         if pkt.deadline is not None and self.env.now > pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             return
@@ -3677,7 +3694,8 @@ class Kernel:
         congestion_metrics = metrics.summarize(
             self.packet_events, self.link_service_windows,
             available_capacity_windows=self.link_available_windows,
-            non_arrival_pids=non_arrival_pids)
+            non_arrival_pids=non_arrival_pids,
+            access_boundary=True)
         result = {
             "natural_end": not interrupted,
             "interrupted": interrupted,

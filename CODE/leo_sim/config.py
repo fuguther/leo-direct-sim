@@ -96,6 +96,7 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "diurnal_phase_h": (int, float),
     },
     "access": {
+        "unavailable_policy": str,  # reject | queue
         "slots_per_satellite": int,  # K
         "uplink_rate_mbps": (int, float),
         "downlink_rate_mbps": (int, float),
@@ -201,6 +202,7 @@ VALID_DEMAND_MODES = {
     "diurnal", "csv", "mlab",
 }
 VALID_ASSOCIATION = {"bbm", "mbb"}
+VALID_UNAVAILABLE_POLICIES = {"reject", "queue"}
 VALID_POLICIES = {
     "hop", "delay", "capacity", "oracle", "info_queue", "info_physical",
 }
@@ -256,6 +258,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "diurnal_phase_h": 12.0,
     },
     "access": {
+        "unavailable_policy": "reject",
         "slots_per_satellite": 4,
         "uplink_rate_mbps": 100.0,
         "downlink_rate_mbps": 100.0,
@@ -542,6 +545,10 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
         raise ConfigError("diurnal parameters out of range")
     if ac["association"] not in VALID_ASSOCIATION:
         raise ConfigError(f"access.association must be one of {sorted(VALID_ASSOCIATION)}")
+    if ac["unavailable_policy"] not in VALID_UNAVAILABLE_POLICIES:
+        raise ConfigError(
+            "access.unavailable_policy must be one of "
+            f"{sorted(VALID_UNAVAILABLE_POLICIES)}")
     if ac["slots_per_satellite"] < 1:
         raise ConfigError("access.slots_per_satellite must be >= 1")
     for f in ("uplink_rate_mbps", "downlink_rate_mbps"):

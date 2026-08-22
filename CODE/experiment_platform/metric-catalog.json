@@ -3,6 +3,8 @@
   "source": "CODE/experiment_bundle.py summary_metrics.csv",
   "metrics": [
     {"id": "delivery_rate", "eligible_as_primary": true, "direction": "higher", "definition": "received / (created - in_flight_at_sim_end); excludes terminal backlog and must not be used alone for finite-horizon congestion claims"},
+    {"id": "access_admission_rate", "eligible_as_primary": false, "direction": "higher", "definition": "packets with first successful satellite ingress / offered packets; zero when offered packets are zero"},
+    {"id": "network_delivery_rate_by_horizon", "eligible_as_primary": false, "direction": "higher", "definition": "delivered packets by horizon / packets with first successful satellite ingress; zero when no packet entered the network"},
     {"id": "completion_ratio", "eligible_as_primary": true, "direction": "higher", "definition": "received / created at the fixed simulation horizon; includes terminal backlog in the denominator"},
     {"id": "in_flight_ratio", "eligible_as_primary": true, "direction": "lower", "definition": "in_flight_at_sim_end / created; terminal backlog fraction"},
     {"id": "offered_load_mbps", "eligible_as_primary": true, "direction": "context", "definition": "created blocks * 64800 bits / simulated seconds / 1e6; realized aggregate arrival load"},
