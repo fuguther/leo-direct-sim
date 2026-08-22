@@ -34,7 +34,8 @@ from . import (config as config_mod, fates, metrics, rng as rng_mod,
                trace as trace_mod)
 
 LEGACY_RECEIPT_SCHEMA = "leo-sim-receipt/v3"
-RECEIPT_SCHEMA = "leo-sim-receipt/v4"
+LEGACY_RECEIPT_SCHEMA_V4 = "leo-sim-receipt/v4"
+RECEIPT_SCHEMA = "leo-sim-receipt/v5"
 METRICS_V1_SCHEMA = "leo-sim-congestion-metrics/v1"
 METRICS_V2_SCHEMA = "leo-sim-congestion-metrics/v2"
 
@@ -48,9 +49,10 @@ RECEIPT_KEYS_V3 = {
     "handover_event_count", "conservation_ok",
 }
 RECEIPT_KEYS_V4 = RECEIPT_KEYS_V3 | {"congestion_metrics_contract"}
-# New runs use v4.  Keep the v4 set as the public strict key set while the
-# verifier retains an explicit v3 compatibility branch for historical runs.
-RECEIPT_KEYS = RECEIPT_KEYS_V4
+RECEIPT_KEYS_V5 = RECEIPT_KEYS_V4 | {
+    "trace_manifest_contract", "trace_identity_contract",
+}
+RECEIPT_KEYS = RECEIPT_KEYS_V5
 DEP_KEYS = {"python", "simpy", "numpy", "pyyaml"}
 # DDQN runs additionally pin the TensorFlow build: the training path depends
 # on it, so its version is part of the run identity (and its absence on the
@@ -540,6 +542,8 @@ def build_receipt(resolved: dict, manifest: dict, result: dict,
     return {
         "schema": RECEIPT_SCHEMA,
         "congestion_metrics_contract": METRICS_V2_SCHEMA,
+        "trace_manifest_contract": trace_mod.TRACE_MANIFEST_SCHEMA,
+        "trace_identity_contract": config_mod.TRACE_IDENTITY_VERSION,
         "config_sha256": resolved["sha256"],
         "config_version": resolved["version"],
         "trace_manifest_sha256": manifest["__sha256"],
@@ -1057,13 +1061,22 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
     if receipt_schema == LEGACY_RECEIPT_SCHEMA:
         expected_receipt_keys = RECEIPT_KEYS_V3
         metrics_contract = METRICS_V1_SCHEMA
-    elif receipt_schema == RECEIPT_SCHEMA:
+    elif receipt_schema == LEGACY_RECEIPT_SCHEMA_V4:
         expected_receipt_keys = RECEIPT_KEYS_V4
         metrics_contract = METRICS_V2_SCHEMA
         if receipt.get("congestion_metrics_contract") != metrics_contract:
             errors.append("v4 congestion_metrics_contract must be v2")
+    elif receipt_schema == RECEIPT_SCHEMA:
+        expected_receipt_keys = RECEIPT_KEYS_V5
+        metrics_contract = METRICS_V2_SCHEMA
+        if receipt.get("congestion_metrics_contract") != metrics_contract:
+            errors.append("v5 congestion_metrics_contract must be v2")
+        if receipt.get("trace_manifest_contract") != trace_mod.TRACE_MANIFEST_SCHEMA:
+            errors.append("v5 trace_manifest_contract must be manifest/v2")
+        if receipt.get("trace_identity_contract") != config_mod.TRACE_IDENTITY_VERSION:
+            errors.append("v5 trace_identity_contract must be identity/v2")
     else:
-        expected_receipt_keys = RECEIPT_KEYS_V4
+        expected_receipt_keys = RECEIPT_KEYS_V5
         metrics_contract = METRICS_V2_SCHEMA
         errors.append(f"receipt schema mismatch: {receipt_schema}")
     keys = set(receipt)
@@ -1138,15 +1151,17 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
 
     # 2. config identity from the on-disk resolved config
     resolved_cfg = None
+    raw_resolved_cfg = None
     resolved_version = None
     if not rcp_cfg.is_file() or rcp_cfg.is_symlink():
         errors.append("missing artifact resolved_config.json")
     else:
         try:
             _rc = json.loads(rcp_cfg.read_text())
-            resolved_cfg = _rc["config"]
+            raw_resolved_cfg = _rc["config"]
+            resolved_cfg = raw_resolved_cfg
             resolved_version = _rc["version"]
-            canonical = json.dumps(resolved_cfg, sort_keys=True, separators=(",", ":"))
+            canonical = json.dumps(raw_resolved_cfg, sort_keys=True, separators=(",", ":"))
             if hashlib.sha256(canonical.encode()).hexdigest() != receipt.get("config_sha256"):
                 errors.append("resolved config sha mismatch")
         except Exception as exc:  # fail closed on any parse problem
@@ -1158,6 +1173,17 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
         errors.append("resolved config malformed: missing scenario/routing groups")
         resolved_cfg = None
     if resolved_cfg is not None:
+        legacy_contract = receipt_schema in {
+            LEGACY_RECEIPT_SCHEMA, LEGACY_RECEIPT_SCHEMA_V4}
+        has_emission = (isinstance(raw_resolved_cfg.get("demand"), dict)
+                        and "emission_end_s" in raw_resolved_cfg["demand"])
+        if legacy_contract and has_emission:
+            errors.append("legacy receipt raw resolved config must omit emission_end_s")
+        if receipt_schema == RECEIPT_SCHEMA and not has_emission:
+            errors.append("v5 receipt raw resolved config must include emission_end_s")
+        if legacy_contract and not has_emission:
+            resolved_cfg = json.loads(json.dumps(raw_resolved_cfg))
+            resolved_cfg.setdefault("demand", {})["emission_end_s"] = None
         try:
             validated = config_mod.resolve_config(resolved_cfg)
             if validated["config"] != resolved_cfg:
@@ -1180,13 +1206,21 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
             errors.append("routing_label != label derived from resolved config")
         if trace_loaded:
             try:
+                emission_horizon = resolved_cfg["demand"]["emission_end_s"]
+                emission_horizon = (resolved_cfg["scenario"]["duration_s"]
+                                    if emission_horizon is None else emission_horizon)
                 trace_mod.validate_packet_rows(
                     trace_list,
-                    horizon_s=float(resolved_cfg["scenario"]["duration_s"]),
+                    horizon_s=float(emission_horizon),
                     max_packets=int(resolved_cfg["execution"]["max_packets"]))
             except Exception as exc:
                 errors.append(f"trace violates resolved config: {exc}")
     if manifest is not None:
+        if receipt_schema == RECEIPT_SCHEMA and manifest.get("schema") != trace_mod.TRACE_MANIFEST_SCHEMA:
+            errors.append("v5 receipt requires trace manifest contract v2")
+        if receipt_schema in {LEGACY_RECEIPT_SCHEMA, LEGACY_RECEIPT_SCHEMA_V4} \
+                and manifest.get("schema") != trace_mod.TRACE_MANIFEST_SCHEMA_V1:
+            errors.append("legacy receipt requires trace manifest contract v1")
         errors.extend(_validate_manifest(manifest, resolved_cfg, resolved_version))
     # trace identity: rebuilt from resolved config + manifest input hash
     if manifest is not None and resolved_cfg is not None and resolved_version:
@@ -1195,7 +1229,7 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
                        if manifest.get("schema") == trace_mod.TRACE_MANIFEST_SCHEMA_V1
                        else _config.trace_identity_sha256)
         expected_identity = identity_fn(
-            {"version": resolved_version, "config": resolved_cfg},
+            {"version": resolved_version, "config": raw_resolved_cfg},
             manifest.get("input_sha256", ""))
         if manifest.get("trace_identity_sha256") != expected_identity:
             errors.append("manifest trace identity != resolved config trace scope")

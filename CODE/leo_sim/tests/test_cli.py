@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from CODE.leo_sim.__main__ import _DecisionLogWriter, main
+from CODE.leo_sim import config, trace
 
 SMOKE = str(Path(__file__).resolve().parent.parent / "profiles" / "smoke.yaml")
 
@@ -66,6 +67,36 @@ def test_full_run_and_receipt_verify(tmp_path, capsys):
     assert rc == 0 and out["natural_end"] is True and out["conservation_ok"] is True
     rc2 = main(["receipt", "verify", out_dir])
     assert rc2 == 0, capsys.readouterr().out
+
+
+def test_v5_receipt_rejects_complete_manifest_downgrade_attack(tmp_path, capsys):
+    cfg_path = _write_cfg(tmp_path)
+    out = tmp_path / "out"
+    assert main(["run", "--config", cfg_path, "--out", str(out)]) == 0
+    capsys.readouterr()
+    manifest_path = out / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    for key in ("simulation_horizon_s", "emission_end_s", "drain_s"):
+        manifest.pop(key)
+    manifest["schema"] = trace.TRACE_MANIFEST_SCHEMA_V1
+    contract = manifest["provenance_contract"]
+    for key in ("simulation_horizon_s", "emission_end_s", "drain_s"):
+        contract.pop(key)
+    contract["schema"] = trace.TRACE_PROVENANCE_SCHEMA_V1
+    resolved = json.loads((out / "resolved_config.json").read_text())
+    manifest["trace_identity_sha256"] = config.legacy_trace_identity_sha256(
+        resolved, manifest["input_sha256"])
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    receipt_path = out / "receipt.json"
+    receipt = json.loads(receipt_path.read_text())
+    receipt["trace_manifest_sha256"] = hashlib.sha256(
+        manifest_path.read_bytes()).hexdigest()
+    receipt["trace_identity_sha256"] = manifest["trace_identity_sha256"]
+    receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+    errors = __import__("CODE.leo_sim.receipt", fromlist=["verify_receipt_dir"]).verify_receipt_dir(str(out))
+    assert errors
+    assert any("v5 receipt requires trace manifest contract v2" in error
+               for error in errors)
 
 
 def test_run_writes_optional_decision_log_with_info_audit(tmp_path, capsys):

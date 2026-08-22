@@ -1,10 +1,50 @@
 """Tests for the event-backed congestion and link-utilization metrics."""
 
+import hashlib
+import json
+from pathlib import Path
+
 import pytest
 
-from CODE.leo_sim import metrics
+from CODE.leo_sim import config, metrics
 from CODE.leo_sim import kernel
 from CODE.leo_sim.tests.helpers import StaticGeometry, cell, make_cfg, row
+
+
+def _convert_run_to_legacy_v1(out, receipt_schema="leo-sim-receipt/v3"):
+    """Build a genuine pre-emission-window artifact, not a schema disguise."""
+    out = Path(out)
+    manifest = json.loads((out / "manifest.json").read_text())
+    for key in ("simulation_horizon_s", "emission_end_s", "drain_s"):
+        manifest.pop(key)
+    manifest["schema"] = "leo-sim-trace-manifest/v1"
+    contract = manifest["provenance_contract"]
+    for key in ("simulation_horizon_s", "emission_end_s", "drain_s"):
+        contract.pop(key)
+    contract["schema"] = "leo-sim-trace-provenance/v1"
+    resolved = json.loads((out / "resolved_config.json").read_text())
+    resolved["config"]["demand"].pop("emission_end_s")
+    (out / "resolved_config.json").write_text(
+        json.dumps(resolved, indent=2, sort_keys=True) + "\n")
+    input_sha = manifest["input_sha256"]
+    manifest["trace_identity_sha256"] = config.legacy_trace_identity_sha256(
+        resolved, input_sha)
+    (out / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    receipt = json.loads((out / "receipt.json").read_text())
+    receipt["schema"] = receipt_schema
+    receipt["config_sha256"] = hashlib.sha256(
+        json.dumps(resolved["config"], sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    receipt["trace_manifest_sha256"] = hashlib.sha256(
+        (out / "manifest.json").read_bytes()).hexdigest()
+    receipt["trace_identity_sha256"] = manifest["trace_identity_sha256"]
+    receipt.pop("trace_manifest_contract", None)
+    receipt.pop("trace_identity_contract", None)
+    if receipt_schema == "leo-sim-receipt/v3":
+        receipt.pop("congestion_metrics_contract", None)
+    (out / "receipt.json").write_text(
+        json.dumps(receipt, indent=2, sort_keys=True) + "\n")
 
 
 def test_summarize_recomputes_queue_tx_propagation_and_link_utilization():
@@ -138,15 +178,11 @@ def test_receipt_v4_rejects_v1_but_legacy_v3_reverifies(tmp_path):
     assert result["congestion_metrics"]["schema"] == "leo-sim-congestion-metrics/v1"
     out = tmp_path / "run"
     written = receipt.write_run(str(out), cfg, trace_bytes, manifest, result, rows)
-    assert written["schema"] == "leo-sim-receipt/v4"
+    assert written["schema"] == "leo-sim-receipt/v5"
     assert written["congestion_metrics_contract"] == "leo-sim-congestion-metrics/v2"
     errors = receipt.verify_receipt_dir(str(out))
     assert any("schema != receipt contract" in error for error in errors)
-    legacy = json.loads((out / "receipt.json").read_text(encoding="utf-8"))
-    legacy["schema"] = "leo-sim-receipt/v3"
-    del legacy["congestion_metrics_contract"]
-    (out / "receipt.json").write_text(
-        json.dumps(legacy, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _convert_run_to_legacy_v1(out)
     assert receipt.verify_receipt_dir(str(out)) == []
 
 
@@ -492,9 +528,5 @@ def test_legacy_v3_v1_delivered_run_without_new_ingress_event_reverifies(tmp_pat
     assert result["congestion_metrics"]["schema"] == "leo-sim-congestion-metrics/v1"
     out = tmp_path / "run"
     receipt.write_run(str(out), cfg, trace_bytes, manifest, result, rows)
-    receipt_doc = json.loads((out / "receipt.json").read_text(encoding="utf-8"))
-    receipt_doc["schema"] = "leo-sim-receipt/v3"
-    del receipt_doc["congestion_metrics_contract"]
-    (out / "receipt.json").write_text(
-        json.dumps(receipt_doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _convert_run_to_legacy_v1(out)
     assert receipt.verify_receipt_dir(str(out)) == []
