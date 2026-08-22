@@ -8,7 +8,7 @@
 > 判定词：`FACT` 为当前可核验证据；`INFERENCE` 为基于证据的判断；`ESTIMATE` 为带前提的工期范围，不是承诺。
 
 > **Access boundary（E0 前门禁）**：当前默认 `access.unavailable_policy=reject` 保持历史兼容；新增显式 `queue` 仅是工程诊断语义，使用有限源端/上行队列，停止时未入网包记为 `IN_SYSTEM_AT_STOP`。新运行可由 raw events 重算 `access_admission_rate` 与 `network_delivery_rate_by_horizon`。旧 20 s 50/100/200 诊断保留原证据但不是 paper-ready；切换 queue 后必须重新做 coverage/horizon audit、VM 小样、E0 标定和训练，不能沿用旧曲线。
-> 因此 access boundary 是 E0 重标定的前门禁：coverage/horizon audit、queue 阶段指标和 VM 小样完成前，E0 仍为 `rerun_required`，不能按上方历史快照关闭。
+> 因此 access boundary 是 E0 重标定的前门禁：queue 阶段指标和 exact-main VM 小样已完成；coverage/horizon 与可用速率联合校准仍未完成，所以 E0 仍为 `rerun_required`，不能按上方历史快照关闭。
 
 ## 1. 两个目标
 
@@ -35,7 +35,7 @@
 | Q0 | snapshot 与 kernel `JointPlan` 原子校验/注入接口已有；Q0-I/Q0-F tiny 已合入 main；信息阶梯 tiny 合同已合入；可选 `--decision-log` 会流式输出带 config/trace/code/receipt SHA sidecar 的 `leo-sim-decision-info/v1` truth/cache-age 审计。真实 trace planned-vs-executed 归因、实际 learner 向量逐字段映射和信息价值实验仍未完成。Q0 不阻塞工程 smoke，但阻塞信息 vs 决策归因 | FACT |
 | 正式分析链 | 矩阵编译/授权 Stage 1 已完成；artifact→指标→配对分析→claim 的真实授权产物和闭环仍缺 | FACT，partial；仍 blocking |
 | 测量层 | 新多 OD trace 的 0.5/1/2/5 s VM cadence 四档均自然结束、receipt verified、raw metrics 重算通过；1/2/5 s packet/link metrics 逐项相同，1 s 暂定主候选。三档 E0 工程标定已完成；正式逐包三段时延 artifact、独立重算和三段和 gate 仍未完成 | FACT；阻塞拥塞论文诊断 |
-| 接入边界 | 默认 reject 与显式 queue 已实现并有有限队列/覆盖恢复/停止语义回归；`satellite_ingress` 与阶段指标 v2 可从 raw events 重算；coverage audit 已有确定性静态几何测试 | FACT；仍需 coverage/horizon audit + VM 小样才能关闭 E0 前门禁 |
+| 接入边界 | PR #150 已合入 main；默认 reject 与显式 queue、receipt v4/metrics v2、历史 v3/v1 兼容已通过独立冷审。main `63a1099` 已部署并完成 1,299 包 VM queue smoke：762 admitted、656 delivered、39 access overflow、604 in-system，natural end/守恒/VM receipt verified；max RSS 约 850 MiB | FACT；VM 小样已完成，仍需 coverage/horizon 与正速率可用性联合校准后才能关闭 E0 前门禁 |
 | 续训 | continuation bundle 已绑定 replay、optimizer、target network、训练计数器、NumPy/TF RNG、schema/config/SHA；VM 已验证恢复后继续一步的动作/计数/权重一致；完整长窗中断/不间断等价仍未跑 | FACT；完整长训前仍需等价门 |
 | 三轮三方无新问题 | 只完成局部 PR/局部模块审阅，没有在最终冻结平台上完成连续三轮 | FACT，未满足 |
 

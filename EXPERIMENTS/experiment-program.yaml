@@ -43,7 +43,11 @@ requirements:
   replay_resume_verified: {status: blocked, reason: full_long_window_interrupted_vs_uninterrupted_equivalence_pending}
   interaction_triggered: {status: planned, conditional: true}
   congestion_mechanism_identified: {status: blocked}
-  access_boundary_e0_gate: {status: rerun_required, reason: queue_semantics_require_coverage_horizon_audit_vm_smoke_and_new_e0_training}
+  access_boundary_e0_gate:
+    status: rerun_required
+    completed: [main_63a1099_deployed, vm_queue_smoke_natural_end, conservation, receipt_v4_verified, ingress_stage_metrics]
+    pending: [coverage_horizon_positive_rate_joint_calibration, new_e0_training]
+    evidence: {run_id: SMOKE-20260822-ACCESS-QUEUE-63a1099, deployment_receipt_sha: 8f31142bbf6a80b764fe66cd27e36b6e805ccad8de48b585a8436dae66b3f7a9, offered: 1299, admitted: 762, delivered: 656, max_rss_kib: 869920, paper_ready: false}
 
 gates:
   platform_frozen:
@@ -170,10 +174,11 @@ experiments:
   - id: ACCESS-BOUNDARY
     class: engineering_gate
     title: access_boundary_coverage_and_ingress_recalibration
-    status: rerun_required
+    status: in_progress
     prerequisites: [real_traffic_provenance_verified]
     purpose: Distinguish access coverage loss from post-ingress congestion before E0 load freeze.
-    required_evidence: [explicit_unavailable_policy, coverage_scan_json, horizon_audit, vm_smoke, raw_ingress_metrics]
+    completed_evidence: [explicit_unavailable_policy, vm_smoke, raw_ingress_metrics, receipt_v4_verified]
+    required_evidence: [coverage_scan_json, horizon_audit, positive_rate_usable_coverage]
     decision: coverage_scan_does_not_automatically_select_added_satellites
 
   - id: E0-LOAD-CALIBRATION
