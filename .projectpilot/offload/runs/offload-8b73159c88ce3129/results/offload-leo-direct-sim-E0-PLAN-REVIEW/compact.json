@@ -1,0 +1,54 @@
+{
+  "taskId": "offload:leo-direct-sim:E0-PLAN-REVIEW",
+  "status": "EVIDENCE_READY",
+  "summary": "E0计划方向正确，但必须先冻结负载、horizon、信息公平和瓶颈归因，否则容易产生伪拥塞和伪算法优势结论。建议四个overnight原子包：负载合同冻结、drain audit、information fairness、bottleneck attribution。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "E0负载分类存在post-hoc threshold风险，需要预注册规则。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/EXPERIMENT-PROGRAM.md#L2"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "blocking",
+      "summary": "截断horizon可能制造虚假拥塞。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/EXPERIMENT-PROGRAM.md#L2"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "vis_k变化可能混淆算法能力与信息能力。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L1-L2"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "先执行四个atomic package，再允许Q0 real replay。",
+    "冻结E0负载和信息合同。",
+    "禁止将工程smoke升级为论文claim。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L1-L2",
+    "github://fuguther/leo-direct-sim/blob/063542e3528ecb97a76d05f36fe9356d5c9c074c/ANALYSIS/EXPERIMENT-PROGRAM.md#L1-L2"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "由于当前读取窗口被限制，未能核验所有允许路径（metrics.py、paired_analysis.py、schema和test文件）的具体实现行号；相关结论应由_地Agent继续闭环。"
+  ]
+}
