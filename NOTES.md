@@ -11,7 +11,7 @@
 - 诊断事实：动态图在 `t=0,1,5,10,20,30` 均连通、degree=4、diameter=17；旧 `vis_k=12` 低于完整传播半径。当前三份 f328e85 drain 结果登记为 `diagnostic_info_truncated`，不用于拥塞分档：10/25/50M offered/admitted/delivered/in-system=`250/240/192/58`、`685/685/541/142`、`1299/1299/1057/222`；50M 有 16 holding overflow、4 no-route；ISL 最大利用率均 <0.4%。
 - 旧结果最后事件：10M 的 58 个末端包中 48 个在 holding、10 个在 uplink；25M 的 142 个均在 holding；50M 的 222 个均在 holding。该证据不足以把 holding 等待归因于物理拥塞，必须先补 vis17 对照。
 - 下一步只预注册 10M、同 trace `e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23` 的 `vis_k=17` 诊断；验收：receipt verified、natural end、conservation、holding/in-system/total delivery 与 vis12 对照。nested、不改内核。
-- 本地 RED→GREEN：新增 profile/diameter contract 测试在 `vis_k=12` 时先失败（3 failed, 1 passed, 7 deselected），改为 17 后 targeted `4 passed, 7 deselected`。完整 pytest、YAML parse、diff-check 待提交前执行。
+- 本地 RED→GREEN：新增 profile/diameter contract 测试在 `vis_k=12` 时先失败（3 failed, 1 passed, 7 deselected），改为 17 后 targeted `4 passed, 7 deselected`；提交前全量 `655 passed, 2 skipped, 3 subtests passed`，YAML parse 4 files、`git diff --check` 均通过。
 
 ## 2026-08-22：280/14/25° E0 工程基线与负载重标定（本分支）
 

@@ -219,8 +219,10 @@ experiments:
     class: engineering_calibration
     title: full_information_reference_radius_check
     status: preregistered
-    prerequisites: [E0-LOAD-CALIBRATION]
-    fixed: [main_f328e85, trace_e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23, offered_10_mbps, emission_end_20s, horizon_30s, topology_recompute_1s]
+    prerequisites: [D1_merged_to_main, D2_merged_to_main, TRAFFIC-T0, ACCESS-BOUNDARY, exact_main_deployed_to_vm]
+    base_evidence: {main_sha: f328e855857c60c4c87860a4eabb550d58636618, trace_sha256: e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23}
+    fixed: [trace_e2b469b984a7fc677f4ae8a61621f7e1e9c93ff3b3ade097461a68f365a2d23, offered_10_mbps, emission_end_20s, horizon_30s, topology_recompute_1s]
+    execution: {code: post_merge_exact_main_tbd, deployment: same_sha_required, status: pending}
     arms: [vis_k_17]
     negative_control: [historical_vis_k_12]
     purpose: Determine whether the old 10M holding/in-system result was confounded by control-plane information truncation below the registered 280/14 graph diameter.
