@@ -5,7 +5,12 @@
   "parent_revision": null,
   "producer_id": "producer:codex",
   "producer_session_id": "P-leo-v2-e0-load-formal-r02",
-  "objective": "Validate three explicitly defined M-Lab multi-OD burst load tiers and produce an auditable load table through one formally authorized six-cell consistency matrix; final E0 threshold selection remains a post-run decision.",
+  "supersedes": {
+    "experiment_id": "EXP-20260821-E0-LOAD-FORMAL-R01",
+    "reason": "R02 is a clean-code rerun against the current main after the F1 information-ladder merge and bottleneck diagnosis.",
+    "artifact_rule": "R01 authorization and results are not reusable and must never be pooled with R02."
+  },
+  "objective": "Validate three explicitly defined M-Lab multi-OD burst load tiers and produce an auditable load table through one formally authorized six-cell consistency matrix; choose a provisional E0 candidate only by the preregistered rule below, then confirm it with additional seeds.",
   "context": [
     "This is a load-contract and analysis-chain validation step, not an algorithm comparison.",
     "Each load tier has two identical non-learning cells with the same trace seed and resolved demand override; the paired difference must be zero if the formal chain is deterministic.",
@@ -19,10 +24,23 @@
     "CODE/scripts/remote"
   ],
   "excluded_inputs": ["CODE/Results", "Unverified historical result claims"],
+  "load_selection_rule": {
+    "validity_gate": [
+      "Every candidate cell must end naturally, report conservation=true, pass governance and satisfy the declared acceptance contract.",
+      "A failed validity gate never qualifies a tier; it triggers a follow-up diagnostic instead of silent exclusion."
+    ],
+    "tier_labels": {
+      "low": "non-congested control point when delivery_rate >= 0.80 and holding-overflow fraction <= 0.05",
+      "medium": "target operating point when delivery_rate is between 0.20 and 0.80 inclusive and holding-overflow fraction <= 0.20",
+      "high": "stress point when delivery_rate < 0.20 or holding-overflow fraction > 0.20, while still passing the validity gate"
+    },
+    "selection": "Select the lowest valid tier labelled medium as the provisional E0 main-load candidate. If no tier is labelled medium, do not freeze a main load; run a bracket follow-up between the nearest valid tiers (or add 25 Mbps around the nearest boundary) and apply the same rule.",
+    "confirmation": "The provisional candidate is not paper-frozen after this one-seed scan. Re-run it with at least two additional trace seeds; freeze only if the same label holds for both and the paired duplicate checks remain exact."
+  },
   "deliverables": [
     "A compiled and independently reviewed six-cell matrix",
     "Receipt-verified VM outputs for all three load pairs",
-    "A persisted V2 paired analysis and a load-tier evidence table with source, endpoint, burst, offered-bit and fate checks"
+    "A persisted V2 paired analysis plus immutable run/receipt artifacts from which the preregistered load-selection rule can be recomputed"
   ],
   "cannot_claim": [
     "Algorithm superiority",
@@ -35,7 +53,7 @@
     "Matrix identity, exact demand intervention path and pair membership pass independent cold review.",
     "All six cells complete naturally on one clean deployed SHA with conservation and acceptance true.",
     "V2 analysis recomputes delivery_rate for all three duplicate pairs and persists a VERIFIED analysis.",
-    "For every tier, the post-run evidence table re-derives the resolved base rate, integrated burst-average target, M-Lab source and endpoint-selection identity, burst transform, offered bits, fates, wall time and raw metric validation from immutable artifacts."
+    "For every tier, immutable receipts and V2 artifacts retain the resolved base rate, integrated burst-average target, M-Lab source and endpoint-selection identity, burst transform, offered bits, fates, wall time and raw metric inputs needed for post-run load selection."
   ],
   "review_roles": ["cold_start", "satellite_drl", "adversarial"],
   "cost_tier": "high_judgment",

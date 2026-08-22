@@ -141,7 +141,10 @@
       "the delivery_rate metric can be recomputed from the receipt",
       "each tier's duplicate pair is descriptive consistency evidence under the fixed M-Lab burst profile",
       "the base offered rate and integrated burst-average target can be recomputed from the authorized resolved configurations",
-      "the raw artifacts preserve source, endpoint-selection, burst and fate evidence for a later E0 load decision"
+      "the raw artifacts preserve source, endpoint-selection, burst and fate evidence for a later E0 load decision",
+      "load_selection_rule: after the validity gate (natural_end, conservation, governance and acceptance), label low when delivery_rate >= 0.80 and holding-overflow fraction <= 0.05, medium when delivery_rate is 0.20-0.80 inclusive and holding-overflow fraction <= 0.20, and high otherwise",
+      "load_selection_rule: choose the lowest valid medium tier as the provisional E0 candidate; if none qualifies, run a bracket follow-up rather than freezing a load",
+      "load_selection_rule: confirm the provisional tier with at least two additional trace seeds before paper-facing load freeze"
     ],
     "cannot_claim": [
       "algorithm superiority",
@@ -149,7 +152,8 @@
       "a cross-tier causal load-response claim",
       "a causal congestion-control claim",
       "Q0 optimality",
-      "paper-ready statistical conclusion"
+      "paper-ready statistical conclusion",
+      "pooling R01 artifacts with R02 artifacts; R01 is bound to an older code SHA and is superseded"
     ]
   },
   "common_config": {

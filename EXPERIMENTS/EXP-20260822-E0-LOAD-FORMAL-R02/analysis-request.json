@@ -33,7 +33,10 @@
       "the delivery_rate metric can be recomputed from the receipt",
       "each tier's duplicate pair is descriptive consistency evidence under the fixed M-Lab burst profile",
       "the base offered rate and integrated burst-average target can be recomputed from the authorized resolved configurations",
-      "the raw artifacts preserve source, endpoint-selection, burst and fate evidence for a later E0 load decision"
+      "the raw artifacts preserve source, endpoint-selection, burst and fate evidence for a later E0 load decision",
+      "load_selection_rule: after the validity gate (natural_end, conservation, governance and acceptance), label low when delivery_rate >= 0.80 and holding-overflow fraction <= 0.05, medium when delivery_rate is 0.20-0.80 inclusive and holding-overflow fraction <= 0.20, and high otherwise",
+      "load_selection_rule: choose the lowest valid medium tier as the provisional E0 candidate; if none qualifies, run a bracket follow-up rather than freezing a load",
+      "load_selection_rule: confirm the provisional tier with at least two additional trace seeds before paper-facing load freeze"
     ],
     "cannot_claim": [
       "algorithm superiority",
@@ -41,11 +44,12 @@
       "a cross-tier causal load-response claim",
       "a causal congestion-control claim",
       "Q0 optimality",
-      "paper-ready statistical conclusion"
+      "paper-ready statistical conclusion",
+      "pooling R01 artifacts with R02 artifacts; R01 is bound to an older code SHA and is superseded"
     ]
   },
   "experiment_id": "EXP-20260822-E0-LOAD-FORMAL-R02",
-  "matrix_manifest_sha256": "01157acc308b38951d5c15e775113e8d8ac47adee896c1888747f056185df8ac",
+  "matrix_manifest_sha256": "c505690113a2dc21f5ed1c751b548fbc23b6623d78c218597a5aa3b647c79144",
   "planned_cells": [
     {
       "acceptance": {
@@ -164,7 +168,7 @@
     "EXP-20260822-E0-LOAD-FORMAL-R02-high_control-s7",
     "EXP-20260822-E0-LOAD-FORMAL-R02-high_copy-s7"
   ],
-  "request_sha256": "13e23a8ae69210b9b8dc7e0c5c1c21d142089ec98704f75a362b36cdb409c368",
+  "request_sha256": "156edffa7e531e758ac43debe102aced773515d39b88d65cf88485b8ea11ce2d",
   "runtime_kind": "leo_sim_v2",
   "schema": "leo-sim-matrix-analysis-request/v1",
   "status": "WAITING_FOR_VERIFIED_RUNS"
