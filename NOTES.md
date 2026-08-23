@@ -5,6 +5,15 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-24：ISL RF 带宽敏感性候选包（精确包冷审通过，未授权）
+
+- 分支 `codex/20260824-advisor-reports`，基线 `origin/main@e75b26c08c96b4507fc2c7d4682fb3e7893c8240`；本工作单元新增带宽敏感性 matrix 候选包、ISL-only horizon 聚合利用率分析指标及回归测试，并把 experiment-platform 测试纳入 CI；不修改 kernel、RF 公式、receipt 或历史实验。
+- 新增 `EXP-20260824-ISL-BANDWIDTH-PILOT-R01`：两臂固定 280/14/25°、20 s 发包+10 s 排空、M-Lab measurement-proxy 多 OD、50M 配置标签+8 s 2× burst、seed 7、hop 路由和 `vis_k=17` propagation-cache 工程参考，只改 `links.rf_isl.bandwidth_hz=500/50 MHz`。该干预同时影响噪声、SNR、MCS 和服务时间，不写成纯容量乘数。
+- 三轮精确冷审先后为 `REQUEST_CHANGES`：依次关闭会筛掉真实低带宽结果的硬 acceptance、delivery rate/全 stage 平均无法表征 ISL 压力、把 horizon link aggregate 误称 service-window utilization 三类问题。当前主指标 `isl_link_utilization_max` 只统计 `stage=isl`，含义是每条有向 ISL 在整段 horizon 聚合 `served_bits / sampled available_capacity_bits` 后跨 link 取最大值；无 ISL 数据 fail-loud。两轮 TDD 均保留 RED→GREEN 证据，最终 CI 同口径命令为 `634 passed, 1 skipped, 3 subtests passed`，文档治理 `0 errors, 0 warnings`。
+- 第四轮独立冷审对精确工件为 `PASS`：source raw SHA=`37f305eb0ffc1cc0ac700d6febf8a1dcd5460ea38940c234c11ed52935f3fe47`，compiled request SHA=`add16c3410e9cca2aa04e5d67401a20b571954121575207d530fe08bdde42286`，run-manifest SHA=`c36ba8d2d9ef5ff09c81ce9b8ee59295ddbdc60324511257a778c59d7d3fd840`，analysis-request SHA=`4f62864ff4635f6b28a2765754f7ddf1f526120dd2223f1d3068110e1f7fcab7`。两臂 trace identity 同为 `effb467639ce8d0b73f60cde249eb6a792ec890b21d3e4e91ffee84143577309`，controlled signature 同为 `d6d9cac717206bfd5ef4d295c1addb322708fb7f03e9d953dc72ec3af725807f`；逐叶比较唯一差异是 ISL RF bandwidth。
+- 精确提交冷启动复核为 `PASS_BOUND_TO_SHA`，绑定生产 commit `34f8149214a79204d9d3d2fa9e5fba5177b3ad4b`；PR [#158](https://github.com/fuguther/leo-direct-sim/pull/158)。PR 证据包含审阅边界、测试计数和 2-cell/7-artifact matrix 复验结果。
+- 边界：该 PASS 只覆盖 compiled/analysis contract。本包仍为 `COMPILED_REVIEW_REQUIRED`，没有 finalization、authorization、latest-main VM deployment 或 analyzer-SHA 分析工件绑定，尚未运行。正式分析前须把 analyzer 的精确 Git commit 纳入 finalization/证据链；未关闭前不得手工启动或作为论文结果。
+
 ## 2026-08-22：E0 vis17 同 trace 诊断登记（当前工作单元）
 
 - docs-only 分支 `codex/20260822-e0-vis17-result`，基线 `main@34c68b4bdc5e5d91a3b5e5ccdf2c3e339473db18`；不改 kernel、trace schema、nested trace 或历史目录。
