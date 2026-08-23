@@ -23,4 +23,4 @@ jobs:
       - name: Check document governance
         run: python scripts/check_document_governance.py --mode all
       - name: Run test suite
-        run: python -m pytest CODE/leo_sim/tests CODE/tests -q
+        run: python -m pytest CODE/leo_sim/tests CODE/experiment_platform/tests CODE/tests -q

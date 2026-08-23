@@ -123,6 +123,42 @@ def test_access_boundary_metrics_are_explicit_v2_metrics():
         "network_delivery_rate_by_horizon") == 0.25
 
 
+def test_isl_utilization_metrics_filter_non_isl_links():
+    receipt_payload = {"totals": {"delivered_bits": 10},
+                       "fate_counts": {"DELIVERED": 1}}
+    ledgers = {"congestion_metrics": {
+        "packets": {},
+        "links": {
+            "gsl:uplink:0:a": {"stage": "uplink", "utilization": 0.99},
+            "isl:0:1": {"stage": "isl", "utilization": 0.25},
+            "isl:1:2": {"stage": "isl", "utilization": 0.75},
+            "gsl:downlink:2:b": {"stage": "downlink", "utilization": 0.95},
+        },
+    }}
+    assert v2_analysis._metric_from_result(
+        receipt_payload, ledgers,
+        "isl_link_utilization_mean") == 0.5
+    assert v2_analysis._metric_from_result(
+        receipt_payload, ledgers,
+        "isl_link_utilization_max") == 0.75
+
+
+def test_isl_utilization_metrics_fail_loud_without_isl_links():
+    receipt_payload = {"totals": {"delivered_bits": 10},
+                       "fate_counts": {"DELIVERED": 1}}
+    ledgers = {"congestion_metrics": {
+        "packets": {},
+        "links": {
+            "gsl:uplink:0:a": {"stage": "uplink", "utilization": 0.99},
+            "gsl:downlink:0:b": {"stage": "downlink", "utilization": 0.95},
+        },
+    }}
+    for primary in {"isl_link_utilization_mean", "isl_link_utilization_max"}:
+        with pytest.raises(v2_analysis.V2AnalysisError,
+                           match="has no ISL links"):
+            v2_analysis._metric_from_result(receipt_payload, ledgers, primary)
+
+
 def test_planned_contrasts_scope_each_contrast_to_its_own_pairing_key():
     results = [
         {"pairing_key": "load-50", "arm_id": "low_control",

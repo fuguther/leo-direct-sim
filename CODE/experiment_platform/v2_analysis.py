@@ -177,6 +177,14 @@ def _metric_from_result(receipt: dict[str, Any], ledgers: dict[str, Any],
         if not values:
             raise V2AnalysisError(f"primary metric {primary} has no service links")
         return sum(values) / len(values)
+    if primary in {"isl_link_utilization_mean", "isl_link_utilization_max"}:
+        values = [_finite(item.get("utilization"), "ISL utilization")
+                  for item in links.values()
+                  if isinstance(item, dict) and item.get("stage") == "isl"]
+        if not values:
+            raise V2AnalysisError(f"primary metric {primary} has no ISL links")
+        return (max(values) if primary.endswith("_max")
+                else sum(values) / len(values))
     raise V2AnalysisError(f"unsupported V2 primary metric: {primary}")
 
 
