@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "planId": "offload-301ee41b0ecae7a2",
+  "relayManifest": {
+    "planId": "offload-301ee41b0ecae7a2",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:REMOTE_ENV_FIX_REVIEW",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "4568e3bc22e9a44106f67c3f2119010dae63997d",
+        "paths": [
+          "CODE/scripts/remote/run-remote.sh",
+          "CODE/scripts/remote/common.sh",
+          "CODE/scripts/remote/remote_job.py",
+          "CODE/experiment_platform/tests/test_remote_launcher_environment.py"
+        ],
+        "promptHash": "cfba594a0c5848400bd34fe3c288f077f78ccb6be9335b3bb3512ffc4b2156cd"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:REMOTE_ENV_FIX_REVIEW:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "4568e3bc22e9a44106f67c3f2119010dae63997d",
+        "paths": [
+          "CODE/scripts/remote/run-remote.sh",
+          "CODE/scripts/remote/common.sh",
+          "CODE/scripts/remote/remote_job.py",
+          "CODE/experiment_platform/tests/test_remote_launcher_environment.py"
+        ],
+        "promptHash": "6bae25491cdcae1c2e83e5cfc6c3838beda7c020652f2e50f17bd33c702a6d01"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "301ee41b0ecae7a29d3bea4769d195a7f1e00893e1176d1450524ccec981b6ac"
+  },
+  "sourceBaseCommit": "4568e3bc22e9a44106f67c3f2119010dae63997d",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:REMOTE_ENV_FIX_REVIEW",
+      "promptHash": "cfba594a0c5848400bd34fe3c288f077f78ccb6be9335b3bb3512ffc4b2156cd",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "4568e3bc22e9a44106f67c3f2119010dae63997d",
+        "paths": [
+          "CODE/scripts/remote/run-remote.sh",
+          "CODE/scripts/remote/common.sh",
+          "CODE/scripts/remote/remote_job.py",
+          "CODE/experiment_platform/tests/test_remote_launcher_environment.py"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:REMOTE_ENV_FIX_REVIEW:independent_review",
+      "promptHash": "6bae25491cdcae1c2e83e5cfc6c3838beda7c020652f2e50f17bd33c702a6d01",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "4568e3bc22e9a44106f67c3f2119010dae63997d",
+        "paths": [
+          "CODE/scripts/remote/run-remote.sh",
+          "CODE/scripts/remote/common.sh",
+          "CODE/scripts/remote/remote_job.py",
+          "CODE/experiment_platform/tests/test_remote_launcher_environment.py"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
