@@ -173,6 +173,7 @@ cd $q_code_dir
 mkdir -p $q_runtime_dir $q_log_dir
 $(if [[ "$exclusive_simulation" -eq 1 ]]; then printf '%s\n' "if pgrep -af '[S]imulationRL.py' >/dev/null; then echo '[remote] another SimulationRL.py process is active' >&2; exit 3; fi"; fi)
 tmux has-session -t $q_session >/dev/null 2>&1 && { echo '[remote] session already exists' >&2; exit 2; }
+$REMOTE_ENV_ACTIVATE
 $q_python scripts/remote/remote_job.py $q_prepare_args
 if ! tmux new-session -d -s $q_session bash -lc $(printf '%q' "$tmux_script"); then
   $q_python scripts/remote/remote_job.py $q_fail_args || true

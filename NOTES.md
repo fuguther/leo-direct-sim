@@ -753,3 +753,9 @@
 - 执行中有一次准备阶段 fail-closed：默认远程 Python 未进入正式 TensorFlow 环境，仿真未启动、无结果目录。显式绑定 formal VM Python 后，同一授权与部署上的前驱验证和正式运行均通过。该事件不污染结果，但默认解释器/环境激活不一致仍是平台可用性缺口，应在独立小修复中加回归并闭合。
 - 结果提交 `dd892b3a…` 的两路 Kimi 冷审均为 `PASS_WITH_LIMITS`、无 blocker。Codex 接受阈值邻接限制：5 MHz 存在约 0.9675 的单高窗与最多 1.941 s 的匹配等待但不满足连续窗规则；2 MHz 的 `isl:187:207` 有 5 个连续高窗但最大重叠等待约 0.0807 s，距 0.1 s 门槛仅约 0.0193 s。因此链路数量和控制臂无压力都不能外推为稳定结论，seeds 11/19 必须逐分支报告、禁用多数票。
 - 本地确认 `0280de3…` 是结果提交祖先，四个 analyzer 文件在两提交间无差异且哈希与 manifest 完全一致。结果提交因 Git identity 改变而按设计拒绝原地重放；在 exact 源提交、VM 正式 Python 3.11.15、原始结果与外部见证上重跑成功，classification 仍为 `PRESSURE_CANDIDATE`，SHA 仍为 `c0075a36…`。
+
+## 2026-08-25：远程正式准备检查统一使用已激活环境
+
+- R03 暴露的启动缺口已复现到 `run-remote.sh`：tmux 内的正式子进程会先执行 `REMOTE_ENV_ACTIVATE`，但 tmux 外的 `remote_job.py prepare` 直接调用 `REMOTE_PYTHON`，因此配置为 `python3` 时会落到未激活的系统解释器，并在仿真启动前因缺少正式依赖 fail-closed。
+- 本修复只在远程 prepare/fail 所在的同一 shell 中、执行 prepare 之前加入现有 `REMOTE_ENV_ACTIVATE`；正式 tmux 子进程的激活与执行逻辑不变，实验参数、授权、回执和分析语义均未修改。
+- TDD 证据：新增 shell 模板回归先在当前代码上以 `substring not found` 失败，随后最小修复转绿。两轮两路 Kimi exact-commit 冷审均为 `PASS_WITH_LIMITS`、无 blocker；Codex 接受其“纯字符串断言可被注释伪装、未覆盖 fail/tmux、外层未锁定严格错误模式先于激活”意见，把回归加固为只认未注释独立命令行，并同时锁定外层 `set -euo pipefail → activation → prepare → fail` 与 tmux `set -euo pipefail → activation → run`。`bash -n` 通过，定向 `2 passed`，全套测试为 `714 passed, 2 skipped, 3 subtests passed`。当前最终修订仍需 PR/CI 合入和 clean-main 部署，不得写成默认远程路径已正式闭环。
