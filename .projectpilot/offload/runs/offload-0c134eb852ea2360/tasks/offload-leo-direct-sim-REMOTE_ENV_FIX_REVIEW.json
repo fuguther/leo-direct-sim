@@ -1,0 +1,59 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:REMOTE_ENV_FIX_REVIEW",
+    "title": "Remote formal environment activation cold review",
+    "goal": "Audit final commit b46208bcd72d96f4be58a788666dec244395a9d3. Confirm production behavior remains the previously reviewed one-line activation fix, and that the revised regression now rejects commented activation text and covers prepare, fail, and tmux child ordering. Return PASS_WITH_LIMITS or REQUEST_CHANGES with blockers separated. Do not edit files or broaden scope.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "b46208bcd72d96f4be58a788666dec244395a9d3",
+      "paths": [
+        "CODE/scripts/remote/run-remote.sh",
+        "CODE/scripts/remote/common.sh",
+        "CODE/scripts/remote/remote_job.py",
+        "CODE/experiment_platform/tests/test_remote_launcher_environment.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Cite exact lines for every major finding.",
+      "Trace prepare, tmux child, and fail paths separately.",
+      "Assess the test against the observed system-python incident.",
+      "State explicit verdict and open items."
+    ],
+    "requiredEvidence": [
+      "Exact-commit line-grounded evidence",
+      "Shell execution-order analysis",
+      "Explicit open_items and verdict"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "13369a1b311bc87eb4cc1cf5217efc6b3c80ddb709b1e528bb3cc194eabe2a9e"
+}
