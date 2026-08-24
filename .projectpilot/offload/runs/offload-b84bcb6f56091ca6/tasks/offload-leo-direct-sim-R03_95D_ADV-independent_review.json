@@ -1,0 +1,69 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R03_95D_ADV:independent_review",
+    "title": "R03 final adversarial evidence-gate review",
+    "goal": "Act as a hostile but evidence-bounded reviewer. Try to make malformed, incomplete or mismatched evidence produce PRESSURE_CANDIDATE or NO_PRESSURE_PHYS_VALID. Investigate disjoint-time utilization and queueing; queue wait on the wrong directed link or wrong packet/service window; denominator-only saturation; ineligible windows; unmatched entries; events beyond stop time; missing counters; undeclared arms; unverified or tampered persisted analysis; altered decision contract; simultaneous RUNBOOK plus compile-report hash forgery; physical or drain invalidity; candidate-only onset; and unlocalized ISL_QUEUE_OVERFLOW. Check classifier ordering, exact cohort identity, threshold synchronization, deterministic RUNBOOK re-rendering and the boundary between internal direct-dict unit tests and the formal persisted CLI. Return PASS_WITH_LIMITS or REQUEST_CHANGES. Do not edit files. Never emit example or placeholder evidence: every evidence item must use the exact github://fuguther/leo-direct-sim/blob/95d28051696ccaa6e75a46bb552e60874f5da256/<allowed-path>#Lx-Ly form; omit a finding if you cannot supply that form.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "deterministic",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "95d28051696ccaa6e75a46bb552e60874f5da256",
+      "paths": [
+        "CODE/experiment_platform/isl_pressure.py",
+        "CODE/experiment_platform/isl_pressure_decision.py",
+        "CODE/experiment_platform/tests/test_isl_pressure.py",
+        "CODE/experiment_platform/tests/test_isl_pressure_decision.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/experiment_platform/tests/test_v2_analysis.py",
+        "CODE/leo_sim/matrix.py",
+        "CODE/leo_sim/tests/test_matrix_contract.py",
+        "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/",
+        "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+        "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Verify the exact commit and declared artifact set.",
+      "Try every declared malformed, disjoint-time, wrong-link, incomplete-drain and unlocalized-overflow bypass.",
+      "Verify the five ordered classes and every fail-loud non-classification path are mutually intelligible.",
+      "Verify the formal persisted CLI cannot accept tampered or unverified V2 analysis.",
+      "Verify changing the decision contract or jointly forging RUNBOOK and compile-report hashes is rejected.",
+      "Verify direct in-memory classification remains a unit-test/internal function and is not the formal evidence path.",
+      "Verify no post-hoc threshold, extra arm, 1 MHz run or algorithm comparison is authorized."
+    ],
+    "requiredEvidence": [
+      "Line-grounded exact-commit evidence with no placeholders",
+      "At least one mechanism counterexample or covered regression",
+      "Explicit open_items and PASS_WITH_LIMITS or REQUEST_CHANGES"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "e0c3b58fce3d851ddb6db7cbcbd3b970ee7057cf8669c485575898fa02e922db"
+}
