@@ -1,0 +1,226 @@
+我先读取合同中允许的所有文件，从核心代码与配置开始。现在读取 V2 分析测试与实验目录内的 request.json。所有合同允许路径已读取完毕。以下为完整评审报告。
+
+---
+
+# R03 对抗性评审报告：ISL 压力 bracket（exact-commit）
+
+**评审对象**：`fuguther/leo-direct-sim` @ `f6cbf4e91c702ed0982b6dcc16b2a22c19da5183`
+**范围**：1 秒定向 ISL rebin、匹配队列等待重建、紧凑持久化诊断、四路决策树、两 cell 配置同一性、claim 边界
+**结论**：**PASS_WITH_LIMITS**（无 blocking；1 条 major、3 条 minor、3 条 info；含一个可执行的合成 ledger 反例）
+
+---
+
+## 1. 已验证通过项（正面证据）
+
+### 1.1 两 cell 配置同一性 — PASS
+
+逐行比对两个 resolved 配置（各 173 行），**唯一差异是 `links.rf_isl.bandwidth_hz`**：b5 为 `5000000.0`，b2 为 `2000000.0`，均位于各自文件第 127 行。其余所有键值（trace seed 7、场景 280×14、mlab 需求、access、hop/C3 路由、control_plane、topology、execution、learning none）逐字相同。
+
+- b5: `EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b5-s7.leo-sim.yaml#L124-L134`
+- b2: 同路径 b2 文件 `#L124-L134`
+
+run-manifest 中两 cell 共享同一 `trace_seed: 7`、`pairing_key: "bandwidth-s7"`、`input_sha256`（f15cf8…）、`trace_identity_sha256`（effb46…）、`code_sha256`（5d52a4…）与相同的 `controlled_signature`（d6d9ca…），只有 `config_sha256` 按预期不同；两臂 `intervention_paths` 均恰好为 `["links.rf_isl.bandwidth_hz"]`（`run-manifest.json#L44-L64` vs `#L79-L99`）。`common_config_sha256` 单一（L102）。**配置同一性成立。**
+
+### 1.2 Rebinner 正确性 — PASS（附 minor 测试缺口）
+
+`isl_pressure.py` 核心逻辑经推演正确：
+
+- `allocate()`（L109-L118）用 `floor(start/w)` 到 `ceil(end/w)-1` 的半开区间分 bin，`bin_end = min(stop, …)` 处理末 bin；边界对齐的区间不会重复计入相邻 bin。
+- 分子分母分离：service 按 `served_rate = served/(end-start)` 均匀摊入（L182-L184），available 按 `rate×overlap` 摊入容量与可用时长（L145-L150）；由于 `served ≤ capacity` 在录入时强制（L171-L173），每 bin `served_bin ≤ capacity_bin`，利用率 ≤ 1，**不存在摊分导致的 >1 假饱和**。
+- 资格门：`available_time ≥ 0.9×duration - 1e-9`（L284）；高利用门仅在 eligible 窗口内判定（L286-L291）；ineligible 窗口既打断连续性（`high_indices` 不含它）也不计入 `_longest_consecutive`（L46-L53、L303）。**物理不可用窗口无法伪装成高利用窗口**。
+- 每 bin fail-loud：有 served 无 capacity → 报错（L275-L278）；served 超 capacity → 报错（L279-L282）；同类窗口重叠 → 报错（L186-L192）；`capacity = rate×(end-start)` 一致性强制（L139-L142、L167-L170）。
+- 匹配队列等待：`queue_enter`↔`service_start` 要求 pid + link_id 双重一致（L239-L241）、禁止 service 早于入队（L242-L244）、同一 queue_id 二次 service_start → 报错（L231-L232）、未知 queue_id → 报错（L233-L235）；未匹配条目不捏造、单独计数（L343）。等待面积按 `[entry.at, start)` 跨 bin 精确摊分（L256-L258）。
+
+brief 验收第 2 条列出的 5 项合成测试全部存在且对应：2 秒饱和突发在低 horizon 聚合下可见（`test_isl_pressure.py#L18-L50`）、区间边界精确摊分（L53-L77）、无可用容量的 service 失败（L80-L92）、重叠 service 失败（L95-L116）、未匹配条目不估算（L119-L137）。另有零时长窗忽略测试（L140-L158）。
+
+### 1.3 紧凑持久化诊断与证据绑定 — PASS（附 1 条 decidability 缺口，见 F2）
+
+`_run_diagnostics`（`v2_analysis.py#L238-L310`）持久化 mcs（含 `rate_min_bps`）、完整 control 字典、access 字典、fate_counts、queue_area、`windowed_isl` 全量输出及 ISL 分母证据（`served_bits`/`available_capacity_bits` 分列，L284-L295）；windowed 分析 fail-closed 接入（L261-L265）。持久化 manifest 经 `verify_persisted_analysis` 重算比对（L700-L781），claim-gate 与 summary 交叉校验（L741-L761），测试覆盖篡改检测（`test_v2_analysis.py#L337-L474`）。分析器身份绑定 clean commit + 三个文件 sha256（`v2_analysis.py#L41-L45`、`L67-L92`），`isl_pressure.py` 在绑定集合内。
+
+### 1.4 决策树可机械判定性 — 基本成立（一项例外，见 F2）
+
+逐条核对 `pressure-decision.json` 条件与持久化字段的映射：
+
+- 资格/高利用/连续窗：每 link `longest_consecutive_high_windows`、`high_window_starts_s`（`isl_pressure.py#L321-L323`）→ ≥2 可判定 ✓
+- 同 link 队列等待：每 link `max_matched_queue_wait_s`（L326）↔ `min_max_matched_queue_wait_s: 0.1`（`pressure-decision.json#L16`，字段名明确是 max 语义，消除歧义）；每 link `matched_queue_wait_bits_s`（L325）↔ ≥100000（L17）✓
+- 未匹配条目：`unmatched_isl_queue_entries` 全局计数（L343）↔ `max_unmatched_isl_queue_entries: 0`（L41）✓
+- zero-rate holds：非零即整个分析 fail（`v2_analysis.py#L249-L254`），VERIFIED ⟹ 通过 ✓
+- access/fate/control 跨臂比较：两臂 diagnostics 各自持久化完整字典（L300-L303），机械可比对 ✓
+- natural_end/conservation/external witness：`_verify_result` 强制（L380-L388、L445-L448），`claim_status` 蕴含 ✓
+- **例外**：`max_candidate_in_system_at_stop: 0`（`pressure-decision.json#L40`）不在紧凑诊断中，需回查 receipt `totals.in_system_bits_at_stop`（该字段存在于 receipt 契约，`v2_analysis.py#L192-L194` 支持其为 primary metric，且 receipt fate 键含 `IN_SYSTEM_AT_STOP`，见 `test_v2_analysis.py#L173`）。receipt.json 已被 inputs hash 绑定（L596-L599），证据不丢，但**不在** "compact persisted diagnostics" 内 → F2。
+
+### 1.5 Claim 边界一致性 — PASS
+
+四处 claim 语言一致：brief `cannot_claim`（`brief.json#L44-L52`）、request `cannot_claim`（request-sources JSON L39-L47）、analysis-request（L26-L34）、pressure-decision `claim_boundary`（L65-L70）均排除算法优越性、通用阈值、纯容量乘数、单种子论文证据、未执行的 1 MHz。claim-gate.json 从 request 继承 cannot_claim 并被持久化校验（`v2_analysis.py#L688-L696`）。R04 条件分支预先注册（`brief.json#L12`、`pressure-decision.json#L59-L63`）。estimand 自始至终表述为描述性工程灵敏度（request L18、analysis-request L4）。compile-report `execution_authorized: false` + `COMPILED_REVIEW_REQUIRED`（L11、L17）与 brief `status: REVIEW`（L67）一致，未见越门痕迹。
+
+---
+
+## 2. Findings（对抗性）
+
+### F1（major）：非零 MCS 地板速率可绕过 zero-rate 门，把物理退化判成 PRESSURE_CANDIDATE（分母坍缩）
+
+决策树目的行明确声明不得把 zero-rate/断连当作拥塞（`pressure-decision.json#L4`），但 physical_validity 只闸 `mcs_zero_rate_holds == 0`（L21，代码强制于 `v2_analysis.py#L249-L254`）。resolved 配置里 MCS 存在非零下限 `min_rate_bps: 10000.0`（b5 resolved `#L130`）。利用率按**可用容量**归一（`isl_pressure.py#L285`），因此当某定向 ISL 的 MCS 速率塌到非零地板时，容量分母同步坍缩，`served/capacity = 1.0` 依然成立——资格门（0.9 可用秒，L284）与高利用门（≥0.8，L290-L291）全部通过，`sustained_hotspot_link_ids` 收录（L303-L305）。队列阈值极低：1e6 bit 包等 0.1 s 即同时满足 0.1 s 与 100000 bit·s（`pressure-decision.json#L15-L18`）。
+
+**可执行合成 ledger 反例**（可直接写成对 `analyze_windows` 的 pytest，再套用冻结阈值）：
+- `stop_time_s = 3.0`；link `isl:1:2` available：`[0,1)` 与 `[1,2)` rate 1e4 bps（容量各 1e4 bit），`[2,3)` rate 1e9；
+- service：`[0,2)` rate 1e4 served 2e4 bit（包 A 的部分服务），`[2, 2.00098)` rate 1e9 served 980000 bit（A 完成），随后包 B 在快速窗内完成；
+- packet events：A 在 0.0 入队即服务（wait 0）；B 在 0.05 入队、2.00098 开始服务（wait ≈1.95 s，面积 ≈1.95e6 bit·s）。
+- 结果：窗口 0、1 eligible 且 utilization=1.0 → 连续 2 窗 → sustained；max wait 1.95 ≥ 0.1；面积 ≥ 1e5；全部 drain、无 overflow、无 zero-rate hold、自然结束。**四路树输出 PRESSURE_CANDIDATE，而机制是 2 秒物理速率坍缩，不是需求性拥塞。**
+
+缓解因素（为何不是 blocking）：(a) `mcs.rate_min_bps` 与每窗 `available_capacity_bits` 均持久化（`v2_analysis.py#L255-L260`、`isl_pressure.py#L296-L297`），执行决策的人可以察觉；(b) PRESSURE_CANDIDATE 的动作本身保守（冻结 5↔2 MHz 区间、需相邻种子确认、禁止论文 claim，`pressure-decision.json#L56-L57`）；(c) claim 边界已声明 SNR/MCS 变化是物理后果（L67）。**但冻结的树没有最低速率/最低服务量闸**，这是目的声明与机械判定之间的真实缝隙。注意：该反例成立的前提是运行时能在速率切换处产生跨窗部分服务（service 窗 `served_bits` 为包的部分比特）——此语义在 `CODE/leo_sim`，超出本评审允许路径，列入 open_items；若 service 按包原子完成，反例的构造方式变化但"地板速率窗 utilization=1"的结论不变。
+
+### F2（minor）：DRAIN_INCOMPLETE 第一条件不在紧凑诊断中
+
+`max_candidate_in_system_at_stop: 0`（`pressure-decision.json#L40`）需要从 receipt `totals.in_system_bits_at_stop` 或 fate 键 `IN_SYSTEM_AT_STOP` 读取；`_run_diagnostics` 的输出字段（`v2_analysis.py#L298-L310`）不含任何 in-system 量，其 fate_counts 来自 `ledgers.packet_fates`（L273-L278）而非 receipt.fate_counts。receipt 本身被 hash 绑定，判定仍可进行，但"从持久化 V2 分析字段机械判定"对这一条件不成立；且 `ledgers.packet_fates` 是否携带 `IN_SYSTEM_AT_STOP` 标签无法在本次允许路径内核实（open_items）。
+
+### F3（minor）：同 link 队列等待是全 horizon 聚合，未与高利用窗时间对齐
+
+PRESSURE_CANDIDATE 的 "same-link" 条件（`pressure-decision.json#L56`）用的是每 link 全 horizon 的 `matched_queue_wait_bits_s`/`max_matched_queue_wait_s`（`isl_pressure.py#L325-L326`），queue_area 摊分不做资格门（L256-L258）。反例：link 在 t=10–12 有 2 个真饱和窗，另有一个包在 t=24–29 因与控制面抢占无关的队头阻塞等了 5 s（最终正常路由、无 fate、全部 drain）——饱和与等待时间上完全不相交，仍满足全部阈值 → PRESSURE_CANDIDATE。持久化字段其实支持更严的核对（每窗 `matched_queue_wait_bits_s` L301 + `high_window_starts_s` L322 可算时间重叠），但树未要求。
+
+### F4（minor）：对抗性测试缺口（验收要求项已全覆盖，缺口在验收清单之外）
+
+现有 5+1 个测试覆盖 brief 验收 L55 的全部五项。未覆盖：(a) ineligible 窗口被排除出 sustained 判定（资格门行为只被部分断言，`test_isl_pressure.py#L68-L77` 未断言 `eligible` 标志）；(b) 同一 queue_id 二次 service_start 报错（`isl_pressure.py#L231-L232`）；(c) pid/link 身份不匹配报错（L239-L241）；(d) 等待面积跨 bin 摊分的数值断言。这些代码路径均经推演正确，但无回归保护。
+
+### F5（info）：packet event 时间未约束在 `[0, stop]`
+
+`queue_enter.at`/`service_start.at` 只验有限性（`isl_pressure.py#L219`、`L238`），超出 horizon 的事件会静默计入 `matched_queue_entries` 与 `max_queue_wait_s`（L251-L255），`allocate` 的 clamp（L110-L112）使其不产生面积。receipt 验证链应已阻止此类 ledger，但按 fail-loud 哲学宜显式拒绝。
+
+### F6（info）：zero-rate hold 使整个分析无产物地失败，而非产出 PHYS_INVALID 分类
+
+任何 `mcs_zero_rate_holds > 0` → `_run_diagnostics` 抛错（`v2_analysis.py#L253-L254`）→ 无 analysis manifest。方向 fail-closed 且实际效果等同于"停止 bracket"，但决策树的 PHYS_INVALID 分支不会留下持久化的分类记录；bracket 档案中将只有 BLOCKED 日志。建议决策程序文档化此路径。
+
+### F7（info）：四路分类器未实现为受测代码
+
+`pressure-decision.json` 是冻结文档，没有任何函数把 manifest 字段映射到四分类结果。字段足够（除 F2），阈值歧义基本被字段命名消除（`min_max_matched_queue_wait_s` ↔ `max_matched_queue_wait_s`），但应用环节依赖人工/一次性脚本，存在误应用空间。一个 20 行的确定性分类器 + 单测即可消除。
+
+---
+
+## 3. 代码正确性 / 实验有效性 / claim 边界的显式分离
+
+- **代码正确性**：rebin、匹配、校验逻辑在已推演的全部边界上正确；缺口是测试覆盖（F4）与事件时间界（F5），均为防御性而非正确性缺陷。
+- **实验有效性**：两 cell 同一性成立（§1.1）；serial_fail_closed 与 b5→b2 顺序在 RUNBOOK/manifest 层一致（RUNBOOK L5-L7、request L5-L7），但 `v2_serial_gate.py` 的强制逻辑在允许路径外（open_items）；F1/F3 是决策树语义层的真实残余风险，被 PRESSURE_CANDIDATE 自带的保守动作与 claim 边界部分收容。
+- **claim 边界**：四处文档一致且被 claim-gate 机制持久化；即便 F1 触发，其产物也只是"5↔2 MHz 工程 onset 候选"，不构成论文 claim，无越界通道。
+
+## 4. 建议下一步（本地 Agent）
+
+1. 本地验证 `git rev-parse HEAD == f6cbf4e…`、`git status --porcelain` 干净，并对照 run-manifest `execution_chain_sha256`（`run-manifest.json#L49-L56`，v2_analysis.py = e2292586…）与 compile-report `artifact_hashes`（L2-L9）重算 sha256——本 worker 按合同不执行 shell，未做此核验。
+2. 把 F1 反例写成 `test_isl_pressure.py` 的合成 ledger 测试，确认 `analyze_windows` 输出与本文推演一致；据此决定是否在 R03 决策工作表中增加" sustained link 的 mcs 速率区间与每窗容量必须人工核对"步骤（推荐，不改阈值）。
+3. 在 `_run_diagnostics` 增加 `in_system_at_stop`（bits/packets）字段，关闭 F2。
+4. 补 F4 列出的 4 个回归测试；考虑 F7 的最小分类器。
+5. 继续既定流程：三角色复核 → finalization → 授权 → 串行执行；不要把本评审当作执行授权。
+
+---
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:R03_REVIEW",
+  "status": "EVIDENCE_READY",
+  "summary": "PASS_WITH_LIMITS。两 cell resolved 配置逐行比对唯一差异为 links.rf_isl.bandwidth_hz（5e6 vs 2e6，各自 L127），manifest 层 trace/input/code/controlled_signature 全同。Rebinner 摊分、资格门、重叠与容量校验、匹配队列等待重建均推演正确，brief 验收五项合成测试齐全。四路决策树除 in_system_at_stop 外的条件均可从持久化字段机械判定。Major 发现 F1：非零 MCS 地板速率（min_rate_bps=1e4）导致分母坍缩时，utilization=1 的连续窗口加极低队列门槛（1e6 bit 包等 0.1 s 即满足双阈值）可把物理速率坍缩判成 PRESSURE_CANDIDATE；已给出可执行合成 ledger 反例，缓解因素是 mcs.rate_min/每窗容量已持久化且 PRESSURE_CANDIDATE 动作保守、claim 边界已排除纯乘数解释。Minor：in_system_at_stop 不在紧凑诊断（F2）、同 link 等待未与高利用窗时间对齐（F3）、资格门等 4 条代码路径无回归测试（F4）。Info：事件时间未界于 [0,stop]（F5）、zero-rate 使分析无产物失败（F6）、四路分类器未代码化（F7）。无 blocking 项。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "非零 MCS 地板速率下的分母坍缩可穿透全部闸门判成 PRESSURE_CANDIDATE：利用率按可用容量归一，速率塌到 min_rate_bps=10000 时 served/capacity=1.0 仍成立，资格门与高利用门全过；队列阈值（0.1 s 且 1e5 bit·s）对 1e6 bit 包仅需一次 0.1 s 等待。合成反例：stop=3 s，link 在 [0,2) 以 1e4 bps 服务 2e4 bit、[2,2.00098) 以 1e9 bps 完成包 A，包 B 等 1.95 s，全 drain、无 overflow、无 zero-rate hold → sustained 2 窗 + 双队列阈值全满足，机制却是物理速率坍缩而非需求拥塞；决策树目的行（L4）声明要避免的正是这类误判，但 physical_validity 只闸 zero-rate holds。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L284-L291",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L303-L305",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L20-L22",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L55-L57",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b5-s7.leo-sim.yaml#L124-L134",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/v2_analysis.py#L249-L254"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "minor",
+      "summary": "drain_validity 第一条件 max_candidate_in_system_at_stop=0 不在紧凑持久化诊断中：_run_diagnostics 输出不含任何 in-system 量，fate_counts 来自 ledgers.packet_fates 而非 receipt.fate_counts；需回查 receipt totals.in_system_bits_at_stop（hash 绑定但未入 compact diagnostics），且 ledgers.packet_fates 是否携带 IN_SYSTEM_AT_STOP 标签无法在允许路径内核实。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L39-L42",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/v2_analysis.py#L298-L310",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/v2_analysis.py#L192-L194",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/tests/test_v2_analysis.py#L171-L173"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "summary": "PRESSURE_CANDIDATE 的 same-link 队列等待是全 horizon 聚合、未与高利用窗时间对齐：queue_area 摊分不做资格门，时间上不相交的饱和（t=10-12）与等待（t=24-29，由非拥塞队头阻塞造成）在同一 link 上可满足全部阈值。持久化的每窗 matched_queue_wait_bits_s 与 high_window_starts_s 支持更严核对，但冻结的树未要求。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L256-L258",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L322-L326",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L55-L57"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "summary": "验收清单五项合成测试齐全，但对抗性空间有缺口：无测试断言 ineligible 窗口被排除出 sustained 判定、同一 queue_id 二次 service_start 报错、pid/link 身份不匹配报错、等待面积跨 bin 摊分数值。这些路径推演正确但无回归保护。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/tests/test_isl_pressure.py#L18-L50",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/tests/test_isl_pressure.py#L53-L77",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L231-L241",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/brief.json#L53-L56"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "queue_enter.at 与 service_start.at 只验有限性、未约束在 [0, stop_time_s] 内；超 horizon 事件会静默计入 matched_queue_entries 与 max_queue_wait_s（allocate clamp 使其不产生面积）。按 fail-loud 哲学宜显式拒绝。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L217-L224",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L236-L258"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "info",
+      "summary": "任何 mcs_zero_rate_holds>0 使整个 V2 分析抛错、无 manifest 产出，而非产出一份 PHYS_INVALID 分类记录；方向 fail-closed、效果等同停止 bracket，但 bracket 档案将只有 BLOCKED 日志，建议决策程序文档化此路径。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/v2_analysis.py#L249-L265",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/tests/test_v2_analysis.py#L285-L298"
+      ]
+    },
+    {
+      "id": "F7",
+      "severity": "info",
+      "summary": "四路决策树未实现为受测代码，分类靠人工/一次性脚本把 manifest 字段套入 pressure-decision.json；字段足够（除 F2），阈值歧义基本被命名消除（min_max_matched_queue_wait_s 对应 max_matched_queue_wait_s），但应用环节仍有误操作空间。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L15-L18",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L43-L64",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L321-L326"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "本地验证 git rev-parse HEAD == f6cbf4e91c702ed0982b6dcc16b2a22c19da5183、worktree 干净，并对照 run-manifest execution_chain_sha256 与 compile-report artifact_hashes 重算 v2_analysis.py 等文件 sha256（本 worker 按合同不执行 shell，未核验）",
+    "将 F1 合成 ledger 反例写成 test_isl_pressure.py 测试确认 analyze_windows 输出；据此在 R03 决策工作表中加入 sustained link 的 mcs 速率区间与每窗 available_capacity_bits 人工核对步骤（不改冻结阈值）",
+    "在 _run_diagnostics 增加 in_system_at_stop（bits/packets）字段，使 DRAIN_INCOMPLETE 两条件均可从紧凑诊断机械判定（F2）",
+    "补 F4 列出的 4 个回归测试；考虑把四路分类实现为 20 行确定性函数加单测（F7）",
+    "按既定流程继续：三角色复核 → finalization → 授权 → 串行执行；本评审是 RESULT_CANDIDATE，不构成执行授权"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b5-s7.leo-sim.yaml#L124-L134",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b2-s7.leo-sim.yaml#L124-L134",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/run-manifest.json#L44-L64",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/run-manifest.json#L79-L99",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L109-L118",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L227-L259",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L330-L346",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/v2_analysis.py#L238-L310",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/v2_analysis.py#L688-L696",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/tests/test_isl_pressure.py#L18-L158",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/tests/test_v2_analysis.py#L337-L474",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/brief.json#L44-L60",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/compile-report.json#L10-L17",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json#L49-L76"
+  ],
+  "open_items": [
+    "本 worker 按合同禁止执行本地 shell：未核验 checkout HEAD 确为 f6cbf4e…（worktree 路径含该 SHA，仅间接指示），未重算任何 sha256；本地 Agent 必须补做 git rev-parse/status 与 run-manifest execution_chain、compile-report artifact_hashes 的哈希对账",
+    "CODE/leo_sim 在允许读取路径之外，无法核实四项运行时语义：(a) service_start 是否每个 ISL 队列条目只发一次（若抢占/续传会重发，isl_pressure.py L231-L232 将使整个分析 fail-closed）；(b) link_service_windows 的 isl stage 是否含控制面服务（影响窗口利用率分子构成）；(c) service 窗是否可携带跨速率切换的部分包 served_bits（F1 反例的构造前提）；(d) ledgers.access/control_counters/packet_fates 是否含 physical_validity 闸门引用的全部字段（grants、expired/lost/geometry-lost/overflow、IN_SYSTEM_AT_STOP）",
+    "v2_serial_gate.py（串行前级闸门强制）在允许路径之外：RUNBOOK L5-L7 与 request execution_policy 的 serial_fail_closed 声明未独立核实其门项是否覆盖 brief 验收 L57 列出的全部八道闸",
+    "authorization.json 与 finalization.json 尚不存在（compile-report execution_authorized=false，与 REVIEW 状态一致）：授权链下游闸门均未发生，本评审结论不改变该前提"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
