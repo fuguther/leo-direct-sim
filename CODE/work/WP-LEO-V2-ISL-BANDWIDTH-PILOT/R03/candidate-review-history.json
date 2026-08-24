@@ -73,6 +73,12 @@
       "codex_disposition": "accepted all four narrow findings for documentation and regression closure without changing thresholds, branch behavior or matrix scope"
     }
   },
+  "post_e110_codex_adversarial_audit": {
+    "stale_review_operation_canceled": "offload-operation:f8b9410bfc87707acb9e60fcb3b17bf7",
+    "finding": "the verifier trusted a self-consistent RUNBOOK hash in compile-report.json and did not re-render RUNBOOK from the request, so a simultaneous RUNBOOK and report-hash edit could preserve formal matrix verification",
+    "disposition": "accepted and fixed by using one deterministic RUNBOOK renderer in both compilation and verification, with a regression that updates the forged RUNBOOK hash and still requires rejection",
+    "scope_boundary": "no classifier behavior, decision threshold, experiment cell or scenario changed"
+  },
   "codex_adjudication": {
     "confirmed_and_fixed": [
       "persist an explicit per-arm in_system_at_stop_packets drain field",
@@ -91,5 +97,5 @@
       "zero-rate analysis failure already blocks the formal cohort; it must be recorded as invalid evidence but does not need a fabricated VERIFIED manifest"
     ]
   },
-  "resolution_status": "E110_REVIEW_FINDINGS_FIXED_AWAITING_NEW_EXACT_COMMIT_REVIEW"
+  "resolution_status": "RUNBOOK_REDERIVATION_FIXED_AWAITING_NEW_EXACT_COMMIT_REVIEW"
 }

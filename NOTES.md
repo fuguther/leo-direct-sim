@@ -729,7 +729,7 @@
 ## 2026-08-24：R03 决策合同与操作手册形成可重编译闭环
 
 - Kimi 在 exact commit `e1106c883b16d03eb3ee8ae49c5c50404d0d1176` 上完成 satellite-DRL 与 cold-start 只读复核，均为 `PASS_WITH_LIMITS`；Codex 接受两个窄问题：生成的 RUNBOOK 漏掉持久化分类命令，以及“5 MHz 已有局部压力时优先停止”与“未定位 ISL overflow 阻断”的文字优先级不够明确。旧复核只作为修订依据，不能授权新提交。
-- matrix request 的 `analysis.decision_contract` 现在显式绑定冻结决策合同；编译器读取并校验安全的 canonical `python -m` 命令，把合同路径、SHA-256 和命令写入分析请求与 RUNBOOK。验证器重新读取合同并重算身份，合同被篡改时旧编译分析 fail-loud；授权工件映射也包含该外部决策合同。
+- matrix request 的 `analysis.decision_contract` 现在显式绑定冻结决策合同；编译器读取并校验安全的 canonical `python -m` 命令，把合同路径、SHA-256 和命令写入分析请求与 RUNBOOK。验证器重新读取合同并重算身份，同时从请求重新渲染 RUNBOOK 逐字比较；即使同时伪造 RUNBOOK 与编译报告中的哈希也会 fail-loud。授权工件映射也包含该外部决策合同。
 - 分类行为、五分支顺序、阈值、5/2 MHz 场景和矩阵规模均未改变。新增回归覆盖“5 MHz 已有局部压力 + 2 MHz 未定位 ISL overflow”仍停在 `CONTROL_PRESSURE_UNBRACKETED`，以及持久化分析验证失败时分类器拒绝输出。
 - R03 已在一次性副本中由 canonical matrix compiler 重编译并与工作树逐文件同步；两个 resolved 配置内容哈希保持不变。`verify_compiled_matrix` 返回 2 cells / 8 bound hashes，其中包含 decision-contract SHA `fa0493b722e3bd119ed516543e4429b2bbc30986d3e5479f24f4d81f5194460e`。
 - 本地证据：全套 `712 passed, 2 skipped, 3 subtests passed`；document governance `0 selected errors, 0 warnings`；`git diff --check` 通过。当前仍未生成正式 review receipts、finalization 或 authorization，未合入、部署或运行；下一步将本修订提交推送后，对新的 exact commit 重新做 cold-start、satellite-DRL、adversarial 三类复核。

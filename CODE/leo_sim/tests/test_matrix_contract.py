@@ -155,6 +155,21 @@ def test_matrix_binds_and_renders_declared_post_analysis_decision(tmp_path):
     _write_json(decision_path, decision)
     with pytest.raises(matrix.MatrixError, match="analysis request"):
         matrix.verify_compiled_matrix(tmp_path, out)
+    decision["canonical_invocation"][-1] = \
+        "ANALYSIS/EXP-LEO-V2-MATRIX/pressure-classification.json"
+    _write_json(decision_path, decision)
+
+    runbook_path = out / "RUNBOOK.md"
+    runbook_path.write_text(
+        runbook_path.read_text(encoding="utf-8").replace(
+            "--candidate-arm treatment", "--candidate-arm control"),
+        encoding="utf-8")
+    report_path = out / "compile-report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report["artifact_hashes"]["RUNBOOK.md"] = file_sha256(runbook_path)
+    _write_json(report_path, report)
+    with pytest.raises(matrix.MatrixError, match="RUNBOOK"):
+        matrix.verify_compiled_matrix(tmp_path, out)
 
 
 @pytest.mark.parametrize("mutation, message", [

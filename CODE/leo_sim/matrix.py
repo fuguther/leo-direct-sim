@@ -625,6 +625,63 @@ def _render_invocation(invocation: list[str]) -> list[str]:
     return lines
 
 
+def _render_runbook(
+        request: dict[str, Any], rows: list[dict[str, Any]],
+        decision_contract: dict[str, Any] | None) -> str:
+    serial = (request.get("execution_policy", {}).get("mode")
+              == "serial_fail_closed")
+    command_contract = (
+        "Cells are listed in mandatory order; every later command is blocked "
+        "until its predecessors pass the serial evidence gate:"
+        if serial else
+        "Each cell is an independent controlled command after review, "
+        "authorization, and clean deployment:"
+    )
+    lines = [
+        f"# {request['experiment_id']}", "",
+        "Runtime: `leo_sim_v2`; compilation only, no run is launched.", "",
+        command_contract, "",
+    ]
+    if serial:
+        lines.extend([
+            "Execution policy: `serial_fail_closed`. The canonical runner applies a "
+            "machine-enforced serial predecessor gate before every cell after the first; "
+            "missing or ineligible pulled predecessor evidence blocks the next launch.", "",
+        ])
+    for row in rows:
+        lines.extend([
+            f"## {row['run_id']}", "", "```bash",
+            "CODE/scripts/remote/run-remote.sh \\",
+            "  --runtime-kind leo_sim_v2 \\",
+            f"  --config EXPERIMENTS/{request['experiment_id']}/{row['config_path']} \\",
+            f"  --authorization EXPERIMENTS/{request['experiment_id']}/authorization.json \\",
+            f"  --session {row['run_id'].lower()}", "```", "",
+        ])
+    lines.extend([
+        "## V2 analysis after every authorized cell has a natural-end result", "",
+        "```bash",
+        "python3 -m CODE.experiment_platform.v2_analysis \\",
+        f"  --experiment EXPERIMENTS/{request['experiment_id']} \\",
+        f"  --authorization EXPERIMENTS/{request['experiment_id']}/authorization.json \\",
+        f"  --out ANALYSIS/{request['experiment_id']}/v2-paired",
+        "```", "",
+        "The output is evidence-bound analysis only; claim-support and value-gate review remain required.",
+    ])
+    if decision_contract is not None:
+        lines.extend([
+            "", "## Apply the frozen post-analysis decision", "",
+            "Run this persisted classifier only after the V2 analysis above "
+            "produces a verified manifest. Any verification or classification "
+            "error is a stop, never a no-pressure result.", "", "```bash",
+            *_render_invocation(decision_contract["canonical_invocation"]),
+            "```", "",
+            f"The command and subsequent action are frozen in "
+            f"`{decision_contract['path']}`. Do not substitute an in-memory "
+            "classification or change thresholds after observing results.",
+        ])
+    return "\n".join(lines)
+
+
 def _analysis_document(request: dict[str, Any], manifest_sha: str,
                        request_sha: str, rows: list[dict[str, Any]],
                        decision_contract: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -712,58 +769,8 @@ def compile_matrix_experiment(request_path: Path, out_dir: Path,
     analysis = _analysis_document(
         validated, manifest_sha, request_sha, rows, decision_contract)
     _write_json(out_dir / "analysis-request.json", analysis)
-    serial = (validated.get("execution_policy", {}).get("mode")
-              == "serial_fail_closed")
-    command_contract = (
-        "Cells are listed in mandatory order; every later command is blocked "
-        "until its predecessors pass the serial evidence gate:"
-        if serial else
-        "Each cell is an independent controlled command after review, "
-        "authorization, and clean deployment:"
-    )
-    runbook_lines = [
-        f"# {validated['experiment_id']}", "",
-        "Runtime: `leo_sim_v2`; compilation only, no run is launched.", "",
-        command_contract, "",
-    ]
-    if serial:
-        runbook_lines.extend([
-            "Execution policy: `serial_fail_closed`. The canonical runner applies a "
-            "machine-enforced serial predecessor gate before every cell after the first; "
-            "missing or ineligible pulled predecessor evidence blocks the next launch.", "",
-        ])
-    for row in rows:
-        runbook_lines.extend([
-            f"## {row['run_id']}", "", "```bash",
-            "CODE/scripts/remote/run-remote.sh \\",
-            "  --runtime-kind leo_sim_v2 \\",
-            f"  --config EXPERIMENTS/{validated['experiment_id']}/{row['config_path']} \\",
-            f"  --authorization EXPERIMENTS/{validated['experiment_id']}/authorization.json \\",
-            f"  --session {row['run_id'].lower()}", "```", "",
-        ])
-    runbook_lines.extend([
-        "## V2 analysis after every authorized cell has a natural-end result", "",
-        "```bash",
-        "python3 -m CODE.experiment_platform.v2_analysis \\",
-        f"  --experiment EXPERIMENTS/{validated['experiment_id']} \\",
-        f"  --authorization EXPERIMENTS/{validated['experiment_id']}/authorization.json \\",
-        f"  --out ANALYSIS/{validated['experiment_id']}/v2-paired",
-        "```", "",
-        "The output is evidence-bound analysis only; claim-support and value-gate review remain required.",
-    ])
-    if decision_contract is not None:
-        runbook_lines.extend([
-            "", "## Apply the frozen post-analysis decision", "",
-            "Run this persisted classifier only after the V2 analysis above "
-            "produces a verified manifest. Any verification or classification "
-            "error is a stop, never a no-pressure result.", "", "```bash",
-            *_render_invocation(decision_contract["canonical_invocation"]),
-            "```", "",
-            f"The command and subsequent action are frozen in "
-            f"`{decision_contract['path']}`. Do not substitute an in-memory "
-            "classification or change thresholds after observing results.",
-        ])
-    (out_dir / "RUNBOOK.md").write_text("\n".join(runbook_lines), encoding="utf-8")
+    (out_dir / "RUNBOOK.md").write_text(
+        _render_runbook(validated, rows, decision_contract), encoding="utf-8")
     bound_paths = ["request.json", "run-manifest.json", "analysis-request.json",
                    "RUNBOOK.md", *(row["config_path"] for row in rows)]
     report = {
@@ -843,6 +850,9 @@ def verify_compiled_matrix(root: Path, experiment_dir: Path) -> tuple[str, dict[
         request, expected_manifest_sha, request_sha, rows, decision_contract)
     if analysis != expected_analysis:
         raise MatrixError("matrix analysis request does not bind the exact cohort")
+    if runbook.read_text(encoding="utf-8") != _render_runbook(
+            request, rows, decision_contract):
+        raise MatrixError("matrix RUNBOOK does not derive from the request")
     paths = ["request.json", "run-manifest.json", "analysis-request.json", "RUNBOOK.md",
              *(row["config_path"] for row in rows)]
     expected_hashes = _artifact_hashes(experiment_dir, paths)
