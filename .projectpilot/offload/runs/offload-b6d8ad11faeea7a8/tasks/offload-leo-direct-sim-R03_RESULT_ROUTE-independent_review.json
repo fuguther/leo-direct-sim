@@ -1,0 +1,61 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R03_RESULT_ROUTE:independent_review",
+    "title": "R03 result and route cold review",
+    "goal": "Audit whether PRESSURE_CANDIDATE is supported without overclaiming, using the persisted analysis and frozen decision contract. Check the three candidate links, same-episode queue evidence, physical/drain controls, identical packet fates, and the execution-incident boundary. Then challenge the proposal to confirm the same 5/2 MHz bracket with trace seeds 11 and 19 (three seeds total including 7) before using the scenario for Q0/information experiments. Return PASS_WITH_LIMITS or REQUEST_CHANGES, with blockers separated from nonblocking limits. Do not edit files, do not propose 1 MHz, RL training, or a larger matrix.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "dd892b3a3428c15e794fb47fe022772fd64469dd",
+      "paths": [
+        "ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/",
+        "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json",
+        "CODE/experiment_platform/isl_pressure.py",
+        "CODE/experiment_platform/isl_pressure_decision.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/request.json"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Cite exact repository paths and concrete persisted fields for every major finding.",
+      "Recompute or cross-check the pressure classification inputs rather than trusting RESULT-REVIEW prose.",
+      "Separate single-seed engineering evidence from any paper-facing claim.",
+      "Assess whether two additional fixed trace seeds are sufficient for the next bounded gate and state open items."
+    ],
+    "requiredEvidence": [
+      "Exact-commit line-grounded evidence",
+      "Independent recomputation or counterexample",
+      "Explicit open_items and verdict"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "966dac2ed437a04a71afb7a7315bf847399044ee2a2093088c315681a4968d02"
+}
