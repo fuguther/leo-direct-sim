@@ -1,0 +1,69 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R03_95D_SAT",
+    "title": "R03 final satellite-network validity review",
+    "goal": "Act as a satellite-network and routing experiment reviewer. Verify whether the exact 5 MHz versus 2 MHz pair can identify genuine directed-ISL pressure without confusing zero-rate service, geometry loss, access failure, NO_ROUTE growth, control-plane failure, denominator collapse or incomplete drain. Check that both arms share trace, seed, deterministic routing, topology, access, demand, emission, observation and drain contracts and differ only in declared ISL bandwidth; that pressure requires eligible consecutive utilization windows and episode-coincident same-directed-link matched queue waiting; that physical and drain invalidity precede every pressure claim; that 5 MHz must be no-pressure for a 5-to-2 onset; and that ISL_QUEUE_OVERFLOW is supplementary to localized pressure rather than a substitute, except an already localized 5 MHz control-pressure stop remains decisive. Confirm the adaptive branch does not silently expand to 1 MHz or algorithm comparisons. Return PASS_WITH_LIMITS or REQUEST_CHANGES. Do not edit files. Never emit example or placeholder evidence: every evidence item must use the exact github://fuguther/leo-direct-sim/blob/95d28051696ccaa6e75a46bb552e60874f5da256/<allowed-path>#Lx-Ly form; omit a finding if you cannot supply that form.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "deterministic",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "95d28051696ccaa6e75a46bb552e60874f5da256",
+      "paths": [
+        "CODE/experiment_platform/isl_pressure.py",
+        "CODE/experiment_platform/isl_pressure_decision.py",
+        "CODE/experiment_platform/tests/test_isl_pressure.py",
+        "CODE/experiment_platform/tests/test_isl_pressure_decision.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/experiment_platform/tests/test_v2_analysis.py",
+        "CODE/leo_sim/matrix.py",
+        "CODE/leo_sim/tests/test_matrix_contract.py",
+        "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/",
+        "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+        "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Verify the exact commit and declared artifact set.",
+      "Verify both arms share all declared controlled conditions except ISL bandwidth.",
+      "Verify pressure requires same-directed-link queueing overlapping the same sustained high-utilization episode.",
+      "Verify physical-invalid and drain-invalid branches precede every pressure claim.",
+      "Verify the 5 MHz control cannot already be pressured when claiming a 5-to-2 MHz bracket.",
+      "Verify ISL queue overflow semantics cannot turn disconnection, missing localization or incomplete drain into congestion.",
+      "Verify the adaptive next step does not expand the current matrix or start algorithm comparison."
+    ],
+    "requiredEvidence": [
+      "Line-grounded exact-commit evidence with no placeholders",
+      "At least one mechanism counterexample or covered regression",
+      "Explicit open_items and PASS_WITH_LIMITS or REQUEST_CHANGES"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "2665689170e4088ae57efd3e572170e46a32b8c9575b3792709ac15c93c2d57a"
+}
