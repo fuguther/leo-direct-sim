@@ -93,6 +93,18 @@ def test_rejects_unverified_or_ambiguous_cohort():
             manifest, control_arm="b5", candidate_arm="b2")
 
 
+def test_rejects_missing_control_failure_counter():
+    control = _run("b5")
+    candidate = _run("b2")
+    del candidate["diagnostics"]["control"]["geometry_lost"]
+
+    with pytest.raises(isl_pressure_decision.PressureDecisionError,
+                       match="lacks required failure counters"):
+        isl_pressure_decision.classify_verified_pair(
+            _manifest(control, candidate), control_arm="b5",
+            candidate_arm="b2")
+
+
 def test_frozen_contract_matches_analyzer_and_classifier_constants():
     root = Path(__file__).resolve().parents[3]
     contract = json.loads((
@@ -120,6 +132,13 @@ def test_frozen_contract_matches_analyzer_and_classifier_constants():
         isl_pressure_decision.OVERFLOW_FATES
     assert tuple(physical["candidate_control_failure_fields"]) == \
         isl_pressure_decision.CONTROL_FAILURES
+    assert physical["required_control_failure_fields_must_be_present"] is True
+    assert contract["canonical_invocation"][-8:] == [
+        "--manifest",
+        "ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json",
+        "--control-arm", "b5", "--candidate-arm", "b2", "--out",
+        "ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/pressure-classification.json",
+    ]
     assert [item["class"] for item in contract["ordered_classification"]] == [
         "PHYS_INVALID", "DRAIN_INCOMPLETE", "CONTROL_PRESSURE_UNBRACKETED",
         "PRESSURE_CANDIDATE", "NO_PRESSURE_PHYS_VALID",
@@ -140,6 +159,15 @@ def test_persisted_classifier_verifies_and_binds_manifest(tmp_path, monkeypatch)
     assert got["classification"] == "PRESSURE_CANDIDATE"
     assert got["analysis_manifest"] == "analysis-manifest.json"
     assert len(got["analysis_manifest_sha256"]) == 64
+
+    out = tmp_path / "analysis" / "pressure-classification.json"
+    assert isl_pressure_decision.main([
+        "--root", str(tmp_path), "--manifest", str(path),
+        "--control-arm", "b5", "--candidate-arm", "b2",
+        "--out", str(out),
+    ]) == 0
+    persisted = json.loads(out.read_text(encoding="utf-8"))
+    assert persisted == got
 
     manifest = _manifest(_run("b5"), _run("b2"))
     manifest["run_results"].append(_run("b2"))

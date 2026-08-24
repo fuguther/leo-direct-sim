@@ -32,6 +32,24 @@
       "window and queue thresholds were duplicated between code defaults and the decision document"
     ]
   },
+  "updated_commit_cold_start_review": {
+    "reviewed_git_commit": "d1844f23829f25b264261850b046959abd1a1dd9",
+    "projectpilot_operation_id": "offload-operation:9e9464b3939a70b1091de6ef6c3f4c67",
+    "reviewer": "kimi_acp",
+    "session_id": "session_cbc4235e-5df0-4e81-ae9e-4f441b393896",
+    "result_class": "CANDIDATE_CONTENT_ENVELOPE_REJECTED",
+    "verdict": "PASS_WITH_LIMITS",
+    "envelope_rejection": "one evidence item used a placeholder reference; no formal review receipt was accepted",
+    "findings": [
+      "a missing required control-failure counter was silently interpreted as zero by the direct pair classifier",
+      "the frozen persisted pair classifier lacked a documented canonical command"
+    ],
+    "codex_disposition": [
+      "accepted the fail-loud finding and required every declared control-failure counter before classification",
+      "accepted the cold-start usability finding and added a verified command that persists the bound classification",
+      "canceled the remaining stale-commit review lanes because their findings could not authorize the corrected revision"
+    ]
+  },
   "codex_adjudication": {
     "confirmed_and_fixed": [
       "persist an explicit per-arm in_system_at_stop_packets drain field",
@@ -50,5 +68,5 @@
       "zero-rate analysis failure already blocks the formal cohort; it must be recorded as invalid evidence but does not need a fabricated VERIFIED manifest"
     ]
   },
-  "resolution_status": "BOTH_CANDIDATE_REVIEWS_ADJUDICATED_AWAITING_UPDATED_COMMIT_REVIEW"
+  "resolution_status": "UPDATED_COMMIT_FINDINGS_FIXED_AWAITING_NEW_EXACT_COMMIT_REVIEW"
 }

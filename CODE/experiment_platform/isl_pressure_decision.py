@@ -1,8 +1,10 @@
 """Deterministically apply the preregistered R03 ISL-pressure decision tree."""
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -58,6 +60,11 @@ def _arm(result: Any, label: str) -> dict[str, Any]:
     mcs = _mapping(diagnostics.get("mcs"), f"{label}.mcs")
     access = _mapping(diagnostics.get("access"), f"{label}.access")
     control = _counts(diagnostics.get("control"), f"{label}.control")
+    missing_control = sorted(set(CONTROL_FAILURES) - set(control))
+    if missing_control:
+        raise PressureDecisionError(
+            f"{label}.control lacks required failure counters: "
+            f"{missing_control}")
     fates = _counts(diagnostics.get("fate_counts"), f"{label}.fate_counts")
     drain = _mapping(diagnostics.get("drain"), f"{label}.drain")
     windowed = _mapping(
@@ -212,3 +219,34 @@ def classify_persisted_pair(
     result["analysis_manifest_sha256"] = hashlib.sha256(
         manifest_path.read_bytes()).hexdigest()
     return result
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Verify, classify and persist one preregistered V2 pressure pair."""
+    parser = argparse.ArgumentParser(
+        description="Verify and classify one persisted V2 ISL-pressure pair")
+    parser.add_argument("--root", type=Path, default=Path.cwd())
+    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--control-arm", required=True)
+    parser.add_argument("--candidate-arm", required=True)
+    parser.add_argument("--out", type=Path, required=True)
+    args = parser.parse_args(argv)
+    root = args.root.resolve()
+    out = args.out.resolve()
+    try:
+        out.relative_to(root)
+        result = classify_persisted_pair(
+            root, args.manifest, control_arm=args.control_arm,
+            candidate_arm=args.candidate_arm)
+    except (PressureDecisionError, ValueError) as exc:
+        parser.error(str(exc))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(
+        json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
+    print(f"{result['classification']}: {out.relative_to(root)}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
