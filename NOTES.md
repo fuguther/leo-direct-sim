@@ -741,3 +741,4 @@
 - 已生成 R03 两格派生授权：`authorize_experiment` 返回 `AUTHORIZED`（2 runs），authorization SHA=`22bf215289ae2a04db63b81ec354b3bf0f43663a8643ed5bb367b41b772329a3`，payload SHA=`c1077db863c9d87552cc5a99daaeec0a4d211d2a7a385851ea9288d4a6709e12`；重新验签通过，首格 b5 的串行门为 `READY`、predecessors 为空。
 - 非阻断限制仍保留：少数畸形 persisted manifest 会以裸 traceback 而非干净错误信封失败，但不会写出分类；零时长 interrupted service 可锚定真实 queue wait，但不贡献利用率且没有专项回归；episode 边缘重叠的完整 wait 与 episode 内面积是预注册的不对称。任何正式分类错误、未定位 overflow、物理无效或未排空都必须停止，不能改写成 no-pressure。
 - 当前只完成了“承重版本复核 → 治理定案 → 派生授权”，尚未 PR/CI 合入、clean-main 部署或执行 VM。下一步提交本治理包并经 required pytest CI 合入；部署 exact merge SHA 后严格串行运行 b5，只有其 natural end、守恒、治理、外部 witness、身份、ISL 指标和 zero-rate 门全通过才允许 b2。单种子分类不能直接进入论文或算法比较。
+- PR #163（`fix: 闭合 ISL 压力标定与串行授权`）首轮 required `pytest` CI 已通过，run=`32742920625`、job=`97481422740`。本条 NOTES 留痕提交后仍须重新通过 required CI 才可 squash 合入；截至本条记录仍未部署或执行 VM。
