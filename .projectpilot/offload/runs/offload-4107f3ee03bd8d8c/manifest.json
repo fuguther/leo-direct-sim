@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "planId": "offload-4107f3ee03bd8d8c",
+  "relayManifest": {
+    "planId": "offload-4107f3ee03bd8d8c",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "custom",
+    "maxParallelWorkers": 1,
+    "analysisLanes": 1,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:KIMI-R02-REREVIEW",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "ba4835d999b9f31f9eeac45d197712358bf094ca",
+        "paths": [
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/tests/test_v2_analysis.py",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R02/",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R02.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/"
+        ],
+        "promptHash": "a40e46c94fdaa0a6dc3d7aded4b01d848dce5a487ad7deecfa07ab6c83cf2c1f"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "4107f3ee03bd8d8ca40c1bea36bac919c560aa86906480ef1e7d78cabfda56f2"
+  },
+  "sourceBaseCommit": "ba4835d999b9f31f9eeac45d197712358bf094ca",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:KIMI-R02-REREVIEW",
+      "promptHash": "a40e46c94fdaa0a6dc3d7aded4b01d848dce5a487ad7deecfa07ab6c83cf2c1f",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "ba4835d999b9f31f9eeac45d197712358bf094ca",
+        "paths": [
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/tests/test_v2_analysis.py",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R02/",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R02.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
