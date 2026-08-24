@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "planId": "offload-ac5bfa07d7a6fa65",
+  "relayManifest": {
+    "planId": "offload-ac5bfa07d7a6fa65",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:R03_REVIEW",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "f6cbf4e91c702ed0982b6dcc16b2a22c19da5183",
+        "paths": [
+          "CODE/experiment_platform/isl_pressure.py",
+          "CODE/experiment_platform/tests/test_isl_pressure.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/tests/test_v2_analysis.py",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/brief.json",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+        ],
+        "promptHash": "e87039e1e98c80a529900df41649002b685452b3f6a220f88c3ab566a74a1787"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:R03_REVIEW:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "f6cbf4e91c702ed0982b6dcc16b2a22c19da5183",
+        "paths": [
+          "CODE/experiment_platform/isl_pressure.py",
+          "CODE/experiment_platform/tests/test_isl_pressure.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/tests/test_v2_analysis.py",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/brief.json",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+        ],
+        "promptHash": "25fec4512d71c71614d6343c1206a4a50d0d033294a3d72a090b066a67e5ca1c"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "ac5bfa07d7a6fa65616d3e07713019ebb8d34a8ba915dde7f8df5aa2ebd589f2"
+  },
+  "sourceBaseCommit": "f6cbf4e91c702ed0982b6dcc16b2a22c19da5183",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:R03_REVIEW",
+      "promptHash": "e87039e1e98c80a529900df41649002b685452b3f6a220f88c3ab566a74a1787",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "f6cbf4e91c702ed0982b6dcc16b2a22c19da5183",
+        "paths": [
+          "CODE/experiment_platform/isl_pressure.py",
+          "CODE/experiment_platform/tests/test_isl_pressure.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/tests/test_v2_analysis.py",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/brief.json",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:R03_REVIEW:independent_review",
+      "promptHash": "25fec4512d71c71614d6343c1206a4a50d0d033294a3d72a090b066a67e5ca1c",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "f6cbf4e91c702ed0982b6dcc16b2a22c19da5183",
+        "paths": [
+          "CODE/experiment_platform/isl_pressure.py",
+          "CODE/experiment_platform/tests/test_isl_pressure.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/tests/test_v2_analysis.py",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/brief.json",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
