@@ -1,0 +1,65 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R03_770E_SAT:independent_review",
+    "title": "R03 corrected satellite-network validity review",
+    "goal": "Act as a satellite-network and routing experiment reviewer. Verify whether the 5 MHz versus 2 MHz pair can identify genuine directed-ISL pressure without confusing zero-rate, geometry, access, NO_ROUTE, data/control overflow, control-plane failure, denominator change or incomplete drain. Check that pressure requires episode-coincident utilization and queueing on one directed link, the 5 MHz control must be no-pressure, and the adaptive stop/next-step logic does not expand the matrix. Return PASS_WITH_LIMITS or REQUEST_CHANGES. Do not edit files. Never emit example or placeholder evidence: every evidence item must use the exact github://fuguther/leo-direct-sim/blob/770eabb94cc32fea2e14b0b452a148dc459534ef/<allowed-path>#Lx-Ly form; omit a finding if you cannot supply that form.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "deterministic",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "770eabb94cc32fea2e14b0b452a148dc459534ef",
+      "paths": [
+        "CODE/experiment_platform/isl_pressure.py",
+        "CODE/experiment_platform/isl_pressure_decision.py",
+        "CODE/experiment_platform/tests/test_isl_pressure.py",
+        "CODE/experiment_platform/tests/test_isl_pressure_decision.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/experiment_platform/tests/test_v2_analysis.py",
+        "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/",
+        "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+        "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Verify the exact commit and declared artifact set.",
+      "Verify both arms share all declared controlled conditions except ISL bandwidth.",
+      "Check pressure requires same-directed-link queueing overlapping the same sustained high-utilization episode.",
+      "Check physical-invalid and drain-invalid branches precede every pressure claim.",
+      "Check the 5 MHz control cannot already be pressured when claiming a 5-to-2 MHz bracket."
+    ],
+    "requiredEvidence": [
+      "Line-grounded exact-commit evidence with no placeholders",
+      "At least one mechanism counterexample or covered regression",
+      "Explicit open_items and PASS_WITH_LIMITS or REQUEST_CHANGES"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "ebd861dbcf4cd3d1a4527a1e864cf3d11f17d37882fec1741289ff6373eb18e5"
+}
