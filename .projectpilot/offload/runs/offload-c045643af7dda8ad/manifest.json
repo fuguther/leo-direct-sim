@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "planId": "offload-c045643af7dda8ad",
+  "relayManifest": {
+    "planId": "offload-c045643af7dda8ad",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:ISL_SEED_CONFIRMATION_ARTIFACTS",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "98d9092751abd84a3d3ad6b39e932e5e501740c0",
+        "paths": [
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/RUNBOOK.md",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/brief.json",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json",
+          "CODE/experiment_platform/compile_experiment.py",
+          "CODE/experiment_platform/experiment-request.schema.json",
+          "CODE/work/work-package.schema.json"
+        ],
+        "promptHash": "74fd37fcb8ad314e84475759e4813d20cff7bc45dececc083f5fff756ba42a22"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:ISL_SEED_CONFIRMATION_ARTIFACTS:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "98d9092751abd84a3d3ad6b39e932e5e501740c0",
+        "paths": [
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/RUNBOOK.md",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/brief.json",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json",
+          "CODE/experiment_platform/compile_experiment.py",
+          "CODE/experiment_platform/experiment-request.schema.json",
+          "CODE/work/work-package.schema.json"
+        ],
+        "promptHash": "312f1635203efc8ed629863aa061314015c3caef1b59c021e71b52e444ae0f58"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "c045643af7dda8ad98895a00218d5b63339308a91cdcc917b69aa35e405bd796"
+  },
+  "sourceBaseCommit": "98d9092751abd84a3d3ad6b39e932e5e501740c0",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:ISL_SEED_CONFIRMATION_ARTIFACTS",
+      "promptHash": "74fd37fcb8ad314e84475759e4813d20cff7bc45dececc083f5fff756ba42a22",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "98d9092751abd84a3d3ad6b39e932e5e501740c0",
+        "paths": [
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/RUNBOOK.md",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/brief.json",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json",
+          "CODE/experiment_platform/compile_experiment.py",
+          "CODE/experiment_platform/experiment-request.schema.json",
+          "CODE/work/work-package.schema.json"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:ISL_SEED_CONFIRMATION_ARTIFACTS:independent_review",
+      "promptHash": "312f1635203efc8ed629863aa061314015c3caef1b59c021e71b52e444ae0f58",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "98d9092751abd84a3d3ad6b39e932e5e501740c0",
+        "paths": [
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/RUNBOOK.md",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/brief.json",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json",
+          "CODE/experiment_platform/compile_experiment.py",
+          "CODE/experiment_platform/experiment-request.schema.json",
+          "CODE/work/work-package.schema.json"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
