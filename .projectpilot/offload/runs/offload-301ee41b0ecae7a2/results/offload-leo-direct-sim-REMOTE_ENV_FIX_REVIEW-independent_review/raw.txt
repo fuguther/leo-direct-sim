@@ -1,0 +1,126 @@
+我将直接读取合同允许的四个文件进行独立审查。我已完整读取合同允许的四个文件，下面给出独立冷审结果。本审查仅基于固定 commit `4568e3bc` 的文件内容（worktree 即该 commit 的 checkout），不假设其他 Worker 的结论。
+
+# Remote formal environment activation 独立审查报告
+
+## 1. 变更定位与三条路径分别追踪
+
+合同要求分别追踪 prepare、tmux child、fail 三条路径。当前文件中三处环境激活点：
+
+- **tmux child**（`tmux_script`，`run-remote.sh:163-169`）：`cd` → `set -euo pipefail`（L165）→ `$REMOTE_ENV_ACTIVATE`（L166）→ `$q_python ... $q_runner_args`（L167）。此为既有路径。
+- **prepare**（`remote_command`，`run-remote.sh:170-183`）：`set -euo pipefail`（L171）→ `cd`/`mkdir`/守卫（L172-175）→ **`$REMOTE_ENV_ACTIVATE`（L176，即本次新增的一行）** → prepare 调用（L177）。
+- **fail**：L178-181 的 `if ! tmux new-session ...` 块内，`$q_python ... $q_fail_args || true`（L179）与 prepare 同属一个 shell，位于 L176 激活之后，因此自动继承已激活环境。
+
+结论：三条路径现在都在 `$REMOTE_ENV_ACTIVATE` 之后解析 `$REMOTE_PYTHON`，环境一致性在构造上成立。
+
+## 2. Shell 执行顺序与 heredoc 展开分析
+
+- 两个 heredoc 均为**未加引号的 `<<EOF`**（L163、L170），因此 `$REMOTE_ENV_ACTIVATE`、`$q_python`、`$q_runner_args` 等在**本地构建期**展开为字面文本，再经 `printf '%q'` + `ssh ... "bash -lc ..."`（L184）整体送往远端。参数展开的结果在 bash 中不会被二次扫描展开，所以值中嵌入的字面 `$HOME` 等会留到**远端**执行时才展开——这对 `source "$HOME/..."` 类配置恰好是期望语义，但值得明确记录（见 F2）。
+- `REMOTE_ENV_ACTIVATE` 由 `common.sh:33` 的 `: "${REMOTE_ENV_ACTIVATE:?...}"` 强制非空；`REMOTE_PYTHON` 缺省 `python3`（`common.sh:46`），经 `printf '%q'` 引用（`run-remote.sh:158`）。
+- **激活失败语义**：远端在 `set -euo pipefail` 下执行，若激活命令失败（如 venv 路径不存在），shell 在 L176 处中止，prepare 不执行、tmux 不创建，非零退出码经 ssh 回传本地（L184）——fail-loud。代价是该次 launch 不会产生任何 nonce 状态回执（prepare 尚未运行），监控方按 nonce 查不到状态而非看到误导性 success，可接受，且与修复前 mkdir/pgrep/has-session 等 pre-prepare 失败的行为一致（见 F4）。
+- **prepare 失败**：`prepare_launch` 自身写 failed 状态并 `return 2`（`remote_job.py:461-471`），远端 set -e 中止，tmux 不启动。闭环。
+- **tmux 创建失败**：fail 动作在已激活环境中运行（L179），`fail_launch` 校验 nonce+session 匹配后才改状态（`remote_job.py:482-483`），`|| true` 保证 exit 2 不被掩盖。
+- 一处既有的不对称（非本次引入）：`tmux_script` 里 `cd`（L164）在 `set -euo pipefail`（L165）**之前**，cd 失败不会立即中止（但后续相对路径会 fail-loud）；`remote_command` 顺序相反。仅记录，不要求改。
+
+## 3. 授权、nonce、部署、fail-closed 是否被削弱
+
+逐项核对，本次变更只是插入一行激活命令：
+
+- nonce 生成与哈希绑定（`run-remote.sh:83-114`）在本地用 `$LOCAL_PYTHON` 完成，不经过远端环境，未受影响。
+- 远端身份核验（`remote_job.py:366-375`）、部署回执核验（`remote_job.py:427`、`533`）、V2 授权重算（`remote_job.py:403-413`）与串行门（`remote_job.py:378-400`）在 prepare 与 run 两个进程中各自重复执行，激活只改变 python 解析路径，不改变这些检查的输入或顺序。
+- 信任面：`REMOTE_ENV_ACTIVATE` 来自操作员的 `remote.env`（`common.sh:26` source），该值在修复前已被注入 tmux child，本次只是把同一受信值用于 prepare/fail，未引入新的不可信输入流。若激活脚本改变 cwd，prepare 的相对路径 `scripts/remote/remote_job.py`（L177）会 fail-loud 而非静默偏离。
+
+未发现削弱。
+
+## 4. 回归测试对事故场景的针对性评估
+
+事故场景：prepare 在**未激活**环境中用系统 python 运行，与 tmux child 环境不一致。
+
+`test_remote_launcher_environment.py:15-23` 的做法：从源码中提取 `remote_command` heredoc 文本，断言字面量 `$REMOTE_ENV_ACTIVATE` 出现在 `$q_python ... $q_prepare_args` 之前。
+
+- **能抓住什么**：修复前状态（remote_command 中无激活行）会使 `index()` 抛 ValueError → 测试红；激活被移到 prepare 之后 → 断言红。即它确实针对事故根因（prepare 缺激活），不只是无害字符串变化的摆设。
+- **抓不住什么**（非阻断）：① 不覆盖 fail 路径顺序与 tmux child 的激活行（L166 若被删，无测试兜底）；② 纯源码文本顺序断言，不验证激活的语义效果（例如 remote.env 中 `REMOTE_ENV_ACTIVATE=true` 这种"非空但无效"的配置，common.sh 只查非空）；③ 若 heredoc 被改为 `<<'EOF'`（激活留到远端展开、远端无此变量而触发 set -u fail-loud），测试仍绿——但该情形恰好 fail-loud，可接受。
+
+## 5. 结论
+
+**PASS_WITH_LIMITS**。一行激活在构造上使 prepare/tmux child/fail 三路径共用同一受信配置环境，未削弱授权、nonce、部署核验或 fail-closed 语义；回归测试能抓住事故根因的回归，但只是源码顺序断言，覆盖面和语义深度有限。无阻断项。
+
+---
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:REMOTE_ENV_FIX_REVIEW:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "PASS_WITH_LIMITS。新增的一行 $REMOTE_ENV_ACTIVATE（run-remote.sh:176）位于 remote_command 的 set -euo pipefail 之后、prepare（L177）之前，fail 路径（L179）与 prepare 同属该 shell 故自动继承；tmux child 在自身脚本中独立激活（L166）。三路径由此共用同一受信 REMOTE_ENV_ACTIVATE/REMOTE_PYTHON 配置。heredoc 为未引用 <<EOF，激活值在本地构建期展开为字面文本、远端执行，激活失败在 set -e 下 fail-loud（无 nonce 回执但 ssh 非零退出）。nonce 绑定（L83-114）、远端身份/部署/授权重算（remote_job.py:366-375,403-413,427,533）均未受影响，无新信任面。回归测试（test_remote_launcher_environment.py:15-23）能在修复前状态（缺激活行）和顺序颠倒时变红，确实针对事故根因，但仅为源码文本顺序断言：不覆盖 fail 路径与 tmux child 激活、不验证激活语义效果。无阻断发现。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "三路径环境一致性在构造上成立：prepare 与 fail 在 remote_command 同一 shell 的激活行（L176）之后执行（L177、L179），tmux child 在自身脚本内独立激活（L166），两处均用同一 $REMOTE_ENV_ACTIVATE 与 $q_python（printf %q 引用 REMOTE_PYTHON），均经 bash -lc 启动且激活发生在 profile 之后，故激活在两处都最终生效。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/run-remote.sh#L163-L184",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/common.sh#L46"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "minor",
+      "summary": "展开边界未文档化：REMOTE_ENV_ACTIVATE 经未引用 heredoc 在本地展开后，其值中字面的 $VAR/$(...) 不会被本地二次展开，而是留到远端 bash 执行时展开。这恰好支持 source \"$HOME/...\" 类写法，但操作员若期望本地展开会踩坑；该值来自受信 remote.env，非安全问题。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/run-remote.sh#L163-L183",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/common.sh#L26-L33"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "summary": "回归测试是源码文本顺序断言：能抓住事故根因（remote_command 缺激活行时 index() 抛错、顺序颠倒时断言失败），但不覆盖 fail 路径顺序、不覆盖 tmux child 激活行（L166 被删无测试兜底）、不验证激活的语义效果（如 REMOTE_ENV_ACTIVATE=true 这种非空无效配置，common.sh 仅强制非空）。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L15-L23",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/common.sh#L33",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/run-remote.sh#L166-L179"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "激活失败时 fail-loud 但无 nonce 状态回执：远端 set -euo pipefail 下激活失败在 prepare 之前中止，ssh 回传非零退出，但该次 launch 无任何 launches/<nonce>.json 回执；按 nonce 查询的监控会查不到状态（而非误读旧 success），且与修复前 mkdir/pgrep/has-session 等 pre-prepare 失败行为一致，非新增风险。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/run-remote.sh#L170-L184",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/remote_job.py#L416-L424"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "授权/nonce/部署/fail-closed 未被削弱：nonce 与哈希绑定在本地由 LOCAL_PYTHON 完成不经远端环境；远端在 prepare 与 run 两进程各自重算身份、部署回执、V2 授权与串行门；fail_launch 改状态前校验 nonce+session 匹配；激活脚本若改变 cwd 只会让相对路径 fail-loud。另记录既有不对称：tmux_script 中 cd（L164）在 set -e（L165）之前，非本次引入。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/run-remote.sh#L83-L114",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/remote_job.py#L366-L375",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/remote_job.py#L403-L413",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/remote_job.py#L476-L492",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/run-remote.sh#L163-L165"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "本地 Agent 执行 git show 4568e3bc22e9a44106f67c3f2119010dae63997d 确认 delta 确实只有一行激活加测试文件（本端禁 shell，未能核验 commit diff 本身）",
+    "运行 CODE/experiment_platform/tests/test_remote_launcher_environment.py 确认测试在本地环境通过",
+    "可选增强（非阻断）：扩展测试同时断言 tmux_script 中激活先于 run、fail 调用位于激活之后；在 remote.env.template 注释中说明激活值在远端展开的语义"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/run-remote.sh#L163-L184",
+    "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/run-remote.sh#L83-L114",
+    "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/common.sh#L20-L61",
+    "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/remote_job.py#L366-L375",
+    "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/remote_job.py#L416-L492",
+    "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L1-L23"
+  ],
+  "open_items": [
+    "合同禁止本地 shell，无法执行 git show/diff 核验该 commit 的实际 delta 是否恰为'一行激活+回归测试'；审查基于固定 commit 的四个文件全文，若 delta 含其他文件改动则超出允许读取路径，需本地 Agent 补验",
+    "无法执行测试或远端命令，测试的本地通过情况与远端真实环境激活效果未验证，最终验收权属本地 Agent",
+    "REMOTE_ENV_ACTIVATE 的具体取值（venv/conda）属 remote.env 私密配置不可见；若实际为 conda activate，在 set -euo pipefail 下存在已知 unbound-variable 失败风险，但该约束对修复前后的 tmux child 同样存在，非本次新增"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
