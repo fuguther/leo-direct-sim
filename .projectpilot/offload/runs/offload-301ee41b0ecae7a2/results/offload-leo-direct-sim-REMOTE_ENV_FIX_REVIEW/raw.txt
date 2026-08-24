@@ -1,0 +1,110 @@
+我先读取合同允许的四个文件，确认 worktree 当前 SHA。我已读完四个合同文件，现在尝试从 GitHub 获取 commit patch 来确认改动确实只有一行。# 冷启动复核报告：远程正式环境激活修复（commit 4568e3bc）
+
+## 改动范围核实
+
+通过 GitHub commit patch 确认：本 commit 对 `run-remote.sh` 的运行时改动**确实只有一行**——在 `remote_command` heredoc 中、prepare 调用之前新增 `$REMOTE_ENV_ACTIVATE`（github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/run-remote.sh#L176）；其余为新增回归测试文件与 NOTES 留痕。工作区 HEAD 即为该精确 commit 且 clean。
+
+## 三条路径的执行顺序分析
+
+**Prepare 路径**（`remote_command`，run-remote.sh#L170-L183）：`set -euo pipefail`（L171）→ `cd`（L172）→ `mkdir`（L173）→ 独占/会话守卫（L174-L175）→ **激活（L176）** → prepare 调用（L177）。激活失败时 `set -e` 使远端命令非零退出，经 ssh 返回后触发本地 `set -euo pipefail`（L2）中止——fail-closed，无会话、无 prepared 状态。prepare 自身的校验失败由 `prepare_launch` 持久化 failed 状态后以 exit 2 结束（remote_job.py#L461-L471），链路完整。
+
+**Fail 路径**（run-remote.sh#L178-L181）：`fail` 调用与 prepare 在**同一 shell** 中，位于激活行 L176 之后，因此与 tmux 正式子进程使用同一个已激活环境；`|| true` 只兜底 fail 标记本身，仍以 `exit 2` 收场。`fail_launch` 只读写状态 JSON（remote_job.py#L476-L492），环境一致性非必需但无害。
+
+**tmux 子进程路径**（run-remote.sh#L163-L169）：激活（L166）在 run（L167）之前，本 commit 未改动。两条 heredoc 都未引号化 EOF，`$REMOTE_ENV_ACTIVATE` 均在**本地构造期**展开为文本，整个命令经 `printf '%q'` 包裹成单个 ssh 参数（L184、L178）后在远端 `bash -lc` 重新解析——两侧都是"login profile → 激活 → python"的同一顺序，语义一致。
+
+## 逐项挑战结论
+
+- **Heredoc 展开**：激活行故意不加引号以支持多词命令（如 `source ~/venv/bin/activate`）；值中若含 `$VAR` 会在远端二次解析时展开。未引入新信任边界——`REMOTE_ENV_ACTIVATE` 是强制配置项（common.sh#L33），其来源 remote.env 本身就以 `source` 方式获得完全代码执行信任（common.sh#L26）。
+- **set -e 行为**：tmux 子进程此前已在 `set -euo pipefail` 下执行同一激活行（L165-L166），所以"激活在该严格模式下可工作"不是新风险；prepare 侧失败即中止，无静默回退。
+- **REMOTE_PYTHON 解析**：默认 `python3`（common.sh#L46），经 `%q` 引用（L158）。两条路径都在激活之后按 PATH 解析，命中同一 venv 解释器；若运营者把 REMOTE_PYTHON 钉成绝对路径，两侧同样一致。一致性在所有配置下成立。
+- **授权/nonce/部署/回执**：身份绑定（run-remote.sh#L83-L114）、nonce（L126-L127）、部署回执校验与期望身份重算（remote_job.py#L366-L375、L427、L533）、V2 串行门在 prepare 与 run 双侧复验（remote_job.py#L434-L436、L547-L549）均未被触碰。未发现任何弱化。
+
+## 回归测试评估（对照 system-python 事故）
+
+事故机制：tmux 外 prepare 直接落到未激活的系统解释器。测试 test_remote_launcher_environment.py#L15-L23 断言 `remote_command` 体内 `$REMOTE_ENV_ACTIVATE` 的首次出现位置先于 prepare 调用字符串：**删除 L176 或将其移到 prepare 之后都会使测试失败**，确实覆盖事故机制本身。但它只是文本顺序检查：
+
+- **（minor）注释绕过**：若激活行被意外注释为 `# $REMOTE_ENV_ACTIVATE`，`index()` 仍命中，测试假绿而事故回归。建议改为对 `^\$REMOTE_ENV_ACTIVATE$` 独立行的 multiline 匹配。
+- **（minor）覆盖面**：fail 调用（run-remote.sh#L179）与 tmux_script 体内的激活（L166）均不在断言内；这两处的回归不会被捕获。建议对 fail 顺序与 `_heredoc_body(script, "tmux_script")` 各加一条断言。
+- **（info）前置伪命中**：若在 prepare 之前插入任何含该字符串的无关行（如 echo/注释），首个 `index` 命中它，测试无法区分真正执行的激活行。
+- **（info）激活失败无回执**：激活在 prepare 之前失败时，nonce 状态文件尚不存在（remote_job.py#L416-L424），监控看到的是"无状态"而非 failed；属既有 fail-closed 语义，可接受但值得在监控侧知晓。
+- **（info）既有不一致**：tmux 子脚本中 `cd`（L164）先于 `set -euo pipefail`（L165），与外层顺序（L171 先于 L172）相反；cd 失败不会在激活前中止。属本 commit 未触碰的既有问题，不在本次范围内。
+
+## 结论
+
+**PASS_WITH_LIMITS**。一行修复在 prepare、fail、tmux 子进程三条路径上建立了同一个已激活环境，未弱化授权、nonce、部署或 fail-closed 语义；回归测试覆盖事故的核心机制（缺失/乱序），但对"注释化"和 fail/tmux 路径的回归不免疫。无 blocking 发现。
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:REMOTE_ENV_FIX_REVIEW",
+  "status": "EVIDENCE_READY",
+  "summary": "PASS_WITH_LIMITS。commit 4568e3bc 对运行时的改动确为一行：在 remote_command 内 prepare 之前加入 $REMOTE_ENV_ACTIVATE（run-remote.sh#L176）。逐路径执行顺序分析确认 prepare（L171-L177）、fail（L178-L181，同一 shell 共享激活环境）与 tmux 子进程（L163-L169，未改动）现使用同一激活环境；heredoc 本地展开+远端重解析语义两侧一致，未引入新信任边界；授权、nonce、部署回执与 fail-closed 行为未弱化，激活失败经双侧 set -euo pipefail fail-loud 中止。回归测试能捕获事故机制（激活缺失或移到 prepare 之后即失败），但属文本顺序断言：注释化激活行可假绿，且 fail 调用与 tmux_script 体内激活不在覆盖内。无 blocking 发现。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "修复正确且最小：prepare、fail 与 tmux 子进程三条路径现共享同一已激活环境，执行顺序为 profile→激活→python，两侧一致；授权/nonce/部署/fail-closed 链路未触碰。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/run-remote.sh#L163-L183",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/common.sh#L26-L46",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/remote_job.py#L366-L375",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/remote_job.py#L531-L549"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "fail-closed 验证：激活失败在 set -euo pipefail 下中止远端命令并经 ssh 触发本地中止；prepare 校验失败由 prepare_launch 自行持久化 failed 状态后 exit 2。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/run-remote.sh#L170-L184",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/remote_job.py#L461-L471",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/remote_job.py#L476-L492"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "summary": "回归测试为纯文本顺序断言：激活行若被注释为 `# $REMOTE_ENV_ACTIVATE` 仍通过 index() 检查而事故回归；也不防 prepare 之前的无关字符串伪命中。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L15-L23"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "summary": "测试覆盖面不足：fail 调用（run-remote.sh#L179）与 tmux_script 体内激活（L166）均无断言，这两处回归不会被捕获；测试确实能捕获事故核心机制（删除或乱序 prepare 前激活即失败）。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L8-L23",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/run-remote.sh#L163-L181"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "既有边界（本 commit 未引入）：激活在 prepare 前失败时无 nonce 状态回执可写，监控侧表现为状态缺失；tmux 子脚本 cd（L164）先于 set -euo pipefail（L165），与外层顺序相反。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/run-remote.sh#L163-L177",
+        "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/remote_job.py#L416-L424"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "本地 Agent 做最终验证：checkout 4568e3bc 后实际运行 pytest CODE/experiment_platform/tests/test_remote_launcher_environment.py 确认转绿（本端按合同未执行任何 Shell 测试）。",
+    "可选加固测试（单独小 PR）：改用 ^\\$REMOTE_ENV_ACTIVATE$ 独立行 multiline 匹配防注释绕过；补 fail 调用顺序与 tmux_script 体内激活两条断言。",
+    "确认线上 remote.env 的 REMOTE_ENV_ACTIVATE 在 set -euo pipefail 下幂等（tmux 子路径历史已验证同模式，风险低）。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/run-remote.sh#L163-L184",
+    "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/common.sh#L26-L46",
+    "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L1-L23",
+    "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/remote_job.py#L416-L492",
+    "github://fuguther/leo-direct-sim/blob/4568e3bc22e9a44106f67c3f2119010dae63997d/CODE/scripts/remote/remote_job.py#L531-L549"
+  ],
+  "open_items": [
+    "合同禁止本地 Shell 执行，回归测试未实际运行，仅静态审查其逻辑；本地 Agent 保留最终验证权。",
+    "remote.env 按设计不入库，REMOTE_ENV_ACTIVATE 的具体取值语义无法在仓库内核验，结论基于 common.sh#L33 的强制存在约束与双路径文本一致性。",
+    "commit 与父提交的精确 diff 经 GitHub patch 确认为 run-remote.sh +1 行（含新增测试与 NOTES 留痕），该 patch 来源无法按证据语法引用，已由 blob 行级证据独立支撑全部结论。"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
