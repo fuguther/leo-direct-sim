@@ -742,3 +742,9 @@
 - 非阻断限制仍保留：少数畸形 persisted manifest 会以裸 traceback 而非干净错误信封失败，但不会写出分类；零时长 interrupted service 可锚定真实 queue wait，但不贡献利用率且没有专项回归；episode 边缘重叠的完整 wait 与 episode 内面积是预注册的不对称。任何正式分类错误、未定位 overflow、物理无效或未排空都必须停止，不能改写成 no-pressure。
 - 当前只完成了“承重版本复核 → 治理定案 → 派生授权”，尚未 PR/CI 合入、clean-main 部署或执行 VM。下一步提交本治理包并经 required pytest CI 合入；部署 exact merge SHA 后严格串行运行 b5，只有其 natural end、守恒、治理、外部 witness、身份、ISL 指标和 zero-rate 门全通过才允许 b2。单种子分类不能直接进入论文或算法比较。
 - PR #163（`fix: 闭合 ISL 压力标定与串行授权`）首轮 required `pytest` CI 已通过，run=`32742920625`、job=`97481422740`。本条 NOTES 留痕提交后仍须重新通过 required CI 才可 squash 合入；截至本条记录仍未部署或执行 VM。
+
+## 2026-08-25：远程正式准备检查统一使用已激活环境
+
+- R03 暴露的启动缺口已复现到 `run-remote.sh`：tmux 内的正式子进程会先执行 `REMOTE_ENV_ACTIVATE`，但 tmux 外的 `remote_job.py prepare` 直接调用 `REMOTE_PYTHON`，因此配置为 `python3` 时会落到未激活的系统解释器，并在仿真启动前因缺少正式依赖 fail-closed。
+- 本修复只在远程 prepare/fail 所在的同一 shell 中、执行 prepare 之前加入现有 `REMOTE_ENV_ACTIVATE`；正式 tmux 子进程的激活与执行逻辑不变，实验参数、授权、回执和分析语义均未修改。
+- TDD 证据：新增 shell 模板回归先在当前代码上以 `substring not found` 失败，随后最小修复转绿；`bash -n` 通过，全套测试为 `713 passed, 2 skipped, 3 subtests passed`。当前尚未独立复核、PR/CI 合入或 clean-main 部署，不得写成默认远程路径已正式闭环。
