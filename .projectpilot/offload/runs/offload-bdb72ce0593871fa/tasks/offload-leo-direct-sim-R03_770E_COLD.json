@@ -1,0 +1,64 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R03_770E_COLD",
+    "title": "R03 corrected exact-commit cold-start review",
+    "goal": "Act as a cold-start reviewer. Verify that commit 770eabb94cc32fea2e14b0b452a148dc459534ef closes the missing-control-counter fail-open, provides a mechanically usable persisted classifier command, preserves the five-way ordering and binds every result to verified persisted evidence. Return PASS_WITH_LIMITS or REQUEST_CHANGES. Do not edit files. Never emit example or placeholder evidence: every evidence item must use the exact github://fuguther/leo-direct-sim/blob/770eabb94cc32fea2e14b0b452a148dc459534ef/<allowed-path>#Lx-Ly form; omit a finding if you cannot supply that form.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "deterministic",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "770eabb94cc32fea2e14b0b452a148dc459534ef",
+      "paths": [
+        "CODE/experiment_platform/isl_pressure.py",
+        "CODE/experiment_platform/isl_pressure_decision.py",
+        "CODE/experiment_platform/tests/test_isl_pressure.py",
+        "CODE/experiment_platform/tests/test_isl_pressure_decision.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/experiment_platform/tests/test_v2_analysis.py",
+        "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/",
+        "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+        "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Verify the exact commit and declared artifact set.",
+      "Confirm missing required control failure counters now fail loudly.",
+      "Confirm the canonical invocation matches the implemented CLI and persisted verification path.",
+      "Separate code correctness, execution readiness and claim limits."
+    ],
+    "requiredEvidence": [
+      "Line-grounded exact-commit evidence with no placeholders",
+      "At least one executable counterexample or covered regression",
+      "Explicit open_items and PASS_WITH_LIMITS or REQUEST_CHANGES"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "47fd3d43340a76cba020b56a4c12f459a14dada7c16e16220894d3031db87f61"
+}
