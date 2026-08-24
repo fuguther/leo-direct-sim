@@ -1,0 +1,197 @@
+我先读取允许路径中的核心文件，确认审计对象的真实内容。现在读 v2_analysis.py 与 metrics.py，检查 analyzer 绑定与指标语义。继续读 metrics.py 与远程脚本。现在读四个远程脚本，检查 clean checkout 选择与 remote.env 处理。最后读 request.json 补齐证据链。已完成全部 11 个允许路径的通读与交叉核对，下面是完整审计报告。
+
+---
+
+# ISL Bandwidth Pilot 执行门审计（EXP-20260824-ISL-BANDWIDTH-PILOT-R01）
+
+## 裁定：BLOCK
+
+编译与门序本身状态正确（`execution_authorized: false`、`status: COMPILED_REVIEW_REQUIRED`、brief 处于 `REVIEW`），未发现未授权先行。但对 brief 自己声明的验收标准，分析链存在两个无法用已审计证据闭环的缺口：**analyzer 完全未被 hash/commit 绑定**，以及**两臂实际 trace_sha256 的跨 cell 相等性在分析阶段无人校验**。二者都正是 brief 验收条款明文要求的内容。
+
+## 当前管线状态（事实层）
+
+- 编译产物齐备且两臂 resolved 配置唯一差异是 `links.rf_isl.bandwidth_hz`（b500 为 5e8，b50 为 5e7），见 `EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R01-b500-s7.leo-sim.yaml#L124-L134` 与 b50 同位置 `#L124-L134`；其余字段逐行一致。
+- `compile-report.json#L11-L17`：`execution_authorized: false`、`launcher_generated: false`、`status: COMPILED_REVIEW_REQUIRED`，编译侧没有越权。
+- brief `status: REVIEW`（`CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R01/brief.json#L60`）；EXP 目录中尚无 `authorization.json` 与 `finalization.json`，而 RUNBOOK 已引用前者（`EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/RUNBOOK.md#L13-L14`）——即当前处于"已编译、待三角色评审/定稿/授权"阶段，门序未被跳过。
+
+## 六个指定问题的回答
+
+### 1) finalization/artifact hash 是否充分绑定 analyzer 与两臂包？——两臂包：是；analyzer：否（BLOCKER F1）
+
+- 两臂包绑定充分：`finalize_decision.py` 对 decision 声明的每个 artifact 重算 sha256（`CODE/work/finalize_decision.py#L113-L120`），每个 review receipt 必须绑定全部 decided artifacts（`#L184-L186`）；`authorize_experiment.py` 要求 finalization 的 artifact_hashes 覆盖当前实验全部编译产物（`CODE/experiment_platform/authorize_experiment.py#L416-L426`），该集合含两臂 resolved 配置（`EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/compile-report.json#L2-L9`）。
+- **analyzer 无绑定**：`run-manifest.json` 的 `execution_chain_sha256` 只含 authorize/deployment_guard/remote_job/run-remote 四个执行链文件（`EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/run-manifest.json#L49-L54`）；`v2_analysis.analyze()` 的 inputs 只绑定结果 artifacts（`CODE/experiment_platform/v2_analysis.py#L380-L386`），输出 manifest 无任何 analyzer commit/hash 字段（`#L387-L406`）；`verify_persisted_analysis` 用"当前检出的代码"重算而非对照固定 commit（`#L479-L490`）。而 brief 验收明确要求 "binds the analyzer's exact Git commit"（`CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R01/brief.json#L51`）。**被篡改或漂移的 `v2_analysis.py`/`metrics.py` 可以产出 VERIFIED 结果而无任何已审计 hash 能发现。**
+
+### 2) authorization 在 merge 后是否仍可校验？——是，设计为重算式，merge 不失效
+
+`verify_authorization` 不依赖 git 状态：重跑 `evaluate_decision`（`CODE/experiment_platform/authorize_experiment.py#L77-L81`）、全量重建 payload 并精确比对（`#L464-L490`）；发射时 `verify_authorization_for_leo_sim_v2_config` 还把 config 路径、`code_sha256`、`execution_chain_sha256` 与当前部署代码重新绑定（`#L514-L544`）。只要被绑定文件内容不变，merge 后校验等价成立；任何文件变动 fail-closed。注意 matrix 分支的具体校验委托给 `CODE/leo_sim/matrix.py`（`#L233-L249`），该文件不在允许读取路径内，无法确认其检查集（OPEN_ITEM 1）。
+
+### 3) 远程脚本如何安全选择 clean checkout 且不复制/泄露 remote.env？
+
+- clean 选择：`push-remote.sh` 拒绝脏树、要求 40 位 hex commit（`CODE/scripts/remote/push-remote.sh#L27-L33`），经 `deployment_guard.py build` 打包并在远端 staging 校验后 install（`#L35-L59`）。
+- remote.env 仅本地 `source`（`CODE/scripts/remote/common.sh#L7-L26`），不进入任何显式传输参数；仅 `REMOTE_ENV_ACTIVATE` 作为激活命令嵌入远端命令串发给目标主机（`CODE/scripts/remote/run-remote.sh#L152-L158`），属设计内。
+- `run-remote.sh` 把 config/authorization 限制在 `EXPERIMENTS/` 内、拒绝符号链接、本地算 hash+nonce 并作为 expected 值交给远端任务（`CODE/scripts/remote/run-remote.sh#L59-L134`），禁止任意命令（`#L43`）。
+- **未能闭环**：部署包是否排除 `remote.env`、是否强制 main 分支/与 origin 对账，都在 `deployment_guard.py` 内（允许路径外，OPEN_ITEM 3）。
+
+### 4) 两臂顺序运行与自然结束检查是否有遗漏？——有遗漏
+
+- 无任何机制强制两臂顺序/独占执行；`--exclusive-simulation` 只检查旧平台 `SimulationRL.py` 进程（`CODE/scripts/remote/run-remote.sh#L163`），不阻止两个 V2 tmux 会话并发。离散事件结果不受 wall-clock 争用影响，但这偏离了"同一 clean 部署上受控顺序执行"的表述；远端部署回执与授权的再校验在 `remote_job.py`（允许路径外，OPEN_ITEM 4）。
+- 自然结束：分析侧可见的闸门是外部 witness 的 `status==success`+`exit_code==0`、nonce/授权/results 目录身份绑定（`CODE/experiment_platform/v2_analysis.py#L105-L132`）、governance receipt 的 `research_eligible is True` 且 `verification_errors == []`（`#L232-L234`）、以及 `receipt_mod.verify_receipt_dir`（`#L202-L205`）。但 `max_events=20000000`（`EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/request.json#L135-L141`）触顶停止与"自然结束"的区分、zero-rate hold 检测都在 `receipt.py`（允许路径外，OPEN_ITEM 2）。**已审计代码中没有一处显式检查 stop/end reason 字段。**
+- 正面：缺臂/败臂会 fail-closed——cohort 必须精确等于计划集（`CODE/experiment_platform/v2_analysis.py#L351-L365`），符合 brief "stops analysis rather than being silently excluded"（`CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R01/brief.json#L52`）。
+
+### 5) paired analysis 前必须验证的字段（已在代码中落实 / 缺失）
+
+已落实：receipt 目录验证（`CODE/experiment_platform/v2_analysis.py#L202-L205`）、receipt schema 分支与 v3/v4 隔离（`#L220-L231`）、`receipt.config_sha256 == 授权值`（`#L241-L242`）、receipt hash 被 formal+governance 双 witness 绑定（`#L237-L240`）、governance witness 绑定 trace_manifest schema/identity contract/hash（`#L243-L253`）、外部 witness 五字段重复绑定（`#L33-L36, L126-L131`）；分母语义由 `metrics.py` 保证：service window `capacity == rate×time`、served ≤ capacity（`CODE/leo_sim/metrics.py#L262-L281`）、可用容量采样窗校验且去重（`#L299-L317`）、`utilization = served_bits / 采样 available_capacity_bits` 并 clamp 到 1.0（`#L331-L342`）、分析侧按 `stage=="isl"` 过滤且无 ISL 链即报错（`CODE/experiment_platform/v2_analysis.py#L180-L187`）。
+**缺失**：两臂实际 trace_sha256 跨 cell 相等（BLOCKER F2）——`analyze()`（`#L320-L406`）与 `_compute_planned_contrasts`（`#L284-L317`）从不比较两臂 trace 字段，而验收明文要求（`CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R01/brief.json#L50`）；编译期 `trace_identity_sha256` 相等（`EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/run-manifest.json#L61, L94`）不能替代执行后实际值。control/data 字段按设计为零/false（`EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/request.json#L2-L7`），不作有效性门，这本身是声明过的行为。
+
+### 6) primary metric 不能被误称为什么
+
+`isl_link_utilization_max` = 每条有向 ISL 链在整个 horizon 上 `served_bits / 采样 available_capacity_bits` 后的跨链最大值（`CODE/leo_sim/metrics.py#L331-L342` + `CODE/experiment_platform/v2_analysis.py#L180-L187`）。它**不是**：1 秒窗口/瞬时峰值（`brief.json#L13`）；纯容量倍增效应（`brief.json#L12`、`request.json#L92`）；因果/算法/论文级效应或阈值（`brief.json#L38-L46`）；均值指标；数据面 goodput 比——分子是该链全部 served bits（已审计代码无控制/数据类别过滤，`CODE/leo_sim/metrics.py#L272-L294`），分母是采样可用容量且 clamp 到 1.0。
+
+## 发现清单
+
+**BLOCKER**
+- F1（blocking）：analyzer（`v2_analysis.py`/`metrics.py`）未被任何 artifact hash 或 commit 绑定，违反 brief 验收条款。证据见问题 1。
+- F2（blocking）：paired analysis 缺少两臂实际 trace_sha256 相等性校验，违反 `brief.json#L50`；trace 不一致的非配对结果可拿到 VERIFIED。证据见问题 5。
+
+**NON_BLOCKING**
+- F3（major）：评审省略不可检测——`finalize_decision.py` 只校验 decision 引用的 receipts（`CODE/work/finalize_decision.py#L125-L128`），对已存在但未引用的 BLOCK receipt 无完整性校验；角色 PASS 齐备性（`#L199-L209`）与 reviewer/session 唯一性（`#L180-L183`）不能防"丢掉不利评审"。
+- F4（major）：饱和截断无标记——utilization clamp 1.0（`CODE/leo_sim/metrics.py#L338-L340`），两臂最大链同时饱和时 contrast=0 会被误读为"无差异"；`run_results` 只带标量不带 clamp/饱和指示（`CODE/experiment_platform/v2_analysis.py#L270-L281`）。
+- F5（minor）：`_verify_result` 对 `authorization_sha256` 存在 fallback 到 formal 自报值的写法（`CODE/experiment_platform/v2_analysis.py#L212-L217`）；当前流程在 `#L359-L363` 必注入，但 helper 本身允许自绑定。
+- F6（minor）：governance receipt 的 `authorization_sha256` 为 `None` 时放行（`CODE/experiment_platform/v2_analysis.py#L235-L236`），允许治理回执不带授权绑定。
+- F7（info）：RUNBOOK 从运行命令直接跳到分析命令，缺少 pull-results 步骤（`EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/RUNBOOK.md#L27-L34`）；陈旧本地 Results 会因 witness 缺失 fail-closed，故仅为操作风险。
+
+## OPEN_ITEM（影响已声明，需本地 Agent 在允许范围外闭环）
+
+1. `CODE/leo_sim/matrix.py` 的 `verify_compiled_matrix` 检查集未知（被 `authorize_experiment.py#L233-L249` 委托）——影响问题 1/2 的完整性结论。
+2. `CODE/leo_sim/receipt.py` 的 `verify_receipt_dir` 与 governance receipt 是否显式校验 natural-end/zero-rate-hold/event-limit/conservation 未知——影响问题 4。
+3. `deployment_guard.py` 是否排除 remote.env、是否强制 main/origin 对账未知——影响问题 3。
+4. `remote_job.py` 远端侧 expected-hash/部署回执再校验与自然结束状态写入未知——影响问题 4。
+5. `run-remote.sh#L92-L99` 内联 canonical hash 算法与 `CODE/leo_sim/config.py` 是否一致未验证（漂移方向为 fail-closed，但可能误拦合法运行）。
+6. exact commit 验证：网页端不能执行 git；全部内容读自路径含 `2f4848a42db503d0b12e577e6307309a06b97232` 的 worktree 检出，本地 Agent 须以 `git rev-parse HEAD` 与 clean 状态最终确认。
+7. `run-manifest.json#L44` 的 `code_sha256` 是否覆盖 `v2_analysis.py`/`metrics.py` 未知（`receipt.py` 的 `code_sha256()` 不可读）；若覆盖可部分降级 F1，但 `_verify_result` 从不就当前代码复核该值，F1 核心缺口仍成立。
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:KIMI-ISLBW-GATE-R01",
+  "status": "EVIDENCE_READY",
+  "summary": "裁定 BLOCK。门序现状正确：编译产物 execution_authorized=false、brief 处于 REVIEW、两臂 resolved 配置唯一差异为 rf_isl.bandwidth_hz，无未授权先行。两个 blocking 缺口：F1 analyzer（v2_analysis.py/metrics.py）未被任何 artifact hash/commit 绑定，execution_chain_sha256 只含执行链四文件，verify_persisted_analysis 用当前代码重算，违反 brief.json#L51 的 analyzer-commit 绑定条款；F2 paired analysis 从不跨 cell 比较两臂实际 trace_sha256，违反 brief.json#L50。授权校验为重算式设计，merge 后仍可校验；远程脚本脏树拒绝与路径/hash/nonce 绑定设计良好，但 deployment_guard/remote_job/receipt/matrix 四模块在允许读取路径外，natural-end 与 remote.env 排除无法闭环，列入 open_items。另报 review-shopping（major）、饱和 clamp 无标记（major）、两处 minor 自绑定放宽。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "analyzer 未被绑定：execution_chain_sha256 仅含 authorize/deployment_guard/remote_job/run-remote 四文件，v2_analysis 的 inputs 只绑定结果 artifacts，输出无 analyzer commit 字段，verify_persisted_analysis 用当前检出代码重算；被篡改的分析器可产出 VERIFIED 结果而无可审计 hash 发现，违反 brief 验收条款 analyzer-commit binding。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/run-manifest.json#L49-L54",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/experiment_platform/v2_analysis.py#L380-L406",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/experiment_platform/v2_analysis.py#L479-L490",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R01/brief.json#L51"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "blocking",
+      "summary": "paired analysis 缺少两臂实际 trace_sha256 跨 cell 相等校验：analyze() 与 _compute_planned_contrasts 只按 pairing_key/arm_id 组织，从不比较 trace 字段；编译期 trace_identity_sha256 相等不能替代执行后实际值，违反 brief.json#L50，trace 不一致的非配对结果可获得 VERIFIED。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/experiment_platform/v2_analysis.py#L284-L317",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/experiment_platform/v2_analysis.py#L351-L373",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R01/brief.json#L50",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/run-manifest.json#L61-L94"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "评审省略不可检测：finalize_decision 只校验 decision 引用的 applied_review_receipts，无针对已存在 BLOCK receipts 的完整性注册；不利评审可被静默不引用，三角色 PASS 齐备性与 reviewer/session 唯一性不能防 review shopping。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/work/finalize_decision.py#L125-L141",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/work/finalize_decision.py#L199-L209"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "primary metric 饱和截断无标记：utilization clamp 到 1.0，两臂最大链同时饱和时 paired difference 为 0 会被误读为无差异；run_results 只带标量不带 clamp/饱和指示。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/leo_sim/metrics.py#L331-L342",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/experiment_platform/v2_analysis.py#L270-L281"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "_verify_result 的 authorization_sha256 校验存在 fallback 到 formal 自报值的写法（当前流程必注入，helper 本身允许自绑定）；governance receipt 的 authorization_sha256 为 None 时放行。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/experiment_platform/v2_analysis.py#L212-L217",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/experiment_platform/v2_analysis.py#L235-L236",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/experiment_platform/v2_analysis.py#L359-L363"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "info",
+      "summary": "门序现状正确：编译 report execution_authorized=false 且 status=COMPILED_REVIEW_REQUIRED，两臂 resolved 配置唯一差异为 links.rf_isl.bandwidth_hz，缺臂/败臂在分析侧 fail-closed；授权为重算式校验，merge 后不失效。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/compile-report.json#L11-L17",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R01-b500-s7.leo-sim.yaml#L124-L134",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R01-b50-s7.leo-sim.yaml#L124-L134",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/experiment_platform/authorize_experiment.py#L464-L490",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/experiment_platform/v2_analysis.py#L351-L365"
+      ]
+    },
+    {
+      "id": "F7",
+      "severity": "info",
+      "summary": "远程脚本 clean checkout 与 remote.env 本地化设计：push-remote 拒绝脏树并要求 40 位 commit；remote.env 仅本地 source；run-remote 限制 EXPERIMENTS/ 路径、拒绝符号链接、nonce+expected hash 绑定、禁止任意命令；但部署包排除 remote.env 与 main/origin 对账在 deployment_guard.py（允许路径外）。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/scripts/remote/push-remote.sh#L27-L42",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/scripts/remote/common.sh#L7-L26",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/scripts/remote/run-remote.sh#L59-L134",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/scripts/remote/run-remote.sh#L163-L164"
+      ]
+    },
+    {
+      "id": "F8",
+      "severity": "info",
+      "summary": "指标语义核对通过：isl_link_utilization_max 为 horizon 聚合 served_bits/采样 available_capacity_bits 的跨有向 ISL 链最大值，非 1 秒窗峰值、非纯容量倍增、非数据面 goodput（分子含全部 served bits 无类别过滤）、非均值、clamp 1.0；分母采样间隔 1s。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/leo_sim/metrics.py#L331-L342",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/experiment_platform/v2_analysis.py#L180-L187",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R01/brief.json#L12-L13",
+        "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/request.json#L135-L141"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "BLOCK 授权与发射：先在 v2_analysis.analyze() 输出中加入 analyzer 绑定（v2_analysis.py 与 metrics.py 的 sha256 或 git commit 字段），并在 verify_persisted_analysis 中对照校验，或把分析链文件纳入 execution_chain_sha256 类绑定后重新编译/评审",
+    "在 analyze() 增加跨 cell 实际 trace_sha256（及 trace_seed）相等校验，从两臂 receipt/manifest 重算比对，不等即 fail-closed，满足 brief.json#L50",
+    "本地 Agent 补读 CODE/leo_sim/matrix.py、CODE/leo_sim/receipt.py、CODE/scripts/remote/deployment_guard.py、CODE/scripts/remote/remote_job.py、CODE/leo_sim/config.py，闭环 open_items 1-5（natural-end 字段、remote.env 排除、main/origin 对账、远端再校验、hash 算法一致性）",
+    "在分析输出 run_results 中增加 per-link utilization 与 clamp/饱和标记，消除 F4 误读面",
+    "决策层引入 review receipts 注册表或要求 decision 列明全部已存在 receipts（含 BLOCK），消除 F3 省略面",
+    "本地以 git rev-parse HEAD 与 git status 确认 exact commit 2f4848a42db503d0b12e577e6307309a06b97232 及 clean 状态后再推进 finalization"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/compile-report.json#L11-L17",
+    "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/run-manifest.json#L44-L62",
+    "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/experiment_platform/authorize_experiment.py#L464-L544",
+    "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/experiment_platform/v2_analysis.py#L98-L132",
+    "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/experiment_platform/v2_analysis.py#L191-L259",
+    "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/leo_sim/metrics.py#L331-L342",
+    "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/scripts/remote/push-remote.sh#L27-L33",
+    "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/scripts/remote/run-remote.sh#L83-L134",
+    "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/scripts/remote/common.sh#L20-L36",
+    "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/work/finalize_decision.py#L113-L120",
+    "github://fuguther/leo-direct-sim/blob/2f4848a42db503d0b12e577e6307309a06b97232/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R01/brief.json#L47-L53"
+  ],
+  "open_items": [
+    "CODE/leo_sim/matrix.py 的 verify_compiled_matrix 检查集未知（authorize_experiment.py#L233-L249 委托，允许路径外）：matrix 分支是否复核 code_sha256/execution_chain_sha256/controlled_signature 无法确认，影响 F1/F2 的最终定级",
+    "CODE/leo_sim/receipt.py 的 verify_receipt_dir 与 governance receipt 是否显式校验 natural-end、zero-rate-hold、event-limit 停止与 conservation 未知：自然结束保证目前只能证明到 v2_analysis.py#L202-L205 与 #L232-L234 的委托点",
+    "CODE/scripts/remote/deployment_guard.py 是否在部署包中排除 remote.env、是否强制 main 分支与 origin 对账未知：push-remote.sh#L38-L42 的 build/install 语义无法闭环",
+    "CODE/scripts/remote/remote_job.py 远端侧 expected-hash、deployment receipt 再校验与自然结束状态写入未知：run-remote.sh#L120-L134 仅传入参数",
+    "run-remote.sh#L92-L99 内联 canonical hash 算法与 CODE/leo_sim/config.py 的 config_sha256 算法一致性未验证（漂移方向 fail-closed，但可能误拦合法运行）",
+    "exact commit 验证：网页端不可执行 git；内容读自路径含 2f4848a42db503d0b12e577e6307309a06b97232 的 worktree，本地 Agent 须以 git rev-parse HEAD 与 clean 状态最终确认",
+    "run-manifest.json#L44 的 code_sha256 是否覆盖 v2_analysis.py/metrics.py 未知（receipt.py 的 code_sha256() 不可读）；即便覆盖，_verify_result 从不就当前代码复核该值，F1 核心缺口仍成立"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
