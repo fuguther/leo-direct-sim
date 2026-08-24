@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "planId": "offload-67cb992ae112cf7c",
+  "relayManifest": {
+    "planId": "offload-67cb992ae112cf7c",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "fast",
+    "maxParallelWorkers": 1,
+    "analysisLanes": 1,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:KIMI-ISLBW-GATE-R01",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "2f4848a42db503d0b12e577e6307309a06b97232",
+        "paths": [
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R01/brief.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R01.json",
+          "CODE/work/finalize_decision.py",
+          "CODE/experiment_platform/authorize_experiment.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/scripts/remote/common.sh",
+          "CODE/scripts/remote/push-remote.sh",
+          "CODE/scripts/remote/run-remote.sh",
+          "CODE/scripts/remote/pull-results-remote.sh"
+        ],
+        "promptHash": "5126ecac8509d353cbe20656fc1bb4c17ebb173fbbb0feb6c7854bc9399780c9"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "67cb992ae112cf7c35be4a38e04f31a6a57aacf9ca0a28755bf180058198a994"
+  },
+  "sourceBaseCommit": "2f4848a42db503d0b12e577e6307309a06b97232",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:KIMI-ISLBW-GATE-R01",
+      "promptHash": "5126ecac8509d353cbe20656fc1bb4c17ebb173fbbb0feb6c7854bc9399780c9",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "2f4848a42db503d0b12e577e6307309a06b97232",
+        "paths": [
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R01/brief.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R01.json",
+          "CODE/work/finalize_decision.py",
+          "CODE/experiment_platform/authorize_experiment.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/scripts/remote/common.sh",
+          "CODE/scripts/remote/push-remote.sh",
+          "CODE/scripts/remote/run-remote.sh",
+          "CODE/scripts/remote/pull-results-remote.sh"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
