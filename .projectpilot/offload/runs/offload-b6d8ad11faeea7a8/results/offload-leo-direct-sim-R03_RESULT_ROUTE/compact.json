@@ -1,0 +1,124 @@
+{
+  "taskId": "offload:leo-direct-sim:R03_RESULT_ROUTE",
+  "status": "EVIDENCE_READY",
+  "summary": "PASS_WITH_LIMITS。独立重算确认：b2 三条有向 ISL（isl:147:167、isl:167:187、isl:222:242）的 episode 满足冻结判据（≥2 连续 eligible 1s 窗 ≥0.8 利用率 + 同链路同时段排队 max wait ≥0.1s 且面积 ≥1e5 bit-s，逐窗利用率与 queue area 求和均与 persisted 值一致）；b5 对照无合格 episode（同三条链路 high window 仅 1/1/0）；两臂包命运逐键相同（1295 DELIVERED + 4 NO_ROUTE）、access grants 均 59、control 失败计数与 drain 残留全 0、无 ISL/HOLDING 溢出。分类器分支顺序与冻结合同逐项一致，且分类前强制重算核验。执行事件为 fail-closed 流程缺口，未污染证据。seeds 11+19（共三 seed）对下一个 bounded gate 充分，但仅够工程校准级，不够统计 claim。无 blocking 发现。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "三条候选链路 episode 独立重算通过：isl:147:167 四窗 23-26s 利用率 0.91865586=10841710/11801710，queue area 逐窗求和=116895223.16 与 persisted 一致；isl:222:242 四窗 13-16s（0.9187/0.8575）area=13950062.11 一致；isl:167:187 五窗 23-27s 抽查一致；max waits 5.130/0.336/0.784 均 ≥0.1",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L72939-L72974",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L73096-L73145",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L75537-L75574",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L84567-L84602",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L84724-L84763"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "5 MHz 对照无压力 episode：control_pressure_link_ids=[]，同三条链路 high_window_count 仅 1/1/0、最长连续 1 < 2；配对差 0.22878040555139892 与主指标 0.3813006759189982-0.15252027036759927 重算一致；两臂 trace_identity_sha256/seed/controlled_signature 相同，仅 config（带宽）不同",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L55946-L55975",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L16653-L16669",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L19044-L19060",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L27709-L27723",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L114088-L114094"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "物理/排空/命运控制全部通过：两臂 fate_counts 逐键相同（DELIVERED 1295 + NO_ROUTE 4，offered=1299）、access grants 均 59、control 四项失败计数全 0、drain 两项全 0、zero_rate_holds 均 0、无 ISL_QUEUE_OVERFLOW/HOLDING_QUEUE_OVERFLOW",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L124-L161",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L56012-L56049",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L8008-L8012",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L63896-L63900"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "分类器代码与冻结合同逐项一致：分支顺序、ISL 溢出处理、控制臂优先分支均匹配；persisted classification 的 reason 字符串与代码输出格式逐字一致；分类前强制 verify_persisted_analysis 重跑 analyze 并比对 10 个键，formal witness 强制 natural_end/conservation_ok",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/CODE/experiment_platform/isl_pressure_decision.py#L93-L207",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L79-L105",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/pressure-classification.json#L1-L19",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/CODE/experiment_platform/v2_analysis.py#L387-L395",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/CODE/experiment_platform/v2_analysis.py#L785-L790"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "非阻塞限制：对照臂 isl:147:167/isl:167:187 在 23s 单窗利用率达 0.9675/0.9674 且同链路本有排队（max 1.94s），对照无压力依赖 ≥2 连续窗规则，bracket margin 不深，多 seed 确认确有必要",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L16656-L16668",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L19047-L19059"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "summary": "执行事件边界成立但属平台债：首次 2MHz 前驱门因未激活 Python fail-closed、未产生结果；正式两臂证据链完整。该缺口不污染本轮分类，但需独立修复，不能视为平台无遗留",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/RESULT-REVIEW.md#L48-L55",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L39-L58"
+      ]
+    },
+    {
+      "id": "F7",
+      "severity": "info",
+      "summary": "路线评估：seeds 11/19 + 已有 7 的三 seed 方案符合 PRESSURE_CANDIDATE 冻结动作（预注册 seeds 确认相邻区间后再谈 paper claim），对 bounded gate 充分但仅工程校准级；方案未越界（无 1MHz/剂量响应/直接 RL）",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L96-L99",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/RESULT-REVIEW.md#L57-L68"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "本地 Agent 在 pinned commit dd892b3a 重跑 pressure-decision.json 的 canonical invocation，确认 analyzer identity（manifest 记录于 0280de3b 的四个文件 hash）未漂移且 PRESSURE_CANDIDATE 复现",
+    "起草新增 seeds 11/19 的预注册合同：固定 seed 值与选择时间、同一决策合同、逐 seed 分支如实报告（禁多数票），授权后再执行",
+    "将远程启动器默认解释器缺口列为独立小修复任务（先回归复现未激活环境，再统一显式环境），不与 R04 混淆",
+    "三 seed 一致前，任何文档不得把 5/2 MHz 区间写成统计阈值或 paper-ready claim"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/pressure-classification.json#L1-L19",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L72939-L72974",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L55946-L55975",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L114050-L114103",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L79-L114",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/request.json#L85-L102"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "网页端无法执行代码：canonical invocation 在 pinned commit 的复现（含 analyzer identity 与 0280de3b 记录 hash 的一致性）必须由本地 Agent 确认；若有漂移 verify_persisted_analysis 会 fail-loud，需本地裁定",
+    "seeds 11/19 尚未进入任何冻结合同，'未看结果'无法从仓库证据核验；预注册时需记录选择时间与依据",
+    "b2 全程聚合主指标 0.3813 的 argmax 链路未在 1120 条链路中逐链重算（由平台重算门覆盖），本地复核可顺带确认",
+    "raw ledger 级抽查（queue_enter/service_start 逐条匹配）只能由本地/VM 侧执行，网页端未覆盖"
+  ]
+}
