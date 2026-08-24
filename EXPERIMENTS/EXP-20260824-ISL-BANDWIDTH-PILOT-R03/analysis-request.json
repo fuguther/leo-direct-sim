@@ -1,0 +1,84 @@
+{
+  "analysis": {
+    "analysis_id": "AN-ISL-BANDWIDTH-PILOT-R03",
+    "estimand": "paired descriptive difference in maximum horizon-aggregate directed-ISL utilization between 2 MHz and 5 MHz under one fixed trace, seed, routing, topology, access, demand, emission and observation contract; the preregistered branch decision additionally requires receipt-bound one-second directed-link and same-link matched queue-wait diagnostics",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "paired engineering bandwidth sensitivity plus the separately frozen pressure classification in CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json; not a statistical algorithm or paper-facing effect claim",
+        "left_arm": "b2",
+        "name": "b2_minus_b5",
+        "right_arm": "b5"
+      }
+    ],
+    "primary_metric": "isl_link_utilization_max"
+  },
+  "claim_boundary": {
+    "can_claim": [
+      "the two declared cells use the same actual trace, seed, deterministic hop routing, topology, access, demand, emission, observation and drain contracts",
+      "the only declared intervention is links.rf_isl.bandwidth_hz, while SNR, MCS, data service time and control service time are physical consequences of that intervention",
+      "verified raw service and available-capacity intervals can be rebinned into fixed one-second directed-ISL windows with served bits and available capacity reported separately",
+      "a PRESSURE_CANDIDATE requires one directed ISL with at least two consecutive one-second windows at utilization at least 0.8, at least 0.9 available seconds in each counted window, and same-link matched queue wait of at least 0.1 seconds and 100000 bit-seconds",
+      "the ordered classification and subsequent action are frozen in CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json before execution"
+    ],
+    "cannot_claim": [
+      "algorithm superiority, a causal information-value effect or a new-algorithm contribution",
+      "a universal or paper-ready ISL congestion threshold from one seed and one scenario",
+      "a pure capacity multiplier effect, because bandwidth also changes noise, SNR, MCS and control-packet service time",
+      "congestion when zero-rate holds occur, candidate access grants differ from control, candidate access, geometry, outage or NO_ROUTE fates exceed control, any data queue overflow occurs, candidate control expired/lost/geometry-lost/overflow exceeds control, natural end or conservation fails, or current external witness evidence is absent",
+      "a fully usable pressure scenario when the candidate has any in-system packet at stop or unmatched ISL queue entry; that branch is DRAIN_INCOMPLETE and requires longer-drain confirmation",
+      "a 1 MHz result or dose-response curve when R04 was not executed",
+      "execution authorization before exact-revision independent review, accepted finalization, clean-main deployment and external witness gates close"
+    ]
+  },
+  "experiment_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R03",
+  "matrix_manifest_sha256": "4d88e84bcf26d6c5fa41f3834064e6f3815d0d225e6666085c3021aa0c9a81cd",
+  "planned_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 0,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": false,
+        "require_data_isl": false
+      },
+      "arm_id": "b5",
+      "config_sha256": "58ffe2b2aed4bd57978bde2fd945977d2ee5e34978c25f945a524efea4c7c52f",
+      "controlled_signature": "d6d9cac717206bfd5ef4d295c1addb322708fb7f03e9d953dc72ec3af725807f",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "bandwidth-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b5-s7",
+      "trace_identity_sha256": "effb467639ce8d0b73f60cde249eb6a792ec890b21d3e4e91ffee84143577309",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 0,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": false,
+        "require_data_isl": false
+      },
+      "arm_id": "b2",
+      "config_sha256": "92aabb3fc3fa63083815c9952ded663ddd4e38dae46d9c2355ec1ece73fcdaa0",
+      "controlled_signature": "d6d9cac717206bfd5ef4d295c1addb322708fb7f03e9d953dc72ec3af725807f",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "bandwidth-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b2-s7",
+      "trace_identity_sha256": "effb467639ce8d0b73f60cde249eb6a792ec890b21d3e4e91ffee84143577309",
+      "trace_seed": 7
+    }
+  ],
+  "planned_run_ids": [
+    "EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b5-s7",
+    "EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b2-s7"
+  ],
+  "request_sha256": "f55bde2c4246be09ffa97d1f8407e906279de4299a78e29dc34e680e2d4f82a4",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-matrix-analysis-request/v1",
+  "status": "WAITING_FOR_VERIFIED_RUNS"
+}

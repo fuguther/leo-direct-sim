@@ -716,3 +716,11 @@
 - `finalize_decision.py` 返回 `ACCEPTED`；`authorize_experiment` 返回 `AUTHORIZED`（2 runs），authorization payload SHA=`71c3052e1af50475dc31b4c247c91e63475f53572b2e15ab12f61d1c3470f526`。两份 resolved config 均通过运行时授权重算。
 - 串行门真实反例符合预注册合同：b500 在无 predecessor 时返回 `READY`；b50 在尚无合格 b500 结果时退出码 2 并 fail-closed。提交前代码全套验证仍需在本治理工件加入后重跑。
 - PR #159（`fix: 闭合 ISL 带宽串行实验门`）首轮 required `pytest` CI 已通过，run=`32711384104`、job=`97383326826`。当前仍只是“审阅与授权完成”，尚未合入/部署，也没有 VM 自然结束回执或分析结果；最终 NOTES 提交仍须重新通过 CI 后才可 squash 合并。合入后部署 exact merge SHA，然后严格执行 b500；仅在其 natural end、守恒、governance、nonce witness、部署身份、主指标和 zero-rate gates 全通过后才运行 b50，最后做 V2 持久化配对分析。单 seed 结果不得解释为算法优越性、普适阈值、Q0 或论文统计证据。
+
+## 2026-08-24：ISL 压力 R03 预注册与一秒窗口分析进入精确提交复审
+
+- R02 实测 50 MHz 的最大全程聚合有向 ISL 利用率仅约 2.08%，不足以形成压力。现有 matrix v1 不能让同一 2 MHz cell 同时属于 5→2 和 2→1 两个配对；R03 因此不扩共享对照合同，改为先做 5 MHz vs 2 MHz，只有预注册结果为 `NO_PRESSURE_PHYS_VALID` 才另建 R04 2 MHz vs 1 MHz。
+- 新增 receipt-bound 一秒有向 ISL 重算：按原始 service/available 区间的精确重叠分别累计 served bits 与 available capacity，重建已匹配 queue_enter→service_start 的同链路等待；未匹配队列只报告为截尾，不伪造等待。异常容量、重叠服务和 malformed 时间证据 fail-loud。
+- `pressure-decision.json` 在结果前冻结四类动作：`PHYS_INVALID` 停止带宽轴；`DRAIN_INCOMPLETE` 原带宽延长排空；`PRESSURE_CANDIDATE` 停止在 5--2 MHz onset 区间；只有 `NO_PRESSURE_PHYS_VALID` 进入 1 MHz。压力需同一有向链路连续至少两个 1 s 窗口利用率 >=0.8、每窗可用时间 >=0.9 s，且匹配排队等待 >=0.1 s 和 >=100000 bit-s。
+- 编译验证为 2 cells / 7 hashes，逐字段差异只有 `links.rf_isl.bandwidth_hz`；两格 trace identity、input 和 controlled signature 一致。当前全套测试 `692 passed, 2 skipped, 3 subtests passed`，document governance `0 errors, 0 warnings`，`git diff --check` 通过。
+- 当前状态仍是 `COMPILED_REVIEW_REQUIRED`：尚无 R03 独立三角色 PASS、finalization、authorization、main 合入、部署或 VM 结果。下一步先让 Kimi 对精确提交做只读挑错，再由 Codex 复核并完成正式独立审阅；任何 blocker 都在授权前修正。

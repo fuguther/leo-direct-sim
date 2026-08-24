@@ -1,0 +1,18 @@
+{
+  "artifact_hashes": {
+    "RUNBOOK.md": "bdb60bffbc0d93f9472900dda196b3f9556c8dcf39531bae470a7659fda58d3f",
+    "analysis-request.json": "2227f0a8779197a96d61297966285d2e1e9a10bea01d4a45b7e2a48a9c7f335a",
+    "request.json": "f55bde2c4246be09ffa97d1f8407e906279de4299a78e29dc34e680e2d4f82a4",
+    "resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b2-s7.leo-sim.yaml": "9713440c46c07d828da012f8133a4814ff1252768eb5551ee08980062282d45b",
+    "resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b5-s7.leo-sim.yaml": "123b82c51f81b13c3de02bf1424a32188ab8446f6650483d5ec84109c16b64e5",
+    "run-manifest.json": "4d88e84bcf26d6c5fa41f3834064e6f3815d0d225e6666085c3021aa0c9a81cd"
+  },
+  "errors": [],
+  "execution_authorized": false,
+  "experiment_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R03",
+  "launcher_generated": false,
+  "request_sha256": "f55bde2c4246be09ffa97d1f8407e906279de4299a78e29dc34e680e2d4f82a4",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-compile-report/v1",
+  "status": "COMPILED_REVIEW_REQUIRED"
+}
