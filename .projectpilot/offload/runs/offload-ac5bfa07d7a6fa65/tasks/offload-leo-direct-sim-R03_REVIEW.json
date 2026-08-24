@@ -1,0 +1,63 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R03_REVIEW",
+    "title": "Exact-commit adversarial review of ISL pressure R03",
+    "goal": "Return PASS_WITH_LIMITS or REQUEST_CHANGES after checking the one-second directed-ISL rebinner, matched queue-wait reconstruction, compact persisted diagnostics, four-way decision tree, two-cell config identity and claim boundaries. Focus on counterexamples that could misclassify denominator collapse, physical unavailability, control-plane failure, access failure, NO_ROUTE, queue overflow or incomplete drain as congestion. Do not edit files and do not propose a large matrix or RL training.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "f6cbf4e91c702ed0982b6dcc16b2a22c19da5183",
+      "paths": [
+        "CODE/experiment_platform/isl_pressure.py",
+        "CODE/experiment_platform/tests/test_isl_pressure.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/experiment_platform/tests/test_v2_analysis.py",
+        "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/brief.json",
+        "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json",
+        "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+        "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Every finding names exact repository files and executable counterexamples or tests.",
+      "Verify exact commit and that the two resolved configs differ only in links.rf_isl.bandwidth_hz.",
+      "Check whether the decision thresholds are mechanically decidable from persisted V2 analysis fields.",
+      "State open_items explicitly and give PASS_WITH_LIMITS or REQUEST_CHANGES."
+    ],
+    "requiredEvidence": [
+      "Exact file paths and line-grounded evidence",
+      "At least one adversarial synthetic-ledger counterexample or a statement that existing tests cover it",
+      "Explicit separation of code correctness, experiment validity and claim limits"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "e87039e1e98c80a529900df41649002b685452b3f6a220f88c3ab566a74a1787"
+}
