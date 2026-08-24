@@ -742,3 +742,12 @@
 - 非阻断限制仍保留：少数畸形 persisted manifest 会以裸 traceback 而非干净错误信封失败，但不会写出分类；零时长 interrupted service 可锚定真实 queue wait，但不贡献利用率且没有专项回归；episode 边缘重叠的完整 wait 与 episode 内面积是预注册的不对称。任何正式分类错误、未定位 overflow、物理无效或未排空都必须停止，不能改写成 no-pressure。
 - 当前只完成了“承重版本复核 → 治理定案 → 派生授权”，尚未 PR/CI 合入、clean-main 部署或执行 VM。下一步提交本治理包并经 required pytest CI 合入；部署 exact merge SHA 后严格串行运行 b5，只有其 natural end、守恒、治理、外部 witness、身份、ISL 指标和 zero-rate 门全通过才允许 b2。单种子分类不能直接进入论文或算法比较。
 - PR #163（`fix: 闭合 ISL 压力标定与串行授权`）首轮 required `pytest` CI 已通过，run=`32742920625`、job=`97481422740`。本条 NOTES 留痕提交后仍须重新通过 required CI 才可 squash 合入；截至本条记录仍未部署或执行 VM。
+
+## 2026-08-24：R03 正式运行定位到 5--2 MHz 单 seed 压力候选
+
+- PR #163 已经 required CI 通过并 squash 合入 main，执行 exact SHA=`0280de3ba0e27551bc7a737a028f5154743051ce`；main 合入后 pytest job `97482210294` 成功。canonical VM 部署 source tree SHA=`ade9dd4e5221fd57b025428965058721de5369189596fcbe3b75f028f1db152a`，deployment receipt SHA=`393b812b2eb8d10cac8be9f7cfc574223bbb3054ab6b0fbebdbfb94e3320bfec`。
+- 5 MHz 与 2 MHz 两格严格串行自然结束，exit code=0、conservation=true、governance `research_eligible=true`，外部 nonce witness 与 VM 原始 Python 3.11.15 环境 receipt verification 均通过。governance receipt SHA 分别为 b5 `a0246e850ccf3c4f3de8fe6f3787559c8a5253479cea90964df24c1c573d9639`、b2 `1dad81f86c4f37661dc5d15ddc0c1bc86718e4d620a27d7bd2f3b6122f988271`。
+- V2 analysis 为 `VERIFIED`、2 runs，persisted verification 为 `ok=true/errors=[]`；analysis manifest SHA=`5ee795b366b87977cb27bb2e4e90504791b4c8273592b687c8face1e416429d7`。全运行期最大有向 ISL 利用率为 5 MHz `0.15252027036759927`、2 MHz `0.3813006759189982`，配对差 `0.22878040555139892`。
+- 冻结五路分类器返回 `PRESSURE_CANDIDATE`，classification SHA=`c0075a3647f4f821bf043e734a6c2ffec9dd8984e4da82e4d0f5a477b56cf5b8`。5 MHz 无合格 episode；2 MHz 在 `isl:147:167`、`isl:167:187`、`isl:222:242` 上形成连续 4/5/4 个一秒高利用窗且同 episode 有匹配排队，最大等待约 5.130/0.336/0.784 s。两臂均为 1,295 delivered、4 `NO_ROUTE`、59 access grants、0 zero-rate holds、0 ISL overflow、0 data in-system at stop、0 unmatched ISL queue entry，control failure counters 也相同，因此未观察到由接入差异、断链增长或未排空伪造的臂间压力信号。
+- claim 边界：这只把 5--2 MHz 冻结为固定场景、seed 7 下的工程 onset 候选，不是普适阈值、纯容量效应、信息价值、算法优越性、Q0 或论文统计结论。按预注册动作停止降低带宽，不运行 1 MHz；下一步先独立审阅并预注册相邻 5/2 MHz 的 seeds 11、19 复核，总计三个 seeds，方向不一致必须如实报告。
+- 执行中有一次准备阶段 fail-closed：默认远程 Python 未进入正式 TensorFlow 环境，仿真未启动、无结果目录。显式绑定 formal VM Python 后，同一授权与部署上的前驱验证和正式运行均通过。该事件不污染结果，但默认解释器/环境激活不一致仍是平台可用性缺口，应在独立小修复中加回归并闭合。

@@ -1,0 +1,15 @@
+{
+  "analysis_manifest": "ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json",
+  "analysis_manifest_sha256": "5ee795b366b87977cb27bb2e4e90504791b4c8273592b687c8face1e416429d7",
+  "cannot_claim": [
+    "algorithm superiority, a causal information-value effect or a new-algorithm contribution",
+    "a universal or paper-ready ISL congestion threshold from one seed and one scenario",
+    "a pure capacity multiplier effect, because bandwidth also changes noise, SNR, MCS and control-packet service time",
+    "congestion when zero-rate holds occur, candidate access grants differ from control, candidate access, geometry, outage or NO_ROUTE fates exceed control, holding-queue overflow occurs, candidate control expired/lost/geometry-lost/overflow exceeds control, natural end or conservation fails, or current external witness evidence is absent; ISL queue overflow is a congestion outcome but cannot replace the preregistered localized pressure episode",
+    "a fully usable pressure scenario when the candidate has any in-system packet at stop or unmatched ISL queue entry; that branch is DRAIN_INCOMPLETE and requires longer-drain confirmation",
+    "a 1 MHz result or dose-response curve when R04 was not executed",
+    "execution authorization before exact-revision independent review, accepted finalization, clean-main deployment and external witness gates close"
+  ],
+  "schema": "leo-sim-v2-claim-gate/v1",
+  "status": "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
+}

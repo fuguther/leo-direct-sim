@@ -1,0 +1,19 @@
+{
+  "analysis_manifest": "ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json",
+  "analysis_manifest_sha256": "5ee795b366b87977cb27bb2e4e90504791b4c8273592b687c8face1e416429d7",
+  "candidate_arm": "b2",
+  "candidate_isl_queue_overflows": 0,
+  "candidate_pressure_link_ids": [
+    "isl:147:167",
+    "isl:167:187",
+    "isl:222:242"
+  ],
+  "classification": "PRESSURE_CANDIDATE",
+  "control_arm": "b5",
+  "control_isl_queue_overflows": 0,
+  "control_pressure_link_ids": [],
+  "reasons": [
+    "b5 has no pressure candidate and b2 has: ['isl:147:167', 'isl:167:187', 'isl:222:242']; ISL queue overflows=0"
+  ],
+  "schema": "leo-sim-isl-pressure-classification/v1"
+}
