@@ -1,0 +1,108 @@
+{
+  "arms": [
+    {
+      "arm_id": "b500",
+      "config_overrides": {
+        "links": {
+          "rf_isl": {
+            "bandwidth_hz": 500000000.0
+          }
+        }
+      },
+      "intervention_paths": [
+        "links.rf_isl.bandwidth_hz"
+      ]
+    },
+    {
+      "arm_id": "b50",
+      "config_overrides": {
+        "links": {
+          "rf_isl": {
+            "bandwidth_hz": 50000000.0
+          }
+        }
+      },
+      "intervention_paths": [
+        "links.rf_isl.bandwidth_hz"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 0,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": false,
+        "require_data_isl": false
+      },
+      "arm_id": "b500",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5d52a49c3a4a8b94ae9077a88ac1f905515a3191dcb56ae96f3a8667e99b0a8a",
+      "config_overrides": {},
+      "config_path": "resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b500-s7.leo-sim.yaml",
+      "config_sha256": "50fa717cc16ad3c95cb49f96fd56f68e27e05a347ef9423525c1573ae4d0ea70",
+      "controlled_signature": "d6d9cac717206bfd5ef4d295c1addb322708fb7f03e9d953dc72ec3af725807f",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "d82130fcad520df5d4c2c4dd2bf016246b6052b8ee131b6d9966c2c582e54972",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "80ce87186808e83481b6547fdde6a5996d9cd6fe6d926b879352f568e32c84ff"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "bandwidth-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b500-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "effb467639ce8d0b73f60cde249eb6a792ec890b21d3e4e91ffee84143577309",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 0,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": false,
+        "require_data_isl": false
+      },
+      "arm_id": "b50",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5d52a49c3a4a8b94ae9077a88ac1f905515a3191dcb56ae96f3a8667e99b0a8a",
+      "config_overrides": {},
+      "config_path": "resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b50-s7.leo-sim.yaml",
+      "config_sha256": "a4292871aadc44b845544cf497f67fa0ae70a09a47663247c7f0144204f2b734",
+      "controlled_signature": "d6d9cac717206bfd5ef4d295c1addb322708fb7f03e9d953dc72ec3af725807f",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "d82130fcad520df5d4c2c4dd2bf016246b6052b8ee131b6d9966c2c582e54972",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "80ce87186808e83481b6547fdde6a5996d9cd6fe6d926b879352f568e32c84ff"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "bandwidth-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b50-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "effb467639ce8d0b73f60cde249eb6a792ec890b21d3e4e91ffee84143577309",
+      "trace_seed": 7
+    }
+  ],
+  "common_config_sha256": "ea045e177b99cd9221c1c8dec264c0dc5c1d86cfcf89c95c04fc25c46e369d43",
+  "execution_authorized": false,
+  "experiment_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02",
+  "request_sha256": "4aa1d83bfc5aceca0f26416638c35a1ffd22835d8b0fc7795ea8d6b71629d89a",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-matrix-manifest/v1"
+}

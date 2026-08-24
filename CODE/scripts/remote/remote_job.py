@@ -357,6 +357,7 @@ def base_launch_payload(args: argparse.Namespace) -> dict[str, Any]:
         "run_attempt_id": "",
         "governance_witness": None,
         "governance_receipt_sha256": None,
+        "verified_predecessors": [],
         "requested_cpu_affinity": parse_cpu_list(getattr(args, "cpu_list", "")),
         "cpu_preflight_busy_fraction": None,
     }
@@ -372,6 +373,44 @@ def validate_expected_identity(args: argparse.Namespace, config: Path, authoriza
         raise ValueError("remote config identity differs from the launcher-bound run id or canonical hash")
     if file_sha256(authorization) != args.expected_authorization_sha256:
         raise ValueError("remote authorization bytes differ from the launcher-bound hash")
+
+
+def verify_v2_serial_predecessors(
+        args: argparse.Namespace, config: Path,
+        authorization: Path, deployment: dict[str, Any]) -> list[str]:
+    """Enforce the deployed serial gate at the remote trust boundary.
+
+    Local launch checks are only an early diagnostic.  The deployed runner
+    repeats this check before preparation and again immediately before the
+    child starts, using the VM's nonce-named launch receipts as the external
+    witnesses for all predecessor cells.
+    """
+    if getattr(args, "runtime_kind", "legacy_gateway") != "leo_sim_v2":
+        return []
+    experiment_dir = authorization.parent
+    sys.path.insert(0, str(CANONICAL_WORKSPACE))
+    from CODE.experiment_platform.v2_serial_gate import verify_predecessors
+
+    return verify_predecessors(
+        CANONICAL_WORKSPACE, experiment_dir, authorization,
+        args.expected_run_id, results_root=CANONICAL_RESULTS,
+        external_witness_root=CANONICAL_RUNTIME / "launches",
+        external_witness_by_nonce=True,
+        deployed_source_commit=deployment["source_git_commit"],
+        expected_deployment=deployment)
+
+
+def verify_v2_run_authorization(
+        args: argparse.Namespace, config: Path, authorization: Path) -> None:
+    """Recompute V2 authorization in every remote process, not only prepare."""
+    if getattr(args, "runtime_kind", "legacy_gateway") != "leo_sim_v2":
+        return
+    sys.path.insert(0, str(CANONICAL_WORKSPACE))
+    from CODE.experiment_platform.authorize_experiment import (
+        verify_authorization_for_leo_sim_v2_config,
+    )
+    verify_authorization_for_leo_sim_v2_config(
+        CANONICAL_WORKSPACE, authorization, config, args.expected_run_id)
 
 
 def prepare_launch(args: argparse.Namespace) -> int:
@@ -390,13 +429,11 @@ def prepare_launch(args: argparse.Namespace) -> int:
         requested_cpu_affinity = validate_cpu_affinity(getattr(args, "cpu_list", ""))
         cpu_preflight_busy_fraction = sample_cpu_busy_fraction(requested_cpu_affinity)
         sys.path.insert(0, str(CANONICAL_WORKSPACE))
+        verified_predecessors: list[str] = []
         if getattr(args, "runtime_kind", "legacy_gateway") == "leo_sim_v2":
-            from CODE.experiment_platform.authorize_experiment import (
-                verify_authorization_for_leo_sim_v2_config,
-            )
-            verify_authorization_for_leo_sim_v2_config(
-                CANONICAL_WORKSPACE, authorization, config,
-                args.expected_run_id)
+            verify_v2_run_authorization(args, config, authorization)
+            verified_predecessors = verify_v2_serial_predecessors(
+                args, config, authorization, deployment)
         else:
             from CODE.experiment_platform.authorize_experiment import verify_authorization_for_config
 
@@ -419,6 +456,7 @@ def prepare_launch(args: argparse.Namespace) -> int:
             "deployment_receipt_sha256": deployment["receipt_sha256"],
             "requested_cpu_affinity": requested_cpu_affinity,
             "cpu_preflight_busy_fraction": cpu_preflight_busy_fraction,
+            "verified_predecessors": verified_predecessors,
         })
     except Exception as exc:
         payload.update({
@@ -506,6 +544,9 @@ def run_formal(args: argparse.Namespace) -> int:
     }
     if any(prepared.get(key) != value for key, value in expected_prepared.items()):
         raise ValueError("prepared launch status does not match this formal job")
+    verify_v2_run_authorization(args, config, authorization)
+    verified_predecessors = verify_v2_serial_predecessors(
+        args, config, authorization, deployment)
     command = formal_command(args, workdir, config, authorization)
     child_cwd = formal_child_cwd(args, workdir)
     pointer = result_pointer_path(args.launch_nonce, create_parent=True)
@@ -532,6 +573,7 @@ def run_formal(args: argparse.Namespace) -> int:
         "source_git_dirty": deployment["source_git_dirty"],
         "source_tree_sha256": deployment["source_tree_sha256"],
         "deployment_receipt_sha256": deployment["receipt_sha256"],
+        "verified_predecessors": verified_predecessors,
         "requested_cpu_affinity": requested_cpu_affinity,
     }
     persist_status(args, payload)
@@ -655,7 +697,6 @@ def run_formal(args: argparse.Namespace) -> int:
                         payload["failure_stage"] = "receipt_verification"
                         payload["error"] = "V2 receipt verification failed"
                         rc = 2
-                    governed["payload_sha256"] = canonical_sha(governed)
                     governed_path = Path(payload["last_results_dir"]) / "governance_receipt.json"
                     write_json(governed_path, governed)
                     payload["governance_receipt"] = str(governed_path)

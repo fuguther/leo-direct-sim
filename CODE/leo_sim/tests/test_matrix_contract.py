@@ -103,6 +103,21 @@ def test_compile_matrix_emits_one_bound_v2_config_and_runbook_command_per_cell(t
     assert "python3 CODE/scripts/remote/run-remote.sh" not in runbook
 
 
+def test_serial_fail_closed_policy_is_preserved_in_compiled_runbook(tmp_path):
+    request = _request()
+    request["execution_policy"] = {"mode": "serial_fail_closed"}
+    source = tmp_path / "request.json"
+    source.write_text(json.dumps(request), encoding="utf-8")
+    out = tmp_path / "EXPERIMENTS" / request["experiment_id"]
+
+    matrix.compile_matrix_experiment(source, out, project_root=tmp_path)
+
+    compiled = json.loads((out / "request.json").read_text(encoding="utf-8"))
+    runbook = (out / "RUNBOOK.md").read_text(encoding="utf-8")
+    assert compiled["execution_policy"] == {"mode": "serial_fail_closed"}
+    assert "machine-enforced serial predecessor gate" in runbook
+
+
 @pytest.mark.parametrize("mutation, message", [
     (lambda r: r.update(extra=True), "unknown request fields"),
     (lambda r: r["cells"].append(copy.deepcopy(r["cells"][0])), "duplicate run_id"),

@@ -1,0 +1,174 @@
+{
+  "authorized_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 0,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": false,
+        "require_data_isl": false
+      },
+      "arm_id": "b500",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5d52a49c3a4a8b94ae9077a88ac1f905515a3191dcb56ae96f3a8667e99b0a8a",
+      "config_path": "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b500-s7.leo-sim.yaml",
+      "config_sha256": "50fa717cc16ad3c95cb49f96fd56f68e27e05a347ef9423525c1573ae4d0ea70",
+      "controlled_signature": "d6d9cac717206bfd5ef4d295c1addb322708fb7f03e9d953dc72ec3af725807f",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "d82130fcad520df5d4c2c4dd2bf016246b6052b8ee131b6d9966c2c582e54972",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "80ce87186808e83481b6547fdde6a5996d9cd6fe6d926b879352f568e32c84ff"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "bandwidth-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b500-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "effb467639ce8d0b73f60cde249eb6a792ec890b21d3e4e91ffee84143577309",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 0,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": false,
+        "require_data_isl": false
+      },
+      "arm_id": "b50",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5d52a49c3a4a8b94ae9077a88ac1f905515a3191dcb56ae96f3a8667e99b0a8a",
+      "config_path": "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b50-s7.leo-sim.yaml",
+      "config_sha256": "a4292871aadc44b845544cf497f67fa0ae70a09a47663247c7f0144204f2b734",
+      "controlled_signature": "d6d9cac717206bfd5ef4d295c1addb322708fb7f03e9d953dc72ec3af725807f",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "d82130fcad520df5d4c2c4dd2bf016246b6052b8ee131b6d9966c2c582e54972",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "80ce87186808e83481b6547fdde6a5996d9cd6fe6d926b879352f568e32c84ff"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "bandwidth-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b50-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "effb467639ce8d0b73f60cde249eb6a792ec890b21d3e4e91ffee84143577309",
+      "trace_seed": 7
+    }
+  ],
+  "authorized_runs": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 0,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": false,
+        "require_data_isl": false
+      },
+      "arm_id": "b500",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5d52a49c3a4a8b94ae9077a88ac1f905515a3191dcb56ae96f3a8667e99b0a8a",
+      "config_path": "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b500-s7.leo-sim.yaml",
+      "config_sha256": "50fa717cc16ad3c95cb49f96fd56f68e27e05a347ef9423525c1573ae4d0ea70",
+      "controlled_signature": "d6d9cac717206bfd5ef4d295c1addb322708fb7f03e9d953dc72ec3af725807f",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "d82130fcad520df5d4c2c4dd2bf016246b6052b8ee131b6d9966c2c582e54972",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "80ce87186808e83481b6547fdde6a5996d9cd6fe6d926b879352f568e32c84ff"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "bandwidth-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b500-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "effb467639ce8d0b73f60cde249eb6a792ec890b21d3e4e91ffee84143577309",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 0,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": false,
+        "require_data_isl": false
+      },
+      "arm_id": "b50",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5d52a49c3a4a8b94ae9077a88ac1f905515a3191dcb56ae96f3a8667e99b0a8a",
+      "config_path": "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b50-s7.leo-sim.yaml",
+      "config_sha256": "a4292871aadc44b845544cf497f67fa0ae70a09a47663247c7f0144204f2b734",
+      "controlled_signature": "d6d9cac717206bfd5ef4d295c1addb322708fb7f03e9d953dc72ec3af725807f",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "d82130fcad520df5d4c2c4dd2bf016246b6052b8ee131b6d9966c2c582e54972",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "80ce87186808e83481b6547fdde6a5996d9cd6fe6d926b879352f568e32c84ff"
+      },
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "bandwidth-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b50-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "effb467639ce8d0b73f60cde249eb6a792ec890b21d3e4e91ffee84143577309",
+      "trace_seed": 7
+    }
+  ],
+  "experiment_artifact_hashes": {
+    "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/RUNBOOK.md": "9ece3ed9753143d1c6f961caebcb2af9718996083348fd467e76d761cb7db6fc",
+    "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/analysis-request.json": "b20c7378634239c428f0e32d65fa62ec2eda9ddb4b48ef618724e95a0ab3cd8c",
+    "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/compile-report.json": "6c1ddefdabcc574b60b67e45657bdb03c91863a04bbcd91f5d3b4c4434f2e872",
+    "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/request.json": "4aa1d83bfc5aceca0f26416638c35a1ffd22835d8b0fc7795ea8d6b71629d89a",
+    "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b50-s7.leo-sim.yaml": "eed0bc11a273e0ba14ce88c0f78d90f599958faeced1794d28b4bdaa41fce3fc",
+    "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b500-s7.leo-sim.yaml": "741f64c6e923398d9f133c6bdccbb1cd9fc7f7ee6a25e61eb3b593c1428c4f36",
+    "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/run-manifest.json": "97cccc67d6d4e3834c44921ff19cc21be7768c307d3a3b66d3619527ef7c38fa"
+  },
+  "experiment_dir": "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02",
+  "experiment_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02",
+  "payload_sha256": "71c3052e1af50475dc31b4c247c91e63475f53572b2e15ab12f61d1c3470f526",
+  "schema": "experiment-execution-authorization/v1",
+  "status": "AUTHORIZED",
+  "verification_policy": {
+    "recompute_work_finalization": true,
+    "require_all_bound_artifact_hashes": true,
+    "require_current_scenario_source_hashes": true,
+    "require_current_trace_input_hashes": true,
+    "require_exact_matrix_cohort": true,
+    "require_exact_run_config_hash": true
+  },
+  "work_finalization": {
+    "brief_path": "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R02/brief.json",
+    "brief_sha256": "14e33e7f0b95e398acc29cee92871f9598127c37899255320161c8548f065d3d",
+    "decision_path": "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R02/decision.json",
+    "decision_sha256": "98da442c4c3f0745f03962c088948b5366e141bef8fe3c3b79579bbb1950c778",
+    "path": "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R02/finalization.json",
+    "revision": 2,
+    "sha256": "8a02abf9e8ceb71765aa2e6b39698fdaef70f3d4368693ed9b459152415b97fb",
+    "work_id": "WP-LEO-V2-ISL-BANDWIDTH-PILOT"
+  }
+}
