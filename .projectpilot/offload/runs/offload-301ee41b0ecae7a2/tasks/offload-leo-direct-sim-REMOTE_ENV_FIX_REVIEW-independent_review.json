@@ -1,0 +1,59 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:REMOTE_ENV_FIX_REVIEW:independent_review",
+    "title": "Remote formal environment activation cold review",
+    "goal": "Audit commit 4568e3bc22e9a44106f67c3f2119010dae63997d. Confirm the one-line activation makes remote prepare and fail handling use the same configured environment as the tmux formal child without weakening authorization, nonce, deployment, or fail-closed behavior. Challenge heredoc expansion, set -e behavior, REMOTE_PYTHON resolution, activation failure handling, and whether the new regression actually catches the incident rather than only a harmless string change. Return PASS_WITH_LIMITS or REQUEST_CHANGES, separating blockers from nonblocking improvements. Do not edit files or broaden scope.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "4568e3bc22e9a44106f67c3f2119010dae63997d",
+      "paths": [
+        "CODE/scripts/remote/run-remote.sh",
+        "CODE/scripts/remote/common.sh",
+        "CODE/scripts/remote/remote_job.py",
+        "CODE/experiment_platform/tests/test_remote_launcher_environment.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Cite exact lines for every major finding.",
+      "Trace prepare, tmux child, and fail paths separately.",
+      "Assess the test against the observed system-python incident.",
+      "State explicit verdict and open items."
+    ],
+    "requiredEvidence": [
+      "Exact-commit line-grounded evidence",
+      "Shell execution-order analysis",
+      "Explicit open_items and verdict"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "6bae25491cdcae1c2e83e5cfc6c3838beda7c020652f2e50f17bd33c702a6d01"
+}
