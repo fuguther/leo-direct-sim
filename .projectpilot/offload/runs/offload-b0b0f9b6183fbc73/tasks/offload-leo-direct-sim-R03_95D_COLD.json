@@ -1,0 +1,70 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R03_95D_COLD",
+    "title": "R03 final exact-commit cold-start completeness review",
+    "goal": "Act as a fresh reviewer with no reliance on earlier conclusions. Determine whether a new operator can mechanically apply the five-way R03 decision using only the declared persisted artifacts. Check exact artifact completeness; that required control and candidate counters fail loud when missing; that the canonical classifier CLI verifies persisted V2 analysis identity and integrity instead of accepting an unverified in-memory dictionary; that the matrix request binds the decision contract hash and the generated RUNBOOK contains the same canonical command; that verification re-renders RUNBOOK from the request and rejects a simultaneous RUNBOOK plus compile-report hash forgery; that a changed decision contract invalidates old compiled analysis; that decision thresholds have one synchronized source; and that code readiness, authorization readiness, experimental result and permissible research claim are kept separate. Pay special attention to ordered overflow handling: an already localized 5 MHz control-pressure stop precedes candidate-arm unlocalized overflow, while otherwise unlocalized ISL_QUEUE_OVERFLOW must block classification rather than become pressure or no-pressure. Return PASS_WITH_LIMITS or REQUEST_CHANGES. Do not edit files. Never emit example or placeholder evidence: every evidence item must use the exact github://fuguther/leo-direct-sim/blob/95d28051696ccaa6e75a46bb552e60874f5da256/<allowed-path>#Lx-Ly form; omit a finding if you cannot supply that form.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "deterministic",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "95d28051696ccaa6e75a46bb552e60874f5da256",
+      "paths": [
+        "CODE/experiment_platform/isl_pressure.py",
+        "CODE/experiment_platform/isl_pressure_decision.py",
+        "CODE/experiment_platform/tests/test_isl_pressure.py",
+        "CODE/experiment_platform/tests/test_isl_pressure_decision.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/experiment_platform/tests/test_v2_analysis.py",
+        "CODE/leo_sim/matrix.py",
+        "CODE/leo_sim/tests/test_matrix_contract.py",
+        "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/",
+        "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+        "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Verify the exact commit and declared artifact set.",
+      "Verify a new operator can mechanically distinguish all five classification branches from persisted verified artifacts.",
+      "Verify missing required counters and unlocalized ISL overflow fail loud.",
+      "Verify the canonical CLI performs persisted analysis verification before classification.",
+      "Verify the decision contract hash and canonical command are bound across request, compiled analysis, verifier and RUNBOOK.",
+      "Verify simultaneous RUNBOOK and compile-report hash tampering is rejected by deterministic RUNBOOK re-rendering.",
+      "Verify thresholds and branch order are synchronized across contract, implementation, tests and operator instructions.",
+      "Verify code readiness, authorization readiness, observed result and research claim are stated separately."
+    ],
+    "requiredEvidence": [
+      "Line-grounded exact-commit evidence with no placeholders",
+      "At least one mechanism counterexample or covered regression",
+      "Explicit open_items and PASS_WITH_LIMITS or REQUEST_CHANGES"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "8e64bac738686759f467ede1b4a4ad38455e3758b0cbd54959a604be6e5f5f30"
+}
