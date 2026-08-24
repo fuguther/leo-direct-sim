@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "planId": "offload-8f6398ca54a1fd79",
+  "relayManifest": {
+    "planId": "offload-8f6398ca54a1fd79",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:KIMI-ISLBW-RESULT-CLAIM-R01",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "d3a116a69912dd214d89582a7b29c947f2357bfa",
+        "paths": [
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R02.json",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/v2_serial_gate.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/governance.py",
+          "ANALYSIS/FINDINGS-REGISTRY.md",
+          "NOTES.md"
+        ],
+        "promptHash": "514828938fb5933dbfd3b20a20c6ba73029e701419a5871f9cb2ab58a25a4fd4"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:KIMI-ISLBW-RESULT-CLAIM-R01:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "d3a116a69912dd214d89582a7b29c947f2357bfa",
+        "paths": [
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R02.json",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/v2_serial_gate.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/governance.py",
+          "ANALYSIS/FINDINGS-REGISTRY.md",
+          "NOTES.md"
+        ],
+        "promptHash": "1bd950421f6dc24eb03fe05dfde9cda85bcb4147e101c721d07c04c089d605fd"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "8f6398ca54a1fd7962ad2d3f8fbc7a3f6553fd7ef40c65ffbe02bb635f7997df"
+  },
+  "sourceBaseCommit": "d3a116a69912dd214d89582a7b29c947f2357bfa",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:KIMI-ISLBW-RESULT-CLAIM-R01",
+      "promptHash": "514828938fb5933dbfd3b20a20c6ba73029e701419a5871f9cb2ab58a25a4fd4",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "d3a116a69912dd214d89582a7b29c947f2357bfa",
+        "paths": [
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R02.json",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/v2_serial_gate.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/governance.py",
+          "ANALYSIS/FINDINGS-REGISTRY.md",
+          "NOTES.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:KIMI-ISLBW-RESULT-CLAIM-R01:independent_review",
+      "promptHash": "1bd950421f6dc24eb03fe05dfde9cda85bcb4147e101c721d07c04c089d605fd",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "d3a116a69912dd214d89582a7b29c947f2357bfa",
+        "paths": [
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R02.json",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/v2_serial_gate.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/governance.py",
+          "ANALYSIS/FINDINGS-REGISTRY.md",
+          "NOTES.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
