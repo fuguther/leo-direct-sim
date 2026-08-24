@@ -21,8 +21,11 @@
   均未饱和，两臂数据 fate 完全相同。50 MHz 因此仍不是已验证的 pressure arm，不能
   据此冻结拥塞阈值或扩成大矩阵。
 - 当前下一门从“修平台证据链”转为“成本受控的压力 bracket 预注册”。本地独立冷审
-  verdict=`PASS_WITH_LIMITS`，仅覆盖单 scenario/seed 工程描述；Kimi 渠道因共享 host
-  endpoint 丢失而未完成，不能冒充 Kimi 外审通过。
+  verdict=`PASS_WITH_LIMITS`，仅覆盖单 scenario/seed 工程描述。ProjectPilot 修复后的
+  Kimi 主审通道已返回 `EVIDENCE_READY/PASS_WITH_LIMITS`；第二个独立通道因非
+  typed-reference 证据被 fail-closed 拒收，整个 operation 为 `FAILED`。这证明主审候选证据
+  可用，不等于 Kimi 双通道外审通过；最终路线仍由 Codex 裁决为先做小型低带宽
+  bracket，不先扩 seed、不转 demand 轴、不扩成大矩阵。
 
 ## 2026-08-22：280/14 E0 完整信息参考诊断（10M 已完成）
 
