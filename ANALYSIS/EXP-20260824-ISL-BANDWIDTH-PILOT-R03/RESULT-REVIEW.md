@@ -67,9 +67,36 @@
 - 远程启动器默认解释器缺口应作为独立小修复处理：先加能复现未激活环境的回归，再修改准备
   与 child-start 使用同一显式环境，完成独立审阅和 clean-main 部署后才作为平台闭环。
 
+## 独立复核补充边界
+
+- 两路 Kimi 在结果提交 `dd892b3a3428c15e794fb47fe022772fd64469dd` 上均给出
+  `PASS_WITH_LIMITS`，没有 blocking finding；Codex 另外核对了其引用的 persisted 字段，
+  不把 worker verdict 直接当正式证据。
+- 5 MHz 对照并不是远离门槛：`isl:147:167` 与 `isl:167:187` 各有一个约
+  `0.9675` 的高利用窗，前者全程最大匹配等待约 `1.941 s`、队列面积约
+  `55.2 Mbit-s`，只是没有达到冻结的“至少两个连续高窗”。另有 5 条链路形成连续高窗，
+  但同 episode 等待没有达到门槛。2 MHz 的 `isl:187:207` 有 5 个连续高窗，最大重叠等待
+  约 `0.0807 s`，只比 `0.1 s` 门槛低约 `0.0193 s`。因此“三条候选链路”和“5 MHz
+  无压力”都只能描述 seed 7 在冻结规则下的分类，不能解释成稳健的链路数量或宽裕的阈值间隔。
+- 新增 seeds 11/19 时必须允许分类翻转到 `CONTROL_PRESSURE_UNBRACKETED`、
+  `NO_PRESSURE_PHYS_VALID` 或其他冻结分支；任何不一致都逐 seed 报告，不用多数票覆盖。
+
+## 精确复现边界
+
+- persisted manifest 把分析器绑定到生成分析时的源提交
+  `0280de3ba0e27551bc7a737a028f5154743051ce`。结果提交 `dd892b3a…` 是其后代，四个绑定的
+  analyzer 文件逐字节未变化，当前 SHA-256 与 manifest 中四项完全一致。
+- 直接在结果提交上运行 canonical classifier 会按设计因 Git commit identity 不同而
+  fail-loud；这不是 analyzer 漂移，也不能把结果提交冒充执行提交。正确复现方式是在源提交
+  `0280de3…`、正式 VM Python 3.11.15 环境和原始 `CODE/Results/`/外部见证上运行。
+- Codex 已按上述边界重跑，分类仍为 `PRESSURE_CANDIDATE`，输出 SHA-256 仍为
+  `c0075a3647f4f821bf043e734a6c2ffec9dd8984e4da82e4d0f5a477b56cf5b8`。
+
 ## 审阅状态
 
-- Codex 原始结果、receipt、外部见证、持久化分析与冻结分类复核：完成。
+- Codex 原始结果、receipt、外部见证、持久化分析与冻结分类复核：完成；精确源提交 VM
+  重放一致。
+- 两路 Kimi 结果与路线冷审：均为 `PASS_WITH_LIMITS`；阈值邻接限制已由 Codex 接受并写入。
 - 单 seed 工程判断：`PRESSURE_CANDIDATE`，不是 paper-ready claim。
-- 新增 seeds 11/19 与启动器修复路线：当前为待独立挑刺的下一步方案，尚未编译、审阅、
-  授权或运行。
+- 新增 seeds 11/19 路线：冷审通过，尚未形成冻结合同、编译、正式复核、授权或运行。
+- 启动器修复：已另起独立候选提交并通过本地回归，尚未完成独立复核、PR/CI、合入和部署。
