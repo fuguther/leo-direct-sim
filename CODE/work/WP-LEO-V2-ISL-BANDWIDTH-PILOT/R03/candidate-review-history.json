@@ -50,6 +50,29 @@
       "canceled the remaining stale-commit review lanes because their findings could not authorize the corrected revision"
     ]
   },
+  "exact_commit_e110_reviews": {
+    "reviewed_git_commit": "e1106c883b16d03eb3ee8ae49c5c50404d0d1176",
+    "satellite_drl": {
+      "projectpilot_operation_id": "offload-operation:a57979a9cd41c8c11923e4e2bba26cb5",
+      "reviewer": "kimi_acp",
+      "session_id": "session_f2357440-f09d-4729-86a5-a4ce33cf6c3b",
+      "verdict": "PASS_WITH_LIMITS",
+      "codex_disposition": "accepted as non-blocking after 55 exact-commit pressure tests passed; separate packets may jointly establish episode-wide queue area and maximum wait because both witnesses remain on the same directed link and overlap the same episode"
+    },
+    "cold_start": {
+      "projectpilot_operation_id": "offload-operation:2ac439a4852c3d8c213fbe134bde734d",
+      "reviewer": "kimi_acp",
+      "session_id": "session_bb15acea-f115-439b-8f64-fde484d87896",
+      "verdict": "PASS_WITH_LIMITS",
+      "accepted_findings": [
+        "the RUNBOOK stopped after V2 analysis and omitted the persisted pressure-classification command",
+        "the contract did not explicitly state that an already localized 5 MHz control-pressure stop precedes candidate-arm unlocalized overflow",
+        "the control-pressure plus candidate unlocalized-overflow branch lacked a direct regression test",
+        "the persisted classifier verification-failure connection lacked a direct regression test"
+      ],
+      "codex_disposition": "accepted all four narrow findings for documentation and regression closure without changing thresholds, branch behavior or matrix scope"
+    }
+  },
   "codex_adjudication": {
     "confirmed_and_fixed": [
       "persist an explicit per-arm in_system_at_stop_packets drain field",
@@ -68,5 +91,5 @@
       "zero-rate analysis failure already blocks the formal cohort; it must be recorded as invalid evidence but does not need a fabricated VERIFIED manifest"
     ]
   },
-  "resolution_status": "UPDATED_COMMIT_FINDINGS_FIXED_AWAITING_NEW_EXACT_COMMIT_REVIEW"
+  "resolution_status": "E110_REVIEW_FINDINGS_FIXED_AWAITING_NEW_EXACT_COMMIT_REVIEW"
 }

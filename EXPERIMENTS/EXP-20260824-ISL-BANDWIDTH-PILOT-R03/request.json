@@ -7,6 +7,9 @@
   },
   "analysis": {
     "analysis_id": "AN-ISL-BANDWIDTH-PILOT-R03",
+    "decision_contract": {
+      "path": "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json"
+    },
     "estimand": "paired descriptive difference in maximum horizon-aggregate directed-ISL utilization between 2 MHz and 5 MHz under one fixed trace, seed, routing, topology, access, demand, emission and observation contract; the preregistered branch decision additionally requires receipt-bound one-second directed-link and episode-coincident same-link matched queue-wait diagnostics in both arms",
     "paired_by": [
       "pairing_key"

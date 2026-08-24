@@ -1,6 +1,9 @@
 {
   "analysis": {
     "analysis_id": "AN-ISL-BANDWIDTH-PILOT-R03",
+    "decision_contract": {
+      "path": "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json"
+    },
     "estimand": "paired descriptive difference in maximum horizon-aggregate directed-ISL utilization between 2 MHz and 5 MHz under one fixed trace, seed, routing, topology, access, demand, emission and observation contract; the preregistered branch decision additionally requires receipt-bound one-second directed-link and episode-coincident same-link matched queue-wait diagnostics in both arms",
     "paired_by": [
       "pairing_key"
@@ -34,8 +37,27 @@
       "execution authorization before exact-revision independent review, accepted finalization, clean-main deployment and external witness gates close"
     ]
   },
+  "decision_contract": {
+    "canonical_invocation": [
+      "python3",
+      "-m",
+      "CODE.experiment_platform.isl_pressure_decision",
+      "--root",
+      ".",
+      "--manifest",
+      "ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json",
+      "--control-arm",
+      "b5",
+      "--candidate-arm",
+      "b2",
+      "--out",
+      "ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/pressure-classification.json"
+    ],
+    "path": "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json",
+    "sha256": "fa0493b722e3bd119ed516543e4429b2bbc30986d3e5479f24f4d81f5194460e"
+  },
   "experiment_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R03",
-  "matrix_manifest_sha256": "0d6d7f0d8ee515a3a5d2710888fd249fcf13fd0775ebae8179704ca8fa0b03ef",
+  "matrix_manifest_sha256": "507eb23c9b52efc918b0982f240e5d2b74252b81c8444a44e55616b10b62c04f",
   "planned_cells": [
     {
       "acceptance": {
@@ -78,7 +100,7 @@
     "EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b5-s7",
     "EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b2-s7"
   ],
-  "request_sha256": "428ca6ac0d1479b2f9262cf7d4604cc68506c17432d0d285558a16b0561eea42",
+  "request_sha256": "345ae063d37352c693e4f1c619b19acb792f6c9ef298038e2e03c46c9c04bf8f",
   "runtime_kind": "leo_sim_v2",
   "schema": "leo-sim-matrix-analysis-request/v1",
   "status": "WAITING_FOR_VERIFIED_RUNS"

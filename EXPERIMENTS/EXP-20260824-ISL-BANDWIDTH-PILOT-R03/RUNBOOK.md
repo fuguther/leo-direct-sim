@@ -36,3 +36,18 @@ python3 -m CODE.experiment_platform.v2_analysis \
 ```
 
 The output is evidence-bound analysis only; claim-support and value-gate review remain required.
+
+## Apply the frozen post-analysis decision
+
+Run this persisted classifier only after the V2 analysis above produces a verified manifest. Any verification or classification error is a stop, never a no-pressure result.
+
+```bash
+python3 -m CODE.experiment_platform.isl_pressure_decision \
+  --root . \
+  --manifest ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json \
+  --control-arm b5 \
+  --candidate-arm b2 \
+  --out ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/pressure-classification.json
+```
+
+The command and subsequent action are frozen in `CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json`. Do not substitute an in-memory classification or change thresholds after observing results.

@@ -19,6 +19,9 @@
     "paired_by": [
       "pairing_key"
     ],
+    "decision_contract": {
+      "path": "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json"
+    },
     "planned_contrasts": [
       {
         "name": "b2_minus_b5",

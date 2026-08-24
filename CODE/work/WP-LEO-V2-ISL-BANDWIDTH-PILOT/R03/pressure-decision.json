@@ -64,7 +64,8 @@
   "isl_queue_overflow_handling": {
     "role": "supplementary_congestion_outcome_not_physical_failure",
     "qualified_pressure_episode_required": true,
-    "unlocalized_overflow_blocks_classification": true
+    "unlocalized_overflow_blocks_classification": true,
+    "control_pressure_branch_precedes_candidate_unlocalized_overflow": true
   },
   "drain_validity": {
     "applies_to_both_arms_before_comparison": true,
@@ -108,7 +109,7 @@
     "Utilization without same-link queue waiting is insufficient for a pressure classification.",
     "High utilization and queue waiting on the same link but at disjoint times are insufficient for a pressure classification.",
     "A 5-to-2 MHz onset interval requires the 5 MHz arm to pass the same no-pressure test; candidate-only classification cannot establish a bracket.",
-    "ISL_QUEUE_OVERFLOW is a congestion outcome, not a disconnection or access failure; without a localized qualified pressure episode it blocks classification rather than proving pressure or no-pressure.",
+    "ISL_QUEUE_OVERFLOW is a congestion outcome, not a disconnection or access failure. If the earlier physical, drain or localized 5 MHz control-pressure branches have not already determined a stop, an arm with ISL_QUEUE_OVERFLOW but no localized qualified pressure episode blocks classification rather than proving pressure or no-pressure.",
     "A result selected by this tree cannot support algorithm superiority, information value, Q0 optimality or a new-algorithm claim."
   ]
 }

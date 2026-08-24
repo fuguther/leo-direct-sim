@@ -725,3 +725,11 @@
 - Kimi 两路旧提交审阅均给出 `PASS_WITH_LIMITS`；Codex 独立裁决后接受并修复显式 drain 字段、episode 时间对齐、事件时间界、service-start/service-window 身份交叉核对、阈值双源漂移和人工分类风险，新增受测五路 pair classifier；拒绝“非零 MCS 低速必属物理失败”的泛化，因为 `min_rate_bps` 在当前实现中是零速率截止门而非正速率地板，合法非零容量上的持续占满与同时排队正是待寻找的 ISL 压力。当前相关测试扩至全套 `706 passed, 2 skipped, 3 subtests passed`；旧评审及裁决保留在 R03 candidate review history，新 exact commit 仍须重新审阅后才能授权。
 - 编译验证为 2 cells / 7 hashes，逐字段差异只有 `links.rf_isl.bandwidth_hz`；两格 trace identity、input 和 controlled signature 一致。当前全套测试 `692 passed, 2 skipped, 3 subtests passed`，document governance `0 errors, 0 warnings`，`git diff --check` 通过。
 - 当前状态仍是 `COMPILED_REVIEW_REQUIRED`：尚无 R03 独立三角色 PASS、finalization、authorization、main 合入、部署或 VM 结果。下一步先让 Kimi 对精确提交做只读挑错，再由 Codex 复核并完成正式独立审阅；任何 blocker 都在授权前修正。
+
+## 2026-08-24：R03 决策合同与操作手册形成可重编译闭环
+
+- Kimi 在 exact commit `e1106c883b16d03eb3ee8ae49c5c50404d0d1176` 上完成 satellite-DRL 与 cold-start 只读复核，均为 `PASS_WITH_LIMITS`；Codex 接受两个窄问题：生成的 RUNBOOK 漏掉持久化分类命令，以及“5 MHz 已有局部压力时优先停止”与“未定位 ISL overflow 阻断”的文字优先级不够明确。旧复核只作为修订依据，不能授权新提交。
+- matrix request 的 `analysis.decision_contract` 现在显式绑定冻结决策合同；编译器读取并校验安全的 canonical `python -m` 命令，把合同路径、SHA-256 和命令写入分析请求与 RUNBOOK。验证器重新读取合同并重算身份，合同被篡改时旧编译分析 fail-loud；授权工件映射也包含该外部决策合同。
+- 分类行为、五分支顺序、阈值、5/2 MHz 场景和矩阵规模均未改变。新增回归覆盖“5 MHz 已有局部压力 + 2 MHz 未定位 ISL overflow”仍停在 `CONTROL_PRESSURE_UNBRACKETED`，以及持久化分析验证失败时分类器拒绝输出。
+- R03 已在一次性副本中由 canonical matrix compiler 重编译并与工作树逐文件同步；两个 resolved 配置内容哈希保持不变。`verify_compiled_matrix` 返回 2 cells / 8 bound hashes，其中包含 decision-contract SHA `fa0493b722e3bd119ed516543e4429b2bbc30986d3e5479f24f4d81f5194460e`。
+- 本地证据：全套 `712 passed, 2 skipped, 3 subtests passed`；document governance `0 selected errors, 0 warnings`；`git diff --check` 通过。当前仍未生成正式 review receipts、finalization 或 authorization，未合入、部署或运行；下一步将本修订提交推送后，对新的 exact commit 重新做 cold-start、satellite-DRL、adversarial 三类复核。

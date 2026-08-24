@@ -104,6 +104,18 @@ def test_isl_overflow_supplements_but_does_not_replace_localized_pressure():
             candidate_arm="b2")
 
 
+def test_control_pressure_precedes_candidate_unlocalized_isl_overflow():
+    control = _run("b5", pressure=True)
+    candidate = _run("b2")
+    candidate["diagnostics"]["fate_counts"]["ISL_QUEUE_OVERFLOW"] = 3
+
+    got = isl_pressure_decision.classify_verified_pair(
+        _manifest(control, candidate), control_arm="b5", candidate_arm="b2")
+
+    assert got["classification"] == "CONTROL_PRESSURE_UNBRACKETED"
+    assert got["candidate_isl_queue_overflows"] == 3
+
+
 def test_holding_overflow_remains_physical_invalid():
     candidate = _run("b2", pressure=True)
     candidate["diagnostics"]["fate_counts"]["HOLDING_QUEUE_OVERFLOW"] = 1
@@ -163,6 +175,8 @@ def test_frozen_contract_matches_analyzer_and_classifier_constants():
         "invalid_non_isl_overflow_fates_must_equal_zero_per_arm"]) == \
         isl_pressure_decision.INVALID_OVERFLOW_FATES
     assert contract["isl_queue_overflow_handling"] == {
+        "control_pressure_branch_precedes_candidate_unlocalized_overflow":
+        True,
         "qualified_pressure_episode_required": True,
         "role": "supplementary_congestion_outcome_not_physical_failure",
         "unlocalized_overflow_blocks_classification": True,
@@ -180,6 +194,11 @@ def test_frozen_contract_matches_analyzer_and_classifier_constants():
         "PHYS_INVALID", "DRAIN_INCOMPLETE", "CONTROL_PRESSURE_UNBRACKETED",
         "PRESSURE_CANDIDATE", "NO_PRESSURE_PHYS_VALID",
     ]
+    runbook = (root / "EXPERIMENTS/"
+               "EXP-20260824-ISL-BANDWIDTH-PILOT-R03/RUNBOOK.md").read_text(
+                   encoding="utf-8")
+    for token in contract["canonical_invocation"]:
+        assert token in runbook
 
 
 def test_persisted_classifier_verifies_and_binds_manifest(tmp_path, monkeypatch):
@@ -212,3 +231,19 @@ def test_persisted_classifier_verifies_and_binds_manifest(tmp_path, monkeypatch)
                        match="exactly one"):
         isl_pressure_decision.classify_verified_pair(
             manifest, control_arm="b5", candidate_arm="b2")
+
+
+def test_persisted_classifier_fails_when_analysis_verification_fails(
+        tmp_path, monkeypatch):
+    path = tmp_path / "analysis-manifest.json"
+    path.write_text(json.dumps(_manifest(_run("b5"), _run("b2"))),
+                    encoding="utf-8")
+    from CODE.experiment_platform import v2_analysis
+    monkeypatch.setattr(
+        v2_analysis, "verify_persisted_analysis",
+        lambda root, manifest_path: (False, ["analyzer identity mismatch"]))
+
+    with pytest.raises(isl_pressure_decision.PressureDecisionError,
+                       match="analyzer identity mismatch"):
+        isl_pressure_decision.classify_persisted_pair(
+            tmp_path, path, control_arm="b5", candidate_arm="b2")

@@ -163,10 +163,19 @@ def _validate_acceptance(value: Any) -> dict[str, Any]:
 
 
 def _validate_analysis(value: Any) -> dict[str, Any]:
-    analysis = _expect_keys(value, {
+    required = {
         "analysis_id", "primary_metric", "estimand", "paired_by",
         "planned_contrasts",
-    }, "analysis")
+    }
+    if not isinstance(value, dict):
+        raise MatrixError("analysis must be a mapping")
+    unknown = set(value) - (required | {"decision_contract"})
+    missing = required - set(value)
+    if unknown:
+        raise MatrixError(f"analysis unknown fields {sorted(unknown)}")
+    if missing:
+        raise MatrixError(f"analysis missing fields {sorted(missing)}")
+    analysis = value
     _safe_id(analysis["analysis_id"], "analysis.analysis_id")
     for key in ("primary_metric", "estimand"):
         if not isinstance(analysis[key], str) or not analysis[key]:
@@ -194,6 +203,18 @@ def _validate_analysis(value: Any) -> dict[str, Any]:
         contrast_arm_pairs.add(arm_pair)
         if not isinstance(item["estimand"], str) or not item["estimand"]:
             raise MatrixError(f"analysis.planned_contrasts[{i}].estimand must be a string")
+    if "decision_contract" in analysis:
+        decision = _expect_keys(
+            analysis["decision_contract"], {"path"},
+            "analysis.decision_contract")
+        raw_path = decision["path"]
+        if (not isinstance(raw_path, str)
+                or not raw_path.startswith("CODE/work/")
+                or not raw_path.endswith(".json")
+                or ".." in Path(raw_path).parts):
+            raise MatrixError(
+                "analysis.decision_contract.path must be a safe "
+                "CODE/work/... JSON path")
     return analysis
 
 
@@ -559,9 +580,55 @@ def _canonical_experiment_dir(root: Path, experiment_id: str,
     return expected
 
 
-def _analysis_document(request: dict[str, Any], manifest_sha: str,
-                       request_sha: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _load_decision_contract(
+        root: Path, request: dict[str, Any]) -> dict[str, Any] | None:
+    spec = request["analysis"].get("decision_contract")
+    if spec is None:
+        return None
+    raw_path = spec["path"]
+    path = root / raw_path
+    _reject_symlink_ancestors(path, root)
+    if path.is_symlink() or not path.is_file():
+        raise MatrixError(f"missing post-analysis decision contract: {raw_path}")
+    try:
+        contract = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise MatrixError(f"post-analysis decision contract unreadable: {exc}") \
+            from exc
+    if not isinstance(contract, dict) or contract.get("schema") != \
+            "leo-sim-isl-pressure-decision/v1":
+        raise MatrixError("unsupported post-analysis decision contract")
+    invocation = contract.get("canonical_invocation")
+    if (not isinstance(invocation, list) or len(invocation) < 5
+            or any(not isinstance(token, str) or not token
+                   or re.fullmatch(r"[A-Za-z0-9_./:-]+", token) is None
+                   for token in invocation)
+            or invocation[:2] != ["python3", "-m"]
+            or not invocation[2].startswith("CODE.experiment_platform.")
+            or len(invocation[3:]) % 2):
+        raise MatrixError(
+            "post-analysis canonical_invocation must be a safe python -m "
+            "command followed by flag/value pairs")
     return {
+        "path": raw_path,
+        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "canonical_invocation": invocation,
+    }
+
+
+def _render_invocation(invocation: list[str]) -> list[str]:
+    lines = [" ".join(invocation[:3]) + " \\"]
+    pairs = list(zip(invocation[3::2], invocation[4::2]))
+    for index, (flag, value) in enumerate(pairs):
+        suffix = " \\" if index < len(pairs) - 1 else ""
+        lines.append(f"  {flag} {value}{suffix}")
+    return lines
+
+
+def _analysis_document(request: dict[str, Any], manifest_sha: str,
+                       request_sha: str, rows: list[dict[str, Any]],
+                       decision_contract: dict[str, Any] | None = None) -> dict[str, Any]:
+    document = {
         "schema": MATRIX_ANALYSIS_SCHEMA,
         "runtime_kind": governance.RUNTIME_KIND,
         "experiment_id": request["experiment_id"],
@@ -579,6 +646,9 @@ def _analysis_document(request: dict[str, Any], manifest_sha: str,
         "matrix_manifest_sha256": manifest_sha,
         "status": "WAITING_FOR_VERIFIED_RUNS",
     }
+    if decision_contract is not None:
+        document["decision_contract"] = decision_contract
+    return document
 
 
 def compile_matrix_experiment(request_path: Path, out_dir: Path,
@@ -598,6 +668,7 @@ def compile_matrix_experiment(request_path: Path, out_dir: Path,
     except (OSError, json.JSONDecodeError) as exc:
         raise MatrixError(f"request unreadable: {exc}") from exc
     validated = validate_request(request)
+    decision_contract = _load_decision_contract(project_root, validated)
     validated, rows = _resolve_cells(validated, project_root)
     out_dir = _canonical_experiment_dir(project_root,
                                          validated["experiment_id"], out_dir)
@@ -638,7 +709,8 @@ def compile_matrix_experiment(request_path: Path, out_dir: Path,
     }
     _write_json(out_dir / "run-manifest.json", manifest)
     manifest_sha = hashlib.sha256((out_dir / "run-manifest.json").read_bytes()).hexdigest()
-    analysis = _analysis_document(validated, manifest_sha, request_sha, rows)
+    analysis = _analysis_document(
+        validated, manifest_sha, request_sha, rows, decision_contract)
     _write_json(out_dir / "analysis-request.json", analysis)
     serial = (validated.get("execution_policy", {}).get("mode")
               == "serial_fail_closed")
@@ -679,6 +751,18 @@ def compile_matrix_experiment(request_path: Path, out_dir: Path,
         "```", "",
         "The output is evidence-bound analysis only; claim-support and value-gate review remain required.",
     ])
+    if decision_contract is not None:
+        runbook_lines.extend([
+            "", "## Apply the frozen post-analysis decision", "",
+            "Run this persisted classifier only after the V2 analysis above "
+            "produces a verified manifest. Any verification or classification "
+            "error is a stop, never a no-pressure result.", "", "```bash",
+            *_render_invocation(decision_contract["canonical_invocation"]),
+            "```", "",
+            f"The command and subsequent action are frozen in "
+            f"`{decision_contract['path']}`. Do not substitute an in-memory "
+            "classification or change thresholds after observing results.",
+        ])
     (out_dir / "RUNBOOK.md").write_text("\n".join(runbook_lines), encoding="utf-8")
     bound_paths = ["request.json", "run-manifest.json", "analysis-request.json",
                    "RUNBOOK.md", *(row["config_path"] for row in rows)]
@@ -754,7 +838,9 @@ def verify_compiled_matrix(root: Path, experiment_dir: Path) -> tuple[str, dict[
     if manifest["cells"] != expected_cells:
         raise MatrixError("matrix manifest cells do not derive from request")
     expected_manifest_sha = hashlib.sha256((experiment_dir / "run-manifest.json").read_bytes()).hexdigest()
-    expected_analysis = _analysis_document(request, expected_manifest_sha, request_sha, rows)
+    decision_contract = _load_decision_contract(root, request)
+    expected_analysis = _analysis_document(
+        request, expected_manifest_sha, request_sha, rows, decision_contract)
     if analysis != expected_analysis:
         raise MatrixError("matrix analysis request does not bind the exact cohort")
     paths = ["request.json", "run-manifest.json", "analysis-request.json", "RUNBOOK.md",
@@ -779,6 +865,9 @@ def verify_compiled_matrix(root: Path, experiment_dir: Path) -> tuple[str, dict[
         str((experiment_dir / raw).resolve().relative_to(root)): digest
         for raw, digest in expected_hashes.items()
     }
+    if decision_contract is not None:
+        artifact_hashes[decision_contract["path"]] = \
+            decision_contract["sha256"]
     # The report cannot hash itself recursively, but authorization must still
     # bind the report file as an artifact after recomputing its embedded map.
     report_relative = str((experiment_dir / "compile-report.json").resolve().relative_to(root))
