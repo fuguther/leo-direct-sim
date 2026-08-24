@@ -1,0 +1,66 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:KIMI-ISLBW-RESULT-CLAIM-R01",
+    "title": "R02 formal result claim and next-route review",
+    "goal": "在 exact main d3a116a69912dd214d89582a7b29c947f2357bfa 上，审阅以下由 Codex 已双端验证并由 v2_analysis VERIFIED 的候选证据信封（你无法访问 ignored raw Results，因此不得声称独立验证原始数据）：两臂实际 trace_sha256 同为 f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4，trace_identity/input/code/controlled_signature 均相同；唯一声明干预为 ISL RF bandwidth 500 MHz vs 50 MHz。两臂 governance receipt 均 research_eligible=true、natural_end/conservation/外部 witness/authorization/deployment 通过；raw receipt 内 research_eligible=false，但 governance v2 将正式资格判为 true，请核对这种分层语义是否符合代码合同，并要求报告准确表述。主指标 isl_link_utilization_max：b500=0.005871255030063291，b50=0.020761875237929505，b50-b500=0.014890620207866214，n_pairs=1；最大 link 在两臂均为 isl:222:242，served_bits 均 131000000，available_capacity_bits 为 22312095000 vs 6309642000；1120 条有向 ISL 均无 utilization>=1 饱和。MCS samples 均 2354177，zero_rate_holds=0，rate_min 594152000 vs 181026800，rate_max 均 2950427500。数据 fate 两臂完全相同：offered 1299、delivered 1295、NO_ROUTE 4、in-system 0；control counters 完全相同，2344720 registered、2343600 completed、1120 in-system。analysis-manifest SHA=bc69740ec1cb5f201a79cf4749908c64e7ff4f49196b0dde7ee412bb95a6eb23，persisted recomputation ok=true。请给 PASS_FOR_ENGINEERING_CLAIM、BLOCK 或 PASS_WITH_LIMITS；严格回答：1) 最强可支持表述；2) 明确不能写的因果/阈值/论文表述；3) 结果是否说明当前 50 MHz 仍远离 ISL 饱和，因此它是否足以作为后续拥塞/压力研究档；4) 下一步最有信息价值且成本合理的预注册扫描路线（轴、停止条件、seed/重复、避免混淆）；5) 是否值得直接扩成大矩阵；6) raw receipt false/governance true 的正确语义；7) 至少两个替代解释或反例。每项区分 FACT、INFERENCE、OPEN_ITEM，并引用仓库路径/代码位置。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "d3a116a69912dd214d89582a7b29c947f2357bfa",
+      "paths": [
+        "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/",
+        "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R02.json",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/experiment_platform/v2_serial_gate.py",
+        "CODE/leo_sim/metrics.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/governance.py",
+        "ANALYSIS/FINDINGS-REGISTRY.md",
+        "NOTES.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "明确给出 PASS_FOR_ENGINEERING_CLAIM、PASS_WITH_LIMITS 或 BLOCK",
+      "FACT、INFERENCE、OPEN_ITEM 分开",
+      "不得把单 seed engineering sensitivity 写成论文统计或纯容量因果效应",
+      "下一步路线含最小扫描、停止条件和不扩大矩阵的判断",
+      "每个关键判断引用 exact-main 仓库路径或声明其仅来自 Codex 候选证据信封"
+    ],
+    "requiredEvidence": [
+      "exact commit verification",
+      "claim-boundary and receipt/governance semantic inspection",
+      "counterexamples and alternative explanations",
+      "cost-aware next experiment route"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "514828938fb5933dbfd3b20a20c6ba73029e701419a5871f9cb2ab58a25a4fd4"
+}
