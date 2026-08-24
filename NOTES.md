@@ -743,6 +743,17 @@
 - 当前只完成了“承重版本复核 → 治理定案 → 派生授权”，尚未 PR/CI 合入、clean-main 部署或执行 VM。下一步提交本治理包并经 required pytest CI 合入；部署 exact merge SHA 后严格串行运行 b5，只有其 natural end、守恒、治理、外部 witness、身份、ISL 指标和 zero-rate 门全通过才允许 b2。单种子分类不能直接进入论文或算法比较。
 - PR #163（`fix: 闭合 ISL 压力标定与串行授权`）首轮 required `pytest` CI 已通过，run=`32742920625`、job=`97481422740`。本条 NOTES 留痕提交后仍须重新通过 required CI 才可 squash 合入；截至本条记录仍未部署或执行 VM。
 
+## 2026-08-24：R03 正式运行定位到 5--2 MHz 单 seed 压力候选
+
+- PR #163 已经 required CI 通过并 squash 合入 main，执行 exact SHA=`0280de3ba0e27551bc7a737a028f5154743051ce`；main 合入后 pytest job `97482210294` 成功。canonical VM 部署 source tree SHA=`ade9dd4e5221fd57b025428965058721de5369189596fcbe3b75f028f1db152a`，deployment receipt SHA=`393b812b2eb8d10cac8be9f7cfc574223bbb3054ab6b0fbebdbfb94e3320bfec`。
+- 5 MHz 与 2 MHz 两格严格串行自然结束，exit code=0、conservation=true、governance `research_eligible=true`，外部 nonce witness 与 VM 原始 Python 3.11.15 环境 receipt verification 均通过。governance receipt SHA 分别为 b5 `a0246e850ccf3c4f3de8fe6f3787559c8a5253479cea90964df24c1c573d9639`、b2 `1dad81f86c4f37661dc5d15ddc0c1bc86718e4d620a27d7bd2f3b6122f988271`。
+- V2 analysis 为 `VERIFIED`、2 runs，persisted verification 为 `ok=true/errors=[]`；analysis manifest SHA=`5ee795b366b87977cb27bb2e4e90504791b4c8273592b687c8face1e416429d7`。全运行期最大有向 ISL 利用率为 5 MHz `0.15252027036759927`、2 MHz `0.3813006759189982`，配对差 `0.22878040555139892`。
+- 冻结五路分类器返回 `PRESSURE_CANDIDATE`，classification SHA=`c0075a3647f4f821bf043e734a6c2ffec9dd8984e4da82e4d0f5a477b56cf5b8`。5 MHz 无合格 episode；2 MHz 在 `isl:147:167`、`isl:167:187`、`isl:222:242` 上形成连续 4/5/4 个一秒高利用窗且同 episode 有匹配排队，最大等待约 5.130/0.336/0.784 s。两臂均为 1,295 delivered、4 `NO_ROUTE`、59 access grants、0 zero-rate holds、0 ISL overflow、0 data in-system at stop、0 unmatched ISL queue entry，control failure counters 也相同，因此未观察到由接入差异、断链增长或未排空伪造的臂间压力信号。
+- claim 边界：这只把 5--2 MHz 冻结为固定场景、seed 7 下的工程 onset 候选，不是普适阈值、纯容量效应、信息价值、算法优越性、Q0 或论文统计结论。按预注册动作停止降低带宽，不运行 1 MHz；下一步先独立审阅并预注册相邻 5/2 MHz 的 seeds 11、19 复核，总计三个 seeds，方向不一致必须如实报告。
+- 执行中有一次准备阶段 fail-closed：默认远程 Python 未进入正式 TensorFlow 环境，仿真未启动、无结果目录。显式绑定 formal VM Python 后，同一授权与部署上的前驱验证和正式运行均通过。该事件不污染结果，但默认解释器/环境激活不一致仍是平台可用性缺口，应在独立小修复中加回归并闭合。
+- 结果提交 `dd892b3a…` 的两路 Kimi 冷审均为 `PASS_WITH_LIMITS`、无 blocker。Codex 接受阈值邻接限制：5 MHz 存在约 0.9675 的单高窗与最多 1.941 s 的匹配等待但不满足连续窗规则；2 MHz 的 `isl:187:207` 有 5 个连续高窗但最大重叠等待约 0.0807 s，距 0.1 s 门槛仅约 0.0193 s。因此链路数量和控制臂无压力都不能外推为稳定结论，seeds 11/19 必须逐分支报告、禁用多数票。
+- 本地确认 `0280de3…` 是结果提交祖先，四个 analyzer 文件在两提交间无差异且哈希与 manifest 完全一致。结果提交因 Git identity 改变而按设计拒绝原地重放；在 exact 源提交、VM 正式 Python 3.11.15、原始结果与外部见证上重跑成功，classification 仍为 `PRESSURE_CANDIDATE`，SHA 仍为 `c0075a36…`。
+
 ## 2026-08-25：远程正式准备检查统一使用已激活环境
 
 - R03 暴露的启动缺口已复现到 `run-remote.sh`：tmux 内的正式子进程会先执行 `REMOTE_ENV_ACTIVATE`，但 tmux 外的 `remote_job.py prepare` 直接调用 `REMOTE_PYTHON`，因此配置为 `python3` 时会落到未激活的系统解释器，并在仿真启动前因缺少正式依赖 fail-closed。
