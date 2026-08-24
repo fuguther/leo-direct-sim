@@ -34,7 +34,7 @@
     ]
   },
   "experiment_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02",
-  "matrix_manifest_sha256": "27d5616b11cd6e8e7403db3cc8a70605ffb7051a5a3319177406df5cd113e2d1",
+  "matrix_manifest_sha256": "772915e80491c113dcf956c1ecc1ebe0e9f6c11ad6f5297123946289ab1dd9cb",
   "planned_cells": [
     {
       "acceptance": {

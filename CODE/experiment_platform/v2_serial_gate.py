@@ -21,10 +21,26 @@ def _inside(root: Path, path: Path, label: str) -> Path:
     return resolved
 
 
+def _verify_deployment_commit(root: Path, expected: str) -> None:
+    if (len(expected) != 40 or set(expected) == {"0"}
+            or any(char not in "0123456789abcdef" for char in expected)):
+        raise v2_analysis.V2AnalysisError(
+            "deployed source commit must be non-zero lowercase full SHA")
+    witness = root / ".deployment_commit"
+    if witness.is_symlink() or not witness.is_file():
+        raise v2_analysis.V2AnalysisError(
+            "deployment commit witness is missing or unsafe")
+    if witness.read_text(encoding="ascii") != expected + "\n":
+        raise v2_analysis.V2AnalysisError(
+            "deployment commit witness mismatch")
+
+
 def verify_predecessors(
         root: Path, experiment_dir: Path, authorization_path: Path,
         next_run_id: str, *, results_root: Path | None = None,
-        external_witness_root: Path | None = None) -> list[str]:
+        external_witness_root: Path | None = None,
+        external_witness_by_nonce: bool = False,
+        deployed_source_commit: str | None = None) -> list[str]:
     """Verify every earlier cell before allowing one serial matrix launch."""
     root = Path(root).resolve()
     experiment_dir = _inside(root, experiment_dir, "experiment directory")
@@ -88,13 +104,20 @@ def verify_predecessors(
     external_witness_root = _inside(
         root, external_witness_root
         or results_root / "_external_launch_witness", "external witness root")
-    v2_analysis._analyzer_identity()
+    if deployed_source_commit is None:
+        v2_analysis._analyzer_identity()
+    else:
+        # The canonical VM deployment intentionally excludes .git.  Its
+        # caller must first verify the signed deployment manifest/tree; this
+        # additional witness prevents a caller from naming another commit.
+        _verify_deployment_commit(root, deployed_source_commit)
     verified: list[str] = []
     for cell in predecessor_cells:
         run_id = cell["run_id"]
         v2_analysis._verify_result(
             root, results_root, external_witness_root, cell,
-            auth_by_id[run_id], primary, require_external_witness=True)
+            auth_by_id[run_id], primary, require_external_witness=True,
+            external_witness_by_nonce=external_witness_by_nonce)
         verified.append(run_id)
     return verified
 

@@ -52,6 +52,19 @@ def _write_external_witness(root: Path, run_id: str, governed: dict,
            witness)
 
 
+def test_external_witness_path_supports_explicit_remote_nonce_naming(tmp_path):
+    witness_root = tmp_path / ".remote_runtime" / "launches"
+    nonce = "d" * 32
+    nonce_path = witness_root / f"{nonce}.json"
+    _write(nonce_path, {"schema": "leo-remote-launch-status/v2"})
+
+    assert v2_analysis._external_witness_path(
+        witness_root, "EXP-run", launch_nonce=nonce) == nonce_path
+    with pytest.raises(v2_analysis.V2AnalysisError,
+                       match="external launch witness is missing"):
+        v2_analysis._external_witness_path(witness_root, "EXP-run")
+
+
 def test_analyzer_identity_binds_clean_full_commit_and_files(monkeypatch):
     responses = [
         mock.Mock(stdout="1" * 40 + "\n"),
@@ -580,6 +593,30 @@ def _single_run_analysis_fixture(tmp_path):
     _write_external_witness(root, row["run_id"], governed,
                             authorization_sha256=auth_sha)
     return root, experiment, auth_path, row
+
+
+def test_verify_result_accepts_canonical_remote_nonce_witness(tmp_path):
+    root, _experiment, auth_path, row = _single_run_analysis_fixture(tmp_path)
+    local_witness = (root / "CODE" / "Results"
+                     / "_external_launch_witness" / f"{row['run_id']}.json")
+    remote_witness_root = root / ".remote_runtime" / "launches"
+    remote_witness = remote_witness_root / ("b" * 32 + ".json")
+    remote_witness_root.mkdir(parents=True)
+    local_witness.replace(remote_witness)
+    authorized = {
+        **row,
+        "authorization_sha256": v2_analysis.file_sha256(auth_path),
+    }
+
+    verified = v2_analysis._verify_result(
+        root, root / "CODE" / "Results", remote_witness_root,
+        row, authorized, "delivery_rate", require_external_witness=True,
+        external_witness_by_nonce=True)
+
+    assert verified["run_id"] == row["run_id"]
+    assert verified["evidence_class"] == "v2_external_witness"
+    assert any(item["path"].endswith(".remote_runtime/launches/" + "b" * 32 + ".json")
+               for item in verified["artifacts"])
 
 
 def test_v2_analysis_requires_external_launch_witness(tmp_path):

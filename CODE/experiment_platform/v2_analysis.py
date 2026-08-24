@@ -117,10 +117,17 @@ def _finite(value: Any, label: str) -> float:
     return float(value)
 
 
-def _external_witness_path(witness_root: Path, run_id: str) -> Path:
+def _external_witness_path(
+        witness_root: Path, run_id: str, *,
+        launch_nonce: str | None = None) -> Path:
     if witness_root.is_symlink() or not witness_root.is_dir():
         raise V2AnalysisError(f"external launch witness directory is missing or unsafe: {witness_root}")
-    path = witness_root / f"{run_id}.json"
+    witness_id = launch_nonce if launch_nonce is not None else run_id
+    if launch_nonce is not None and (
+            len(launch_nonce) != 32
+            or any(char not in "0123456789abcdef" for char in launch_nonce)):
+        raise V2AnalysisError(f"{run_id} launch nonce is invalid")
+    path = witness_root / f"{witness_id}.json"
     if path.is_symlink() or not path.is_file() or path.parent != witness_root:
         raise V2AnalysisError(f"external launch witness is missing or unsafe: {path}")
     try:
@@ -133,15 +140,18 @@ def _external_witness_path(witness_root: Path, run_id: str) -> Path:
 def _verify_external_witness(
         *, witness_root: Path, run_id: str,
         formal: dict[str, Any], governed: dict[str, Any],
-        paths: dict[str, Path], authorized: dict[str, Any]) -> dict[str, Any]:
+        paths: dict[str, Path], authorized: dict[str, Any],
+        external_witness_by_nonce: bool = False) -> dict[str, Any]:
     """Verify the launch-scoped status pulled from the canonical VM runtime."""
-    path = _external_witness_path(witness_root, run_id)
+    expected_nonce = formal.get("launch_nonce")
+    path = _external_witness_path(
+        witness_root, run_id,
+        launch_nonce=expected_nonce if external_witness_by_nonce else None)
     witness = _read_json(path)
     if not isinstance(witness, dict) or witness.get("schema") != EXTERNAL_STATUS_SCHEMA:
         raise V2AnalysisError(f"{run_id} external launch witness schema mismatch")
     if witness.get("status") != "success" or witness.get("exit_code") != 0:
         raise V2AnalysisError(f"{run_id} external launch witness is not successful")
-    expected_nonce = formal.get("launch_nonce")
     expected_auth = authorized.get("authorization_sha256")
     if any(witness.get(key) != expected for key, expected in {
             "launch_nonce": expected_nonce,
@@ -292,7 +302,8 @@ def _verify_authorized_cell(row: dict[str, Any],
 
 def _verify_result(root: Path, results_root: Path, witness_root: Path,
                    row: dict[str, Any], authorized: dict[str, Any],
-                   primary: str, *, require_external_witness: bool) -> dict[str, Any]:
+                   primary: str, *, require_external_witness: bool,
+                   external_witness_by_nonce: bool = False) -> dict[str, Any]:
     run_id = row.get("run_id")
     result_dir = _direct_result(results_root, run_id)
     required = (
@@ -376,7 +387,8 @@ def _verify_result(root: Path, results_root: Path, witness_root: Path,
             raise V2AnalysisError(f"{run_id} governance witness binding mismatch")
         external_witness = _verify_external_witness(
             witness_root=witness_root, run_id=run_id, formal=formal,
-            governed=governed, paths=paths, authorized=authorized)
+            governed=governed, paths=paths, authorized=authorized,
+            external_witness_by_nonce=external_witness_by_nonce)
     else:
         external_witness = None
     diagnostics = _run_diagnostics(ledgers)
@@ -386,7 +398,10 @@ def _verify_result(root: Path, results_root: Path, witness_root: Path,
         "sha256": file_sha256(path),
     } for path in paths.values()]
     if external_witness is not None:
-        witness_path = witness_root / f"{run_id}.json"
+        witness_path = _external_witness_path(
+            witness_root, run_id,
+            launch_nonce=(formal.get("launch_nonce")
+                          if external_witness_by_nonce else None))
         artifacts.append({
             "path": str(witness_path.relative_to(root)),
             "sha256": file_sha256(witness_path),

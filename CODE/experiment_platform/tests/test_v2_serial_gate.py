@@ -79,6 +79,41 @@ def test_second_serial_cell_requires_verified_current_predecessor(tmp_path):
     assert verify.call_args.kwargs["require_external_witness"] is True
 
 
+def test_remote_serial_gate_uses_nonce_named_external_witness(tmp_path):
+    experiment, authorization_path = _fixture(tmp_path)
+    (tmp_path / ".deployment_commit").write_text("d" * 40 + "\n",
+                                                   encoding="ascii")
+    authorization = json.loads(authorization_path.read_text())
+    with mock.patch.object(v2_serial_gate.authorize_experiment,
+                           "verify_authorization", return_value=authorization), \
+            mock.patch.object(v2_serial_gate.v2_analysis,
+                              "_analyzer_identity") as analyzer_identity, \
+            mock.patch.object(v2_serial_gate.v2_analysis, "_verify_result",
+                              return_value={"run_id": "EXP-SERIAL-first"}) as verify:
+        prior = v2_serial_gate.verify_predecessors(
+            tmp_path, experiment, authorization_path, "EXP-SERIAL-second",
+            external_witness_by_nonce=True,
+            deployed_source_commit="d" * 40)
+    assert prior == ["EXP-SERIAL-first"]
+    analyzer_identity.assert_not_called()
+    assert verify.call_args.kwargs["external_witness_by_nonce"] is True
+
+
+def test_remote_serial_gate_rejects_deployment_commit_mismatch(tmp_path):
+    experiment, authorization_path = _fixture(tmp_path)
+    (tmp_path / ".deployment_commit").write_text("e" * 40 + "\n",
+                                                   encoding="ascii")
+    authorization = json.loads(authorization_path.read_text())
+    with mock.patch.object(v2_serial_gate.authorize_experiment,
+                           "verify_authorization", return_value=authorization):
+        with pytest.raises(v2_analysis.V2AnalysisError,
+                           match="deployment commit witness mismatch"):
+            v2_serial_gate.verify_predecessors(
+                tmp_path, experiment, authorization_path, "EXP-SERIAL-second",
+                external_witness_by_nonce=True,
+                deployed_source_commit="d" * 40)
+
+
 def test_second_serial_cell_fails_when_predecessor_evidence_fails(tmp_path):
     experiment, authorization_path = _fixture(tmp_path)
     authorization = json.loads(authorization_path.read_text())

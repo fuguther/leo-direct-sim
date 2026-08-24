@@ -82,6 +82,30 @@
           "rejected as already fail-closed in the authorized path: an empty cohort is rejected because authorization has no authorized V2 cohort; an explicit regression test now preserves this behavior"
         ]
       }
+    },
+    {
+      "reviewed_git_commit": "9e9c5758a740d47e45f71237f2c1be8277927d79",
+      "authorization_state_at_review": "NOT_AUTHORIZED",
+      "verdicts": {
+        "cold_start": "PASS",
+        "satellite_drl": "PASS",
+        "adversarial": "BLOCK"
+      },
+      "confirmed_blocking_findings": [
+        "the serial predecessor gate was enforced only by the local launcher, so post-authorization local launcher or gate tampering could still reach the deployed remote prepare/run path and start b50 without verified b500 evidence"
+      ],
+      "external_candidate_review": {
+        "reviewer": "kimi_code_cli",
+        "session_id": "session_193f5baf-6652-4053-bdb4-6e95dd62bf99",
+        "result_class": "RESULT_CANDIDATE",
+        "verdict": "BLOCK",
+        "codex_adjudication": [
+          "confirmed: the deployed remote trust boundary did not reapply the predecessor gate",
+          "confirmed: VM witnesses are nonce-named and the deployment intentionally excludes .git, so direct reuse required explicit witness and analyzer-identity adaptations",
+          "confirmed and fixed: prepare and run both recheck predecessor evidence before child launch",
+          "confirmed and fixed: a behavioral regression now bypasses the local launcher and proves that missing predecessor evidence returns exit code 2 without invoking Popen"
+        ]
+      }
     }
   ],
   "resolution_status": "IMPLEMENTED_AWAITING_INDEPENDENT_REREVIEW",
