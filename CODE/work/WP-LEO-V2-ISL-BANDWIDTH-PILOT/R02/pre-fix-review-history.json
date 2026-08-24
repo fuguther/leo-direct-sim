@@ -44,6 +44,23 @@
       "a repository-wide review-receipt registry is a broader governance change; this revision instead preserves both BLOCK reviews in this bound history artifact"
     ]
   },
+  "rereview_rounds": [
+    {
+      "reviewed_git_commit": "3fe7616f7906a4f6499ed79a11da1954704885da",
+      "authorization_state_at_review": "NOT_AUTHORIZED",
+      "verdicts": {
+        "cold_start": "PASS",
+        "satellite_drl": "BLOCK",
+        "adversarial": "BLOCK"
+      },
+      "confirmed_blocking_findings": [
+        "the revision-2 brief incorrectly named revision-1 experiment paths as allowed inputs",
+        "the execution contract did not explicitly forbid launching b50 before every b500 validity gate passed",
+        "the default analyzer accepted legacy v3/v4 receipts without the external witness required by this work package",
+        "persisted verification did not bind claim_status or require claim-gate status equality"
+      ]
+    }
+  ],
   "resolution_status": "IMPLEMENTED_AWAITING_INDEPENDENT_REREVIEW",
   "required_rereview_roles": [
     "cold_start",

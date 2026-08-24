@@ -17,8 +17,8 @@
     "Revision 1 was blocked before authorization by adversarial and Kimi reviews because analyzer identity, actual cross-cell trace equality, authorized-row identity and zero-rate gates were incomplete; pre-fix-review-history.json preserves those findings."
   ],
   "allowed_inputs": [
-    "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01",
-    "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R01.json",
+    "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02",
+    "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R02.json",
     "CODE/experiment_platform/v2_analysis.py",
     "CODE/leo_sim/metrics.py",
     "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R02/pre-fix-review-history.json",
@@ -51,6 +51,7 @@
     "The exact revision-2 matrix, analyzer semantics, pre-fix review history and this brief pass independent cold-start, satellite-DRL and adversarial review with no unresolved blocker.",
     "Both cells are launched only through the canonical remote runner from the same clean main deployment and complete naturally with conservation, governance identity and external witness checks passing.",
     "The two actual trace_sha256 values match; a mismatch invalidates the paired interpretation even if trace_identity_sha256 was equal before execution.",
+    "The b50 cell is not launched unless b500 has first completed naturally and its pulled receipt, conservation, governance eligibility, external witness, identity and mcs_zero_rate_holds=0 checks all pass; any failure stops the cohort.",
     "Receipt verification recomputes congestion metrics from raw event ledgers; V2 analysis consumes the verified metrics, persists VERIFIED artifacts, and binds the analyzer's exact Git commit plus v2_analysis.py and metrics.py hashes; no one-second-window or paper-facing claim is inferred.",
     "Any zero-rate hold, interruption, event-limit stop, missing ISL link metrics, receipt mismatch or governance_receipt.research_eligible != true stops analysis rather than being silently excluded.",
     "The persisted analysis separately reports MCS rate diagnostics, control counters, per-directed-ISL served_bits and sampled available_capacity_bits, and saturated-link identifiers; a zero contrast with saturation cannot be interpreted as no bandwidth sensitivity."

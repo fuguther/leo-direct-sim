@@ -292,7 +292,7 @@ def _verify_authorized_cell(row: dict[str, Any],
 
 def _verify_result(root: Path, results_root: Path, witness_root: Path,
                    row: dict[str, Any], authorized: dict[str, Any],
-                   primary: str) -> dict[str, Any]:
+                   primary: str, *, require_external_witness: bool) -> dict[str, Any]:
     run_id = row.get("run_id")
     result_dir = _direct_result(results_root, run_id)
     required = (
@@ -330,6 +330,9 @@ def _verify_result(root: Path, results_root: Path, witness_root: Path,
                             receipt_mod.LEGACY_RECEIPT_SCHEMA_V4}:
         # Historical v3/v4 artifacts remain readable, but never inherit the
         # v2 external witness contract by self-reporting extra fields.
+        if require_external_witness:
+            raise V2AnalysisError(
+                f"{run_id} external-witness mode requires current receipt evidence")
         expected_governance_schema = GOVERNANCE_SCHEMA_V1
     else:
         raise V2AnalysisError(f"{run_id} receipt schema is not a supported formal branch")
@@ -454,7 +457,8 @@ def _compute_planned_contrasts(
 
 def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
             results_root: Path | None = None,
-            external_witness_root: Path | None = None) -> dict[str, Any]:
+            external_witness_root: Path | None = None,
+            *, allow_legacy_internal: bool = False) -> dict[str, Any]:
     """Verify an authorized V2 cohort and return a persisted analysis manifest."""
     root = Path(root).resolve()
     experiment_dir = Path(experiment_dir).resolve()
@@ -504,7 +508,8 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
     analyzer = _analyzer_identity()
     results = [
         _verify_result(root, results_root, external_witness_root, cell,
-                       auth_by_id[cell["run_id"]], primary)
+                       auth_by_id[cell["run_id"]], primary,
+                       require_external_witness=not allow_legacy_internal)
         for cell in cells
     ]
     evidence_classes = {result["evidence_class"] for result in results}
@@ -534,6 +539,8 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
         "inputs": inputs,
         "authorization_sha256": authorization_sha256,
         "analyzer": analyzer,
+        "analysis_mode": ("legacy_internal" if allow_legacy_internal
+                            else "current_external_witness"),
         "experiment_dir": str(experiment_dir.relative_to(root)),
         "authorization_path": str(Path(authorization_path).resolve().relative_to(root)),
         "results_root": str(results_root.relative_to(root)),
@@ -634,16 +641,33 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
         gate = _read_json(output_dir / "claim-gate.json")
         if gate.get("analysis_manifest_sha256") != file_sha256(manifest_path):
             raise V2AnalysisError("claim gate does not bind analysis manifest")
+        if gate.get("status") != manifest.get("claim_status"):
+            raise V2AnalysisError("claim gate status differs from analysis claim_status")
+        summary = _read_json(output_dir / "summary.json")
+        expected_summary = {
+            "schema": "leo-sim-v2-analysis-summary/v1",
+            "experiment_id": manifest.get("experiment_id"),
+            "primary_metric": manifest.get("primary_metric"),
+            "planned_contrasts": manifest.get("planned_contrasts"),
+            "claim_status": manifest.get("claim_status"),
+        }
+        if summary != expected_summary:
+            raise V2AnalysisError("analysis summary differs from manifest")
+        analysis_mode = manifest.get("analysis_mode")
+        if analysis_mode not in {"current_external_witness", "legacy_internal"}:
+            raise V2AnalysisError("analysis manifest mode is invalid")
         recomputed = analyze(
             root,
             root / manifest["experiment_dir"],
             root / manifest["authorization_path"],
             root / manifest["results_root"],
             root / manifest["external_witness_root"],
+            allow_legacy_internal=(analysis_mode == "legacy_internal"),
         )
         for key in ("experiment_id", "primary_metric", "verified_run_ids",
                     "run_results", "planned_contrasts", "claim_boundary",
-                    "inputs", "authorization_sha256", "analyzer"):
+                    "inputs", "authorization_sha256", "analyzer",
+                    "analysis_mode", "claim_status"):
             if recomputed.get(key) != manifest.get(key):
                 raise V2AnalysisError(f"persisted analysis differs for {key}")
     except (OSError, ValueError, json.JSONDecodeError) as exc:
@@ -660,11 +684,15 @@ def main() -> int:
     parser.add_argument("--authorization", type=Path, required=True)
     parser.add_argument("--results-root", type=Path)
     parser.add_argument("--external-witness-root", type=Path)
+    parser.add_argument(
+        "--allow-legacy-internal", action="store_true",
+        help="opt in to diagnostic-only v3/v4 evidence without external witness")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     try:
         manifest = analyze(args.root, args.experiment, args.authorization,
-                           args.results_root, args.external_witness_root)
+                           args.results_root, args.external_witness_root,
+                           allow_legacy_internal=args.allow_legacy_internal)
         write_outputs(args.root, args.out, manifest)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"V2 ANALYSIS BLOCKED: {exc}")

@@ -360,12 +360,40 @@ def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
         ok, errors = v2_analysis.verify_persisted_analysis(
             root, out / "analysis-manifest.json")
         persisted_path = out / "analysis-manifest.json"
+        gate_path = out / "claim-gate.json"
+        summary_path = out / "summary.json"
+        original_persisted = json.loads(persisted_path.read_text(encoding="utf-8"))
+        original_gate = json.loads(gate_path.read_text(encoding="utf-8"))
+        original_summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        claim_tampered = json.loads(json.dumps(original_persisted))
+        claim_tampered["claim_status"] = "LEGACY_INTERNAL_ONLY"
+        claim_summary = dict(original_summary)
+        claim_summary["claim_status"] = claim_tampered["claim_status"]
+        _write(summary_path, claim_summary)
+        claim_tampered["output_hashes"]["summary.json"] = \
+            v2_analysis.file_sha256(summary_path)
+        for artifact in claim_tampered["output_artifacts"]:
+            if artifact["path"].endswith("/summary.json"):
+                artifact["sha256"] = claim_tampered["output_hashes"]["summary.json"]
+        _write(persisted_path, claim_tampered)
+        claim_gate = dict(original_gate)
+        claim_gate["status"] = claim_tampered["claim_status"]
+        claim_gate["analysis_manifest_sha256"] = v2_analysis.file_sha256(
+            persisted_path)
+        _write(gate_path, claim_gate)
+        claim_ok, claim_errors = v2_analysis.verify_persisted_analysis(
+            root, persisted_path)
+        _write(persisted_path, original_persisted)
+        _write(gate_path, original_gate)
+        _write(summary_path, original_summary)
         tampered = json.loads(persisted_path.read_text(encoding="utf-8"))
         tampered["analyzer"]["git_commit"] = "0" * 40
         _write(persisted_path, tampered)
         tampered_ok, tampered_errors = v2_analysis.verify_persisted_analysis(
             root, persisted_path)
     assert ok, errors
+    assert not claim_ok
+    assert any("claim_status" in item for item in claim_errors)
     assert not tampered_ok
     assert any("analyzer identity mismatch" in item for item in tampered_errors)
     assert manifest["status"] == "VERIFIED"
@@ -376,6 +404,34 @@ def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
     report = (out / "report.md").read_text(encoding="utf-8")
     assert "MCS zero-rate holds" in report
     assert "saturated directed ISL links" in report
+
+
+def test_v2_analysis_rejects_legacy_receipt_without_explicit_internal_mode(
+        tmp_path):
+    root, experiment, auth_path, row = _single_run_analysis_fixture(tmp_path)
+    result_dir = root / "CODE" / "Results" / row["run_id"]
+    receipt_path = result_dir / "receipt.json"
+    governed_path = result_dir / "governance_receipt.json"
+    formal_path = result_dir / "formal_run.json"
+    receipt_doc = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt_doc["schema"] = v2_analysis.receipt_mod.LEGACY_RECEIPT_SCHEMA_V4
+    _write(receipt_path, receipt_doc)
+    receipt_sha = v2_analysis.file_sha256(receipt_path)
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    governed["schema"] = v2_analysis.GOVERNANCE_SCHEMA_V1
+    governed["run_receipt_sha256"] = receipt_sha
+    _write(governed_path, governed)
+    formal = json.loads(formal_path.read_text(encoding="utf-8"))
+    formal["receipt_sha256"] = receipt_sha
+    _write(formal_path, formal)
+    auth = json.loads(auth_path.read_text(encoding="utf-8"))
+    with mock.patch.object(v2_analysis.authorize_experiment,
+                           "verify_authorization", return_value=auth), \
+            mock.patch.object(v2_analysis.receipt_mod, "verify_receipt_dir",
+                              return_value=[]):
+        with pytest.raises(v2_analysis.V2AnalysisError,
+                           match="external-witness mode requires current"):
+            v2_analysis.analyze(root, experiment, auth_path)
 
 
 def test_v2_analysis_rejects_authorized_cell_identity_mismatch(tmp_path):
