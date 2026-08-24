@@ -1,0 +1,123 @@
+新 commit 与本地 worktree 不同，我将从 GitHub 按固定 commit 读取合同允许的四个文件。四个文件已在固定 commit `b46208bc` 上取得逐字内容。结论先行：三个生产文件与上一轮审过的 `4568e3bc` 内容逐行一致，唯一实质变化是回归测试的改写。以下为独立审查报告。
+
+# Final commit b46208bc 独立审查报告
+
+## 1. 生产行为是否仍是已审过的一行激活修复
+
+逐字比对本 commit 的三个生产文件与上一轮（`4568e3bc`）审过的内容：
+
+- `run-remote.sh`：`tmux_script` heredoc（L163-169，激活 L166）与 `remote_command` heredoc（L170-183，`set -euo pipefail` L171 → 激活 L176 → prepare L177 → fail L179）与上轮完全一致；nonce/哈希绑定段（L83-114）、ssh 下发（L184）未变。
+- `common.sh`：`REMOTE_ENV_ACTIVATE` 强制非空（L33）、`REMOTE_PYTHON` 缺省 `python3`（L46）、路径白名单（L35-60）未变。
+- `remote_job.py`：`prepare_launch` 失败写状态返回 2（L461-471）、`fail_launch` nonce+session 校验（L476-492）、远端授权/部署/身份重算（L366-375、L403-413、L427、L533）未变。
+
+生产行为保持上一轮通过的一行激活语义。注意：此为逐字内容比对，非 `git diff` 字节级证明（见 open_items）。
+
+## 2. 三条路径执行顺序（本 commit 现状）
+
+- **prepare**：远端 `bash -lc` 执行 `remote_command`：`set -euo pipefail`（L171）→ `cd`/`mkdir`/守卫（L172-175）→ `$REMOTE_ENV_ACTIVATE`（L176）→ prepare（L177）。激活失败则 set -e 中止、prepare 不执行、ssh 非零退出，fail-loud。
+- **tmux child**：`tmux_script` 内 `cd`（L164）→ `set -euo pipefail`（L165）→ 激活（L166）→ run（L167）。与 prepare 用同一 `$REMOTE_ENV_ACTIVATE` 与 `$q_python`。
+- **fail**：与 prepare 同属 `remote_command` shell（L179），位于激活之后，自动继承已激活环境；`|| true` 不掩盖 exit 2（L180）。
+
+## 3. 修订后回归测试评估
+
+新测试文件（44 行）相对上轮的改动：
+
+- 新增 `_active_lines`（L15-17）：丢弃空行与 `#` 开头的注释行，再做**列表元素精确相等**的 `index()`/`count()` 查找。
+- `test_remote_prepare_and_fail_use_the_activated_formal_environment`（L20-31）：断言 `remote_command` 中激活恰好出现 1 次且 `activation < prepare < fail`。
+- `test_tmux_child_uses_the_activated_formal_environment`（L34-44）：断言 `tmux_script` 中激活恰好 1 次且 `set -euo pipefail < activation < run`。
+
+针对合同三点逐项核验：
+
+- **拒绝注释掉的激活文本**：成立。`# $REMOTE_ENV_ACTIVATE` 被 `_active_lines` 过滤（L16-17），`index("$REMOTE_ENV_ACTIVATE")` 抛 ValueError → 测试红。且因是精确元素匹配，`echo $REMOTE_ENV_ACTIVATE`、`: $REMOTE_ENV_ACTIVATE`、`$REMOTE_ENV_ACTIVATE  # comment` 这类"出现但语义无效"的行同样不等于目标元素 → 测试红。比上轮子串匹配严格得多。
+- **覆盖 prepare/fail/tmux child 顺序**：成立（L31、L44）。
+- **对事故场景的针对性**：事故根因是 remote_command 缺激活导致 prepare 用系统 python。激活行缺失、被注释、被移到 prepare 之后、被复制两份，四种退化和修复前状态全部变红。
+
+## 4. 残留缺口（均非阻断）
+
+- **G1**：`remote_command` 侧未断言 `set -euo pipefail < activation`（tmux 侧有，L38/L44；remote_command 侧只查 activation < prepare < fail，L24-31）。若有人把激活移到 `remote_command` 的 `set -euo pipefail`（L171）之前，测试仍绿，但激活失败将不再触发 set -e 中止，prepare 会以系统 python 继续——退化为事故的静默形态。当前源码顺序正确（L171 < L176），属测试覆盖缺口而非代码缺陷。
+- **G2**：仍是静态文本顺序断言，不验证激活的语义效果；`remote.env` 中 `REMOTE_ENV_ACTIVATE=true` 这类非空无效配置可全部通过（`common.sh:33` 只强制非空）。受信配置面，非代码缺陷。
+- **G3**：激活失败时不产生 nonce 状态回执（prepare 未运行），监控按 nonce 查不到状态而非误读旧 success；与既有 pre-prepare 失败（mkdir/pgrep/has-session）行为一致，非新增。
+
+## 5. 结论
+
+**PASS_WITH_LIMITS**。生产文件保持已审的一行激活语义；修订后的回归测试确实拒绝注释激活、覆盖 prepare/fail/tmux child 三路径顺序，且精确元素匹配堵住了多种"文本在但无效"的退化。无阻断项；G1 建议补一条 `set -euo pipefail < activation` 的 remote_command 侧断言。
+
+---
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:REMOTE_ENV_FIX_REVIEW:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "PASS_WITH_LIMITS。逐字比对确认 b46208bc 的 run-remote.sh、common.sh、remote_job.py 与上轮已审的 4568e3bc 内容逐行一致，生产行为仍是一行激活修复：remote_command 中 set -euo pipefail（L171）→ $REMOTE_ENV_ACTIVATE（L176）→ prepare（L177），fail（L179）同 shell 继承激活环境，tmux child 自激活（L166）；nonce/授权/部署/fail-closed 链路未动。修订后测试新增 _active_lines 过滤注释与空行（L15-17）并做精确元素匹配：注释掉的 '# $REMOTE_ENV_ACTIVATE' 及 echo/冒号/尾注释等无效形态均使 index() 抛错变红；两个测试分别断言 remote_command 中 activation==1 且 activation<prepare<fail（L20-31）、tmux_script 中 set -euo pipefail<activation<run（L34-44），对系统 python 事故的缺失/注释/乱序/重复四种退化全部敏感。无阻断项；残留非阻断缺口：remote_command 侧未断言 set -euo pipefail<activation（挪前会使激活失败静默化为事故形态）、无语义级验证、激活失败无 nonce 回执（与既有 pre-prepare 失败一致）。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "生产行为与上轮已审 commit 一致：remote_command 保持 set -euo pipefail（L171）→ 激活（L176）→ prepare（L177）→ fail（L179）顺序，tmux child 保持 cd→set -e→激活（L166）→run（L167）；nonce 绑定、授权重算、部署核验、fail_launch 的 nonce+session 校验均未变。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/run-remote.sh#L163-L184",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/run-remote.sh#L83-L114",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/remote_job.py#L461-L492",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/common.sh#L33-L46"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "修订后测试确实拒绝注释激活文本：_active_lines 过滤空行与 # 开头行（L16-17），且 index/count 是列表精确元素匹配，因此注释激活、echo/冒号包裹、行尾注释等'文本在但语义无效'形态全部使测试失败；同时断言激活恰好出现 1 次。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L15-L17",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L24-L31",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L39-L44"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "三路径顺序覆盖完整：remote_command 侧断言 activation<prepare<fail（L24-31），tmux child 侧断言 set -euo pipefail<activation<run（L38-44）；对系统 python 事故的缺失/注释/乱序/重复四种退化均能变红。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L20-L44",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/run-remote.sh#L170-L181"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "summary": "覆盖缺口：remote_command 侧未断言 set -euo pipefail 位于激活之前（tmux 侧有此断言）。若激活被移到 remote_command 的 set -euo pipefail（run-remote.sh L171）之前，测试仍绿，但激活失败将不再中止，prepare 会以未激活环境继续——退化为事故的静默形态。当前源码顺序正确（L171<L176），仅为测试缺口。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L20-L31",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L38-L44",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/run-remote.sh#L170-L177"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "测试仍为静态文本顺序断言：不验证激活的语义效果，remote.env 中 REMOTE_ENV_ACTIVATE=true 这类非空无效配置可全部通过（common.sh:33 仅强制非空）；受信配置面，非代码缺陷。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L15-L17",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/common.sh#L33"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "本地 Agent 运行 git diff 4568e3bc..b46208bc 确认生产三文件零字节变化、delta 仅测试文件（本端禁 shell，生产文件一致性为逐字内容比对而非 git 级证明）",
+    "本地运行 CODE/experiment_platform/tests/test_remote_launcher_environment.py 并做一次变异验证：把激活行注释掉、移到 prepare 后、复制一份，确认三种变异均使测试红",
+    "可选增强（非阻断）：在 remote_command 侧补 strict_shell<activation 断言，与 tmux 侧对齐"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/run-remote.sh#L163-L184",
+    "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/run-remote.sh#L83-L114",
+    "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/common.sh#L20-L61",
+    "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/remote_job.py#L416-L492",
+    "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L1-L44"
+  ],
+  "open_items": [
+    "合同禁止本地 shell，无法执行 git diff 做字节级 delta 证明；生产三文件'与上轮一致'的结论基于 FetchURL 逐字内容比对，理论上不能排除不可见字节（如行尾空白）差异，需本地 Agent 补验",
+    "无法执行测试：测试在本 commit 下实际通过、以及变异（注释/乱序/重复激活）时实际变红，均为基于语义的推理而非运行结果，需本地 Agent 实跑确认",
+    "REMOTE_ENV_ACTIVATE 实际取值属 remote.env 私密配置不可见；激活的语义效果（venv 确实优先于系统 python）无法在远端验证，最终验收权属本地 Agent"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
