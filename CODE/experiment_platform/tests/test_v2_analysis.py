@@ -13,6 +13,21 @@ from CODE.leo_sim import kernel, receipt, trace
 from CODE.leo_sim.tests.helpers import StaticGeometry, cell, make_cfg, row
 
 
+_REAL_ANALYZER_IDENTITY = v2_analysis._analyzer_identity
+
+
+@pytest.fixture(autouse=True)
+def _stable_analyzer_identity(monkeypatch):
+    identity = {
+        "git_commit": "a" * 40,
+        "files": {
+            "CODE/experiment_platform/v2_analysis.py": "b" * 64,
+            "CODE/leo_sim/metrics.py": "c" * 64,
+        },
+    }
+    monkeypatch.setattr(v2_analysis, "_analyzer_identity", lambda: identity)
+
+
 def _write(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n",
@@ -35,6 +50,31 @@ def _write_external_witness(root: Path, run_id: str, governed: dict,
     }
     _write(root / "CODE" / "Results" / "_external_launch_witness" / f"{run_id}.json",
            witness)
+
+
+def test_analyzer_identity_binds_clean_full_commit_and_files(monkeypatch):
+    responses = [
+        mock.Mock(stdout="1" * 40 + "\n"),
+        mock.Mock(stdout=""),
+    ]
+    monkeypatch.setattr(v2_analysis.subprocess, "run",
+                        mock.Mock(side_effect=responses))
+    identity = _REAL_ANALYZER_IDENTITY()
+    assert identity["git_commit"] == "1" * 40
+    assert set(identity["files"]) == set(v2_analysis.ANALYZER_FILES)
+    assert all(len(value) == 64 for value in identity["files"].values())
+
+
+def test_analyzer_identity_rejects_dirty_analysis_files(monkeypatch):
+    responses = [
+        mock.Mock(stdout="1" * 40 + "\n"),
+        mock.Mock(stdout=" M CODE/experiment_platform/v2_analysis.py\n"),
+    ]
+    monkeypatch.setattr(v2_analysis.subprocess, "run",
+                        mock.Mock(side_effect=responses))
+    with pytest.raises(v2_analysis.V2AnalysisError,
+                       match="differ from the bound Git commit"):
+        _REAL_ANALYZER_IDENTITY()
 
 
 def _run_fixture(root: Path, run_id: str, arm_id: str, pair: str) -> dict:
@@ -86,8 +126,19 @@ def _run_fixture(root: Path, run_id: str, arm_id: str, pair: str) -> dict:
     governed = json.loads((out / "governance_receipt.json").read_text(encoding="utf-8"))
     _write_external_witness(root, run_id, governed,
                             authorization_sha256=auth_sha)
-    return {"run_id": run_id, "arm_id": arm_id, "pairing_key": pair,
-            "config_sha256": receipt_payload["config_sha256"]}
+    return {
+        "run_id": run_id,
+        "runtime_kind": "leo_sim_v2",
+        "arm_id": arm_id,
+        "phase": "non_learning",
+        "pairing_key": pair,
+        "trace_seed": receipt_payload["seed"],
+        "config_sha256": receipt_payload["config_sha256"],
+        "trace_identity_sha256": receipt_payload["trace_identity_sha256"],
+        "input_sha256": manifest["input_sha256"],
+        "code_sha256": receipt_payload["code_sha256"],
+        "controlled_signature": "c" * 64,
+    }
 
 
 def test_primary_metric_is_derived_from_v2_receipt_and_ledgers():
@@ -162,13 +213,17 @@ def test_isl_utilization_metrics_fail_loud_without_isl_links():
 def test_planned_contrasts_scope_each_contrast_to_its_own_pairing_key():
     results = [
         {"pairing_key": "load-50", "arm_id": "low_control",
-         "primary_metric": 0.40},
+         "primary_metric": 0.40, "trace_sha256": "a" * 64,
+         "trace_identity_sha256": "b" * 64, "seed": 7},
         {"pairing_key": "load-50", "arm_id": "low_copy",
-         "primary_metric": 0.45},
+         "primary_metric": 0.45, "trace_sha256": "a" * 64,
+         "trace_identity_sha256": "b" * 64, "seed": 7},
         {"pairing_key": "load-100", "arm_id": "medium_control",
-         "primary_metric": 0.50},
+         "primary_metric": 0.50, "trace_sha256": "d" * 64,
+         "trace_identity_sha256": "e" * 64, "seed": 8},
         {"pairing_key": "load-100", "arm_id": "medium_copy",
-         "primary_metric": 0.55},
+         "primary_metric": 0.55, "trace_sha256": "d" * 64,
+         "trace_identity_sha256": "e" * 64, "seed": 8},
     ]
     contrasts = [
         {"name": "low_copy_minus_low_control", "left_arm": "low_copy",
@@ -180,6 +235,65 @@ def test_planned_contrasts_scope_each_contrast_to_its_own_pairing_key():
         results, contrasts, "delivery_rate")
     assert [item["n_pairs"] for item in output] == [1, 1]
     assert [item["mean_difference"] for item in output] == pytest.approx([0.05, 0.05])
+
+
+def test_planned_contrast_rejects_actual_trace_mismatch():
+    results = [
+        {"pairing_key": "pair-1", "arm_id": "left",
+         "primary_metric": 0.4, "trace_sha256": "a" * 64,
+         "trace_identity_sha256": "b" * 64, "seed": 7},
+        {"pairing_key": "pair-1", "arm_id": "right",
+         "primary_metric": 0.5, "trace_sha256": "c" * 64,
+         "trace_identity_sha256": "b" * 64, "seed": 7},
+    ]
+    with pytest.raises(v2_analysis.V2AnalysisError,
+                       match="actual trace_sha256 mismatch"):
+        v2_analysis._compute_planned_contrasts(
+            results,
+            [{"name": "left_minus_right", "left_arm": "left",
+              "right_arm": "right"}],
+            "delivery_rate")
+
+
+def test_run_diagnostics_rejects_zero_rate_holds():
+    ledgers = {
+        "mechanism_counters": {
+            "mcs_rate_samples": 2,
+            "mcs_zero_rate_holds": 1,
+            "mcs_rate_min_bps": 10,
+            "mcs_rate_max_bps": 20,
+        },
+        "control_counters": {},
+        "congestion_metrics": {"links": {}},
+    }
+    with pytest.raises(v2_analysis.V2AnalysisError,
+                       match="zero-rate hold"):
+        v2_analysis._run_diagnostics(ledgers)
+
+
+def test_run_diagnostics_preserves_raw_isl_denominator_and_saturation():
+    ledgers = {
+        "mechanism_counters": {
+            "mcs_rate_samples": 2,
+            "mcs_zero_rate_holds": 0,
+            "mcs_rate_min_bps": 10,
+            "mcs_rate_max_bps": 20,
+        },
+        "control_counters": {"registered": 3, "transmission_completed": 2},
+        "congestion_metrics": {"links": {
+            "isl:0:1": {
+                "stage": "isl", "served_bits": 100.0,
+                "available_capacity_bits": 100.0, "utilization": 1.0,
+                "available_samples": 2, "service_windows": 1,
+            },
+        }},
+    }
+    diagnostics = v2_analysis._run_diagnostics(ledgers)
+    assert diagnostics["mcs"]["zero_rate_holds"] == 0
+    assert diagnostics["control"]["registered"] == 3
+    assert diagnostics["isl"]["saturated_link_ids"] == ["isl:0:1"]
+    assert diagnostics["isl"]["links"]["isl:0:1"]["served_bits"] == 100.0
+    assert diagnostics["isl"]["links"]["isl:0:1"]["available_capacity_bits"] == 100.0
 
 
 def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
@@ -229,18 +343,50 @@ def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
         _write(governed_path, governed)
         _write_external_witness(root, row["run_id"], governed,
                                 authorization_sha256=auth_sha)
+    analyzer = {
+        "git_commit": "d" * 40,
+        "files": {
+            "CODE/experiment_platform/v2_analysis.py": "e" * 64,
+            "CODE/leo_sim/metrics.py": "f" * 64,
+        },
+    }
     with mock.patch.object(v2_analysis.authorize_experiment,
-                           "verify_authorization", return_value=auth):
+                           "verify_authorization", return_value=auth), \
+            mock.patch.object(v2_analysis, "_analyzer_identity",
+                              return_value=analyzer, create=True):
         manifest = v2_analysis.analyze(root, experiment, auth_path)
         out = root / "ANALYSIS" / "EXP-V2-ANALYSIS"
         v2_analysis.write_outputs(root, out, manifest)
         ok, errors = v2_analysis.verify_persisted_analysis(
             root, out / "analysis-manifest.json")
+        persisted_path = out / "analysis-manifest.json"
+        tampered = json.loads(persisted_path.read_text(encoding="utf-8"))
+        tampered["analyzer"]["git_commit"] = "0" * 40
+        _write(persisted_path, tampered)
+        tampered_ok, tampered_errors = v2_analysis.verify_persisted_analysis(
+            root, persisted_path)
     assert ok, errors
+    assert not tampered_ok
+    assert any("analyzer identity mismatch" in item for item in tampered_errors)
     assert manifest["status"] == "VERIFIED"
+    assert manifest["analyzer"] == analyzer
     assert manifest["claim_status"] == "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
     assert manifest["planned_contrasts"][0]["n_pairs"] == 1
     assert json.loads((out / "claim-gate.json").read_text())["status"] == manifest["claim_status"]
+    report = (out / "report.md").read_text(encoding="utf-8")
+    assert "MCS zero-rate holds" in report
+    assert "saturated directed ISL links" in report
+
+
+def test_v2_analysis_rejects_authorized_cell_identity_mismatch(tmp_path):
+    root, experiment, auth_path, row = _single_run_analysis_fixture(tmp_path)
+    auth = json.loads(auth_path.read_text(encoding="utf-8"))
+    auth["authorized_cells"][0]["trace_identity_sha256"] = "0" * 64
+    with mock.patch.object(v2_analysis.authorize_experiment,
+                           "verify_authorization", return_value=auth):
+        with pytest.raises(v2_analysis.V2AnalysisError,
+                           match="authorized cell identity mismatch"):
+            v2_analysis.analyze(root, experiment, auth_path)
 
 
 def test_v2_analysis_rejects_governance_witness_contract_mismatch(tmp_path):

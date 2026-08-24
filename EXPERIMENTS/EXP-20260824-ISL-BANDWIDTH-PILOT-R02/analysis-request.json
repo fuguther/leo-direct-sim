@@ -1,0 +1,84 @@
+{
+  "analysis": {
+    "analysis_id": "AN-ISL-BANDWIDTH-PILOT-R02",
+    "estimand": "paired descriptive difference in maximum directed-ISL link utilization between 50 MHz and 500 MHz ISL RF bandwidth under one fixed seed, trace identity, routing policy, topology and access contract; each link ratio aggregates served bits and sampled available-capacity bits over the run horizon",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "paired descriptive sensitivity of maximum horizon-aggregate directed-ISL link utilization; not a causal algorithm or paper-facing effect claim",
+        "left_arm": "b50",
+        "name": "b50_minus_b500",
+        "right_arm": "b500"
+      }
+    ],
+    "primary_metric": "isl_link_utilization_max"
+  },
+  "claim_boundary": {
+    "can_claim": [
+      "the two declared cells execute with the same trace seed, trace identity, deterministic hop routing, topology, access, demand and stopping contract",
+      "the only declared mechanism intervention is links.rf_isl.bandwidth_hz",
+      "natural-end, conservation, packet-fate, directional service, available-capacity, queue and receipt records can be recomputed for an engineering bandwidth-sensitivity diagnosis",
+      "a valid paired result can compare the maximum horizon-aggregate directed-ISL link utilization at 50 MHz and 500 MHz within this one fixed scenario; raw receipt and ledger records are retained for optional recomputation of ISL utilization mean, hotspot continuity, queue area and delivery diagnostics",
+      "the persisted analysis reports analyzer Git/file identity, actual cross-cell trace equality, MCS diagnostics, control counters, per-directed-ISL numerator and denominator values, and saturation flags"
+    ],
+    "cannot_claim": [
+      "algorithm superiority or a causal information-value effect",
+      "a universal or final low, onset or pressure threshold",
+      "a pure capacity multiplier effect, because bandwidth also changes noise, SNR, MCS and control-packet service time",
+      "that the matrix acceptance fields independently enforce result-validity gates; validity still requires the formal governance receipt, natural end, conservation, identity binding and external witness",
+      "paper-ready statistical evidence, Q0 optimality or a final experiment freeze",
+      "execution authorization before independent review, finalization, clean-main deployment and external research witness are complete",
+      "that a zero primary contrast proves no sensitivity when either arm has a saturated directed-ISL link"
+    ]
+  },
+  "experiment_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02",
+  "matrix_manifest_sha256": "ac53cb8aef1cefe32578a0a689604bb80014d7739bfe5d874d4768f64cf57a59",
+  "planned_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 0,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": false,
+        "require_data_isl": false
+      },
+      "arm_id": "b500",
+      "config_sha256": "50fa717cc16ad3c95cb49f96fd56f68e27e05a347ef9423525c1573ae4d0ea70",
+      "controlled_signature": "d6d9cac717206bfd5ef4d295c1addb322708fb7f03e9d953dc72ec3af725807f",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "bandwidth-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b500-s7",
+      "trace_identity_sha256": "effb467639ce8d0b73f60cde249eb6a792ec890b21d3e4e91ffee84143577309",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 0,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": false,
+        "require_data_isl": false
+      },
+      "arm_id": "b50",
+      "config_sha256": "a4292871aadc44b845544cf497f67fa0ae70a09a47663247c7f0144204f2b734",
+      "controlled_signature": "d6d9cac717206bfd5ef4d295c1addb322708fb7f03e9d953dc72ec3af725807f",
+      "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
+      "learning_seed": null,
+      "pairing_key": "bandwidth-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b50-s7",
+      "trace_identity_sha256": "effb467639ce8d0b73f60cde249eb6a792ec890b21d3e4e91ffee84143577309",
+      "trace_seed": 7
+    }
+  ],
+  "planned_run_ids": [
+    "EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b500-s7",
+    "EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b50-s7"
+  ],
+  "request_sha256": "b2d013ed20425dd4d853aa7a08d812ba5da0fc71a39aac2e9deeb14e305b712d",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-matrix-analysis-request/v1",
+  "status": "WAITING_FOR_VERIFIED_RUNS"
+}

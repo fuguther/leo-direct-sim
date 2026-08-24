@@ -1,0 +1,53 @@
+{
+  "schema": "isl-bandwidth-pre-fix-review-history/v1",
+  "work_id": "WP-LEO-V2-ISL-BANDWIDTH-PILOT",
+  "revision": 2,
+  "reviewed_revision": 1,
+  "reviewed_git_commit": "2f4848a42db503d0b12e577e6307309a06b97232",
+  "authorization_state_at_review": "NOT_AUTHORIZED",
+  "reviews": [
+    {
+      "reviewer": "codex-adversarial-agent",
+      "verdict": "BLOCK",
+      "blocking_findings": [
+        "persisted analysis did not bind the analyzer Git commit or analyzer file hashes",
+        "paired analysis did not require equal actual trace_sha256 values",
+        "result artifacts were not completely compared with the authorized matrix row",
+        "mcs_zero_rate_holds was not an explicit analysis stop gate"
+      ]
+    },
+    {
+      "reviewer": "kimi_acp",
+      "operation_id": "offload-operation:534d63d78c292dc00582367592738cea",
+      "result_class": "RESULT_CANDIDATE",
+      "verdict": "BLOCK",
+      "blocking_findings": [
+        "persisted analysis did not bind the analyzer Git commit or analyzer file hashes",
+        "paired analysis did not require equal actual trace_sha256 values"
+      ],
+      "major_findings": [
+        "a saturated utilization value needs an explicit diagnostic flag",
+        "pre-fix BLOCK reviews must remain visible rather than being silently replaced by later PASS receipts"
+      ]
+    }
+  ],
+  "codex_adjudication": {
+    "confirmed": [
+      "analyzer identity binding was absent",
+      "actual cross-cell trace equality was absent",
+      "authorized-row identity checks were incomplete",
+      "zero-rate holds were not an explicit stop gate",
+      "saturation and raw per-link numerator/denominator diagnostics were absent"
+    ],
+    "rejected_or_narrowed": [
+      "Kimi described ISL served_bits as including control traffic; kernel.py records service windows only for DataPacket, so control traffic is excluded from the numerator and is reported separately",
+      "a repository-wide review-receipt registry is a broader governance change; this revision instead preserves both BLOCK reviews in this bound history artifact"
+    ]
+  },
+  "resolution_status": "IMPLEMENTED_AWAITING_INDEPENDENT_REREVIEW",
+  "required_rereview_roles": [
+    "cold_start",
+    "satellite_drl",
+    "adversarial"
+  ]
+}

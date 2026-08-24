@@ -15,6 +15,8 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +37,11 @@ GOVERNANCE_WITNESS_FIELDS = (
     "trace_identity_contract", "trace_manifest_sha256",
 )
 REMOTE_RESULTS_ROOT = Path("/data/论文/leo-direct-sim/CODE/Results")
+ANALYZER_FILES = (
+    "CODE/experiment_platform/v2_analysis.py",
+    "CODE/leo_sim/metrics.py",
+)
+GIT_COMMIT = re.compile(r"^[0-9a-f]{40}$")
 
 
 class V2AnalysisError(ValueError):
@@ -53,6 +60,34 @@ def canonical_sha(value: Any) -> str:
     raw = json.dumps(value, ensure_ascii=False, sort_keys=True,
                      separators=(",", ":"))
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _analyzer_identity() -> dict[str, Any]:
+    """Bind analysis semantics to one clean Git commit and exact files."""
+    repository = Path(__file__).resolve().parents[2]
+    try:
+        commit = subprocess.run(
+            ["git", "-C", str(repository), "rev-parse", "HEAD"],
+            check=True, capture_output=True, text=True,
+        ).stdout.strip().lower()
+        status = subprocess.run(
+            ["git", "-C", str(repository), "status", "--porcelain", "--",
+             *ANALYZER_FILES],
+            check=True, capture_output=True, text=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise V2AnalysisError(f"cannot resolve analyzer Git identity: {exc}") from exc
+    if not GIT_COMMIT.fullmatch(commit):
+        raise V2AnalysisError("analyzer Git commit is not an exact full SHA")
+    if status:
+        raise V2AnalysisError("analyzer files differ from the bound Git commit")
+    files = {}
+    for raw in ANALYZER_FILES:
+        path = repository / raw
+        if path.is_symlink() or not path.is_file():
+            raise V2AnalysisError(f"analyzer file is missing or symbolic: {raw}")
+        files[raw] = file_sha256(path)
+    return {"git_commit": commit, "files": files}
 
 
 def _read_json(path: Path) -> Any:
@@ -188,6 +223,73 @@ def _metric_from_result(receipt: dict[str, Any], ledgers: dict[str, Any],
     raise V2AnalysisError(f"unsupported V2 primary metric: {primary}")
 
 
+def _run_diagnostics(ledgers: dict[str, Any]) -> dict[str, Any]:
+    """Preserve mechanism and raw ISL denominator evidence for interpretation."""
+    counters = ledgers.get("mechanism_counters")
+    control = ledgers.get("control_counters")
+    congestion = ledgers.get("congestion_metrics")
+    if not isinstance(counters, dict):
+        raise V2AnalysisError("ledgers.mechanism_counters is missing")
+    if not isinstance(control, dict):
+        raise V2AnalysisError("ledgers.control_counters is missing")
+    if not isinstance(congestion, dict) or not isinstance(congestion.get("links"), dict):
+        raise V2AnalysisError("ledgers.congestion_metrics.links is missing")
+    zero_rate_holds = counters.get("mcs_zero_rate_holds")
+    if isinstance(zero_rate_holds, bool) or not isinstance(zero_rate_holds, int) \
+            or zero_rate_holds < 0:
+        raise V2AnalysisError("mcs_zero_rate_holds must be a non-negative integer")
+    if zero_rate_holds:
+        raise V2AnalysisError("zero-rate hold makes the analysis ineligible")
+    mcs = {
+        "rate_samples": counters.get("mcs_rate_samples"),
+        "zero_rate_holds": zero_rate_holds,
+        "rate_min_bps": counters.get("mcs_rate_min_bps"),
+        "rate_max_bps": counters.get("mcs_rate_max_bps"),
+    }
+    links: dict[str, dict[str, Any]] = {}
+    saturated: list[str] = []
+    for link_id, item in sorted(congestion["links"].items()):
+        if not isinstance(item, dict) or item.get("stage") != "isl":
+            continue
+        values = {
+            "served_bits": _finite(item.get("served_bits"),
+                                    f"{link_id}.served_bits"),
+            "available_capacity_bits": _finite(
+                item.get("available_capacity_bits"),
+                f"{link_id}.available_capacity_bits"),
+            "utilization": _finite(item.get("utilization"),
+                                   f"{link_id}.utilization"),
+            "available_samples": item.get("available_samples"),
+            "service_windows": item.get("service_windows"),
+        }
+        links[link_id] = values
+        if values["utilization"] >= 1.0 - 1e-12:
+            saturated.append(link_id)
+    return {
+        "mcs": mcs,
+        "control": dict(sorted(control.items())),
+        "isl": {
+            "link_count": len(links),
+            "saturated_link_ids": saturated,
+            "links": links,
+        },
+    }
+
+
+def _verify_authorized_cell(row: dict[str, Any],
+                            authorized: dict[str, Any]) -> None:
+    fields = (
+        "run_id", "runtime_kind", "arm_id", "phase", "trace_seed",
+        "pairing_key", "config_sha256", "trace_identity_sha256",
+        "input_sha256", "code_sha256", "controlled_signature",
+    )
+    changed = [key for key in fields if row.get(key) != authorized.get(key)]
+    if changed:
+        raise V2AnalysisError(
+            f"{row.get('run_id')} authorized cell identity mismatch: "
+            + ", ".join(changed))
+
+
 def _verify_result(root: Path, results_root: Path, witness_root: Path,
                    row: dict[str, Any], authorized: dict[str, Any],
                    primary: str) -> dict[str, Any]:
@@ -207,13 +309,17 @@ def _verify_result(root: Path, results_root: Path, witness_root: Path,
     governed = docs["governance_receipt.json"]
     receipt = docs["receipt.json"]
     ledgers = docs["ledgers.json"]
+    _verify_authorized_cell(row, authorized)
     if not isinstance(formal, dict) or formal.get("schema") != "leo-sim-formal-run/v1":
         raise V2AnalysisError(f"{run_id} formal witness schema mismatch")
     if any(formal.get(key) != expected for key, expected in {
             "run_id": run_id,
             "config_sha256": authorized.get("config_sha256"),
-            "authorization_sha256": authorized.get("authorization_sha256", formal.get("authorization_sha256")),
-    }.items() if expected is not None):
+            "code_sha256": authorized.get("code_sha256"),
+            "authorization_sha256": authorized.get("authorization_sha256"),
+            "natural_end": True,
+            "conservation_ok": True,
+    }.items()):
         raise V2AnalysisError(f"{run_id} formal witness identity mismatch")
     if not isinstance(governed, dict):
         raise V2AnalysisError(f"{run_id} governance receipt schema mismatch")
@@ -232,14 +338,28 @@ def _verify_result(root: Path, results_root: Path, witness_root: Path,
     if governed.get("run_id") != run_id or governed.get("research_eligible") is not True \
             or governed.get("verification_errors") != []:
         raise V2AnalysisError(f"{run_id} governance receipt is not eligible")
-    if governed.get("authorization_sha256") not in (None, authorized.get("authorization_sha256")):
+    if governed.get("authorization_sha256") != authorized.get("authorization_sha256"):
         raise V2AnalysisError(f"{run_id} governance authorization hash mismatch")
     receipt_sha = file_sha256(paths["receipt.json"])
     if governed.get("run_receipt_sha256") != receipt_sha \
             or formal.get("receipt_sha256") != receipt_sha:
         raise V2AnalysisError(f"{run_id} receipt hash is not bound by witnesses")
-    if receipt.get("config_sha256") != authorized.get("config_sha256"):
-        raise V2AnalysisError(f"{run_id} receipt config hash mismatch")
+    manifest_doc = docs["manifest.json"]
+    result_identity = {
+        "config_sha256": receipt.get("config_sha256"),
+        "trace_identity_sha256": receipt.get("trace_identity_sha256"),
+        "input_sha256": manifest_doc.get("input_sha256"),
+        "trace_seed": receipt.get("seed"),
+        "code_sha256": receipt.get("code_sha256"),
+    }
+    identity_mismatches = [
+        key for key, actual in result_identity.items()
+        if actual != authorized.get(key)
+    ]
+    if identity_mismatches:
+        raise V2AnalysisError(
+            f"{run_id} result identity mismatch: "
+            + ", ".join(identity_mismatches))
     if expected_governance_schema == GOVERNANCE_SCHEMA_V2:
         expected_binding = {
             "receipt_schema": receipt_mod.RECEIPT_SCHEMA,
@@ -256,6 +376,7 @@ def _verify_result(root: Path, results_root: Path, witness_root: Path,
             governed=governed, paths=paths, authorized=authorized)
     else:
         external_witness = None
+    diagnostics = _run_diagnostics(ledgers)
     metric = _metric_from_result(receipt, ledgers, primary)
     artifacts = [{
         "path": str(path.relative_to(root)),
@@ -273,7 +394,13 @@ def _verify_result(root: Path, results_root: Path, witness_root: Path,
         "pairing_key": row.get("pairing_key"),
         "seed": row.get("trace_seed"),
         "config_sha256": receipt.get("config_sha256"),
+        "trace_sha256": receipt.get("trace_sha256"),
+        "trace_identity_sha256": receipt.get("trace_identity_sha256"),
+        "input_sha256": manifest_doc.get("input_sha256"),
+        "code_sha256": receipt.get("code_sha256"),
+        "controlled_signature": authorized.get("controlled_signature"),
         "primary_metric": metric,
+        "diagnostics": diagnostics,
         "result_path": str(result_dir.relative_to(root)),
         "evidence_class": ("v2_external_witness" if external_witness is not None
                             else "legacy_v3_v4_internal_only"),
@@ -305,6 +432,14 @@ def _compute_planned_contrasts(
                 raise V2AnalysisError(
                     f"contrast {contrast.get('name')} missing arm at pair {pair_key}")
             if has_left:
+                for field in ("trace_sha256", "trace_identity_sha256",
+                              "input_sha256", "seed", "code_sha256",
+                              "controlled_signature"):
+                    if pair[left].get(field) != pair[right].get(field):
+                        label = ("actual trace_sha256 mismatch" if field == "trace_sha256"
+                                 else f"paired identity mismatch: {field}")
+                        raise V2AnalysisError(
+                            f"contrast {contrast.get('name')} {label} at pair {pair_key}")
                 diffs.append(pair[left]["primary_metric"] -
                              pair[right]["primary_metric"])
         if not diffs:
@@ -366,6 +501,7 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
     primary = analysis_request.get("analysis", {}).get("primary_metric")
     if not isinstance(primary, str) or not primary:
         raise V2AnalysisError("V2 primary metric is missing")
+    analyzer = _analyzer_identity()
     results = [
         _verify_result(root, results_root, external_witness_root, cell,
                        auth_by_id[cell["run_id"]], primary)
@@ -397,6 +533,7 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
         "claim_boundary": request.get("claim_boundary", {}),
         "inputs": inputs,
         "authorization_sha256": authorization_sha256,
+        "analyzer": analyzer,
         "experiment_dir": str(experiment_dir.relative_to(root)),
         "authorization_path": str(Path(authorization_path).resolve().relative_to(root)),
         "results_root": str(results_root.relative_to(root)),
@@ -427,9 +564,28 @@ def write_outputs(root: Path, out_dir: Path, manifest: dict[str, Any]) -> dict[s
         f"- status: `{manifest['status']}`",
         f"- primary metric: `{manifest['primary_metric']}`",
         f"- verified runs: `{len(manifest['verified_run_ids'])}`", "",
+        "## Run diagnostics", "",
+    ]
+    for result in manifest["run_results"]:
+        diagnostics = result["diagnostics"]
+        mcs = diagnostics["mcs"]
+        control = diagnostics["control"]
+        isl = diagnostics["isl"]
+        saturated = ", ".join(isl["saturated_link_ids"]) or "none"
+        report.extend([
+            f"### {result['run_id']}", "",
+            f"- MCS samples: `{mcs['rate_samples']}`; MCS zero-rate holds: "
+            f"`{mcs['zero_rate_holds']}`; rate range: "
+            f"`{mcs['rate_min_bps']}`–`{mcs['rate_max_bps']}` bps",
+            f"- control registered/completed: `{control.get('registered')}`/"
+            f"`{control.get('transmission_completed')}`",
+            f"- directed ISL links: `{isl['link_count']}`; "
+            f"saturated directed ISL links: `{saturated}`", "",
+        ])
+    report.extend([
         "This output is evidence-bound analysis, not a paper claim.",
         "Independent claim-support and value-gate review remains required.",
-    ]
+    ])
     (out_dir / "report.md").write_text("\n".join(report) + "\n", encoding="utf-8")
     persisted = dict(manifest)
     persisted["output_hashes"] = {
@@ -463,6 +619,8 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
         manifest = _read_json(manifest_path)
         if manifest.get("schema") != SCHEMA or manifest.get("status") != "VERIFIED":
             raise V2AnalysisError("analysis manifest is not VERIFIED")
+        if manifest.get("analyzer") != _analyzer_identity():
+            raise V2AnalysisError("analysis manifest analyzer identity mismatch")
         for raw, digest in manifest.get("inputs", {}).items():
             path = (root / raw).resolve(strict=True)
             path.relative_to(root)
@@ -485,7 +643,7 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
         )
         for key in ("experiment_id", "primary_metric", "verified_run_ids",
                     "run_results", "planned_contrasts", "claim_boundary",
-                    "inputs", "authorization_sha256"):
+                    "inputs", "authorization_sha256", "analyzer"):
             if recomputed.get(key) != manifest.get(key):
                 raise V2AnalysisError(f"persisted analysis differs for {key}")
     except (OSError, ValueError, json.JSONDecodeError) as exc:
