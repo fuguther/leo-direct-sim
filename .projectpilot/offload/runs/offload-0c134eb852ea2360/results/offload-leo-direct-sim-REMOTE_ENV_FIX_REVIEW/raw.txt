@@ -1,0 +1,97 @@
+新 commit 不在本地 worktree，我通过 GitHub 按精确 commit 获取改动与文件内容。# 终审复核报告：远程正式环境激活修复（commit b46208bc）
+
+## 与上一轮的差异核实
+
+经 GitHub API 确认：b46208bc 的**父提交正是上一轮已审的 4568e3bc**，且本 commit 只改动两个文件——`test_remote_launcher_environment.py`（+25/−4）与 `NOTES.md`（+1/−1）。**`run-remote.sh`、`common.sh`、`remote_job.py` 三个生产文件零改动**；我同时抓取了 b46208bc 上的 `run-remote.sh` 原文，与 4568e3bc 逐行一致——激活行仍在 tmux_script L166 与 remote_command L176，三路径生产行为保持上一轮审定的"一行激活修复"语义，授权、nonce、部署回执、fail-closed 链路未触碰（run-remote.sh#L163-L184、remote_job.py#L461-L492、remote_job.py#L531-L549）。
+
+## 三路径执行顺序（生产侧，未变）
+
+- **Prepare**：`set -euo pipefail`（L171）→ `cd`（L172）→ `mkdir`（L173）→ 守卫（L174-L175）→ **激活（L176）** → prepare（L177）。激活失败即 fail-loud 中止，本地经 ssh 非零返回同步中止。
+- **Fail**：与 prepare 同一 shell、同一激活环境（L178-L181），`|| true` 仅兜底状态标记，`exit 2` 收场。
+- **tmux 子进程**：`cd`（L164）→ `set -euo pipefail`（L165）→ **激活（L166）** → run（L167）。
+
+## 加固后回归测试评估（对照 system-python 事故与上轮意见）
+
+新测试文件 44 行。上一轮我提的两条 minor 均已被针对性关闭：
+
+- **注释伪装已拒绝**：`_active_lines`（test L15-L17）先剔除空行与 `#` 开头的注释行，且后续 `list.index()`/`list.count()` 是**剥离空白后的整行精确相等**匹配——`# $REMOTE_ENV_ACTIVATE`、`echo "$REMOTE_ENV_ACTIVATE"` 等伪命中都不再计入，`index` 会直接 ValueError 使测试失败。事故机制（删除/注释/乱序 prepare 前激活）现在三种形态都会被捕获（test L20-L31）。
+- **三路径覆盖已补齐**：remote_command 侧断言 `count("$REMOTE_ENV_ACTIVATE") == 1` 且 `activation < prepare < fail`（L30-L31），fail 调用按精确串 `$q_python scripts/remote/remote_job.py $q_fail_args || true` 锚定（L27-L28）；tmux 侧新增独立测试断言 `set -euo pipefail < activation < run` 且激活唯一（L34-L44）。
+- **唯一性断言**（L30、L43）堵住了"多加一行激活文本来骗过顺序检查"的空间。
+
+**残留限制（非阻断）**：
+
+- （info）测试仍是文本结构断言而非行为执行：若激活行被包进永不执行的条件块但保留独立行外观，测试无法识别。属对抗性场景，常规回归网可接受（test L15-L17 的过滤粒度决定）。
+- （info）精确匹配是保守方向：`$REMOTE_ENV_ACTIVATE  # 说明` 这类行尾注释会造成假失败而非假通过，fail-closed，可接受。
+- （info）tmux 子脚本中 `cd`（run-remote.sh#L164）仍先于 `set -euo pipefail`（L165），新测试锚定了 set-euo 与激活的顺序但未覆盖 cd；既有问题，两轮均未引入新变化。
+
+## 结论
+
+**PASS_WITH_LIMITS**。生产行为与上一轮审定的一行激活修复完全一致（父提交即 4568e3bc，三个生产文件零 diff）；加固后的回归测试拒绝了注释伪装、锚定了整行精确匹配，并覆盖了 prepare、fail、tmux 子进程三条路径的顺序与激活唯一性。无 blocking 发现。
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:REMOTE_ENV_FIX_REVIEW",
+  "status": "EVIDENCE_READY",
+  "summary": "PASS_WITH_LIMITS。b46208bc 的父提交正是已审的 4568e3bc，且仅改动测试文件与 NOTES.md，run-remote.sh/common.sh/remote_job.py 零改动，生产行为保持一行激活修复：prepare（L176 激活先于 L177）、fail（L178-L181 同 shell 同环境）、tmux 子进程（L166 激活先于 L167）三路径语义不变，授权/nonce/部署/fail-closed 未触碰。加固后测试用 _active_lines 剔除注释与空行并做整行精确匹配，注释伪装与子串伪命中均被拒绝；prepare/fail/tmux 三路径各有顺序断言并锁定激活唯一性（count==1），上轮两条 minor 意见均已关闭。残留仅为文本断言的固有局限（非行为执行）与 cd 先于 set -euo 的既有未覆盖点，均非阻断。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "生产行为与上一轮审定一致：b46208bc 父提交为 4568e3bc，仅测试与 NOTES 变动；run-remote.sh 三路径（prepare/fail/tmux 子进程）的激活与执行顺序逐行不变，fail-closed 与授权链路未弱化。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/run-remote.sh#L163-L184",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/run-remote.sh#L170-L181",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/remote_job.py#L461-L492",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/remote_job.py#L531-L549"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "注释伪装已修复：_active_lines 剔除注释行且断言基于整行精确相等，`# $REMOTE_ENV_ACTIVATE` 或 echo 伪命中会导致 index 抛错、测试失败；事故机制（缺失/注释/乱序）均可捕获。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L15-L17",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L20-L31"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "三路径覆盖已补齐：remote_command 侧断言 activation < prepare < fail 且激活唯一；tmux 侧独立断言 set -euo pipefail < activation < run 且激活唯一，防重复行欺骗。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L24-L31",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L34-L44",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/run-remote.sh#L163-L169"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "summary": "残留非阻断限制：测试仍是文本结构断言（激活行被包进不执行的条件块可假通过，属对抗性场景）；整行精确匹配使行尾注释产生假失败（保守方向可接受）；tmux 子脚本 cd 先于 set -euo pipefail 的既有顺序仍未被测试覆盖。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L15-L17",
+        "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/run-remote.sh#L164-L165"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "本地 Agent 在 b46208bc 上实际运行 pytest CODE/experiment_platform/tests/test_remote_launcher_environment.py 确认两个用例转绿（本端按合同未执行任何测试；NOTES 中 714 passed 为作者自述，未经本端核验）。",
+    "可做一次反向变异验证：临时注释 run-remote.sh L176 确认测试如预期失败，随后还原——该变异测试需在本地执行，不属本端权限。",
+    "通过后按仓库流程推进 PR/CI 与 clean-main 部署，再允许正式远程路径闭环声明。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/run-remote.sh#L163-L184",
+    "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/common.sh#L33-L46",
+    "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/experiment_platform/tests/test_remote_launcher_environment.py#L1-L44",
+    "github://fuguther/leo-direct-sim/blob/b46208bcd72d96f4be58a788666dec244395a9d3/CODE/scripts/remote/remote_job.py#L416-L492"
+  ],
+  "open_items": [
+    "合同禁止本地执行，两个回归用例未实际运行，结论基于静态审查；本地 Agent 保留最终验证权。",
+    "remote.env 不入库，REMOTE_ENV_ACTIVATE 的具体取值语义无法在仓库内核验；结论依赖 common.sh#L33 的强制存在约束与双路径文本一致性。",
+    "b46208bc 的父提交身份与文件级 diff 经 GitHub commit API/patch 确认（父=4568e3bc，仅测试+NOTES 变动），该元数据无法按 github:// blob 语法引用，但全部实质性结论均由上述 blob 行级证据独立支撑。",
+    "NOTES.md 自述全套测试 714 passed 属作者声明，本端未核验，不作为完成证据。"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
