@@ -1,6 +1,6 @@
 {
   "schema": "leo-document-governance/v1",
-  "updated_at": "2026-08-23",
+  "updated_at": "2026-08-24",
   "allowed_statuses": [
     "CURRENT-CONTRACT",
     "CURRENT-VOLATILE",
@@ -158,7 +158,7 @@
       "purpose": "Latest repository snapshot of readiness and blockers",
       "may_direct_current_work": true,
       "owner": "experiment-readiness",
-      "last_reviewed": "2026-08-22",
+      "last_reviewed": "2026-08-24",
       "review_interval_days": 7,
       "replacement": null,
       "require_banner": false,
@@ -197,7 +197,7 @@
       "purpose": "Unique live finding and disposition registry",
       "may_direct_current_work": true,
       "owner": "review-governance",
-      "last_reviewed": "2026-08-21",
+      "last_reviewed": "2026-08-24",
       "review_interval_days": 14,
       "replacement": null,
       "require_banner": false,
@@ -213,6 +213,32 @@
       "last_reviewed": "2026-08-20",
       "review_interval_days": 30,
       "replacement": null,
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
+      "glob": "ANALYSIS/EXP-*/v2-paired/report.md",
+      "status": "EVIDENCE-SNAPSHOT",
+      "purpose": "Generated V2 analysis report bound to raw-artifact hashes",
+      "may_direct_current_work": false,
+      "owner": "experiment-evidence",
+      "last_reviewed": null,
+      "review_interval_days": null,
+      "replacement": "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
+      "glob": "ANALYSIS/EXP-*/RESULT-REVIEW.md",
+      "status": "EVIDENCE-SNAPSHOT",
+      "purpose": "Experiment-specific claim and value review bound to verified analysis",
+      "may_direct_current_work": false,
+      "owner": "claim-review",
+      "last_reviewed": null,
+      "review_interval_days": null,
+      "replacement": "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
       "require_banner": false,
       "archive_candidate": false,
       "suggested_archive_target": null

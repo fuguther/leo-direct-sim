@@ -5,6 +5,17 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-24：ISL RF 带宽正式双臂已完成并闭合 V2 重算
+
+- PR #159 经 CI `658 passed, 1 skipped, 3 subtests passed`、文档治理 `0 errors, 0 warnings` 后 squash 合入；正式运行与分析器绑定 exact main `d3a116a69912dd214d89582a7b29c947f2357bfa`。canonical VM deployment receipt SHA=`dc1d7e0339ae3ee9c78025d863036f6d4d6ec261dea8b8a26f05f99233ae1291`；authorization 文件 SHA=`9442f778558d2467f2fc08c30c208a9ed5da38fae64e7f6f557c19332d8178ee`。
+- `EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b500-s7` 与 `...-b50-s7` 均由 canonical runner 严格串行启动、自然结束、exit 0、conservation 通过，外部 launch witness 与 governance receipt 均验证成功。governance receipt SHA 分别为 `92abea2a149dff76492249de75e15d4b64f7cd166a31619ea2255573fc5233ed`、`c2d7306cd3ef1892c06b14b486b85fc1760a5f4b315e689017bcb817a585c863`；VM 与本地精确 Python 3.11.15/锁定依赖环境的 `receipt verify` 均返回 `verified`。
+- raw `receipt.json` 的 `research_eligible=false` 是合同要求，不是失败：本地 kernel 永不自授权；正式资格只由外部 governance v2 在 receipt、review/authorization、clean-main deployment、execution chain 和 nonce-bound witness 全部通过后给出 `research_eligible=true`。
+- 持久化 V2 analysis status=`VERIFIED`、verified runs=`2`、claim status=`READY_FOR_INDEPENDENT_CLAIM_REVIEW`；`verify_persisted_analysis` 返回 `ok=true, errors=[]`。analysis manifest SHA=`bc69740ec1cb5f201a79cf4749908c64e7ff4f49196b0dde7ee412bb95a6eb23`，分析器绑定同一 main。
+- 单 seed、同 trace 的工程结果：`isl_link_utilization_max` 为 b500 `0.005871255030063291`、b50 `0.020761875237929505`，预注册 b50−b500 差=`0.014890620207866214`。两臂 trace SHA 同为 `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4`；数据 fate 完全相同（1,299 offered、1,295 delivered、4 `NO_ROUTE`、0 in-system），1120 条有向 ISL 无饱和，MCS zero-rate holds 均为 0。
+- 最大 link 两臂均为 `isl:222:242`，served bits 均为 `131000000`；sampled available-capacity bits 从 `22312095000` 降到 `6309642000`。全部 link 的 served bits、service-window 数和逐 link available time（均 30 s）一致，但 224/1120 link 的 available sample count 相差 1--2：b500 分布为 `{30:840,31:224,32:56}`，b50 为 `{30:952,31:168}`。独立冷审后重算否定了“drain 裁剪导致总时窗不同”的初始解释；差异更符合 bandwidth 改变 SNR/MCS threshold 分段数量。该差异不改变最大 link 的 30 个 sample，但再次说明干预不是纯容量乘数。
+- 运行过程保留一个 fail-loud 基础设施证据：b50 首次 prepare 因原 `REMOTE_PYTHON=python3` 在环境激活前执行 predecessor verifier，找不到 TensorFlow 而在仿真启动前退出；随后只用临时、未入库的 remote config 指向 canonical Python 3.11.15，原 `remote.env` 与仓库代码均未修改，正式 nonce 重新通过全部 gate 后运行。
+- 当前最强边界只是“在这个固定 scenario/seed 中，50 MHz 相对 500 MHz 提高了最大 horizon-aggregate 有向 ISL 利用率，但两臂仍远离饱和且包命运相同”。不能写成纯带宽因果乘数、拥塞阈值、算法优越性、Q0 结论或论文统计证据；50 MHz 不能据此冻结为 pressure arm。独立冷审 verdict=`PASS_WITH_LIMITS`；其“本地版本不匹配”open item 被精确 Python 3.11.15 双端 `verified` 证据驳回。Kimi 结果外审任务已准备，但共享 ProjectPilot host 缺失 endpoint 且不能无中断恢复，故 Kimi 审阅明确保持未完成。
+
 ## 2026-08-24：ISL RF 带宽敏感性候选包（精确包冷审通过，未授权）
 
 - 分支 `codex/20260824-advisor-reports`，基线 `origin/main@e75b26c08c96b4507fc2c7d4682fb3e7893c8240`；本工作单元新增带宽敏感性 matrix 候选包、ISL-only horizon 聚合利用率分析指标及回归测试，并把 experiment-platform 测试纳入 CI；不修改 kernel、RF 公式、receipt 或历史实验。
