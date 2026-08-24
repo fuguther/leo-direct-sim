@@ -1,0 +1,64 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R03_COLD:independent_review",
+    "title": "R03 exact-commit cold-start review",
+    "goal": "Act as a cold-start reviewer. Check that a new reader can mechanically understand and apply the five-way decision without hidden knowledge; verify persisted-evidence binding, threshold single-source checks, pair classifier behavior, artifact completeness and claim boundaries. Return PASS_WITH_LIMITS or REQUEST_CHANGES. Do not edit files.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "d1844f23829f25b264261850b046959abd1a1dd9",
+      "paths": [
+        "CODE/experiment_platform/isl_pressure.py",
+        "CODE/experiment_platform/isl_pressure_decision.py",
+        "CODE/experiment_platform/tests/test_isl_pressure.py",
+        "CODE/experiment_platform/tests/test_isl_pressure_decision.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/experiment_platform/tests/test_v2_analysis.py",
+        "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/",
+        "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+        "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Verify the exact commit and artifact set.",
+      "Check every decision branch is mechanically decidable from verified persisted fields.",
+      "Give executable counterexamples for every claimed blocker or major finding.",
+      "Separate code correctness, experiment readiness and claim limits."
+    ],
+    "requiredEvidence": [
+      "Line-grounded exact-commit evidence",
+      "Explicit open_items",
+      "PASS_WITH_LIMITS or REQUEST_CHANGES"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "03538c960dd84463c8b85251abfe8098bda86e05b078ff1c1ce05e1c65f3ee16"
+}
