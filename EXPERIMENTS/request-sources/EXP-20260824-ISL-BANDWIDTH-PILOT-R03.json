@@ -15,7 +15,7 @@
   "analysis": {
     "analysis_id": "AN-ISL-BANDWIDTH-PILOT-R03",
     "primary_metric": "isl_link_utilization_max",
-    "estimand": "paired descriptive difference in maximum horizon-aggregate directed-ISL utilization between 2 MHz and 5 MHz under one fixed trace, seed, routing, topology, access, demand, emission and observation contract; the preregistered branch decision additionally requires receipt-bound one-second directed-link and same-link matched queue-wait diagnostics",
+    "estimand": "paired descriptive difference in maximum horizon-aggregate directed-ISL utilization between 2 MHz and 5 MHz under one fixed trace, seed, routing, topology, access, demand, emission and observation contract; the preregistered branch decision additionally requires receipt-bound one-second directed-link and episode-coincident same-link matched queue-wait diagnostics in both arms",
     "paired_by": [
       "pairing_key"
     ],
@@ -33,7 +33,8 @@
       "the two declared cells use the same actual trace, seed, deterministic hop routing, topology, access, demand, emission, observation and drain contracts",
       "the only declared intervention is links.rf_isl.bandwidth_hz, while SNR, MCS, data service time and control service time are physical consequences of that intervention",
       "verified raw service and available-capacity intervals can be rebinned into fixed one-second directed-ISL windows with served bits and available capacity reported separately",
-      "a PRESSURE_CANDIDATE requires one directed ISL with at least two consecutive one-second windows at utilization at least 0.8, at least 0.9 available seconds in each counted window, and same-link matched queue wait of at least 0.1 seconds and 100000 bit-seconds",
+      "a PRESSURE_CANDIDATE requires the 5 MHz control to have no qualifying pressure episode and the 2 MHz arm to have one directed ISL with at least two consecutive one-second windows at utilization at least 0.8, at least 0.9 available seconds in each counted window, and same-link queue waiting overlapping that episode with max wait at least 0.1 seconds and episode queue area at least 100000 bit-seconds",
+      "if the 5 MHz control already has a qualifying pressure episode, classify CONTROL_PRESSURE_UNBRACKETED and do not claim a 5-to-2 MHz onset interval",
       "the ordered classification and subsequent action are frozen in CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json before execution"
     ],
     "cannot_claim": [

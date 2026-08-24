@@ -16,6 +16,14 @@ class PressureAnalysisError(ValueError):
     """Raw window evidence is malformed or internally inconsistent."""
 
 
+DEFAULT_WINDOW_S = 1.0
+DEFAULT_MIN_AVAILABLE_FRACTION = 0.9
+DEFAULT_HIGH_UTILIZATION = 0.8
+DEFAULT_MIN_CONSECUTIVE_HIGH_WINDOWS = 2
+DEFAULT_MIN_EPISODE_QUEUE_WAIT_S = 0.1
+DEFAULT_MIN_EPISODE_QUEUE_AREA_BITS_S = 100000.0
+
+
 def _finite(value: Any, label: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)) \
             or not math.isfinite(float(value)):
@@ -53,11 +61,25 @@ def _longest_consecutive(indices: list[int]) -> int:
     return longest
 
 
+def _consecutive_runs(indices: list[int]) -> list[list[int]]:
+    runs: list[list[int]] = []
+    for index in indices:
+        if not runs or index != runs[-1][-1] + 1:
+            runs.append([index])
+        else:
+            runs[-1].append(index)
+    return runs
+
+
 def analyze_windows(
-        ledgers: dict[str, Any], *, window_s: float = 1.0,
-        min_available_fraction: float = 0.9,
-        high_utilization: float = 0.8,
-        min_consecutive_high_windows: int = 2) -> dict[str, Any]:
+        ledgers: dict[str, Any], *, window_s: float = DEFAULT_WINDOW_S,
+        min_available_fraction: float = DEFAULT_MIN_AVAILABLE_FRACTION,
+        high_utilization: float = DEFAULT_HIGH_UTILIZATION,
+        min_consecutive_high_windows: int =
+        DEFAULT_MIN_CONSECUTIVE_HIGH_WINDOWS,
+        min_episode_queue_wait_s: float = DEFAULT_MIN_EPISODE_QUEUE_WAIT_S,
+        min_episode_queue_area_bits_s: float =
+        DEFAULT_MIN_EPISODE_QUEUE_AREA_BITS_S) -> dict[str, Any]:
     """Return exact-overlap 1-D window diagnostics for directed ISLs.
 
     Service and available-capacity intervals are apportioned by their overlap
@@ -72,6 +94,10 @@ def analyze_windows(
     min_available_fraction = _finite(
         min_available_fraction, "min_available_fraction")
     high_utilization = _finite(high_utilization, "high_utilization")
+    min_episode_queue_wait_s = _finite(
+        min_episode_queue_wait_s, "min_episode_queue_wait_s")
+    min_episode_queue_area_bits_s = _finite(
+        min_episode_queue_area_bits_s, "min_episode_queue_area_bits_s")
     if stop <= 0 or window_s <= 0:
         raise PressureAnalysisError("stop_time_s and window_s must be positive")
     if not 0 < min_available_fraction <= 1:
@@ -79,6 +105,9 @@ def analyze_windows(
             "min_available_fraction must be in (0, 1]")
     if not 0 < high_utilization <= 1:
         raise PressureAnalysisError("high_utilization must be in (0, 1]")
+    if min_episode_queue_wait_s < 0 or min_episode_queue_area_bits_s < 0:
+        raise PressureAnalysisError(
+            "episode queue-wait thresholds must be non-negative")
     if isinstance(min_consecutive_high_windows, bool) or not isinstance(
             min_consecutive_high_windows, int) \
             or min_consecutive_high_windows < 1:
@@ -104,6 +133,7 @@ def analyze_windows(
             "queue_area": [0.0] * bin_count,
             "max_queue_wait_s": 0.0,
             "matched_queue_entries": 0,
+            "matched_waits": [],
         })
 
     def allocate(start: float, end: float, callback) -> None:
@@ -149,6 +179,7 @@ def analyze_windows(
                 index, item["available_time"][index] + overlap),
         ))
 
+    service_evidence: dict[tuple[int, str, float], dict[str, Any]] = {}
     for raw in service_windows:
         if not isinstance(raw, dict):
             raise PressureAnalysisError(
@@ -156,12 +187,17 @@ def analyze_windows(
         if raw.get("stage") != "isl":
             continue
         link_id = _nonempty(raw.get("link_id"), "service.link_id")
+        pid = _pid(raw.get("pid"), "service.pid")
         start = _finite(raw.get("start"), f"{link_id}.service.start")
         end = _finite(raw.get("end"), f"{link_id}.service.end")
         rate = _finite(raw.get("rate_bps"), f"{link_id}.service.rate_bps")
         capacity = _finite(
             raw.get("capacity_bits"), f"{link_id}.service.capacity_bits")
         served = _finite(raw.get("served_bits"), f"{link_id}.served_bits")
+        bits = raw.get("bits")
+        if isinstance(bits, bool) or not isinstance(bits, int) or bits <= 0:
+            raise PressureAnalysisError(
+                f"service bits must be a positive integer for {link_id}")
         if start < 0 or end < start or end > stop + 1e-9 or rate <= 0:
             raise PressureAnalysisError(f"invalid service window for {link_id}")
         if not math.isclose(capacity, rate * (end - start),
@@ -171,6 +207,11 @@ def analyze_windows(
         if served < 0 or served > capacity * (1 + 1e-9):
             raise PressureAnalysisError(
                 f"served bits exceed service capacity for {link_id}")
+        key = (pid, link_id, start)
+        if key in service_evidence:
+            raise PressureAnalysisError(
+                f"duplicate service-window identity for {link_id}")
+        service_evidence[key] = {"rate_bps": rate, "bits": bits}
         if end == start:
             if capacity != 0 or served != 0:
                 raise PressureAnalysisError(
@@ -194,12 +235,20 @@ def analyze_windows(
     emitted_bits: dict[int, int] = {}
     queue_entries: dict[int, dict[str, Any]] = {}
     service_starts: list[dict[str, Any]] = []
+
+    def event_time(raw: dict[str, Any], label: str) -> float:
+        at = _finite(raw.get("at"), f"{label}.at")
+        if at < 0 or at > stop + 1e-9:
+            raise PressureAnalysisError(f"{label}.at is outside stop time")
+        return at
+
     for raw in packet_events:
         if not isinstance(raw, dict):
             raise PressureAnalysisError("every packet event must be a mapping")
         kind = raw.get("kind")
         if kind == "packet_emitted":
             pid = _pid(raw.get("pid"), "packet_emitted.pid")
+            event_time(raw, "packet_emitted")
             bits = raw.get("bits")
             if isinstance(bits, bool) or not isinstance(bits, int) or bits <= 0:
                 raise PressureAnalysisError(
@@ -216,12 +265,13 @@ def analyze_windows(
                 raise PressureAnalysisError(f"duplicate queue_id {qid}")
             queue_entries[qid] = {
                 "pid": _pid(raw.get("pid"), "queue_enter.pid"),
-                "at": _finite(raw.get("at"), "queue_enter.at"),
+                "at": event_time(raw, "queue_enter"),
                 "link_id": _nonempty(raw.get("link_id"),
                                      "queue_enter.link_id"),
             }
         elif kind == "service_start" and raw.get("stage") == "isl" \
                 and raw.get("queue_id") is not None:
+            event_time(raw, "service_start")
             service_starts.append(raw)
 
     matched_qids: set[int] = set()
@@ -242,6 +292,20 @@ def analyze_windows(
         if start < entry["at"]:
             raise PressureAnalysisError(
                 f"ISL service precedes queue entry for queue_id {qid}")
+        service = service_evidence.get((pid, link_id, start))
+        if service is None:
+            raise PressureAnalysisError(
+                f"ISL service_start has no matching service window for "
+                f"queue_id {qid}")
+        start_bits = raw.get("bits")
+        if start_bits != service["bits"]:
+            raise PressureAnalysisError(
+                f"ISL service bits mismatch for queue_id {qid}")
+        start_rate = _finite(raw.get("rate_bps"), "service_start.rate_bps")
+        if not math.isclose(start_rate, service["rate_bps"],
+                            rel_tol=1e-9, abs_tol=1e-6):
+            raise PressureAnalysisError(
+                f"ISL service rate mismatch for queue_id {qid}")
         bits = emitted_bits.get(pid)
         if bits is None:
             bits = raw.get("bits")
@@ -252,6 +316,10 @@ def analyze_windows(
         item = ensure(link_id)
         item["matched_queue_entries"] += 1
         item["max_queue_wait_s"] = max(item["max_queue_wait_s"], wait)
+        item["matched_waits"].append({
+            "start": entry["at"], "end": start,
+            "bits": bits, "wait_s": wait,
+        })
         max_wait_global = max(max_wait_global, wait)
         allocate(entry["at"], start,
                  lambda index, overlap: item["queue_area"].__setitem__(
@@ -260,6 +328,7 @@ def analyze_windows(
 
     output_links: dict[str, Any] = {}
     sustained: list[str] = []
+    pressure_candidates: list[str] = []
     active_utilizations: list[float] = []
     for link_id, raw in sorted(links.items()):
         windows: list[dict[str, float | bool]] = []
@@ -301,8 +370,40 @@ def analyze_windows(
                     "matched_queue_wait_bits_s": queue_area,
                 })
         longest = _longest_consecutive(high_indices)
-        if longest >= min_consecutive_high_windows:
+        sustained_runs = [
+            run for run in _consecutive_runs(high_indices)
+            if len(run) >= min_consecutive_high_windows
+        ]
+        if sustained_runs:
             sustained.append(link_id)
+        episodes: list[dict[str, Any]] = []
+        for run in sustained_runs:
+            episode_start = run[0] * window_s
+            episode_end = min(stop, (run[-1] + 1) * window_s)
+            overlapping_waits = [
+                item for item in raw["matched_waits"]
+                if min(item["end"], episode_end)
+                - max(item["start"], episode_start) > 1e-12
+            ]
+            queue_area = sum(raw["queue_area"][index] for index in run)
+            max_overlapping_wait = max(
+                (item["wait_s"] for item in overlapping_waits), default=0.0)
+            pressure_candidate = (
+                queue_area >= min_episode_queue_area_bits_s - 1e-9
+                and max_overlapping_wait >= min_episode_queue_wait_s - 1e-12
+            )
+            episodes.append({
+                "start_s": episode_start,
+                "end_s": episode_end,
+                "window_count": len(run),
+                "window_starts_s": [index * window_s for index in run],
+                "matched_queue_wait_bits_s": queue_area,
+                "overlapping_matched_queue_entries": len(overlapping_waits),
+                "max_overlapping_matched_queue_wait_s": max_overlapping_wait,
+                "pressure_candidate": pressure_candidate,
+            })
+        if any(item["pressure_candidate"] for item in episodes):
+            pressure_candidates.append(link_id)
         total_capacity = sum(raw["capacity"])
         total_served = sum(raw["served"])
         output_links[link_id] = {
@@ -324,6 +425,7 @@ def analyze_windows(
             "matched_queue_entries": raw["matched_queue_entries"],
             "matched_queue_wait_bits_s": sum(raw["queue_area"]),
             "max_matched_queue_wait_s": raw["max_queue_wait_s"],
+            "sustained_high_episodes": episodes,
             "windows": windows,
         }
 
@@ -334,11 +436,14 @@ def analyze_windows(
         "min_available_fraction": min_available_fraction,
         "high_utilization_threshold": high_utilization,
         "min_consecutive_high_windows": min_consecutive_high_windows,
+        "min_episode_queue_wait_s": min_episode_queue_wait_s,
+        "min_episode_queue_area_bits_s": min_episode_queue_area_bits_s,
         "directed_isl_link_count": len(output_links),
         "active_window_utilization_p99": _percentile(
             active_utilizations, 0.99),
         "max_window_utilization": max(active_utilizations, default=0.0),
         "sustained_hotspot_link_ids": sustained,
+        "pressure_candidate_link_ids": pressure_candidates,
         "matched_isl_queue_entries": len(matched_qids),
         "unmatched_isl_queue_entries": len(set(queue_entries) - matched_qids),
         "max_matched_isl_queue_wait_s": max_wait_global,

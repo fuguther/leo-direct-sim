@@ -41,6 +41,7 @@ REMOTE_RESULTS_ROOT = Path("/data/论文/leo-direct-sim/CODE/Results")
 ANALYZER_FILES = (
     "CODE/experiment_platform/v2_analysis.py",
     "CODE/experiment_platform/isl_pressure.py",
+    "CODE/experiment_platform/isl_pressure_decision.py",
     "CODE/leo_sim/metrics.py",
 )
 GIT_COMMIT = re.compile(r"^[0-9a-f]{40}$")
@@ -302,6 +303,12 @@ def _run_diagnostics(ledgers: dict[str, Any]) -> dict[str, Any]:
         "fate_counts": dict(sorted(fate_counts.items())),
         "queue_area_bits_s": dict(sorted(queue_area.items())),
         "windowed_isl": windowed_isl,
+        "drain": {
+            "in_system_at_stop_packets": fate_counts.get(
+                "IN_SYSTEM_AT_STOP", 0),
+            "unmatched_isl_queue_entries": windowed_isl[
+                "unmatched_isl_queue_entries"],
+        },
         "isl": {
             "link_count": len(links),
             "saturated_link_ids": saturated,
@@ -665,6 +672,11 @@ def write_outputs(root: Path, out_dir: Path, manifest: dict[str, Any]) -> dict[s
             f"`{diagnostics['windowed_isl']['max_window_utilization']}`; "
             f"sustained hotspot links: "
             f"`{diagnostics['windowed_isl']['sustained_hotspot_link_ids']}`",
+            f"- episode-coincident pressure-candidate links: "
+            f"`{diagnostics['windowed_isl']['pressure_candidate_link_ids']}`",
+            f"- drain residue packets/unmatched ISL queue entries: "
+            f"`{diagnostics['drain']['in_system_at_stop_packets']}`/"
+            f"`{diagnostics['drain']['unmatched_isl_queue_entries']}`",
             f"- matched/unmatched ISL queue entries: "
             f"`{diagnostics['windowed_isl']['matched_isl_queue_entries']}`/"
             f"`{diagnostics['windowed_isl']['unmatched_isl_queue_entries']}`", "",

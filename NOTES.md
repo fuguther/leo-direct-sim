@@ -721,6 +721,7 @@
 
 - R02 实测 50 MHz 的最大全程聚合有向 ISL 利用率仅约 2.08%，不足以形成压力。现有 matrix v1 不能让同一 2 MHz cell 同时属于 5→2 和 2→1 两个配对；R03 因此不扩共享对照合同，改为先做 5 MHz vs 2 MHz，只有预注册结果为 `NO_PRESSURE_PHYS_VALID` 才另建 R04 2 MHz vs 1 MHz。
 - 新增 receipt-bound 一秒有向 ISL 重算：按原始 service/available 区间的精确重叠分别累计 served bits 与 available capacity，重建已匹配 queue_enter→service_start 的同链路等待；未匹配队列只报告为截尾，不伪造等待。异常容量、重叠服务和 malformed 时间证据 fail-loud。
-- `pressure-decision.json` 在结果前冻结四类动作：`PHYS_INVALID` 停止带宽轴；`DRAIN_INCOMPLETE` 原带宽延长排空；`PRESSURE_CANDIDATE` 停止在 5--2 MHz onset 区间；只有 `NO_PRESSURE_PHYS_VALID` 进入 1 MHz。压力需同一有向链路连续至少两个 1 s 窗口利用率 >=0.8、每窗可用时间 >=0.9 s，且匹配排队等待 >=0.1 s 和 >=100000 bit-s。
+- 首轮精确提交审阅期间，Codex 自查发现两个会造成假 bracket 的设计漏洞，并在授权前修正：高利用和排队必须重叠于同一持续 episode，不能把同链路不同时段拼成拥塞；5 MHz 对照也必须按同一规则证明无压力，不能只看 2 MHz 候选。`pressure-decision.json` 现冻结五类动作：`PHYS_INVALID`、`DRAIN_INCOMPLETE`、`CONTROL_PRESSURE_UNBRACKETED`、`PRESSURE_CANDIDATE`、`NO_PRESSURE_PHYS_VALID`。只有“5 MHz 无压力、2 MHz 有同 episode 压力”才允许称 5--2 MHz 候选区间；5 MHz 已有压力则停止并回到上侧 bracket。
+- Kimi 两路旧提交审阅均给出 `PASS_WITH_LIMITS`；Codex 独立裁决后接受并修复显式 drain 字段、episode 时间对齐、事件时间界、service-start/service-window 身份交叉核对、阈值双源漂移和人工分类风险，新增受测五路 pair classifier；拒绝“非零 MCS 低速必属物理失败”的泛化，因为 `min_rate_bps` 在当前实现中是零速率截止门而非正速率地板，合法非零容量上的持续占满与同时排队正是待寻找的 ISL 压力。当前相关测试扩至全套 `706 passed, 2 skipped, 3 subtests passed`；旧评审及裁决保留在 R03 candidate review history，新 exact commit 仍须重新审阅后才能授权。
 - 编译验证为 2 cells / 7 hashes，逐字段差异只有 `links.rf_isl.bandwidth_hz`；两格 trace identity、input 和 controlled signature 一致。当前全套测试 `692 passed, 2 skipped, 3 subtests passed`，document governance `0 errors, 0 warnings`，`git diff --check` 通过。
 - 当前状态仍是 `COMPILED_REVIEW_REQUIRED`：尚无 R03 独立三角色 PASS、finalization、authorization、main 合入、部署或 VM 结果。下一步先让 Kimi 对精确提交做只读挑错，再由 Codex 复核并完成正式独立审阅；任何 blocker 都在授权前修正。

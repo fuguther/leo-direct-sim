@@ -4,6 +4,8 @@
   "purpose": "Locate one engineering ISL-pressure bracket without treating zero-rate, disconnection, access failure, NO_ROUTE growth or incomplete drain as congestion.",
   "control_arm": "b5",
   "candidate_arm": "b2",
+  "classifier": "CODE/experiment_platform/isl_pressure_decision.py::classify_persisted_pair",
+  "analysis_block_behavior": "If receipt verification or V2 analysis fails before a VERIFIED manifest exists, stop the cohort and record invalid evidence. Never reinterpret a blocked analysis as NO_PRESSURE_PHYS_VALID or run the next bandwidth.",
   "window_contract": {
     "window_s": 1.0,
     "directed_links": true,
@@ -13,11 +15,13 @@
     "served_and_available_bits_reported_separately": true
   },
   "same_link_queue_contract": {
-    "min_max_matched_queue_wait_s": 0.1,
-    "min_matched_queue_wait_bits_s": 100000.0,
+    "must_overlap_the_same_sustained_high_episode": true,
+    "min_max_overlapping_matched_queue_wait_s": 0.1,
+    "min_episode_matched_queue_wait_bits_s": 100000.0,
     "unmatched_entries_are_censored_not_imputed": true
   },
   "physical_validity": {
+    "applies_to_both_arms_before_comparison": true,
     "max_mcs_zero_rate_holds": 0,
     "candidate_access_grants_must_equal_control": true,
     "candidate_noncongestion_fates_may_exceed_control_by": {
@@ -27,9 +31,15 @@
       "RANDOM_OUTAGE_IN_FLIGHT": 0,
       "NO_ROUTE": 0
     },
-    "candidate_overflow_fates_must_equal_zero": [
+    "overflow_fates_must_equal_zero_per_arm": [
       "ISL_QUEUE_OVERFLOW",
       "HOLDING_QUEUE_OVERFLOW"
+    ],
+    "candidate_control_failure_fields": [
+      "expired",
+      "lost",
+      "geometry_lost",
+      "overflow"
     ],
     "candidate_control_expired_lost_geometry_lost_overflow_may_exceed_control_by": 0,
     "require_natural_end": true,
@@ -37,28 +47,38 @@
     "require_current_external_witness": true
   },
   "drain_validity": {
-    "max_candidate_in_system_at_stop": 0,
-    "max_unmatched_isl_queue_entries": 0
+    "applies_to_both_arms_before_comparison": true,
+    "max_in_system_at_stop_packets_per_arm": 0,
+    "max_unmatched_isl_queue_entries_per_arm": 0,
+    "persisted_fields": [
+      "diagnostics.drain.in_system_at_stop_packets",
+      "diagnostics.drain.unmatched_isl_queue_entries"
+    ]
   },
   "ordered_classification": [
     {
       "class": "PHYS_INVALID",
-      "when": "Any physical-validity condition fails, including new access, geometry, outage, NO_ROUTE, data-overflow or control-plane failure evidence.",
+      "when": "Either arm fails a per-arm physical-validity condition, or the candidate exceeds the control on a declared differential condition, including access, geometry, outage, NO_ROUTE, data-overflow or control-plane failure evidence.",
       "action": "Stop the bandwidth bracket. Do not call the result congestion. Move only to a separately preregistered traffic or OD-hotspot axis under physically plausible links."
     },
     {
       "class": "DRAIN_INCOMPLETE",
-      "when": "Physical validity passes but either drain-validity condition fails.",
+      "when": "Physical validity passes but either arm fails a drain-validity condition.",
       "action": "Do not run 1 MHz and do not compare algorithms. Repeat the same candidate with unchanged emission and a separately reviewed longer observation/drain horizon."
     },
     {
+      "class": "CONTROL_PRESSURE_UNBRACKETED",
+      "when": "Physical and drain validity pass, but the 5 MHz control already contains a pressure-candidate episode, whether or not the 2 MHz arm also contains one.",
+      "action": "Stop. Do not claim a 5-to-2 MHz onset interval. Report whether the 2 MHz signal is concordant or non-monotone, and locate a physically valid no-pressure upper arm before any onset claim. Reanalyse or rerun the prior 50 MHz upper arm under this same window contract rather than launching 1 MHz."
+    },
+    {
       "class": "PRESSURE_CANDIDATE",
-      "when": "Physical and drain validity pass, and one directed ISL has at least two consecutive eligible 1 s windows at utilization >= 0.8 plus same-link matched queue wait >= 0.1 s and >= 100000 bit-s.",
+      "when": "Physical and drain validity pass, the 5 MHz control has no pressure-candidate episode, and the 2 MHz candidate has one directed ISL with at least two consecutive eligible 1 s windows at utilization >= 0.8 plus queue waiting that overlaps that same episode with max wait >= 0.1 s and episode queue area >= 100000 bit-s.",
       "action": "Stop the bandwidth bracket. Freeze the engineering onset statement to the interval between 5 MHz and 2 MHz; do not infer a dose-response curve or a 1 MHz result. Confirm the adjacent bracket with preregistered seeds before any paper claim."
     },
     {
       "class": "NO_PRESSURE_PHYS_VALID",
-      "when": "Physical and drain validity pass but PRESSURE_CANDIDATE does not.",
+      "when": "Physical and drain validity pass and neither arm contains a pressure-candidate episode.",
       "action": "Create R04 as 2 MHz versus 1 MHz with the same trace, seed, routing, topology, access, demand, horizon and this unchanged decision contract."
     }
   ],
@@ -66,6 +86,8 @@
     "This single-seed bracket is an engineering calibration, not a statistical effect estimate.",
     "Bandwidth changes noise, SNR, MCS and control service time as physical consequences; it is not a pure capacity multiplier.",
     "Utilization without same-link queue waiting is insufficient for a pressure classification.",
+    "High utilization and queue waiting on the same link but at disjoint times are insufficient for a pressure classification.",
+    "A 5-to-2 MHz onset interval requires the 5 MHz arm to pass the same no-pressure test; candidate-only classification cannot establish a bracket.",
     "A result selected by this tree cannot support algorithm superiority, information value, Q0 optimality or a new-algorithm claim."
   ]
 }
