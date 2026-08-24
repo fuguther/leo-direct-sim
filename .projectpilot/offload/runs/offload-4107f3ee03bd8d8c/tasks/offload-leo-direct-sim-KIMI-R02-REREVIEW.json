@@ -1,0 +1,60 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:KIMI-R02-REREVIEW",
+    "title": "R02 evidence-gate adversarial rereview",
+    "goal": "Try to reproduce the prior legacy receipt external-witness bypass and claim_status tampering bypass; verify R02 provenance, serial stop contract, original analyzer/trace/authorization/zero-rate gates, and identify any remaining fail-open behavior. Give PASS or BLOCK with reproducible file/line/test evidence and explicit open_items. Do not treat missing authorization or VM results as a code defect, but state they remain future gates.",
+    "mode": "REMOTE",
+    "policyMode": "custom",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "ba4835d999b9f31f9eeac45d197712358bf094ca",
+      "paths": [
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/experiment_platform/tests/test_v2_analysis.py",
+        "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R02/",
+        "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R02.json",
+        "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Binds exact full commit",
+      "Attempts both prior bypasses",
+      "Every blocker has reproducible repository evidence",
+      "States explicit open_items"
+    ],
+    "requiredEvidence": [
+      "Exact file paths and code locations",
+      "Concrete adversarial test or reasoning trace",
+      "PASS or BLOCK verdict with claim boundary"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "a40e46c94fdaa0a6dc3d7aded4b01d848dce5a487ad7deecfa07ab6c83cf2c1f"
+}
