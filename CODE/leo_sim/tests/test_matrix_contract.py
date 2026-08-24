@@ -118,6 +118,60 @@ def test_serial_fail_closed_policy_is_preserved_in_compiled_runbook(tmp_path):
     assert "machine-enforced serial predecessor gate" in runbook
 
 
+def test_matrix_binds_and_renders_declared_post_analysis_decision(tmp_path):
+    request = _request()
+    decision_path = tmp_path / "CODE" / "work" / "WP-MATRIX" / "R01" / \
+        "pressure-decision.json"
+    decision = {
+        "schema": "leo-sim-isl-pressure-decision/v1",
+        "canonical_invocation": [
+            "python3", "-m", "CODE.experiment_platform.isl_pressure_decision",
+            "--root", ".", "--manifest", "ANALYSIS/EXP-LEO-V2-MATRIX/"
+            "v2-paired/analysis-manifest.json", "--control-arm", "control",
+            "--candidate-arm", "treatment", "--out",
+            "ANALYSIS/EXP-LEO-V2-MATRIX/pressure-classification.json",
+        ],
+    }
+    _write_json(decision_path, decision)
+    request["analysis"]["decision_contract"] = {
+        "path": "CODE/work/WP-MATRIX/R01/pressure-decision.json",
+    }
+    source = tmp_path / "request.json"
+    source.write_text(json.dumps(request), encoding="utf-8")
+    out = tmp_path / "EXPERIMENTS" / request["experiment_id"]
+
+    matrix.compile_matrix_experiment(source, out, project_root=tmp_path)
+
+    analysis = json.loads((out / "analysis-request.json").read_text())
+    assert analysis["decision_contract"]["path"] == \
+        "CODE/work/WP-MATRIX/R01/pressure-decision.json"
+    assert len(analysis["decision_contract"]["sha256"]) == 64
+    runbook = (out / "RUNBOOK.md").read_text(encoding="utf-8")
+    for token in decision["canonical_invocation"]:
+        assert token in runbook
+    matrix.verify_compiled_matrix(tmp_path, out)
+
+    decision["canonical_invocation"][-1] = "ANALYSIS/tampered.json"
+    _write_json(decision_path, decision)
+    with pytest.raises(matrix.MatrixError, match="analysis request"):
+        matrix.verify_compiled_matrix(tmp_path, out)
+    decision["canonical_invocation"][-1] = \
+        "ANALYSIS/EXP-LEO-V2-MATRIX/pressure-classification.json"
+    _write_json(decision_path, decision)
+
+    runbook_path = out / "RUNBOOK.md"
+    runbook_path.write_text(
+        runbook_path.read_text(encoding="utf-8").replace(
+            "--candidate-arm treatment", "--candidate-arm control"),
+        encoding="utf-8")
+    report_path = out / "compile-report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report["artifact_hashes"]["RUNBOOK.md"] = file_sha256(runbook_path)
+    _write_json(report_path, report)
+    with pytest.raises(matrix.MatrixError, match="RUNBOOK"):
+        matrix.verify_compiled_matrix(tmp_path, out)
+
+
 @pytest.mark.parametrize("mutation, message", [
     (lambda r: r.update(extra=True), "unknown request fields"),
     (lambda r: r["cells"].append(copy.deepcopy(r["cells"][0])), "duplicate run_id"),

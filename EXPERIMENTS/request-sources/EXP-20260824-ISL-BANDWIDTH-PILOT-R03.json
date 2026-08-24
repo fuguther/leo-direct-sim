@@ -1,0 +1,188 @@
+{
+  "schema": "leo-sim-experiment-matrix-request/v1",
+  "experiment_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R03",
+  "runtime_kind": "leo_sim_v2",
+  "execution_policy": {
+    "mode": "serial_fail_closed"
+  },
+  "work_finalization": "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/finalization.json",
+  "acceptance": {
+    "min_delivered_packets": 0,
+    "min_multisat_deliveries": 0,
+    "require_control_delivery": false,
+    "require_data_isl": false
+  },
+  "analysis": {
+    "analysis_id": "AN-ISL-BANDWIDTH-PILOT-R03",
+    "primary_metric": "isl_link_utilization_max",
+    "estimand": "paired descriptive difference in maximum horizon-aggregate directed-ISL utilization between 2 MHz and 5 MHz under one fixed trace, seed, routing, topology, access, demand, emission and observation contract; the preregistered branch decision additionally requires receipt-bound one-second directed-link and episode-coincident same-link matched queue-wait diagnostics in both arms",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "decision_contract": {
+      "path": "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json"
+    },
+    "planned_contrasts": [
+      {
+        "name": "b2_minus_b5",
+        "left_arm": "b2",
+        "right_arm": "b5",
+        "estimand": "paired engineering bandwidth sensitivity plus the separately frozen pressure classification in CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json; not a statistical algorithm or paper-facing effect claim"
+      }
+    ]
+  },
+  "claim_boundary": {
+    "can_claim": [
+      "the two declared cells use the same actual trace, seed, deterministic hop routing, topology, access, demand, emission, observation and drain contracts",
+      "the only declared intervention is links.rf_isl.bandwidth_hz, while SNR, MCS, data service time and control service time are physical consequences of that intervention",
+      "verified raw service and available-capacity intervals can be rebinned into fixed one-second directed-ISL windows with served bits and available capacity reported separately",
+      "a PRESSURE_CANDIDATE requires the 5 MHz control to have no qualifying pressure episode and the 2 MHz arm to have one directed ISL with at least two consecutive one-second windows at utilization at least 0.8, at least 0.9 available seconds in each counted window, and same-link queue waiting overlapping that episode with max wait at least 0.1 seconds and episode queue area at least 100000 bit-seconds",
+      "if the 5 MHz control already has a qualifying pressure episode, classify CONTROL_PRESSURE_UNBRACKETED and do not claim a 5-to-2 MHz onset interval",
+      "the ordered classification and subsequent action are frozen in CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json before execution"
+    ],
+    "cannot_claim": [
+      "algorithm superiority, a causal information-value effect or a new-algorithm contribution",
+      "a universal or paper-ready ISL congestion threshold from one seed and one scenario",
+      "a pure capacity multiplier effect, because bandwidth also changes noise, SNR, MCS and control-packet service time",
+      "congestion when zero-rate holds occur, candidate access grants differ from control, candidate access, geometry, outage or NO_ROUTE fates exceed control, holding-queue overflow occurs, candidate control expired/lost/geometry-lost/overflow exceeds control, natural end or conservation fails, or current external witness evidence is absent; ISL queue overflow is a congestion outcome but cannot replace the preregistered localized pressure episode",
+      "a fully usable pressure scenario when the candidate has any in-system packet at stop or unmatched ISL queue entry; that branch is DRAIN_INCOMPLETE and requires longer-drain confirmation",
+      "a 1 MHz result or dose-response curve when R04 was not executed",
+      "execution authorization before exact-revision independent review, accepted finalization, clean-main deployment and external witness gates close"
+    ]
+  },
+  "arms": [
+    {
+      "arm_id": "b5",
+      "config_overrides": {
+        "links": {
+          "rf_isl": {
+            "bandwidth_hz": 5000000.0
+          }
+        }
+      },
+      "intervention_paths": [
+        "links.rf_isl.bandwidth_hz"
+      ]
+    },
+    {
+      "arm_id": "b2",
+      "config_overrides": {
+        "links": {
+          "rf_isl": {
+            "bandwidth_hz": 2000000.0
+          }
+        }
+      },
+      "intervention_paths": [
+        "links.rf_isl.bandwidth_hz"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "run_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b5-s7",
+      "arm_id": "b5",
+      "phase": "non_learning",
+      "trace_seed": 7,
+      "learning_seed": null,
+      "pairing_key": "bandwidth-s7",
+      "config_overrides": {},
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      }
+    },
+    {
+      "run_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b2-s7",
+      "arm_id": "b2",
+      "phase": "non_learning",
+      "trace_seed": 7,
+      "learning_seed": null,
+      "pairing_key": "bandwidth-s7",
+      "config_overrides": {},
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      }
+    }
+  ],
+  "common_config": {
+    "scenario": {
+      "name": "mlab-multiod-burst-t0-queue-280x14-e25",
+      "duration_s": 30,
+      "time_step_s": 0.1,
+      "num_satellites": 280,
+      "num_planes": 14,
+      "altitude_km": 600,
+      "inclination_deg": 98.6,
+      "min_elevation_deg": 25
+    },
+    "endpoints": {
+      "grid_deg": 0.25,
+      "aggregation_deg": 1.0,
+      "sites": [],
+      "mlab_auto": true,
+      "mlab_max_sites": 64
+    },
+    "demand": {
+      "mode": "mlab",
+      "offered_mbps": 50,
+      "emission_end_s": 20,
+      "packet_bits": 1000000,
+      "deadline_s": null,
+      "burst_start_s": 8,
+      "burst_duration_s": 8,
+      "burst_multiplier": 2
+    },
+    "access": {
+      "unavailable_policy": "queue",
+      "slots_per_satellite": 4,
+      "uplink_rate_mbps": 100,
+      "downlink_rate_mbps": 100,
+      "uplink_queue_bits": 64000000,
+      "downlink_queue_bits": 64000000,
+      "association": "bbm",
+      "hysteresis_deg": 0,
+      "min_dwell_s": 0,
+      "acquisition_delay_s": 0.1
+    },
+    "links": {
+      "rate_model": "mcs",
+      "ge_enabled": false
+    },
+    "topology": {
+      "recompute_interval_s": 1,
+      "matching": "markovian"
+    },
+    "control_plane": {
+      "enabled": true,
+      "advertise_interval_s": 1,
+      "ttl_s": 10,
+      "vis_k": 17,
+      "packet_bits": 8000
+    },
+    "routing": {
+      "policy": "hop",
+      "contract": "C3",
+      "learning_enabled": false,
+      "max_hops": 64
+    },
+    "learning": {
+      "algorithm": "none",
+      "mode": "train"
+    },
+    "execution": {
+      "max_events": 20000000,
+      "max_entities": 2000,
+      "max_packets": 20000,
+      "available_capacity_interval_s": 1,
+      "monitor": false
+    },
+    "outputs": {
+      "out_dir": "CODE/Results",
+      "plotting": false
+    }
+  }
+}

@@ -716,3 +716,29 @@
 - `finalize_decision.py` 返回 `ACCEPTED`；`authorize_experiment` 返回 `AUTHORIZED`（2 runs），authorization payload SHA=`71c3052e1af50475dc31b4c247c91e63475f53572b2e15ab12f61d1c3470f526`。两份 resolved config 均通过运行时授权重算。
 - 串行门真实反例符合预注册合同：b500 在无 predecessor 时返回 `READY`；b50 在尚无合格 b500 结果时退出码 2 并 fail-closed。提交前代码全套验证仍需在本治理工件加入后重跑。
 - PR #159（`fix: 闭合 ISL 带宽串行实验门`）首轮 required `pytest` CI 已通过，run=`32711384104`、job=`97383326826`。当前仍只是“审阅与授权完成”，尚未合入/部署，也没有 VM 自然结束回执或分析结果；最终 NOTES 提交仍须重新通过 CI 后才可 squash 合并。合入后部署 exact merge SHA，然后严格执行 b500；仅在其 natural end、守恒、governance、nonce witness、部署身份、主指标和 zero-rate gates 全通过后才运行 b50，最后做 V2 持久化配对分析。单 seed 结果不得解释为算法优越性、普适阈值、Q0 或论文统计证据。
+
+## 2026-08-24：ISL 压力 R03 预注册与一秒窗口分析进入精确提交复审
+
+- R02 实测 50 MHz 的最大全程聚合有向 ISL 利用率仅约 2.08%，不足以形成压力。现有 matrix v1 不能让同一 2 MHz cell 同时属于 5→2 和 2→1 两个配对；R03 因此不扩共享对照合同，改为先做 5 MHz vs 2 MHz，只有预注册结果为 `NO_PRESSURE_PHYS_VALID` 才另建 R04 2 MHz vs 1 MHz。
+- 新增 receipt-bound 一秒有向 ISL 重算：按原始 service/available 区间的精确重叠分别累计 served bits 与 available capacity，重建已匹配 queue_enter→service_start 的同链路等待；未匹配队列只报告为截尾，不伪造等待。异常容量、重叠服务和 malformed 时间证据 fail-loud。
+- 首轮精确提交审阅期间，Codex 自查发现两个会造成假 bracket 的设计漏洞，并在授权前修正：高利用和排队必须重叠于同一持续 episode，不能把同链路不同时段拼成拥塞；5 MHz 对照也必须按同一规则证明无压力，不能只看 2 MHz 候选。`pressure-decision.json` 现冻结五类动作：`PHYS_INVALID`、`DRAIN_INCOMPLETE`、`CONTROL_PRESSURE_UNBRACKETED`、`PRESSURE_CANDIDATE`、`NO_PRESSURE_PHYS_VALID`。只有“5 MHz 无压力、2 MHz 有同 episode 压力”才允许称 5--2 MHz 候选区间；5 MHz 已有压力则停止并回到上侧 bracket。
+- Kimi 两路旧提交审阅均给出 `PASS_WITH_LIMITS`；Codex 独立裁决后接受并修复显式 drain 字段、episode 时间对齐、事件时间界、service-start/service-window 身份交叉核对、阈值双源漂移和人工分类风险，新增受测五路 pair classifier；拒绝“非零 MCS 低速必属物理失败”的泛化，因为 `min_rate_bps` 在当前实现中是零速率截止门而非正速率地板，合法非零容量上的持续占满与同时排队正是待寻找的 ISL 压力。当前相关测试扩至全套 `706 passed, 2 skipped, 3 subtests passed`；旧评审及裁决保留在 R03 candidate review history，新 exact commit 仍须重新审阅后才能授权。
+- 编译验证为 2 cells / 7 hashes，逐字段差异只有 `links.rf_isl.bandwidth_hz`；两格 trace identity、input 和 controlled signature 一致。当前全套测试 `692 passed, 2 skipped, 3 subtests passed`，document governance `0 errors, 0 warnings`，`git diff --check` 通过。
+- 当前状态仍是 `COMPILED_REVIEW_REQUIRED`：尚无 R03 独立三角色 PASS、finalization、authorization、main 合入、部署或 VM 结果。下一步先让 Kimi 对精确提交做只读挑错，再由 Codex 复核并完成正式独立审阅；任何 blocker 都在授权前修正。
+
+## 2026-08-24：R03 决策合同与操作手册形成可重编译闭环
+
+- Kimi 在 exact commit `e1106c883b16d03eb3ee8ae49c5c50404d0d1176` 上完成 satellite-DRL 与 cold-start 只读复核，均为 `PASS_WITH_LIMITS`；Codex 接受两个窄问题：生成的 RUNBOOK 漏掉持久化分类命令，以及“5 MHz 已有局部压力时优先停止”与“未定位 ISL overflow 阻断”的文字优先级不够明确。旧复核只作为修订依据，不能授权新提交。
+- matrix request 的 `analysis.decision_contract` 现在显式绑定冻结决策合同；编译器读取并校验安全的 canonical `python -m` 命令，把合同路径、SHA-256 和命令写入分析请求与 RUNBOOK。验证器重新读取合同并重算身份，同时从请求重新渲染 RUNBOOK 逐字比较；即使同时伪造 RUNBOOK 与编译报告中的哈希也会 fail-loud。授权工件映射也包含该外部决策合同。
+- 分类行为、五分支顺序、阈值、5/2 MHz 场景和矩阵规模均未改变。新增回归覆盖“5 MHz 已有局部压力 + 2 MHz 未定位 ISL overflow”仍停在 `CONTROL_PRESSURE_UNBRACKETED`，以及持久化分析验证失败时分类器拒绝输出。
+- R03 已在一次性副本中由 canonical matrix compiler 重编译并与工作树逐文件同步；两个 resolved 配置内容哈希保持不变。`verify_compiled_matrix` 返回 2 cells / 8 bound hashes，其中包含 decision-contract SHA `fa0493b722e3bd119ed516543e4429b2bbc30986d3e5479f24f4d81f5194460e`。
+- 本地证据：全套 `712 passed, 2 skipped, 3 subtests passed`；document governance `0 selected errors, 0 warnings`；`git diff --check` 通过。当前仍未生成正式 review receipts、finalization 或 authorization，未合入、部署或运行；下一步将本修订提交推送后，对新的 exact commit 重新做 cold-start、satellite-DRL、adversarial 三类复核。
+
+## 2026-08-24：R03 精确提交三方复核完成并生成两格授权
+
+- 最终承重代码与冻结工件基线为 exact commit `95d28051696ccaa6e75a46bb552e60874f5da256`。cold-start、satellite-DRL、adversarial 三类 Kimi 只读复核均返回 `PASS_WITH_LIMITS`，会话分别为 `session_46138f46-c820-4fed-9376-c1b249daf30e`、`session_1b4c85bd-b97b-4802-9952-976150af8169`、`session_d06fa03e-ca73-43c8-ae65-5449e9977d75`；Codex 独立复核后确认无 blocker，不把 worker 结论直接当正式证据。
+- 三份正式 receipt 均绑定同一组 26 个 exact artifact hashes，SHA 分别为 cold-start `6621b43ca1649892805d3932a022db8ab579225e88e6e5c99fe93d751a77c7bf`、satellite-DRL `051c820e198a43b4d08c1c95f4eac58c347f359067ea526a3b40f5b46f64c056`、adversarial `9a29c1df83ab01761f1d5702dfbd5c03f612ad04bcd397e855b645388ad2d663`。`finalize_decision.py` 返回 `ACCEPTED`；decision SHA=`036af4674b30e7fa5697f2bd3f89396a7cb36e5f7014e0e70f5acf8d099e0971`，finalization SHA=`c9cbb6b866d143e2faca4d195494b40ede9bb318c84a5af2caf76afb546901d3`。
+- 已生成 R03 两格派生授权：`authorize_experiment` 返回 `AUTHORIZED`（2 runs），authorization SHA=`22bf215289ae2a04db63b81ec354b3bf0f43663a8643ed5bb367b41b772329a3`，payload SHA=`c1077db863c9d87552cc5a99daaeec0a4d211d2a7a385851ea9288d4a6709e12`；重新验签通过，首格 b5 的串行门为 `READY`、predecessors 为空。
+- 非阻断限制仍保留：少数畸形 persisted manifest 会以裸 traceback 而非干净错误信封失败，但不会写出分类；零时长 interrupted service 可锚定真实 queue wait，但不贡献利用率且没有专项回归；episode 边缘重叠的完整 wait 与 episode 内面积是预注册的不对称。任何正式分类错误、未定位 overflow、物理无效或未排空都必须停止，不能改写成 no-pressure。
+- 当前只完成了“承重版本复核 → 治理定案 → 派生授权”，尚未 PR/CI 合入、clean-main 部署或执行 VM。下一步提交本治理包并经 required pytest CI 合入；部署 exact merge SHA 后严格串行运行 b5，只有其 natural end、守恒、治理、外部 witness、身份、ISL 指标和 zero-rate 门全通过才允许 b2。单种子分类不能直接进入论文或算法比较。
+- PR #163（`fix: 闭合 ISL 压力标定与串行授权`）首轮 required `pytest` CI 已通过，run=`32742920625`、job=`97481422740`。本条 NOTES 留痕提交后仍须重新通过 required CI 才可 squash 合入；截至本条记录仍未部署或执行 VM。

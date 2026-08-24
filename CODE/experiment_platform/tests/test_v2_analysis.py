@@ -22,6 +22,8 @@ def _stable_analyzer_identity(monkeypatch):
         "git_commit": "a" * 40,
         "files": {
             "CODE/experiment_platform/v2_analysis.py": "b" * 64,
+            "CODE/experiment_platform/isl_pressure.py": "d" * 64,
+            "CODE/experiment_platform/isl_pressure_decision.py": "e" * 64,
             "CODE/leo_sim/metrics.py": "c" * 64,
         },
     }
@@ -306,6 +308,17 @@ def test_run_diagnostics_preserves_raw_isl_denominator_and_saturation():
             "mcs_rate_max_bps": 20,
         },
         "control_counters": {"registered": 3, "transmission_completed": 2},
+        "packet_fates": {"1": ["IN_SYSTEM_AT_STOP", 1.0]},
+        "access": {},
+        "queue_area_bits_s": {},
+        "stop_time_s": 1.0,
+        "packet_events": [],
+        "link_service_windows": [],
+        "link_available_windows": [{
+            "stage": "isl", "link_id": "isl:0:1",
+            "start": 0.0, "end": 1.0, "rate_bps": 100.0,
+            "capacity_bits": 100.0,
+        }],
         "congestion_metrics": {"links": {
             "isl:0:1": {
                 "stage": "isl", "served_bits": 100.0,
@@ -320,6 +333,8 @@ def test_run_diagnostics_preserves_raw_isl_denominator_and_saturation():
     assert diagnostics["isl"]["saturated_link_ids"] == ["isl:0:1"]
     assert diagnostics["isl"]["links"]["isl:0:1"]["served_bits"] == 100.0
     assert diagnostics["isl"]["links"]["isl:0:1"]["available_capacity_bits"] == 100.0
+    assert diagnostics["drain"]["in_system_at_stop_packets"] == 1
+    assert diagnostics["drain"]["unmatched_isl_queue_entries"] == 0
 
 
 def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
@@ -374,6 +389,8 @@ def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
         "git_commit": "d" * 40,
         "files": {
             "CODE/experiment_platform/v2_analysis.py": "e" * 64,
+            "CODE/experiment_platform/isl_pressure.py": "0" * 64,
+            "CODE/experiment_platform/isl_pressure_decision.py": "1" * 64,
             "CODE/leo_sim/metrics.py": "f" * 64,
         },
     }
@@ -457,6 +474,8 @@ def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
     report = (out / "report.md").read_text(encoding="utf-8")
     assert "MCS zero-rate holds" in report
     assert "saturated directed ISL links" in report
+    assert "1 s active-window p99/max utilization" in report
+    assert "matched/unmatched ISL queue entries" in report
 
 
 def test_v2_analysis_rejects_empty_authorized_cohort(tmp_path):
