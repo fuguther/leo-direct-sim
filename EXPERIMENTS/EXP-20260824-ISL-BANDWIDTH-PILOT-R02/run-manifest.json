@@ -41,16 +41,18 @@
         "source_run_id": null,
         "source_sha256": null
       },
-      "code_sha256": "596086d1668f5a4fa002cd4360ecd69ed72202ed701f26dd123fb834f3811b67",
+      "code_sha256": "5d52a49c3a4a8b94ae9077a88ac1f905515a3191dcb56ae96f3a8667e99b0a8a",
       "config_overrides": {},
       "config_path": "resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b500-s7.leo-sim.yaml",
       "config_sha256": "50fa717cc16ad3c95cb49f96fd56f68e27e05a347ef9423525c1573ae4d0ea70",
       "controlled_signature": "d6d9cac717206bfd5ef4d295c1addb322708fb7f03e9d953dc72ec3af725807f",
       "execution_chain_sha256": {
         "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "436673281a52481ea8e1ee415f9d4faecd13b583c6ffe6da5828584874827229",
+        "CODE/experiment_platform/v2_serial_gate.py": "441b8944ea7727e1646a6edbe65a19c9f11c02df75978c9d82ff27a977e57a48",
         "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
         "CODE/scripts/remote/remote_job.py": "721dcaad132877dd4b864aa0e02bd2680b354ea420e9d6ce4b2b88ad62be3ae5",
-        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+        "CODE/scripts/remote/run-remote.sh": "80ce87186808e83481b6547fdde6a5996d9cd6fe6d926b879352f568e32c84ff"
       },
       "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
       "learning_seed": null,
@@ -74,16 +76,18 @@
         "source_run_id": null,
         "source_sha256": null
       },
-      "code_sha256": "596086d1668f5a4fa002cd4360ecd69ed72202ed701f26dd123fb834f3811b67",
+      "code_sha256": "5d52a49c3a4a8b94ae9077a88ac1f905515a3191dcb56ae96f3a8667e99b0a8a",
       "config_overrides": {},
       "config_path": "resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b50-s7.leo-sim.yaml",
       "config_sha256": "a4292871aadc44b845544cf497f67fa0ae70a09a47663247c7f0144204f2b734",
       "controlled_signature": "d6d9cac717206bfd5ef4d295c1addb322708fb7f03e9d953dc72ec3af725807f",
       "execution_chain_sha256": {
         "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "436673281a52481ea8e1ee415f9d4faecd13b583c6ffe6da5828584874827229",
+        "CODE/experiment_platform/v2_serial_gate.py": "441b8944ea7727e1646a6edbe65a19c9f11c02df75978c9d82ff27a977e57a48",
         "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
         "CODE/scripts/remote/remote_job.py": "721dcaad132877dd4b864aa0e02bd2680b354ea420e9d6ce4b2b88ad62be3ae5",
-        "CODE/scripts/remote/run-remote.sh": "d7ed57ca7d5e35fd635942120152d21f1754091c5a5726f47d261021e5ef0576"
+        "CODE/scripts/remote/run-remote.sh": "80ce87186808e83481b6547fdde6a5996d9cd6fe6d926b879352f568e32c84ff"
       },
       "input_sha256": "f15cf8b9845c195046a4566d31ab9eb0137e16270ea98ee6a06b871a6f578437",
       "learning_seed": null,
@@ -98,7 +102,7 @@
   "common_config_sha256": "ea045e177b99cd9221c1c8dec264c0dc5c1d86cfcf89c95c04fc25c46e369d43",
   "execution_authorized": false,
   "experiment_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02",
-  "request_sha256": "b2d013ed20425dd4d853aa7a08d812ba5da0fc71a39aac2e9deeb14e305b712d",
+  "request_sha256": "4aa1d83bfc5aceca0f26416638c35a1ffd22835d8b0fc7795ea8d6b71629d89a",
   "runtime_kind": "leo_sim_v2",
   "schema": "leo-sim-experiment-matrix-manifest/v1"
 }

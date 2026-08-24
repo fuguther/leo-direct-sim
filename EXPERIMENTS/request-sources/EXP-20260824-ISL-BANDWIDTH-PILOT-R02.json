@@ -2,6 +2,9 @@
   "schema": "leo-sim-experiment-matrix-request/v1",
   "experiment_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02",
   "runtime_kind": "leo_sim_v2",
+  "execution_policy": {
+    "mode": "serial_fail_closed"
+  },
   "work_finalization": "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R02/finalization.json",
   "acceptance": {
     "min_delivered_packets": 0,

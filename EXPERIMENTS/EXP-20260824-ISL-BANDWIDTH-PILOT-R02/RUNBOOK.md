@@ -2,7 +2,9 @@
 
 Runtime: `leo_sim_v2`; compilation only, no run is launched.
 
-Each cell is an independent controlled command after review, authorization, and clean deployment:
+Cells are listed in mandatory order; every later command is blocked until its predecessors pass the serial evidence gate:
+
+Execution policy: `serial_fail_closed`. The canonical runner applies a machine-enforced serial predecessor gate before every cell after the first; missing or ineligible pulled predecessor evidence blocks the next launch.
 
 ## EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b500-s7
 

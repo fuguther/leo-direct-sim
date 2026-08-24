@@ -28,6 +28,8 @@ MATRIX_MANIFEST_SCHEMA = "leo-sim-experiment-matrix-manifest/v1"
 MATRIX_ANALYSIS_SCHEMA = "leo-sim-matrix-analysis-request/v1"
 EXECUTION_CHAIN_PATHS = (
     "CODE/experiment_platform/authorize_experiment.py",
+    "CODE/experiment_platform/v2_analysis.py",
+    "CODE/experiment_platform/v2_serial_gate.py",
     "CODE/scripts/remote/deployment_guard.py",
     "CODE/scripts/remote/remote_job.py",
     "CODE/scripts/remote/run-remote.sh",

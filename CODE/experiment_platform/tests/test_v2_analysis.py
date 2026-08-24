@@ -362,9 +362,31 @@ def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
         persisted_path = out / "analysis-manifest.json"
         gate_path = out / "claim-gate.json"
         summary_path = out / "summary.json"
+        report_path = out / "report.md"
         original_persisted = json.loads(persisted_path.read_text(encoding="utf-8"))
         original_gate = json.loads(gate_path.read_text(encoding="utf-8"))
         original_summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        original_report = report_path.read_text(encoding="utf-8")
+        hashless = json.loads(json.dumps(original_persisted))
+        hashless.pop("output_hashes")
+        hashless.pop("output_artifacts")
+        report_path.write_text("tampered report\n", encoding="utf-8")
+        _write(persisted_path, hashless)
+        hashless_gate = dict(original_gate)
+        hashless_gate["analysis_manifest_sha256"] = v2_analysis.file_sha256(
+            persisted_path)
+        _write(gate_path, hashless_gate)
+        hashless_ok, hashless_errors = v2_analysis.verify_persisted_analysis(
+            root, persisted_path)
+        _write(persisted_path, original_persisted)
+        _write(gate_path, original_gate)
+        report_path.write_text(original_report, encoding="utf-8")
+        boundary_gate = dict(original_gate)
+        boundary_gate["cannot_claim"] = []
+        _write(gate_path, boundary_gate)
+        boundary_ok, boundary_errors = v2_analysis.verify_persisted_analysis(
+            root, persisted_path)
+        _write(gate_path, original_gate)
         claim_tampered = json.loads(json.dumps(original_persisted))
         claim_tampered["claim_status"] = "LEGACY_INTERNAL_ONLY"
         claim_summary = dict(original_summary)
@@ -392,6 +414,10 @@ def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
         tampered_ok, tampered_errors = v2_analysis.verify_persisted_analysis(
             root, persisted_path)
     assert ok, errors
+    assert not hashless_ok
+    assert any("output hash contract" in item for item in hashless_errors)
+    assert not boundary_ok
+    assert any("claim gate differs" in item for item in boundary_errors)
     assert not claim_ok
     assert any("claim_status" in item for item in claim_errors)
     assert not tampered_ok
@@ -404,6 +430,35 @@ def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
     report = (out / "report.md").read_text(encoding="utf-8")
     assert "MCS zero-rate holds" in report
     assert "saturated directed ISL links" in report
+
+
+def test_v2_analysis_rejects_empty_authorized_cohort(tmp_path):
+    experiment = tmp_path / "EXPERIMENTS" / "EXP-EMPTY"
+    _write(experiment / "request.json", {
+        "experiment_id": "EXP-EMPTY", "claim_boundary": {},
+    })
+    _write(experiment / "run-manifest.json", {
+        "schema": v2_analysis.MATRIX_SCHEMA,
+        "experiment_id": "EXP-EMPTY", "cells": [],
+    })
+    _write(experiment / "analysis-request.json", {
+        "schema": v2_analysis.ANALYSIS_SCHEMA,
+        "experiment_id": "EXP-EMPTY", "planned_run_ids": [],
+        "analysis": {"primary_metric": "delivery_rate",
+                     "planned_contrasts": []},
+    })
+    authorization_path = experiment / "authorization.json"
+    _write(authorization_path, {
+        "status": "AUTHORIZED", "experiment_id": "EXP-EMPTY",
+        "authorized_cells": [],
+    })
+    with mock.patch.object(v2_analysis.authorize_experiment,
+                           "verify_authorization",
+                           return_value=json.loads(
+                               authorization_path.read_text())):
+        with pytest.raises(v2_analysis.V2AnalysisError,
+                           match="authorization has no authorized V2 cohort"):
+            v2_analysis.analyze(tmp_path, experiment, authorization_path)
 
 
 def test_v2_analysis_rejects_legacy_receipt_without_explicit_internal_mode(

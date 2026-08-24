@@ -634,15 +634,41 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
             if file_sha256(path) != digest:
                 raise V2AnalysisError(f"input hash mismatch: {raw}")
         output_dir = manifest_path.parent
-        for name, digest in manifest.get("output_hashes", {}).items():
+        output_hashes = manifest.get("output_hashes")
+        if not isinstance(output_hashes, dict) or set(output_hashes) != {
+                "summary.json", "report.md"}:
+            raise V2AnalysisError("analysis output hash contract is incomplete")
+        expected_output_artifacts = {
+            str((output_dir / name).relative_to(root)): digest
+            for name, digest in output_hashes.items()
+        }
+        output_artifacts = manifest.get("output_artifacts")
+        if not isinstance(output_artifacts, list) or any(
+                not isinstance(item, dict)
+                or set(item) != {"path", "sha256"}
+                for item in output_artifacts):
+            raise V2AnalysisError("analysis output artifact contract is inconsistent")
+        actual_output_artifacts = {
+            item["path"]: item["sha256"] for item in output_artifacts
+        }
+        if len(actual_output_artifacts) != len(output_artifacts) \
+                or actual_output_artifacts != expected_output_artifacts:
+            raise V2AnalysisError("analysis output artifact contract is inconsistent")
+        for name, digest in output_hashes.items():
             path = output_dir / name
             if file_sha256(path) != digest:
                 raise V2AnalysisError(f"output hash mismatch: {name}")
         gate = _read_json(output_dir / "claim-gate.json")
-        if gate.get("analysis_manifest_sha256") != file_sha256(manifest_path):
-            raise V2AnalysisError("claim gate does not bind analysis manifest")
-        if gate.get("status") != manifest.get("claim_status"):
-            raise V2AnalysisError("claim gate status differs from analysis claim_status")
+        expected_gate = {
+            "schema": CLAIM_GATE_SCHEMA,
+            "status": manifest.get("claim_status"),
+            "analysis_manifest": str(manifest_path.relative_to(root)),
+            "analysis_manifest_sha256": file_sha256(manifest_path),
+            "cannot_claim": manifest.get("claim_boundary", {}).get(
+                "cannot_claim", []),
+        }
+        if gate != expected_gate:
+            raise V2AnalysisError("claim gate differs from analysis manifest")
         summary = _read_json(output_dir / "summary.json")
         expected_summary = {
             "schema": "leo-sim-v2-analysis-summary/v1",

@@ -59,6 +59,29 @@
         "the default analyzer accepted legacy v3/v4 receipts without the external witness required by this work package",
         "persisted verification did not bind claim_status or require claim-gate status equality"
       ]
+    },
+    {
+      "reviewed_git_commit": "ba4835d999b9f31f9eeac45d197712358bf094ca",
+      "authorization_state_at_review": "NOT_AUTHORIZED",
+      "verdicts": {
+        "cold_start": "PASS",
+        "satellite_drl": "PASS",
+        "adversarial": "BLOCK"
+      },
+      "confirmed_blocking_findings": [
+        "the brief declared a b500-before-b50 receipt gate, but the canonical execution entrypoint still allowed b50 to reach SSH without machine-verifying b500 evidence"
+      ],
+      "external_candidate_review": {
+        "reviewer": "kimi_acp",
+        "operation_id": "offload-operation:3038563187a1561d8ea00574ac864df7",
+        "result_class": "RESULT_CANDIDATE",
+        "verdict": "PASS_WITH_MINOR_FINDINGS",
+        "codex_adjudication": [
+          "confirmed and fixed: output_hashes and output_artifacts must be mandatory and exact",
+          "confirmed and fixed: claim-gate cannot_claim must equal the recomputed manifest boundary",
+          "rejected as already fail-closed in the authorized path: an empty cohort is rejected because authorization has no authorized V2 cohort; an explicit regression test now preserves this behavior"
+        ]
+      }
     }
   ],
   "resolution_status": "IMPLEMENTED_AWAITING_INDEPENDENT_REREVIEW",

@@ -112,6 +112,17 @@ IFS='|' read -r launch_nonce expected_run_id expected_config_sha expected_author
 [[ "$launch_nonce" =~ ^[a-f0-9]{32}$ ]] || die "could not generate launch nonce"
 [[ "$expected_config_sha" =~ ^[a-f0-9]{64}$ && "$expected_authorization_sha" =~ ^[a-f0-9]{64}$ ]] \
     || die "could not bind local config/authorization hashes"
+if [[ "$runtime_kind" == "leo_sim_v2" ]]; then
+    local_experiment_dir="$(dirname "$local_authorization")"
+    (
+        cd "$LOCAL_WORKSPACE_DIR"
+        "$LOCAL_PYTHON" -m CODE.experiment_platform.v2_serial_gate \
+            --root "$LOCAL_WORKSPACE_DIR" \
+            --experiment "$local_experiment_dir" \
+            --authorization "$local_authorization" \
+            --next-run-id "$expected_run_id"
+    )
+fi
 session_name="${session_base}_${launch_nonce:0:12}"
 [[ "$session_name" =~ ^[A-Za-z0-9_.-]+$ ]] || die "invalid nonce-bound session name"
 

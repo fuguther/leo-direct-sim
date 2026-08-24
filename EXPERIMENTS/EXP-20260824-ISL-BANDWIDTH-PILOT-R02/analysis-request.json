@@ -34,7 +34,7 @@
     ]
   },
   "experiment_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02",
-  "matrix_manifest_sha256": "ac53cb8aef1cefe32578a0a689604bb80014d7739bfe5d874d4768f64cf57a59",
+  "matrix_manifest_sha256": "27d5616b11cd6e8e7403db3cc8a70605ffb7051a5a3319177406df5cd113e2d1",
   "planned_cells": [
     {
       "acceptance": {
@@ -77,7 +77,7 @@
     "EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b500-s7",
     "EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b50-s7"
   ],
-  "request_sha256": "b2d013ed20425dd4d853aa7a08d812ba5da0fc71a39aac2e9deeb14e305b712d",
+  "request_sha256": "4aa1d83bfc5aceca0f26416638c35a1ffd22835d8b0fc7795ea8d6b71629d89a",
   "runtime_kind": "leo_sim_v2",
   "schema": "leo-sim-matrix-analysis-request/v1",
   "status": "WAITING_FOR_VERIFIED_RUNS"

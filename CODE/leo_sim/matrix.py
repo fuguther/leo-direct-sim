@@ -207,11 +207,20 @@ def _validate_claim_boundary(value: Any) -> dict[str, Any]:
 
 
 def validate_request(request: Any) -> dict[str, Any]:
-    request = _expect_keys(request, {
+    required = {
         "schema", "experiment_id", "runtime_kind", "work_finalization",
         "common_config", "arms", "cells", "acceptance", "analysis",
         "claim_boundary",
-    }, "matrix request")
+    }
+    allowed = required | {"execution_policy"}
+    if not isinstance(request, dict):
+        raise MatrixError("matrix request must be a mapping")
+    unknown = set(request) - allowed
+    missing = required - set(request)
+    if unknown:
+        raise MatrixError(f"unknown request fields {sorted(unknown)}")
+    if missing:
+        raise MatrixError(f"matrix request missing fields {sorted(missing)}")
     if request["schema"] != MATRIX_REQUEST_SCHEMA:
         raise MatrixError(f"request.schema must be {MATRIX_REQUEST_SCHEMA!r}")
     experiment_id = request["experiment_id"]
@@ -219,6 +228,13 @@ def validate_request(request: Any) -> dict[str, Any]:
         raise MatrixError("experiment_id must be a safe EXP-* identifier")
     if request["runtime_kind"] != governance.RUNTIME_KIND:
         raise MatrixError("runtime_kind must be 'leo_sim_v2'")
+    execution_policy = request.get("execution_policy")
+    if execution_policy is not None:
+        execution_policy = _expect_keys(
+            execution_policy, {"mode"}, "execution_policy")
+        if execution_policy["mode"] != "serial_fail_closed":
+            raise MatrixError(
+                "execution_policy.mode must be serial_fail_closed")
     finalization = request["work_finalization"]
     if (not isinstance(finalization, str) or not finalization.startswith("CODE/work/")
             or not finalization.endswith("/finalization.json")
@@ -312,6 +328,8 @@ def validate_request(request: Any) -> dict[str, Any]:
             raise MatrixError("analysis contrast must compare distinct arms")
     return {
         **request,
+        **({"execution_policy": execution_policy}
+           if execution_policy is not None else {}),
         "arms": normalized_arms,
         "cells": normalized_cells,
     }
@@ -622,11 +640,26 @@ def compile_matrix_experiment(request_path: Path, out_dir: Path,
     manifest_sha = hashlib.sha256((out_dir / "run-manifest.json").read_bytes()).hexdigest()
     analysis = _analysis_document(validated, manifest_sha, request_sha, rows)
     _write_json(out_dir / "analysis-request.json", analysis)
+    serial = (validated.get("execution_policy", {}).get("mode")
+              == "serial_fail_closed")
+    command_contract = (
+        "Cells are listed in mandatory order; every later command is blocked "
+        "until its predecessors pass the serial evidence gate:"
+        if serial else
+        "Each cell is an independent controlled command after review, "
+        "authorization, and clean deployment:"
+    )
     runbook_lines = [
         f"# {validated['experiment_id']}", "",
         "Runtime: `leo_sim_v2`; compilation only, no run is launched.", "",
-        "Each cell is an independent controlled command after review, authorization, and clean deployment:", "",
+        command_contract, "",
     ]
+    if serial:
+        runbook_lines.extend([
+            "Execution policy: `serial_fail_closed`. The canonical runner applies a "
+            "machine-enforced serial predecessor gate before every cell after the first; "
+            "missing or ineligible pulled predecessor evidence blocks the next launch.", "",
+        ])
     for row in rows:
         runbook_lines.extend([
             f"## {row['run_id']}", "", "```bash",
