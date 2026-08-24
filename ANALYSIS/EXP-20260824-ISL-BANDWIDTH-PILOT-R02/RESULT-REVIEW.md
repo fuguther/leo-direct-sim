@@ -70,5 +70,12 @@ ISL 饱和，数据包命运没有变化。
 - 独立冷审：`PASS_WITH_LIMITS`。通过范围仅是上述单 scenario/seed 工程描述；冷审提出的
   “本地 Python 版本不匹配”open item 未被终判采纳，因为本轮已另建精确 Python 3.11.15
   与锁定依赖环境，且 VM/本地均实际返回 `verified`。
-- Kimi 外审：任务已准备，但共享 ProjectPilot host 缺失 endpoint；停止共享 host 或复制
-  认证 token 均未获安全授权，因此未派发。此项明确保持 `UNVERIFIED`，不冒充完成。
+- Kimi 外审：ProjectPilot host 的 endpoint/锁与 backend 选择故障修复后，已派发
+  operation `offload-operation:0e5d47be8640e25dae9756dda39fa545`，绑定 exact code
+  `d3a116a69912dd214d89582a7b29c947f2357bfa`。主审通道返回
+  `EVIDENCE_READY/PASS_WITH_LIMITS`；独立通道两次在证据中写入非
+  typed-reference 的 `github.com`，被校验器 fail-closed 拒收，整个 operation
+  终态为 `FAILED`。因此只记“Kimi 主审候选证据已返回，独立通道未通过合同”，
+  不冒充双通道外审通过。主审提出“先扩 seed/再转 demand 轴”的路线未被 Codex
+  采纳：它会偏离本轮只改 bandwidth 的预注册问题，且现有 `5/2/1 MHz`
+  bracket 证据更直接；仍先定位 onset，再在相邻档补预注册 seed。
