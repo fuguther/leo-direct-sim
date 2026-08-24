@@ -15,6 +15,7 @@
 - 最大 link 两臂均为 `isl:222:242`，served bits 均为 `131000000`；sampled available-capacity bits 从 `22312095000` 降到 `6309642000`。全部 link 的 served bits、service-window 数和逐 link available time（均 30 s）一致，但 224/1120 link 的 available sample count 相差 1--2：b500 分布为 `{30:840,31:224,32:56}`，b50 为 `{30:952,31:168}`。独立冷审后重算否定了“drain 裁剪导致总时窗不同”的初始解释；差异更符合 bandwidth 改变 SNR/MCS threshold 分段数量。该差异不改变最大 link 的 30 个 sample，但再次说明干预不是纯容量乘数。
 - 运行过程保留一个 fail-loud 基础设施证据：b50 首次 prepare 因原 `REMOTE_PYTHON=python3` 在环境激活前执行 predecessor verifier，找不到 TensorFlow 而在仿真启动前退出；随后只用临时、未入库的 remote config 指向 canonical Python 3.11.15，原 `remote.env` 与仓库代码均未修改，正式 nonce 重新通过全部 gate 后运行。
 - 当前最强边界只是“在这个固定 scenario/seed 中，50 MHz 相对 500 MHz 提高了最大 horizon-aggregate 有向 ISL 利用率，但两臂仍远离饱和且包命运相同”。不能写成纯带宽因果乘数、拥塞阈值、算法优越性、Q0 结论或论文统计证据；50 MHz 不能据此冻结为 pressure arm。独立冷审 verdict=`PASS_WITH_LIMITS`；其“本地版本不匹配”open item 被精确 Python 3.11.15 双端 `verified` 证据驳回。Kimi 结果外审任务已准备，但共享 ProjectPilot host 缺失 endpoint 且不能无中断恢复，故 Kimi 审阅明确保持未完成。
+- 合并留痕：结果归档 PR #160 的 GitHub Actions `pytest` 为 `SUCCESS`（run `32717549102`，job `97401900189`），squash 合入 main=`e9ccd87345596fd5727843a938143119a5f176d0`，远端结果分支已删除。
 
 ## 2026-08-24：ISL RF 带宽敏感性候选包（精确包冷审通过，未授权）
 
