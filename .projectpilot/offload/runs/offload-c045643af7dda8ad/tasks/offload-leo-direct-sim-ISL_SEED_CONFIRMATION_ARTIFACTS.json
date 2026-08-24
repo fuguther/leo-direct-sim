@@ -1,0 +1,65 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:ISL_SEED_CONFIRMATION_ARTIFACTS",
+    "title": "Audit frozen seed 11 and seed 19 package design",
+    "goal": "Starting from exact commit 98d9092751abd84a3d3ad6b39e932e5e501740c0, audit and specify the exact field-level mapping for revision 4 candidate artifacts for two separate matrix experiments: EXP-20260825-ISL-BANDWIDTH-CONFIRM-S11 and EXP-20260825-ISL-BANDWIDTH-CONFIRM-S19. Each must contain exactly b5 then b2 for only its own trace seed. Preserve every R03 scenario, demand, access, topology, routing, timing, bandwidth and pressure threshold invariant; only identifiers and trace_seed may differ. Specify one R04 brief binding both packages and separate pressure decision contracts for S11 and S19. Do not edit files, execute shell/compiler/tests, or create reviews, decision.json, finalization.json, authorization.json, results, or implementation-code changes. The brief must state: seeds 11/19 were selected after seeing seed 7 but before generating or viewing their scenario results; S19 remains frozen but unauthorized until S11 is exactly PRESSURE_CANDIDATE; any other S11 branch/error stops and S19 is never authorized; no majority vote, no 1 MHz, no Q0/info/RL, and even three matching seeds are only an engineering testbed rather than a statistical or paper threshold claim.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "98d9092751abd84a3d3ad6b39e932e5e501740c0",
+      "paths": [
+        "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+        "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/RUNBOOK.md",
+        "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/brief.json",
+        "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json",
+        "CODE/experiment_platform/compile_experiment.py",
+        "CODE/experiment_platform/experiment-request.schema.json",
+        "CODE/work/work-package.schema.json"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Give an exact field-level R03-to-S11/S19 mapping and identify every field that must or must not change.",
+      "Specify how each experiment will compile to exactly two serial cells ordered b5 then b2; flag any schema or governance risk Codex must test locally.",
+      "Both pressure decision contracts preserve the R03 ordered classes, thresholds, physical-validity and drain-validity gates while pointing only to their own experiment and analysis paths.",
+      "The R04 brief freezes both packages before any new result and accurately states the post-seed7 selection boundary and conditional S19 authorization stop rule.",
+      "No authorization, review receipt, finalization, result, or implementation code is created or modified.",
+      "Return a candidate-only PASS_WITH_LIMITS or REQUEST_CHANGES and explicit open items; do not claim tests were run."
+    ],
+    "requiredEvidence": [
+      "Exact proposed changed-file list",
+      "Machine-readable field mapping for R03 versus S11/S19 invariants",
+      "Schema and governance risk audit",
+      "Explicit open_items and candidate-only verdict"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "74fd37fcb8ad314e84475759e4813d20cff7bc45dececc083f5fff756ba42a22"
+}
