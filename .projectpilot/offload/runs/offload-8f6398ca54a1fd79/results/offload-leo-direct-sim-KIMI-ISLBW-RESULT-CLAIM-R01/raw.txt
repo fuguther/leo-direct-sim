@@ -1,0 +1,178 @@
+我先核对 exact commit，然后并行读取合同允许的关键文件。重新用 content 模式提取关键代码位置。现在读取 FINDINGS-REGISTRY 与 NOTES 获取 R01/R02 上下文与下一步路线背景。# R02 formal result claim 审阅报告
+
+**裁决：PASS_WITH_LIMITS**
+
+审阅基线：本地 worktree HEAD 已核对为 `d3a116a69912dd214d89582a7b29c947f2357bfa`（PR #159 的 squash merge），worktree clean。所有数值结果我只从 Codex 候选证据信封获得，未独立验证原始 Results（gitignored 且不在允许路径内）。
+
+---
+
+## 0. 一个前置结构性事实（影响所有数值结论的证据等级）
+
+**FACT**：在 pinned commit `d3a116a` 上，R02 尚无任何运行结果记录。`NOTES.md:705` 在该 commit 明确写着「当前仍只是『审阅与授权完成』，尚未合入/部署，也没有 VM 自然结束回执或分析结果」。正式双臂结果的持久化分析（`ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/v2-paired/analysis-manifest.json`、`claim-gate.json`、`RESULT-REVIEW.md` 等 9 个文件）是在**后续** commit `e9ccd87`（PR #160「exp: 记录 ISL 带宽正式双臂结果」）才合入 main 的（本地 `git log main` 可核验：`83b5421 → e9ccd87 → d3a116a`）。因此信封中全部数值（utilization、MCS、fate、manifest SHA `bc6974…`）在本审阅基线上**无仓库内对应物**，只能标记为「仅来自 Codex 候选证据信封」，必须由本地 Agent 在 main ≥ `e9ccd87` 上对持久化产物重验。
+
+## 1. 最强可支持表述
+
+**FACT（代码合同层，可核验）**：
+- 两臂唯一配置差异是 `links.rf_isl.bandwidth_hz` 500 MHz vs 50 MHz——两份 resolved YAML 的 diff 只有第 127 行一行（`resolved/…-b50-s7.leo-sim.yaml:127` vs `…-b500-s7.leo-sim.yaml:127`）；`analysis-request.json:48/54/66/72` 显示两臂 `controlled_signature`、`trace_identity_sha256`、`input_sha256` 完全相同；`authorization.json:155` 状态为 `AUTHORIZED` 且带完整 verification_policy（:156-163）。
+- `v2_analysis.py:486-490` 在分析时强制校验**实际** `trace_sha256` 跨 cell 相等；:382-389 强制 governance receipt v2 `research_eligible=true`、verification_errors 为空、authorization hash 绑定；:410-424 强制 nonce 外部 witness。
+- 算术自洽：131000000/22312095000 = 0.005871255030…、131000000/6309642000 = 0.020761875238…、差 = 0.014890620208…，与信封逐位一致；1120 条有向 ISL 的利用率由 `metrics.py:334-340` 以 horizon 聚合 served/sampled-available 计算，且 `metrics.py:341-342` 对 served > denominator 直接 raise，无静默截断。
+
+**INFERENCE**：在给定信封数值为真的前提下，最强表述是——「在 seed=7、280/14/25°、M-Lab 多 OD + 8 s 2× burst、hop/C3、access 100 Mbps 的固定场景下，把 ISL RF 带宽从 500 MHz 降到 50 MHz，horizon 聚合的最大有向 ISL 利用率从约 0.59% 升到约 2.08%（同一链路 isl:222:242，served_bits 完全相同），方向符合预期、幅度约 3.5 倍，且两臂均无任何链路接近饱和。」这是 `request.json:16` 自声明的 paired descriptive sensitivity，不是因果或算法结论。
+
+## 2. 明确不能写的表述
+
+依据 `request.json:90-98` 的 cannot_claim 与 `v2_analysis.py:6-8`（VERIFIED ≠ paper claim，需过 claim-gate 与独立 claim/value review）：
+
+- 不能写算法 superiority、因果信息价值效应（:91）；
+- 不能写普适/最终的 low/onset/pressure 阈值（:92）——单 seed、n_pairs=1（`v2_analysis.py:500`）；
+- 不能写成「纯容量乘数效应」（:93）：FACT 是分母只放大了 3.54×（22312095000/6309642000）而非 10×，rate_min 只放大 3.28×，带宽同时改变噪声/SNR/MCS/控制包服务时间；
+- 不能写论文级统计证据、Q0 最优、实验冻结（:95）；
+- 不能写「50 MHz 下 ISL 永不饱和」之类的普适表述——horizon 聚合指标不覆盖 burst 窗口瞬态（见第 7 节）；
+- 不能把 acceptance 字段（全 0/false，`request.json:2-7`）当作结果有效性门禁（:94）。
+
+## 3. 50 MHz 是否远离 ISL 饱和、能否作拥塞/压力档
+
+**INFERENCE（基于信封数值）**：是，远离饱和——b50 最大利用率 2.08%，约 48× 余量，1120 条链路无 satuation（饱和判据 `v2_analysis.py:276-277`：utilization ≥ 1−1e-12）。但**它不足以作为拥塞/压力档**：
+
+- 两臂数据 fate 完全相同（offered 1299 / delivered 1295 / NO_ROUTE 4 / in-system 0）、control counters 完全相同——说明在 50 MHz 下系统仍处于**需求/接入受限**区间，带宽缩减没有触发任何拥塞响应。当前配置的接入侧只有 up/down 100 Mbps（`request.json:104-105`）、offered 50 Mbps ×2 burst（:122-128），瓶颈更可能在 access 而非 ISL。
+- 结论：b50 是**敏感性参考档**，不是压力档。拥塞研究必须沿 demand（offered_mbps/burst）或 access 轴加压，而不是指望 50 MHz 自然产生 ISL 压力。
+
+## 4. 下一步最有信息价值且成本合理的预注册路线
+
+**INFERENCE**（成本意识：两臂串行 pilot 已证明单 cell 成本低、串行门 fail-closed 有效，`v2_serial_gate.py:38-80`）：
+
+1. **第一步（最小、必做）：seed 复制**。同一 R02 两臂设计，trace_seed 扩到 7/11/13（沿用 R03 已有的 7/11 惯例），3 个 exact pairs。停止条件：若任一 seed 上 max-link 身份或差值符号翻转，停止并先查 trace/路由混淆，不加 seed 硬凑。
+2. **第二步：固定 50 MHz，做 demand 阶梯**。轴：`offered_mbps` ∈ {50, 100, 200, 400}（保持 burst 结构不变），单 seed 7 先行。**停止条件（预注册）**：(a) 任一有向 ISL horizon 利用率 ≥ 0.5 工程带；(b) fate 出现劣化（NO_ROUTE 增长、QUEUE_OVERFLOW 出现、in-system > 0）；(c) `mcs_zero_rate_holds > 0`——`v2_analysis.py:251-252` 会使分析直接 ineligible，出现即停。命中任一条件即停阶梯、在该点做 3-seed 确认。
+3. **避免混淆**：一次只动一个轴（bandwidth 或 demand，不联合扫）；保持 trace identity、hop/C3 路由、access 合同不变；每档都用 `pairing_key` 配对；burst 窗口内利用率需要更细粒度指标时，另立分析项，不要复用 horizon 聚合主指标下结论。
+
+## 5. 是否值得直接扩成大矩阵
+
+**INFERENCE**：不值得。理由：(a) 当前结果是单 seed 描述性对比，统计骨架为零；(b) 两个带宽档都深处于无拥塞区（fate 完全相同），大矩阵会在一个没有信号的区间批量烧 VM 机时；(c) 有信息的是「压力从哪来」——先走完第 4 节的两步小扫描定位压力轴，再决定是否需要 bandwidth × demand 因子设计。NOTES.md:620 对 R02 200 Mbps 矩阵的既有结论（「下一步应先做多 seed/重复」）与此一致。
+
+## 6. raw receipt false / governance true 的正确语义
+
+**FACT（代码层确认，分层语义符合合同）**：
+
+- `receipt.py:196-204`：`expected_research_eligible()` **无条件返回 False**，docstring 明确「Local artifacts never confer formal research eligibility…Formal eligibility belongs to the external governance receipt that binds review, authorization and deployed commit.」
+- `receipt.py:1460-1464`：receipt 校验会重算该值，raw receipt 写 true 反而报错。
+- `v2_analysis.py:382-384`：正式资格只从 governance receipt（v2 schema）读取，要求 `research_eligible is True` 且 `verification_errors == []`，并绑定 authorization hash；v2 还要过 identity/witness 绑定（:387-424）。
+
+正确表述：**「raw receipt 的 research_eligible=false 意为『本地工件自身不授予正式资格』，governance v2 receipt 的 true 是绑定审阅、授权、部署与外部 witness 后的正式授予；两者是分层设计而非冲突或覆盖。」** 报告中禁止写成「raw receipt 判不合格但 governance 覆盖为合格」。
+
+## 7. 替代解释与反例
+
+1. **需求/接入受限解释（最强替代）**：两臂 fate、served_bits、control counters 完全相同，说明观测到的利用率差纯粹是分母（available capacity）变化，分子未动。该结果与「ISL 带宽在此场景根本不在瓶颈上」完全相容；真正的瓶颈可能是 access 100 Mbps（`request.json:104-105`）或 50 Mbps 的 offered demand 本身。若写报告时不点明这一点，「带宽降低 10× 利用率只升到 2%」会被误读为「ISL 容量裕度大」而非「负载根本没打到 ISL」。
+2. **horizon 聚合稀释 burst 瞬态**：主指标是 30 s horizon 聚合（estimand，`request.json:10`；分母由 1 s 间隔独立采样，`metrics.py:296-329`）。8 s ×2 burst 内的瞬时利用率可能远高于 2.08% 的聚合值——本结果不能排除 burst 窗口内的瞬态高压。反例构造：若 burst 期间实际到达率集中在少数链路，聚合后峰值被 30 s 分母摊薄约 3.75 倍。
+3. **MCS 非线性/噪声标度假设**：10× 带宽只换来 3.54× 分母，依赖于当前 MCS 表与噪声随带宽标定的实现。换一个 MCS 表、噪声图或 min elevation，比值和绝对水平都可能变化——单点数字对物理建模选择敏感，不能外推。
+4. **单 seed 反例风险**：max link 身份 isl:222:242 与具体数值可能是 seed 7 的 trace/burst 相位产物；换 seed 后最大链路位置和比值都可不同。这正是第 4 节把 seed 复制列为第一步的原因。
+
+## OPEN_ITEM 汇总
+
+- 信封全部数值（trace_sha256、utilization、MCS、fate/counters、analysis-manifest SHA `bc6974…`、recomputation ok）在 pinned commit `d3a116a` 上无仓库内对应物；持久化分析在后续 `e9ccd87`（PR #160）才合入，且该路径不在本任务允许读取范围内——本地 Agent 必须在 main ≥ `e9ccd87` 上重验 analysis-manifest SHA 与 report/summary 数值。
+- PR #160 合入的 `claim-gate.json` 是否与 `request.json:82-98` 的 claim boundary 逐条一致，未经我核验（路径越权）。
+- burst 窗口级（非聚合）利用率无数据；如拥塞研究需要，应作为独立分析项补做。
+- 本端无法访问 ignored raw Results，未做任何原始数据级验证；最终验证权在本地 Agent。
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:KIMI-ISLBW-RESULT-CLAIM-R01",
+  "status": "EVIDENCE_READY",
+  "summary": "裁决 PASS_WITH_LIMITS。代码合同层核验通过：两臂唯一 diff 为 bandwidth_hz（resolved yaml 第127行），identity/controlled_signature/input 全同，authorization AUTHORIZED 且 verification_policy 完整；raw receipt research_eligible=false 是 receipt.py:196-204 的分层设计（本地工件永不授予正式资格），governance v2 的 true 由 v2_analysis.py:382-424 强制绑定，语义正确，报告须按分层表述而非覆盖。信封数值算术自洽（131e6/22312095000 等逐位吻合），3.54x 分母比证实非纯容量乘数。主要限制：pinned commit d3a116a 上 NOTES.md:705 明示尚无运行结果，持久化分析在后续 e9ccd87(PR#160) 才合入，故全部数值仅来自 Codex 信封，须本地在 main>=e9ccd87 重验。50 MHz 最大利用率 2.08%（约48x 余量）远离 ISL 饱和，但两臂 fate 全同说明系统处于需求/接入受限区，b50 是敏感性参考档而非拥塞压力档。下一步：先 3-seed(7/11/13) 复制本对比，再固定 50MHz 做 offered_mbps 50/100/200/400 demand 阶梯，停止条件为 max util>=0.5、fate 劣化或 mcs_zero_rate_holds>0（v2_analysis.py:251-252）；不值得直接扩大矩阵。替代解释：需求/接入受限、horizon 聚合稀释 burst 瞬态、MCS 非线性标定、单 seed 偶然性。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "pinned commit d3a116a 上 R02 无任何运行结果记录（NOTES 明示未合入/未部署/无回执）；正式双臂结果的持久化分析在后续 commit e9ccd87(PR#160) 才合入 main。信封全部数值在本审阅基线无仓库内对应物，只能标记为 Codex 候选信封来源，本地 Agent 必须在 main>=e9ccd87 重验 analysis-manifest SHA bc6974 与 report 数值。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/NOTES.md#L699-L705",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/compile-report.json#L11-L17"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "raw receipt research_eligible=false / governance v2 true 的分层语义符合代码合同：expected_research_eligible 无条件返回 False（本地工件永不授予正式资格），verify_receipt 会重算强制；正式资格仅由 governance receipt v2 授予并由 v2_analysis 强制 research_eligible is True、verification_errors 空、authorization hash 与外部 witness 绑定。报告必须表述为分层设计，禁止写成冲突或覆盖。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/CODE/leo_sim/receipt.py#L196-L204",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/CODE/leo_sim/receipt.py#L1460-L1464",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/CODE/experiment_platform/v2_analysis.py#L382-L389"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "信封数值算术自洽：131000000/22312095000=0.005871255030…、131000000/6309642000=0.020761875238…、diff=0.014890620208… 逐位吻合；分母比 3.54x（而非带宽的 10x）、rate_min 比 3.28x，与 cannot_claim『非纯容量乘数』一致。利用率由 horizon 聚合 served/sampled-available 计算，served>denominator 直接 raise，无静默截断。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/request.json#L90-L98",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/CODE/leo_sim/metrics.py#L296-L342",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/CODE/experiment_platform/v2_analysis.py#L225-L232"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "claim 边界：单 seed、n_pairs=1 的 paired descriptive sensitivity，不得写成算法 superiority、因果效应、普适阈值、纯容量乘数或论文统计证据；VERIFIED 分析仍需 claim-gate 与独立 claim/value review。主指标为 horizon 聚合，不能排除 burst 窗口瞬态高压。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/request.json#L82-L98",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/request.json#L8-L23",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/CODE/experiment_platform/v2_analysis.py#L1-L12",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/CODE/experiment_platform/v2_analysis.py#L500-L500"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "两臂数据 fate 与 control counters 完全相同（信封数据）说明 50 MHz 下系统处于需求/接入受限区（access 仅 up/down 100 Mbps、offered 50 Mbps x2 burst），带宽缩减未触发任何拥塞响应；b50 最大利用率约 2.08%（约 48x 余量）远离 ISL 饱和，但它只是敏感性参考档，不足以作为拥塞/压力研究档——压力必须沿 demand/access 轴施加。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/request.json#L100-L129",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/CODE/experiment_platform/v2_analysis.py#L276-L277"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "summary": "下一步路线：先做最小 3-seed(7/11/13) 复制同一两臂对比；再固定 50 MHz 做 offered_mbps 50/100/200/400 demand 阶梯，预注册停止条件为任一有向 ISL 利用率>=0.5、fate 劣化（NO_ROUTE 增长/QUEUE_OVERFLOW/in-system>0）或 mcs_zero_rate_holds>0（该条件使分析直接 ineligible）；一次只动一个轴避免混淆。不值得直接扩成大矩阵：无统计骨架且在无拥塞信号区间烧机时。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/CODE/experiment_platform/v2_analysis.py#L247-L252",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/NOTES.md#L613-L620",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/CODE/experiment_platform/v2_serial_gate.py#L38-L80"
+      ]
+    },
+    {
+      "id": "F7",
+      "severity": "info",
+      "summary": "实验信封一致性核验通过：两臂唯一 diff 为 resolved yaml 第 127 行 bandwidth_hz；analysis-request 中两臂 controlled_signature/trace_identity/input sha256 全同；authorization.json status=AUTHORIZED 且带完整 verification_policy；v2_analysis 在分析时强制实际 trace_sha256 跨 cell 相等。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/analysis-request.json#L38-L75",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/authorization.json#L151-L163",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b50-s7.leo-sim.yaml#L127-L127",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R02-b500-s7.leo-sim.yaml#L127-L127",
+        "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/CODE/experiment_platform/v2_analysis.py#L486-L490"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "本地 Agent 在 main>=e9ccd87(PR#160) 上重验 ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/v2-paired/analysis-manifest.json 的 SHA=bc6974… 及 report/summary 数值与 Codex 信封逐字段一致（该路径在 pinned commit d3a116a 上不存在，本端未核验）",
+    "核对 PR#160 合入的 claim-gate.json 与 request.json:82-98 的 claim boundary 逐条一致后再写任何结果记录",
+    "报告措辞采用分层语义：raw receipt research_eligible=false=本地工件不授予正式资格，governance v2 true=绑定审阅/授权/部署/witness 后的正式授予；禁止写成冲突或覆盖",
+    "按预注册路线执行：先 3-seed(7/11/13) 复制 R02 两臂对比，再固定 50 MHz 做 offered_mbps 50/100/200/400 demand 阶梯，停止条件 max util>=0.5 / fate 劣化 / mcs_zero_rate_holds>0；不扩大矩阵",
+    "结果记录写入 NOTES/FINDINGS-REGISTRY 时标注单 seed n_pairs=1 descriptive 边界，并显式声明两臂 fate 全同意味着需求/接入受限而非 ISL 受限"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/request.json#L82-L98",
+    "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/CODE/leo_sim/receipt.py#L196-L204",
+    "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/CODE/experiment_platform/v2_analysis.py#L382-L424",
+    "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/CODE/leo_sim/metrics.py#L334-L342",
+    "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/NOTES.md#L699-L705",
+    "github://fuguther/leo-direct-sim/blob/d3a116a69912dd214d89582a7b29c947f2357bfa/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/authorization.json#L151-L163"
+  ],
+  "open_items": [
+    "信封全部数值（trace_sha256 f6981c…、两臂利用率、fate/counters、MCS、analysis-manifest SHA bc6974…、recomputation ok=true）在 pinned commit d3a116a 上无仓库内对应物（NOTES.md:705 明示当时无结果；持久化分析在后续 e9ccd87 才合入且不在允许读取路径内），本端未独立验证，本地 Agent 保留最终验证权",
+    "PR#160 的 claim-gate.json 与 request.json claim boundary 的一致性未经核验（路径越权）",
+    "burst 窗口级（非 horizon 聚合）瞬态利用率无数据，不能排除 8s burst 内瞬态高压",
+    "本端无法访问 gitignored 原始 Results，未做任何原始数据级验证"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
