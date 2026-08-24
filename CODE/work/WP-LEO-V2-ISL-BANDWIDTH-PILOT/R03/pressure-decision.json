@@ -46,8 +46,7 @@
       "RANDOM_OUTAGE_IN_FLIGHT": 0,
       "NO_ROUTE": 0
     },
-    "overflow_fates_must_equal_zero_per_arm": [
-      "ISL_QUEUE_OVERFLOW",
+    "invalid_non_isl_overflow_fates_must_equal_zero_per_arm": [
       "HOLDING_QUEUE_OVERFLOW"
     ],
     "candidate_control_failure_fields": [
@@ -62,6 +61,11 @@
     "require_conservation": true,
     "require_current_external_witness": true
   },
+  "isl_queue_overflow_handling": {
+    "role": "supplementary_congestion_outcome_not_physical_failure",
+    "qualified_pressure_episode_required": true,
+    "unlocalized_overflow_blocks_classification": true
+  },
   "drain_validity": {
     "applies_to_both_arms_before_comparison": true,
     "max_in_system_at_stop_packets_per_arm": 0,
@@ -74,7 +78,7 @@
   "ordered_classification": [
     {
       "class": "PHYS_INVALID",
-      "when": "Either arm fails a per-arm physical-validity condition, or the candidate exceeds the control on a declared differential condition, including access, geometry, outage, NO_ROUTE, data-overflow or control-plane failure evidence.",
+      "when": "Either arm fails a per-arm physical-validity condition, or the candidate exceeds the control on a declared differential condition, including access, geometry, outage, NO_ROUTE, holding-queue overflow or control-plane failure evidence. ISL_QUEUE_OVERFLOW is not a physical-invalid fate.",
       "action": "Stop the bandwidth bracket. Do not call the result congestion. Move only to a separately preregistered traffic or OD-hotspot axis under physically plausible links."
     },
     {
@@ -84,12 +88,12 @@
     },
     {
       "class": "CONTROL_PRESSURE_UNBRACKETED",
-      "when": "Physical and drain validity pass, but the 5 MHz control already contains a pressure-candidate episode, whether or not the 2 MHz arm also contains one.",
+      "when": "Physical and drain validity pass, but the 5 MHz control already contains a localized pressure-candidate episode, whether or not the 2 MHz arm also contains one. ISL_QUEUE_OVERFLOW may be reported as a supplementary congestion outcome but cannot replace the localized episode.",
       "action": "Stop. Do not claim a 5-to-2 MHz onset interval. Report whether the 2 MHz signal is concordant or non-monotone, and locate a physically valid no-pressure upper arm before any onset claim. Reanalyse or rerun the prior 50 MHz upper arm under this same window contract rather than launching 1 MHz."
     },
     {
       "class": "PRESSURE_CANDIDATE",
-      "when": "Physical and drain validity pass, the 5 MHz control has no pressure-candidate episode, and the 2 MHz candidate has one directed ISL with at least two consecutive eligible 1 s windows at utilization >= 0.8 plus queue waiting that overlaps that same episode with max wait >= 0.1 s and episode queue area >= 100000 bit-s.",
+      "when": "Physical and drain validity pass, the 5 MHz control has no pressure-candidate episode, and the 2 MHz candidate has one directed ISL with at least two consecutive eligible 1 s windows at utilization >= 0.8 plus queue waiting that overlaps that same episode with max wait >= 0.1 s and episode queue area >= 100000 bit-s. ISL_QUEUE_OVERFLOW is supplementary and does not invalidate an otherwise qualified episode.",
       "action": "Stop the bandwidth bracket. Freeze the engineering onset statement to the interval between 5 MHz and 2 MHz; do not infer a dose-response curve or a 1 MHz result. Confirm the adjacent bracket with preregistered seeds before any paper claim."
     },
     {
@@ -104,6 +108,7 @@
     "Utilization without same-link queue waiting is insufficient for a pressure classification.",
     "High utilization and queue waiting on the same link but at disjoint times are insufficient for a pressure classification.",
     "A 5-to-2 MHz onset interval requires the 5 MHz arm to pass the same no-pressure test; candidate-only classification cannot establish a bracket.",
+    "ISL_QUEUE_OVERFLOW is a congestion outcome, not a disconnection or access failure; without a localized qualified pressure episode it blocks classification rather than proving pressure or no-pressure.",
     "A result selected by this tree cannot support algorithm superiority, information value, Q0 optimality or a new-algorithm claim."
   ]
 }

@@ -84,6 +84,37 @@ def test_drain_failure_precedes_pressure_signal():
     assert got["classification"] == "DRAIN_INCOMPLETE"
 
 
+def test_isl_overflow_supplements_but_does_not_replace_localized_pressure():
+    control = _run("b5")
+    candidate = _run("b2", pressure=True)
+    candidate["diagnostics"]["fate_counts"]["ISL_QUEUE_OVERFLOW"] = 2
+
+    got = isl_pressure_decision.classify_verified_pair(
+        _manifest(control, candidate), control_arm="b5", candidate_arm="b2")
+
+    assert got["classification"] == "PRESSURE_CANDIDATE"
+    assert got["candidate_isl_queue_overflows"] == 2
+
+    candidate = _run("b2")
+    candidate["diagnostics"]["fate_counts"]["ISL_QUEUE_OVERFLOW"] = 1
+    with pytest.raises(isl_pressure_decision.PressureDecisionError,
+                       match="no localized sustained pressure episode"):
+        isl_pressure_decision.classify_verified_pair(
+            _manifest(control, candidate), control_arm="b5",
+            candidate_arm="b2")
+
+
+def test_holding_overflow_remains_physical_invalid():
+    candidate = _run("b2", pressure=True)
+    candidate["diagnostics"]["fate_counts"]["HOLDING_QUEUE_OVERFLOW"] = 1
+
+    got = isl_pressure_decision.classify_verified_pair(
+        _manifest(_run("b5"), candidate), control_arm="b5",
+        candidate_arm="b2")
+
+    assert got["classification"] == "PHYS_INVALID"
+
+
 def test_rejects_unverified_or_ambiguous_cohort():
     manifest = _manifest(_run("b5"), _run("b2"))
     manifest["status"] = "PARTIAL"
@@ -128,8 +159,14 @@ def test_frozen_contract_matches_analyzer_and_classifier_constants():
     assert tuple(physical[
         "candidate_noncongestion_fates_may_exceed_control_by"]) == \
         isl_pressure_decision.NONCONGESTION_FATES
-    assert tuple(physical["overflow_fates_must_equal_zero_per_arm"]) == \
-        isl_pressure_decision.OVERFLOW_FATES
+    assert tuple(physical[
+        "invalid_non_isl_overflow_fates_must_equal_zero_per_arm"]) == \
+        isl_pressure_decision.INVALID_OVERFLOW_FATES
+    assert contract["isl_queue_overflow_handling"] == {
+        "qualified_pressure_episode_required": True,
+        "role": "supplementary_congestion_outcome_not_physical_failure",
+        "unlocalized_overflow_blocks_classification": True,
+    }
     assert tuple(physical["candidate_control_failure_fields"]) == \
         isl_pressure_decision.CONTROL_FAILURES
     assert physical["required_control_failure_fields_must_be_present"] is True

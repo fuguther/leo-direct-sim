@@ -28,14 +28,14 @@
       "algorithm superiority, a causal information-value effect or a new-algorithm contribution",
       "a universal or paper-ready ISL congestion threshold from one seed and one scenario",
       "a pure capacity multiplier effect, because bandwidth also changes noise, SNR, MCS and control-packet service time",
-      "congestion when zero-rate holds occur, candidate access grants differ from control, candidate access, geometry, outage or NO_ROUTE fates exceed control, any data queue overflow occurs, candidate control expired/lost/geometry-lost/overflow exceeds control, natural end or conservation fails, or current external witness evidence is absent",
+      "congestion when zero-rate holds occur, candidate access grants differ from control, candidate access, geometry, outage or NO_ROUTE fates exceed control, holding-queue overflow occurs, candidate control expired/lost/geometry-lost/overflow exceeds control, natural end or conservation fails, or current external witness evidence is absent; ISL queue overflow is a congestion outcome but cannot replace the preregistered localized pressure episode",
       "a fully usable pressure scenario when the candidate has any in-system packet at stop or unmatched ISL queue entry; that branch is DRAIN_INCOMPLETE and requires longer-drain confirmation",
       "a 1 MHz result or dose-response curve when R04 was not executed",
       "execution authorization before exact-revision independent review, accepted finalization, clean-main deployment and external witness gates close"
     ]
   },
   "experiment_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R03",
-  "matrix_manifest_sha256": "953a0a8a295083038c262db144d81b6c384d0c59d9474ea3c665dc9d437106c2",
+  "matrix_manifest_sha256": "0d6d7f0d8ee515a3a5d2710888fd249fcf13fd0775ebae8179704ca8fa0b03ef",
   "planned_cells": [
     {
       "acceptance": {
@@ -78,7 +78,7 @@
     "EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b5-s7",
     "EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b2-s7"
   ],
-  "request_sha256": "856c134ae47519f0b35b1065057232f28123ee892cc864751db9df6c541afc80",
+  "request_sha256": "428ca6ac0d1479b2f9262cf7d4604cc68506c17432d0d285558a16b0561eea42",
   "runtime_kind": "leo_sim_v2",
   "schema": "leo-sim-matrix-analysis-request/v1",
   "status": "WAITING_FOR_VERIFIED_RUNS"

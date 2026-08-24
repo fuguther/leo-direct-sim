@@ -20,7 +20,8 @@ NONCONGESTION_FATES = (
     "RANDOM_OUTAGE_IN_FLIGHT",
     "NO_ROUTE",
 )
-OVERFLOW_FATES = ("ISL_QUEUE_OVERFLOW", "HOLDING_QUEUE_OVERFLOW")
+INVALID_OVERFLOW_FATES = ("HOLDING_QUEUE_OVERFLOW",)
+ISL_OVERFLOW_FATE = "ISL_QUEUE_OVERFLOW"
 CONTROL_FAILURES = ("expired", "lost", "geometry_lost", "overflow")
 
 
@@ -76,6 +77,7 @@ def _arm(result: Any, label: str) -> dict[str, Any]:
             access.get("grants"), f"{label}.access.grants"),
         "control": control,
         "fates": fates,
+        "isl_queue_overflows": fates.get(ISL_OVERFLOW_FATE, 0),
         "in_system_at_stop_packets": _count(
             drain.get("in_system_at_stop_packets"),
             f"{label}.drain.in_system_at_stop_packets"),
@@ -123,7 +125,7 @@ def classify_verified_pair(
         if arm["zero_rate_holds"]:
             physical.append(
                 f"{arm_id} has {arm['zero_rate_holds']} zero-rate holds")
-        for fate in OVERFLOW_FATES:
+        for fate in INVALID_OVERFLOW_FATES:
             count = arm["fates"].get(fate, 0)
             if count:
                 physical.append(f"{arm_id} has {count} {fate} fates")
@@ -169,14 +171,26 @@ def classify_verified_pair(
             classification = "CONTROL_PRESSURE_UNBRACKETED"
             reasons = [
                 f"{control_arm} already has pressure-candidate links: "
-                f"{control['pressure_links']}"
+                f"{control['pressure_links']}; ISL queue overflows="
+                f"{control['isl_queue_overflows']}"
             ]
+        elif control["isl_queue_overflows"]:
+            raise PressureDecisionError(
+                f"{control_arm} has {control['isl_queue_overflows']} "
+                "ISL_QUEUE_OVERFLOW fates but no localized sustained "
+                "pressure episode")
         elif candidate["pressure_links"]:
             classification = "PRESSURE_CANDIDATE"
             reasons = [
                 f"{control_arm} has no pressure candidate and {candidate_arm} "
-                f"has: {candidate['pressure_links']}"
+                f"has: {candidate['pressure_links']}; ISL queue overflows="
+                f"{candidate['isl_queue_overflows']}"
             ]
+        elif candidate["isl_queue_overflows"]:
+            raise PressureDecisionError(
+                f"{candidate_arm} has {candidate['isl_queue_overflows']} "
+                "ISL_QUEUE_OVERFLOW fates but no localized sustained "
+                "pressure episode")
         else:
             classification = "NO_PRESSURE_PHYS_VALID"
             reasons = ["both arms pass validity and neither has a pressure episode"]
@@ -187,6 +201,8 @@ def classify_verified_pair(
         "candidate_arm": candidate_arm,
         "control_pressure_link_ids": control["pressure_links"],
         "candidate_pressure_link_ids": candidate["pressure_links"],
+        "control_isl_queue_overflows": control["isl_queue_overflows"],
+        "candidate_isl_queue_overflows": candidate["isl_queue_overflows"],
         "reasons": reasons,
     }
 

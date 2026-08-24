@@ -59,7 +59,7 @@
     "Synthetic tests prove that a two-second saturated burst remains visible when its horizon aggregate is low, interval boundaries are apportioned exactly, service without availability fails, overlapping directed-link service fails, unmatched queue entries are not imputed and queue waiting at a disjoint time cannot qualify a high-utilization episode.",
     "The two cells share actual trace, seed, deterministic routing, topology, access, demand, emission, observation and drain contracts; the only declared intervention is links.rf_isl.bandwidth_hz.",
     "The b2 cell is not launched until the b5 predecessor passes natural-end, conservation, receipt, governance, external-witness, identity, ISL-metric and zero-rate gates.",
-    "The final classification is computed by the bound deterministic pair classifier in pressure-decision.json order and reports served bits, available capacity, available time, utilization, episode-coincident same-link matched queue wait, censored queue entries, fate and access diagnostics without post-hoc threshold changes.",
+    "The final classification is computed by the bound deterministic pair classifier in pressure-decision.json order and reports served bits, available capacity, available time, utilization, episode-coincident same-link matched queue wait, censored queue entries, ISL overflow as a supplementary congestion outcome, other fate and access diagnostics without post-hoc threshold changes.",
     "PHYS_INVALID, DRAIN_INCOMPLETE or CONTROL_PRESSURE_UNBRACKETED stops this bracket and blocks algorithm comparison; PRESSURE_CANDIDATE requires a no-pressure 5 MHz control and stops before 1 MHz; only NO_PRESSURE_PHYS_VALID permits a separately preregistered R04."
   ],
   "review_roles": [

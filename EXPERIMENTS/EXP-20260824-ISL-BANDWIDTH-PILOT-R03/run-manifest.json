@@ -102,7 +102,7 @@
   "common_config_sha256": "ea045e177b99cd9221c1c8dec264c0dc5c1d86cfcf89c95c04fc25c46e369d43",
   "execution_authorized": false,
   "experiment_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R03",
-  "request_sha256": "856c134ae47519f0b35b1065057232f28123ee892cc864751db9df6c541afc80",
+  "request_sha256": "428ca6ac0d1479b2f9262cf7d4604cc68506c17432d0d285558a16b0561eea42",
   "runtime_kind": "leo_sim_v2",
   "schema": "leo-sim-experiment-matrix-manifest/v1"
 }
