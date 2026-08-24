@@ -1,0 +1,155 @@
+我先盘点允许路径内的文件，再逐项核对证据。读取持久化分析产物与三个代码文件。上次误读了重复区域。现在精确定位 b5/b2 的关键段落。三个 `pressure_candidate: true` 全部落在 b2 臂。现在读各链路 episode 明细。验证链确认会重跑 `analyze` 并逐字段比对。再看 analyzer 身份绑定与 diagnostics 构造。补一个 b2 中“持续高窗但不构成压力”的对照例，并确认 b5/b2 摘要的 p99 字段。核查完成，证据链闭环。整理结论并输出信封。# R03 结果与路线独立冷审（independent_review）
+
+**裁决：PASS_WITH_LIMITS** — `PRESSURE_CANDIDATE` 在冻结合同下由持久化字段直接支持，无过度声明；seeds 11/19 确认方案与冻结动作一致，可作为下一道有界门。无 blocking 项；限制见 F4–F6。
+
+## 核对方法
+
+不信任 RESULT-REVIEW 散文，直接在持久化 manifest 中逐字段核证分类输入，并静态审阅分类器/窗口分析/验证链代码是否忠实实现冻结合同。受“不得执行本地 Shell”约束，未重跑 SHA-256 与仿真重算，相关缺口列入 open_items。
+
+## 逐项核证
+
+**1. 三条候选链路（候选臂 b2，全部满足冻结阈值且有余量）**
+
+- `isl:147:167`：高窗 23/24/25/26 s（4 连续，≥2），`eligible_window_count=30`，episode 23–27 s 内 `matched_queue_wait_bits_s=116,895,223`（≥100,000），`max_overlapping_matched_queue_wait_s=5.130`（≥0.1），`pressure_candidate=true`（manifest L72939–L72974）。
+- `isl:167:187`：高窗 23–27 s（5 连续），episode 23–28 s，面积 12,757,504 bit-s，max wait 0.3355 s，`pressure_candidate=true`（L75537–L75574）。
+- `isl:222:242`：高窗 13–16 s（4 连续），episode 13–17 s，面积 13,950,062 bit-s，max wait 0.7844 s，`pressure_candidate=true`（L84567–84602）；抽查窗 13 s 利用率 0.85751（L84762），与 RESULT-REVIEW 的“0.85751–0.91866”一致。
+- 全文件 `"pressure_candidate": true` 恰好 3 处，全部落在 b2 臂；b2 摘要 `pressure_candidate_link_ids` 恰为这三条（L114057–L114061），b5 为空（L55953）。与 `pressure-classification.json` L11–L17 完全一致。
+
+**2. 同 episode 排队证据**：三条链路 `overlapping_matched_queue_entries` 分别 51/51/42，等待区间与 episode 实际重叠（isl_pressure.py L383–L394 的重叠判定），不是“同链路不同时段”的伪证据。匹配队列条目两臂均为 6863、未匹配 0（L55946/L55963、L114050/L114082），印证 RESULT-REVIEW 的 6,863 条说法。
+
+**3. 物理/排空控制（两臂对称通过）**
+
+- MCS `zero_rate_holds=0` 两臂（L8008–L8012、L63896–L63900）；且 `_run_diagnostics` 对 zero-rate 直接 fail-loud（v2_analysis.py L250–L255）。
+- 包命运完全相同：`DELIVERED 1295, NO_ROUTE 4`（b5 L158–L161；b2 L56046–L56049），offered 1,299 = 1295+4。
+- 接入块逐字段一致：grants 59、`slot_hold_s_total=227.5000000000005`、`wait_time_s_total=1.571803153780504` 两臂全等（b5 L125–L139；b2 L56013–L56027）。
+- control failure 计数 expired/lost/geometry_lost/overflow 两臂全 0（b5 L140–L153；b2 L56028–L56041）。
+- 排空：`in_system_at_stop_packets=0`、`unmatched_isl_queue_entries=0` 两臂（b5 L154–L157；b2 L56042–L56045）；`ISL_QUEUE_OVERFLOW` 两臂 0（classification L5、L13）。
+- 主指标重算：0.3813006759189982 − 0.15252027036759927 = 0.2287804055513989…，与持久化配对差 0.22878040555139892 一致（L55970、L114089、summary.json L4–L15）。
+
+**4. 冻结合同 → 代码 → 输出的一致性**：`classify_verified_pair` 的分支顺序（PHYS_INVALID → DRAIN_INCOMPLETE → CONTROL_PRESSURE_UNBRACKETED → 控制臂未定位溢出 fail-loud → PRESSURE_CANDIDATE → 候选臂未定位溢出 fail-loud → NO_PRESSURE）与 pressure-decision.json L79–L105 的 ordered_classification 逐条对应，包括 `control_pressure_branch_precedes_candidate_unlocalized_overflow`（isl_pressure_decision.py L149–L196）。窗口合同参数（1.0 s、0.8、0.9、≥2 连续、0.1 s、100000 bit-s）在 isl_pressure.py L19–L24 的默认值与 manifest 两臂 windowed 摘要记录值（L55949–L55952、L114053–L114056）一致。`verify_persisted_analysis` 从原始 artifact 重跑 `analyze` 并逐字段比对 `run_results`（v2_analysis.py L776–L790），分类不是信任散文。
+
+**5. 执行事件边界**：RESULT-REVIEW 披露了首次启动器用未激活系统 Python、缺 TensorFlow、准备阶段 fail-closed 的事件（L50–L55）。进入证据链的两个正式 run 各自绑定独立外部见证与哈希（manifest inputs L39–L58），分类输入与失败尝试无共享路径。但“仿真未启动、未生成结果目录”这一事实本身无法从仓库核实——列入 open_items，且启动器默认解释器缺口作为独立修复项跟踪是正确处置（L66–L68）。
+
+**6. 无过度声明**：RESULT-REVIEW 自限为“工程 onset 候选区间”，逐条排除普适阈值/纯容量乘数/信息价值/算法优越性/Q0 最优（L43–L46），并保留 4 个共有 NO_ROUTE 为独立历史边界——与 request.json claim_boundary（L85–L102）和 claim-gate.json 一致。
+
+## 限制（非阻断）
+
+- **F4（major，limit）**：分类对阈值/分窗相位敏感。5 MHz 控制臂并不“安静”：存在 5 条 sustained-hotspot 链路（L55956–L55962），max 1 s 窗利用率 0.9675（L55948）；其中 `isl:147:167` 在控制臂有单个 0.9675 高窗 + 1.94 s 匹配等待 + 55.2M bit-s 队列面积，仅因“≥2 连续高窗”一条不满足而不构成 episode（L16653–L16669）；`isl:4:3` 有 2 连续高窗 episode 但 max wait 0.0122 s、面积 25,751 bit-s 不达排队阈值（L43204–L43235）。反向地，b2 的 `isl:187:207` 有 5 连续高窗、面积 425,681 bit-s 达标，仅 max wait 0.0807 s 差 0.02 s 未入选（L78311–L78348）。结论：两臂方向性差异真实，但“恰好 3 条链路”“控制臂零压力”是阈值邻接结论，不可作为稳定计数写入论文；这正是需要 seeds 11/19 直接探测的不稳定性。
+- **F5（minor）**：manifest 的 analyzer 身份绑定 git commit `0280de3b…`（L4–L12），RESULT-REVIEW 快照也绑定该 commit；本审计 commit 为 `dd892b3a…`。我无法执行哈希重算来确认三个 analyzer 文件在两 commit 间未变；`verify_persisted_analysis` 的 analyzer-identity 检查（v2_analysis.py L68–L93、L721–L722）保证若不一致会 fail-loud，但需本地实跑确认。
+- **F6（minor）**：原始 `CODE/Results/` 不入库，receipt 重验证与从原始 ledgers 的独立重算只能由本地/VM 完成；本次为静态一致性 + 代码忠实性审阅。
+
+## seeds 11/19 提案评估
+
+与冻结动作一致：PRESSURE_CANDIDATE 的 action 明确要求“Confirm the adjacent bracket with preregistered seeds before any paper claim”（pressure-decision.json L96–L99），RESULT-REVIEW 的提案（固定、未看结果的 seeds 11/19，每 seed 严格配对、只改 bandwidth、逐分支报告、禁止多数票，L60–L66）是合同内最小且充分的有界确认门。充分性边界：3 个 seed 一致只能支持“本场景在 3 个流量实现下 5→2 MHz onset 方向稳定”，仍不能支持普适阈值或统计效应；考虑到 F4 的阈值邻接性，新增 seed 出现分支翻转（尤其 CONTROL_PRESSURE_UNBRACKETED）是现实可能，必须按合同逐分支处理。不提议 1 MHz、RL 训练或更大矩阵——与本任务约束一致。
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:R03_RESULT_ROUTE:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "PASS_WITH_LIMITS。PRESSURE_CANDIDATE 由持久化字段直接支持：b2 三条链路（isl:147:167/167:187/222:242）的连续高窗、同 episode 排队面积与 max wait 均超冻结阈值且有余量；b5 控制臂无合格 episode；两臂包命运、接入、control failure、zero-rate、排空逐字段一致；分类器分支顺序与窗口参数忠实实现冻结合同；验证链从原始 artifact 重算而非信任散文。无 blocking。限制：分类阈值邻接（控制臂单高窗+1.94s 等待仅差连续性一条；b2 一链路差 0.02s 未入选），链路计数不可当稳定结论；analyzer 绑定 commit 0280de3b 与审计 commit dd892b3a 的一致性需本地实跑确认；执行事件的'未生成结果目录'不可从仓库核实。seeds 11/19 方案与冻结动作一致，作为有界门充分，但不支持统计/普适声明。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "PRESSURE_CANDIDATE 分类与持久化字段完全一致：b5 pressure_candidate_link_ids 为空，b2 恰为三条候选链路，两臂 ISL_QUEUE_OVERFLOW=0，分类理由串与分类器输出格式一致",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/pressure-classification.json#L4-L17",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L55953-L55964",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L114050-L114061"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "三条候选链路 episode 独立核证通过：连续高窗 4/5/4 个（≥2），episode 队列面积 116.9M/12.76M/13.95M bit-s（≥100000），max 重叠等待 5.130/0.336/0.784 s（≥0.1），overlapping 匹配条目 51/51/42",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L72939-L72974",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L75537-L75574",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L84567-L84602"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "物理/排空/同命运控制逐字段核证通过：fate_counts 两臂同为 DELIVERED 1295 + NO_ROUTE 4，access 块全等（grants 59），control failure 计数全 0，zero_rate_holds=0，drain 0/0；配对差 0.2287804055513989 与主指标字段重算一致",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L154-L161",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L56013-L56049",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L8008-L8012",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L63896-L63900",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/summary.json#L4-L15"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "非阻断限制：分类阈值邻接。控制臂存在 5 条 sustained-hotspot 链路和 0.9675 的单高窗；isl:147:167 在控制臂有 1.94 s 等待与 55.2M bit-s 面积仅差连续性一条；候选臂 isl:187:207 五连续高窗仅 max wait 差 0.02 s 未入选。'恰好 3 条链路/控制零压力'不可作为稳定计数，seed 间翻转是现实可能",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L55946-L55962",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L16653-L16669",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L43204-L43235",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L78311-L78348"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "验证链设计为从原始 artifact 重算并逐字段比对（含 analyzer 身份绑定 git commit 与文件哈希），但 analyzer 绑定 commit 0280de3b 与本审计 commit dd892b3a 之间的文件一致性未能在此静态核实；若不一致 verify_persisted_analysis 会 fail-loud，需本地实跑确认",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/CODE/experiment_platform/v2_analysis.py#L68-L93",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/CODE/experiment_platform/v2_analysis.py#L712-L793",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L4-L12"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "summary": "执行事件边界：首次启动器未激活 Python 的 fail-closed 事件已披露且与正式证据链无共享路径（两正式 run 各自绑定独立外部见证与哈希），但'未生成结果目录'无法从仓库核实；启动器默认解释器缺口仍需独立修复",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/RESULT-REVIEW.md#L48-L68",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L39-L58"
+      ]
+    },
+    {
+      "id": "F7",
+      "severity": "info",
+      "summary": "seeds 11/19 提案与冻结的 PRESSURE_CANDIDATE 动作一致（预注册 seeds 确认相邻 bracket 后才可论文声明），固定未看结果 seed、逐分支报告、禁多数票的设计对有界确认门充分；但 3 seeds 单场景不支持普适阈值或统计效应",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L96-L99",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/RESULT-REVIEW.md#L57-L68",
+        "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/request.json#L85-L102"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "本地 Agent 在 dd892b3a 实跑 classify_persisted_pair 的 canonical 调用，确认 analyzer identity 检查通过（0280de3b 到 dd892b3a 间三个 analyzer 文件与 metrics.py 未变），并将回执与审计 commit 绑定",
+    "按 RESULT-REVIEW 提案起草 seeds 11/19 的预注册（同一压力判据与物理/排空停止条件、逐分支报告、禁多数票），走编译→审阅→授权→远程执行流程",
+    "在新 seed 结果中专门检查 F4 的阈值邻接项（控制臂单高窗+大等待、候选臂 0.02 s 边际），如出现分支翻转按冻结树处理，不得改写为多数票",
+    "启动器默认解释器缺口作为独立小修复走单独 PR（先回归复现再修），不与 seed 确认混入",
+    "论文侧仅可使用'单 seed 工程 onset 候选区间'表述；链路计数与控制臂零压力须标注阈值邻接限制"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/pressure-classification.json#L1-L19",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/RESULT-REVIEW.md#L36-L46",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L72939-L72974",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L75537-L75574",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L84567-L84602",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L16653-L16669",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/ANALYSIS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/v2-paired/analysis-manifest.json#L78311-L78348",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/CODE/experiment_platform/isl_pressure_decision.py#L149-L196",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/CODE/experiment_platform/isl_pressure.py#L379-L406",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/CODE/experiment_platform/v2_analysis.py#L712-L793",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L79-L105",
+    "github://fuguther/leo-direct-sim/blob/dd892b3a3428c15e794fb47fe022772fd64469dd/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/request.json#L85-L102"
+  ],
+  "open_items": [
+    "原始 CODE/Results/ 不入库，receipt 重验证与从原始 ledgers 的独立重算只能本地/VM 完成；本审为静态一致性与代码忠实性核证，未实跑",
+    "RESULT-REVIEW 与 manifest analyzer 绑定 commit 0280de3b…，审计 commit 为 dd892b3a…；需本地确认前者为后者祖先且 analyzer 文件未变（verify_persisted_analysis 设计上会 fail-loud）",
+    "执行事件中'失败尝试未生成结果目录'无法从仓库核实，只能依赖披露与哈希绑定隔离",
+    "F4 阈值邻接：seeds 11/19 可能出现分支翻转（含 CONTROL_PRESSURE_UNBRACKETED），确认门必须逐分支报告",
+    "3 seeds 仍属单场景/单 OD/单 burst 模式，即便一致也不支持普适阈值或统计效应声明"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
