@@ -1,0 +1,140 @@
+{
+  "taskId": "offload:leo-direct-sim:KIMI-R02-REREVIEW",
+  "status": "EVIDENCE_READY",
+  "summary": "PASS（RESULT_CANDIDATE）。两个历史绕过在 commit ba4835d9 均复现失败：legacy receipt 在默认模式被 v2_analysis.py:333-335 fail-closed 拒绝、v5 分支无条件强制 external witness（L366-379）、混合队列被 L515-517 拒绝，测试 test_v2_analysis.py:409-434 复现攻击；claim_status 篡改被 gate/summary/重算三重绑定（L641-672）截获，测试 L368-396 覆盖。analyzer 身份、实际 trace 相等、authorized-cell 身份、zero-rate 停止闸均有代码+测试双证据。R02 谱系哈希链自洽，resolved 配置唯一差异为 bandwidth_hz。残余 3 个 minor fail-open（空队列可 VERIFIED、report.md 经删除 output_hashes 键可篡改、claim-gate cannot_claim 未校验）与 1 个测试覆盖缺口，均不阻断。缺授权与 VM 结果属未来闸门，非代码缺陷。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "历史绕过 1（legacy receipt 免 external-witness 伪装 v5）不可复现：默认模式 raise、v5 分支豁免不存在、混合队列拒绝、legacy-only 被显式降级为 LEGACY_INTERNAL_ONLY，且有攻击复现测试",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L326-L340",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L366-L379",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L515-L517",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/tests/test_v2_analysis.py#L409-L434",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/RUNBOOK.md#L29-L34"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "历史绕过 2（persisted claim_status 篡改）不可复现：claim-gate 哈希绑定、status 相等、summary 逐字比对、analyze() 重算逐键比对四重防线；推理轨迹确认升级/降级两个篡改方向均被 L659-672 重算截获；现存测试做了一致性篡改并断言失败",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L608-L616",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L641-L655",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L659-L672",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/tests/test_v2_analysis.py#L368-L396"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "analyzer 身份、实际 trace_sha256 跨臂相等、authorized-cell 11 字段身份、zero-rate 停止闸四项原始闸门均在当前 commit 实现且有对应测试",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L65-L90",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L279-L290",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L437-L447",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L237-L242",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/tests/test_v2_analysis.py#L55-L77",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/tests/test_v2_analysis.py#L240-L271"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "R02 工件谱系自洽：matrix/manifest/request 哈希三处一致，两 cell 仅 config_sha256 不同，trace identity/seed/code/input/controlled_signature 全等，serial 停止契约已写入 brief 验收条；授权与 VM 证据尚缺属未来闸门",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/analysis-request.json#L37-L37",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/compile-report.json#L6-L14",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/run-manifest.json#L44-L62",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/run-manifest.json#L77-L99",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R02/brief.json#L50-L58"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "残余 fail-open：cells 与 planned_contrasts 同时为空时可产出零 run 的 VERIFIED + READY_FOR_INDEPENDENT_CLAIM_REVIEW；L448-449 的 no-pairs 拒绝只在有 contrast 时触发。R02 固定两 cell 不可达，建议补 cells 非空断言",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L490-L507",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L519-L520",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L528-L550"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "summary": "残余 fail-open：verify_persisted_analysis 将 output_hashes 视为可选（.get 默认 {}），且重算比对键列表不含 output_hashes/output_artifacts；删除该键并同步更新 claim-gate 哈希后，report.md 可被任意篡改而通过校验。claim_status/summary/inputs 仍受保护",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L597-L607",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L636-L640",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L667-L672"
+      ]
+    },
+    {
+      "id": "F7",
+      "severity": "minor",
+      "summary": "残余 fail-open：claim-gate.json 的 cannot_claim 写入后无任何校验（仅验 status 与 manifest 哈希），清空 cannot_claim 的 gate 文件可通过 verify_persisted_analysis；claim_boundary 本体仍经重算与输入哈希绑定",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L608-L616",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L641-L645"
+      ]
+    },
+    {
+      "id": "F8",
+      "severity": "info",
+      "summary": "测试覆盖缺口：无混合 evidence class 拒绝测试、无 legacy opt-in 正路径（断言 LEGACY_INTERNAL_ONLY）测试、claim_status 篡改测试只覆盖降级方向；代码机制本身方向无关，属覆盖缺口而非代码缺陷",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L515-L517",
+        "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/tests/test_v2_analysis.py#L368-L434"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "本地 Agent 在 commit ba4835d9 上运行 python3 -m pytest CODE/experiment_platform/tests/test_v2_analysis.py 确认全绿（本端受合同约束未执行 Shell 验收）",
+    "可选小 PR 修复 F5/F6/F7：analyze() 断言 cells 非空；verify_persisted_analysis 强制 output_hashes 覆盖 summary.json 与 report.md；校验 claim-gate.cannot_claim 与 manifest claim_boundary 一致；并补混合队列/legacy 正路径/claim_status 升级方向三个测试",
+    "按 brief.json 验收链推进：三角色复核齐 → finalization.json → 授权 → clean-main 部署 → 严格串行 b500→b50（b500 全部闸门通过前不发射 b50）→ v2_analysis 默认模式分析",
+    "将本 PASS 视为 RESULT_CANDIDATE：最终裁决、receipt/authorize/remote-runner 内部复核与 VM 回执验证由本地 Agent 完成"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L326-L340",
+    "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/v2_analysis.py#L659-L672",
+    "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/experiment_platform/tests/test_v2_analysis.py#L368-L434",
+    "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R02/run-manifest.json#L99-L103",
+    "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R02/brief.json#L50-L58",
+    "github://fuguther/leo-direct-sim/blob/ba4835d999b9f31f9eeac45d197712358bf094ca/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R02/pre-fix-review-history.json#L47-L69"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "receipt_mod.verify_receipt_dir、authorize_experiment.verify_authorization、CODE/scripts/remote 执行链内部不在允许读取路径内，本端未复核；若 verify_receipt_dir 不拒绝自报 v5 schema 的 legacy artifact，攻击者仍需伪造完整 V2 governance receipt + external witness 链，利用面不变但需本地确认",
+    "serial b500→b50 停止契约目前以 brief.json:54 验收条形式存在，RUNBOOK.md 仅为命令清单不具强制力；实际强制依赖 remote runner/授权链（路径外），发射前需本地确认执行链落实该顺序闸",
+    "finalization.json 不存在、authorization.json 不存在、无 VM 回执与 external witness：按合同属未来闸门而非代码缺陷，但 R02 在它们齐备前不得进入分析或 claim",
+    "本端未执行 pytest（合同禁止本地 Shell 验收）；所有测试结论来自代码阅读与推理轨迹，需本地跑 test_v2_analysis.py 全量确认",
+    "F5/F6/F7 三个 minor fail-open 与 F8 测试缺口未修复；不影响本次 PASS 结论，但建议在授权前或并行小 PR 中闭环"
+  ]
+}
