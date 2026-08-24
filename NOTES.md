@@ -733,3 +733,11 @@
 - 分类行为、五分支顺序、阈值、5/2 MHz 场景和矩阵规模均未改变。新增回归覆盖“5 MHz 已有局部压力 + 2 MHz 未定位 ISL overflow”仍停在 `CONTROL_PRESSURE_UNBRACKETED`，以及持久化分析验证失败时分类器拒绝输出。
 - R03 已在一次性副本中由 canonical matrix compiler 重编译并与工作树逐文件同步；两个 resolved 配置内容哈希保持不变。`verify_compiled_matrix` 返回 2 cells / 8 bound hashes，其中包含 decision-contract SHA `fa0493b722e3bd119ed516543e4429b2bbc30986d3e5479f24f4d81f5194460e`。
 - 本地证据：全套 `712 passed, 2 skipped, 3 subtests passed`；document governance `0 selected errors, 0 warnings`；`git diff --check` 通过。当前仍未生成正式 review receipts、finalization 或 authorization，未合入、部署或运行；下一步将本修订提交推送后，对新的 exact commit 重新做 cold-start、satellite-DRL、adversarial 三类复核。
+
+## 2026-08-24：R03 精确提交三方复核完成并生成两格授权
+
+- 最终承重代码与冻结工件基线为 exact commit `95d28051696ccaa6e75a46bb552e60874f5da256`。cold-start、satellite-DRL、adversarial 三类 Kimi 只读复核均返回 `PASS_WITH_LIMITS`，会话分别为 `session_46138f46-c820-4fed-9376-c1b249daf30e`、`session_1b4c85bd-b97b-4802-9952-976150af8169`、`session_d06fa03e-ca73-43c8-ae65-5449e9977d75`；Codex 独立复核后确认无 blocker，不把 worker 结论直接当正式证据。
+- 三份正式 receipt 均绑定同一组 26 个 exact artifact hashes，SHA 分别为 cold-start `6621b43ca1649892805d3932a022db8ab579225e88e6e5c99fe93d751a77c7bf`、satellite-DRL `051c820e198a43b4d08c1c95f4eac58c347f359067ea526a3b40f5b46f64c056`、adversarial `9a29c1df83ab01761f1d5702dfbd5c03f612ad04bcd397e855b645388ad2d663`。`finalize_decision.py` 返回 `ACCEPTED`；decision SHA=`036af4674b30e7fa5697f2bd3f89396a7cb36e5f7014e0e70f5acf8d099e0971`，finalization SHA=`c9cbb6b866d143e2faca4d195494b40ede9bb318c84a5af2caf76afb546901d3`。
+- 已生成 R03 两格派生授权：`authorize_experiment` 返回 `AUTHORIZED`（2 runs），authorization SHA=`22bf215289ae2a04db63b81ec354b3bf0f43663a8643ed5bb367b41b772329a3`，payload SHA=`c1077db863c9d87552cc5a99daaeec0a4d211d2a7a385851ea9288d4a6709e12`；重新验签通过，首格 b5 的串行门为 `READY`、predecessors 为空。
+- 非阻断限制仍保留：少数畸形 persisted manifest 会以裸 traceback 而非干净错误信封失败，但不会写出分类；零时长 interrupted service 可锚定真实 queue wait，但不贡献利用率且没有专项回归；episode 边缘重叠的完整 wait 与 episode 内面积是预注册的不对称。任何正式分类错误、未定位 overflow、物理无效或未排空都必须停止，不能改写成 no-pressure。
+- 当前只完成了“承重版本复核 → 治理定案 → 派生授权”，尚未 PR/CI 合入、clean-main 部署或执行 VM。下一步提交本治理包并经 required pytest CI 合入；部署 exact merge SHA 后严格串行运行 b5，只有其 natural end、守恒、治理、外部 witness、身份、ISL 指标和 zero-rate 门全通过才允许 b2。单种子分类不能直接进入论文或算法比较。
