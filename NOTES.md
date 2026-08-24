@@ -695,3 +695,11 @@
 - 当前分支继续修复 cold review P1：`pull-results-remote.sh --run/--plan/--all-latest` 对包含 `formal_run.json` 的 V2 结果，按其中的 nonce 从 canonical VM `.remote_runtime/launches/<nonce>.json` 单独取外部状态，保存为 `CODE/Results/_external_launch_witness/<run_id>.json`；不从结果目录生成或替代，且对 nonce、run_id、符号链接和路径穿越 fail-loud。
 - `v2_analysis` 对 receipt/v5 + governance/v2 强制读取该外部 witness，验证成功状态、exit code、nonce/run/auth、远端 `last_results_dir`、governance receipt SHA 和五项 governance witness 绑定。v3/v4 只走显式 `legacy_v3_v4_internal_only` 分支，混合 cohort 拒绝，不能冒充 v5 正式证据。
 - 本轮 targeted tests 覆盖 external witness 缺失、nonce/run/auth/receipt-SHA 错配、五个 witness 字段各自错配和正常路径；仍需在本分支完成全量测试、cold review、CI/PR 后再部署。
+
+## 2026-08-24：ISL 带宽 R02 两格串行 pilot 完成复审与授权
+
+- 代码与矩阵复核基线为 exact SHA=`4b007bff3969be10e062bad723bdbae0ffd15040`；R02 只比较同一 seed/trace/路由/负载合同下的 ISL RF 带宽 500 MHz 与 50 MHz。三类最终独立复核均 PASS，Kimi 另做只读候选复核；旧 BLOCK 与逐轮修复历史保留在 `pre-fix-review-history.json`，没有被覆盖。
+- final brief SHA=`14e33e7f0b95e398acc29cee92871f9598127c37899255320161c8548f065d3d`。固化时实际发现并修复 schema 必需的 `revision_reason` 缺失；措辞经三类 reviewer 与 Kimi 重新确认，区分 R01 初始 blocker 和后续 R02 rereview，且不扩大科学 claim scope。三份 receipt SHA 为 cold-start `675c5baa062202c62cbbe0919550e6d706686f6bfe43dc31da5a480976ca8536`、satellite-DRL `b23983fc4c34e4f908b5b3a4fa8c723f663a9eeab2f9edb8fc0677a38052f75a`、adversarial `451418b03433b77e94b3b28613ccf58490b26a6b4947c4a39ecba2cd68c96f7f`。
+- `finalize_decision.py` 返回 `ACCEPTED`；`authorize_experiment` 返回 `AUTHORIZED`（2 runs），authorization payload SHA=`71c3052e1af50475dc31b4c247c91e63475f53572b2e15ab12f61d1c3470f526`。两份 resolved config 均通过运行时授权重算。
+- 串行门真实反例符合预注册合同：b500 在无 predecessor 时返回 `READY`；b50 在尚无合格 b500 结果时退出码 2 并 fail-closed。提交前代码全套验证仍需在本治理工件加入后重跑。
+- 当前只是“审阅与授权完成”，尚未 PR/CI 合入、尚未部署，也没有 VM 自然结束回执或分析结果。下一步是 PR/CI 合入 clean main、部署 exact merge SHA，然后严格执行 b500；仅在其 natural end、守恒、governance、nonce witness、部署身份、主指标和 zero-rate gates 全通过后才运行 b50，最后做 V2 持久化配对分析。单 seed 结果不得解释为算法优越性、普适阈值、Q0 或论文统计证据。

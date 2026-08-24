@@ -3,6 +3,7 @@
   "work_id": "WP-LEO-V2-ISL-BANDWIDTH-PILOT",
   "revision": 2,
   "parent_revision": 1,
+  "revision_reason": "R01 was blocked before authorization because analyzer identity, actual trace equality, authorized-row identity and zero-rate gates were incomplete; subsequent R02 rereviews additionally required remote serial enforcement and predecessor deployment binding. R02 closes these governance gaps while preserving the same two-cell bandwidth intervention without expanding the scientific claim scope.",
   "producer_id": "producer:codex",
   "producer_session_id": "P-leo-v2-isl-bandwidth-pilot-r02",
   "objective": "Authorize and execute the reviewed 500 MHz versus 50 MHz ISL RF bandwidth sensitivity pair, then recompute the preregistered horizon-aggregate directed-ISL link-utilization contrast from verified receipts.",
