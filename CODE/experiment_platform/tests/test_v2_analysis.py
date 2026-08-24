@@ -34,6 +34,11 @@ def _write(path: Path, value: object) -> None:
                     encoding="utf-8")
 
 
+def _seal_governed(value: dict) -> None:
+    value.pop("payload_sha256", None)
+    value["payload_sha256"] = v2_analysis.canonical_sha(value)
+
+
 def _write_external_witness(root: Path, run_id: str, governed: dict,
                             *, authorization_sha256: str) -> None:
     witness = {
@@ -123,10 +128,15 @@ def _run_fixture(root: Path, run_id: str, arm_id: str, pair: str) -> dict:
             (out / "receipt.json").read_bytes()).hexdigest(),
         "natural_end": True, "conservation_ok": True,
     })
-    _write(out / "governance_receipt.json", {
+    execution_chain = {"CODE/example.py": "9" * 64}
+    governed = {
         "schema": "leo-sim-governance-receipt/v2", "research_eligible": True,
         "run_id": run_id, "launch_nonce": "b" * 32,
         "verification_errors": [],
+        "source_git_commit": "d" * 40,
+        "source_tree_sha256": "e" * 64,
+        "deployment_receipt_sha256": "f" * 64,
+        "execution_chain_sha256": execution_chain,
         "receipt_schema": receipt_payload["schema"],
         "resolved_config_sha256": v2_analysis.file_sha256(
             out / "resolved_config.json"),
@@ -135,7 +145,9 @@ def _run_fixture(root: Path, run_id: str, arm_id: str, pair: str) -> dict:
         "trace_manifest_sha256": v2_analysis.file_sha256(out / "manifest.json"),
         "run_receipt_sha256": hashlib.sha256(
             (out / "receipt.json").read_bytes()).hexdigest(),
-    })
+    }
+    _seal_governed(governed)
+    _write(out / "governance_receipt.json", governed)
     governed = json.loads((out / "governance_receipt.json").read_text(encoding="utf-8"))
     _write_external_witness(root, run_id, governed,
                             authorization_sha256=auth_sha)
@@ -150,6 +162,7 @@ def _run_fixture(root: Path, run_id: str, arm_id: str, pair: str) -> dict:
         "trace_identity_sha256": receipt_payload["trace_identity_sha256"],
         "input_sha256": manifest["input_sha256"],
         "code_sha256": receipt_payload["code_sha256"],
+        "execution_chain_sha256": execution_chain,
         "controlled_signature": "c" * 64,
     }
 
@@ -353,6 +366,7 @@ def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
         governed_path = result_dir / "governance_receipt.json"
         governed = json.loads(governed_path.read_text(encoding="utf-8"))
         governed["authorization_sha256"] = auth_sha
+        _seal_governed(governed)
         _write(governed_path, governed)
         _write_external_witness(root, row["run_id"], governed,
                                 authorization_sha256=auth_sha)
@@ -548,6 +562,7 @@ def test_v2_analysis_rejects_governance_witness_contract_mismatch(tmp_path):
     governed = json.loads(governed_path.read_text(encoding="utf-8"))
     governed["authorization_sha256"] = auth_sha
     governed["trace_manifest_schema"] = "leo-sim-trace-manifest/v1"
+    _seal_governed(governed)
     _write(governed_path, governed)
     with mock.patch.object(v2_analysis.authorize_experiment,
                            "verify_authorization", return_value=auth):
@@ -589,6 +604,7 @@ def _single_run_analysis_fixture(tmp_path):
     governed_path = result_dir / "governance_receipt.json"
     governed = json.loads(governed_path.read_text(encoding="utf-8"))
     governed["authorization_sha256"] = auth_sha
+    _seal_governed(governed)
     _write(governed_path, governed)
     _write_external_witness(root, row["run_id"], governed,
                             authorization_sha256=auth_sha)
@@ -617,6 +633,61 @@ def test_verify_result_accepts_canonical_remote_nonce_witness(tmp_path):
     assert verified["evidence_class"] == "v2_external_witness"
     assert any(item["path"].endswith(".remote_runtime/launches/" + "b" * 32 + ".json")
                for item in verified["artifacts"])
+
+
+def test_verify_result_rejects_predecessor_from_another_deployment(tmp_path):
+    root, _experiment, auth_path, row = _single_run_analysis_fixture(tmp_path)
+    result_dir = root / "CODE" / "Results" / row["run_id"]
+    governed_path = result_dir / "governance_receipt.json"
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    governed["source_git_commit"] = "0" * 40
+    governed["payload_sha256"] = v2_analysis.canonical_sha({
+        key: value for key, value in governed.items()
+        if key != "payload_sha256"
+    })
+    _write(governed_path, governed)
+    _write_external_witness(
+        root, row["run_id"], governed,
+        authorization_sha256=v2_analysis.file_sha256(auth_path))
+    authorized = {
+        **row,
+        "authorization_sha256": v2_analysis.file_sha256(auth_path),
+    }
+
+    with pytest.raises(v2_analysis.V2AnalysisError,
+                       match="deployment identity mismatch"):
+        v2_analysis._verify_result(
+            root, root / "CODE" / "Results",
+            root / "CODE" / "Results" / "_external_launch_witness",
+            row, authorized, "delivery_rate", require_external_witness=True,
+            expected_deployment={
+                "source_git_commit": "d" * 40,
+                "source_tree_sha256": "e" * 64,
+                "receipt_sha256": "f" * 64,
+            })
+
+
+def test_verify_result_rejects_invalid_governance_payload_hash(tmp_path):
+    root, _experiment, auth_path, row = _single_run_analysis_fixture(tmp_path)
+    governed_path = (root / "CODE" / "Results" / row["run_id"]
+                     / "governance_receipt.json")
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    governed["payload_sha256"] = "0" * 64
+    _write(governed_path, governed)
+    _write_external_witness(
+        root, row["run_id"], governed,
+        authorization_sha256=v2_analysis.file_sha256(auth_path))
+    authorized = {
+        **row,
+        "authorization_sha256": v2_analysis.file_sha256(auth_path),
+    }
+
+    with pytest.raises(v2_analysis.V2AnalysisError,
+                       match="payload hash mismatch"):
+        v2_analysis._verify_result(
+            root, root / "CODE" / "Results",
+            root / "CODE" / "Results" / "_external_launch_witness",
+            row, authorized, "delivery_rate", require_external_witness=True)
 
 
 def test_v2_analysis_requires_external_launch_witness(tmp_path):

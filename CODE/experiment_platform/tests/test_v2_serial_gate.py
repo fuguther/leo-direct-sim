@@ -93,10 +93,17 @@ def test_remote_serial_gate_uses_nonce_named_external_witness(tmp_path):
         prior = v2_serial_gate.verify_predecessors(
             tmp_path, experiment, authorization_path, "EXP-SERIAL-second",
             external_witness_by_nonce=True,
-            deployed_source_commit="d" * 40)
+            deployed_source_commit="d" * 40,
+            expected_deployment={
+                "source_git_commit": "d" * 40,
+                "source_tree_sha256": "e" * 64,
+                "receipt_sha256": "f" * 64,
+            })
     assert prior == ["EXP-SERIAL-first"]
     analyzer_identity.assert_not_called()
     assert verify.call_args.kwargs["external_witness_by_nonce"] is True
+    assert verify.call_args.kwargs["expected_deployment"]["source_tree_sha256"] \
+        == "e" * 64
 
 
 def test_remote_serial_gate_rejects_deployment_commit_mismatch(tmp_path):

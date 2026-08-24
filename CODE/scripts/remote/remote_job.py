@@ -396,7 +396,21 @@ def verify_v2_serial_predecessors(
         args.expected_run_id, results_root=CANONICAL_RESULTS,
         external_witness_root=CANONICAL_RUNTIME / "launches",
         external_witness_by_nonce=True,
-        deployed_source_commit=deployment["source_git_commit"])
+        deployed_source_commit=deployment["source_git_commit"],
+        expected_deployment=deployment)
+
+
+def verify_v2_run_authorization(
+        args: argparse.Namespace, config: Path, authorization: Path) -> None:
+    """Recompute V2 authorization in every remote process, not only prepare."""
+    if getattr(args, "runtime_kind", "legacy_gateway") != "leo_sim_v2":
+        return
+    sys.path.insert(0, str(CANONICAL_WORKSPACE))
+    from CODE.experiment_platform.authorize_experiment import (
+        verify_authorization_for_leo_sim_v2_config,
+    )
+    verify_authorization_for_leo_sim_v2_config(
+        CANONICAL_WORKSPACE, authorization, config, args.expected_run_id)
 
 
 def prepare_launch(args: argparse.Namespace) -> int:
@@ -417,12 +431,7 @@ def prepare_launch(args: argparse.Namespace) -> int:
         sys.path.insert(0, str(CANONICAL_WORKSPACE))
         verified_predecessors: list[str] = []
         if getattr(args, "runtime_kind", "legacy_gateway") == "leo_sim_v2":
-            from CODE.experiment_platform.authorize_experiment import (
-                verify_authorization_for_leo_sim_v2_config,
-            )
-            verify_authorization_for_leo_sim_v2_config(
-                CANONICAL_WORKSPACE, authorization, config,
-                args.expected_run_id)
+            verify_v2_run_authorization(args, config, authorization)
             verified_predecessors = verify_v2_serial_predecessors(
                 args, config, authorization, deployment)
         else:
@@ -535,6 +544,7 @@ def run_formal(args: argparse.Namespace) -> int:
     }
     if any(prepared.get(key) != value for key, value in expected_prepared.items()):
         raise ValueError("prepared launch status does not match this formal job")
+    verify_v2_run_authorization(args, config, authorization)
     verified_predecessors = verify_v2_serial_predecessors(
         args, config, authorization, deployment)
     command = formal_command(args, workdir, config, authorization)
@@ -687,7 +697,6 @@ def run_formal(args: argparse.Namespace) -> int:
                         payload["failure_stage"] = "receipt_verification"
                         payload["error"] = "V2 receipt verification failed"
                         rc = 2
-                    governed["payload_sha256"] = canonical_sha(governed)
                     governed_path = Path(payload["last_results_dir"]) / "governance_receipt.json"
                     write_json(governed_path, governed)
                     payload["governance_receipt"] = str(governed_path)

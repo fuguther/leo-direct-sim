@@ -106,6 +106,31 @@
           "confirmed and fixed: a behavioral regression now bypasses the local launcher and proves that missing predecessor evidence returns exit code 2 without invoking Popen"
         ]
       }
+    },
+    {
+      "reviewed_git_commit": "4eac75b01ea60e7d5f843e288514ee079a181fc4",
+      "authorization_state_at_review": "NOT_AUTHORIZED",
+      "verdicts": {
+        "cold_start": "PASS",
+        "satellite_drl": "PASS",
+        "adversarial": "BLOCK"
+      },
+      "confirmed_blocking_findings": [
+        "the predecessor governance receipt was not required to match the current source commit, source tree, deployment receipt and execution chain, so a re-bound witness could admit evidence from another deployment",
+        "the V2 run process did not independently recompute authorization for a non-serial request after reading its prepared status"
+      ],
+      "external_candidate_review": {
+        "reviewer": "kimi_code_cli",
+        "session_id": "session_193f5baf-6652-4053-bdb4-6e95dd62bf99",
+        "result_class": "RESULT_CANDIDATE",
+        "verdict": "PASS_WITH_MINOR_FINDINGS",
+        "codex_adjudication": [
+          "confirmed Kimi's positive findings for remote direct-run blocking, nonce witnesses, no-git deployment identity and R02 recompilation",
+          "accepted Kimi's VM/OS trust-root boundary for the theoretical gate-to-Popen race; an application lock cannot defend against a malicious same-privilege VM writer",
+          "superseded by later adversarial evidence: Kimi did not detect that predecessor deployment identity and governance payload hashes were not validated",
+          "confirmed and fixed after the later BLOCK: predecessor governance now matches current commit, tree, deployment receipt and execution chain, and every V2 run process recomputes authorization"
+        ]
+      }
     }
   ],
   "resolution_status": "IMPLEMENTED_AWAITING_INDEPENDENT_REREVIEW",

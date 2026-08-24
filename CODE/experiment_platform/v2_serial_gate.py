@@ -40,7 +40,8 @@ def verify_predecessors(
         next_run_id: str, *, results_root: Path | None = None,
         external_witness_root: Path | None = None,
         external_witness_by_nonce: bool = False,
-        deployed_source_commit: str | None = None) -> list[str]:
+        deployed_source_commit: str | None = None,
+        expected_deployment: dict[str, Any] | None = None) -> list[str]:
     """Verify every earlier cell before allowing one serial matrix launch."""
     root = Path(root).resolve()
     experiment_dir = _inside(root, experiment_dir, "experiment directory")
@@ -117,7 +118,8 @@ def verify_predecessors(
         v2_analysis._verify_result(
             root, results_root, external_witness_root, cell,
             auth_by_id[run_id], primary, require_external_witness=True,
-            external_witness_by_nonce=external_witness_by_nonce)
+            external_witness_by_nonce=external_witness_by_nonce,
+            expected_deployment=expected_deployment)
         verified.append(run_id)
     return verified
 

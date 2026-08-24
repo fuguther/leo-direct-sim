@@ -67,6 +67,9 @@ def test_v2_governance_receipt_binds_raw_config_and_trace_contract(tmp_path):
     assert governed["trace_identity_contract"] == receipt["trace_identity_contract"]
     assert len(governed["resolved_config_sha256"]) == 64
     assert len(governed["trace_manifest_sha256"]) == 64
+    unsigned = {key: value for key, value in governed.items()
+                if key != "payload_sha256"}
+    assert governed["payload_sha256"] == remote_job.canonical_sha(unsigned)
 
 
 def test_remote_v2_predecessor_gate_uses_canonical_nonce_witnesses(tmp_path,
@@ -94,7 +97,8 @@ def test_remote_v2_predecessor_gate_uses_canonical_nonce_witnesses(tmp_path,
         results_root=root / "CODE" / "Results",
         external_witness_root=root / ".remote_runtime" / "launches",
         external_witness_by_nonce=True,
-        deployed_source_commit="d" * 40)
+        deployed_source_commit="d" * 40,
+        expected_deployment=deployment)
 
 
 def test_remote_prepare_and_run_both_enforce_predecessor_gate():
@@ -102,8 +106,26 @@ def test_remote_prepare_and_run_both_enforce_predecessor_gate():
     run_source = inspect.getsource(remote_job.run_formal)
     assert "verify_v2_serial_predecessors" in prepare_source
     assert "verify_v2_serial_predecessors" in run_source
+    assert "verify_v2_run_authorization" in prepare_source
+    assert "verify_v2_run_authorization" in run_source
     assert run_source.index("verify_v2_serial_predecessors") < \
         run_source.index("subprocess.Popen")
+    assert run_source.index("verify_v2_run_authorization") < \
+        run_source.index("subprocess.Popen")
+
+
+def test_remote_run_recomputes_authorization_for_nonserial_v2(
+        tmp_path, monkeypatch):
+    root = tmp_path
+    config = root / "EXPERIMENTS" / "EXP-SINGLE" / "resolved" / "run.leo-sim.yaml"
+    authorization = config.parents[1] / "authorization.json"
+    args = SimpleNamespace(runtime_kind="leo_sim_v2", expected_run_id="run")
+    monkeypatch.setattr(remote_job, "CANONICAL_WORKSPACE", root)
+    from CODE.experiment_platform import authorize_experiment
+    with mock.patch.object(
+            authorize_experiment, "verify_authorization_for_leo_sim_v2_config") as verify:
+        remote_job.verify_v2_run_authorization(args, config, authorization)
+    verify.assert_called_once_with(root, authorization, config, "run")
 
 
 def test_direct_remote_run_blocks_second_cell_without_predecessor(
@@ -184,6 +206,8 @@ def test_direct_remote_run_blocks_second_cell_without_predecessor(
     monkeypatch.setattr(remote_job, "validate_expected_identity",
                         lambda *_args: None)
     monkeypatch.setattr(remote_job, "validate_cpu_affinity", lambda _value: [])
+    monkeypatch.setattr(remote_job, "verify_v2_run_authorization",
+                        lambda *_args: None)
     persisted = []
     monkeypatch.setattr(remote_job, "persist_status",
                         lambda _args, payload, **_kwargs: persisted.append(dict(payload)))

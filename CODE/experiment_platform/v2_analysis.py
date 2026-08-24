@@ -300,10 +300,40 @@ def _verify_authorized_cell(row: dict[str, Any],
             + ", ".join(changed))
 
 
+def _verify_governance_identity(
+        run_id: str, governed: dict[str, Any], authorized: dict[str, Any],
+        expected_deployment: dict[str, Any] | None) -> None:
+    claimed_payload = governed.get("payload_sha256")
+    unsigned = {
+        key: value for key, value in governed.items()
+        if key != "payload_sha256"
+    }
+    if claimed_payload != canonical_sha(unsigned):
+        raise V2AnalysisError(f"{run_id} governance payload hash mismatch")
+    if governed.get("execution_chain_sha256") \
+            != authorized.get("execution_chain_sha256"):
+        raise V2AnalysisError(
+            f"{run_id} governance execution-chain mismatch")
+    if expected_deployment is None:
+        return
+    expected = {
+        "source_git_commit": expected_deployment.get("source_git_commit"),
+        "source_tree_sha256": expected_deployment.get("source_tree_sha256"),
+        "deployment_receipt_sha256": expected_deployment.get("receipt_sha256"),
+    }
+    if any(not isinstance(value, str) or not value
+           for value in expected.values()):
+        raise V2AnalysisError("expected deployment identity is incomplete")
+    if any(governed.get(key) != value for key, value in expected.items()):
+        raise V2AnalysisError(
+            f"{run_id} predecessor deployment identity mismatch")
+
+
 def _verify_result(root: Path, results_root: Path, witness_root: Path,
                    row: dict[str, Any], authorized: dict[str, Any],
                    primary: str, *, require_external_witness: bool,
-                   external_witness_by_nonce: bool = False) -> dict[str, Any]:
+                   external_witness_by_nonce: bool = False,
+                   expected_deployment: dict[str, Any] | None = None) -> dict[str, Any]:
     run_id = row.get("run_id")
     result_dir = _direct_result(results_root, run_id)
     required = (
@@ -354,6 +384,9 @@ def _verify_result(root: Path, results_root: Path, witness_root: Path,
         raise V2AnalysisError(f"{run_id} governance receipt is not eligible")
     if governed.get("authorization_sha256") != authorized.get("authorization_sha256"):
         raise V2AnalysisError(f"{run_id} governance authorization hash mismatch")
+    if expected_governance_schema == GOVERNANCE_SCHEMA_V2:
+        _verify_governance_identity(
+            run_id, governed, authorized, expected_deployment)
     receipt_sha = file_sha256(paths["receipt.json"])
     if governed.get("run_receipt_sha256") != receipt_sha \
             or formal.get("receipt_sha256") != receipt_sha:

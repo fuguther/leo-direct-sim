@@ -52,7 +52,7 @@
   ],
   "acceptance": [
     "The exact revision-2 matrix, analyzer semantics, pre-fix review history and this brief pass independent cold-start, satellite-DRL and adversarial review with no unresolved blocker.",
-    "Both cells are launched only through the canonical remote runner from the same clean main deployment and complete naturally with conservation, governance identity and external witness checks passing.",
+    "Both cells are launched only through the canonical remote runner from the same clean main deployment and complete naturally with conservation, governance identity, canonical governance payload hash and external witness checks passing; a predecessor from another commit, tree, deployment receipt or execution chain is rejected.",
     "The two actual trace_sha256 values match; a mismatch invalidates the paired interpretation even if trace_identity_sha256 was equal before execution.",
     "The b50 cell is machine-blocked both before SSH and again at the deployed remote prepare/run boundary unless b500 has first completed naturally and its receipt, conservation, governance eligibility, nonce-bound external witness, identity, primary ISL metric and mcs_zero_rate_holds=0 checks all pass; any failure stops the cohort.",
     "Receipt verification recomputes congestion metrics from raw event ledgers; V2 analysis consumes the verified metrics, persists VERIFIED artifacts, and binds the analyzer's exact Git commit plus v2_analysis.py and metrics.py hashes; no one-second-window or paper-facing claim is inferred.",
