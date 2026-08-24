@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "planId": "offload-b38dafe81bc68010",
+  "relayManifest": {
+    "planId": "offload-b38dafe81bc68010",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:R03_E110_SAT",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e1106c883b16d03eb3ee8ae49c5c50404d0d1176",
+        "paths": [
+          "CODE/experiment_platform/isl_pressure.py",
+          "CODE/experiment_platform/isl_pressure_decision.py",
+          "CODE/experiment_platform/tests/test_isl_pressure.py",
+          "CODE/experiment_platform/tests/test_isl_pressure_decision.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/tests/test_v2_analysis.py",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+        ],
+        "promptHash": "d7190f338bf36fa557fc488a3b553bfbe988b53d61b54d468a04d97bf8d3cded"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:R03_E110_SAT:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e1106c883b16d03eb3ee8ae49c5c50404d0d1176",
+        "paths": [
+          "CODE/experiment_platform/isl_pressure.py",
+          "CODE/experiment_platform/isl_pressure_decision.py",
+          "CODE/experiment_platform/tests/test_isl_pressure.py",
+          "CODE/experiment_platform/tests/test_isl_pressure_decision.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/tests/test_v2_analysis.py",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+        ],
+        "promptHash": "d54f08cda7f4e8fc8215bc0b956e5b881b4b1530071cde09478ec9fae4190533"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "b38dafe81bc68010ecd7968d66bc48afd48331fb0478d61a89f3611d099aeea0"
+  },
+  "sourceBaseCommit": "e1106c883b16d03eb3ee8ae49c5c50404d0d1176",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:R03_E110_SAT",
+      "promptHash": "d7190f338bf36fa557fc488a3b553bfbe988b53d61b54d468a04d97bf8d3cded",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e1106c883b16d03eb3ee8ae49c5c50404d0d1176",
+        "paths": [
+          "CODE/experiment_platform/isl_pressure.py",
+          "CODE/experiment_platform/isl_pressure_decision.py",
+          "CODE/experiment_platform/tests/test_isl_pressure.py",
+          "CODE/experiment_platform/tests/test_isl_pressure_decision.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/tests/test_v2_analysis.py",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:R03_E110_SAT:independent_review",
+      "promptHash": "d54f08cda7f4e8fc8215bc0b956e5b881b4b1530071cde09478ec9fae4190533",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "e1106c883b16d03eb3ee8ae49c5c50404d0d1176",
+        "paths": [
+          "CODE/experiment_platform/isl_pressure.py",
+          "CODE/experiment_platform/isl_pressure_decision.py",
+          "CODE/experiment_platform/tests/test_isl_pressure.py",
+          "CODE/experiment_platform/tests/test_isl_pressure_decision.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/tests/test_v2_analysis.py",
+          "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/",
+          "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+          "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
