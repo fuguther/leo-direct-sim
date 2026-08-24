@@ -1,0 +1,64 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R03_ADV",
+    "title": "R03 adversarial fail-closed review",
+    "goal": "Act as an adversarial reviewer. Try to make the corrected analyzer and classifier produce PRESSURE_CANDIDATE from malformed, disjoint-time, wrong-arm, denominator-only, unmatched, unverified or incomplete-drain evidence. Check service_start to service-window identity, event time bounds, classifier ordering and persisted verification. Return PASS_WITH_LIMITS or REQUEST_CHANGES. Do not edit files.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "d1844f23829f25b264261850b046959abd1a1dd9",
+      "paths": [
+        "CODE/experiment_platform/isl_pressure.py",
+        "CODE/experiment_platform/isl_pressure_decision.py",
+        "CODE/experiment_platform/tests/test_isl_pressure.py",
+        "CODE/experiment_platform/tests/test_isl_pressure_decision.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/experiment_platform/tests/test_v2_analysis.py",
+        "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/",
+        "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json",
+        "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Exercise all five classifier branches with executable synthetic inputs.",
+      "Check verified-manifest and external-witness gates cannot be bypassed by direct dict construction in the formal path.",
+      "Check frozen JSON fields and code constants cannot silently drift.",
+      "Report any untested bypass as a blocker or major finding."
+    ],
+    "requiredEvidence": [
+      "Line-grounded exact-commit evidence",
+      "Executable adversarial counterexamples",
+      "Explicit open_items and verdict"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "2d195e2d3037d2e46be9f7831d0e6c40e47fff40901fa099b2cec177d3d4e91a"
+}
