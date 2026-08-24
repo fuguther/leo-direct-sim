@@ -747,4 +747,4 @@
 
 - R03 暴露的启动缺口已复现到 `run-remote.sh`：tmux 内的正式子进程会先执行 `REMOTE_ENV_ACTIVATE`，但 tmux 外的 `remote_job.py prepare` 直接调用 `REMOTE_PYTHON`，因此配置为 `python3` 时会落到未激活的系统解释器，并在仿真启动前因缺少正式依赖 fail-closed。
 - 本修复只在远程 prepare/fail 所在的同一 shell 中、执行 prepare 之前加入现有 `REMOTE_ENV_ACTIVATE`；正式 tmux 子进程的激活与执行逻辑不变，实验参数、授权、回执和分析语义均未修改。
-- TDD 证据：新增 shell 模板回归先在当前代码上以 `substring not found` 失败，随后最小修复转绿。两路 Kimi exact-commit 冷审均为 `PASS_WITH_LIMITS`、无 blocker；Codex 接受其“纯字符串断言可被注释伪装且未覆盖 fail/tmux”意见，把回归加固为只认未注释独立命令行，并同时锁定 prepare、fail、tmux 三条路径。`bash -n` 通过，全套测试为 `714 passed, 2 skipped, 3 subtests passed`。当前最终修订仍需 exact-commit 复核、PR/CI 合入和 clean-main 部署，不得写成默认远程路径已正式闭环。
+- TDD 证据：新增 shell 模板回归先在当前代码上以 `substring not found` 失败，随后最小修复转绿。两轮两路 Kimi exact-commit 冷审均为 `PASS_WITH_LIMITS`、无 blocker；Codex 接受其“纯字符串断言可被注释伪装、未覆盖 fail/tmux、外层未锁定严格错误模式先于激活”意见，把回归加固为只认未注释独立命令行，并同时锁定外层 `set -euo pipefail → activation → prepare → fail` 与 tmux `set -euo pipefail → activation → run`。`bash -n` 通过，定向 `2 passed`，全套测试为 `714 passed, 2 skipped, 3 subtests passed`。当前最终修订仍需 PR/CI 合入和 clean-main 部署，不得写成默认远程路径已正式闭环。

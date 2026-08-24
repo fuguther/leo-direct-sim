@@ -21,6 +21,7 @@ def test_remote_prepare_and_fail_use_the_activated_formal_environment():
     remote_command = _active_lines(_heredoc_body(
         RUNNER.read_text(encoding="utf-8"), "remote_command"))
 
+    strict_shell = remote_command.index("set -euo pipefail")
     activation = remote_command.index("$REMOTE_ENV_ACTIVATE")
     prepare = remote_command.index(
         "$q_python scripts/remote/remote_job.py $q_prepare_args")
@@ -28,7 +29,7 @@ def test_remote_prepare_and_fail_use_the_activated_formal_environment():
         "$q_python scripts/remote/remote_job.py $q_fail_args || true")
 
     assert remote_command.count("$REMOTE_ENV_ACTIVATE") == 1
-    assert activation < prepare < fail
+    assert strict_shell < activation < prepare < fail
 
 
 def test_tmux_child_uses_the_activated_formal_environment():
