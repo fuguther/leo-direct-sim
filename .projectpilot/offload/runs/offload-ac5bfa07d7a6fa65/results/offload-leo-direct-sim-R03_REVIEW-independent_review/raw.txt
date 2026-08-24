@@ -1,0 +1,164 @@
+我先按合同只读允许路径，核对配置差异与决策逻辑证据。我已按合同完成只读独立复核。以下为交付全文，末尾附结构化信封。
+
+# R03 独立对抗复核：ISL pressure 分支（commit f6cbf4e9）
+
+## 结论：PASS_WITH_LIMITS
+
+代码与分析链路整体 fail-closed、方向正确；两胞配置同一性成立；决策阈值基本可由持久化 V2 分析字段机械判定。但发现一个**分析器级别的可执行反例**（事件时间越界 + 队等与服务窗口无交叉校验），现有测试未覆盖；另有两处机械判定/结构性局限。未发现会把真实 receipt 一致的结果误判为拥塞的直接路径，主要风险依赖 receipt 层校验（在本次允许读取路径之外，见 open_items）。
+
+## 合同逐项核对
+
+**1. 精确 commit 与两胞配置同一性 — 成立（带一处限制）**
+
+- 本复核在任务绑定的 f6cbf4e91c702ed0982b6dcc16b2a22c19da5183 检出上执行；受“禁止本地 Shell”约束，无法用 `git rev-parse` 独立重解析 commit，此项记入 open_items。
+- 两个 resolved 配置逐行比对：除 `links.rf_isl.bandwidth_hz`（b5 = 5 000 000.0，b2 = 2 000 000.0，两文件均在第 127 行）外，access / control_plane / demand / endpoints / execution / learning / links 其余项 / outputs / routing / scenario（含 seed 7）/ topology 全部相同（`...b5-s7.leo-sim.yaml` L1-L173 与 `...b2-s7.leo-sim.yaml` L1-L173，差异仅 L127）。
+- 旁证：run-manifest 中两胞 `code_sha256`、`input_sha256`、`trace_identity_sha256`、`controlled_signature` 完全一致，仅 `config_sha256` 不同（run-manifest.json L44-L64、L79-L99），与“唯一干预为 bandwidth”一致。
+- 附带观察：两 resolved 配置均设 `min_rate_bps: 10000.0`（b5 L130、b2 L130），真实 MCS 速率有下限，缓解了分母坍缩在真实运行中的可实现性（但不改变分析器本身不校验速率下限的事实）。
+
+**2. 决策阈值能否由持久化 V2 分析字段机械判定 — 大部分可以，两处例外**
+
+字段映射（pressure-decision.json → 持久化 manifest）：
+
+- zero-rate holds → `diagnostics.mcs.zero_rate_holds`（v2_analysis.py L249-L260，持久化于 L298-L310）。
+- fate 对比（ACCESS_REJECTED / ACCESS_QUEUE_OVERFLOW / GEOMETRY_LOSS_IN_FLIGHT / RANDOM_OUTAGE_IN_FLIGHT / NO_ROUTE / ISL_QUEUE_OVERFLOW / HOLDING_QUEUE_OVERFLOW）→ `diagnostics.fate_counts`（L273-L278）。
+- access grants / control counters → `diagnostics.access` / `diagnostics.control`（L245-L246、L267-L272、L300-L301）。
+- 物理有效性的 natural_end / conservation / external witness → 在分析准入处强制（L380-L388、L445-L448），VERIFIED + `evidence_class == "v2_external_witness"`（L466-L483、L587-L621）隐含其已通过；**不是显式持久化布尔字段**，只能由“manifest 存在且 VERIFIED”推断。
+- PRESSURE 三要素 → `windowed_isl.links[].longest_consecutive_high_windows`、`max_matched_queue_wait_s`、`matched_queue_wait_bits_s`（isl_pressure.py L303-L327），判定阈值在 pressure-decision.json L55-L57，机械可判。
+- DRAIN 的 unmatched 队列 → `windowed_isl.unmatched_isl_queue_entries`（isl_pressure.py L342-L344），可判。
+- **例外 1**：DRAIN 的 `max_candidate_in_system_at_stop`（pressure-decision.json L39-L42）没有显式持久化字段；`run_results` 只带 `primary_metric` 与 `diagnostics`（v2_analysis.py L466-L483），只能经 `fate_counts` 中的 IN_SYSTEM_AT_STOP 推断，而 packet_fates 是否记录该 fate 取决于 leo_sim（允许路径外，无法核验）。若漏记，该门会静默通过。
+- **例外 2**：control/access 的具体子键名未在决策合同中钉死，判定器需知晓 leo_sim ledger schema。
+
+**3. 一秒 directed-ISL rebinner 与匹配队等重建 — 核心逻辑正确，一处校验缺口**
+
+正确部分：固定 bin 精确重叠分摊（isl_pressure.py L109-L118）、available/service 窗口容量一致性与同向链路重叠 fail-loud（L125-L192）、served>capacity 与 served-without-availability 拒绝（L275-L282）、资格窗按 available_time 比例判定（L283-L291）、未匹配 queue_enter 只做 censor 不虚构（L342-L344）。测试覆盖验收要求的合成用例：低水平总量下两秒饱和可见（test_isl_pressure.py L18-L50）、边界精确分摊（L53-L77）、无可用容量服务拒绝（L80-L92）、重叠服务拒绝（L95-L116）、未匹配队列条目只报告（L119-L137）、零时长不成功服务忽略（L140-L158）。
+
+**缺口（finding F1）**：`packet_events` 的 `queue_enter.at` / `service_start.at` 只校验有限数值，不校验落在 `[0, stop_time_s]` 内（isl_pressure.py L197-L244），且匹配成功的队等不与该 pid 的实际 service window 交叉核对（L229-L259 只核对 pid/link_id/bits）；`allocate` 对越界区间静默截断到 bin 范围（L109-L118）。
+
+## 对抗合成 ledger 反例（现有测试未覆盖）
+
+```python
+ledgers = {
+    "stop_time_s": 30.0,
+    "packet_events": [
+        {"kind": "packet_emitted", "pid": 1, "at": 0.0, "bits": 1000000},
+        {"kind": "queue_enter", "pid": 1, "at": 29.9, "queue": "isl",
+         "link_id": "isl:1:2", "queue_id": 1},
+        # service_start 在 stop 之后：分析器接受，实际应为在停时仍在系统内
+        {"kind": "service_start", "pid": 1, "at": 30.4, "stage": "isl",
+         "link_id": "isl:1:2", "queue_id": 1, "bits": 1000000},
+    ],
+    # 1 bps 可用窗口：分析器只要求 rate>0，分母坍缩不触发任何错误
+    "link_available_windows": [{"stage": "isl", "link_id": "isl:1:2",
+        "start": 10.0, "end": 12.0, "rate_bps": 1.0, "capacity_bits": 2.0}],
+    "link_service_windows": [{"stage": "isl", "link_id": "isl:1:2",
+        "start": 10.0, "end": 12.0, "rate_bps": 1.0,
+        "capacity_bits": 2.0, "served_bits": 2.0}],
+}
+```
+
+逐行推演 `analyze_windows(ledgers)` 的结果：bin 10、11 各得 served=1 bit、capacity=1 bit、available_time=1 s → 两窗 eligible 且 utilization=1.0 ≥ 0.8，`longest_consecutive_high_windows = 2`；队等区间 [29.9, 30.4) 经 `allocate` 截断后仅 bin 29 得 0.1 s × 1 000 000 bit = **100 000 bit·s**，恰好达到阈值，且 `max_matched_queue_wait_s = 0.5 ≥ 0.1`。于是 pressure-decision.json L55-L57 的全部 PRESSURE_CANDIDATE 谓词在同一条链路上成立——尽管 (a) 匹配队等对应的 service_start 在 horizon 之外（物理上该包停时应在系统内，属 DRAIN/畸形证据），(b) 队等时段 [29.9, 30.4] 与高利用窗口 [10, 12] 时间上完全不相交（合同只要求 same-link，未要求 same-window）。test_isl_pressure.py 全部 158 行中无任何对事件时间越界或队等-服务窗口交叉核对的用例。
+
+**对真实实验的影响评估**：该反例要进入正式分类，还需 receipt 校验不拦（service_start 越界、无对应服务窗口——这部分校验在允许读取路径之外，无法确认）；且真实配置有 `min_rate_bps: 10000.0` 速率下限，决策顺序上 DRAIN_INCOMPLETE 先于 PRESSURE_CANDIDATE（pressure-decision.json L49-L57），在 in-system fate 被正确记录的前提下会先拦截。因此定为 major（分析器 fail-loud 承诺与行为不符 + 测试缺口），而非 blocking。
+
+## 其余发现
+
+- **F2（minor）**：DRAIN 的 in-system-at-stop 无显式持久化字段，只能经 `fate_counts` 推断；若 packet_fates 不含 IN_SYSTEM_AT_STOP，该门静默通过（v2_analysis.py L273-L278、L466-L483；pressure-decision.json L39-L42）。
+- **F3（minor）**：zero-rate hold 与窗口证据畸形会让整个分析抛错中止（v2_analysis.py L249-L254、L261-L265），而不是产出结构化的 PHYS_INVALID 分类记录；方向是 fail-closed，不会误判为拥塞，但“最终分类按 pressure-decision.json 声明顺序产出”在这类情形下只能从错误文本人工映射。
+- **F4（info）**：阈值常量在 pressure-decision.json（L7-L18）与 `analyze_windows` 默认参数（isl_pressure.py L56-L60）各存一份；持久化的 `sustained_hotspot_link_ids` 用的是分析器默认值（L303-L305、L330-L346）。当前两者一致（0.8 / 0.9 / 2 / 1 s），但判定必须以决策合同为准对 per-link 字段重算，不能直接消费 sustained 列表。
+- **claim 边界**：一致且明确——单种子工程标定、非统计效应、非纯容量乘数、不得由本分支支持算法优越性/信息价值/Q0 结论（brief.json L44-L52；request-sources L31-L47；pressure-decision.json L65-L70）。PHYS_INVALID/DRAIN_INCOMPLETE 正确阻断拥塞解读（pressure-decision.json L43-L53）。
+
+## 三层分离声明
+
+- **代码正确性**：rebinner 分摊与守恒校验逻辑正确；缺口仅限事件时间界与队等-服务交叉核对（F1）。
+- **实验有效性**：两胞同一性成立，serial fail-closed、授权前 REVIEW 状态正确（compile-report.json L10-L17）；有效性最终依赖 receipt/governance 层对 F1 类畸形证据的拦截（未在本次范围内核验）。
+- **claim 界限**：本复核只支持“分析器与合同可按声明工作（带 F1-F3 限制）”；不支持任何拥塞阈值、算法比较或论文级结论。
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:R03_REVIEW:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "PASS_WITH_LIMITS。两胞 resolved 配置经逐行比对仅 links.rf_isl.bandwidth_hz 不同（两文件 L127），manifest 中 trace/input/code/controlled 身份哈希一致。决策阈值大部分可由持久化 V2 字段机械判定（mcs/fate/access/control/windowed_isl per-link 字段），例外：natural_end/conservation/external witness 仅由 VERIFIED 状态隐含，in-system-at-stop 只能经 fate_counts 推断。发现 1 个 major：isl_pressure.analyze_windows 不校验 queue_enter/service_start 时间落在 [0, stop] 内、不交叉核对匹配队等与该 pid 的服务窗口，给出可执行合成 ledger（post-stop service_start + 时间不相交队等 + 1 bps 分母）使 PRESSURE_CANDIDATE 全部谓词成立；现有测试未覆盖。缓解：决策顺序先 DRAIN 后 PRESSURE、resolved 配置 min_rate_bps=10000、receipt 层校验（范围外）。另有 2 个 minor（in-system 无显式持久化字段；zero-rate/畸形证据使分析中止而非产出结构化 PHYS_INVALID）与 1 个 info（阈值双份存储，sustained 列表用分析器默认值）。claim 边界一致：单种子工程标定，不支持算法优越性/通用阈值/论文级结论。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "analyze_windows 对 queue_enter.at/service_start.at 无 [0, stop_time_s] 界校验，且匹配队等不与该 pid 的实际 service window 交叉核对；可执行合成 ledger（stop=30，queue_enter 29.9、service_start 30.4、bits=1e6，叠加 10-12 s 的 1 bps 可用/服务窗口）使 longest_consecutive_high_windows=2、max_matched_queue_wait_s=0.5、matched_queue_wait_bits_s=100000，满足 pressure-decision.json 全部 PRESSURE_CANDIDATE 谓词，尽管证据越界且时间与高利用窗口不相交；test_isl_pressure.py 无对应用例。真实管线中受 DRAIN 优先顺序、min_rate_bps=10000 与 receipt 校验（范围外）缓解。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L197-L259",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L109-L118",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L55-L57",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/tests/test_isl_pressure.py#L119-L158"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "minor",
+      "summary": "DRAIN_INCOMPLETE 的 max_candidate_in_system_at_stop 无显式持久化字段；run_results 仅含 primary_metric 与 diagnostics，只能经 diagnostics.fate_counts 中的 IN_SYSTEM_AT_STOP 推断，packet_fates 是否记录该 fate 取决于允许路径外的 leo_sim；若漏记该门静默通过。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/v2_analysis.py#L273-L278",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/v2_analysis.py#L466-L483",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L39-L42"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "summary": "zero-rate hold 与窗口证据畸形使整个分析抛 V2AnalysisError 中止，而非产出结构化 PHYS_INVALID 分类；fail-closed 方向正确，但四类决策的记录在该路径下只能从错误文本人工映射。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/v2_analysis.py#L249-L254",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/v2_analysis.py#L261-L265",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L43-L48"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "窗口/队等阈值在 pressure-decision.json 与 analyze_windows 默认参数中各存一份（当前一致：1 s/0.8/0.9/2）；持久化 sustained_hotspot_link_ids 使用分析器默认值，最终判定应以决策合同对 per-link 字段重算，不能直接消费 sustained 列表。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L56-L60",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L303-L346",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L7-L18"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "两胞配置同一性成立：b5/b2 resolved 配置逐行相同，仅 links.rf_isl.bandwidth_hz 不同（5e6 vs 2e6，各自 L127）；manifest 中 code/input/trace_identity/controlled_signature 哈希一致；两配置均含 min_rate_bps=10000 的 MCS 速率下限。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b5-s7.leo-sim.yaml#L124-L134",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b2-s7.leo-sim.yaml#L124-L134",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/run-manifest.json#L44-L64",
+        "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/run-manifest.json#L79-L99"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "本地 Agent 在授权前核验 leo_sim packet_fates 是否记录 IN_SYSTEM_AT_STOP，以及 receipt 校验是否绑定 service_start 事件时间界与对应服务窗口（决定 F1/F2 在真实管线的可实现性）",
+    "可选的小型加固 PR：为 analyze_windows 增加 packet event 时间 [0, stop] 界校验、匹配队等与该 pid 服务窗口的交叉核对，并补 F1 反例的回归测试",
+    "最终分类脚本/记录中按 pressure-decision.json 阈值对 windowed_isl per-link 字段重算，不直接消费 sustained_hotspot_link_ids",
+    "将分析中止（zero-rate/畸形证据）在 PR 或 runbook 中显式映射为 PHYS_INVALID 记录路径"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/isl_pressure.py#L56-L346",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/tests/test_isl_pressure.py#L18-L158",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/v2_analysis.py#L238-L310",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/v2_analysis.py#L356-L483",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/experiment_platform/tests/test_v2_analysis.py#L285-L335",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/pressure-decision.json#L7-L70",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R03/brief.json#L44-L59",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json#L31-L75",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b5-s7.leo-sim.yaml#L124-L134",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/resolved/EXP-20260824-ISL-BANDWIDTH-PILOT-R03-b2-s7.leo-sim.yaml#L124-L134",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/run-manifest.json#L44-L99",
+    "github://fuguther/leo-direct-sim/blob/f6cbf4e91c702ed0982b6dcc16b2a22c19da5183/EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R03/compile-report.json#L10-L17"
+  ],
+  "open_items": [
+    "leo_sim 是否在 packet_fates 中记录 IN_SYSTEM_AT_STOP、receipt 校验是否约束 packet event 时间界与 service_start↔service window 对应关系：在合同允许读取路径之外，无法核验；影响 F1/F2 在真实管线的可实现性评估",
+    "run-manifest 的 config_sha256 与 compile-report 的 resolved 文件 artifact 哈希不一致（疑为 canonical JSON 与原始字节两种哈希），编译器实现不在允许路径内，无法确认",
+    "精确 commit 身份按任务绑定接受；受禁止本地 Shell 约束未能以 git rev-parse 独立重解析 f6cbf4e91c702ed0982b6dcc16b2a22c19da5183",
+    "control/access 持久化子键名未在决策合同中钉死，机械判定器实现时需对照 leo_sim ledger schema（允许路径外）"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
