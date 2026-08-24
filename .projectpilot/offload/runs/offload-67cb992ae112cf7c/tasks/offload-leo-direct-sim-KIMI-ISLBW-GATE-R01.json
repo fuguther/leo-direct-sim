@@ -1,0 +1,67 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:KIMI-ISLBW-GATE-R01",
+    "title": "ISL bandwidth pilot execution-gate audit",
+    "goal": "在 exact commit 上审阅从三角色 PASS 到 finalization、authorization、merge、clean-main deployment、b500/b50 sequential canonical run、receipt verification、paired analysis 的完整路线。重点寻找会让未授权、脏树、错误 commit、错误 analyzer、错误 trace、非自然结束或指标误读混入结果的缺口。请将 BLOCKER、NON_BLOCKING、OPEN_ITEM 分开；每个结论引用仓库路径和可复现检查。不要修改任何文件，不要启动 VM 正式实验。特别回答：1) finalization/artifact hash 是否充分绑定 analyzer 与两臂包；2) authorization 在 merge 后是否仍可校验；3) 远程脚本如何安全选择 clean checkout 而不复制或泄露 remote.env；4) 两臂顺序运行与自然结束检查是否有遗漏；5) paired analysis 前必须验证哪些 receipt/trace/MCS/control/data/denominator 字段；6) primary metric 不能被误称为什么。",
+    "mode": "REMOTE",
+    "policyMode": "fast",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "2f4848a42db503d0b12e577e6307309a06b97232",
+      "paths": [
+        "CODE/work/WP-LEO-V2-ISL-BANDWIDTH-PILOT/R01/brief.json",
+        "EXPERIMENTS/EXP-20260824-ISL-BANDWIDTH-PILOT-R01/",
+        "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R01.json",
+        "CODE/work/finalize_decision.py",
+        "CODE/experiment_platform/authorize_experiment.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/leo_sim/metrics.py",
+        "CODE/scripts/remote/common.sh",
+        "CODE/scripts/remote/push-remote.sh",
+        "CODE/scripts/remote/run-remote.sh",
+        "CODE/scripts/remote/pull-results-remote.sh"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "明确给出 PASS 或 BLOCK，并将 blocking findings 与非阻塞改进分开",
+      "每个 finding 引用精确仓库路径和复现检查",
+      "不得把编译、审阅、授权、部署、运行、分析中的任一步冒充后续阶段",
+      "显式列出 open_items，即使为空"
+    ],
+    "requiredEvidence": [
+      "exact commit verification",
+      "artifact and authorization binding checks",
+      "remote script environment-selection evidence",
+      "receipt and metric semantic checks"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "5126ecac8509d353cbe20656fc1bb4c17ebb173fbbb0feb6c7854bc9399780c9"
+}
