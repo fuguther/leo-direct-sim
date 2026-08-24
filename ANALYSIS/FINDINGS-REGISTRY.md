@@ -28,7 +28,7 @@
 |---|---|---|---|---|---|---|---|
 | R1-A1 | learning/reward | blocking | INFERENCE | fixed | 已关闭“额外转发跳数获得正收益”的已知风险；这不等价于已冻结 Q0 的物理字典序目标 | `4163226`：forward_step_penalty ≤ −reward_w1；零等待与非法覆盖反例；全量 `557 passed, 1 skipped, 3 subtests passed` | 训练转发奖励 = 原始 M1 queue reward + 非正逐跳成本；原始公式保留作诊断；R6-F3 继续约束 Q0 不能用 shaped reward 判最优 |
 | R1-A2 | learning/information | blocking | FACT | fixed | action/decision gate 曾读取 `obs_hops` 外 cache：加入两跳目的地广告不改变观测，却会开启 forward 动作 | 修前反例 `learner.decisions=1`；#62 head `614fd23` 独立冷审 APPROVE、定向 `41 passed`、全量 `410 passed`、CI SUCCESS | #62 / main `758b606`：目的地、远端传播与队列指标共用 cache-hop 边界；C1 同时约束当前邻居来源与实际一跳传播 |
-| R7-F1 | experiment_platform/PAPER | blocking | FACT | open | generic compile→paired analysis→claim 链已恢复；V2 结果适配器现已接入 receipt/formal/governance/ledgers 校验、指标重算、paired analysis 和 claim-gate 输出，但尚无真实授权 cohort 的持久化分析产物与 VM 证据 | `2f577a5`：V2 fixture 两臂 paired analysis、持久化 hash 重验；全量 `565 passed, 1 skipped, 3 subtests passed`；矩阵 Stage 1 已由 #67 合入 | 保留 open；部署当前 SHA，跑真实授权 cohort，核对 analysis-manifest/claim-gate，再做独立 claim/value review；fixture 绿不等于论文数据 |
+| R7-F1 | experiment_platform/PAPER | blocking | FACT | fixed | generic compile→paired analysis→claim-gate 链已由真实授权 cohort 闭合；这只关闭平台证据链缺口，不自动批准具体论文 claim | PR #159 / main `d3a116a69912dd214d89582a7b29c947f2357bfa`：R02 两个 serial VM cell 自然结束、governance eligible、双端 receipt verified；analysis manifest SHA `bc69740ec1cb5f201a79cf4749908c64e7ff4f49196b0dde7ee412bb95a6eb23`；`verify_persisted_analysis ok=true` | 平台 finding 关闭；每个实验继续执行独立 claim/value review。R02 单 seed 结果不得外推为统计、阈值或算法结论 |
 | R4A2-F1 | learning | blocking | INFERENCE | fixed | sibling metadata 可重标 contract（C3/C4 同宽） | learning.py 校验链（#42 审阅） | #42 af4b115：metadata SHA 独立 config pin |
 | R4A2-F2 | learning | major | FACT | fixed | metadata 非法 UTF-8 未统一转 LearningUnavailable | learning.py read_text 路径 | #42 af4b115：_read_json_bytes 统一捕获 |
 | R4A2-F2i | learning | major | FACT | fixed | legacy TabularQ 不校验 state-key 宽度/表示 | test_qlearning_migration.py 16B fixture | #42 af4b115：key 宽度+有限性校验 |
@@ -65,7 +65,7 @@
 
 ## Open / Follow-up 清单
 
-- R7-F1：正式实验持久化分析与 claim 链损坏，是当前平台门禁。
+- R7-F1 已由 R02 真实授权 cohort 关闭；逐实验 claim/value review 是持续治理要求，不再作为同一平台缺陷重复登记。
 - R4B2-A3b：控制包在途跟踪、Q0 snapshot → 完整 checkpoint/resume（设计 follow-up）。
 - R6-F1/R6-F3/R6-M1：Q0-I/J/F、物理目标和精确算法合同。
 - R6-A1/R6-A2/R6-A3/R6-B2/R6-P02b：已登记的 snapshot/holding/routing follow-up。

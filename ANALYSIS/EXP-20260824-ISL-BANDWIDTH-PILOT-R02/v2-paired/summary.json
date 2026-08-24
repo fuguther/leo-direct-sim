@@ -1,0 +1,19 @@
+{
+  "claim_status": "READY_FOR_INDEPENDENT_CLAIM_REVIEW",
+  "experiment_id": "EXP-20260824-ISL-BANDWIDTH-PILOT-R02",
+  "planned_contrasts": [
+    {
+      "differences": [
+        0.014890620207866214
+      ],
+      "left_arm": "b50",
+      "mean_difference": 0.014890620207866214,
+      "metric": "isl_link_utilization_max",
+      "n_pairs": 1,
+      "name": "b50_minus_b500",
+      "right_arm": "b500"
+    }
+  ],
+  "primary_metric": "isl_link_utilization_max",
+  "schema": "leo-sim-v2-analysis-summary/v1"
+}
