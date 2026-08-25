@@ -1,0 +1,223 @@
+母未定义、"sustained" 语义不可执行）。
+8. 范围扩张 — 未发现不必要工作。
+
+## 发现明细
+
+### F1（major, FACT）coverage 现有 fail-closed 上限与计划规模硬冲突，计划通篇未提
+
+- 证据：`github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/coverage.py#L24-L26`（`MAX_COVERAGE_CHECKS = 50_000_000`、`MAX_COVERAGE_ENDPOINTS = 10_000`）；`github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/coverage.py#L83-L98`（两个上限在 `scan_coverage` 内强制 fail-closed）；计划 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L302-L315`。
+- 推理：16,988 endpoints > 10,000 上限；即便 Task 3 的 600s/60s smoke 也是 16,988×11×280 = 52,323,040 > 50M checks；24h 全量 4.11e10 更超出三个数量级。计划只说"新增 `scan_constellation_coverage()`"，但 (a) 若实现者让 population 模式复用 `scan_coverage` 的校验即立刻 fail-loud 失败；(b) 若新路径不设等价界限，又违背本仓库 fail-closed 惯例且无替代的拒绝无界工作量合同。这是计划级遗漏，会在 Task 3 smoke 首次执行时爆雷。
+- 最小修改：在 Task 3 明文写出新路径的资源合同——`scan_coverage` 的三条上限保留不变；`scan_constellation_coverage` 用 `--max-working-mib` 推导分块大小并以"端点数 × 卫星数 × 采样数须可由分块覆盖"为唯一规模前提，同时声明 population 模式不经由 `MAX_COVERAGE_CHECKS`（或显式给出替代上限值）。
+
+### F2（major, FACT）Task 6 写集遗漏 `receipt.py`，nested 编译实际消费第二条 RNG 流与 receipt 硬编码合同冲突
+
+- 证据：计划 Task 6 文件清单 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L446-L451`（无 receipt.py）；`github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L312-L315`（`expected_rng = stream_mapping(seed, ["demand"])`，不等即报错）；现有编译入口 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L575`；manifest 只写 demand 流 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L736`。
+- 推理：nested 模式确定性消费 `nested_filter` 流（计划 L463-473）。若实现者保持 manifest `rng_streams` 不变，receipt 校验能过，但经 receipt 核验的 manifest 声明的随机性来源不完整（少报一条实际被消费的流）——正是 manifest 该字段存在的意义；若实现者把 `nested_filter` 加进 manifest，receipt L312-315 立即判 mismatch，Task 8 要求的"receipt verification"smoke 必然失败（计划 L711）。两条路都走不通，说明计划漏了 receipt.py 的配套改动。
+- 最小修改：Task 6 文件清单加入 `CODE/leo_sim/receipt.py`；nested 模式下 manifest `rng_streams` 值扩展为 `{"demand": spawn[0], "nested_filter": spawn[1]}`（顶层 key set 不变），receipt 端按 `nested_master_offered_mbps is not None` 复现同一分支，非 nested 路径字节不变。
+
+### F3（major, FACT）nested_master_offered_mbps 未限制 demand 模式，csv/mlab 下合同欠定义
+
+- 证据：计划校验合同 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L168-L171`（仅查 master ≥ offered）；companion 写出条件 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L453`；csv 分支无任何候选生成 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L470-L554`。
+- 推理：`mode: csv`（及 mlab）下不存在"在 master 负载生成候选再过滤"的路径；只要 `nested_master_offered_mbps` 非空就写 `nested-family.json` 的规则在 csv 下要么产生虚假 family 声明，要么迫使实现者即兴解释。与本仓库 fail-closed 惯例（AGENTS 硬事实 4）相悖。
+- 最小修改：Task 1 校验合同加一条：`nested_master_offered_mbps is not None` 要求 `mode == "population_gravity"`（本工作包范围），其他模式直接 ConfigError。
+
+### F4（major, FACT）决策合同中四个 fraction 阈值未定义分母，access/route 门可被歧义误判
+
+- 证据：计划 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L557-L563`（`max_rejected_fraction` / `max_access_overflow_fraction` / `max_uplink_overflow_fraction` / `max_no_route_fraction` 均无分母）。
+- 推理：以 `max_no_route_fraction: 0.001` 为例，"of offered" 与 "of admitted" 在 access 受限场景下可差两个数量级——若 access 只放行 1% 的包，按 offered 算的 NO_ROUTE 比例可以极低，按 admitted 算却可能全军覆没，同一运行可被判成 ROUTE_LIMITED 或 route_clean 两种结论。access/route 门是整个分层判据的承重墙（L4 只在 L3 clean 时才评估），分母歧义直接动摇"access failure 永不被误标为 ISL congestion"的核心承诺。
+- 最小修改：在 contract v1 中逐字段写明分母（建议 rejected/access_overflow/uplink_overflow 相对 emitted，no_route 相对 admitted-at-ingress），并在 Task 7 增加一条 RED：同一 fixture 在两种分母解释下结论不同，证明实现按声明分母计算。
+
+### F5（major, FACT→INFERENCE）`min_directed_link_windows: 3` 不约束同一链路/连续性，无法支撑"sustained directed-link pressure"的允许结论
+
+- 证据：计划 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L564-L568`（阈值）；`github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L62-L68`（L4 允许结论的措辞是 "sustained directed-link pressure"）。
+- 推理：按字面，三条分散在不同有向链路、不同时刻的 1s 窗口各 ≥0.70 即满足 `min_directed_link_windows: 3`，但这不是任何一条链路上的"持续"压力。计划 Task 7 的 RED（"horizon-aggregate high utilization without three qualifying windows returns NO_ISL_PRESSURE"，L614）只挡聚合平均，不挡跨链路拼窗。FACT 部分是合同文本与结论措辞不一致；INFERENCE 部分是实现者大概率按字面实现而得出偏宽的 ISL_PRESSURE_CANDIDATE。
+- 最小修改：改为"同一条有向链路在同一观测窗内 ≥K 个（可声明是否连续）1s 窗口 ≥0.70"，并把 RED 反例改为"三条窗口分散在三条链路 → NO_ISL_PRESSURE"。
+
+### F6（minor, FACT）utc_start_hour 对 legacy diurnal 生效但不进 manifest 的两键 transform
+
+- 证据：计划 `_rate_multiplier` `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L336-L342`（`uses_local_clock` 含 `mode == "diurnal"`）；计划保留 legacy 两键值 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L364-L375`；receipt 端两键复现 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L489-L496`；Task 1 校验未禁止该组合 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L157-L158`。
+- 推理：`mode: diurnal` + `utc_start_hour: 5` 通过校验、改变 trace 字节，但 manifest 的 `traffic_transform.diurnal` 仍是 `{amplitude, phase_h}`，应用的 UTC 偏移在 manifest 摘要中不可见（仅在 resolved_config.json 与 identity 哈希中间接绑定）。属 provenance 记录缺口。
+- 最小修改：校验改为 `utc_start_hour != 0` 仅在 `temporal_model == local_diurnal_cosine` 时合法（默认 0.0 下 legacy 字节不变性不受影响）。
+
+### F7（minor, FACT）`nested-family.json` 未纳入编译期工件安全防护
+
+- 证据：现有防护只覆盖两个文件 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L454-L459`（symlink/非常规文件 fail closed）；计划新增第三个编译工件 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L453`。
+- 推理：companion 携带 family/config/trace 三层哈希，是后续家族验证的信任锚；不经过同样的 symlink/覆盖检查就留下与 trace.csv/manifest.json 不一致的写入面。
+- 最小修改：Task 6 明确把 companion 加入同一 artifact 防护循环，并加一条 symlink 拒绝回归测试。
+
+### F8（minor, INFERENCE）scalar/vector 在严格阈值边界的"逐位一致"RED 在浮点上不保证成立
+
+- 证据：计划 vector 谓词 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L256-L264` 与边界 RED 要求 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L296`；scalar 路径 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/model.py#L517-L532`（ecef→asin 仰角）与 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/model.py#L529-L532`。
+- 推理：两路径在实数域等价（cos 在 [0,π] 单调减，dot > cos(ψmax) ⟺ elevation > e），但浮点域一个是 asin 链、一个是点积/acos 链，恰在阈值 1 ulp 邻域内的点可能分叉；断言"包括严格边界在内逐点 identical"的 RED 可能因 fixture 恰好落界而假阳性失败或被迫放水。
+- 最小修改：RED 改为"界外逐点一致 + 边界点按共享参考谓词（同一公式直接构造）判定"，或在计划中显式声明边界容差处理规则。
+
+### F9（minor, INFERENCE/UNVERIFIED）计划未要求记录逐源接受率，alias 灾难性接受率只靠上限 fail-loud 兜底
+
+- 证据：计划 benchmark 条款 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L435`（只比速度）；采样器 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L407-L428`。
+- 推理：数学上接受分布 ∝ pop^γ/max(d,floor)^α 与 scan 目标精确等价（floor^α 为常数因子，在归一化中约去；自反排除与 scan 的 same-cell 排除在 population 1:1 端点下一致）。floor=100km、α=1.25 下最坏源（远离人口团的岛屿 cell）单抽接受率约 (100/5000)^1.25 ≈ 0.008，期望 ~130 抽，10^4 上限的耗尽概率可忽略——但这是推断，未实测；若未来调高 α 或调低 floor，接受率按幂律恶化而计划无任何观测手段。
+- 最小修改：benchmark 条款增加"记录全候选源的 min/mean 接受率与耗尽计数"，作为后续参数变更的对照基线。
+
+### F10（info, FACT）新增五个 demand 默认字段使所有既有 profile 的 trace_identity_sha256 漂移，计划只提了 manifest 哈希
+
+- 证据：identity payload 内嵌完整 demand 组 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/config.py#L801-L814`；receipt 端按现行代码重算 identity `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L1225-L1236`；计划的表述 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L175-L177`。
+- 推理：计划正确指出 trace.csv 字节不变、manifest 哈希可变；但未写明推论——所有存量已编译 trace 目录在新代码下重算 identity 将不再匹配其 manifest。只要旧工件用其原 commit 的代码核验即无实际损害，但这一点应显式声明，避免后续误判为回归。
+- 最小修改：Task 1 加一句限制声明："identity 漂移仅影响跨版本重验；存量工件以其生产 commit 的代码核验"。
+
+### F11（info, INFERENCE）30s 全球稀疏场景下 `min_admission_rate: 0.99` 大概率判 ACCESS_LIMITED，计划未预告该期望结果
+
+- 证据：admission 定义 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/metrics.py#L389-L390`（ingress/emitted）；access 受几何门控 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/kernel.py#L2543-L2551`；诊断 profile 仅 30s 窗 `github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L636-L646`。
+- 推理：全球 16,988 cell 中相当部分在任意 30s 窗内无卫星可见（25° 最小仰角、280 星），这些源的包在 horizon 内无法 ingress，admission 必然远低于 0.99。这是分层设计的预期行为而非缺陷，但计划未写明"首次诊断的期望状态大概率是 ACCESS_LIMITED"，存在把正确分类误读为实现 bug 的运维风险。
+- 最小修改：Task 8 期望结果段加一句预期分类说明。
+
+## 最终判定
+
+**REQUEST_CHANGES**。计划整体可执行、无科学性伪造，F1–F5 五条 major 均为可在计划文本层修复的合同/资源缺口，无需推翻架构；修复后需重新绑定 exact SHA 冷审。
+
+未验证假设与受限范围：
+- 16,988 cells、raster SHA `c5742d16...`、legacy trace SHA `0780da2f...`、24h/10s 实测墙钟——本环境按合同未执行任何代码，均 UNVERIFIED。
+- "除 kernel.py:1057 与 coverage.py:187 外无其他直接用 t 的几何路径"的结论基于全仓库 `Constellation(` 构造点 grep + provider 派生链（model.py 内全部几何查询经 subpoint/ecef）；`control.py`/`routing.py`/`link_budget.py`/`outage.py`/`fates.py` 不在合同允许读取路径内，其中若存在不经 provider 的独立几何计算，本审阅无法覆盖。
+- `link_budget` 的 MCS 速率表不可读，L4 的 0.70/1s 窗口在当前链路预算下的可达性只能定性判断（低速率长距链路可达、高速率链路在 ≤80 Mbps 注册菜单内不可达），未量化。
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:GLOBAL-SCENE-PLAN-REVIEW-R1",
+  "status": "EVIDENCE_READY",
+  "summary": "冷审结论 REQUEST_CHANGES。八维度全覆盖；alias-rejection 目标分布经推导与现有 scan 精确等价、无构造性灾难接受率；geometry_epoch_s 构造点仅 kernel.py:1057/coverage.py:187 且均在写集；ledgers.json 持久化原始事件足以支撑 scene_check 重算。五条 major：F1 coverage 现有 fail-closed 上限(10k endpoints/50M checks)与 16,988 端点及 52.3M smoke 检查数硬冲突且计划未提；F2 Task 6 写集漏 receipt.py，rng_streams 硬编码 demand-only 与 nested_filter 流冲突；F3 nested_master 未限制 csv/mlab 模式；F4 决策合同四个 fraction 阈值无分母定义；F5 min_directed_link_windows:3 不要求同链路/连续，撑不住 sustained 结论。另有 minor F6-F9 与 info F10-F11。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "FACT: coverage.py 的 MAX_COVERAGE_ENDPOINTS=10000/MAX_COVERAGE_CHECKS=50M 与计划 16,988 端点及 52,323,040 次 smoke 检查硬冲突，计划未声明新路径的资源界限合同",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/coverage.py#L24-L26",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/coverage.py#L83-L98",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L302-L315"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "FACT: Task 6 写集不含 receipt.py，而 receipt 硬编码 rng_streams=stream_mapping(seed,[\"demand\"])；nested 编译消费 nested_filter 流后，manifest 要么少报流、要么 receipt 校验必败",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L446-L451",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L312-L315",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L736"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "FACT: nested_master_offered_mbps 校验只查 >=offered，未排除 csv/mlab 等无候选生成的模式，companion 写出规则在该组合下欠定义",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L168-L171",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L453",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L470-L554"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "FACT: 决策合同 max_rejected/access_overflow/uplink_overflow/no_route 四个 fraction 均未定义分母(of offered vs of admitted)，access 受限场景下同一运行可被判成两种结论",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L557-L563"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "summary": "FACT/INFERENCE: min_directed_link_windows=3 不要求同一有向链路或连续窗口，字面实现下三条跨链路散窗即可过 L4，与 L4 允许结论 sustained directed-link pressure 不一致",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L564-L568",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L62-L68"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "summary": "FACT: utc_start_hour 对 legacy mode=diurnal 同样生效但 manifest transform 保持两键，utc_start_hour!=0+diurnal 通过校验却不在 manifest 记录",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L336-L342",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L489-L496"
+      ]
+    },
+    {
+      "id": "F7",
+      "severity": "minor",
+      "summary": "FACT: nested-family.json 未纳入 trace.py:454-459 的编译期工件 symlink/常规文件防护",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L454-L459",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L453"
+      ]
+    },
+    {
+      "id": "F8",
+      "severity": "minor",
+      "summary": "INFERENCE: scalar(asin 仰角)与 vector(点积/acos footprint)在严格阈值边界的逐位一致 RED 在浮点域不保证成立，需改用共享参考谓词或声明边界处理",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L256-L264",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L296",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/model.py#L517-L532"
+      ]
+    },
+    {
+      "id": "F9",
+      "severity": "minor",
+      "summary": "INFERENCE/UNVERIFIED: alias 接受率最坏情形(约 0.008)未要求实测记录，仅靠 10^4 上限 fail-loud 兜底；benchmark 只比速度",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L435",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L407-L428"
+      ]
+    },
+    {
+      "id": "F10",
+      "severity": "info",
+      "summary": "FACT: 五个新 demand 默认字段使所有既有 profile 的 trace_identity_sha256 漂移，存量工件跨版本重验将不匹配；计划只声明了 manifest 哈希可变",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/config.py#L801-L814",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L1225-L1236",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L175-L177"
+      ]
+    },
+    {
+      "id": "F11",
+      "severity": "info",
+      "summary": "INFERENCE: 30s 全球稀疏场景 min_admission_rate=0.99 大概率判 ACCESS_LIMITED，属设计预期但计划未预告，存在误读为实现缺陷的运维风险",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/metrics.py#L389-L390",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/kernel.py#L2543-L2551",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L636-L646"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "按计划文本最小修改落实 F1-F5（Task 3 资源合同、Task 6 加 receipt.py 与 rng_streams 分支、Task 1 限制 nested 模式、contract v1 补分母与同链路连续窗定义），F6-F9 顺手修复",
+    "修订后对新 exact SHA 重新冷审（本台账无既有编号覆盖，建议按 R 轮次分配新 ID）",
+    "本地 Agent 用 git grep 在 control.py/routing.py/link_budget.py/outage.py 中确认无绕过 provider 的直接 t 几何计算，以闭合维度 6 的受限验证",
+    "首次执行 Task 3 smoke 前确认新 vector 路径不经 MAX_COVERAGE_CHECKS 或有替代上限"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/coverage.py#L24-L26",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L312-L315",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L489-L496",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L504-L532",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/config.py#L789-L814",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L146-L163",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L575",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L696-L723",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/kernel.py#L1056-L1075",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/kernel.py#L1654-L1710",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/model.py#L497-L532",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/rng.py#L26-L34",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/metrics.py#L389-L390",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L540-L593"
+  ],
+  "open_items": [
+    "control.py/routing.py/link_budget.py/outage.py/fates.py 不在允许读取路径内：维度 6 的'无遗漏直接 t 几何路径'结论仅由全仓库 Constellation( 构造点 grep(kernel.py:1057、coverage.py:187，其余为 tests)与 model.py provider 派生链支撑，需本地 Agent grep 闭合",
+    "16,988 cells、raster SHA c5742d16...、legacy trace SHA 0780da2f...、24h/10s 墙钟与 RSS：合同禁止执行代码，全部 UNVERIFIED；比较总数 41,102,126,240=16988×280×8641 已手工核算一致",
+    "link_budget MCS 速率表不可读：L4 的 0.70/1s 窗口在注册负载菜单(<=80 Mbps)下的可达性只做了定性判断(低速率长距链路可达、高速率链路不可达)，未量化",
+    "F9 的最坏源接受率约 0.008 为推导值(INFERENCE)，未经实测"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
