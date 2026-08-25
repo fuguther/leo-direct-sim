@@ -5,6 +5,12 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-25：全球人口区域直连接入场景实施计划（仅计划）
+
+- 基于 clean `origin/main@98d9092751abd84a3d3ad6b39e932e5e501740c0` 新建隔离分支 `codex/20260825-global-access-plan`；基线 `python3 -m pytest CODE/leo_sim/tests CODE/tests -q` 为 `598 passed, 1 skipped`。用户原工作树保持只读且未处置其中改动。
+- 新计划 `docs/superpowers/plans/2026-08-25-global-direct-access-scene.md` 将场景口径冻结为：1° 全球正人口候选区域、有限运行中动态稀疏活跃、population + local-time proxy 流量、coverage/access/route/ISL 分层判定、严格 nested master trace 负载族。当前 GPW 工件 SHA=`c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a`，1° 候选数为 16,988；0.5° 仅保留后续敏感性。
+- 本工作单元不改平台代码、不跑正式矩阵、不改两份导师报告；计划要求 Luna 未来以 TDD 实现并停在 exact-SHA 独立复核就绪的 PR，不得自批承重改动。后续算法比较必须等全球覆盖、接入清洁和真实 ISL 压力候选依次关闭。
+
 ## 2026-08-24：ISL RF 带宽正式双臂已完成并闭合 V2 重算
 
 - PR #159 经 CI `658 passed, 1 skipped, 3 subtests passed`、文档治理 `0 errors, 0 warnings` 后 squash 合入；正式运行与分析器绑定 exact main `d3a116a69912dd214d89582a7b29c947f2357bfa`。canonical VM deployment receipt SHA=`dc1d7e0339ae3ee9c78025d863036f6d4d6ec261dea8b8a26f05f99233ae1291`；authorization 文件 SHA=`9442f778558d2467f2fc08c30c208a9ed5da38fae64e7f6f557c19332d8178ee`。
