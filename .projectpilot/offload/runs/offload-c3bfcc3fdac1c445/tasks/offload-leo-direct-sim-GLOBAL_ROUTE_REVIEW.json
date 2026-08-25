@@ -1,0 +1,67 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:GLOBAL_ROUTE_REVIEW",
+    "title": "全球直连接入场景与分层验收路线审查",
+    "goal": "只读检查现有代码是否支持以下科学路线，并找出隐含缩小范围、规模瓶颈、接入与ISL混淆、时间窗口不足及指标缺口。候选路线是：全球人口网格作为全部潜在需求区域；按人口、渗透率、忙时会话、活动因子和本地时间生成动态活跃子集；把全球覆盖/接入能力、日常动态业务、接入压力测试、ISL路由压力测试分成四个互不冒充的验收层。已知当前M-Lab R03只从2604个测量候选格中经强连通分量与64上限选56格，trace实际55活跃格；人口配置5度聚合只有1061个候选格、30秒108包和127个活跃格；1度人口聚合约16988个候选格，0.5度约61295个。审查1度起步是否合理，是否应采用分层聚合/稀疏激活，以及最小可证伪验收应是什么。不要修改文件、不要运行正式实验、不要把平台smoke或候选数据写成已完成能力。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "98d9092751abd84a3d3ad6b39e932e5e501740c0",
+      "paths": [
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/population.py",
+        "CODE/leo_sim/trace.py",
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/platform_check.py",
+        "CODE/leo_sim/profiles/population_gravity.yaml",
+        "CODE/leo_sim/tests/test_population.py",
+        "CODE/leo_sim/tests/test_trace.py",
+        "CODE/leo_sim/tests/test_platform_check.py",
+        "EXPERIMENTS/request-sources/EXP-20260824-ISL-BANDWIDTH-PILOT-R03.json"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "逐项区分代码事实、推论和未验证假设",
+      "指出当前实现能直接复用、必须补做、应拒绝沿用的部分",
+      "给出分层验收的最小指标、反例和停止条件",
+      "明确1度、0.5度及分层聚合路线的成本与科学取舍",
+      "每个承重判断引用精确仓库路径或可复现检查"
+    ],
+    "requiredEvidence": [
+      "精确文件路径和代码行为证据",
+      "规模上限与复杂度证据",
+      "至少三个可能导致错误科研结论的反例",
+      "open_items明确声明"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "a53e1aba6744f10ee0297727236d13a96849f25f884eb1ce3dba21b509a98eb3"
+}
