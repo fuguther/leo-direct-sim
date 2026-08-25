@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "planId": "offload-6a67e7a0de6608cc",
+  "relayManifest": {
+    "planId": "offload-6a67e7a0de6608cc",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:GLOBAL-SCENE-PLAN-REVIEW-R1",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "9945b794b1d090d99151e44d89e79e6f6babbe18",
+        "paths": [
+          "docs/superpowers/plans/2026-08-25-global-direct-access-scene.md",
+          "AGENTS.md",
+          "ANALYSIS/FINDINGS-REGISTRY.md",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/coverage.py",
+          "CODE/leo_sim/population.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/rng.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/platform_check.py",
+          "CODE/leo_sim/tests/"
+        ],
+        "promptHash": "011ede032f06624be848f32595e0a3d7b03ce94280b45d91d88983bc3bff5a4c"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:GLOBAL-SCENE-PLAN-REVIEW-R1:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "9945b794b1d090d99151e44d89e79e6f6babbe18",
+        "paths": [
+          "docs/superpowers/plans/2026-08-25-global-direct-access-scene.md",
+          "AGENTS.md",
+          "ANALYSIS/FINDINGS-REGISTRY.md",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/coverage.py",
+          "CODE/leo_sim/population.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/rng.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/platform_check.py",
+          "CODE/leo_sim/tests/"
+        ],
+        "promptHash": "11b06e6433276c9b6179e2644b9a3b0f930fbf95073ab138c34bd0e78d8b7468"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "6a67e7a0de6608cc262a274fcee31121fd7f06e080ba818cf91527f5466ef676"
+  },
+  "sourceBaseCommit": "9945b794b1d090d99151e44d89e79e6f6babbe18",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:GLOBAL-SCENE-PLAN-REVIEW-R1",
+      "promptHash": "011ede032f06624be848f32595e0a3d7b03ce94280b45d91d88983bc3bff5a4c",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "9945b794b1d090d99151e44d89e79e6f6babbe18",
+        "paths": [
+          "docs/superpowers/plans/2026-08-25-global-direct-access-scene.md",
+          "AGENTS.md",
+          "ANALYSIS/FINDINGS-REGISTRY.md",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/coverage.py",
+          "CODE/leo_sim/population.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/rng.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/platform_check.py",
+          "CODE/leo_sim/tests/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:GLOBAL-SCENE-PLAN-REVIEW-R1:independent_review",
+      "promptHash": "11b06e6433276c9b6179e2644b9a3b0f930fbf95073ab138c34bd0e78d8b7468",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "9945b794b1d090d99151e44d89e79e6f6babbe18",
+        "paths": [
+          "docs/superpowers/plans/2026-08-25-global-direct-access-scene.md",
+          "AGENTS.md",
+          "ANALYSIS/FINDINGS-REGISTRY.md",
+          "CODE/leo_sim/config.py",
+          "CODE/leo_sim/model.py",
+          "CODE/leo_sim/kernel.py",
+          "CODE/leo_sim/coverage.py",
+          "CODE/leo_sim/population.py",
+          "CODE/leo_sim/trace.py",
+          "CODE/leo_sim/rng.py",
+          "CODE/leo_sim/receipt.py",
+          "CODE/leo_sim/metrics.py",
+          "CODE/leo_sim/platform_check.py",
+          "CODE/leo_sim/tests/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
