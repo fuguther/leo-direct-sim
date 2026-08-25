@@ -455,3 +455,169 @@ def test_uncompiled_new_scene_fields_do_not_change_trace_bytes(tmp_path):
     assert hashlib.sha256(
         (tmp_path / "explicit" / "trace.csv").read_bytes()).hexdigest() == base_sha
     assert explicit_manifest["trace_sha256"] == base_manifest["trace_sha256"]
+
+
+# ---------------------------------------------------------------- Task 4:
+# opt-in local-solar-time population demand proxy (explicitly NOT measured
+# traffic).
+
+def _fake_pop_table(*populations):
+    regions = tuple(
+        population.PopulationRegion(f"G5:18:{36 + i}", 2.5,
+                                    2.5 + 5.0 * i, pop)
+        for i, pop in enumerate(populations))
+    table = population.PopulationTable(
+        regions=regions, source_path="/fake/pop.tif", source_sha256="c" * 64,
+        source_shape=(720, 1440), source_resolution_deg=(0.25, 0.25),
+        aggregation_deg=5.0, total_population=float(sum(populations)))
+    return table
+
+
+def _population_cfg(monkeypatch, **demand):
+    table = _fake_pop_table(10.0, 3.0, 1.0)
+    monkeypatch.setattr(population, "load_population_regions",
+                        lambda path, aggregation_deg: table)
+    base = {
+        "scenario": {"duration_s": 50.0, "seed": 7},
+        "endpoints": {"aggregation_deg": 5.0},
+        "demand": {"mode": "population_gravity",
+                   "population_path": "/fake/pop.tif",
+                   "offered_mbps": 20.0, "packet_bits": 1_000_000,
+                   "source_population_exponent": 1.0,
+                   "destination_population_exponent": 1.0,
+                   "gravity_alpha": 1.0, "gravity_d_floor_km": 100.0},
+    }
+    base["demand"].update(demand)
+    return config.resolve_config(base)
+
+
+def test_local_diurnal_local_hour_declared_at_utc_wraparound(monkeypatch):
+    """longitude 0 at UTC 12 and longitude 180 at UTC 0 both resolve to the
+    declared local hour at t=0, so the rate multiplier is the peak there."""
+    dm = {"mode": "population_gravity", "temporal_model": "local_diurnal_cosine",
+          "utc_start_hour": 0.0, "diurnal_amplitude": 1.0,
+          "diurnal_phase_h": 12.0, "burst_start_s": None}
+    dm["utc_start_hour"] = 12.0
+    m0 = trace._rate_multiplier("population_gravity", 0.0, 0.0, dm)
+    assert m0 == pytest.approx(2.0)  # local hour 12 -> cos peak
+    dm["utc_start_hour"] = 0.0
+    m180 = trace._rate_multiplier("population_gravity", 0.0, 180.0, dm)
+    assert m180 == pytest.approx(2.0)  # local hour 12 -> cos peak
+
+
+def test_local_diurnal_amplitude_zero_is_byte_equivalent_to_constant(
+        tmp_path, monkeypatch):
+    const = _population_cfg(monkeypatch)
+    flat = _population_cfg(monkeypatch, temporal_model="local_diurnal_cosine",
+                           utc_start_hour=4.0, diurnal_amplitude=0.0)
+    m1 = trace.compile_trace(const, str(tmp_path / "const"))
+    m2 = trace.compile_trace(flat, str(tmp_path / "flat"))
+    assert (tmp_path / "const" / "trace.csv").read_bytes() == (
+        tmp_path / "flat" / "trace.csv").read_bytes()
+    assert m1["trace_sha256"] == m2["trace_sha256"]
+    # the traces may be identical only because the amplitude is literally
+    # zero; the identity still differs (different feature selection)
+    assert m1["trace_identity_sha256"] != m2["trace_identity_sha256"]
+
+
+def test_local_diurnal_utc_block_changes_bytes_and_repeat_identical(
+        tmp_path, monkeypatch):
+    block_a = _population_cfg(monkeypatch, temporal_model="local_diurnal_cosine",
+                              utc_start_hour=2.0, diurnal_amplitude=0.5)
+    block_b = _population_cfg(monkeypatch, temporal_model="local_diurnal_cosine",
+                              utc_start_hour=14.0, diurnal_amplitude=0.5)
+    a1 = trace.compile_trace(block_a, str(tmp_path / "a1"))
+    b1 = trace.compile_trace(block_b, str(tmp_path / "b1"))
+    a2 = trace.compile_trace(block_a, str(tmp_path / "a2"))
+    assert a1["trace_sha256"] != b1["trace_sha256"]
+    assert (tmp_path / "a1" / "trace.csv").read_bytes() == (
+        tmp_path / "a2" / "trace.csv").read_bytes()
+    assert a1["trace_identity_sha256"] != b1["trace_identity_sha256"]
+
+
+def test_local_diurnal_manifest_proxy_labels_and_four_key_transform(
+        tmp_path, monkeypatch):
+    cfg = _population_cfg(monkeypatch, temporal_model="local_diurnal_cosine",
+                          utc_start_hour=6.5, diurnal_amplitude=0.5,
+                          diurnal_phase_h=15.0)
+    manifest = trace.compile_trace(cfg, str(tmp_path / "proxy"))
+    assert manifest["provenance"] == "population_proxy"
+    assert manifest["not_calibrated_user_demand"] is True
+    transform = manifest["provenance_contract"]["traffic_transform"]
+    assert transform["diurnal"] == {
+        "amplitude": 0.5, "phase_h": 15.0, "utc_start_hour": 6.5,
+        "clock": "source_local_solar_time_proxy",
+    }
+    # the manifest's exact top-level key set is unchanged
+    assert set(manifest) == {
+        "schema", "trace_schema", "trace_sha256", "trace_identity_sha256",
+        "config_version", "input_sha256", "mode", "provenance",
+        "simulation_horizon_s", "emission_end_s", "drain_s", "rng_streams",
+        "packet_id_contract", "offered_packets", "offered_bits", "ledger",
+        "active_endpoints", "time_range_s", "provenance_contract",
+        "not_calibrated_user_demand", "provenance_note", "population",
+    }
+
+
+def test_legacy_diurnal_transform_keeps_two_key_value(tmp_path):
+    cfg = _cfg(demand={"mode": "diurnal", "diurnal_amplitude": 0.5,
+                       "diurnal_phase_h": 12.0})
+    manifest = trace.compile_trace(cfg, str(tmp_path / "legacy-diurnal"))
+    transform = manifest["provenance_contract"]["traffic_transform"]
+    assert transform["diurnal"] == {"amplitude": 0.5, "phase_h": 12.0}
+    assert set(transform["diurnal"]) == {"amplitude", "phase_h"}
+    assert "utc_start_hour" not in transform["diurnal"]
+
+
+def test_local_diurnal_trace_receipt_verification_and_tamper_rejection(
+        tmp_path, monkeypatch):
+    cfg = _population_cfg(monkeypatch, temporal_model="local_diurnal_cosine",
+                          utc_start_hour=5.0, diurnal_amplitude=0.5)
+    manifest = trace.compile_trace(cfg, str(tmp_path / "pop"))
+    assert receipt._validate_manifest(manifest, cfg["config"], cfg["version"]) == []
+    # a tampered local-time transform must be rejected
+    tampered = dict(manifest)
+    tampered["provenance_contract"] = dict(manifest["provenance_contract"])
+    tampered["provenance_contract"]["traffic_transform"] = dict(
+        manifest["provenance_contract"]["traffic_transform"])
+    tampered["provenance_contract"]["traffic_transform"]["diurnal"] = dict(
+        manifest["provenance_contract"]["traffic_transform"]["diurnal"])
+    tampered["provenance_contract"]["traffic_transform"]["diurnal"]["clock"] = \
+        "operator_clock"
+    errors = receipt._validate_manifest(tampered, cfg["config"], cfg["version"])
+    assert any("diurnal" in e for e in errors)
+    # extra keys inside the transform are also rejected
+    extra = dict(manifest)
+    extra["provenance_contract"]["traffic_transform"]["diurnal"]["extra"] = 1
+    errors = receipt._validate_manifest(extra, cfg["config"], cfg["version"])
+    assert any("diurnal" in e for e in errors)
+
+
+def test_local_diurnal_observed_support_sets_never_rename_candidates(
+        tmp_path):
+    """A finite trace may have far fewer observed sources than the 16,988
+    candidate regions: the manifest keeps candidate_regions exact, while the
+    trace-derived observed sets are reported separately and never renamed as
+    the candidate support."""
+    resolved = config.load_config_file(str(POPULATION_PROFILE))
+    resolved["config"]["endpoints"]["aggregation_deg"] = 1.0
+    resolved["config"]["demand"].update({
+        "temporal_model": "local_diurnal_cosine",
+        "utc_start_hour": 6.0,
+    })
+    manifest = trace.compile_trace(resolved, str(tmp_path / "real"))
+    rows = trace.load_trace(
+        str(tmp_path / "real" / "trace.csv"),
+        horizon_s=30.0, max_packets=2000)
+    assert manifest["population"]["candidate_regions"] == 16_988
+    observed_sources = sorted({row["src_grid_id"] for row in rows})
+    observed_destinations = sorted({row["dst_grid_id"] for row in rows})
+    runtime_endpoints = sorted(set(observed_sources)
+                               | set(observed_destinations))
+    assert len(observed_sources) < 16_988
+    assert len(observed_destinations) < 16_988
+    assert len(runtime_endpoints) < 16_988
+    assert len(runtime_endpoints) == manifest["active_endpoints"]
+    # the manifest names the candidate support, the trace derives the
+    # runtime sets: they must be reported separately, never conflated
+    assert manifest["population"]["candidate_regions"] != len(observed_sources)

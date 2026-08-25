@@ -492,6 +492,18 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
                 "amplitude": float(resolved_cfg["demand"]["diurnal_amplitude"]),
                 "phase_h": float(resolved_cfg["demand"]["diurnal_phase_h"]),
             }
+        elif (mode == "population_gravity"
+              and resolved_cfg["demand"]["temporal_model"]
+              == "local_diurnal_cosine"):
+            # the opt-in local-solar-time population proxy carries an exact
+            # four-key value; anything else is a tampered transform
+            expected_diurnal = {
+                "amplitude": float(resolved_cfg["demand"]["diurnal_amplitude"]),
+                "phase_h": float(resolved_cfg["demand"]["diurnal_phase_h"]),
+                "utc_start_hour": float(
+                    resolved_cfg["demand"]["utc_start_hour"]),
+                "clock": "source_local_solar_time_proxy",
+            }
         if transform.get("diurnal") != expected_diurnal:
             errors.append("provenance diurnal transform mismatch")
     return errors

@@ -273,3 +273,48 @@ def test_run_rejects_valid_legacy_v1_precompiled_trace_for_current_runtime(
     rc = main(["run", "--config", str(p2), "--out", str(tmp_path / "out-v1")])
     assert rc == 2
     assert "TRACE COMPILE FAILED" in capsys.readouterr().out
+
+
+def test_population_local_diurnal_cli_run_verifies_receipt(tmp_path, capsys,
+                                                           monkeypatch):
+    """The opt-in local-time population proxy flows through the canonical
+    CLI: the compiled manifest carries the four-key transform, the run ends
+    naturally, and the receipt verifies under the new transform branch."""
+    from CODE.leo_sim import population as pop_mod
+    regions = (
+        pop_mod.PopulationRegion("G5:18:36", 2.5, 2.5, 10.0),
+        pop_mod.PopulationRegion("G5:18:37", 2.5, 7.5, 3.0),
+    )
+    table = pop_mod.PopulationTable(
+        regions=regions, source_path="/fake/pop.tif",
+        source_sha256="d" * 64, source_shape=(720, 1440),
+        source_resolution_deg=(0.25, 0.25), aggregation_deg=5.0,
+        total_population=13.0)
+    monkeypatch.setattr(pop_mod, "load_population_regions",
+                        lambda path, aggregation_deg: table)
+
+    cfg = tmp_path / "cfg.yaml"
+    cfg.write_text(
+        "scenario:\n  duration_s: 1.0\n  seed: 7\n"
+        "endpoints:\n  aggregation_deg: 5.0\n"
+        "demand:\n  mode: population_gravity\n"
+        "  population_path: /fake/pop.tif\n"
+        "  offered_mbps: 8.0\n  packet_bits: 1000000\n"
+        "  temporal_model: local_diurnal_cosine\n  utc_start_hour: 3.0\n"
+        "  diurnal_amplitude: 0.5\n"
+        "routing:\n  policy: oracle\n"
+        "control_plane:\n  enabled: false\n"
+        f"outputs:\n  out_dir: {tmp_path}/out\n", encoding="utf-8")
+    out_dir = str(tmp_path / "out")
+    rc = main(["run", "--config", str(cfg), "--out", out_dir])
+    captured = capsys.readouterr().out
+    assert rc == 0, captured
+    assert json.loads(captured)["natural_end"] is True
+    manifest = json.loads(
+        (tmp_path / "out" / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["provenance"] == "population_proxy"
+    assert manifest["not_calibrated_user_demand"] is True
+    transform = manifest["provenance_contract"]["traffic_transform"]["diurnal"]
+    assert transform["clock"] == "source_local_solar_time_proxy"
+    assert transform["utc_start_hour"] == 3.0
+    assert main(["receipt", "verify", out_dir]) == 0

@@ -197,9 +197,17 @@ def _rate_multiplier(mode, t, src_lon, dm):
             return dm["burst_multiplier"]
         return 1.0
     if mode == "diurnal":
+        # Preserve the historical trace contract exactly.
         amp = dm["diurnal_amplitude"]
-        # local-time phase from longitude: busiest at diurnal_phase_h local time
         local_h = (t / 3600.0 + src_lon / 15.0) % 24.0
+        return max(0.0, 1.0 + amp * math.cos(2 * math.pi * (local_h - dm["diurnal_phase_h"]) / 24.0))
+    if mode == "population_gravity" \
+            and dm["temporal_model"] == "local_diurnal_cosine":
+        # Opt-in local-solar-time population proxy: the UTC start hour shifts
+        # the local-time clock; longitude maps the local hour.  This is a
+        # population proxy, never calibrated subscriber traffic.
+        local_h = (dm["utc_start_hour"] + t / 3600.0 + src_lon / 15.0) % 24.0
+        amp = dm["diurnal_amplitude"]
         return max(0.0, 1.0 + amp * math.cos(2 * math.pi * (local_h - dm["diurnal_phase_h"]) / 24.0))
     return 1.0
 
@@ -613,6 +621,10 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                 max_mult = max(1.0, dm["burst_multiplier"])
             elif mode == "diurnal":
                 max_mult = 1.0 + abs(dm["diurnal_amplitude"])
+            elif mode == "population_gravity" \
+                    and dm["temporal_model"] == "local_diurnal_cosine":
+                # same envelope legacy diurnal uses: 1 + |amplitude|
+                max_mult = 1.0 + abs(dm["diurnal_amplitude"])
             t = 0.0
             while True:
                 t += float(gen.exponential(1.0 / (base_rate * max_mult)))
@@ -715,10 +727,20 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                 "multiplier": float(dm["burst_multiplier"]),
             } if mode in ("burst", "mlab")
             and dm["burst_start_s"] is not None else None),
+            # legacy mode:diurnal keeps its historical two-key value
+            # exactly; only the new population-local-time combination uses
+            # the four-key value with the explicit proxy clock label
             "diurnal": ({
                 "amplitude": float(dm["diurnal_amplitude"]),
                 "phase_h": float(dm["diurnal_phase_h"]),
-            } if mode == "diurnal" else None),
+            } if mode == "diurnal" else
+             ({
+                "amplitude": float(dm["diurnal_amplitude"]),
+                "phase_h": float(dm["diurnal_phase_h"]),
+                "utc_start_hour": float(dm["utc_start_hour"]),
+                "clock": "source_local_solar_time_proxy",
+             } if mode == "population_gravity"
+               and dm["temporal_model"] == "local_diurnal_cosine" else None)),
         },
     }
     manifest = {
