@@ -1,0 +1,174 @@
+{
+  "taskId": "offload:leo-direct-sim:GLOBAL-SCENE-PLAN-REVIEW-R1",
+  "status": "EVIDENCE_READY",
+  "summary": "冷审结论 REQUEST_CHANGES。八维度全覆盖；alias-rejection 目标分布经推导与现有 scan 精确等价、无构造性灾难接受率；geometry_epoch_s 构造点仅 kernel.py:1057/coverage.py:187 且均在写集；ledgers.json 持久化原始事件足以支撑 scene_check 重算。五条 major：F1 coverage 现有 fail-closed 上限(10k endpoints/50M checks)与 16,988 端点及 52.3M smoke 检查数硬冲突且计划未提；F2 Task 6 写集漏 receipt.py，rng_streams 硬编码 demand-only 与 nested_filter 流冲突；F3 nested_master 未限制 csv/mlab 模式；F4 决策合同四个 fraction 阈值无分母定义；F5 min_directed_link_windows:3 不要求同链路/连续，撑不住 sustained 结论。另有 minor F6-F9 与 info F10-F11。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "FACT: coverage.py 的 MAX_COVERAGE_ENDPOINTS=10000/MAX_COVERAGE_CHECKS=50M 与计划 16,988 端点及 52,323,040 次 smoke 检查硬冲突，计划未声明新路径的资源界限合同",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/coverage.py#L24-L26",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/coverage.py#L83-L98",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L302-L315"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "FACT: Task 6 写集不含 receipt.py，而 receipt 硬编码 rng_streams=stream_mapping(seed,[\"demand\"])；nested 编译消费 nested_filter 流后，manifest 要么少报流、要么 receipt 校验必败",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L446-L451",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L312-L315",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L736"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "FACT: nested_master_offered_mbps 校验只查 >=offered，未排除 csv/mlab 等无候选生成的模式，companion 写出规则在该组合下欠定义",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L168-L171",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L453",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L470-L554"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "FACT: 决策合同 max_rejected/access_overflow/uplink_overflow/no_route 四个 fraction 均未定义分母(of offered vs of admitted)，access 受限场景下同一运行可被判成两种结论",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L557-L563"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "major",
+      "summary": "FACT/INFERENCE: min_directed_link_windows=3 不要求同一有向链路或连续窗口，字面实现下三条跨链路散窗即可过 L4，与 L4 允许结论 sustained directed-link pressure 不一致",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L564-L568",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L62-L68"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "summary": "FACT: utc_start_hour 对 legacy mode=diurnal 同样生效但 manifest transform 保持两键，utc_start_hour!=0+diurnal 通过校验却不在 manifest 记录",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L336-L342",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L489-L496"
+      ]
+    },
+    {
+      "id": "F7",
+      "severity": "minor",
+      "summary": "FACT: nested-family.json 未纳入 trace.py:454-459 的编译期工件 symlink/常规文件防护",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L454-L459",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L453"
+      ]
+    },
+    {
+      "id": "F8",
+      "severity": "minor",
+      "summary": "INFERENCE: scalar(asin 仰角)与 vector(点积/acos footprint)在严格阈值边界的逐位一致 RED 在浮点域不保证成立，需改用共享参考谓词或声明边界处理",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L256-L264",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L296",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/model.py#L517-L532"
+      ]
+    },
+    {
+      "id": "F9",
+      "severity": "minor",
+      "summary": "INFERENCE/UNVERIFIED: alias 接受率最坏情形(约 0.008)未要求实测记录，仅靠 10^4 上限 fail-loud 兜底；benchmark 只比速度",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L435",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L407-L428"
+      ]
+    },
+    {
+      "id": "F10",
+      "severity": "info",
+      "summary": "FACT: 五个新 demand 默认字段使所有既有 profile 的 trace_identity_sha256 漂移，存量工件跨版本重验将不匹配；计划只声明了 manifest 哈希可变",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/config.py#L801-L814",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L1225-L1236",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L175-L177"
+      ]
+    },
+    {
+      "id": "F11",
+      "severity": "info",
+      "summary": "INFERENCE: 30s 全球稀疏场景 min_admission_rate=0.99 大概率判 ACCESS_LIMITED，属设计预期但计划未预告，存在误读为实现缺陷的运维风险",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/metrics.py#L389-L390",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/kernel.py#L2543-L2551",
+        "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L636-L646"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "按计划文本最小修改落实 F1-F5（Task 3 资源合同、Task 6 加 receipt.py 与 rng_streams 分支、Task 1 限制 nested 模式、contract v1 补分母与同链路连续窗定义），F6-F9 顺手修复",
+    "修订后对新 exact SHA 重新冷审（本台账无既有编号覆盖，建议按 R 轮次分配新 ID）",
+    "本地 Agent 用 git grep 在 control.py/routing.py/link_budget.py/outage.py 中确认无绕过 provider 的直接 t 几何计算，以闭合维度 6 的受限验证",
+    "首次执行 Task 3 smoke 前确认新 vector 路径不经 MAX_COVERAGE_CHECKS 或有替代上限"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/coverage.py#L24-L26",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L312-L315",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L489-L496",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/receipt.py#L504-L532",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/config.py#L789-L814",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L146-L163",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L575",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/trace.py#L696-L723",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/kernel.py#L1056-L1075",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/kernel.py#L1654-L1710",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/model.py#L497-L532",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/rng.py#L26-L34",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/CODE/leo_sim/metrics.py#L389-L390",
+    "github://fuguther/leo-direct-sim/blob/9945b794b1d090d99151e44d89e79e6f6babbe18/docs/superpowers/plans/2026-08-25-global-direct-access-scene.md#L540-L593"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "control.py/routing.py/link_budget.py/outage.py/fates.py 不在允许读取路径内：维度 6 的'无遗漏直接 t 几何路径'结论仅由全仓库 Constellation( 构造点 grep(kernel.py:1057、coverage.py:187，其余为 tests)与 model.py provider 派生链支撑，需本地 Agent grep 闭合",
+    "16,988 cells、raster SHA c5742d16...、legacy trace SHA 0780da2f...、24h/10s 墙钟与 RSS：合同禁止执行代码，全部 UNVERIFIED；比较总数 41,102,126,240=16988×280×8641 已手工核算一致",
+    "link_budget MCS 速率表不可读：L4 的 0.70/1s 窗口在注册负载菜单(<=80 Mbps)下的可达性只做了定性判断(低速率长距链路可达、高速率链路不可达)，未量化",
+    "F9 的最坏源接受率约 0.008 为推导值(INFERENCE)，未经实测"
+  ]
+}
