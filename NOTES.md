@@ -13,6 +13,7 @@
 - Kimi 第一冷审轮判定 `REQUEST_CHANGES`；Codex 已逐项核对并收紧计划：全球 vector coverage 使用独立且有限的 20,000 端点/500 亿比较/4 GiB 上限，不放宽 legacy scalar cap；nested 仅允许 population-gravity，补齐 `nested_filter` RNG/receipt 与 companion 文件防护；决策比例写死 offered/admitted 分母；ISL 压力改为同一有向链路三个连续窗口且同链路队列等待为正。另保留旧 trace identity，补 alias 接受率/耗尽概率和浮点边界回退验收。
 - 本地继续核对发现内核历史上把源端 uplink 与目的端 downlink 队列溢出都记成 `ACCESS_QUEUE_OVERFLOW`。计划不扩大到改 fate 合同，而要求 scene checker 用已核验的 `satellite_ingress` 事件分流：入网前计 access-limited，入网后计 downlink-limited；另把已入网但停在 holding、从未暴露于 ISL 的包判作 route-limited，避免把接入、路由或下行故障误叫 ISL 压力。
 - Kimi 第二审阅视角再次命中 trace identity 与 RNG 证据链问题。最终计划采用显式 identity/v3，并冻结 identity/v2 重算器以保证旧 v2 receipt 可复核；`nested_filter` 追加为 canonical child 7，禁止与既有 child 1 `ge_gsl` 复用。scene checker 的八个单运行状态、低样本阈值语义、data-only ISL 利用率边界以及与现有 paired `isl_pressure_decision.py` 的职责也已写死。
+- PR #166 的 head `eb7fad516275de68767750efd132e10d8b949096` 已通过 required `pytest` CI（run `32835577615`，job `97763554393`，19 s）。本条合并留痕提交后仍须重新通过 required CI，方可 squash 合入；合入只表示计划就绪，不表示 DeepSeek Harness 已实现、平台已完成或实验已运行。
 
 ## 2026-08-24：ISL RF 带宽正式双臂已完成并闭合 V2 重算
 
