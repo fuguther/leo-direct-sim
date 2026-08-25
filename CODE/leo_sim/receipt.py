@@ -695,7 +695,14 @@ def _validate_v2_event_authority(errors: list[str], ledgers: dict,
         if not isinstance(pair, list) or len(pair) != 2:
             errors.append(f"satellite_ingress pid {pid_s} has no authoritative fate")
             continue
-        if pair[0] in {"ACCESS_REJECTED", "ACCESS_QUEUE_OVERFLOW"}:
+        # ACCESS_REJECTED is always pre-ingress by construction (the kernel
+        # rejects at emission before any uplink admission), so an ingress
+        # event for it is contradictory.  ACCESS_QUEUE_OVERFLOW is NOT here:
+        # the historical kernel reuses that fate for BOTH the source uplink
+        # (pre-ingress) and the destination downlink (post-ingress) queue —
+        # the real ingress event is the authoritative split, and the scene
+        # checker classifies by it (access-limited vs downlink-limited).
+        if pair[0] == "ACCESS_REJECTED":
             errors.append(f"satellite_ingress pid {pid_s} has terminal access fate {pair[0]}")
         if pid_s in trace_bits and event.get("bits") != trace_bits[pid_s]:
             errors.append(f"satellite_ingress bits != trace bits for {pid_s}")
