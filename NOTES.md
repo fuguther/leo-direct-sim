@@ -9,7 +9,10 @@
 
 - 基于 clean `origin/main@98d9092751abd84a3d3ad6b39e932e5e501740c0` 新建隔离分支 `codex/20260825-global-access-plan`；基线 `python3 -m pytest CODE/leo_sim/tests CODE/tests -q` 为 `598 passed, 1 skipped`。用户原工作树保持只读且未处置其中改动。
 - 新计划 `docs/superpowers/plans/2026-08-25-global-direct-access-scene.md` 将场景口径冻结为：1° 全球正人口候选区域、有限运行中动态稀疏活跃、population + local-time proxy 流量、coverage/access/route/ISL 分层判定、严格 nested master trace 负载族。当前 GPW 工件 SHA=`c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a`，1° 候选数为 16,988；0.5° 仅保留后续敏感性。
-- 本工作单元不改平台代码、不跑正式矩阵、不改两份导师报告；计划要求 Luna 未来以 TDD 实现并停在 exact-SHA 独立复核就绪的 PR，不得自批承重改动。后续算法比较必须等全球覆盖、接入清洁和真实 ISL 压力候选依次关闭。
+- 本工作单元不改平台代码、不跑正式矩阵、不改两份导师报告；用户后续指定由 DeepSeek Harness 执行。计划已加入 runner 版本锁定、隔离工作树、逐任务 TDD、越界停机与 exact-SHA 交接合同；DeepSeek Harness 必须停在独立复核就绪的 PR，不得自批承重改动。后续算法比较必须等全球覆盖、接入清洁和真实 ISL 压力候选依次关闭。
+- Kimi 第一冷审轮判定 `REQUEST_CHANGES`；Codex 已逐项核对并收紧计划：全球 vector coverage 使用独立且有限的 20,000 端点/500 亿比较/4 GiB 上限，不放宽 legacy scalar cap；nested 仅允许 population-gravity，补齐 `nested_filter` RNG/receipt 与 companion 文件防护；决策比例写死 offered/admitted 分母；ISL 压力改为同一有向链路三个连续窗口且同链路队列等待为正。另保留旧 trace identity，补 alias 接受率/耗尽概率和浮点边界回退验收。
+- 本地继续核对发现内核历史上把源端 uplink 与目的端 downlink 队列溢出都记成 `ACCESS_QUEUE_OVERFLOW`。计划不扩大到改 fate 合同，而要求 scene checker 用已核验的 `satellite_ingress` 事件分流：入网前计 access-limited，入网后计 downlink-limited；另把已入网但停在 holding、从未暴露于 ISL 的包判作 route-limited，避免把接入、路由或下行故障误叫 ISL 压力。
+- Kimi 第二审阅视角再次命中 trace identity 与 RNG 证据链问题。最终计划采用显式 identity/v3，并冻结 identity/v2 重算器以保证旧 v2 receipt 可复核；`nested_filter` 追加为 canonical child 7，禁止与既有 child 1 `ge_gsl` 复用。scene checker 的八个单运行状态、低样本阈值语义、data-only ISL 利用率边界以及与现有 paired `isl_pressure_decision.py` 的职责也已写死。
 
 ## 2026-08-24：ISL RF 带宽正式双臂已完成并闭合 V2 重算
 

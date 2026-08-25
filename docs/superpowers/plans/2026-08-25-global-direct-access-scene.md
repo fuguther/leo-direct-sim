@@ -1,12 +1,35 @@
 # Global populated-land direct-access scene implementation plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan task-by-task, and use `superpowers:test-driven-development` for every behavior change. The producer must stop at a review-ready PR; because this plan touches `kernel.py` and receipt-adjacent evidence contracts, the producer may not self-approve or self-merge.
+> **For DeepSeek Harness:** Execute this plan task-by-task with the `standard` preset, keep an explicit plan, and use test-driven development for every behavior change. The producer must stop at a review-ready PR; because this plan touches `kernel.py` and receipt-adjacent evidence contracts, DeepSeek Harness may not self-approve or self-merge.
 
 **Goal:** Build an honest, scalable 1-degree global populated-land direct-access scene, prove that every populated candidate region is included in the coverage and demand support, separate access limitation from ISL pressure, and leave a verified path for a later bounded pressure calibration. Do not run an algorithm-comparison matrix in this work package.
 
 **Architecture:** Keep all positive-population 1-degree cells as the potential user universe, but instantiate only cells that actually emit or receive packets in a finite trace. Generate population-weighted, local-time-varying Poisson demand and exact gravity destinations. Audit the full candidate universe with a chunked geometry-only coverage engine. Generate load arms as deterministic nested subsets of one master demand trace. Finally, classify each diagnostic run through independent coverage, access, route, and ISL-pressure gates, so access failure can never be mislabeled as ISL congestion.
 
 **Tech Stack:** Python 3, NumPy, SimPy, PyYAML, Pillow GeoTIFF reader, pytest, existing `leo_sim` config/trace/coverage/receipt/metrics contracts, existing experiment-platform compiler and canonical remote launcher.
+
+---
+
+## 0. DeepSeek Harness execution contract
+
+DeepSeek Harness is the implementation runner, not the scientific authority. Codex owns final scope control, exact-SHA verification, finding adjudication, and the decision to authorize any later VM calibration. Kimi may provide a candidate cold review, but neither worker may turn its own output into accepted evidence.
+
+The currently inspected local runner is DeepSeek Harness `0.1.0-rc.8` from source commit `141eb6fef83422698aef7a981029e843e8161534`. It is a developer-preview dependency, so the implementation receipt must record the actual runner version and source commit used. If either differs, stop and report the difference before editing; do not silently upgrade, rebuild from another revision, or claim runner equivalence.
+
+Execution rules:
+
+- Use the existing DeepSeek Harness `standard` preset and configured model route; never write API keys, `.credentials.yaml`, `.env`, or machine-specific provider configuration into this repository.
+- Select only the isolated implementation worktree as the Harness workspace. Do not select or modify the user's dirty checkout, the DeepSeek Harness source checkout, or the old LEO repository.
+- Feed Harness this entire plan, not a paraphrased one-line request. It must keep Task 0 through Task 9 as the authoritative order and may not add a formal matrix, RL work, report edits, or unrelated cleanup.
+- Before each task, Harness records the exact starting SHA and the task-local allowed file list. After each task, it runs the listed tests, inspects `git diff --name-only`, and commits only that task's declared theme.
+- Harness must pause with `NEEDS_CODEX_JUDGMENT` when a stop condition fires, a listed contract must change, a tracked path would be deleted/moved/overwritten, a test appears to require weakening, or evidence conflicts. It may fix ordinary implementation defects within the declared scope without asking the user.
+- Harness stops at `PR_READY_FOR_INDEPENDENT_REVIEW`; it does not merge, deploy to the VM, authorize experiments, or interpret the local smoke as a research result.
+
+The Web UI handoff text is intentionally short because this document carries the full contract:
+
+```text
+Implement docs/superpowers/plans/2026-08-25-global-direct-access-scene.md exactly, Task 0 through Task 9. Use the standard preset and TDD. Work only in the isolated worktree created from current origin/main. Obey AGENTS.md and every exclusion, stop condition, file list, test, evidence, and claim boundary in the plan. Do not edit mentor reports, run a formal matrix, deploy, self-approve, or merge. On an ordinary in-scope defect, diagnose and fix it. On a contract conflict or stop condition, stop with NEEDS_CODEX_JUDGMENT and preserve the evidence. Final state must be PR_READY_FOR_INDEPENDENT_REVIEW with exact SHA, diff, test counts, benchmark results, smoke receipt, and unresolved limitations.
+```
 
 ---
 
@@ -33,8 +56,10 @@ The checked baseline, before any implementation, is:
 
 ```text
 base commit: 98d9092751abd84a3d3ad6b39e932e5e501740c0
-full tests: 598 passed, 1 skipped
+leo_sim + CODE/tests subset: 598 passed, 1 skipped
+CI-equivalent suite: 686 passed, 1 skipped, 3 subtests passed
 legacy population profile trace SHA-256: 0780da2fedea503d5f600830aecc805c95b1b8fc098395150ecaf2185846279a
+legacy population profile trace identity SHA-256: 2715dfb316de48d958cd05fa09aafcf22e340766d186e7a0a9a9b6a4b0dd9ad4
 legacy population profile: 1,061 candidates, 108 packets, 127 runtime endpoints
 1-degree population candidates: 16,988
 0.5-degree population candidates: 61,295 (future sensitivity only)
@@ -42,7 +67,7 @@ legacy population profile: 1,061 candidates, 108 packets, 127 runtime endpoints
 
 ## 2. Explicit exclusions
 
-Luna must not do any of the following in this work package:
+DeepSeek Harness must not do any of the following in this work package:
 
 - Do not edit either mentor report, any group-meeting report, or any `.docx` file.
 - Do not edit RL, Q0-I, Q0-F, Q0-J, reward, observation, or new-algorithm code.
@@ -65,24 +90,24 @@ Each layer is independent. A later layer is not evaluated if an earlier required
 | L1 coverage | Was every 1-degree populated cell audited for access opportunity? | population source SHA, 16,988 candidates, full endpoint ledger, sampled horizon/step, no omitted cell | coverage within the audited time window |
 | L2 demand | Does finite traffic have global population support and dynamic local-time intensity? | config-bound population/local-time model, observed source/destination/runtime sets, realized load | global-support population proxy trace |
 | L3 access | Did packets reach the satellite network without access dominating the outcome? | access admission, access wait/overflow/rejection, uplink fate, route-entry exposure | access-clean or access-limited |
-| L4 ISL pressure | Is there sustained directed-link pressure after L3 is clean? | directed link/time-window utilization with available-capacity denominator, ISL queue delay/overflow, exposed packets | ISL-pressure candidate or no pressure |
+| L4 route | Did admitted packets obtain a legal route instead of stalling before ISL exposure? | no-route fates, holding events, first-ISL exposure, stop fate | route-clean or route-limited |
+| L5 egress | Is downlink queue failure small enough not to confound the run? | ingress-bound downlink overflow, downlink wait, destination coverage | downlink-clean or downlink-limited |
+| L6 ISL pressure | Is there sustained directed-link pressure after L3-L5 are clean? | directed link/time-window utilization with available-capacity denominator, ISL queue delay/overflow, exposed packets | ISL-pressure candidate or no pressure |
 
-The final status vocabulary is closed:
+The single-run `scene_check.py` status vocabulary is closed:
 
 ```text
 INVALID_EVIDENCE
 COVERAGE_INCOMPLETE
-GLOBAL_SUPPORT_DIAGNOSTIC
 ACCESS_LIMITED
 ROUTE_LIMITED
+DOWNLINK_LIMITED
 NO_ISL_EXPOSURE
 NO_ISL_PRESSURE
 ISL_PRESSURE_CANDIDATE
-PRESSURE_NOT_FOUND_WITHIN_REGISTERED_ENVELOPE
-READY_FOR_ISL_PRESSURE_BRACKET
 ```
 
-`READY_FOR_ISL_PRESSURE_BRACKET` means the scene machinery is ready for an independently reviewed calibration request. It does not mean an algorithm experiment is ready or that a paper claim exists.
+`GLOBAL_SUPPORT_DIAGNOSTIC` is an allowed trace/coverage claim label, not a run status. `PRESSURE_NOT_FOUND_WITHIN_REGISTERED_ENVELOPE` is a later menu-level outcome emitted only after every predeclared load arm is classified `NO_ISL_PRESSURE`; it is not emitted by a single-run checker. This work package ends at `PR_READY_FOR_INDEPENDENT_REVIEW`, not at calibration readiness.
 
 ---
 
@@ -92,7 +117,8 @@ READY_FOR_ISL_PRESSURE_BRACKET
 
 - [ ] Run `git fetch origin`.
 - [ ] Run `git status --short --branch` in the user's checkout. If it is dirty, do not stash, clean, or commit it.
-- [ ] Create an isolated worktree from the then-current `origin/main` using branch `luna/20260825-global-direct-access`.
+- [ ] Record DeepSeek Harness version, source commit, preset, and model route name without recording any credential value.
+- [ ] Create an isolated worktree from the then-current `origin/main` using branch `dsh/20260825-global-direct-access`.
 - [ ] Record `git rev-parse HEAD`, `git rev-parse origin/main`, and `git status --porcelain=v1`.
 - [ ] Run the CI-equivalent baseline:
 
@@ -101,7 +127,7 @@ python3 scripts/check_document_governance.py --mode all
 python3 -m pytest CODE/leo_sim/tests CODE/experiment_platform/tests CODE/tests -q
 ```
 
-Expected: document governance has 0 selected errors, pytest is green, and the worktree is clean. The historical `598 passed, 1 skipped` count is context only; Luna must record the new exact count.
+Expected: document governance has 0 selected errors, pytest is green, and the worktree is clean. The recorded `686 passed, 1 skipped, 3 subtests passed` count is context only; DeepSeek Harness must record the new exact count from its actual base.
 
 **Stop conditions:** main is red; origin cannot be fetched; the isolated worktree is not clean; the checked population raster SHA differs from the value above. Report the exact mismatch and stop before editing.
 
@@ -110,8 +136,10 @@ Expected: document governance has 0 selected errors, pytest is green, and the wo
 **Files:**
 
 - Modify: `CODE/leo_sim/config.py`
+- Modify: `CODE/leo_sim/receipt.py`
 - Test: `CODE/leo_sim/tests/test_config.py`
 - Test: `CODE/leo_sim/tests/test_trace.py`
+- Test: `CODE/leo_sim/tests/test_receipt.py`
 
 Add only these fields:
 
@@ -156,6 +184,9 @@ if dm["temporal_model"] == "local_diurnal_cosine" \
         "local_diurnal_cosine is only valid with population_gravity")
 if not 0 <= dm["utc_start_hour"] < 24:
     raise ConfigError("demand.utc_start_hour must be in [0, 24)")
+if dm["mode"] != "population_gravity" and dm["utc_start_hour"] != 0:
+    raise ConfigError(
+        "demand.utc_start_hour is only configurable for population_gravity")
 if dm["population_destination_sampler"] not in {"scan", "alias_rejection"}:
     raise ConfigError(
         "demand.population_destination_sampler must be scan or alias_rejection")
@@ -166,15 +197,22 @@ if dm["population_destination_sampler"] != "scan" \
 if dm["destination_rejection_max_draws"] < 1:
     raise ConfigError("demand.destination_rejection_max_draws must be >= 1")
 master = dm["nested_master_offered_mbps"]
-if master is not None and master < dm["offered_mbps"]:
-    raise ConfigError(
-        "demand.nested_master_offered_mbps must be >= demand.offered_mbps")
+if master is not None:
+    if dm["mode"] != "population_gravity":
+        raise ConfigError(
+            "nested master load is only valid with population_gravity")
+    if master < dm["offered_mbps"]:
+        raise ConfigError(
+            "demand.nested_master_offered_mbps must be >= demand.offered_mbps")
 ```
 
+The trace identity payload is a versioned evidence contract, so do not silently extend identity/v2. Freeze the current builder as `trace_identity_payload_v2()` and introduce `leo-sim-trace-identity/v3` for new compilations. The v2 builder must remove the five newly defaulted demand fields after config resolution so an old v2 receipt can be reconstructed byte-for-byte. Receipt v5 verification chooses the v2 or v3 builder from the persisted `trace_identity_contract`, accepts no other value, and never guesses from the current code version or the manifest schema. Identity/v1 support remains unchanged.
+
 - [ ] First write failing tests for every invalid combination and every boundary.
-- [ ] Add a regression compiling the unchanged `population_gravity.yaml` and assert that `trace.csv` SHA remains `0780da2fedea503d5f600830aecc805c95b1b8fc098395150ecaf2185846279a`. The manifest hash may change because the resolved config identity gains explicit defaults.
+- [ ] Add a regression compiling the unchanged `population_gravity.yaml` and assert that `trace.csv` SHA remains `0780da2fedea503d5f600830aecc805c95b1b8fc098395150ecaf2185846279a`. New compilations declare identity/v3; do not hard-code their not-yet-produced hash.
+- [ ] Add a frozen old-v2 verification fixture whose trace identity is `2715dfb316de48d958cd05fa09aafcf22e340766d186e7a0a9a9b6a4b0dd9ad4`; prove it still verifies under the new code and fails if any old v2 trace-determining field is tampered.
 - [ ] Assert `geometry_epoch_s` is excluded from `trace_identity_payload()` because it changes geometry, not trace bytes.
-- [ ] Assert the five demand fields are included in trace identity because they can change trace bytes or family membership.
+- [ ] Assert all five new demand fields are present in identity/v3, while the frozen identity/v2 builder removes exactly those fields and nothing else.
 - [ ] Run:
 
 ```bash
@@ -244,6 +282,18 @@ python3 -m pytest CODE/leo_sim/tests/test_model.py CODE/leo_sim/tests/test_kerne
 
 Do not create a second geometry implementation. Preserve `scan_coverage()` as the generic scalar reference. Add a `scan_constellation_coverage()` optimized path and compare it against the scalar function in tests.
 
+The existing scalar caps remain unchanged: 10,000 endpoints and 50,000,000 scalar visibility calls. The population-vector path is a separate, explicit contract because even the required 600 s/60 s smoke is 52,323,040 comparisons and cannot legally pass through the scalar cap. It must fail before allocation unless all are true:
+
+```text
+endpoint_source == population_raster
+endpoint_count <= 20,000
+sample_count <= 1,000,001
+endpoint_count * sample_count * satellite_count <= 50,000,000,000
+0 < max_working_mib <= 4096
+```
+
+The optimized report records these four resolved limits, the calculated comparison count, chosen endpoint/time chunk sizes, projected bytes, observed peak RSS, and whether the full scan or only a bounded smoke ran. Do not raise the legacy constants or route arbitrary trace endpoints through the population exception.
+
 The CLI must use mutually exclusive endpoint sources:
 
 ```text
@@ -262,6 +312,8 @@ footprint_angle = math.acos(
 cos_footprint = math.cos(footprint_angle)
 visible = endpoint_unit_vectors @ satellite_unit_vectors.T > cos_footprint
 ```
+
+Compute the cosine margin before classification. For pairs within a declared `64 * machine_epsilon` ambiguity band, fall back to the existing scalar `ground_visible()` predicate and count those fallbacks in the audit report. This keeps the fast path conservative at the floating-point boundary without pretending two algebraically equivalent formulas are bit-identical.
 
 Chunk endpoints and times so peak working memory stays under a caller-specified `--max-working-mib` default of 256 MiB. Do not allocate an endpoint-by-satellite-by-all-times tensor. The report must include:
 
@@ -293,7 +345,7 @@ Chunk endpoints and times so peak working memory stays under a caller-specified 
 
 The zeros above are type examples, not expected scientific results. Tests must recompute all summary values from endpoint rows.
 
-- [ ] RED: scalar and vector paths are identical on a small real `Constellation`, including the strict `elevation > threshold` boundary.
+- [ ] RED: scalar and vector paths are identical on a small real `Constellation`; explicit `nextafter` cases just below, within, and above the strict visibility boundary exercise the scalar fallback and its counter.
 - [ ] RED: population weights reject negative, non-finite, missing, duplicate, or silently omitted endpoints.
 - [ ] RED: the output ledger contains each loaded population grid ID exactly once.
 - [ ] RED: population-weighted summaries use the population denominator, not endpoint count.
@@ -333,11 +385,18 @@ def _rate_multiplier(mode: str, t: float, src_lon: float, dm: dict) -> float:
         start = dm["burst_start_s"]
         duration = dm["burst_duration_s"]
         return dm["burst_multiplier"] if start <= t < start + duration else 1.0
-    uses_local_clock = (
-        mode == "diurnal"
-        or (mode == "population_gravity"
-            and dm["temporal_model"] == "local_diurnal_cosine"))
-    if uses_local_clock:
+    if mode == "diurnal":
+        # Preserve the historical trace contract exactly.
+        local_hour = (t / 3600.0 + src_lon / 15.0) % 24.0
+        amplitude = float(dm["diurnal_amplitude"])
+        phase = float(dm["diurnal_phase_h"])
+        return max(
+            0.0,
+            1.0 + amplitude
+            * math.cos(2.0 * math.pi * (local_hour - phase) / 24.0),
+        )
+    if mode == "population_gravity" \
+            and dm["temporal_model"] == "local_diurnal_cosine":
         local_hour = (
             dm["utc_start_hour"] + t / 3600.0 + src_lon / 15.0) % 24.0
         amplitude = float(dm["diurnal_amplitude"])
@@ -433,6 +492,7 @@ There is no fallback to `scan`, uniform, nearest, or the last endpoint. The reje
 - [ ] RED: on a fixed three-region fixture, 200,000 deterministic samples match the normalized scan probabilities within an absolute tolerance of 0.01 for every destination.
 - [ ] RED: the 1-degree population table builds one proposal table, not one O(N) table per source.
 - [ ] Benchmark 10,000 destination draws at 1 degree. Acceptance: `alias_rejection` is at least 10 times faster than `scan` on the same machine and returns no invalid/self destination. If not, stop and profile rather than asserting scalability.
+- [ ] For a deterministic 201-source sample that includes population and latitude extrema, compute the exact proposal acceptance probability, expected draws, observed draws, and the 10,000-draw exhaustion probability per source. Record min/median/max acceptance. If the worst calculated exhaustion probability exceeds `1e-9`, stop and revise the cap before accepting the sampler; speed alone is insufficient.
 - [ ] Run:
 
 ```bash
@@ -446,8 +506,11 @@ python3 -m pytest CODE/leo_sim/tests/test_trace.py -q
 **Files:**
 
 - Modify: `CODE/leo_sim/trace.py`
+- Modify: `CODE/leo_sim/rng.py`
+- Modify: `CODE/leo_sim/receipt.py`
 - Create: `CODE/leo_sim/trace_family.py`
 - Create: `CODE/leo_sim/tests/test_trace_family.py`
+- Modify: `CODE/leo_sim/tests/test_receipt.py`
 - Modify only if required for CLI routing: `CODE/leo_sim/__main__.py`
 
 Do not add nested metadata to the exact-key trace manifest v2. Write `nested-family.json` only when `nested_master_offered_mbps` is non-null.
@@ -460,10 +523,10 @@ Generation rule:
 4. Sort kept rows and renumber packet IDs `1..N` in emission order.
 5. Apply `execution.max_packets` to the master candidate count, not only the child count.
 
-The demand stream remains child 0. The filter stream is child 1:
+Append `nested_filter` to the end of the canonical `rng.STREAM_NAMES` tuple. The demand stream remains child 0 and the filter becomes child 7; it must not reuse child 1, which is already `ge_gsl` in the runtime RNG contract. NumPy's `SeedSequence(seed).spawn(1)[0] == SeedSequence(seed).spawn(8)[0]` state equality has been locally checked, but a permanent regression is still required.
 
 ```python
-generators = rng.streams(sc["seed"], ["demand", "nested_filter"])
+generators = rng.streams(sc["seed"])
 demand_gen = generators["demand"]
 filter_gen = generators["nested_filter"]
 inclusion_probability = (
@@ -471,6 +534,8 @@ inclusion_probability = (
     / float(dm["nested_master_offered_mbps"])
 )
 ```
+
+The manifest `rng_streams` contract branches exactly with the active feature: legacy and non-nested traces retain only the canonical demand mapping; nested traces select the canonical demand and nested-filter entries from the full mapping. Receipt verification reconstructs that same branch from the resolved config and rejects a missing, extra, wrongly indexed, or tampered stream. This is an exact contract change only for nested traces.
 
 The companion schema is exact-key and versioned:
 
@@ -484,7 +549,7 @@ The companion schema is exact-key and versioned:
   "master_candidate_packets": 1600,
   "child_packets": 400,
   "demand_rng_stream": "SeedSequence(7).spawn[0]",
-  "filter_rng_stream": "SeedSequence(7).spawn[1]",
+  "filter_rng_stream": "SeedSequence(7).spawn[7]",
   "canonical_row_contract": "emit_time_s,src_grid_id,dst_grid_id,bits,deadline_at_s",
   "config_sha256": "64 lowercase hex characters",
   "trace_identity_sha256": "64 lowercase hex characters",
@@ -493,6 +558,8 @@ The companion schema is exact-key and versioned:
 ```
 
 `family_identity_sha256` must hash the trace-determining config after removing only `demand.offered_mbps` and non-scientific output paths. It retains seed, master load, temporal model, population asset, geometry-independent trace fields, packet size, emission window, and sampler settings.
+
+Extend the compile-time artifact guard from `trace.csv` and `manifest.json` to `nested-family.json`: reject a symlink, directory, device, or other non-regular pre-existing target before writing. A failed compile must not leave a companion that appears valid.
 
 The verifier compares multisets of canonical rows excluding packet ID:
 
@@ -519,6 +586,7 @@ def is_multiset_subset(child_rows: list[dict], parent_rows: list[dict]) -> bool:
 - [ ] RED: changing routing, access slots, ISL bandwidth, learning, geometry epoch, or output path does not alter trace family identity.
 - [ ] RED: non-contiguous child IDs, non-sequential IDs, a row not in the parent, a duplicate beyond parent multiplicity, or a tampered companion hash fails.
 - [ ] RED: master candidates over `execution.max_packets` fail before any trace artifact is accepted.
+- [ ] RED: appending `nested_filter` leaves the generated values and mapping indices of all seven existing streams unchanged; the filter differs from every existing stream and is recorded as child 7.
 - [ ] Run:
 
 ```bash
@@ -556,22 +624,30 @@ traffic:
   require_isl_exposed_packets: 100
 access_clean:
   min_admission_rate: 0.99
-  max_rejected_fraction: 0.001
-  max_access_overflow_fraction: 0.001
-  max_uplink_overflow_fraction: 0.001
+  max_access_rejected_fraction_of_offered: 0.001
+  max_uplink_queue_overflow_fraction_of_offered: 0.001
 route_clean:
-  max_no_route_fraction: 0.001
+  max_no_route_fraction_of_admitted: 0.001
+  max_route_stalled_fraction_of_admitted: 0.001
+downlink_clean:
+  max_downlink_queue_overflow_fraction_of_admitted: 0.001
 isl_pressure:
   window_s: 1.0
-  min_directed_link_windows: 3
+  min_consecutive_windows_same_directed_link: 3
   min_window_utilization: 0.70
-  require_positive_p95_queue_delay: true
+  require_positive_p95_queue_delay_same_link: true
 observation:
   emission_end_s: 20
   observation_end_s: 30
 ```
 
 These are operational decision thresholds, not physical constants. They may be revised only in a separate reviewed contract change before compiling the calibration menu, never after viewing the candidate results.
+
+Fractions are compared at full precision with no rounding or continuity correction. With a denominator below 1,000, a `0.001` maximum therefore means zero tolerated packets; that is intentional fail-closed behaviour, but the roughly hundred-packet local smoke is too small to validate or tune these thresholds.
+
+Every fraction has one closed denominator. `offered` is the immutable trace row count; `admitted` is the independently recomputed count of unique `satellite_ingress` packets. `ACCESS_REJECTED` is always pre-ingress. The current kernel unfortunately uses `ACCESS_QUEUE_OVERFLOW` for both source uplink and destination downlink queues, so the checker must split that fate by the independently verified ingress event: no ingress means uplink/access overflow and ingress means downlink overflow. Any contradictory event/fate pair is `INVALID_EVIDENCE`.
+
+The route numerator contains authoritative `NO_ROUTE` fates plus a separately reported `route_stalled_at_stop` count: admitted packets ending `IN_SYSTEM_AT_STOP` that entered a holding queue but never entered ISL or downlink service. Both use admitted packets as denominator. A zero admitted denominator stops at `ACCESS_LIMITED` and never evaluates routing. The checker emits every numerator, denominator, packet-ID set, and fraction; it does not rename an association grant as physical satellite ingress.
 
 Classification order:
 
@@ -584,6 +660,8 @@ elif not access_clean:
     status = "ACCESS_LIMITED"
 elif not route_clean:
     status = "ROUTE_LIMITED"
+elif not downlink_clean:
+    status = "DOWNLINK_LIMITED"
 elif isl_exposed_packets < require_isl_exposed_packets:
     status = "NO_ISL_EXPOSURE"
 elif not isl_pressure:
@@ -600,18 +678,25 @@ served ISL bits in window
 sampled available ISL capacity bits in the same window
 ```
 
+The numerator is successfully served **data-packet** ISL bits from `link_service_windows`; the current ledger does not expose per-link/time control-packet service windows. Control packets share physical capacity, so the checker also reports run-level control occupancy/failures, but it must call the utilization result `data_plane_utilization` and treat it as a conservative lower bound on total physical utilization. It may not claim total-link utilization or compare runs with different control-plane settings under this contract.
+
+An ISL-pressure candidate requires one specific directed `isl:<src>:<dst>` link to meet the utilization threshold in at least three adjacent, non-overlapping windows whose boundaries differ by exactly `window_s`, plus positive p95 ISL queue wait for packets queued on that same link during the same consecutive run. Three windows scattered across different links or separated in time do not pass. Report the qualifying link ID, exact windows, served bits, available-capacity bits, utilization, packet count, and queue-wait sample count.
+
 Requirements:
 
 - Available-capacity denominator is mandatory; missing exposure returns null plus a reason.
 - Report `[0, T_emit]`, `[0, T_obs]`, and drain separately.
 - `IN_SYSTEM_AT_STOP` is a fate, not congestion evidence.
 - Access, holding, uplink, ISL, and downlink waits/overflows are separate fields.
-- Pooled average utilization alone never passes L4.
+- Pooled average utilization alone never passes L6.
+- `scene_check.py` is the preformal single-run scene gate. It does not replace `CODE/experiment_platform/isl_pressure_decision.py`, which remains the later verified paired-arm decision step after canonical VM analysis.
 
-- [ ] RED: every status branch above has a minimal counterexample fixture.
+- [ ] RED: every one of the eight single-run statuses above has a minimal counterexample fixture.
 - [ ] RED: access failure plus high delivery loss returns `ACCESS_LIMITED`, never ISL pressure.
 - [ ] RED: no-route failure returns `ROUTE_LIMITED` even if a surviving link is highly utilized.
-- [ ] RED: horizon-aggregate high utilization without three qualifying windows returns `NO_ISL_PRESSURE`.
+- [ ] RED: admitted `IN_SYSTEM_AT_STOP` packets stalled in holding before any ISL exposure return `ROUTE_LIMITED`, not `NO_ISL_EXPOSURE`.
+- [ ] RED: the same historical `ACCESS_QUEUE_OVERFLOW` fate is split by verified ingress: pre-ingress returns `ACCESS_LIMITED`, post-ingress returns `DOWNLINK_LIMITED`, and a contradictory ledger returns `INVALID_EVIDENCE`.
+- [ ] RED: horizon-aggregate high utilization, three scattered windows, three windows on different directed links, or qualifying utilization with queue delay only on another link returns `NO_ISL_PRESSURE`.
 - [ ] RED: `IN_SYSTEM_AT_STOP > 0` with no queue/utilization evidence returns `NO_ISL_PRESSURE`.
 - [ ] RED: tampered trace, manifest, receipt, ledger, coverage source SHA, candidate count, window, or threshold contract returns `INVALID_EVIDENCE` or `COVERAGE_INCOMPLETE` as appropriate.
 - [ ] Run:
@@ -709,6 +794,7 @@ The 80 Mbps master is a deterministic trace-generation ceiling for the nested fa
 - [ ] Assert the manifest says 16,988 candidate regions and `population_proxy`; report the observed source, destination, and runtime endpoint counts separately.
 - [ ] Run a trace-only microbenchmark for child loads 5/10/20/40/80 Mbps from the same master and verify strict nesting. Do not run five network simulations locally.
 - [ ] Run exactly one local 5 Mbps engineering smoke to check entity/event cost. Required outcome: natural end, conservation, receipt verification, no silent sampler fallback, and resource measurements. A low delivery rate is not a pass criterion and must be classified by layer.
+- [ ] Treat `ACCESS_LIMITED` as a plausible and non-bug result for this 30-second cost smoke: most candidate regions are inactive and sparse active endpoints may wait beyond the short horizon. The smoke cannot validate the 0.99 access threshold or the pressure scene; it validates only compilation, resource bounds, natural end, conservation, and evidence plumbing.
 - [ ] If `max_entities=2000`, `max_events=20000000`, or 30-second wall time blocks this smoke, record the actual peak and failure. Change only the proven blocker in a separate commit with a regression; do not raise all limits together.
 - [ ] Do not run 10/20/40/80 network arms, VM calibration, RL, or Q0 in this task.
 - [ ] Run:
@@ -753,7 +839,7 @@ git status --short
 7. claim boundary: population proxy, global populated land, diagnostic only.
 ```
 
-**Stop condition:** Luna stops at `PR_READY_FOR_INDEPENDENT_REVIEW`. Luna does not merge. Codex remains responsible for reviewing the exact SHA and deciding whether a later precompiled VM pressure-calibration menu may be authorized.
+**Stop condition:** DeepSeek Harness stops at `PR_READY_FOR_INDEPENDENT_REVIEW`. It does not merge. Codex remains responsible for reviewing the exact SHA and deciding whether a later precompiled VM pressure-calibration menu may be authorized.
 
 ## 4. Definition of done
 
