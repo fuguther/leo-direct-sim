@@ -188,7 +188,8 @@ def _cli() -> int:
         cfg["scenario"]["num_satellites"], cfg["scenario"]["num_planes"],
         cfg["scenario"]["altitude_km"], cfg["scenario"]["inclination_deg"],
         cfg["scenario"]["min_elevation_deg"],
-        max_isl_km=cfg["links"]["max_isl_km"])
+        max_isl_km=cfg["links"]["max_isl_km"],
+        geometry_epoch_s=cfg["scenario"]["geometry_epoch_s"])
     report = scan_coverage(
         geometry, endpoints, horizon_s=horizon, step_s=args.step,
         visible_fraction_threshold=args.threshold,

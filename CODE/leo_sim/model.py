@@ -479,9 +479,11 @@ class Constellation:
 
     def __init__(self, num_satellites: int, num_planes: int, altitude_km: float,
                  inclination_deg: float, min_elevation_deg: float = 25.0,
-                 max_isl_km: float = 6000.0):
+                 max_isl_km: float = 6000.0, geometry_epoch_s: float = 0.0):
         if num_satellites % num_planes != 0:
             raise ValueError("num_satellites must be divisible by num_planes")
+        if not math.isfinite(float(geometry_epoch_s)) or geometry_epoch_s < 0:
+            raise ValueError("geometry_epoch_s must be finite and >= 0")
         self.num_satellites = num_satellites
         self.num_planes = num_planes
         self.per_plane = num_satellites // num_planes
@@ -489,21 +491,28 @@ class Constellation:
         self.inclination_deg = inclination_deg
         self.min_elevation_deg = min_elevation_deg
         self.max_isl_km = max_isl_km
+        self.geometry_epoch_s = float(geometry_epoch_s)
         self.r = EARTH_RADIUS_KM + altitude_km
         # circular orbit period
         mu = 398600.4418  # km^3/s^2
         self.period_s = 2 * math.pi * math.sqrt(self.r ** 3 / mu)
 
     def subpoint(self, sat_id: int, t: float) -> tuple[float, float, float]:
-        """Geodetic lat/lon (deg) and altitude (km) of sat subpoint at time t."""
+        """Geodetic lat/lon (deg) and altitude (km) of sat subpoint at time t.
+
+        A single explicit deterministic phase block: the epoch is applied
+        exactly once here so every higher geometry method (ecef, elevation,
+        visibility, ISL availability, certified change times) inherits it.
+        geometry_epoch_s = 0 keeps the historical bytes bit-identical."""
+        at = float(t) + self.geometry_epoch_s
         plane = sat_id // self.per_plane
         idx = sat_id % self.per_plane
         raan = 2 * math.pi * plane / self.num_planes
-        phase = 2 * math.pi * (idx / self.per_plane + t / self.period_s)
+        phase = 2 * math.pi * (idx / self.per_plane + at / self.period_s)
         inc = math.radians(self.inclination_deg)
         lat = math.asin(math.sin(inc) * math.sin(phase))
         lon_inertial = math.atan2(math.cos(inc) * math.sin(phase), math.cos(phase)) + raan
-        lon = lon_inertial - EARTH_ROT_RATE_RAD_S * t
+        lon = lon_inertial - EARTH_ROT_RATE_RAD_S * at
         lon = math.degrees((lon + math.pi) % (2 * math.pi) - math.pi)
         return math.degrees(lat), lon, self.altitude_km
 

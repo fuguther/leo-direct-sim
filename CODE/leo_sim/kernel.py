@@ -1058,7 +1058,8 @@ class Kernel:
                 self.cfg_sc["num_satellites"], self.cfg_sc["num_planes"],
                 self.cfg_sc["altitude_km"], self.cfg_sc["inclination_deg"],
                 self.cfg_sc["min_elevation_deg"],
-                max_isl_km=self.cfg_links["max_isl_km"])
+                max_isl_km=self.cfg_links["max_isl_km"],
+                geometry_epoch_s=self.cfg_sc["geometry_epoch_s"])
         if self.cfg_links["geometry_loss"] and not getattr(
                 geometry, "certifies_change_times", False):
             # a provider that cannot authoritatively answer "next availability

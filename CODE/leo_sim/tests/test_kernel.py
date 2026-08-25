@@ -7,7 +7,7 @@ import math
 
 import pytest
 
-from CODE.leo_sim import kernel  # noqa: F401  (import must exist)
+from CODE.leo_sim import kernel, model  # noqa: F401  (import must exist)
 from CODE.leo_sim.tests.helpers import StaticGeometry, cell, cell_center, make_cfg, row
 
 PROP_600KM = 600.0 / 299_792.458  # ~0.0020014 s
@@ -432,3 +432,33 @@ def test_drr_bit_fairness_with_mixed_packet_sizes():
         max_imbalance = max(max_imbalance, abs(served[A] - served[C]))
     assert max_imbalance <= bound, f"DRR fairness bound violated: {max_imbalance}"
     assert served[A] == 32_000_000 and served[C] == 32_000_000
+
+
+# ---------------------------------------------------------------- Task 2:
+# the kernel must wire scenario.geometry_epoch_s into the real
+# Constellation geometry provider.
+
+def test_kernel_passes_resolved_geometry_epoch_to_provider(monkeypatch):
+    """A one-packet kernel fixture at two epochs must forward the resolved
+    scenario.geometry_epoch_s into the real Constellation construction path
+    (geometry=None), so the geometry is an explicit function of (epoch, t)
+    and never of the machine clock."""
+    seen = {}
+
+    class RecordingConstellation(model.Constellation):
+        def __init__(self, *args, **kwargs):
+            seen["epoch"] = kwargs.get("geometry_epoch_s")
+            super().__init__(*args, **kwargs)
+
+    monkeypatch.setattr(kernel.model, "Constellation", RecordingConstellation)
+    for epoch in (0.0, 3600.0):
+        cfg = make_cfg({
+            "scenario": {"num_satellites": 2, "num_planes": 1,
+                         "duration_s": 1.0, "geometry_epoch_s": epoch,
+                         "altitude_km": 600.0},
+        })
+        # geometry=None: the kernel must build the Constellation itself and
+        # hand it the resolved epoch
+        res = kernel.run_simulation(cfg, [row(1, 0.0, A, B)])
+        assert res["natural_end"] is True
+        assert seen["epoch"] == epoch
