@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+import numpy as np
+
 from CODE.leo_sim import config, population, receipt, rng, trace
 
 
@@ -621,3 +623,190 @@ def test_local_diurnal_observed_support_sets_never_rename_candidates(
     # the manifest names the candidate support, the trace derives the
     # runtime sets: they must be reported separately, never conflated
     assert manifest["population"]["candidate_regions"] != len(observed_sources)
+
+
+# ---------------------------------------------------------------- Task 5:
+# exact opt-in population destination sampler (alias_rejection).
+
+def _three_region_endpoints():
+    """Three equal-population 5-degree regions ~556 km apart at the equator:
+    the alias proposal table is flat so scripted draws are deterministic."""
+    regions = (
+        population.PopulationRegion("G5:18:36", 2.5, 2.5, 1.0),
+        population.PopulationRegion("G5:18:37", 2.5, 7.5, 1.0),
+        population.PopulationRegion("G5:18:38", 2.5, 12.5, 1.0),
+    )
+    return [{"name": r.grid_id, "lat": r.lat, "lon": r.lon,
+             "weight": r.population, "agg_grid_id": r.grid_id}
+            for r in regions]
+
+
+class ScriptedGen:
+    """Scripted numpy-Generator stand-in: every random() pops the next
+    value, so each branch of the sampler is exercised deterministically."""
+
+    def __init__(self, values):
+        self.values = list(values)
+        self.calls = 0
+
+    def random(self):
+        value = self.values[self.calls]
+        self.calls += 1
+        return value
+
+
+def _alias_dm(max_draws=10_000, alpha=1.25, floor=100.0):
+    return {"gravity_d_floor_km": floor, "gravity_alpha": alpha,
+            "destination_population_exponent": 1.0,
+            "destination_rejection_max_draws": max_draws}
+
+
+def test_alias_rejection_scripted_branches():
+    endpoints = _three_region_endpoints()
+    alias = trace.VoseAlias([e["weight"] for e in endpoints])
+    dm = _alias_dm()
+    # 1) same-source rejection, 2) distance rejection, 3) success.
+    # VoseAlias.draw consumes exactly two randoms (bucket index + coin).
+    gen = ScriptedGen([0.0,        # bucket 0 = the source (rejected)
+                       0.5,        # coin < prob 1.0 -> bucket 0 again
+                       0.4,        # bucket 1 = far region
+                       0.5,        # coin -> rejects alias, stays on region 1
+                       0.99,       # acceptance coin >= (floor/d)^alpha
+                       0.7,        # bucket 2 = near region
+                       0.5,        # coin -> stays on region 2
+                       0.001])     # acceptance coin < (floor/d)^alpha
+    picked = trace.sample_population_destination(gen, alias, endpoints, 0, dm)
+    assert picked["agg_grid_id"] == "G5:18:38"  # nearest, accepted
+    assert gen.calls == 8
+
+
+def test_alias_rejection_cap_exhaustion_fails_loud():
+    endpoints = _three_region_endpoints()
+    alias = trace.VoseAlias([e["weight"] for e in endpoints])
+    dm = _alias_dm(max_draws=2)
+    # both draws land on the far region and fail the acceptance coin
+    gen = ScriptedGen([0.4, 0.5, 0.99,   # draw 1: region 1, rejected
+                       0.4, 0.5, 0.99])  # draw 2: region 1, rejected
+    with pytest.raises(trace.TraceError, match="exhausted"):
+        trace.sample_population_destination(gen, alias, endpoints, 0, dm)
+    assert gen.calls == 6
+
+
+def test_alias_rejection_matches_scan_distribution_on_fixture():
+    """200,000 deterministic samples must reproduce the normalized scan
+    probabilities for every destination within absolute tolerance 0.01."""
+    endpoints = _three_region_endpoints()
+    alias = trace.VoseAlias([e["weight"] for e in endpoints])
+    dm = _alias_dm(alpha=1.25, floor=100.0)
+    src = endpoints[0]
+    floor = float(dm["gravity_d_floor_km"])
+    alpha = float(dm["gravity_alpha"])
+    weights = []
+    for e in endpoints[1:]:
+        d = max(trace._haversine_km(src["lat"], src["lon"],
+                                    e["lat"], e["lon"]), floor)
+        weights.append(e["weight"] / d ** alpha)
+    total = sum(weights)
+    expected = [w / total for w in weights]
+    gen = np.random.default_rng(20260825)
+    counts = [0, 0, 0]
+    for _ in range(200_000):
+        dst = trace.sample_population_destination(gen, alias, endpoints, 0, dm)
+        counts[endpoints.index(dst)] += 1
+    observed = [c / 200_000 for c in counts[1:]]
+    assert counts[0] == 0  # never a self destination
+    for got, want in zip(observed, expected):
+        assert abs(got - want) <= 0.01
+
+
+def test_alias_rejection_builds_one_proposal_table(tmp_path, monkeypatch):
+    """The 1-degree population table must build exactly ONE proposal table
+    (O(N) once), never one O(N) table per source."""
+    built = []
+
+    class CountingAlias(trace.VoseAlias):
+        def __init__(self, weights):
+            built.append(weights)
+            super().__init__(weights)
+
+    monkeypatch.setattr(trace, "VoseAlias", CountingAlias)
+    resolved = config.load_config_file(str(POPULATION_PROFILE))
+    resolved["config"]["endpoints"]["aggregation_deg"] = 1.0
+    resolved["config"]["demand"].update({
+        "population_destination_sampler": "alias_rejection",
+        "destination_rejection_max_draws": 10_000,
+        "offered_mbps": 1.0, "packet_bits": 1_000_000,
+        "emission_end_s": 5.0,
+    })
+    resolved["config"]["scenario"]["duration_s"] = 10.0
+    trace.compile_trace(resolved, str(tmp_path / "alias"))
+    assert len(built) == 1
+    assert len(built[0]) == 16_988  # the full 1-degree candidate universe
+
+
+def test_alias_rejection_exhaustion_risk_on_201_source_sample():
+    """Deterministic 201-source sample covering population and latitude
+    extrema: the exact per-draw acceptance probability, expected draws,
+    observed draws and the 10,000-draw exhaustion probability must be
+    computed for every source; the worst exhaustion must stay under 1e-9
+    (otherwise the cap itself must be revised before accepting the
+    sampler)."""
+    table = population.load_population_regions(
+        str(POPULATION_TIFF), 1.0)
+    endpoints = [
+        {"name": r.grid_id, "lat": r.lat, "lon": r.lon,
+         "weight": r.population, "agg_grid_id": r.grid_id}
+        for r in table.regions
+    ]
+    by_pop = sorted(range(len(endpoints)), key=lambda i: -endpoints[i]["weight"])
+    by_lat = sorted(range(len(endpoints)), key=lambda i: endpoints[i]["lat"])
+    by_pop = sorted(range(len(endpoints)), key=lambda i: -endpoints[i]["weight"])
+    by_lat = sorted(range(len(endpoints)), key=lambda i: endpoints[i]["lat"])
+    source_indices = sorted(set(by_pop[:60]) | set(by_lat[:30])
+                            | set(by_lat[-30:]) | set(range(0, len(endpoints),
+                                                             len(endpoints) // 90)))
+    source_indices = sorted(source_indices)[:201]
+    assert len(source_indices) == 201
+    alias = trace.VoseAlias([e["weight"] for e in endpoints])
+    dm = _alias_dm(max_draws=10_000, alpha=1.25, floor=100.0)
+    stats = trace.alias_rejection_stats(endpoints, dm, source_indices)
+    worst = 0.0
+    acceptances = []
+    for i in source_indices:
+        s = stats[i]
+        assert 0.0 <= s["per_draw_success_probability"] <= 1.0
+        acceptances.append(s["per_draw_success_probability"])
+        worst = max(worst, s["exhaustion_probability"])
+    assert worst < 1e-9, worst
+    # observed draws follow the geometric expectation on a seeded RNG.
+    # sample_population_destination loops internally up to the cap, so the
+    # draw count is measured on the alias itself.
+    class CountingAlias(trace.VoseAlias):
+        def __init__(self, inner):
+            self._inner = inner
+            self.draws = 0
+
+        def draw(self, gen):
+            self.draws += 1
+            return self._inner.draw(gen)
+
+    gen = np.random.default_rng(7)
+    expected = [1.0 / stats[i]["per_draw_success_probability"]
+                for i in source_indices]
+    observed = []
+    for i in source_indices[:20]:
+        counting = CountingAlias(alias)
+        trace.sample_population_destination(
+            gen, counting, endpoints, i, dm)
+        observed.append(counting.draws)
+    # record min/median/max acceptance over the 201-source sample
+    acceptances_sorted = sorted(acceptances)
+    median_acceptance = acceptances_sorted[len(acceptances_sorted) // 2]
+    assert acceptances_sorted[0] == min(acceptances)
+    assert acceptances_sorted[-1] == max(acceptances)
+    assert 0 < median_acceptance < 1
+    # sanity: observed mean is within a generous factor of the expectation
+    import statistics
+    mean_observed = statistics.mean(observed)
+    mean_expected = statistics.mean(expected[:20])
+    assert 0.05 * mean_expected < mean_observed < 20 * mean_expected

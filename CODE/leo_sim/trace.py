@@ -113,6 +113,115 @@ def _haversine_km(lat1, lon1, lat2, lon2):
     return 2 * r * math.asin(math.sqrt(a))
 
 
+class VoseAlias:
+    """One Vose alias table over explicit positive proposal weights.
+
+    Built ONCE for the whole population table (a single O(N) table, never
+    one O(N) table per source).  draw(gen) consumes exactly two RNG values
+    from the caller's generator: a bucket index and the alias coin.  The
+    table is a pure function of the weights, so compilation remains
+    byte-deterministic for identical seeds.
+    """
+
+    def __init__(self, weights):
+        n = len(weights)
+        if n == 0:
+            raise TraceError("alias table requires at least one candidate")
+        total = sum(weights)
+        if not math.isfinite(total) or total <= 0:
+            raise TraceError("alias proposal weights must be positive-finite "
+                             "and sum to a positive total")
+        scaled = [n * w / total for w in weights]
+        small = [i for i, p in enumerate(scaled) if p < 1.0]
+        large = [i for i, p in enumerate(scaled) if p >= 1.0]
+        self.prob = [0.0] * n
+        self.alias = [0] * n
+        while small and large:
+            s = small.pop()
+            l = large.pop()
+            self.prob[s] = scaled[s]
+            self.alias[s] = l
+            scaled[l] = (scaled[l] + scaled[s]) - 1.0
+            if scaled[l] < 1.0:
+                small.append(l)
+            else:
+                large.append(l)
+        while large:
+            self.prob[large.pop()] = 1.0
+        while small:
+            self.prob[small.pop()] = 1.0
+
+    def draw(self, gen):
+        bucket = int(gen.random() * len(self.prob))
+        if bucket >= len(self.prob):  # guard against 1.0 rounding
+            bucket = len(self.prob) - 1
+        if gen.random() < self.prob[bucket]:
+            return bucket
+        return self.alias[bucket]
+
+
+def sample_population_destination(gen, alias, endpoints, src_index, dm):
+    """Exact population gravity destination by rejection over ONE alias
+    proposal table.  No fallback to scan/uniform/nearest/last exists: the
+    rejection cap is part of trace identity and fails loudly."""
+    floor = float(dm["gravity_d_floor_km"])
+    alpha = float(dm["gravity_alpha"])
+    max_draws = int(dm["destination_rejection_max_draws"])
+    src = endpoints[src_index]
+    for _ in range(max_draws):
+        candidate_index = alias.draw(gen)
+        if candidate_index == src_index:
+            continue
+        dst = endpoints[candidate_index]
+        distance = max(
+            _haversine_km(src["lat"], src["lon"], dst["lat"], dst["lon"]),
+            floor,
+        )
+        acceptance = (floor / distance) ** alpha
+        if gen.random() < acceptance:
+            return dst
+    raise TraceError(
+        "population alias_rejection exhausted "
+        f"destination_rejection_max_draws={max_draws}")
+
+
+def alias_rejection_stats(endpoints, dm, source_indices=None) -> dict:
+    """Exact per-source rejection-sampler statistics (no drawing needed):
+
+    per_draw_success_probability: p_i = sum_{j != i} W_j/W * (floor/d)^alpha
+    expected_draws: 1/p_i (geometric)
+    exhaustion_probability: (1 - p_i) ** destination_rejection_max_draws
+
+    Only the listed sources are computed so a 201-source audit on the
+    16,988-region table stays analytic instead of quadratic.
+    """
+    floor = float(dm["gravity_d_floor_km"])
+    alpha = float(dm["gravity_alpha"])
+    max_draws = int(dm["destination_rejection_max_draws"])
+    gamma = float(dm["destination_population_exponent"])
+    weights = [e["weight"] ** gamma for e in endpoints]
+    total = sum(weights)
+    indices = range(len(endpoints)) if source_indices is None \
+        else sorted(source_indices)
+    out = {}
+    for i in indices:
+        p_i = 0.0
+        for j in range(len(endpoints)):
+            if j == i:
+                continue
+            distance = max(_haversine_km(
+                endpoints[i]["lat"], endpoints[i]["lon"],
+                endpoints[j]["lat"], endpoints[j]["lon"]), floor)
+            p_i += (weights[j] / total) * (floor / distance) ** alpha
+        out[i] = {
+            "per_draw_success_probability": p_i,
+            "expected_draws": (1.0 / p_i if p_i > 0 else float("inf")),
+            "exhaustion_probability": (
+                (1.0 - p_i) ** max_draws if 0 < p_i <= 1.0 else 1.0),
+        }
+    return out
+
+
 def _endpoints(cfg: dict) -> list[dict]:
     ep = cfg["endpoints"]
     sites = ep["sites"]
@@ -610,6 +719,14 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                            if mode == "population_gravity" else 1.0)
         weights = [e["weight"] ** source_exponent for e in endpoints]
         wsum = sum(weights)
+        # exact opt-in destination sampler: ONE alias proposal table for the
+        # whole population universe (never one O(N) table per source)
+        population_alias = None
+        if mode == "population_gravity" \
+                and dm["population_destination_sampler"] == "alias_rejection":
+            destination_exponent = dm["destination_population_exponent"]
+            population_alias = VoseAlias(
+                [e["weight"] ** destination_exponent for e in endpoints])
         pid = 0
         for i, e in enumerate(endpoints):
             base_rate = total_rate * weights[i] / wsum
@@ -633,7 +750,12 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                 if gen.random() > _rate_multiplier(mode, t, e["lon"], dm) / max_mult:
                     continue
                 pid += 1
-                dst = _dst_choices(gen, mode, endpoints, i, t, dm, mlab_weights)
+                if population_alias is not None:
+                    dst = sample_population_destination(
+                        gen, population_alias, endpoints, i, dm)
+                else:
+                    dst = _dst_choices(gen, mode, endpoints, i, t, dm,
+                                       mlab_weights)
                 dl = f"{t + deadline:.6f}" if deadline is not None else ""
                 rows.append((pid, t, e["agg_grid_id"], dst["agg_grid_id"], bits_per_pkt, dl))
         rows.sort(key=lambda r: (r[1], r[0]))
