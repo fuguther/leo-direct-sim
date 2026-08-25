@@ -1,0 +1,69 @@
+{
+  "contract": {
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:GLOBAL-SCENE-PLAN-REVIEW-R1:independent_review",
+    "title": "全球直连接入场景计划冷审",
+    "goal": "你是独立、苛刻的科研软件审阅者。审阅 docs/superpowers/plans/2026-08-25-global-direct-access-scene.md，并对照列出的当前实现文件判断计划是否可执行、是否有科学或合同错误。重点检查：一，全球 populated-land 与真正 global 的 claim 边界是否诚实；二，population+local-time Poisson proxy 的语义和 offered_mbps 解释是否自洽；三，alias-rejection 是否真的精确等价于现有 gravity 目标且是否存在灾难性接受率；四，nested master trace 是否能保证严格子集、RNG 不串扰、packet-id/manifest/receipt 合同不破坏；五，coverage 的球面 footprint 公式、严格阈值、分块算法与 24h/10s 可行性；六，geometry_epoch_s 是否遗漏任何直接使用 t 的几何路径；七，scene classifier 是否足以区分 access/route/ISL，阈值有没有无法计算或容易误判的问题；八，计划有没有扩张到不必要的工作。每条 blocking 或 major 发现必须给 github://fuguther/leo-direct-sim/9945b794b1d090d99151e44d89e79e6f6babbe18/<path>#L<line> 证据、从事实到后果的推理和最小修改建议。对每条发现标 FACT、INFERENCE 或 UNVERIFIED。先读 ANALYSIS/FINDINGS-REGISTRY.md 去重。只报告问题，不写优点。最终判定只能是 APPROVE、REQUEST_CHANGES 或 BLOCK，并列 open_items。禁止修改文件、提交、推送、建 PR 或运行正式实验。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "9945b794b1d090d99151e44d89e79e6f6babbe18",
+      "paths": [
+        "docs/superpowers/plans/2026-08-25-global-direct-access-scene.md",
+        "AGENTS.md",
+        "ANALYSIS/FINDINGS-REGISTRY.md",
+        "CODE/leo_sim/config.py",
+        "CODE/leo_sim/model.py",
+        "CODE/leo_sim/kernel.py",
+        "CODE/leo_sim/coverage.py",
+        "CODE/leo_sim/population.py",
+        "CODE/leo_sim/trace.py",
+        "CODE/leo_sim/rng.py",
+        "CODE/leo_sim/receipt.py",
+        "CODE/leo_sim/metrics.py",
+        "CODE/leo_sim/platform_check.py",
+        "CODE/leo_sim/tests/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "覆盖八个指定审阅维度并明确审阅面",
+      "每条 blocking 或 major 发现含精确 GitHub 行号证据、推理链和最小修复",
+      "最终判定为 APPROVE、REQUEST_CHANGES 或 BLOCK",
+      "显式列出 open_items 和未验证假设"
+    ],
+    "requiredEvidence": [
+      "绑定精确 commit 9945b794b1d090d99151e44d89e79e6f6babbe18",
+      "github:// 行号锚点",
+      "代码事实与计划条款的交叉核对"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "11b06e6433276c9b6179e2644b9a3b0f930fbf95073ab138c34bd0e78d8b7468"
+}
