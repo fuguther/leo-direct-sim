@@ -20,7 +20,8 @@ from . import link_budget
 
 CONFIG_SCHEMA_VERSION = "leo-sim-config/v1"
 TRACE_IDENTITY_VERSION_V1 = "leo-sim-trace-identity/v1"
-TRACE_IDENTITY_VERSION = "leo-sim-trace-identity/v2"
+TRACE_IDENTITY_VERSION_V2 = "leo-sim-trace-identity/v2"
+TRACE_IDENTITY_VERSION = "leo-sim-trace-identity/v3"
 
 
 class ConfigError(ValueError):
@@ -66,6 +67,7 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "inclination_deg": (int, float),
         "min_elevation_deg": (int, float),
         "seed": int,
+        "geometry_epoch_s": (int, float),
     },
     "endpoints": {
         "grid_deg": (int, float),
@@ -96,6 +98,12 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         "burst_multiplier": (int, float),
         "diurnal_amplitude": (int, float),
         "diurnal_phase_h": (int, float),
+        # Global populated-land direct-access scene (frozen in Task 1):
+        "temporal_model": str,  # constant | local_diurnal_cosine
+        "utc_start_hour": (int, float),
+        "population_destination_sampler": str,  # scan | alias_rejection
+        "destination_rejection_max_draws": int,
+        "nested_master_offered_mbps": (int, float, type(None)),
     },
     "access": {
         "unavailable_policy": str,  # reject | queue
@@ -230,6 +238,7 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "inclination_deg": 53.0,
         "min_elevation_deg": 25.0,
         "seed": 42,
+        "geometry_epoch_s": 0.0,
     },
     "endpoints": {
         "grid_deg": 0.25,
@@ -259,6 +268,11 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "burst_multiplier": 2.0,
         "diurnal_amplitude": 0.5,
         "diurnal_phase_h": 12.0,
+        "temporal_model": "constant",
+        "utc_start_hour": 0.0,
+        "population_destination_sampler": "scan",
+        "destination_rejection_max_draws": 10_000,
+        "nested_master_offered_mbps": None,
     },
     "access": {
         "unavailable_policy": "reject",
@@ -551,6 +565,37 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
         raise ConfigError("burst_multiplier must be > 0")
     if dm["diurnal_amplitude"] < 0 or not 0 <= dm["diurnal_phase_h"] < 24:
         raise ConfigError("diurnal parameters out of range")
+    if sc["geometry_epoch_s"] < 0:
+        raise ConfigError("scenario.geometry_epoch_s must be >= 0")
+    if dm["temporal_model"] not in {"constant", "local_diurnal_cosine"}:
+        raise ConfigError(
+            "demand.temporal_model must be constant or local_diurnal_cosine")
+    if dm["temporal_model"] == "local_diurnal_cosine" \
+            and dm["mode"] != "population_gravity":
+        raise ConfigError(
+            "local_diurnal_cosine is only valid with population_gravity")
+    if not 0 <= dm["utc_start_hour"] < 24:
+        raise ConfigError("demand.utc_start_hour must be in [0, 24)")
+    if dm["mode"] != "population_gravity" and dm["utc_start_hour"] != 0:
+        raise ConfigError(
+            "demand.utc_start_hour is only configurable for population_gravity")
+    if dm["population_destination_sampler"] not in {"scan", "alias_rejection"}:
+        raise ConfigError(
+            "demand.population_destination_sampler must be scan or alias_rejection")
+    if dm["population_destination_sampler"] != "scan" \
+            and dm["mode"] != "population_gravity":
+        raise ConfigError(
+            "population destination sampler is only valid with population_gravity")
+    if dm["destination_rejection_max_draws"] < 1:
+        raise ConfigError("demand.destination_rejection_max_draws must be >= 1")
+    master = dm["nested_master_offered_mbps"]
+    if master is not None:
+        if dm["mode"] != "population_gravity":
+            raise ConfigError(
+                "nested master load is only valid with population_gravity")
+        if master < dm["offered_mbps"]:
+            raise ConfigError(
+                "demand.nested_master_offered_mbps must be >= demand.offered_mbps")
     if ac["association"] not in VALID_ASSOCIATION:
         raise ConfigError(f"access.association must be one of {sorted(VALID_ASSOCIATION)}")
     if ac["unavailable_policy"] not in VALID_UNAVAILABLE_POLICIES:
@@ -786,9 +831,52 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
             "100000 sampling intervals")
 
 
-def trace_identity_payload(resolved: dict) -> dict:
-    """The exact config scope that determines trace bytes / compile bounds.
+# The five demand fields defaulted since identity/v2 (Task 1 global scene
+# contract).  The frozen v2 builder removes exactly these after config
+# resolution so an old v2 receipt can be reconstructed byte-for-byte.
+V2_REMOVED_DEMAND_FIELDS = (
+    "temporal_model",
+    "utc_start_hour",
+    "population_destination_sampler",
+    "destination_rejection_max_draws",
+    "nested_master_offered_mbps",
+)
 
+
+def _trace_identity_payload(resolved: dict, identity_version: str,
+                            removed_demand_fields=()) -> dict:
+    c = resolved["config"]
+    demand = copy.deepcopy(c["demand"])
+    emission_end = demand.pop("emission_end_s")
+    if emission_end is None:
+        emission_end = c["scenario"]["duration_s"]
+    for field in removed_demand_fields:
+        demand.pop(field, None)
+    return {
+        "identity_version": identity_version,
+        "config_version": resolved["version"],
+        "scenario": {"emission_end_s": emission_end,
+                     "seed": c["scenario"]["seed"]},
+        "endpoints": c["endpoints"],
+        "demand": demand,
+        "execution": {"max_packets": c["execution"]["max_packets"]},
+    }
+
+
+def trace_identity_payload_v2(resolved: dict) -> dict:
+    """Frozen identity/v2 builder.
+
+    Removes the five demand fields defaulted by the Task 1 global scene
+    contract after config resolution, so a v2 receipt compiled before those
+    fields existed still reconstructs byte-for-byte."""
+    return _trace_identity_payload(
+        resolved, TRACE_IDENTITY_VERSION_V2, V2_REMOVED_DEMAND_FIELDS)
+
+
+def trace_identity_payload(resolved: dict) -> dict:
+    """The v3 trace identity payload for new compilations.
+
+    The exact config scope that determines trace bytes / compile bounds.
     Two mechanism arms (routing policy, access, links, control plane,
     learning, outputs, operational execution limits) MUST consume the same
     immutable trace, so none of them appear here. Included:
@@ -797,21 +885,10 @@ def trace_identity_payload(resolved: dict) -> dict:
       - the full endpoints group (grid, aggregation, sites);
       - the full demand group (generator parameters, csv/mlab inputs by path);
       - execution.max_packets (the compile-time bound).
+    `scenario.geometry_epoch_s` is deliberately absent: it changes the
+    geometry phase, never the trace bytes.
     """
-    c = resolved["config"]
-    demand = copy.deepcopy(c["demand"])
-    emission_end = demand.pop("emission_end_s")
-    if emission_end is None:
-        emission_end = c["scenario"]["duration_s"]
-    return {
-        "identity_version": TRACE_IDENTITY_VERSION,
-        "config_version": resolved["version"],
-        "scenario": {"emission_end_s": emission_end,
-                     "seed": c["scenario"]["seed"]},
-        "endpoints": c["endpoints"],
-        "demand": demand,
-        "execution": {"max_packets": c["execution"]["max_packets"]},
-    }
+    return _trace_identity_payload(resolved, TRACE_IDENTITY_VERSION)
 
 
 def legacy_trace_identity_payload(resolved: dict) -> dict:
@@ -828,6 +905,16 @@ def legacy_trace_identity_payload(resolved: dict) -> dict:
         "demand": demand,
         "execution": {"max_packets": c["execution"]["max_packets"]},
     }
+
+
+def trace_identity_sha256_v2(resolved: dict, input_sha256: str = "") -> str:
+    """SHA256 of the frozen identity/v2 payload plus the demand input content
+    hash.  Used to verify persisted v2 contracts; produces the exact legacy
+    v2 hash for configs resolved under the Task 1 contract."""
+    payload = trace_identity_payload_v2(resolved)
+    payload["input_sha256"] = input_sha256
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def trace_identity_sha256(resolved: dict, input_sha256: str = "") -> str:

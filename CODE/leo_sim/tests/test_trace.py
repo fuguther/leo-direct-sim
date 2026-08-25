@@ -402,3 +402,56 @@ def test_population_gravity_trace_is_byte_reproducible(tmp_path, monkeypatch):
     assert (tmp_path / "one" / "trace.csv").read_bytes() == (
         tmp_path / "two" / "trace.csv").read_bytes()
     assert m1["trace_identity_sha256"] == m2["trace_identity_sha256"]
+
+
+# -------------------------------------------------------- Task 1 regression:
+# the global scene fields are frozen as defaults; the unchanged legacy
+# population profile must keep its exact trace bytes and identity/v2 must
+# still be reconstructible, while new compilations declare identity/v3.
+
+POPULATION_PROFILE = (Path(__file__).resolve().parents[2]
+                      / "leo_sim" / "profiles" / "population_gravity.yaml")
+LEGACY_POPULATION_TRACE_SHA = (
+    "0780da2fedea503d5f600830aecc805c95b1b8fc098395150ecaf2185846279a")
+FROZEN_OLD_V2_TRACE_IDENTITY = (
+    "2715dfb316de48d958cd05fa09aafcf22e340766d186e7a0a9a9b6a4b0dd9ad4")
+
+
+def test_population_gravity_profile_trace_bytes_regression(tmp_path):
+    """Task 1 must not perturb the legacy population profile trace bytes."""
+    resolved = config.load_config_file(str(POPULATION_PROFILE))
+    manifest = trace.compile_trace(resolved, str(tmp_path / "pop"))
+    trace_sha = hashlib.sha256(
+        (tmp_path / "pop" / "trace.csv").read_bytes()).hexdigest()
+    assert trace_sha == LEGACY_POPULATION_TRACE_SHA
+    # new compilations declare identity/v3, not the frozen v2 value
+    assert manifest["trace_identity_sha256"] == config.trace_identity_sha256(
+        resolved, manifest["input_sha256"])
+    assert manifest["trace_identity_sha256"] != FROZEN_OLD_V2_TRACE_IDENTITY
+    # the frozen v2 identity of this exact profile is still reconstructible
+    # byte-for-byte by the frozen v2 builder (the five new demand fields are
+    # removed after config resolution).
+    assert config.trace_identity_sha256_v2(
+        resolved, manifest["input_sha256"]) == FROZEN_OLD_V2_TRACE_IDENTITY
+
+
+def test_uncompiled_new_scene_fields_do_not_change_trace_bytes(tmp_path):
+    """Setting the new global-scene fields to their defaults must leave the
+    legacy trace bytes untouched (they are trace-determining only when a
+    task-4+ feature is actually selected)."""
+    resolved = config.load_config_file(str(POPULATION_PROFILE))
+    base_manifest = trace.compile_trace(resolved, str(tmp_path / "base"))
+    base_sha = hashlib.sha256(
+        (tmp_path / "base" / "trace.csv").read_bytes()).hexdigest()
+    resolved["config"]["scenario"]["geometry_epoch_s"] = 0.0
+    resolved["config"]["demand"].update({
+        "temporal_model": "constant",
+        "utc_start_hour": 0.0,
+        "population_destination_sampler": "scan",
+        "destination_rejection_max_draws": 10_000,
+        "nested_master_offered_mbps": None,
+    })
+    explicit_manifest = trace.compile_trace(resolved, str(tmp_path / "explicit"))
+    assert hashlib.sha256(
+        (tmp_path / "explicit" / "trace.csv").read_bytes()).hexdigest() == base_sha
+    assert explicit_manifest["trace_sha256"] == base_manifest["trace_sha256"]
