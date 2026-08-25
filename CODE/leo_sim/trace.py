@@ -568,7 +568,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
     os.makedirs(out, exist_ok=True)
     if not out.is_dir():
         raise TraceError(f"output path is not a directory: {out}")
-    for name in ("trace.csv", "manifest.json"):
+    for name in ("trace.csv", "manifest.json", "nested-family.json"):
         artifact = out / name
         if artifact.is_symlink():
             raise TraceError(f"output artifact may not be a symbolic link: {artifact}")
@@ -576,6 +576,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
             raise TraceError(f"output artifact is not a regular file: {artifact}")
 
     rows: list[tuple] = []
+    master_candidate_packets = 0
     input_hash = ""
     provenance = "synthetic"
     source_type = "synthetic_generator"
@@ -689,7 +690,22 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                     ep["grid_deg"], ep["aggregation_deg"], ep["mlab_max_sites"])
             else:
                 endpoints = _endpoints(cfg)
-        gen = rng.streams(sc["seed"])["demand"]
+        generators = rng.streams(sc["seed"])
+        gen = generators["demand"]
+        # Task 6 nested family: when a master load is declared, candidates
+        # are generated at the MASTER rate on the demand stream, and every
+        # fully generated candidate receives one independent nested_filter
+        # draw on its own child-7 stream; kept candidates form the child.
+        nested_master = dm["nested_master_offered_mbps"]
+        filter_gen = None
+        inclusion_probability = 1.0
+        if nested_master is not None:
+            filter_gen = generators["nested_filter"]
+            inclusion_probability = (
+                float(dm["offered_mbps"]) / float(nested_master))
+        generation_mbps = (float(nested_master)
+                           if nested_master is not None
+                           else float(dm["offered_mbps"]))
         if mode == "mlab":
             if mlab_weights is None:
                 mlab_weights, mlab_summary = _load_mlab_weights(
@@ -714,7 +730,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                     f"{uncovered}; measurement_proxy demand cannot be compiled "
                     "without measurement coverage (fail closed, no silent "
                     "uniform fallback)")
-        total_rate = dm["offered_mbps"] * 1e6 / bits_per_pkt  # pkts/s across endpoints
+        total_rate = generation_mbps * 1e6 / bits_per_pkt  # pkts/s across endpoints
         source_exponent = (dm["source_population_exponent"]
                            if mode == "population_gravity" else 1.0)
         weights = [e["weight"] ** source_exponent for e in endpoints]
@@ -728,6 +744,9 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
             population_alias = VoseAlias(
                 [e["weight"] ** destination_exponent for e in endpoints])
         pid = 0
+        master_rows: list[tuple] = []
+        nested_child_rows: list[tuple] | None = \
+            [] if filter_gen is not None else None
         for i, e in enumerate(endpoints):
             base_rate = total_rate * weights[i] / wsum
             if base_rate <= 0:
@@ -757,7 +776,29 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                     dst = _dst_choices(gen, mode, endpoints, i, t, dm,
                                        mlab_weights)
                 dl = f"{t + deadline:.6f}" if deadline is not None else ""
-                rows.append((pid, t, e["agg_grid_id"], dst["agg_grid_id"], bits_per_pkt, dl))
+                candidate = (pid, t, e["agg_grid_id"], dst["agg_grid_id"],
+                             bits_per_pkt, dl)
+                master_rows.append(candidate)
+                # every fully generated candidate receives exactly one
+                # independent nested_filter draw (generation order); kept
+                # candidates form the child trace
+                if nested_child_rows is not None \
+                        and filter_gen.random() < inclusion_probability:
+                    nested_child_rows.append(candidate)
+        # the master candidate count is binding BEFORE any child filtering
+        master_candidate_packets = len(master_rows)
+        if nested_master is not None and \
+                master_candidate_packets > int(cfg["execution"]["max_packets"]):
+            raise TraceError(
+                f"nested master trace would contain "
+                f"{master_candidate_packets} candidate packets > "
+                f"execution.max_packets "
+                f"({int(cfg['execution']['max_packets'])}); tighten the "
+                f"master load instead of generating an unbounded trace")
+        if nested_child_rows is not None:
+            rows = nested_child_rows
+        else:
+            rows = master_rows
         rows.sort(key=lambda r: (r[1], r[0]))
         rows = [(i + 1, *r[1:]) for i, r in enumerate(rows)]
 
@@ -865,6 +906,17 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                and dm["temporal_model"] == "local_diurnal_cosine" else None)),
         },
     }
+    # rng_streams contract: nested families select the canonical demand
+    # and nested-filter entries from the FULL stream mapping; legacy and
+    # non-nested traces keep the historical single-demand mapping
+    # (demand is child 0 in both branches; nested_filter is child 7).
+    if dm["nested_master_offered_mbps"] is not None:
+        full_streams = rng.stream_mapping(sc["seed"])
+        rng_streams = {"demand": full_streams["demand"],
+                       "nested_filter": full_streams["nested_filter"]}
+    else:
+        rng_streams = rng.stream_mapping(sc["seed"], ["demand"])
+
     manifest = {
         "schema": TRACE_MANIFEST_SCHEMA,
         "trace_schema": TRACE_SCHEMA,
@@ -877,7 +929,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
         "simulation_horizon_s": duration,
         "emission_end_s": emission_end,
         "drain_s": drain_s,
-        "rng_streams": rng.stream_mapping(sc["seed"], ["demand"]),
+        "rng_streams": rng_streams,
         "packet_id_contract": PACKET_ID_CONTRACT,
         "offered_packets": len(rows),
         "offered_bits": offered_bits,
@@ -923,6 +975,35 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
     with open(out / "manifest.json", "w", encoding="utf-8") as fh:
         json.dump(manifest, fh, indent=2, sort_keys=True)
         fh.write("\n")
+    if dm["nested_master_offered_mbps"] is not None:
+        # exact-key, versioned companion artifact (never nested metadata in
+        # the manifest itself).  Written only after trace.csv and
+        # manifest.json succeeded, so a failed compile cannot leave a
+        # companion that appears valid.
+        from . import trace_family as _family
+        family = {
+            "schema": _family.FAMILY_SCHEMA,
+            "family_identity_sha256": _family.family_identity_sha256(
+                resolved, manifest["input_sha256"]),
+            "master_offered_mbps": float(dm["nested_master_offered_mbps"]),
+            "child_offered_mbps": float(dm["offered_mbps"]),
+            "inclusion_probability": (
+                float(dm["offered_mbps"])
+                / float(dm["nested_master_offered_mbps"])),
+            "master_candidate_packets": master_candidate_packets,
+            "child_packets": len(rows),
+            "demand_rng_stream": _family._canonical_stream_label(
+                resolved, "demand"),
+            "filter_rng_stream": _family._canonical_stream_label(
+                resolved, "nested_filter"),
+            "canonical_row_contract": _family.CANONICAL_ROW_CONTRACT,
+            "config_sha256": resolved["sha256"],
+            "trace_identity_sha256": manifest["trace_identity_sha256"],
+            "trace_sha256": trace_sha256,
+        }
+        with open(out / "nested-family.json", "w", encoding="utf-8") as fh:
+            json.dump(family, fh, indent=2, sort_keys=True)
+            fh.write("\n")
     return manifest
 
 

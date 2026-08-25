@@ -309,8 +309,19 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
     }.get(mode, "synthetic")
     if manifest.get("provenance") != expected_provenance:
         errors.append("manifest provenance mismatch")
+    # rng_streams: reconstruct the exact config feature branch.  Legacy and
+    # non-nested traces keep only the canonical demand mapping; nested
+    # traces select the canonical demand and nested-filter entries from the
+    # full mapping.  Nothing is guessed from the manifest itself.
     expected_rng = rng_mod.stream_mapping(
         resolved_cfg["scenario"]["seed"], ["demand"])
+    if (resolved_cfg["demand"].get("mode") == "population_gravity"
+            and resolved_cfg["demand"].get("nested_master_offered_mbps")
+            is not None):
+        full_rng = rng_mod.stream_mapping(
+            resolved_cfg["scenario"]["seed"], rng_mod.STREAM_NAMES)
+        expected_rng = {"demand": full_rng["demand"],
+                        "nested_filter": full_rng["nested_filter"]}
     if manifest.get("rng_streams") != expected_rng:
         errors.append("manifest RNG stream mapping mismatch")
     input_sha = manifest.get("input_sha256")

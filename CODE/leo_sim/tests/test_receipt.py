@@ -167,3 +167,103 @@ def test_new_compilation_declares_identity_v3(tmp_path, monkeypatch):
         config.TRACE_IDENTITY_VERSION
     assert manifest["trace_identity_sha256"] == config.trace_identity_sha256(
         cfg, manifest["input_sha256"])
+
+# ---------------------------------------------------------------- Task 6:
+# the trace manifest rng_streams contract branches exactly with the active
+# nested-family feature; receipt verification reconstructs that branch from
+# the resolved config and rejects missing/extra/wrongly indexed streams.
+
+def test_nested_manifest_rng_streams_branch_and_receipt_verification(
+        tmp_path, monkeypatch):
+    from CODE.leo_sim import population as pop_mod
+    regions = (
+        pop_mod.PopulationRegion("G5:18:36", 2.5, 2.5, 10.0),
+        pop_mod.PopulationRegion("G5:18:37", 2.5, 7.5, 3.0),
+    )
+    table = pop_mod.PopulationTable(
+        regions=regions, source_path="/fake/pop.tif",
+        source_sha256="f" * 64, source_shape=(720, 1440),
+        source_resolution_deg=(0.25, 0.25), aggregation_deg=5.0,
+        total_population=13.0)
+    monkeypatch.setattr(pop_mod, "load_population_regions",
+                        lambda path, aggregation_deg: table)
+    resolved = config.resolve_config({
+        "scenario": {"duration_s": 5.0, "seed": 7},
+        "endpoints": {"aggregation_deg": 5.0},
+        "demand": {
+            "mode": "population_gravity", "population_path": "/fake/pop.tif",
+            "offered_mbps": 10.0,
+            "nested_master_offered_mbps": 80.0,
+            "packet_bits": 1_000_000,
+            "source_population_exponent": 1.0,
+            "destination_population_exponent": 1.0,
+            "gravity_alpha": 1.25, "gravity_d_floor_km": 100.0,
+            "temporal_model": "local_diurnal_cosine", "utc_start_hour": 3.0,
+        },
+        "execution": {"max_packets": 5_000},
+    })
+    manifest = trace.compile_trace(resolved, str(tmp_path / "nested"))
+    # nested traces select exactly the canonical demand and nested-filter
+    # entries from the full mapping, never a partial/legacy guess
+    assert manifest["rng_streams"] == {
+        "demand": "SeedSequence(7).spawn[0]",
+        "nested_filter": "SeedSequence(7).spawn[7]",
+    }
+    assert receipt._validate_manifest(manifest, resolved["config"],
+                                      resolved["version"]) == []
+    # tampering: missing stream, extra stream, wrong index, wrong label
+    missing = dict(manifest)
+    missing["rng_streams"] = {"demand": "SeedSequence(7).spawn[0]"}
+    errors = receipt._validate_manifest(missing, resolved["config"],
+                                        resolved["version"])
+    assert any("RNG" in e for e in errors)
+    extra = dict(manifest)
+    extra["rng_streams"] = dict(manifest["rng_streams"])
+    extra["rng_streams"]["routing"] = "SeedSequence(7).spawn[4]"
+    errors = receipt._validate_manifest(extra, resolved["config"],
+                                        resolved["version"])
+    assert any("RNG" in e for e in errors)
+    wrong_index = dict(manifest)
+    wrong_index["rng_streams"] = {
+        "demand": "SeedSequence(7).spawn[0]",
+        "nested_filter": "SeedSequence(7).spawn[1]",  # ge_gsl's index!
+    }
+    errors = receipt._validate_manifest(wrong_index, resolved["config"],
+                                        resolved["version"])
+    assert any("RNG" in e for e in errors)
+    wrong_label = dict(manifest)
+    wrong_label["rng_streams"] = {
+        "demand": "SeedSequence(7).spawn[0]",
+        "nested_filter": "SeedSequence(7).spawn[8]",
+    }
+    errors = receipt._validate_manifest(wrong_label, resolved["config"],
+                                        resolved["version"])
+    assert any("RNG" in e for e in errors)
+
+
+def test_non_nested_manifest_keeps_only_canonical_demand_mapping(
+        tmp_path, monkeypatch):
+    from CODE.leo_sim import population as pop_mod
+    regions = (
+        pop_mod.PopulationRegion("G5:18:36", 2.5, 2.5, 10.0),
+        pop_mod.PopulationRegion("G5:18:37", 2.5, 7.5, 3.0),
+    )
+    table = pop_mod.PopulationTable(
+        regions=regions, source_path="/fake/pop.tif",
+        source_sha256="f" * 64, source_shape=(720, 1440),
+        source_resolution_deg=(0.25, 0.25), aggregation_deg=5.0,
+        total_population=13.0)
+    monkeypatch.setattr(pop_mod, "load_population_regions",
+                        lambda path, aggregation_deg: table)
+    resolved = config.resolve_config({
+        "scenario": {"duration_s": 5.0, "seed": 7},
+        "endpoints": {"aggregation_deg": 5.0},
+        "demand": {"mode": "population_gravity",
+                   "population_path": "/fake/pop.tif",
+                   "offered_mbps": 10.0, "packet_bits": 1_000_000},
+        "execution": {"max_packets": 5_000},
+    })
+    manifest = trace.compile_trace(resolved, str(tmp_path / "plain"))
+    assert manifest["rng_streams"] == {"demand": "SeedSequence(7).spawn[0]"}
+    assert receipt._validate_manifest(manifest, resolved["config"],
+                                      resolved["version"]) == []
