@@ -49,7 +49,7 @@
     "sha256": "574880a791f9f3276642caebed8f4329e3cd77f59d5fc528ef629fa774102ec5"
   },
   "experiment_id": "EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01",
-  "matrix_manifest_sha256": "d7788f560732a012d2e3da5639cd90d9194f78005a3bfdbb24e3a5d50adbccac",
+  "matrix_manifest_sha256": "b4ffed51eb52feec427ef5d683701fdbff8433ab264963c2dafae52f04bd1c13",
   "planned_cells": [
     {
       "acceptance": {
