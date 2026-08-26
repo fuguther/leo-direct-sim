@@ -1,0 +1,79 @@
+{
+  "contract": {
+    "allowedPaths": [
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+      "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+      "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/",
+      "CODE/leo_sim/scene_check.py",
+      "CODE/leo_sim/matrix.py",
+      "CODE/leo_sim/governance.py"
+    ],
+    "metadata": {
+      "frozenPlanDigest": "sha256:d8be85576b13b26f56e2efbb29b70131bbd97f7661dfc9efa76bf41577d32fb5",
+      "digestVersion": "canonical-json-sha256-v1"
+    },
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:SAT-R1:independent_review",
+    "title": "Satellite/DRL research-design review of global pressure bracket",
+    "goal": "Review exact commit fcfc1e42a7780a36ab8452c1659211f3d4c19da8. Check whether the 280-satellite/14-plane global population-proxy setup, 16,988-endpoint coverage ledger, load10 duplicate pair, routing/ISL settings, non-learning phase, and claim boundaries are scientifically coherent and sufficient for the first bounded pressure classification. Distinguish a real pressure experiment from access/route/downlink failure and from a future RL comparison. Check reproducibility, seed/pair identity, and whether the package accidentally claims real traffic or global service. Identify blockers versus minor issues and produce a candidate agent-review-receipt/v2 with exact paths/fields and unknowns; do not claim VM results.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "fcfc1e42a7780a36ab8452c1659211f3d4c19da8",
+      "paths": [
+        "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json",
+        "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+        "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+        "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+        "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+        "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/",
+        "CODE/leo_sim/scene_check.py",
+        "CODE/leo_sim/matrix.py",
+        "CODE/leo_sim/governance.py"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Return a clear PASS, REQUEST_CHANGES, or BLOCKED verdict.",
+      "Candidate receipt must use agent-review-receipt/v2, role satellite_drl, exact work_id/revision, distinct reviewer identity, evidence, blocking_findings, unknowns, and required_revision.",
+      "Every finding cites an exact repository path and line or JSON field and distinguishes blocker from minor.",
+      "Explicitly state whether the package is safe to proceed to finalization/authorization and that no Pro-tier routing was used."
+    ],
+    "requiredEvidence": [
+      "Exact file paths and line or JSON-field references",
+      "Observed configuration, pair identity, coverage, claim-boundary and ISL-gate facts",
+      "Candidate receipt JSON and a check that no Pro-tier routing was used"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "ffc55a8c1697673edce663eda7273ea762f5c360e5d0a2836e50629c1ec514bf"
+}
