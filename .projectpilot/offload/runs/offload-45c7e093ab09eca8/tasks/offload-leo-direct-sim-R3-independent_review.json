@@ -1,0 +1,83 @@
+{
+  "contract": {
+    "allowedPaths": [
+      "CODE/leo_sim/scene_check.py",
+      "CODE/leo_sim/matrix.py",
+      "CODE/experiment_platform/authorize_experiment.py",
+      "CODE/experiment_platform/v2_analysis.py",
+      "CODE/leo_sim/governance.py",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+      "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+      "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+    ],
+    "metadata": {
+      "frozenPlanDigest": "sha256:550e160949dcdacbb160250376adda5281891235c6074bb0e138383c1bc7faef",
+      "digestVersion": "canonical-json-sha256-v1"
+    },
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R3:independent_review",
+    "title": "Adversarial review of global pressure bracket R01",
+    "goal": "Review exact commit fcfc1e42a7780a36ab8452c1659211f3d4c19da8. Try to break the authorization and scientific-claim gates: check scene-check contract and coverage hashes, matrix artifact path normalization, regenerated package identity, population-gravity endpoint semantics, runbook/finalization boundaries, and whether any access/route/downlink failure could be mislabeled as ISL pressure. Check the package has no hidden bypass or stale artifact. Identify blockers versus minors. Produce a candidate review receipt with exact paths/fields and explicit unknowns; do not claim any VM result.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "fcfc1e42a7780a36ab8452c1659211f3d4c19da8",
+      "paths": [
+        "CODE/leo_sim/scene_check.py",
+        "CODE/leo_sim/matrix.py",
+        "CODE/experiment_platform/authorize_experiment.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/leo_sim/governance.py",
+        "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json",
+        "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+        "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+        "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+        "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+        "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Return a clear PASS, REQUEST_CHANGES, or BLOCKED verdict.",
+      "Candidate receipt must use agent-review-receipt/v2, role adversarial, exact work_id/revision, distinct reviewer identity, evidence, blocking_findings, unknowns, and required_revision.",
+      "Every finding cites an exact repository path and line or JSON field and distinguishes blocker from minor.",
+      "Explicitly state whether the package is safe to proceed to finalization/authorization and that no Pro-tier routing was used."
+    ],
+    "requiredEvidence": [
+      "Exact file paths and line or JSON-field references",
+      "Observed matrix, scene-check contract, coverage, and authorization-chain facts",
+      "Candidate receipt JSON and a check that no Pro-tier routing was used"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "1dd11b980a031ed1498356d92369e83dc5e4dca926f16d1e8640bd3a0d314253"
+}
