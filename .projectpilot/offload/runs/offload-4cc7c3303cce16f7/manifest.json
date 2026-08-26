@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "planId": "offload-4cc7c3303cce16f7",
+  "relayManifest": {
+    "planId": "offload-4cc7c3303cce16f7",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:R1",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "3ad1dbd467eaab69668209862f6a81da516fc22f",
+        "paths": [
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/tests/test_governance.py",
+          "CODE/leo_sim/scene_check.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/experiment_platform/authorize_experiment.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+          "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+        ],
+        "promptHash": "b981c54624b1041df702023b5c8ba41eb6e5d7c312020723e38f1e19f3cb30ba"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:R1:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "3ad1dbd467eaab69668209862f6a81da516fc22f",
+        "paths": [
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/tests/test_governance.py",
+          "CODE/leo_sim/scene_check.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/experiment_platform/authorize_experiment.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+          "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+        ],
+        "promptHash": "34ab266165c6e451f1bcf3aa6eeb1571cff0cfeab7bf9266210c879785a1750b"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "4cc7c3303cce16f7d32d4e9e587bfffa6e2fd97b699dba28f706f8643c27f17b"
+  },
+  "sourceBaseCommit": "3ad1dbd467eaab69668209862f6a81da516fc22f",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:R1",
+      "promptHash": "b981c54624b1041df702023b5c8ba41eb6e5d7c312020723e38f1e19f3cb30ba",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "3ad1dbd467eaab69668209862f6a81da516fc22f",
+        "paths": [
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/tests/test_governance.py",
+          "CODE/leo_sim/scene_check.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/experiment_platform/authorize_experiment.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+          "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:R1:independent_review",
+      "promptHash": "34ab266165c6e451f1bcf3aa6eeb1571cff0cfeab7bf9266210c879785a1750b",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "3ad1dbd467eaab69668209862f6a81da516fc22f",
+        "paths": [
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/tests/test_governance.py",
+          "CODE/leo_sim/scene_check.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/experiment_platform/authorize_experiment.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+          "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
