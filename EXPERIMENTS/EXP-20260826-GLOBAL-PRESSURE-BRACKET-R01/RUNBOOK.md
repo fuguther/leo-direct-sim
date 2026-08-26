@@ -36,3 +36,25 @@ python3 -m CODE.experiment_platform.v2_analysis \
 ```
 
 The output is evidence-bound analysis only; claim-support and value-gate review remain required.
+
+## Apply the frozen scene and coverage gates
+
+Run scene_check once per verified natural-end result. The contract freezes both the scene thresholds and the full population coverage ledger; any binding or classification error is a stop, never a clean-scene result.
+
+```bash
+python3 -m CODE.leo_sim.scene_check \
+  --root . \
+  --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json \
+  --run-dir CODE/Results/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_a-s7 \
+  --out ANALYSIS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/scene-check/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_a-s7.json
+```
+
+```bash
+python3 -m CODE.leo_sim.scene_check \
+  --root . \
+  --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json \
+  --run-dir CODE/Results/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_b-s7 \
+  --out ANALYSIS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/scene-check/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_b-s7.json
+```
+
+The command and all bound inputs are frozen in `CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json`. Do not substitute a different decision, coverage report, or in-memory threshold.

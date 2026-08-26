@@ -25,6 +25,7 @@ DOWNLINK_LIMITED, NO_ISL_EXPOSURE, NO_ISL_PRESSURE, ISL_PRESSURE_CANDIDATE
 """
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import math
@@ -41,6 +42,7 @@ from . import trace as trace_mod
 
 SCENE_DECISION_SCHEMA = "leo-sim-scene-decision/v1"
 SCENE_CHECK_SCHEMA = "leo-sim-scene-check/v1"
+SCENE_CHECK_CONTRACT_SCHEMA = "leo-sim-scene-check-contract/v1"
 
 SCENE_STATUSES = (
     "INVALID_EVIDENCE",
@@ -88,6 +90,103 @@ DENOMINATOR_ADMITTED = "admitted"
 
 class SceneCheckError(ValueError):
     """Invalid scene-check input or decision contract."""
+
+
+def _safe_contract_path(root: Path, raw: Any, label: str) -> Path:
+    if (not isinstance(raw, str) or not raw.startswith("CODE/work/")
+            or ".." in Path(raw).parts
+            or Path(raw).suffix.lower() not in {".json", ".yaml", ".yml"}):
+        raise SceneCheckError(f"{label} must be a safe CODE/work path")
+    path = (root / raw).resolve()
+    try:
+        path.relative_to(root.resolve())
+    except ValueError as exc:
+        raise SceneCheckError(f"{label} escapes project root") from exc
+    if path.is_symlink() or not path.is_file():
+        raise SceneCheckError(f"{label} is missing or symbolic: {raw}")
+    return path
+
+
+def load_scene_check_contract(path: str | Path,
+                              root: str | Path | None = None) -> dict[str, Any]:
+    """Load the immutable scene/coverage binding used by the CLI.
+
+    The matrix compiler hashes this contract before authorization.  At
+    analysis time we re-check the contract, both referenced artifact hashes,
+    and the semantic decision/coverage schemas before any classification.
+    """
+    contract_path = Path(path).resolve()
+    if root is None:
+        code_root = next((parent for parent in contract_path.parents
+                          if parent.name == "CODE"), None)
+        if code_root is None:
+            raise SceneCheckError("cannot infer project root for scene-check contract")
+        project_root = code_root.parent.resolve()
+    else:
+        project_root = Path(root).resolve()
+    try:
+        contract_path.relative_to(project_root)
+    except ValueError as exc:
+        raise SceneCheckError("scene-check contract escapes project root") from exc
+    if contract_path.is_symlink() or not contract_path.is_file():
+        raise SceneCheckError(f"scene-check contract missing or symbolic: {path}")
+    try:
+        contract = json.loads(contract_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise SceneCheckError(f"scene-check contract unreadable: {exc}") from exc
+    expected_keys = {
+        "schema", "decision_path", "decision_sha256", "coverage_path",
+        "coverage_sha256", "canonical_invocation",
+    }
+    if not isinstance(contract, dict) or set(contract) != expected_keys:
+        raise SceneCheckError("scene-check contract keys mismatch")
+    if contract.get("schema") != SCENE_CHECK_CONTRACT_SCHEMA:
+        raise SceneCheckError(
+            f"scene-check contract schema must be {SCENE_CHECK_CONTRACT_SCHEMA}")
+    invocation = contract.get("canonical_invocation")
+    if (not isinstance(invocation, list) or len(invocation) < 7
+            or any(not isinstance(token, str) or not token for token in invocation)
+            or invocation[:3] != ["python3", "-m", "CODE.leo_sim.scene_check"]
+            or len(invocation[3:]) % 2):
+        raise SceneCheckError("scene-check canonical_invocation is invalid")
+    expected_prefix = ["--root", ".", "--contract",
+                       str(contract_path.relative_to(project_root))]
+    if invocation[3:7] != expected_prefix:
+        raise SceneCheckError("scene-check canonical_invocation does not bind contract")
+    decision_path = _safe_contract_path(
+        project_root, contract["decision_path"], "decision_path")
+    coverage_path = _safe_contract_path(
+        project_root, contract["coverage_path"], "coverage_path")
+    decision_sha = hashlib.sha256(decision_path.read_bytes()).hexdigest()
+    coverage_sha = hashlib.sha256(coverage_path.read_bytes()).hexdigest()
+    if decision_sha != contract["decision_sha256"]:
+        raise SceneCheckError("scene decision contract hash mismatch")
+    if coverage_sha != contract["coverage_sha256"]:
+        raise SceneCheckError("coverage audit hash mismatch")
+    try:
+        decision = yaml.safe_load(decision_path.read_text(encoding="utf-8"))
+        coverage_report = json.loads(coverage_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, yaml.YAMLError, json.JSONDecodeError) as exc:
+        raise SceneCheckError(f"scene-check bound artifact unreadable: {exc}") from exc
+    if not isinstance(decision, dict):
+        raise SceneCheckError("bound scene decision must be a mapping")
+    decision_errors = verify_decision_contract(decision)
+    if decision_errors:
+        raise SceneCheckError("bound scene decision invalid: "
+                              + "; ".join(decision_errors))
+    coverage_errors = coverage_mod.verify_coverage_audit_v2(coverage_report)
+    if coverage_errors:
+        raise SceneCheckError("bound coverage audit invalid: "
+                              + "; ".join(coverage_errors))
+    return {
+        "contract": contract,
+        "contract_sha256": hashlib.sha256(contract_path.read_bytes()).hexdigest(),
+        "contract_path": str(contract_path.relative_to(project_root)),
+        "decision": decision,
+        "decision_path": str(decision_path.relative_to(project_root)),
+        "coverage": coverage_report,
+        "coverage_path": str(coverage_path.relative_to(project_root)),
+    }
 
 
 def _is_num(v) -> bool:
@@ -556,25 +655,34 @@ def _recompute_isl_pressure(service_windows, available_windows,
         ordered = sorted(windows_util)
         if len(ordered) < min_consecutive:
             continue
-        best_run = 0
-        run = 0
-        best_windows: list[int] = []
+        best_run_windows: list[int] = []
+        current_run: list[int] = []
+        previous_k: int | None = None
         for k in ordered:
-            if windows_util[k] >= min_utilization:
-                run += 1
-                best_windows.append(k)
+            qualifies = windows_util[k] >= min_utilization
+            adjacent = previous_k is not None and k == previous_k + 1
+            if qualifies and (not current_run or adjacent):
+                current_run.append(k)
+            elif qualifies:
+                # A missing/undocumented fixed window is a real gap.  It
+                # must break the "consecutive" episode rather than being
+                # silently removed from the run.
+                current_run = [k]
             else:
-                run = 0
-                best_windows = []
-            best_run = max(best_run, run)
-        if best_run < min_consecutive:
+                current_run = []
+            if len(current_run) > len(best_run_windows):
+                best_run_windows = list(current_run)
+            previous_k = k
+        if len(best_run_windows) < min_consecutive:
             continue
         if require_queue:
             waits = isl_queue_waits.get(link, [])
             p95 = _p95(waits)
             if p95 is None or p95 <= 0.0:
                 continue
-        consecutive = best_windows[-min_consecutive:]
+        # Select from the actual best qualifying episode.  Do not use a
+        # later, shorter run merely because it was the last run observed.
+        consecutive = best_run_windows[-min_consecutive:]
         candidate = {
             "link_id": link,
             "qualifying_windows": [int(k) for k in consecutive],
@@ -800,3 +908,59 @@ def _control_plane_summary(ledgers: dict) -> dict[str, Any]:
                       "control_tx_completed")
         } if isinstance(mechanism, dict) else {},
     }
+
+
+def _cli(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--root", type=Path, required=True,
+                        help="project root containing CODE/work")
+    parser.add_argument("--contract", type=Path, required=True,
+                        help="bound scene-check contract, relative to root")
+    parser.add_argument("--run-dir", type=Path, required=True,
+                        help="verified V2 result directory, relative to root")
+    parser.add_argument("--out", type=Path, required=True,
+                        help="scene-check JSON output, relative to root")
+    args = parser.parse_args(argv)
+    root = args.root.resolve()
+
+    def rooted(raw: Path, label: str) -> Path:
+        path = (root / raw).resolve() if not raw.is_absolute() else raw.resolve()
+        try:
+            path.relative_to(root)
+        except ValueError as exc:
+            raise SceneCheckError(f"{label} escapes project root") from exc
+        if path.is_symlink() or not path.is_dir():
+            raise SceneCheckError(f"{label} must be a real directory: {raw}")
+        return path
+
+    run_dir = rooted(args.run_dir, "run-dir")
+    bound = load_scene_check_contract(root / args.contract, root)
+    report = check_scene(str(run_dir), str(run_dir), bound["coverage"],
+                         bound["decision"])
+    report["contract_binding"] = {
+        "schema": SCENE_CHECK_CONTRACT_SCHEMA,
+        "contract_path": bound["contract_path"],
+        "contract_sha256": bound["contract_sha256"],
+        "decision_path": bound["decision_path"],
+        "decision_sha256": bound["contract"]["decision_sha256"],
+        "coverage_path": bound["coverage_path"],
+        "coverage_sha256": bound["contract"]["coverage_sha256"],
+    }
+    out = (root / args.out).resolve() if not args.out.is_absolute() else args.out.resolve()
+    try:
+        out.relative_to(root)
+    except ValueError as exc:
+        raise SceneCheckError("out escapes project root") from exc
+    if out.is_symlink():
+        raise SceneCheckError("out must not be symbolic")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(report, ensure_ascii=False, indent=2,
+                              sort_keys=True) + "\n", encoding="utf-8")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(_cli())
+    except SceneCheckError as exc:
+        raise SystemExit(f"scene_check: {exc}") from exc

@@ -595,8 +595,46 @@ def _load_decision_contract(
     except (OSError, json.JSONDecodeError) as exc:
         raise MatrixError(f"post-analysis decision contract unreadable: {exc}") \
             from exc
-    if not isinstance(contract, dict) or contract.get("schema") != \
-            "leo-sim-isl-pressure-decision/v1":
+    if not isinstance(contract, dict):
+        raise MatrixError("post-analysis decision contract must be an object")
+    schema = contract.get("schema")
+    if schema == "leo-sim-scene-check-contract/v1":
+        required = {"schema", "decision_path", "decision_sha256",
+                    "coverage_path", "coverage_sha256",
+                    "canonical_invocation"}
+        if set(contract) != required:
+            raise MatrixError("scene-check contract keys mismatch")
+        for field, suffix in (("decision_path", (".yaml", ".yml", ".json")),
+                              ("coverage_path", (".json",))):
+            raw = contract[field]
+            if (not isinstance(raw, str) or not raw.startswith("CODE/work/")
+                    or ".." in Path(raw).parts
+                    or not raw.endswith(suffix)):
+                raise MatrixError(f"scene-check {field} is unsafe")
+            bound = root / raw
+            _reject_symlink_ancestors(bound, root)
+            if bound.is_symlink() or not bound.is_file():
+                raise MatrixError(f"scene-check {field} is missing or symbolic")
+            actual = hashlib.sha256(bound.read_bytes()).hexdigest()
+            if actual != contract[f"{field[:-5]}_sha256"]:
+                raise MatrixError(f"scene-check {field} hash mismatch")
+        invocation = contract["canonical_invocation"]
+        expected_prefix = ["python3", "-m", "CODE.leo_sim.scene_check",
+                           "--root", ".", "--contract", raw_path]
+        if (not isinstance(invocation, list) or len(invocation) != 7
+                or invocation != expected_prefix):
+            raise MatrixError("scene-check canonical_invocation is not frozen")
+        return {
+            "schema": schema,
+            "path": raw_path,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "canonical_invocation": invocation,
+            "bound_artifacts": {
+                contract["decision_path"]: contract["decision_sha256"],
+                contract["coverage_path"]: contract["coverage_sha256"],
+            },
+        }
+    if schema != "leo-sim-isl-pressure-decision/v1":
         raise MatrixError("unsupported post-analysis decision contract")
     invocation = contract.get("canonical_invocation")
     if (not isinstance(invocation, list) or len(invocation) < 5
@@ -610,9 +648,11 @@ def _load_decision_contract(
             "post-analysis canonical_invocation must be a safe python -m "
             "command followed by flag/value pairs")
     return {
+        "schema": schema,
         "path": raw_path,
         "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
         "canonical_invocation": invocation,
+        "bound_artifacts": {},
     }
 
 
@@ -668,17 +708,39 @@ def _render_runbook(
         "The output is evidence-bound analysis only; claim-support and value-gate review remain required.",
     ])
     if decision_contract is not None:
-        lines.extend([
-            "", "## Apply the frozen post-analysis decision", "",
-            "Run this persisted classifier only after the V2 analysis above "
-            "produces a verified manifest. Any verification or classification "
-            "error is a stop, never a no-pressure result.", "", "```bash",
-            *_render_invocation(decision_contract["canonical_invocation"]),
-            "```", "",
-            f"The command and subsequent action are frozen in "
-            f"`{decision_contract['path']}`. Do not substitute an in-memory "
-            "classification or change thresholds after observing results.",
-        ])
+        if decision_contract.get("schema") == "leo-sim-scene-check-contract/v1":
+            lines.extend([
+                "", "## Apply the frozen scene and coverage gates", "",
+                "Run scene_check once per verified natural-end result. The "
+                "contract freezes both the scene thresholds and the full "
+                "population coverage ledger; any binding or classification "
+                "error is a stop, never a clean-scene result.", "",
+            ])
+            for row in rows:
+                invocation = decision_contract["canonical_invocation"] + [
+                    "--run-dir", f"CODE/Results/{row['run_id']}",
+                    "--out", f"ANALYSIS/{request['experiment_id']}/scene-check/"
+                             f"{row['run_id']}.json",
+                ]
+                lines.extend(["```bash", *_render_invocation(invocation),
+                              "```", ""])
+            lines.extend([
+                f"The command and all bound inputs are frozen in "
+                f"`{decision_contract['path']}`. Do not substitute a different "
+                "decision, coverage report, or in-memory threshold.",
+            ])
+        else:
+            lines.extend([
+                "", "## Apply the frozen post-analysis decision", "",
+                "Run this persisted classifier only after the V2 analysis above "
+                "produces a verified manifest. Any verification or classification "
+                "error is a stop, never a no-pressure result.", "", "```bash",
+                *_render_invocation(decision_contract["canonical_invocation"]),
+                "```", "",
+                f"The command and subsequent action are frozen in "
+                f"`{decision_contract['path']}`. Do not substitute an in-memory "
+                "classification or change thresholds after observing results.",
+            ])
     return "\n".join(lines)
 
 
@@ -784,6 +846,10 @@ def compile_matrix_experiment(request_path: Path, out_dir: Path,
         "launcher_generated": False,
         "artifact_hashes": _artifact_hashes(out_dir, bound_paths),
     }
+    if decision_contract is not None:
+        report["artifact_hashes"][decision_contract["path"]] = \
+            decision_contract["sha256"]
+        report["artifact_hashes"].update(decision_contract["bound_artifacts"])
     _write_json(out_dir / "compile-report.json", report)
     return report
 
@@ -856,6 +922,9 @@ def verify_compiled_matrix(root: Path, experiment_dir: Path) -> tuple[str, dict[
     paths = ["request.json", "run-manifest.json", "analysis-request.json", "RUNBOOK.md",
              *(row["config_path"] for row in rows)]
     expected_hashes = _artifact_hashes(experiment_dir, paths)
+    if decision_contract is not None:
+        expected_hashes[decision_contract["path"]] = decision_contract["sha256"]
+        expected_hashes.update(decision_contract["bound_artifacts"])
     if report["artifact_hashes"] != expected_hashes:
         raise MatrixError("matrix compile report artifact hash map is incomplete or stale")
     for row in rows:
@@ -878,6 +947,7 @@ def verify_compiled_matrix(root: Path, experiment_dir: Path) -> tuple[str, dict[
     if decision_contract is not None:
         artifact_hashes[decision_contract["path"]] = \
             decision_contract["sha256"]
+        artifact_hashes.update(decision_contract["bound_artifacts"])
     # The report cannot hash itself recursively, but authorization must still
     # bind the report file as an artifact after recomputing its embedded map.
     report_relative = str((experiment_dir / "compile-report.json").resolve().relative_to(root))

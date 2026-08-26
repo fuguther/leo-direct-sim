@@ -106,7 +106,10 @@
     "paired_by": ["pairing_key"],
     "planned_contrasts": [
       {"name": "load10_a_minus_load10_b", "left_arm": "load10_a", "right_arm": "load10_b", "estimand": "paired descriptive duplicate difference"}
-    ]
+    ],
+    "decision_contract": {
+      "path": "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json"
+    }
   },
   "claim_boundary": {
     "can_claim": [

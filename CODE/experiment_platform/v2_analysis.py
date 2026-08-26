@@ -42,7 +42,9 @@ ANALYZER_FILES = (
     "CODE/experiment_platform/v2_analysis.py",
     "CODE/experiment_platform/isl_pressure.py",
     "CODE/experiment_platform/isl_pressure_decision.py",
+    "CODE/leo_sim/coverage.py",
     "CODE/leo_sim/metrics.py",
+    "CODE/leo_sim/scene_check.py",
 )
 GIT_COMMIT = re.compile(r"^[0-9a-f]{40}$")
 
