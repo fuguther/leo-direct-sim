@@ -1,0 +1,115 @@
+{
+  "taskId": "offload:leo-direct-sim:R2:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "Verdict: BLOCKED(审查未闭环,非代码缺陷)。F1(consecutive-window)与 F2(scene/coverage 绑定)在代码层面均已闭环:绝对锚定窗口索引+邻接打断(scene_check.py L559-676)、合同双哈希+路径约束+语义重验(scene_check.py L95-189、matrix.py L583-636、L849-852、L914-929),decision/coverage/compile-report/analysis-request 四处哈希与人口参数互一致。次要发现:candidate 链路选择非规范化(L654-698)、利用率 min(1.0) 截断掩盖异常(L640-641)、canonical_invocation 不绑定 run-dir(设计选择)、analyzer/execution-chain 身份不含 matrix.py/governance.py。未验证:governance 修复、两组测试、request.json、resolved 配置、coverage 深字段、所有哈希重算与测试运行(合同禁本地 Shell)。未使用 Pro-tier 路由;不得进入 finalization/authorization。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "先前 F1(consecutive-window 语义)已闭环:绝对 t=0 锚定整数窗口索引,缺失/低利用窗口真实打断 episode,候选报告取自最长 qualifying run,p95 队列等待要求同一直向链路为正;有三组专项反例测试覆盖。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/scene_check.py#L559-L572",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/scene_check.py#L654-L698",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/tests/test_scene_check.py#L487-L524",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/tests/test_scene_check.py#L354-L417"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "先前 F2(scene/coverage 绑定)已闭环:scene-check 合同 exact-keys+schema+canonical_invocation 前缀+decision/coverage 双 SHA-256+语义重验;matrix 编译与 verify 双侧把合同及 bound artifacts 纳入哈希图;coverage 与 decision 逐项互绑。已核实 source_sha256/candidate_regions/aggregation 三处一致,contract SHA 与 analysis-request 一致。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/scene_check.py#L95-L189",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/scene_check.py#L351-L383",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/matrix.py#L583-L636",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/matrix.py#L914-L929",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L2-L12",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/analysis-request.json#L33-L50"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "summary": "candidate 链路选择按 utilization 字典插入序取首个达标链路即 break;二值判定稳定,但多链路同时达标时报告的 candidate 身份依赖 ledger 顺序,非规范化,影响可复现性细节而非判定结论。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/scene_check.py#L654-L698"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "summary": "窗口利用率被 min(1.0, served/capacity) 截断,served>capacity 的证据异常会被静默掩盖而非 fail-loud。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/scene_check.py#L632-L641"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "canonical_invocation 固定为恰好 7 个 token,不含 --run-dir/--out:合同绑定阈值与 coverage,但不绑定作用于哪个 run 目录,run 绑定完全依赖 scene_check 运行期 receipt 验证。设计自洽(matrix 校验与 runbook 生成一致),但名称易误导,建议在合同中显式注明。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json#L7-L15",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/matrix.py#L621-L626",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/matrix.py#L719-L726"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "info",
+      "summary": "v2 analyzer 身份(ANALYZER_FILES)与 execution_chain_sha256 均不含 matrix.py/governance.py 本身;编译产物完整性靠 verify_compiled_matrix 重导出兜底,授权链对编译器代码版本的绑定是间接的。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/experiment_platform/v2_analysis.py#L41-L48",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L45-L52"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "本地 Agent 重跑 sha256sum 核对 scene-check-contract.json 的 decision_sha256/coverage_sha256 与 compile-report 哈希图是否与实际文件一致(本通道合同禁 Shell,未重算)",
+    "审读 CODE/leo_sim/governance.py 与 test_governance.py,核实 population-gravity 空 sites 接受逻辑是否 fail-closed 且无静默回退",
+    "运行 test_scene_check.py、test_matrix_contract.py、test_governance.py 全量测试并记录真实 passed/failed",
+    "核对 EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/request.json 与 request-sources 版本逐字段一致,并检查两份 resolved yaml 内容(哈希相同已知)",
+    "提取 coverage-audit.json 的 scan.horizon_s/step_s 与 summary.never_visible,确认与 scene-decision.yaml L7-10 一致",
+    "考虑小修:scene_check candidate 选择改为按排序链路序;利用率截断改为 >1+eps 时报 INVALID_EVIDENCE"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/scene_check.py#L559-L698",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/scene_check.py#L95-L189",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/matrix.py#L583-L656",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/matrix.py#L857-L969",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/experiment_platform/v2_analysis.py#L70-L95",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L1-L31",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json#L1-L16",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L2-L21",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L40-L104",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json#L110-L126"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "governance.py 的 population-gravity 空 sites 修复未审读(文件未读),无法确认 acceptance 第 1 条",
+    "test_matrix_contract.py 与 test_governance.py 未读,matrix/governance 行为的测试证据缺口",
+    "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/request.json 与两份 resolved yaml 未读,无法确认与 request-sources 逐字段一致",
+    "coverage-audit.json 为单行巨型 JSON,scan.horizon_s/step_s 与 summary.never_visible 深字段未能提取核对",
+    "所有 SHA-256(contract、compile-report、matrix 单元格身份)未能在本通道重算,合同禁止本地 Shell;须本地 Agent 复核",
+    "任何测试均未实际运行;以上结论全部基于静态审读",
+    "审查被会话强制终止,邮件级遗漏检查(反向假设搜索)未全部完成"
+  ]
+}
