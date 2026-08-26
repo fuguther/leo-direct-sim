@@ -1,0 +1,159 @@
+我先读取合同允许的核心代码与工件文件，进行静态冷审。继续读取 matrix、governance、v2_analysis 与相关测试。继续读取 EXPERIMENTS 目录工件与测试文件。现在读取三个测试文件与 resolved 配置。发现疑点：manifest 中 v2_analysis.py 的执行链哈希与实际文件不符。查证提交历史以定位时序。更新进度并核查 0c14610 相对编译提交 3ad1dbd 的实际改动范围。决定性验证：在 0c14610 树上实际运行 `verify_compiled_matrix` 与 `code_sha256` 重算（只读）。运行相关单测以确认行为级证据（只读性质，产物 gitignore）。核查完成。汇总裁决与发现。# Cold Review：EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01 @ 0c14610
+
+## 裁决：REQUEST_CHANGES
+
+一个 blocking 发现：已提交的编译包相对被审 commit 是**陈旧产物**，在其自身验证门下无法通过，不能进入 finalization/authorization。两条前次 major 发现（F1 consecutive-window 语义、F2 scene/coverage 绑定）在设计与代码层面均已闭合。
+
+---
+
+## 前次发现复核
+
+### 旧 F1（scene_check 连续窗口语义）— 已闭合
+
+- 固定窗口网格锚定 t=0、以绝对整数索引 k 为键，service 与 available 区间不会错位合并（`CODE/leo_sim/scene_check.py:559-572`）。
+- 连续性=相邻绝对索引（`k == previous_k + 1`）；缺失或低利用窗口会真正打断 episode，而不是被静默跳过（`scene_check.py:662-672`，含注释说明）。
+- candidate 取自最长合格 run（`best_run_windows`），不再被"最后一个较短 run"覆盖（`scene_check.py:658-676, 685`）。
+- p95 队等要求**同一条 directed link**，且报告值取自该 link（`scene_check.py:678-682, 696`）。
+- 行为级测试齐备：相邻性+best-run 报告（`test_scene_check.py:487-524`）、跨 link 窗口不算（434-484）、散点窗口不算（354-417）。我在被审 commit 的 checkout 上实跑 `test_scene_check.py / test_matrix_contract.py / test_governance.py`：**54/54 通过**。
+
+### 旧 F2（scene/coverage 绑定）— 已闭合
+
+- 新 `leo-sim-scene-check-contract/v1` 以哈希绑定 decision + coverage 并冻结 canonical_invocation（`scene-check-contract.json:1-16`）。
+- 四重绑定均验证过：加载时重算双哈希+双 schema（`scene_check.py:110-189`）；matrix 编译期校验契约键集、绑定工件哈希、精确 invocation（`matrix.py:601-636`）；契约与两个被绑工件进入 compile-report artifact hash map（`matrix.py:849-852`，实测 `compile-report.json:3-5` 与文件实际 sha256 一致）；`verify_compiled_matrix` 复核时重算（`matrix.py:925-929, 947-950`）；每次 scene_check 报告回显 contract_binding（`scene_check.py:940-948`）。
+- 数值交叉一致（实算验证）：decision population SHA `c5742d16…` == coverage `endpoint_source.source_sha256` == run-manifest `input_sha256`；coverage 16988 个 endpoint 全唯一、`never_visible=0` == `require_never_visible: 0`、horizon 3600/step 60 与 decision 一致；population_weighted_visible_fraction=0.8601。
+
+## 新发现
+
+### F1（blocking）：编译产物相对 0c14610 陈旧，授权门将 fail-closed 拒绝
+
+`run-manifest.json` 两个 cell 的 `execution_chain_sha256` 记录 `CODE/experiment_platform/v2_analysis.py = aa180e5e…`（`run-manifest.json:47`），但 0c14610 上该文件实际哈希为 `7b5e8418…`（aa180e5e 是 3ad1dbd/d1a5223 时的旧值）。`code_sha256` 同样陈旧：manifest 记 `ec629366…`（`run-manifest.json:40`），在 0c14610 树上重算 `receipt.code_sha256()` 得 `6cba632c…`。实测 `matrix.verify_compiled_matrix(root, EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01)` 在 0c14610 直接报 `MatrixError: matrix manifest cells do not derive from request`。
+
+时序（git log 证据）：编译发生在 3ad1dbd，0c14610 同一 commit 内同时修改了 `v2_analysis.py`、`matrix.py`、`scene_check.py` 与 EXP 工件——生产者在改完 analyzer 后未重编译。影响：不是安全漏洞（门正确地 fail-closed，任何东西都跑不起来），但**该 commit 上的包无法进入 finalization/authorization**；必须在新 clean SHA 重编译，而重编译会改变 manifest/analysis-request/compile-report/RUNBOOK 全部哈希，按"复核仅对 exact SHA 有效"的规则需要对新 SHA 重新复核。
+
+### F2（minor）：`observation` 决策参数是死参数
+
+`emission_end_s/observation_end_s` 只做形状校验（`scene_check.py:78, 307-317`），分类逻辑从不使用，也不与运行 resolved config 的 `duration_s: 30 / emission_end_s: 20` 交叉核对。本包数值恰好一致，但契约读者会误以为观测窗被执行。
+
+### F3（minor）：利用率上限静默截断
+
+`min(1.0, served_bits / capacity)`（`scene_check.py:640-641`）会把 served > capacity 的账本不一致静默压成 1.0，而非标记证据异常。
+
+### F4（minor）：v2 analyzer identity 未覆盖 receipt.py/trace.py
+
+`ANALYZER_FILES`（`v2_analysis.py:41-48`）含 scene_check/coverage/metrics/isl_pressure*，但分析语义依赖 `receipt_mod.verify_receipt_dir`；receipt.py 语义变更不会触发 analyzer identity 失配。
+
+### F5（info）：governance population-gravity 修复正确但报错文案未更新
+
+空 sites + `population_gravity` 正确放行（`governance.py:88-98`），并绑定 raster 输入哈希（`governance.py:120-136`），测试齐备（`test_governance.py:53-66, 222-241`）。仅报错信息（`governance.py:96-98`）未提及 population_gravity 豁免，纯文案。
+
+### F6（info）：matrix RUNBOOK 缺少授权命令
+
+单跑 runbook 含 `authorize_experiment.py` 命令（`governance.py:349-355`），matrix runbook（`matrix.py:691-744`，实际 `RUNBOOK.md:1-60`）只有 run-remote/analysis/scene_check 命令，授权步骤只有文字描述。scene_check 命令与冻结的 canonical_invocation 前缀一致（`RUNBOOK.md:45-49` 对 `scene-check-contract.json:7-15`），已核对。
+
+## 其他核对事实
+
+- 全部已提交工件哈希内部自洽且与实际文件一致：request `1db1953d…`、run-manifest `d7788f56…`、analysis-request `90d05a51…`、RUNBOOK `06ec3306…`、两个 resolved yaml 同为 `bae0c72d…`；scene-decision `9ad82a9a…`、coverage `b5631b2d…`、contract `574880a7…`（双向与 compile-report/analysis-request 一致）。
+- 两个 load10 cell 的 config_sha256/trace_identity_sha256/input_sha256/controlled_signature 完全相同，符合"确定性重复完整性检查"的 estimand；pairing/serial_fail_closed 契约由 `matrix.py:469-533` fail-closed 执行。
+- Claim boundary 保守且与 brief 一致：不得声称全局 ISL 压力阈值、load-response 曲线、首个压力点、真实用户流量等（`request.json:120-124`、`brief.json:39-43`）。
+- `finalization.json` 与 `authorization.json` 尚不存在，符合 brief `status: REVIEW` 的阶段状态。
+- **未使用任何 Pro-tier 路由**：本复核全程在 primary 通道完成；仓库工件中 routing.policy=hop、learning=none，无任何 pro-tier 引用。
+- 方法披露：我在被审 commit 的本地 checkout（HEAD 确认为 0c14610、工作区 clean）上做了只读哈希重算、运行了 `verify_compiled_matrix` 与 54 个单测；按合同这只是 RESULT_CANDIDATE，最终验收权属本地 Agent。
+
+## 结论
+
+包**不安全进入** finalization/authorization——不是因为设计有缺陷，而是因为被审 commit 上的编译产物与该 commit 的代码不一致，verify 门会（正确地）拒绝。修复路径明确：在最终 clean SHA 重跑 `compile_matrix_experiment`，对新 exact SHA 重新走独立复核。
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:R2",
+  "status": "EVIDENCE_READY",
+  "summary": "裁决 REQUEST_CHANGES。前次 F1（连续窗口语义）与 F2（scene/coverage 绑定）均已闭合：t=0 锚定绝对窗口键+相邻性打断+best-run 选取+同链路 p95；契约四重哈希绑定且实测全部一致。但发现 1 个 blocking 新问题：0c14610 同时修改了 v2_analysis.py/matrix.py/scene_check.py 与 EXP 编译工件，而 run-manifest 的 execution_chain_sha256（v2_analysis.py=aa180e5e，实际 7b5e8418）与 code_sha256（ec629366，重算 6cba632c）均为编译时点旧值；实测 verify_compiled_matrix 在该 commit 直接报 'matrix manifest cells do not derive from request'。授权门会 fail-closed 拒绝，无安全风险，但该包不能进入 finalization/authorization，须在最终 clean SHA 重编译并对新 exact SHA 重新复核。另有 4 个 minor/info（observation 死参数、利用率静默截断、analyzer identity 未含 receipt.py、runbook 缺授权命令）。54/54 相关单测通过。未使用 Pro-tier 路由。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "编译包相对被审 commit 陈旧：run-manifest cells 的 execution_chain_sha256 记录 v2_analysis.py=aa180e5e…（3ad1dbd/d1a5223 旧值），0c14610 实际为 7b5e8418…；code_sha256=ec629366… 与 0c14610 重算值 6cba632c… 不符。实测 matrix.verify_compiled_matrix 在该 commit 失败（cells do not derive from request），授权将 fail-closed。须在最终 clean SHA 重编译并重审。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L40-L52",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L45-L52",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/matrix.py#L901-L912",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/governance.py#L43-L52"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "minor",
+      "summary": "decision.observation（emission_end_s/observation_end_s）只做形状校验，分类从不使用，也不与运行 resolved config 交叉核对；本包数值恰好一致但契约无强制。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/scene_check.py#L307-L317",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L29-L31"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "summary": "ISL 窗口利用率被 min(1.0, served/capacity) 静默截断，served>capacity 的账本不一致不会被标记为证据异常。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/scene_check.py#L632-L641"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "summary": "v2 analyzer identity 的 ANALYZER_FILES 不含 receipt.py/trace.py，而分析语义依赖 receipt_mod.verify_receipt_dir；receipt 语义变更不会触发 analyzer identity 失配。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/experiment_platform/v2_analysis.py#L41-L48",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/experiment_platform/v2_analysis.py#L70-L95"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "governance population-gravity 豁免逻辑正确（空 sites 放行、raster 输入哈希绑定、测试齐备），仅报错文案未提及该豁免。前次 F1/F2 均已闭合。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/governance.py#L85-L98",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/governance.py#L120-L136",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/tests/test_governance.py#L53-L66"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "info",
+      "summary": "matrix RUNBOOK 缺具体 authorize_experiment 命令（单跑 runbook 有）；scene_check 命令与冻结 canonical_invocation 前缀一致已核对。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/RUNBOOK.md#L40-L60",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/matrix.py#L691-L744",
+        "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/governance.py#L349-L355"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "在最终 clean commit 上重跑 compile_matrix_experiment 重新生成本实验包（execution_chain_sha256/code_sha256 将刷新），对新 exact SHA 重新走冷启动独立复核后再 finalization/authorization",
+    "本地 Agent 复核本报告：重算 run-manifest.json 中 execution_chain_sha256 与 receipt.code_sha256()，并重跑 matrix.verify_compiled_matrix 确认 F1",
+    "本地 Agent 重跑 CODE/leo_sim/tests/{test_scene_check,test_matrix_contract,test_governance}.py 确认 54/54",
+    "可选后续小修：observation 死参数接入交叉核对或从契约删除；served>capacity 改为显式证据异常；ANALYZER_FILES 纳入 receipt.py/trace.py；matrix RUNBOOK 补授权命令"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/scene_check.py#L559-L572",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/scene_check.py#L653-L698",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/tests/test_scene_check.py#L487-L524",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/scene_check.py#L110-L189",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/matrix.py#L601-L636",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/matrix.py#L925-L950",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json#L1-L16",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L2-L12",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/analysis-request.json#L33-L50",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json#L114-L125",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/leo_sim/tests/test_matrix_contract.py#L175-L223",
+    "github://fuguther/leo-direct-sim/blob/0c14610d94934aca041aacbfe231e333308fef94/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json#L44-L53"
+  ],
+  "open_items": [
+    "authorize_experiment.py 不在本任务允许读取路径内；授权环节是否把 scene-check 契约哈希图完整纳入 authorization，仅由 test_matrix_contract.py#L241-L258 与 #L175-L223 间接证实，建议本地 Agent 直接核对 build_authorization 的 artifact 绑定",
+    "code_sha256 覆盖的文件清单由 receipt.py（不在允许路径）定义；实测重算值 6cba632c… 与 manifest 的 ec629366… 不符已确认陈旧，但具体由哪些文件差异导致需本地 Agent 确认",
+    "本 Worker 无法访问 CI 状态；0c14610 的 CI 绿与否需本地 Agent 核实",
+    "本 Worker 的哈希重算、verify_compiled_matrix 失败复现与 54/54 单测结果均为 RESULT_CANDIDATE，按合同须由本地 Agent 复检后方可作为最终验收依据"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
