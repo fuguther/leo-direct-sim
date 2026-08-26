@@ -85,12 +85,14 @@ def build_run_intent(request: dict, *, project_root: Path | None = None) -> dict
     demand_mode = resolved["config"]["demand"]["mode"]
     endpoint_cfg = resolved["config"]["endpoints"]
     auto_mlab = demand_mode == "mlab" and endpoint_cfg["mlab_auto"]
-    if demand_mode != "csv" and not auto_mlab and \
-            len(endpoint_cfg["sites"]) < 2:
-        # csv mode supplies rows directly; every other mode compiles traffic
-        # from these sites and needs traffic between distinct cells.  Fail at
-        # seal time so an intent cannot be marked green on ungenerable demand
-        # (trace compilation would fail later anyway).
+    raster_population = demand_mode == "population_gravity"
+    if demand_mode != "csv" and not auto_mlab and not raster_population and \
+                len(endpoint_cfg["sites"]) < 2:
+        # csv mode supplies rows directly, M-Lab auto selects measured cells,
+        # and population_gravity uses the complete positive-population raster
+        # as its endpoint universe. Other modes compile traffic from explicit
+        # sites and need traffic between distinct cells. Fail at seal time so
+        # an intent cannot be marked green on ungenerable demand.
         raise IntentError(
             "non-csv demand requires at least two endpoints.sites, unless "
             "demand.mode=mlab with endpoints.mlab_auto=true")
