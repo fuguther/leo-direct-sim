@@ -1,0 +1,123 @@
+{
+  "schema": "leo-sim-experiment-matrix-request/v1",
+  "experiment_id": "EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01",
+  "runtime_kind": "leo_sim_v2",
+  "work_finalization": "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/finalization.json",
+  "execution_policy": {"mode": "serial_fail_closed"},
+  "common_config": {
+    "scenario": {
+      "name": "population-global-1deg-pressure-bracket-r01",
+      "duration_s": 30,
+      "time_step_s": 0.1,
+      "num_satellites": 280,
+      "num_planes": 14,
+      "altitude_km": 600,
+      "inclination_deg": 98.6,
+      "min_elevation_deg": 25,
+      "geometry_epoch_s": 0,
+      "seed": 7
+    },
+    "endpoints": {"grid_deg": 0.25, "aggregation_deg": 1.0, "sites": []},
+    "demand": {
+      "mode": "population_gravity",
+      "population_path": "CODE/population_map/gpw_v4_population_count_rev11_2020_15_min.tif",
+      "offered_mbps": 10,
+      "nested_master_offered_mbps": 80,
+      "emission_end_s": 20,
+      "packet_bits": 1000000,
+      "source_population_exponent": 1,
+      "destination_population_exponent": 1,
+      "gravity_alpha": 1.25,
+      "gravity_d_floor_km": 100,
+      "temporal_model": "local_diurnal_cosine",
+      "utc_start_hour": 0,
+      "diurnal_amplitude": 0.5,
+      "diurnal_phase_h": 12,
+      "population_destination_sampler": "alias_rejection",
+      "destination_rejection_max_draws": 10000
+    },
+    "access": {
+      "unavailable_policy": "queue",
+      "slots_per_satellite": 4,
+      "uplink_rate_mbps": 100,
+      "downlink_rate_mbps": 100,
+      "uplink_queue_bits": 64000000,
+      "downlink_queue_bits": 64000000,
+      "hysteresis_deg": 0,
+      "min_dwell_s": 0,
+      "acquisition_delay_s": 0.1,
+      "association": "bbm"
+    },
+    "links": {"rate_model": "mcs", "ge_enabled": false},
+    "topology": {"recompute_interval_s": 1, "matching": "markovian"},
+    "control_plane": {
+      "enabled": true,
+      "advertise_interval_s": 1,
+      "ttl_s": 10,
+      "packet_bits": 8000,
+      "vis_k": 17
+    },
+    "routing": {"policy": "hop", "max_hops": 64, "contract": "C3", "learning_enabled": false},
+    "learning": {"algorithm": "none"},
+    "execution": {
+      "max_events": 20000000,
+      "max_entities": 2000,
+      "max_packets": 5000,
+      "available_capacity_interval_s": 1
+    },
+    "outputs": {"plotting": false}
+  },
+  "arms": [
+    {"arm_id": "load10_a", "config_overrides": {"demand": {"offered_mbps": 10}}, "intervention_paths": ["demand.offered_mbps"]},
+    {"arm_id": "load10_b", "config_overrides": {"demand": {"offered_mbps": 10}}, "intervention_paths": ["demand.offered_mbps"]}
+  ],
+  "cells": [
+    {
+      "run_id": "EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_a-s7",
+      "arm_id": "load10_a",
+      "phase": "non_learning",
+      "trace_seed": 7,
+      "learning_seed": null,
+      "pairing_key": "load10-s7",
+      "config_overrides": {},
+      "checkpoint_lineage": {"mode": "not_applicable", "source_run_id": null, "source_sha256": null}
+    },
+    {
+      "run_id": "EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_b-s7",
+      "arm_id": "load10_b",
+      "phase": "non_learning",
+      "trace_seed": 7,
+      "learning_seed": null,
+      "pairing_key": "load10-s7",
+      "config_overrides": {},
+      "checkpoint_lineage": {"mode": "not_applicable", "source_run_id": null, "source_sha256": null}
+    }
+  ],
+  "acceptance": {
+    "min_delivered_packets": 0,
+    "min_multisat_deliveries": 0,
+    "require_data_isl": false,
+    "require_control_delivery": false
+  },
+  "analysis": {
+    "analysis_id": "AN-GLOBAL-PRESSURE-BRACKET-R01-LOAD10-DUPLICATE",
+    "primary_metric": "delivery_rate",
+    "estimand": "duplicate-run consistency at one declared nested global load; not a load-response or algorithm comparison",
+    "paired_by": ["pairing_key"],
+    "planned_contrasts": [
+      {"name": "load10_a_minus_load10_b", "left_arm": "load10_a", "right_arm": "load10_b", "estimand": "paired descriptive duplicate difference"}
+    ]
+  },
+  "claim_boundary": {
+    "can_claim": [
+      "the two cells use the same population-proxy trace identity, seed and declared runtime contract",
+      "the duplicate pair provides an integrity and repeatability check for the 10 Mbps nested child trace",
+      "scene_check classification is applied only after receipt verification, the full population coverage ledger, and the frozen scene decision contract"
+    ],
+    "cannot_claim": [
+      "a global ISL pressure threshold or a load-response curve",
+      "that 10 Mbps is the first pressure point before the higher registered loads are checked",
+      "real subscriber traffic, universal global service, algorithm superiority, information value, reinforcement-learning value, or a new-algorithm contribution"
+    ]
+  }
+}
