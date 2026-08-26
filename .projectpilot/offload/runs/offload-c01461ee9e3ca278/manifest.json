@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "planId": "offload-c01461ee9e3ca278",
+  "relayManifest": {
+    "planId": "offload-c01461ee9e3ca278",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:SAT-R1",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "fcfc1e42a7780a36ab8452c1659211f3d4c19da8",
+        "paths": [
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+          "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/",
+          "CODE/leo_sim/scene_check.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/leo_sim/governance.py"
+        ],
+        "promptHash": "79c7eaca6f7c6d0251e4a61463bc6957cd8eb695af3cbdc30abbed5aa122966b"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:SAT-R1:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "fcfc1e42a7780a36ab8452c1659211f3d4c19da8",
+        "paths": [
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+          "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/",
+          "CODE/leo_sim/scene_check.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/leo_sim/governance.py"
+        ],
+        "promptHash": "ffc55a8c1697673edce663eda7273ea762f5c360e5d0a2836e50629c1ec514bf"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "c01461ee9e3ca278767a219a3608a927071a95361346bf3ab87a36fde895d69a"
+  },
+  "sourceBaseCommit": "fcfc1e42a7780a36ab8452c1659211f3d4c19da8",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:SAT-R1",
+      "promptHash": "79c7eaca6f7c6d0251e4a61463bc6957cd8eb695af3cbdc30abbed5aa122966b",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "fcfc1e42a7780a36ab8452c1659211f3d4c19da8",
+        "paths": [
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+          "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/",
+          "CODE/leo_sim/scene_check.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/leo_sim/governance.py"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:SAT-R1:independent_review",
+      "promptHash": "ffc55a8c1697673edce663eda7273ea762f5c360e5d0a2836e50629c1ec514bf",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "fcfc1e42a7780a36ab8452c1659211f3d4c19da8",
+        "paths": [
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+          "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/",
+          "CODE/leo_sim/scene_check.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/leo_sim/governance.py"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
