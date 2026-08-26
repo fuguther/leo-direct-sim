@@ -1,0 +1,109 @@
+{
+  "taskId": "offload:leo-direct-sim:SAT-R1:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "Verdict: PASS。280星/14面、16,988端点覆盖台账、load10 重复对、非学习相、分层场景门禁与 claim 边界在 commit fcfc1e42 的静态证据下科学自洽：配对身份完全一致（同 trace_seed=7、config_sha256、trace_identity、逐字节相同的 resolved 配置），matrix 配对合同与 non_learning 强制在代码层闭环，场景决策/覆盖台账经 scene-check-contract 按 hash 冻结并进入 compile-report artifact hash 图，篡改在授权前失败。无 blocking 发现；2 条 minor（brief 分类清单遗漏 DOWNLINK_LIMITED/NO_ISL_EXPOSURE；resolved 配置含未声明的 hotspot/learning.mode 默认值）+3 条 info。未使用任何 Pro-tier 路由（policy=hop, learning_enabled=false, algorithm=none），未声称任何 VM 结果。包可安全进入 finalization/authorization；hash 重算、finalization.json 与 kernel 语义留给本地闭环。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "minor",
+      "summary": "brief 交付物的闭合分类清单（4 类）遗漏分类器实际可达的 DOWNLINK_LIMITED 与 NO_ISL_EXPOSURE，文档口径不全",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json#L32-L38",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L47-L56",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L873-L891"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "minor",
+      "summary": "resolved 配置注入 request 未声明的默认值 demand.hotspot_fraction=0.1/hotspot_concentration=0.8 与 learning.mode=train；在 population_gravity/algorithm=none 下是否惰性超出允许读取范围，若不惰性需限定 population-proxy 口径",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/resolved/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_a-s7.leo-sim.yaml#L43-L44",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/resolved/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_a-s7.leo-sim.yaml#L70-L95",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/request.json#L113-L130"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "offered_mbps=10（nested master=80）的每端点/全局语义无法从允许文件判定；若为全局总量则 load10 物理上不可达 ISL 0.8 利用率门禁，括号设计仍稳健但需管理预期",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json#L21-L38",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/resolved/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_a-s7.leo-sim.yaml#L113-L114",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L24-L28"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "覆盖台账中 2,010/16,988（约11.8%）端点 first_visible_wait_s>0，抽样端点平均可见星数 0.65-0.80、可见时间占比约 0.5；load10 合法结果很可能是 ACCESS_LIMITED 而非进入 ISL 门禁",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json#L1",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L15-L18"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "run-manifest 的 config_sha256（canonical 对象 hash）与 compile-report 的 resolved 文件字节 hash 属两种口径，两 cell 各自一致，非矛盾",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L40-L44",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L9-L10"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "本地 Agent 在干净 checkout 上运行 verify_compiled_matrix 重算全部 hash（含 scene-decision/coverage/contract 三件绑定），确认与我记录的跨文件一致性相符",
+    "确认 CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/finalization.json 存在且其 artifact hash map 含 scene-decision/scene-check-contract/coverage-audit 三件后再授权",
+    "在 config.py/kernel.py 层面确认 demand.hotspot_fraction/hotspot_concentration 与 learning.mode=train 在 population_gravity+algorithm=none 下为惰性默认值；若不惰性，修订 population-proxy 口径并重新评审",
+    "明确 offered_mbps=10 在 nested 模式下的语义（每端点或全局），写入实验叙述以管理 load10 能否触及 ISL 门禁的预期",
+    "修订 brief.json L37 的闭合分类清单，补入 DOWNLINK_LIMITED 与 NO_ISL_EXPOSURE（或注明以 scene_check.SCENE_STATUSES 为准）",
+    "集齐 cold_start/satellite_drl/adversarial 三份独立复核回执后再走 finalization → authorization → clean-main 部署 → run-remote 链"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json#L8-L19",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json#L60-L61",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json#L74-L95",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json#L114-L125",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L40-L60",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L2-L21",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/analysis-request.json#L33-L50",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json#L3-L6",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L1-L31",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json#L1",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L156-L165",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L575-L599",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L386-L390",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L496-L532",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L601-L636",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/governance.py#L85-L98",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/governance.py#L29-L36",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/resolved/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_a-s7.leo-sim.yaml#L106-L116",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/resolved/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_a-s7.leo-sim.yaml#L157-L162",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json#L39-L50"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "字节级 hash 未本地重算（远程通道禁止 shell）：scene-decision 9ad82a9a…、coverage b5631b2d…、contract 574880a7…、request 1db1953d…、manifest a33c8b63…、resolved bae0c72d… 仅做跨文件一致性核对；影响：授权前的最终防篡改确认必须由本地完成",
+    "coverage-audit.json 为单行大文件，仅审阅头部与抽样端点行；scan/summary 块及 16,988 行完整性与无重复 id 未逐一核验（scene_check.py:376-382 在分析期机器强制，可缓解）",
+    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/finalization.json 不在本任务允许读取路径内，其存在性与 hash 图内容未知；影响：brief 验收第 3 条的最终闭环",
+    "demand.offered_mbps=10 的语义（每端点 vs 全局总量）及 hotspot_fraction=0.1、learning.mode=train 在 population_gravity/algorithm=none 下的惰性需 config.py/kernel.py 确认（超出允许路径）；影响：F2/F3 的定级与 population-proxy 口径",
+    "duplicate 对的有效性假设运行时不向 RNG 注入 run_id 等 per-run 熵；kernel.py 不可读，未验证"
+  ]
+}
