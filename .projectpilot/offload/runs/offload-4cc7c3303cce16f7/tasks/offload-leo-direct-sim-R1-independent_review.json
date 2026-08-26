@@ -1,0 +1,78 @@
+{
+  "contract": {
+    "allowedPaths": [
+      "CODE/leo_sim/governance.py",
+      "CODE/leo_sim/tests/test_governance.py",
+      "CODE/leo_sim/scene_check.py",
+      "CODE/leo_sim/matrix.py",
+      "CODE/experiment_platform/authorize_experiment.py",
+      "CODE/experiment_platform/v2_analysis.py",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+      "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+      "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+    ],
+    "metadata": {
+      "frozenPlanDigest": "sha256:a54f040c50ce06d12c098dd8ff9f68033905fac54e336508d9fa7a4321ef4842",
+      "digestVersion": "canonical-json-sha256-v1"
+    },
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R1:independent_review",
+    "title": "Cold review of global pressure bracket R01",
+    "goal": "Review the exact compiled matrix, resolved configs, scene decision contract, and the population-gravity governance fix. Verify that load10 is a legitimate first bounded diagnostic step, that the duplicate pair is not being misrepresented as a load contrast, and that no authorization or claim can bypass the receipt/coverage/scene gates.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "3ad1dbd467eaab69668209862f6a81da516fc22f",
+      "paths": [
+        "CODE/leo_sim/governance.py",
+        "CODE/leo_sim/tests/test_governance.py",
+        "CODE/leo_sim/scene_check.py",
+        "CODE/leo_sim/matrix.py",
+        "CODE/experiment_platform/authorize_experiment.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+        "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+        "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Return a clear PASS, REQUEST_CHANGES, or BLOCKED verdict.",
+      "Every finding must cite an exact repository path and line or JSON field, explain impact, and distinguish a blocker from a minor issue.",
+      "Explicitly state open_items and whether the package is safe to proceed to finalization/authorization."
+    ],
+    "requiredEvidence": [
+      "Exact file paths and line references",
+      "Observed matrix/scene-check contract facts",
+      "A check that no Pro-tier routing was used"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "34ab266165c6e451f1bcf3aa6eeb1571cff0cfeab7bf9266210c879785a1750b"
+}
