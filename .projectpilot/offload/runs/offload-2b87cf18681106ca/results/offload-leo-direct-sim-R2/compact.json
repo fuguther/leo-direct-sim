@@ -1,0 +1,109 @@
+{
+  "taskId": "offload:leo-direct-sim:R2",
+  "status": "EVIDENCE_READY",
+  "summary": "裁决 REQUEST_CHANGES。上轮 blocking（编译陈旧）在 1f6dc64 闭合：code_sha256=6cba632c 与 execution_chain v2_analysis.py=7b5e8418 均与现场重算一致，verify_compiled_matrix 实测 PASS，全链哈希自洽；首轮 F1（连续窗口语义）与 F2（scene/coverage 绑定）因代码零改动维持闭合，54/54 单测通过。新发现 1 个 major：verify_compiled_matrix 返回的授权 artifact 哈希表混入 3 个不存在的幻影路径（matrix.py:943-946 给根相对 CODE/work 契约键误加 experiment_dir 前缀），方向 fail-closed 但属授权承重脏数据且无测试覆盖。另有 5 条沿挂 minor/info（observation 死参数、利用率静默截断、analyzer identity 缺 receipt.py、governance 文案、runbook 缺授权命令）。建议修 matrix.py:943-946 后重编译并对新 SHA 复核。未使用 Pro-tier 路由。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "授权 artifact 哈希表混入 3 个幻影路径：matrix.py:943-946 对所有 expected_hashes 键加 experiment_dir 前缀，但 925-927 已含根相对 CODE/work 契约键，生成不存在的 EXPERIMENTS/EXP-.../CODE/work/... 路径；947-950 再补正确键，幻影与正确条目并存。实测 authorize_experiment._verified_experiment 返回 13 键中 3 键指向不存在文件。fail-closed 方向、非安全洞，但属授权承重脏数据且 matrix+scene 契约组合无测试覆盖（test_matrix_contract.py:241-258 fixture 不带契约）。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/matrix.py#L943-L950",
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/matrix.py#L922-L929",
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/matrix.py#L836-L852",
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/tests/test_matrix_contract.py#L241-L258"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "minor",
+      "summary": "decision.observation（emission_end_s/observation_end_s）为死参数：仅形状校验，不参与分类，也不与运行 resolved config 交叉核对（沿挂自上轮，代码未变）。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/scene_check.py#L307-L317",
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L29-L31"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "summary": "ISL 窗口利用率 min(1.0, served/capacity) 静默截断，served>capacity 的账本不一致不被标记为证据异常（沿挂）。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/scene_check.py#L632-L641"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "summary": "v2 analyzer identity 的 ANALYZER_FILES 未含 receipt.py/trace.py，receipt 语义变更不会触发 analyzer identity 失配（沿挂）。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/experiment_platform/v2_analysis.py#L41-L48",
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/experiment_platform/v2_analysis.py#L70-L95"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "governance population-gravity 豁免逻辑正确（空 sites 放行、raster 输入哈希绑定、测试齐备），仅报错文案未提豁免（沿挂）。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/governance.py#L85-L98",
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/governance.py#L120-L136",
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/tests/test_governance.py#L53-L66"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "info",
+      "summary": "matrix RUNBOOK 缺具体 authorize_experiment 命令（单跑 runbook 有）；scene_check 命令与冻结 canonical_invocation 前缀一致已核对（沿挂）。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/RUNBOOK.md#L40-L60",
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json#L7-L15",
+        "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/governance.py#L349-L355"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "修复 matrix.py:943-946：前缀化时跳过已是根相对的 CODE/work 键（或改用 947-950 的统一追加路径），并补一个带 scene 契约的 _verified_experiment 测试覆盖幻影键回归",
+    "修复后在最终 clean SHA 重跑 compile_matrix_experiment 重新生成本实验包，并对新 exact SHA 重新走冷启动独立复核",
+    "本地 Agent 复检本报告：在 1f6dc64 重跑 matrix.verify_compiled_matrix 与 authorize_experiment._verified_experiment，确认 PASS 及 13 键中 3 个幻影路径；重跑 54 个相关单测",
+    "本地 Agent 核对 build_authorization 对 artifact 哈希表的消费方式，确认幻影键在授权/篡改检查中的实际行为后再决定修复紧迫度"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L40-L52",
+    "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L2-L12",
+    "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/analysis-request.json#L33-L52",
+    "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/scene_check.py#L559-L572",
+    "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/scene_check.py#L653-L698",
+    "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/scene_check.py#L110-L189",
+    "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/matrix.py#L601-L636",
+    "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/leo_sim/tests/test_scene_check.py#L487-L524",
+    "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json#L1-L16",
+    "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json#L114-L125",
+    "github://fuguther/leo-direct-sim/blob/1f6dc640158cd4afcb4f46ff6752a4b7b69d028c/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json#L39-L53"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "authorize_experiment.py 不在允许读取路径内；build_authorization 是否逐条哈希 artifact 键（幻影键将触发 fail-closed）还是直接嵌入，需本地 Agent 核实——这决定 F1 在授权环节的实际表现为拒绝还是脏数据传播",
+    "本 Worker 无法访问 CI 状态；1f6dc64 的 CI 绿与否需本地 Agent 核实",
+    "coverage-audit.json 的 scan/summary 与 16988 endpoint 唯一性在 0c14610 轮已实算核对，1f6dc64 该文件哈希 b5631b2d 未变，结论继承；若本地 Agent 需要可一键重核",
+    "本 Worker 的哈希重算、verify/_verified_experiment 实测与 54/54 单测均为 RESULT_CANDIDATE，按合同须由本地 Agent 复检后方可作为最终验收依据"
+  ]
+}
