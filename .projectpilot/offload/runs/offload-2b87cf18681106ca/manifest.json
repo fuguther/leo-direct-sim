@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "planId": "offload-2b87cf18681106ca",
+  "relayManifest": {
+    "planId": "offload-2b87cf18681106ca",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:R2",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "1f6dc640158cd4afcb4f46ff6752a4b7b69d028c",
+        "paths": [
+          "CODE/leo_sim/scene_check.py",
+          "CODE/leo_sim/tests/test_scene_check.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/leo_sim/tests/test_matrix_contract.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/tests/test_governance.py",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+          "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+        ],
+        "promptHash": "98d19d6a8e426879ce178defa6da55e54bd43323d3e9d61b252d0d0d87f69675"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:R2:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "1f6dc640158cd4afcb4f46ff6752a4b7b69d028c",
+        "paths": [
+          "CODE/leo_sim/scene_check.py",
+          "CODE/leo_sim/tests/test_scene_check.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/leo_sim/tests/test_matrix_contract.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/tests/test_governance.py",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+          "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+        ],
+        "promptHash": "3dba4e28fe11aced133abae3255575c06ec1220cbebe2b3dd4bee19a62ff7db9"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "2b87cf18681106ca7f1dc646c53a3c820b193e1b156f305fdbcf7a30efc437ea"
+  },
+  "sourceBaseCommit": "1f6dc640158cd4afcb4f46ff6752a4b7b69d028c",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:R2",
+      "promptHash": "98d19d6a8e426879ce178defa6da55e54bd43323d3e9d61b252d0d0d87f69675",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "1f6dc640158cd4afcb4f46ff6752a4b7b69d028c",
+        "paths": [
+          "CODE/leo_sim/scene_check.py",
+          "CODE/leo_sim/tests/test_scene_check.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/leo_sim/tests/test_matrix_contract.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/tests/test_governance.py",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+          "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:R2:independent_review",
+      "promptHash": "3dba4e28fe11aced133abae3255575c06ec1220cbebe2b3dd4bee19a62ff7db9",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "1f6dc640158cd4afcb4f46ff6752a4b7b69d028c",
+        "paths": [
+          "CODE/leo_sim/scene_check.py",
+          "CODE/leo_sim/tests/test_scene_check.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/leo_sim/tests/test_matrix_contract.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/leo_sim/governance.py",
+          "CODE/leo_sim/tests/test_governance.py",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+          "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
