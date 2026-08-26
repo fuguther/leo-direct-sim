@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install dependencies (VM-aligned versions)
-        run: pip install pytest simpy==4.0.1 numpy==1.24.3 pyyaml
+        run: pip install pytest simpy==4.0.1 numpy==1.24.3 pyyaml pillow==12.0.0
       - name: Check document governance
         run: python scripts/check_document_governance.py --mode all
       - name: Run test suite

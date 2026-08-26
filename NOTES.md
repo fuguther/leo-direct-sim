@@ -7,6 +7,8 @@
 
 ## 2026-08-25：全球人口区域直连接入场景实施完成（DeepSeek Harness，PR_READY_FOR_INDEPENDENT_REVIEW）
 
+- 2026-08-26 PR #167 首次 CI 在干净 Ubuntu runner 上为 `13 failed, 745 passed, 3 skipped, 3 subtests passed`；13 项同源于 workflow 未安装运行时已使用的 Pillow（`ModuleNotFoundError: PIL`），不是 13 个独立仿真缺陷。最小修复仅在 CI 安装清单钉住 `pillow==12.0.0`；受影响的 platform/receipt/trace 测试本地复验（排除约 4 分钟的 scene smoke）为 `51 passed, 1 deselected`，最终状态以修复提交后的 GitHub required CI 为准。
+
 - 实施分支 `dsh/20260825-global-direct-access`，隔离 worktree `/private/tmp/leo-dsh-global-access-20260825`。
 - 基线 SHA=`0290e93946bedcca4cca04e8199dba43d5509f92`（= supervisor 指定的 origin/main）；最终 HEAD=`29f78fb4809a73149bc6fb880e276d53341b0a1f`。
 - 提交链（8 个，按任务）：`d77df0b` 配置契约冻结；`c21144b` 轨道相位块；`ec00dca` 全人口覆盖审计；`9bb7306` local-time 人口代理；`68713bc` alias 目的地采样；`f445a1f` 严格 nested 负载族；`b987578` 分层 scene 分类器；`29f78fb` 有界诊断 profile。
