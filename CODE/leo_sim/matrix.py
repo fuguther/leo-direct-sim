@@ -940,14 +940,21 @@ def verify_compiled_matrix(root: Path, experiment_dir: Path) -> tuple[str, dict[
         resolved = config_mod.load_config_file(str(config_path))
         if resolved != row["config"]:
             raise MatrixError(f"matrix resolved config changed: {row['run_id']}")
-    artifact_hashes = {
-        str((experiment_dir / raw).resolve().relative_to(root)): digest
-        for raw, digest in expected_hashes.items()
-    }
-    if decision_contract is not None:
-        artifact_hashes[decision_contract["path"]] = \
-            decision_contract["sha256"]
-        artifact_hashes.update(decision_contract["bound_artifacts"])
+    artifact_hashes: dict[str, str] = {}
+    for raw, digest in expected_hashes.items():
+        # The compiled matrix artifacts are relative to the experiment
+        # directory; decision/coverage contracts are already project-root
+        # relative CODE/work paths.  Do not prepend EXPERIMENTS/<id> to the
+        # latter or authorization receives phantom artifact paths.
+        if raw.startswith(("CODE/", "ANALYSIS/", "EXPERIMENTS/")):
+            candidate = (root / raw).resolve()
+            key = raw
+        else:
+            candidate = (experiment_dir / raw).resolve()
+            key = str(candidate.relative_to(root))
+        if not candidate.is_file():
+            raise MatrixError(f"matrix artifact is missing: {raw}")
+        artifact_hashes[key] = digest
     # The report cannot hash itself recursively, but authorization must still
     # bind the report file as an artifact after recomputing its embedded map.
     report_relative = str((experiment_dir / "compile-report.json").resolve().relative_to(root))

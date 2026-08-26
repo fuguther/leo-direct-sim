@@ -217,6 +217,12 @@ def test_matrix_binds_scene_decision_and_coverage_artifacts(tmp_path):
     assert "CODE.leo_sim.scene_check" in runbook
     assert "CODE/Results/EXP-LEO-V2-MATRIX-control-s42" in runbook
     matrix.verify_compiled_matrix(tmp_path, out)
+    _, authorization_artifacts, _ = authorize_experiment._verified_experiment(
+        tmp_path, out)
+    assert all((tmp_path / raw).is_file()
+               for raw in authorization_artifacts)
+    assert not any(raw.startswith(f"EXPERIMENTS/{request['experiment_id']}/CODE/")
+                   for raw in authorization_artifacts)
 
     coverage_path.write_text("tampered\n", encoding="utf-8")
     with pytest.raises(matrix.MatrixError, match="hash mismatch"):
