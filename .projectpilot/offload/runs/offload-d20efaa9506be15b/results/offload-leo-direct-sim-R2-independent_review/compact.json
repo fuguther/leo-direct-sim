@@ -1,0 +1,130 @@
+{
+  "taskId": "offload:leo-direct-sim:R2:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "Verdict: PASS(附强制本地复核)。fcfc1e42 相对 1f6dc64 仅 5 文件变更(compare API 证实):matrix.py 授权产物路径规范化+存在性检查、test_matrix_contract.py 幻影路径回归、3 个再生 JSON。三个先前 finding 全部 CLOSED:F1 连续窗口语义(scene_check.py 未变)、F2 scene/coverage 绑定(三层互绑未变)、F3 授权幻影路径(根相对 CODE/work key 不再被加 EXPERIMENTS/ 前缀,缺失即 fail-closed,附存在性回归断言 matrix.py L943-957、test L220-225)。再生哈希内部一致(manifest a33c8b63 互指 compile-report 与 analysis-request);code_sha256 随 matrix.py 变更合理变化(6cba632c→daf695af),佐证其覆盖 leo_sim 运行时;execution_chain(v2_analysis=7b5e8418)、合同/覆盖/RUNBOOK/resolved 哈希全部不变。未用 Pro-tier 路由;可进 finalization/authorization,但须本地先跑 verify_compiled_matrix+pytest 并补齐独立复核。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "先前 F1(consecutive-window 语义)维持 CLOSED:scene_check.py 在 fcfc1e42 未变更,绝对锚定窗格、邻接打断、best-run 报告、同链路 p95 修复与三组反例测试保持有效。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L559-L698",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/tests/test_scene_check.py#L487-L524"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "先前 F2(scene/coverage 绑定)维持 CLOSED:合同双 SHA-256+路径约束+语义重验(scene_check 加载期)、matrix 编译/验证双侧 bound artifacts 绑定、篡改回归测试均未变。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L95-L189",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L583-L636",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/tests/test_matrix_contract.py#L175-L219"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "先前授权路径 finding 本轮 CLOSED:verify_compiled_matrix 的授权产物表现在区分根相对(CODE//ANALYSIS//EXPERIMENTS/ 前缀)与实验目录相对 key,CODE/work 合同与覆盖产物不再被冠以 EXPERIMENTS/<exp>/ 幻影前缀;新增 is_file() 存在性检查 fail-closed;新增回归断言授权产物全部真实存在且无幻影前缀。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L943-L957",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/tests/test_matrix_contract.py#L220-L225"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "再生矩阵哈希内部一致:analysis-request.matrix_manifest_sha256=a33c8b63… 与 compile-report 的 run-manifest 哈希互指;compile-report 的 analysis-request 哈希同步为 7a0ec0d9…;code_sha256 随本 commit 唯一代码变更(matrix.py)合理更新为 daf695af…;execution_chain 中 v2_analysis.py 保持 7b5e8418… 未变;合同/覆盖/RUNBOOK/resolved 哈希全部不变。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/analysis-request.json#L49-L52",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L2-L12",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L40-L52"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "授权产物路径分类使用 CODE//ANALYSIS//EXPERIMENTS/ 前缀启发式;当前 key 集合封闭(固定产物名+resolved/ 配置+经 CODE/work 强校验的合同路径)故安全,但属隐式约定,未来新增产物类型时可能误分类。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L943-L957"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "summary": "沿用:candidate 链路按字典插入序取首个达标链路即 break,多链路同达标时报告身份依赖 ledger 顺序,非规范化(不影响二值判定)。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L654-L698"
+      ]
+    },
+    {
+      "id": "F7",
+      "severity": "minor",
+      "summary": "沿用:窗口利用率 min(1.0, …) 截断使 served>capacity 的异常证据被静默掩盖而非 fail-loud。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L632-L641"
+      ]
+    },
+    {
+      "id": "F8",
+      "severity": "minor",
+      "summary": "沿用:governance.py 拒绝文案只提 csv/mlab,未提 population_gravity 豁免(纯文案,无行为影响)。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/governance.py#L89-L98"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "在干净 fcfc1e42 checkout 上运行 verify_compiled_matrix(授权内置步骤),确认 manifest cells 与授权产物路径从当前树重导出通过——本通道禁 Shell,哈希重算是此闭环的前提",
+    "本地执行 shasum -a 256 核对 code_sha256=daf695af… 与 v2_analysis.py=7b5e8418… 是否匹配干净树内容",
+    "运行 PYTHONPATH=. pytest -q 全量(重点 test_scene_check/test_matrix_contract/test_governance),记录真实 passed/failed",
+    "本地核对 coverage-audit.json endpoints 行数==16988 且 name 无重复",
+    "按 brief.json 流程补齐 cold_start/satellite_drl/adversarial 三份独立复核与 finalization.json 后再授权",
+    "小修候选(独立 PR):candidate 选择排序化;利用率 >1+eps 报 INVALID_EVIDENCE;governance 文案补 population_gravity"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L943-L960",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/tests/test_matrix_contract.py#L217-L228",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L559-L698",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L95-L189",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/governance.py#L84-L136",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L37-L96",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/analysis-request.json#L33-L52",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L2-L21",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json#L1-L16",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L1-L31"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "本通道合同禁止本地 Shell:code_sha256=daf695af…、v2_analysis.py=7b5e8418…、coverage/decision/contract 哈希未能对干净树重算;verify_compiled_matrix 授权时 fail-closed 兜底,但必须本地实跑一次确认",
+    "任何测试未在本通道实际运行;结论基于静态审读+git compare 证据(compare API 证实仅 5 文件变更,未变更文件继承前轮逐行审读)",
+    "coverage-audit.json endpoints 行数==16988 与 name 唯一性须本地计数(远端已核实 summary/scan 标记值与 decision 一致)",
+    "receipt.py 不在允许路径内,code_sha256 精确组成未核验(本轮 diff 间接佐证其覆盖 CODE/leo_sim/matrix.py)",
+    "finalization.json 与三份独立复核 receipt 不在被审范围(brief.status=REVIEW 阶段预期),授权前必须齐"
+  ]
+}
