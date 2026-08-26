@@ -1,0 +1,200 @@
+我先读取合同允许的 R01 工作包文件与实验目录清单。已读工作包与请求矩阵。接下来读实验目录产物与三个核心代码文件。现在读三个核心代码文件，核对门槛语义与 fail-closed 逻辑。再读 matrix.py，并核验 coverage-audit.json 的聚合计数。所有合同允许的文件已读完（9 项全部）。覆盖账本用 `Grep count_matches` 核验：`"name":"G1:` 恰好 16,988 次，全库无 `"never_visible":true`。以下为完整审查报告。
+
+---
+
+# Satellite/DRL 研究设计审查：EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01
+
+**审查对象**:commit `fcfc1e42a7780a36ab8452c1659211f3d4c19da8` 上的 WP-LEO-V2-GLOBAL-PRESSURE-BRACKET R01 工作包与已编译矩阵
+**审查角色**:satellite_drl（独立 reviewer，非 producer `producer:codex-global-pressure`)
+**结论**:**PASS — 可进入 finalization；授权仍需 finalization 被接受且 cold_start/adversarial 两个角色复核通过。本审查不声明任何 VM 结果。**
+
+## 1. 场景与总体架构成立
+
+- 280 星 / 14 面 / 600 km / 98.6° / min_elevation 25° / seed 7 在请求与两个 resolved 配置中完全一致（`EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/request.json` L158-169;resolved YAML L163-174)。
+- 流量是 population_gravity + GPWv4 栅格代理，非实测用户流量；这一点在 brief 上下文、decision 合同、claim 边界三处一致声明，且 `scene_check` 把 `traffic.provenance == population_proxy` 作为硬校验（`CODE/leo_sim/scene_check.py` L262-263;`scene-decision.yaml` L11-14)。
+- `population_gravity` 接受空 `sites` 列表由治理层显式放行，与 brief 验收第 1 条吻合（`CODE/leo_sim/governance.py` L88-98)。
+
+## 2. 覆盖账本与 16,988 端点
+
+- `coverage-audit.json` 恰好含 16,988 个端点条目，与 `scene-decision.yaml` L6 的 `candidate_regions: 16988` 及账本 `endpoint_source.candidate_regions` 一致；逐行 `never_visible` 全为 false（全库 grep 无 `"never_visible":true`)，满足 `require_never_visible: 0`(L10)。
+- L1 层在分析时重算：源 SHA、聚合度、候选数、审计窗口、summary 与去重后的账本长度逐项比对，任一不符即 COVERAGE_INCOMPLETE(`scene_check.py` L351-383)。账本与 decision 的哈希在编译期进入 artifact 哈希图、在 scene_check 加载期再验（`compile-report.json` L2-12;`scene_check.py` L160-165)。
+
+## 3. load10 重复对与 seed/pair 身份
+
+- 两个 cell 的 `trace_seed=7`、`pairing_key=load10-s7`、`phase=non_learning`、`learning_seed=null`、`checkpoint_lineage=not_applicable` 完全相同（request.json L51-80)。
+- 配对的同一性不只是声明：两臂 resolved 配置字节级相同（compile-report.json L9-10 同一 SHA),`config_sha256`、`controlled_signature`、`trace_identity_sha256` 在 manifest 中逐对相同（run-manifest.json L40-60 对 L75-95)。
+- 矩阵编译器机器执行配对合同：每个 pairing_key 恰好一对、共享 trace_seed/phase/controlled_signature，且禁止覆盖随机身份路径（`CODE/leo_sim/matrix.py` L496-515、L27-31、L296-298)。
+- 科学定位正确：这是一个确定性重复完整性检查，estimand 明确写"不是负载响应或算法对比"(request.json L13、L17-24),claim 边界禁止把 load10 称为"第一个压力点"(L87-91)。
+
+## 4. 压力实验 vs 接入/路由/下行失败的分层区分
+
+分类顺序封闭且单调：`INVALID_EVIDENCE → COVERAGE_INCOMPLETE → ACCESS_LIMITED → ROUTE_LIMITED → DOWNLINK_LIMITED → NO_ISL_EXPOSURE → NO_ISL_PRESSURE → ISL_PRESSURE_CANDIDATE`(scene_check.py L873-891)。只有在接入（L3)、路由（L4)、下行（L5）全部干净后才评估 ISL 压力，且：
+
+- 分母封闭：access 类对 offered,route/downlink 类对 admitted(scene_check.py L86-88、L793-860);
+- 零 admitted 直接落 ACCESS_LIMITED，不评估路由（L798-801、L828-831);
+- L6 要求同一有向链路 ≥2 个相邻 1s 窗利用率 ≥0.8 且该链路 p95 排队时延为正；缺分母的窗被显式记录且不能凑数，缺口会打断"连续"(L633-641、L653-699);`available_capacity_interval_s: 1` 与 `window_s: 1.0` 对齐（request.json L136-141;scene-decision.yaml L24-28)。
+- 与未来 RL 对比的隔离干净：`non_learning` 相位在编译期强制 algorithm=none、无 checkpoint、无 learning seed(matrix.py L386-390);routing 为 `hop`/C3/`learning_enabled: false`(request.json L152-157)。**未使用任何 Pro-tier/学习型路由。**
+
+## 5. Reproducibility 与 fail-closed 状态
+
+- run_id 由 canonical 规则派生并强校验（matrix.py L416-420、L432-433);execution_chain 六个授权/部署/启动文件被 SHA 绑定（governance.py L29-52;run-manifest.json L45-52)。
+- 编译产物处于 `COMPILED_REVIEW_REQUIRED`、`execution_authorized: false`、`launcher_generated: false`(compile-report.json L13-20)；实验目录无 `authorization.json`,R01 目录无 `finalization.json`——与本阶段（审阅前）一致，无任何已跑 VM 的证据或声明。
+- brief 验收第 3 条（decision/coverage/contract 进入 finalization 哈希图、篡改必失败）在编译期已预绑定，verify 路径重算全部身份（matrix.py L857-976)。
+
+## 6. 发现（均非阻塞）
+
+- **F6(minor)**：验收门槛全零（`min_delivered_packets: 0`、`require_data_isl: false` 等，run-manifest.json L28-33)——退化运行也能拿到 natural-end receipt。缓解：scene_check 分层会把它们分类为 ACCESS_LIMITED/NO_ISL_EXPOSURE 而非压力。建议在 RUNBOOK 或 brief 中明示"acceptance 有意为 0，判定权在 scene_check"，避免后续读者误读。
+- **F7(minor)**：覆盖审计窗口（horizon 3600 s / step 60 s,scene-decision.yaml L7-9）与运行观察窗（30 s,L29-31）不同；账本证明的是小时级几何可见性，不证明 30 s 窗内可见。窗内不可见会以 access/route 失败形式被 L3/L4 捕获，设计上自洽，但报告撰写时不得把覆盖账本引为"观察窗内覆盖"。
+- **F8(info)**:30 s 时长下 ISL 压力情节最多约 30 个窗，`min_consecutive=2` 可达成；但若未来要在 R02 抬负载，建议保持 window/分母采样对齐这一约定不变。
+
+## 7. Unknowns（不影响本 verdict，但须声明）
+
+- `coverage-audit.json` 为单行巨文件，其 `scan`/`summary` 聚合字段值我未能逐字读取（行截断）；计数类事实已用 occurrence 级 grep 独立核验（16,988 条、零 never_visible:true),summary 一致性由 scene_check L1 重算兜底。
+- `authorize_experiment.py`、`v2_analysis.py`、`run-remote.sh` 不在我的允许读取清单内，其内部行为仅以 `execution_chain_sha256` 绑定，未审。
+- `nested_master_offered_mbps: 80` 的嵌套采样语义只能从声明侧确认， kernel/trace 实现不在允许路径内。
+
+## 8. 候选回执（agent-review-receipt/v2,RESULT_CANDIDATE)
+
+```json
+{
+  "schema": "agent-review-receipt/v2",
+  "work_id": "WP-LEO-V2-GLOBAL-PRESSURE-BRACKET",
+  "revision": 1,
+  "reviewed_commit": "fcfc1e42a7780a36ab8452c1659211f3d4c19da8",
+  "reviewer_role": "satellite_drl",
+  "reviewer_id": "reviewer:kimi-web-offload-satellite-drl-r01",
+  "verdict": "PASS",
+  "safe_to_proceed": "finalization_only",
+  "pro_tier_routing_used": false,
+  "vm_results_claimed": false,
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L40-L60",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L2-L20",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L873-L891",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L386-L390",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L496-L515",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L1-L31",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/request.json#L81-L91"
+  ],
+  "blocking_findings": [],
+  "unknowns": [
+    "coverage-audit.json scan/summary aggregate fields not directly readable (single-line file); counts verified independently, L1 recompute is the enforcement point",
+    "authorize_experiment.py / v2_analysis.py / run-remote.sh outside allowed read scope; bound only via execution_chain_sha256",
+    "nested_master_offered_mbps=80 nesting semantics confirmed at declaration level only"
+  ],
+  "required_revision": null,
+  "notes": "Design is coherent for the first bounded pressure classification. PASS covers design/finalization readiness only; authorization still requires accepted finalization plus cold_start and adversarial reviews per brief.review_roles."
+}
+```
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:SAT-R1",
+  "status": "EVIDENCE_READY",
+  "summary": "Verdict: PASS (design-level). 280-sat/14-plane population-proxy scene, 16,988-endpoint coverage ledger (occurrence-verified, zero never_visible), byte-identical load10 duplicate pair (same trace_seed/config/controlled_signature/trace_identity hashes), machine-enforced pairing and non-learning contracts, layered classifier that strictly separates ACCESS/ROUTE/DOWNLINK failure from ISL pressure, and claim boundaries excluding real traffic/global service/RL value are all coherent and fail-closed. No Pro-tier routing used (routing.policy=hop, learning_enabled=false, algorithm=none). Package is at COMPILED_REVIEW_REQUIRED with execution_authorized=false everywhere; no VM results exist or are claimed. Safe to proceed to finalization; authorization remains gated on accepted finalization plus cold_start and adversarial reviews. Two minor findings: all-zero acceptance thresholds (mitigated by scene_check layers) and coverage-audit window (3600s) vs run window (30s) mismatch that must not be misread as in-window coverage.",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "info",
+      "summary": "Pair/seed identity is machine-verified: both load10 cells share trace_seed=7, pairing_key=load10-s7, identical config_sha256, controlled_signature and trace_identity_sha256; resolved configs are byte-identical.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L40-L60",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L75-L95",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L9-L10"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "info",
+      "summary": "Non-learning separation is enforced at compile time: non_learning phase requires algorithm=none, no learning seed, not_applicable lineage; no Pro-tier/learning routing anywhere (policy=hop, contract C3, learning_enabled=false).",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L386-L390",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/request.json#L142-L157"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "Claim boundaries correctly exclude real subscriber traffic, universal global service, algorithm superiority, RL value, and premature first-pressure-point claims; provenance=population_proxy is a hard-checked contract field.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/request.json#L81-L91",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json#L39-L43",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L262-L263"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "Layered classifier cleanly separates access/route/downlink failure from ISL pressure: closed status order, closed offered/admitted denominators, zero-admitted short-circuit to ACCESS_LIMITED, and L6 requiring >=2 consecutive same-directed-link 1s windows at >=0.8 utilization plus positive p95 queue delay, with missing denominators and window gaps unable to fabricate candidacy.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L873-L891",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L633-L699",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L24-L31"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "Coverage ledger holds exactly 16,988 endpoint entries (occurrence count) matching candidate_regions=16988, with zero never_visible:true rows, satisfying require_never_visible=0; L1 recomputes source SHA, aggregation, count, window and ledger length and fails closed.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json#L1",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L3-L10",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L351-L383"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "summary": "Cell acceptance thresholds are all zero (min_delivered_packets=0, require_data_isl=false, require_control_delivery=false): a degenerate run can still earn a natural-end verified receipt. Mitigated because scene_check layers classify such runs as ACCESS_LIMITED/NO_ISL_EXPOSURE rather than pressure, but the intent (acceptance deliberately weak, decision power in scene_check) should be stated in RUNBOOK/brief to prevent misreading.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L28-L33",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L798-L801"
+      ]
+    },
+    {
+      "id": "F7",
+      "severity": "minor",
+      "summary": "Coverage audit window (horizon 3600s, step 60s) differs from the 30s run/observation window; the ledger proves hourly geometric visibility, not in-window visibility. In-window invisibility is caught as access/route failure by L3/L4, but reports must not cite the coverage ledger as in-window coverage.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L7-L10",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/request.json#L158-L169"
+      ]
+    },
+    {
+      "id": "F8",
+      "severity": "info",
+      "summary": "Scene decision, coverage audit and scene-check contract are hash-bound into the compile artifact map and re-verified at analysis time; tamper fails before authorization, satisfying brief acceptance #3. Compile state is COMPILED_REVIEW_REQUIRED with execution_authorized=false and no launcher generated; no VM run exists or is claimed.",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L2-L20",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L849-L852",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L160-L165"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "本地 Agent 对本候选回执做最终验证（重算 coverage-audit/run-manifest 哈希，确认与 compile-report 绑定一致）后将 satellite_drl 角色回执落盘为 agent-review-receipt/v2",
+    "推进 finalization.json 编制，将 scene-decision/coverage-audit/scene-check-contract 纳入 finalization 哈希图；授权前等待 cold_start 与 adversarial 两角色复核",
+    "在 RUNBOOK 或 brief 补一句：acceptance 门槛有意为 0，判定权在 scene_check 分层合同（对应 F6）",
+    "后续分析/论文表述中，覆盖账本只引用为小时级几何覆盖，不得引为 30s 观察窗内覆盖（对应 F7）"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json#L39-L53",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L1-L31",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json#L1",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/request.json#L51-L91",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L26-L103",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L1-L21",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L718-L892",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L380-L420",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/governance.py#L77-L98"
+  ],
+  "open_items": [
+    "coverage-audit.json 的 scan/summary 聚合字段因单行巨文件截断未能逐字读取；端点计数(16,988)与 never_visible 事实已用 occurrence 级搜索独立核验,summary 一致性由 scene_check L1 重算兜底",
+    "authorize_experiment.py / v2_analysis.py / run-remote.sh 不在合同允许读取路径内,仅经 execution_chain_sha256 绑定,授权门内部行为未审",
+    "nested_master_offered_mbps=80 的嵌套子迹语义仅在声明层确认,kernel/trace 实现不在允许路径内",
+    "本结果为 RESULT_CANDIDATE:最终验证权、回执落盘与 finalization/authorization 决定均保留给本地 Agent"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
