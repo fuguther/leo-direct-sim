@@ -1,0 +1,143 @@
+{
+  "taskId": "offload:leo-direct-sim:R1",
+  "status": "EVIDENCE_READY",
+  "summary": "Verdict: REQUEST_CHANGES. 编译矩阵自洽（compile-report 全部 artifact 哈希经重算吻合），load10 双臂为同配置同种子的诚实重复对，estimand 与 cannot_claim 明确禁止误述为负载对比或首个压力点；路由为 hop/C3、学习关闭，无 Pro-tier/学习路由；population-gravity governance 修复（governance.py raster 豁免）最小且有回归测试。唯一 major：scene-decision.yaml 未被任何哈希链绑定——compile-report artifact_hashes、analysis-request、RUNBOOK 均不含它，matrix decision_contract 通道（仅接受 leo-sim-isl-pressure-decision/v1 JSON）与之不兼容，授权后改 ISL 阈值不会触发任何重算失败，'frozen scene decision contract' 目前仅是流程承诺。授权/分析链本身无绕过（三角复核+全量重算+外部 witness+claim-gate）。授权前需闭合该绑定缺口。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "scene-decision.yaml 未进入任何哈希绑定：compile-report 仅含 6 个编译产物、analysis-request 无 decision_contract、RUNBOOK 无冻结决策节；matrix.py 的 decision_contract 机制只接受 leo-sim-isl-pressure-decision/v1 JSON，无法绑定 scene-decision/v1 YAML。授权后篡改 isl_pressure 阈值不可被重算发现，claim_boundary 的 'frozen scene decision contract' 无机制支撑。授权前必须闭合。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L2-L8",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/analysis-request.json#L1-L17",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/leo_sim/matrix.py#L206-L217",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/leo_sim/matrix.py#L583-L616",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/RUNBOOK.md#L29-L38"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "minor",
+      "summary": "population_gravity 豁免把'需求可生成'的 seal-time 保证后移：raster 只验文件哈希不验内容，candidate_regions=16988 真实性完全依赖运行后 scene_check L1；退化 raster 会顺利 seal，属可接受的 fail-loud 延迟但应记录。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/leo_sim/governance.py#L85-L98",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/leo_sim/governance.py#L120-L136",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/leo_sim/scene_check.py#L252-L284",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/leo_sim/tests/test_governance.py#L53-L66"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "summary": "acceptance 门全零（min_delivered_packets=0、两个 require 均 false），运行'通过验收'不携带结果信号；全部诊断权重在 scene_check。与 claim_boundary 一致，但后续不得把 acceptance passed 当作证据。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L28-L33",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json#L96-L101"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "重复对定位诚实：双臂 override 相同、config_sha256/controlled_signature/trace seed 全同，estimand 明确为 duplicate-run consistency 且 cannot_claim 禁止负载曲线/首个压力点表述；实质是确定性/管线完整性检查而非随机重复性检查，表述准确。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L43-L60",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L78-L95",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json#L102-L122"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "无 Pro-tier/学习路由：routing.policy=hop、contract=C3、learning_enabled=false、learning.algorithm=none、checkpoint 全 null；matrix 合同禁止 arm 覆盖 stochastic identity 路径且 non_learning 相位拒绝任何学习配置。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/resolved/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_a-s7.leo-sim.yaml#L157-L162",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/resolved/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_a-s7.leo-sim.yaml#L70-L95",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/leo_sim/matrix.py#L296-L298",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/leo_sim/matrix.py#L386-L390"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "info",
+      "summary": "scene-decision 与编译配置数值一致：population.source_sha256=c5742d16… 与两 cell 的 input_sha256 相同；aggregation_deg/emission_end_s/observation_end_s/temporal_model 均与 resolved config 对齐。candidate_regions=16988 待 coverage 审计产生后由 L1 核验。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L3-L14",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L29-L31",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L53-L59",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/resolved/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_a-s7.leo-sim.yaml#L40-L56"
+      ]
+    },
+    {
+      "id": "F7",
+      "severity": "info",
+      "summary": "授权/claim 无绕过：授权要求 finalization 重算匹配+ACCEPTED+cold_start/satellite_drl/adversarial 三角复核，verify_authorization 全量重算比对；v5 证据强制外部 launch witness，legacy 只能降级 LEGACY_INTERNAL_ONLY；claim-gate.json 固化 cannot_claim。scene_check 先 receipt 验证后分层分类，篡改合同即 INVALID_EVIDENCE。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/experiment_platform/authorize_experiment.py#L82-L90",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/experiment_platform/authorize_experiment.py#L464-L490",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/experiment_platform/v2_analysis.py#L143-L180",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/experiment_platform/v2_analysis.py#L700-L708",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/leo_sim/scene_check.py#L765-L784"
+      ]
+    },
+    {
+      "id": "F8",
+      "severity": "info",
+      "summary": "编译产物自洽：compile-report 的 artifact_hashes 与 request_sha256 经本地重算全部吻合，目录无 authorization.json，状态 COMPILED_REVIEW_REQUIRED/execution_authorized=false 正确；request-sources 与编译 request.json 语义一致（仅格式化差异）。",
+      "sourceRole": null,
+      "qualityGrade": null,
+      "recommendation": null,
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L2-L17",
+        "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L98-L103"
+      ]
+    }
+  ],
+  "recommendedActions": [
+    "授权前闭合 F1：将 scene-decision.yaml 纳入授权时强制重算核验的绑定集（扩展 verify_compiled_matrix/authorize_experiment 或经 finalization 反向校验），否则弱化 claim_boundary 中 'frozen scene decision contract' 表述",
+    "本地重跑 pytest CODE/leo_sim/tests/test_governance.py 与矩阵合同测试，确认 dc2ae4e 修复在当前 HEAD 全绿",
+    "本地重算 CODE/population_map/gpw_v4_population_count_rev11_2020_15_min.tif 的 sha256 并与 manifest input_sha256/scene-decision source_sha256（c5742d16…）三方核对",
+    "复核 v2_serial_gate.py 的 fail-closed 实现（本次合同未授权读取该文件）",
+    "澄清 nested_master_offered_mbps=80 的嵌套子迹语义，确认 load10 确为 80 Mbps 主迹的有界子样本后再进入 finalization"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json#L70-L122",
+    "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L26-L103",
+    "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L1-L18",
+    "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L1-L31",
+    "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/leo_sim/governance.py#L85-L136",
+    "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/leo_sim/matrix.py#L469-L533",
+    "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/leo_sim/scene_check.py#L610-L644",
+    "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/experiment_platform/authorize_experiment.py#L404-L461",
+    "github://fuguther/leo-direct-sim/blob/3ad1dbd467eaab69668209862f6a81da516fc22f/CODE/experiment_platform/v2_analysis.py#L561-L596"
+  ],
+  "files": [],
+  "verification": [],
+  "openItems": [
+    "finalize_decision.py 与未来 finalization.json 是否把 scene-decision.yaml 纳入授权强制核验集——不在允许路径且文件尚不存在，决定 F1 处置方式",
+    "v2_serial_gate.py 串行门禁实现未授权读取，仅经 execution_chain_sha256 哈希绑定，fail-closed 语义未独立核验",
+    "nested_master_offered_mbps=80 嵌套语义在 kernel/trace 层，不在允许路径，无法核验 load10 为 80 Mbps 主迹的有界嵌套子样本",
+    "candidate_regions=16988 须待 coverage 审计产物产生后由 scene_check L1 复核；raster 文件本体哈希须本地重算确认",
+    "'Pro-tier routing' 若指 offload 平台模型路由档位而非仿真 routing policy，仓库内无取证手段（仿真侧已证 hop/C3、学习关闭）"
+  ]
+}
