@@ -309,8 +309,19 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
     }.get(mode, "synthetic")
     if manifest.get("provenance") != expected_provenance:
         errors.append("manifest provenance mismatch")
+    # rng_streams: reconstruct the exact config feature branch.  Legacy and
+    # non-nested traces keep only the canonical demand mapping; nested
+    # traces select the canonical demand and nested-filter entries from the
+    # full mapping.  Nothing is guessed from the manifest itself.
     expected_rng = rng_mod.stream_mapping(
         resolved_cfg["scenario"]["seed"], ["demand"])
+    if (resolved_cfg["demand"].get("mode") == "population_gravity"
+            and resolved_cfg["demand"].get("nested_master_offered_mbps")
+            is not None):
+        full_rng = rng_mod.stream_mapping(
+            resolved_cfg["scenario"]["seed"], rng_mod.STREAM_NAMES)
+        expected_rng = {"demand": full_rng["demand"],
+                        "nested_filter": full_rng["nested_filter"]}
     if manifest.get("rng_streams") != expected_rng:
         errors.append("manifest RNG stream mapping mismatch")
     input_sha = manifest.get("input_sha256")
@@ -492,6 +503,18 @@ def _validate_manifest(manifest: dict, resolved_cfg: dict | None,
                 "amplitude": float(resolved_cfg["demand"]["diurnal_amplitude"]),
                 "phase_h": float(resolved_cfg["demand"]["diurnal_phase_h"]),
             }
+        elif (mode == "population_gravity"
+              and resolved_cfg["demand"]["temporal_model"]
+              == "local_diurnal_cosine"):
+            # the opt-in local-solar-time population proxy carries an exact
+            # four-key value; anything else is a tampered transform
+            expected_diurnal = {
+                "amplitude": float(resolved_cfg["demand"]["diurnal_amplitude"]),
+                "phase_h": float(resolved_cfg["demand"]["diurnal_phase_h"]),
+                "utc_start_hour": float(
+                    resolved_cfg["demand"]["utc_start_hour"]),
+                "clock": "source_local_solar_time_proxy",
+            }
         if transform.get("diurnal") != expected_diurnal:
             errors.append("provenance diurnal transform mismatch")
     return errors
@@ -672,7 +695,14 @@ def _validate_v2_event_authority(errors: list[str], ledgers: dict,
         if not isinstance(pair, list) or len(pair) != 2:
             errors.append(f"satellite_ingress pid {pid_s} has no authoritative fate")
             continue
-        if pair[0] in {"ACCESS_REJECTED", "ACCESS_QUEUE_OVERFLOW"}:
+        # ACCESS_REJECTED is always pre-ingress by construction (the kernel
+        # rejects at emission before any uplink admission), so an ingress
+        # event for it is contradictory.  ACCESS_QUEUE_OVERFLOW is NOT here:
+        # the historical kernel reuses that fate for BOTH the source uplink
+        # (pre-ingress) and the destination downlink (post-ingress) queue —
+        # the real ingress event is the authoritative split, and the scene
+        # checker classifies by it (access-limited vs downlink-limited).
+        if pair[0] == "ACCESS_REJECTED":
             errors.append(f"satellite_ingress pid {pid_s} has terminal access fate {pair[0]}")
         if pid_s in trace_bits and event.get("bits") != trace_bits[pid_s]:
             errors.append(f"satellite_ingress bits != trace bits for {pid_s}")
@@ -1073,8 +1103,11 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
             errors.append("v5 congestion_metrics_contract must be v2")
         if receipt.get("trace_manifest_contract") != trace_mod.TRACE_MANIFEST_SCHEMA:
             errors.append("v5 trace_manifest_contract must be manifest/v2")
-        if receipt.get("trace_identity_contract") != config_mod.TRACE_IDENTITY_VERSION:
-            errors.append("v5 trace_identity_contract must be identity/v2")
+        if receipt.get("trace_identity_contract") not in {
+                config_mod.TRACE_IDENTITY_VERSION_V2,
+                config_mod.TRACE_IDENTITY_VERSION}:
+            errors.append(
+                "v5 trace_identity_contract must be identity/v2 or identity/v3")
     else:
         expected_receipt_keys = RECEIPT_KEYS_V5
         metrics_contract = METRICS_V2_SCHEMA
@@ -1222,19 +1255,46 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
                 and manifest.get("schema") != trace_mod.TRACE_MANIFEST_SCHEMA_V1:
             errors.append("legacy receipt requires trace manifest contract v1")
         errors.extend(_validate_manifest(manifest, resolved_cfg, resolved_version))
-    # trace identity: rebuilt from resolved config + manifest input hash
+    # trace identity: rebuilt from resolved config + manifest input hash.
+    # The builder is chosen ONLY from the persisted trace_identity_contract
+    # (v5 receipts): identity/v2 or identity/v3, never guessed from the
+    # current code version or the manifest schema.  Legacy receipts keep the
+    # unchanged identity/v1 path.
     if manifest is not None and resolved_cfg is not None and resolved_version:
         from . import config as _config
-        identity_fn = (_config.legacy_trace_identity_sha256
-                       if manifest.get("schema") == trace_mod.TRACE_MANIFEST_SCHEMA_V1
-                       else _config.trace_identity_sha256)
-        expected_identity = identity_fn(
-            {"version": resolved_version, "config": raw_resolved_cfg},
-            manifest.get("input_sha256", ""))
-        if manifest.get("trace_identity_sha256") != expected_identity:
-            errors.append("manifest trace identity != resolved config trace scope")
-        if receipt.get("trace_identity_sha256") != expected_identity:
-            errors.append("receipt trace identity mismatch")
+        if receipt_schema == RECEIPT_SCHEMA:
+            contract = receipt.get("trace_identity_contract")
+            if contract == _config.TRACE_IDENTITY_VERSION_V2:
+                identity_fn = _config.trace_identity_sha256_v2
+            elif contract == _config.TRACE_IDENTITY_VERSION:
+                identity_fn = _config.trace_identity_sha256
+            else:
+                # the v5 gate above already reported the invalid contract;
+                # never fall through to a guess
+                identity_fn = None
+            if identity_fn is None:
+                errors.append(
+                    "v5 trace identity cannot be recomputed: unknown "
+                    "trace_identity_contract")
+            else:
+                expected_identity = identity_fn(
+                    {"version": resolved_version, "config": raw_resolved_cfg},
+                    manifest.get("input_sha256", ""))
+                if manifest.get("trace_identity_sha256") != expected_identity:
+                    errors.append(
+                        "manifest trace identity != resolved config trace scope")
+                if receipt.get("trace_identity_sha256") != expected_identity:
+                    errors.append("receipt trace identity mismatch")
+        else:
+            # legacy receipt: identity/v1 stays unchanged
+            expected_identity = _config.legacy_trace_identity_sha256(
+                {"version": resolved_version, "config": raw_resolved_cfg},
+                manifest.get("input_sha256", ""))
+            if manifest.get("trace_identity_sha256") != expected_identity:
+                errors.append(
+                    "manifest trace identity != resolved config trace scope")
+            if receipt.get("trace_identity_sha256") != expected_identity:
+                errors.append("receipt trace identity mismatch")
 
     # 3. code and dependency identity (deps are REQUIRED, exact key set;
     # DDQN runs additionally pin tensorflow)

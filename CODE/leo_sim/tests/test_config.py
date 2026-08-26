@@ -159,3 +159,193 @@ def test_ge_dwell_rejects_bool():
         config.resolve_config({"links": {"ge_enabled": True,
                                          "ge_gsl": {"mean_good_s": True,
                                                     "mean_bad_s": 1.0}}})
+
+
+# ---------------------------------------------------------------- Task 1:
+# global populated-land direct-access scene configuration contract.
+
+NEW_DEMAND_FIELDS = (
+    "temporal_model",
+    "utc_start_hour",
+    "population_destination_sampler",
+    "destination_rejection_max_draws",
+    "nested_master_offered_mbps",
+)
+
+
+def test_global_scene_defaults_resolve():
+    cfg = config.resolve_config()["config"]
+    assert cfg["scenario"]["geometry_epoch_s"] == 0.0
+    for field in NEW_DEMAND_FIELDS:
+        assert field in cfg["demand"]
+    assert cfg["demand"]["temporal_model"] == "constant"
+    assert cfg["demand"]["utc_start_hour"] == 0.0
+    assert cfg["demand"]["population_destination_sampler"] == "scan"
+    assert cfg["demand"]["destination_rejection_max_draws"] == 10_000
+    assert cfg["demand"]["nested_master_offered_mbps"] is None
+
+
+def _population_gravity_demand(**extra):
+    """Minimal demand group that passes population_gravity semantics."""
+    return {"mode": "population_gravity",
+            "population_path": "/fake/pop.tif",
+            **extra}
+
+
+def test_geometry_epoch_s_must_be_finite_ge_zero():
+    for bad in (-1.0, -1, float("-inf")):
+        with pytest.raises(config.ConfigError, match="geometry_epoch_s"):
+            config.resolve_config({"scenario": {"geometry_epoch_s": bad}})
+    ok = config.resolve_config({"scenario": {"geometry_epoch_s": 0.0}})
+    assert ok["config"]["scenario"]["geometry_epoch_s"] == 0.0
+    ok = config.resolve_config({"scenario": {"geometry_epoch_s": 1234.5}})
+    assert ok["config"]["scenario"]["geometry_epoch_s"] == 1234.5
+    # bool is an int subclass and must fail the numeric type check
+    with pytest.raises(config.ConfigError, match="geometry_epoch_s"):
+        config.resolve_config({"scenario": {"geometry_epoch_s": True}})
+
+
+def test_temporal_model_must_be_known_enum():
+    for bad in ("solar", "step", "", 1, True):
+        with pytest.raises(config.ConfigError, match="temporal_model"):
+            config.resolve_config({"demand": {"temporal_model": bad}})
+    for good in ("constant", "local_diurnal_cosine"):
+        assert config.resolve_config(
+            {"demand": _population_gravity_demand(
+                temporal_model=good)})["config"]["demand"][
+            "temporal_model"] == good
+
+
+def test_local_diurnal_cosine_only_valid_with_population_gravity():
+    base = {"demand": {"temporal_model": "local_diurnal_cosine"}}
+    for mode in ("uniform", "gravity", "hotspot", "diurnal", "mlab"):
+        with pytest.raises(config.ConfigError, match="local_diurnal_cosine"):
+            config.resolve_config({"demand": {"mode": mode,
+                                              "temporal_model": "local_diurnal_cosine"}})
+    # burst/csv only reach the temporal-model gate once their own
+    # prerequisites are satisfied
+    with pytest.raises(config.ConfigError, match="local_diurnal_cosine"):
+        config.resolve_config({"demand": {"mode": "burst",
+                                          "burst_start_s": 1.0,
+                                          "burst_duration_s": 2.0,
+                                          "temporal_model": "local_diurnal_cosine"}})
+    with pytest.raises(config.ConfigError, match="local_diurnal_cosine"):
+        config.resolve_config({"demand": {"mode": "csv", "csv_path": "/tmp/in.csv",
+                                          "temporal_model": "local_diurnal_cosine"}})
+
+
+def test_utc_start_hour_range_and_mode_gating():
+    for bad in (-0.1, 24.0, 24, float("nan")):
+        with pytest.raises(config.ConfigError, match="utc_start_hour"):
+            config.resolve_config({"demand": {"utc_start_hour": bad}})
+    for ok in (0.0, 11.5, 23.999):
+        cfg = config.resolve_config(
+            {"demand": _population_gravity_demand(utc_start_hour=ok)})
+        assert cfg["config"]["demand"]["utc_start_hour"] == ok
+    # only population_gravity may set a non-zero UTC start hour
+    for mode in ("uniform", "gravity", "diurnal", "mlab"):
+        with pytest.raises(config.ConfigError, match="utc_start_hour"):
+            config.resolve_config({"demand": {"mode": mode,
+                                              "utc_start_hour": 5.0}})
+    # zero start hour is the default and is not special-cased per mode
+    for mode in ("uniform", "diurnal"):
+        cfg = config.resolve_config({"demand": {"mode": mode,
+                                                "utc_start_hour": 0.0}})
+        assert cfg["config"]["demand"]["utc_start_hour"] == 0.0
+
+
+def test_population_destination_sampler_enum_and_mode_gating():
+    for bad in ("uniform", "nearest", "", 1):
+        with pytest.raises(config.ConfigError,
+                           match="population_destination_sampler"):
+            config.resolve_config(
+                {"demand": {"population_destination_sampler": bad}})
+    for mode in ("uniform", "gravity", "diurnal", "mlab"):
+        with pytest.raises(config.ConfigError,
+                           match="population destination sampler"):
+            config.resolve_config(
+                {"demand": {"mode": mode,
+                            "population_destination_sampler": "alias_rejection"}})
+    # scan is the default and is valid everywhere
+    for mode in ("uniform", "gravity"):
+        cfg = config.resolve_config(
+            {"demand": {"mode": mode,
+                        "population_destination_sampler": "scan"}})
+        assert cfg["config"]["demand"]["population_destination_sampler"] == "scan"
+    cfg = config.resolve_config(
+        {"demand": _population_gravity_demand(
+            population_destination_sampler="alias_rejection")})
+    assert cfg["config"]["demand"][
+        "population_destination_sampler"] == "alias_rejection"
+
+
+def test_destination_rejection_max_draws_boundary():
+    for bad in (0, -1, True):
+        with pytest.raises(config.ConfigError,
+                           match="destination_rejection_max_draws"):
+            config.resolve_config(
+                {"demand": {"destination_rejection_max_draws": bad}})
+    ok = config.resolve_config(
+        {"demand": {"destination_rejection_max_draws": 1}})
+    assert ok["config"]["demand"]["destination_rejection_max_draws"] == 1
+
+
+def test_nested_master_load_mode_gating_and_ordering():
+    for mode in ("uniform", "gravity", "diurnal"):
+        with pytest.raises(config.ConfigError, match="nested master"):
+            config.resolve_config(
+                {"demand": {"mode": mode,
+                            "nested_master_offered_mbps": 80.0}})
+    # master must be >= the child offered load
+    with pytest.raises(config.ConfigError, match="nested_master_offered_mbps"):
+        config.resolve_config(
+            {"demand": _population_gravity_demand(
+                offered_mbps=20.0, nested_master_offered_mbps=10.0)})
+    cfg = config.resolve_config(
+        {"demand": _population_gravity_demand(
+            offered_mbps=20.0, nested_master_offered_mbps=20.0)})
+    assert cfg["config"]["demand"]["nested_master_offered_mbps"] == 20.0
+    cfg = config.resolve_config(
+        {"demand": _population_gravity_demand(
+            offered_mbps=5.0, nested_master_offered_mbps=80.0)})
+    assert cfg["config"]["demand"]["nested_master_offered_mbps"] == 80.0
+    # bool must fail the numeric-or-null type check
+    with pytest.raises(config.ConfigError, match="nested_master_offered_mbps"):
+        config.resolve_config(
+            {"demand": _population_gravity_demand(
+                nested_master_offered_mbps=True)})
+
+
+def test_geometry_epoch_s_excluded_from_trace_identity():
+    """geometry changes geometry, not trace bytes: it must never enter any
+    trace identity payload."""
+    cfg = config.resolve_config({"scenario": {"geometry_epoch_s": 4321.0}})
+    for payload in (config.trace_identity_payload(cfg),
+                    config.trace_identity_payload_v2(cfg)):
+        assert "geometry_epoch_s" not in payload
+        assert "geometry_epoch_s" not in payload["scenario"]
+
+
+def test_v3_payload_has_new_demand_fields_v2_strips_exactly_them():
+    cfg = config.resolve_config({"demand": _population_gravity_demand()})
+    v3 = config.trace_identity_payload(cfg)
+    v2 = config.trace_identity_payload_v2(cfg)
+    assert v3["identity_version"] == "leo-sim-trace-identity/v3"
+    assert v2["identity_version"] == "leo-sim-trace-identity/v2"
+    for field in NEW_DEMAND_FIELDS:
+        assert field in v3["demand"]
+        assert field not in v2["demand"]
+    # the v2 builder removes exactly those fields and nothing else
+    assert set(v2["demand"]) == set(v3["demand"]) - set(NEW_DEMAND_FIELDS)
+    assert v3["scenario"] == v2["scenario"]
+    assert v3["endpoints"] == v2["endpoints"]
+    assert v3["execution"] == v2["execution"]
+    assert v3["config_version"] == v2["config_version"]
+
+
+def test_v2_and_v3_identity_hashes_differ():
+    cfg = config.resolve_config({"demand": _population_gravity_demand()})
+    assert config.trace_identity_sha256_v2(cfg) != \
+        config.trace_identity_sha256(cfg)
+    assert len(config.trace_identity_sha256_v2(cfg)) == 64
+    assert len(config.trace_identity_sha256(cfg)) == 64

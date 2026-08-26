@@ -20,6 +20,12 @@ STREAM_NAMES = (
     "routing",
     "control",
     "monitor",
+    # Task 6: nested-family member filter.  MUST stay appended at the END:
+    # numpy SeedSequence.spawn(n) children are positional, so the first seven
+    # streams keep their exact child indices 0..6 and their generated values
+    # byte-for-byte (spawn(1)[0] state == spawn(8)[0] state); the filter is
+    # child 7 and never reuses child 1 (ge_gsl).
+    "nested_filter",
 )
 
 

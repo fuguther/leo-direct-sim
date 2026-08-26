@@ -117,3 +117,66 @@ def test_memoized_geometry_delegates_for_scripted_providers():
     assert m.isl_available(0, 1, 2.0) is True
     assert m.next_isl_change(0, 1, 0.0, 10.0) is None
     assert m.elevation_deg(0, 0.0, 0.0, 1.0) == 90.0
+
+
+# ---------------------------------------------------------------- Task 2:
+# explicit deterministic orbital phase block (geometry_epoch_s).
+
+def test_epoch_shifts_time_invariantly():
+    """setting an epoch x must equal shifting the query time by x, for the
+    full geometry surface that derives from subpoint/ecef."""
+    base = model.Constellation(num_satellites=12, num_planes=3,
+                               altitude_km=550, inclination_deg=53)
+    shifted = model.Constellation(num_satellites=12, num_planes=3,
+                                  altitude_km=550, inclination_deg=53,
+                                  geometry_epoch_s=1234.5)
+    for sat_id in (0, 1, 11):
+        for t in (0.0, 37.25, 10_000.0):
+            assert shifted.ecef(sat_id, t) == base.ecef(sat_id, t + 1234.5)
+            assert shifted.subpoint(sat_id, t) == base.subpoint(
+                sat_id, t + 1234.5)
+
+
+def test_epoch_zero_bit_equivalent_to_old_default():
+    """epoch 0 must be bit-identical to the historical default geometry."""
+    c0 = model.Constellation(num_satellites=12, num_planes=3, altitude_km=550,
+                             inclination_deg=53, geometry_epoch_s=0.0)
+    c_old = model.Constellation(num_satellites=12, num_planes=3,
+                                altitude_km=550, inclination_deg=53)
+    for sat_id in (0, 5, 11):
+        # fixed expected subpoints derived from the pre-epoch implementation
+        expected = c_old.subpoint(sat_id, 0.0)
+        assert c0.subpoint(sat_id, 0.0) == expected
+        assert c0.ecef(sat_id, 42.5) == c_old.ecef(sat_id, 42.5)
+        assert c0.positions(7.0) == c_old.positions(7.0)
+
+
+def test_epoch_validates_finite_nonnegative():
+    for bad in (-1.0, float("-inf"), float("nan")):
+        with pytest.raises(ValueError, match="geometry_epoch_s"):
+            model.Constellation(num_satellites=12, num_planes=3,
+                                altitude_km=550, inclination_deg=53,
+                                geometry_epoch_s=bad)
+    # a non-numeric value fails closed too (float() conversion inside the
+    # same guard), never silently coerces to an epoch
+    with pytest.raises(ValueError):
+        model.Constellation(num_satellites=12, num_planes=3,
+                            altitude_km=550, inclination_deg=53,
+                            geometry_epoch_s="x")
+
+
+def test_epoch_applies_through_all_derived_geometry():
+    """elevation/visibility/ISL queries all derive from subpoint, so a
+    nonzero epoch must shift them exactly as a time shift would."""
+    base = model.Constellation(num_satellites=12, num_planes=3,
+                               altitude_km=550, inclination_deg=53)
+    shifted = model.Constellation(num_satellites=12, num_planes=3,
+                                  altitude_km=550, inclination_deg=53,
+                                  geometry_epoch_s=600.0)
+    lat, lon, _ = base.subpoint(3, 100.0)
+    assert shifted.ground_visible(3, lat, lon, 100.0) == base.ground_visible(
+        3, lat, lon, 100.0 + 600.0)
+    assert shifted.slant_range_km(3, lat, lon, 100.0) == pytest.approx(
+        base.slant_range_km(3, lat, lon, 100.0 + 600.0))
+    assert shifted.isl_available(2, 7, 100.0) == base.isl_available(
+        2, 7, 100.0 + 600.0)

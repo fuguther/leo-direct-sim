@@ -5,6 +5,27 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-25：全球人口区域直连接入场景实施完成（DeepSeek Harness，PR_READY_FOR_INDEPENDENT_REVIEW）
+
+- 2026-08-26 PR #167 首次 CI 在干净 Ubuntu runner 上为 `13 failed, 745 passed, 3 skipped, 3 subtests passed`；13 项同源于 workflow 未安装运行时已使用的 Pillow（`ModuleNotFoundError: PIL`），不是 13 个独立仿真缺陷。最小修复仅在 CI 安装清单钉住 `pillow==12.0.0`；受影响的 platform/receipt/trace 测试本地复验（排除约 4 分钟的 scene smoke）为 `51 passed, 1 deselected`，最终状态以修复提交后的 GitHub required CI 为准。
+
+- 实施分支 `dsh/20260825-global-direct-access`，隔离 worktree `/private/tmp/leo-dsh-global-access-20260825`。
+- 基线 SHA=`0290e93946bedcca4cca04e8199dba43d5509f92`（= supervisor 指定的 origin/main）；最终 HEAD=`29f78fb4809a73149bc6fb880e276d53341b0a1f`。
+- 提交链（8 个，按任务）：`d77df0b` 配置契约冻结；`c21144b` 轨道相位块；`ec00dca` 全人口覆盖审计；`9bb7306` local-time 人口代理；`68713bc` alias 目的地采样；`f445a1f` 严格 nested 负载族；`b987578` 分层 scene 分类器；`29f78fb` 有界诊断 profile。
+- 本次实施文件集（base..HEAD，共 20 个）：`config.py coverage.py kernel.py model.py receipt.py rng.py scene_check.py trace.py trace_family.py profiles/population_global_1deg_diagnostic.yaml` + 9 个测试文件；无 `.docx`/RL/Q0/learning/mentor/实验请求/授权/结果目录改动。
+- 基线测试：`686 passed, 1 skipped, 3 subtests passed`（Task 0 记录）。最终全量 CI：`760 passed, 1 skipped, 3 subtests passed`；含唯一 5 Mbps 本地 smoke（约 4-5 分钟）。
+- 文档治理 `--mode all`：`0 errors, 0 warnings`。
+- 关键差异（相对计划）：
+  - runner 身份：实际执行 harness 为 npm 安装的 DeepSeek Harness `0.1.1-rc.2`（源码 checkout 不携带 git 提交元数据），计划钉的 `0.1.0-rc.8@141eb6fe` 仅存在于 `/Users/lge/deepseek-harness` 的干净源码 checkout。经 Codex 裁决：接受差异并继续，回执如实记录、不声称 runner 等价。
+  - Task 7 停止条件：计划要求按 `satellite_ingress` 事件把历史双义 fate `ACCESS_QUEUE_OVERFLOW` 拆成 pre-ingress(access-limited)/post-ingress(downlink-limited)，但既有 receipt v2 事件权威把 `satellite_ingress+ACCESS_QUEUE_OVERFLOW` 判为矛盾，使合法下行溢出 run 无法通过 L0 验证（实测 3 包均报 terminal access fate）。经 Codex 裁决：授权最小 receipt 修正（仅 `ACCESS_REJECTED+ingress` 保留为矛盾；`ACCESS_QUEUE_OVERFLOW+ingress` 作为合法下行溢出证据），证据全文见 `/tmp/leo-dsh-task7-stop-evidence.md`。
+- 证据与回归：
+  - legacy population profile `trace.csv` SHA=`0780da2fedea503d5f600830aecc805c95b1b8fc098395150ecaf2185846279a`（不变）；legacy identity/v2 仍可重建=`2715dfb316de48d958cd05fa09aafcf22e340766d186e7a0a9a9b6a4b0dd9ad4`。
+  - 1° 600 s/60 s 覆盖 smoke 两次输出 SHA 完全相同=`0f6117bca0095adf28f28328b6c6e445585fd01df32d9819f23011a2b2c8407d`；endpoints=16988、samples=11、source raster SHA=`c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a`。
+  - 5/10/20/40/80 trace 族：master 1073 包；child 60/123/268/541/1073 包，全部严格多重集子集，child 与 companion 独立 verifier 均空错误，五个 child 共享同一 family identity。
+  - 5 Mbps 本地 smoke（isolated `/tmp/leo-5mbps-smoke-evidence.json`）：natural end、conservation、receipt verified；wall≈249 s、peak RSS≈1.59 GB、events=16,796,444；86 offered → 74 delivered / 12 in-system、0 access/route/downlink 失败。该 run 是唯一本地工程 smoke（cheap path），未跑 10/20/40/80 网络臂、未上 VM。
+  - alias_rejection 基准：10,000 目的地抽样，1° 表 scan≈72.4 s、alias≈1.08 s（约 67×），零 self/invalid 目的地；201-source 采样最坏 10,000 次拒绝耗尽概率≈7.1e-12 < 1e-9。
+- 限制（Not done by this package）：全 24 h 覆盖结果（资源门未超限，本次仅做 600 s/60 s 与一次基准推算，未跑 24 h 全量 41,102,126,240 比较）、VM 压力标定菜单、正式 load bracket、多 seed 统计、信息消融、RL/新算法比较、论文 claim、mentor 报告更新。全部承重改动按计划未经本仓自批，等待独立冷审。
+
 ## 2026-08-25：全球人口区域直连接入场景实施计划（仅计划）
 
 - 基于 clean `origin/main@98d9092751abd84a3d3ad6b39e932e5e501740c0` 新建隔离分支 `codex/20260825-global-access-plan`；基线 `python3 -m pytest CODE/leo_sim/tests CODE/tests -q` 为 `598 passed, 1 skipped`。用户原工作树保持只读且未处置其中改动。

@@ -113,6 +113,115 @@ def _haversine_km(lat1, lon1, lat2, lon2):
     return 2 * r * math.asin(math.sqrt(a))
 
 
+class VoseAlias:
+    """One Vose alias table over explicit positive proposal weights.
+
+    Built ONCE for the whole population table (a single O(N) table, never
+    one O(N) table per source).  draw(gen) consumes exactly two RNG values
+    from the caller's generator: a bucket index and the alias coin.  The
+    table is a pure function of the weights, so compilation remains
+    byte-deterministic for identical seeds.
+    """
+
+    def __init__(self, weights):
+        n = len(weights)
+        if n == 0:
+            raise TraceError("alias table requires at least one candidate")
+        total = sum(weights)
+        if not math.isfinite(total) or total <= 0:
+            raise TraceError("alias proposal weights must be positive-finite "
+                             "and sum to a positive total")
+        scaled = [n * w / total for w in weights]
+        small = [i for i, p in enumerate(scaled) if p < 1.0]
+        large = [i for i, p in enumerate(scaled) if p >= 1.0]
+        self.prob = [0.0] * n
+        self.alias = [0] * n
+        while small and large:
+            s = small.pop()
+            l = large.pop()
+            self.prob[s] = scaled[s]
+            self.alias[s] = l
+            scaled[l] = (scaled[l] + scaled[s]) - 1.0
+            if scaled[l] < 1.0:
+                small.append(l)
+            else:
+                large.append(l)
+        while large:
+            self.prob[large.pop()] = 1.0
+        while small:
+            self.prob[small.pop()] = 1.0
+
+    def draw(self, gen):
+        bucket = int(gen.random() * len(self.prob))
+        if bucket >= len(self.prob):  # guard against 1.0 rounding
+            bucket = len(self.prob) - 1
+        if gen.random() < self.prob[bucket]:
+            return bucket
+        return self.alias[bucket]
+
+
+def sample_population_destination(gen, alias, endpoints, src_index, dm):
+    """Exact population gravity destination by rejection over ONE alias
+    proposal table.  No fallback to scan/uniform/nearest/last exists: the
+    rejection cap is part of trace identity and fails loudly."""
+    floor = float(dm["gravity_d_floor_km"])
+    alpha = float(dm["gravity_alpha"])
+    max_draws = int(dm["destination_rejection_max_draws"])
+    src = endpoints[src_index]
+    for _ in range(max_draws):
+        candidate_index = alias.draw(gen)
+        if candidate_index == src_index:
+            continue
+        dst = endpoints[candidate_index]
+        distance = max(
+            _haversine_km(src["lat"], src["lon"], dst["lat"], dst["lon"]),
+            floor,
+        )
+        acceptance = (floor / distance) ** alpha
+        if gen.random() < acceptance:
+            return dst
+    raise TraceError(
+        "population alias_rejection exhausted "
+        f"destination_rejection_max_draws={max_draws}")
+
+
+def alias_rejection_stats(endpoints, dm, source_indices=None) -> dict:
+    """Exact per-source rejection-sampler statistics (no drawing needed):
+
+    per_draw_success_probability: p_i = sum_{j != i} W_j/W * (floor/d)^alpha
+    expected_draws: 1/p_i (geometric)
+    exhaustion_probability: (1 - p_i) ** destination_rejection_max_draws
+
+    Only the listed sources are computed so a 201-source audit on the
+    16,988-region table stays analytic instead of quadratic.
+    """
+    floor = float(dm["gravity_d_floor_km"])
+    alpha = float(dm["gravity_alpha"])
+    max_draws = int(dm["destination_rejection_max_draws"])
+    gamma = float(dm["destination_population_exponent"])
+    weights = [e["weight"] ** gamma for e in endpoints]
+    total = sum(weights)
+    indices = range(len(endpoints)) if source_indices is None \
+        else sorted(source_indices)
+    out = {}
+    for i in indices:
+        p_i = 0.0
+        for j in range(len(endpoints)):
+            if j == i:
+                continue
+            distance = max(_haversine_km(
+                endpoints[i]["lat"], endpoints[i]["lon"],
+                endpoints[j]["lat"], endpoints[j]["lon"]), floor)
+            p_i += (weights[j] / total) * (floor / distance) ** alpha
+        out[i] = {
+            "per_draw_success_probability": p_i,
+            "expected_draws": (1.0 / p_i if p_i > 0 else float("inf")),
+            "exhaustion_probability": (
+                (1.0 - p_i) ** max_draws if 0 < p_i <= 1.0 else 1.0),
+        }
+    return out
+
+
 def _endpoints(cfg: dict) -> list[dict]:
     ep = cfg["endpoints"]
     sites = ep["sites"]
@@ -197,9 +306,17 @@ def _rate_multiplier(mode, t, src_lon, dm):
             return dm["burst_multiplier"]
         return 1.0
     if mode == "diurnal":
+        # Preserve the historical trace contract exactly.
         amp = dm["diurnal_amplitude"]
-        # local-time phase from longitude: busiest at diurnal_phase_h local time
         local_h = (t / 3600.0 + src_lon / 15.0) % 24.0
+        return max(0.0, 1.0 + amp * math.cos(2 * math.pi * (local_h - dm["diurnal_phase_h"]) / 24.0))
+    if mode == "population_gravity" \
+            and dm["temporal_model"] == "local_diurnal_cosine":
+        # Opt-in local-solar-time population proxy: the UTC start hour shifts
+        # the local-time clock; longitude maps the local hour.  This is a
+        # population proxy, never calibrated subscriber traffic.
+        local_h = (dm["utc_start_hour"] + t / 3600.0 + src_lon / 15.0) % 24.0
+        amp = dm["diurnal_amplitude"]
         return max(0.0, 1.0 + amp * math.cos(2 * math.pi * (local_h - dm["diurnal_phase_h"]) / 24.0))
     return 1.0
 
@@ -451,7 +568,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
     os.makedirs(out, exist_ok=True)
     if not out.is_dir():
         raise TraceError(f"output path is not a directory: {out}")
-    for name in ("trace.csv", "manifest.json"):
+    for name in ("trace.csv", "manifest.json", "nested-family.json"):
         artifact = out / name
         if artifact.is_symlink():
             raise TraceError(f"output artifact may not be a symbolic link: {artifact}")
@@ -459,6 +576,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
             raise TraceError(f"output artifact is not a regular file: {artifact}")
 
     rows: list[tuple] = []
+    master_candidate_packets = 0
     input_hash = ""
     provenance = "synthetic"
     source_type = "synthetic_generator"
@@ -572,7 +690,22 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                     ep["grid_deg"], ep["aggregation_deg"], ep["mlab_max_sites"])
             else:
                 endpoints = _endpoints(cfg)
-        gen = rng.streams(sc["seed"])["demand"]
+        generators = rng.streams(sc["seed"])
+        gen = generators["demand"]
+        # Task 6 nested family: when a master load is declared, candidates
+        # are generated at the MASTER rate on the demand stream, and every
+        # fully generated candidate receives one independent nested_filter
+        # draw on its own child-7 stream; kept candidates form the child.
+        nested_master = dm["nested_master_offered_mbps"]
+        filter_gen = None
+        inclusion_probability = 1.0
+        if nested_master is not None:
+            filter_gen = generators["nested_filter"]
+            inclusion_probability = (
+                float(dm["offered_mbps"]) / float(nested_master))
+        generation_mbps = (float(nested_master)
+                           if nested_master is not None
+                           else float(dm["offered_mbps"]))
         if mode == "mlab":
             if mlab_weights is None:
                 mlab_weights, mlab_summary = _load_mlab_weights(
@@ -597,12 +730,23 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                     f"{uncovered}; measurement_proxy demand cannot be compiled "
                     "without measurement coverage (fail closed, no silent "
                     "uniform fallback)")
-        total_rate = dm["offered_mbps"] * 1e6 / bits_per_pkt  # pkts/s across endpoints
+        total_rate = generation_mbps * 1e6 / bits_per_pkt  # pkts/s across endpoints
         source_exponent = (dm["source_population_exponent"]
                            if mode == "population_gravity" else 1.0)
         weights = [e["weight"] ** source_exponent for e in endpoints]
         wsum = sum(weights)
+        # exact opt-in destination sampler: ONE alias proposal table for the
+        # whole population universe (never one O(N) table per source)
+        population_alias = None
+        if mode == "population_gravity" \
+                and dm["population_destination_sampler"] == "alias_rejection":
+            destination_exponent = dm["destination_population_exponent"]
+            population_alias = VoseAlias(
+                [e["weight"] ** destination_exponent for e in endpoints])
         pid = 0
+        master_rows: list[tuple] = []
+        nested_child_rows: list[tuple] | None = \
+            [] if filter_gen is not None else None
         for i, e in enumerate(endpoints):
             base_rate = total_rate * weights[i] / wsum
             if base_rate <= 0:
@@ -613,6 +757,10 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                 max_mult = max(1.0, dm["burst_multiplier"])
             elif mode == "diurnal":
                 max_mult = 1.0 + abs(dm["diurnal_amplitude"])
+            elif mode == "population_gravity" \
+                    and dm["temporal_model"] == "local_diurnal_cosine":
+                # same envelope legacy diurnal uses: 1 + |amplitude|
+                max_mult = 1.0 + abs(dm["diurnal_amplitude"])
             t = 0.0
             while True:
                 t += float(gen.exponential(1.0 / (base_rate * max_mult)))
@@ -621,9 +769,36 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                 if gen.random() > _rate_multiplier(mode, t, e["lon"], dm) / max_mult:
                     continue
                 pid += 1
-                dst = _dst_choices(gen, mode, endpoints, i, t, dm, mlab_weights)
+                if population_alias is not None:
+                    dst = sample_population_destination(
+                        gen, population_alias, endpoints, i, dm)
+                else:
+                    dst = _dst_choices(gen, mode, endpoints, i, t, dm,
+                                       mlab_weights)
                 dl = f"{t + deadline:.6f}" if deadline is not None else ""
-                rows.append((pid, t, e["agg_grid_id"], dst["agg_grid_id"], bits_per_pkt, dl))
+                candidate = (pid, t, e["agg_grid_id"], dst["agg_grid_id"],
+                             bits_per_pkt, dl)
+                master_rows.append(candidate)
+                # every fully generated candidate receives exactly one
+                # independent nested_filter draw (generation order); kept
+                # candidates form the child trace
+                if nested_child_rows is not None \
+                        and filter_gen.random() < inclusion_probability:
+                    nested_child_rows.append(candidate)
+        # the master candidate count is binding BEFORE any child filtering
+        master_candidate_packets = len(master_rows)
+        if nested_master is not None and \
+                master_candidate_packets > int(cfg["execution"]["max_packets"]):
+            raise TraceError(
+                f"nested master trace would contain "
+                f"{master_candidate_packets} candidate packets > "
+                f"execution.max_packets "
+                f"({int(cfg['execution']['max_packets'])}); tighten the "
+                f"master load instead of generating an unbounded trace")
+        if nested_child_rows is not None:
+            rows = nested_child_rows
+        else:
+            rows = master_rows
         rows.sort(key=lambda r: (r[1], r[0]))
         rows = [(i + 1, *r[1:]) for i, r in enumerate(rows)]
 
@@ -715,12 +890,33 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
                 "multiplier": float(dm["burst_multiplier"]),
             } if mode in ("burst", "mlab")
             and dm["burst_start_s"] is not None else None),
+            # legacy mode:diurnal keeps its historical two-key value
+            # exactly; only the new population-local-time combination uses
+            # the four-key value with the explicit proxy clock label
             "diurnal": ({
                 "amplitude": float(dm["diurnal_amplitude"]),
                 "phase_h": float(dm["diurnal_phase_h"]),
-            } if mode == "diurnal" else None),
+            } if mode == "diurnal" else
+             ({
+                "amplitude": float(dm["diurnal_amplitude"]),
+                "phase_h": float(dm["diurnal_phase_h"]),
+                "utc_start_hour": float(dm["utc_start_hour"]),
+                "clock": "source_local_solar_time_proxy",
+             } if mode == "population_gravity"
+               and dm["temporal_model"] == "local_diurnal_cosine" else None)),
         },
     }
+    # rng_streams contract: nested families select the canonical demand
+    # and nested-filter entries from the FULL stream mapping; legacy and
+    # non-nested traces keep the historical single-demand mapping
+    # (demand is child 0 in both branches; nested_filter is child 7).
+    if dm["nested_master_offered_mbps"] is not None:
+        full_streams = rng.stream_mapping(sc["seed"])
+        rng_streams = {"demand": full_streams["demand"],
+                       "nested_filter": full_streams["nested_filter"]}
+    else:
+        rng_streams = rng.stream_mapping(sc["seed"], ["demand"])
+
     manifest = {
         "schema": TRACE_MANIFEST_SCHEMA,
         "trace_schema": TRACE_SCHEMA,
@@ -733,7 +929,7 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
         "simulation_horizon_s": duration,
         "emission_end_s": emission_end,
         "drain_s": drain_s,
-        "rng_streams": rng.stream_mapping(sc["seed"], ["demand"]),
+        "rng_streams": rng_streams,
         "packet_id_contract": PACKET_ID_CONTRACT,
         "offered_packets": len(rows),
         "offered_bits": offered_bits,
@@ -779,6 +975,35 @@ def compile_trace(resolved: dict, out_dir: str) -> dict:
     with open(out / "manifest.json", "w", encoding="utf-8") as fh:
         json.dump(manifest, fh, indent=2, sort_keys=True)
         fh.write("\n")
+    if dm["nested_master_offered_mbps"] is not None:
+        # exact-key, versioned companion artifact (never nested metadata in
+        # the manifest itself).  Written only after trace.csv and
+        # manifest.json succeeded, so a failed compile cannot leave a
+        # companion that appears valid.
+        from . import trace_family as _family
+        family = {
+            "schema": _family.FAMILY_SCHEMA,
+            "family_identity_sha256": _family.family_identity_sha256(
+                resolved, manifest["input_sha256"]),
+            "master_offered_mbps": float(dm["nested_master_offered_mbps"]),
+            "child_offered_mbps": float(dm["offered_mbps"]),
+            "inclusion_probability": (
+                float(dm["offered_mbps"])
+                / float(dm["nested_master_offered_mbps"])),
+            "master_candidate_packets": master_candidate_packets,
+            "child_packets": len(rows),
+            "demand_rng_stream": _family._canonical_stream_label(
+                resolved, "demand"),
+            "filter_rng_stream": _family._canonical_stream_label(
+                resolved, "nested_filter"),
+            "canonical_row_contract": _family.CANONICAL_ROW_CONTRACT,
+            "config_sha256": resolved["sha256"],
+            "trace_identity_sha256": manifest["trace_identity_sha256"],
+            "trace_sha256": trace_sha256,
+        }
+        with open(out / "nested-family.json", "w", encoding="utf-8") as fh:
+            json.dump(family, fh, indent=2, sort_keys=True)
+            fh.write("\n")
     return manifest
 
 
