@@ -1,0 +1,87 @@
+{
+  "contract": {
+    "allowedPaths": [
+      "CODE/leo_sim/scene_check.py",
+      "CODE/leo_sim/tests/test_scene_check.py",
+      "CODE/leo_sim/matrix.py",
+      "CODE/leo_sim/tests/test_matrix_contract.py",
+      "CODE/experiment_platform/v2_analysis.py",
+      "CODE/leo_sim/governance.py",
+      "CODE/leo_sim/tests/test_governance.py",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+      "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+      "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+    ],
+    "metadata": {
+      "frozenPlanDigest": "sha256:b916d499a820218215006a4d519cc218ec0767a8e463201dba857e389fff3e6c",
+      "digestVersion": "canonical-json-sha256-v1"
+    },
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R2",
+    "title": "Cold review of revised global pressure bracket R01",
+    "goal": "Review exact commit 0c14610. Focus on the two prior major findings: scene_check consecutive-window semantics and scene/coverage binding. Check the new scene-check contract, coverage-audit artifact, matrix compile/verify hashes, runbook commands, v2 analyzer identity, governance population-gravity fix, and claim boundaries. Identify any remaining correctness, scientific-design, authorization, or reproducibility blocker.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "0c14610d94934aca041aacbfe231e333308fef94",
+      "paths": [
+        "CODE/leo_sim/scene_check.py",
+        "CODE/leo_sim/tests/test_scene_check.py",
+        "CODE/leo_sim/matrix.py",
+        "CODE/leo_sim/tests/test_matrix_contract.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/leo_sim/governance.py",
+        "CODE/leo_sim/tests/test_governance.py",
+        "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json",
+        "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+        "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+        "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+        "EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json",
+        "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Return a clear PASS, REQUEST_CHANGES, or BLOCKED verdict.",
+      "Every finding must cite an exact repository path and line or JSON field, explain impact, and distinguish a blocker from a minor issue.",
+      "Explicitly verify whether the prior F1 and F2 findings are closed and list any open_items.",
+      "Explicitly state that no Pro-tier routing was used and whether the package is safe to proceed to finalization/authorization."
+    ],
+    "requiredEvidence": [
+      "Exact file paths and line references",
+      "Observed matrix, scene-check contract, coverage, and authorization-chain facts",
+      "A check that no Pro-tier routing was used"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "552fbdbcec0e3415b1114b7d2d365d61af39aa2c515ccfc07e1099a6cf75a93d"
+}
