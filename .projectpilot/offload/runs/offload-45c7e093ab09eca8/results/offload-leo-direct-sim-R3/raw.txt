@@ -1,0 +1,177 @@
+我先并行读取合同允许的核心代码与 R01 工件，再逐项做对抗性核查。继续读 matrix.py 全文与 R01 编译产物。matrix.py 太大被截断，我分段读取。matrix.py 超过单次读取上限，我分段读取。核心代码已读完。现在核对实验包内 request.json 与 R01 工作目录的完整文件清单。所有合同允许的文件已核查完毕，收尾整理结论。# 对抗性复核报告：WP-LEO-V2-GLOBAL-PRESSURE-BRACKET R01 @ fcfc1e42
+
+**Verdict: PASS（无 blocking 发现；7 条 minor/info；未发现隐藏绕过或陈旧授权产物）。包可以进入 finalization/authorization 流程。** 本复核只读取了合同允许的 11 条路径，未使用任何 Pro-tier 路由/高级通道；不声称任何 VM 结果。
+
+## 一、已核验为牢固的门（文本级交叉核验）
+
+**1. scene-check 合同与覆盖哈希三角一致。** `scene-check-contract.json` 的 `decision_sha256=9ad82a9a…` 与 `coverage_sha256=b5631b2d…` 与 compile-report 的 `artifact_hashes`（`CODE/work/.../scene-decision.yaml`、`coverage-audit.json` 条目）及 analysis-request 的 `decision_contract.bound_artifacts` 三处逐一相等；合同自身 `sha256=574880a7…` 在 compile-report 与 analysis-request `decision_contract.sha256` 中一致（scene-check-contract.json L2-L6；compile-report.json L3-L5；analysis-request.json L33-L50）。`canonical_invocation` 为 7 token 且前缀精确绑定合同路径，同时满足 matrix.py L621-626（必须恰好 7 token）与 scene_check.py L146-155（≥7 且前缀匹配）两侧校验。
+
+**2. 覆盖审计内部事实与决策合同一致。** coverage-audit.json 为单行大 JSON；文本核验得：恰好 16988 个 `"name":"G1:` 端点条目（= decision `candidate_regions: 16988`）、无 `"never_visible":true`、恰好一处 `"horizon_s":3600`、一处 `"step_s":60`、一处 `"never_visible":0,`（summary），与 scene-decision.yaml L3-L10 的 population/coverage 字段一致；`endpoint_source.source_sha256=c5742d16…` 与 decision `population.source_sha256` 相同。
+
+**3. 人口栅格身份链闭合。** decision `population.source_sha256` = coverage `endpoint_source.source_sha256` = run-manifest 两个 cell 的 `input_sha256 = c5742d16…`（run-manifest.json L53、L88），即覆盖审计与需求输入哈希绑定到同一栅格文件；governance.py L120-136 对 `population_gravity` 的 `input_sha256` 就是该栅格文件的字节哈希，且强制路径在项目根内、非符号链接。
+
+**4. matrix 产物路径规范化防前缀欺骗。** verify_compiled_matrix 对哈希表键做显式分流：以 `CODE/`、`ANALYSIS/`、`EXPERIMENTS/` 开头者按项目根相对解析，其余按实验目录相对解析（matrix.py L943-957，注释明确说明不为 CODE/work 路径加 `EXPERIMENTS/<id>` 前缀）；`_canonical_experiment_dir` 强制输出目录必须等于 `EXPERIMENTS/<experiment_id>`（L572-580）；`_reject_symlink_ancestors` 逐级拒符号链接（L547-569）。编译期从 request 全量重算 cell 身份（`config_sha256`、`trace_identity_sha256`、`input_sha256`、`code_sha256`、`execution_chain_sha256`，L901-912），代码或执行链在编译后变动即 fail-closed。
+
+**5. 再生成包身份与授权链。** authorize_experiment 对矩阵 manifest 走 `verify_compiled_matrix` 重算（L115-116、L233-249）；授权前置条件包括：finalization 重算恒等且 `status==ACCEPTED`、三角色（cold_start/satellite_drl/adversarial）齐全（L84-90）、finalization 的 artifact hash map 覆盖全部编译产物哈希（L416-426）。当前包状态自洽：`finalization.json` 尚不存在（R01 目录仅 brief/scene-decision/scene-check-contract/coverage-audit 四件），`brief.json` `status=REVIEW`（L53），compile-report `execution_authorized=false`、`launcher_generated=false`、`status=COMPILED_REVIEW_REQUIRED`，run-manifest `execution_authorized=false`，analysis-request `status=WAITING_FOR_VERIFIED_RUNS`，实验目录无 `authorization.json`——无陈旧授权、无隐藏绕过文件。重复 cell 对的 `config_sha256`/`trace_identity_sha256`/`controlled_signature` 两两相同（run-manifest.json L43-L44 vs L78-L79），符合配对合同（matrix.py L507-515）。
+
+**6. ISL 压力误标防线（本任务核心对抗点）。** scene_check 分类次序封闭且分层抢占：`INVALID_EVIDENCE → COVERAGE_INCOMPLETE → ACCESS_LIMITED → ROUTE_LIMITED → DOWNLINK_LIMITED → NO_ISL_EXPOSURE → NO_ISL_PRESSURE → ISL_PRESSURE_CANDIDATE`（scene_check.py L873-891）。任何 access/route/downlink 失败都会抢在 ISL 状态之前返回，**不存在把接入/路由/下行失败误标为 ISL 压力的路径**：`ACCESS_QUEUE_OVERFLOW` 按独立重算的 ingress 事件二分（无 ingress=上行溢出，有 ingress=下行溢出，L446-450），`ACCESS_REJECTED` 与 ingress 矛盾即判脏（L442-445、L817-819）；route 层分母固定为 admitted（L833-841）；L6 要求同一有向链路 ≥2 个相邻 1s 窗口利用率 ≥0.8 且同链路 p95 排队等待为正，缺分母窗口会打断连续段而非被静默跳过（L633-641、L666-670），利用率 clamp 到 1.0（L640）。控制面只作摘要、明示数据面利用率是保守下界（L895-910）。
+
+**7. 无 Pro-tier 路由。** request 与 resolved config 均为 `routing.policy="hop"`、`routing.learning_enabled=false`、`learning.algorithm="none"`、phase `non_learning`（request-sources L142-157、L51-79；resolved YAML L70-95、L157-162）。
+
+## 二、发现（全部 minor/info，无 blocking）
+
+- **F1 minor** scene_check CLI 把 `run_dir` 同时作为 `trace_dir` 传入（scene_check.py L936-939），使 L0「run trace.csv != scene trace.csv」比较退化为同一文件自比（L341-345），docstring 声称的「immutable trace 双目录对照」在规范调用下实际不生效。残留保护依赖 `receipt_mod.verify_receipt_dir` 对 trace 的绑定（receipt.py 不在允许路径内，未核）。
+- **F2 minor** `decision.observation`（`emission_end_s=20`/`observation_end_s=30`）只做模式校验（L307-317），分类与 ISL 窗口重算（L559-699）从未消费它；ISL 利用率覆盖含 drain 尾段的全运行区间。方向偏保守（drain 期利用率下降只会打断连续段），但属「声明了却未执行」的合同字段。
+- **F3 minor** `_isl_queue_waits_per_link` 对缺失 `at` 字段的事件静默取 0.0（L531-538），会把排队等待 inflate 成 `started_at-0`，与 `require_positive_p95_queue_delay_same_link=true` 叠加时理论上有利于假阳性（仍需利用率≥0.8×2 连续窗口，实际触发难度高）。ledgers 事件模式由 kernel/receipt 保证，未核。
+- **F4 minor** 矩阵 RUNBOOK 模板（matrix.py L668-744）不含 finalization/authorize 命令，而 cell 命令直接引用尚不存在的 `authorization.json`（RUNBOOK.md L11-27）；对比单运行 runbook 是含 authorize 步骤的（governance.py L349-355）。方向 fail-closed（run-remote 必然被门挡住），但文档链不完整，操作者需从模板外获知授权步骤。
+- **F5 minor** governance.py 在 `sites<2` 拒绝时的报错文案只提 mlab 例外、不提 `population_gravity` 例外（L96-98），行为正确（L88-90 已放行 raster 模式）、文案误导。
+- **F6 info** L2 demand 层只报告观察到的 src/dst/runtime 端点集合（L702-715），**从未校验 trace 端点 ⊆ 覆盖账本**；覆盖 L1 校验的方向是「账本对决策合同完整」而非「trace 对账本封闭」。残留风险依赖同一栅格哈希（c5742d16…）间接闭合。
+- **F7 info** 编译要求空输出目录（matrix.py L796-800），但 verify 阶段不扫描实验目录内的新增杂散文件；不影响哈希绑定的正确性，仅可能混淆操作者。
+
+## 三、候选复核回执（agent-review-receipt/v2）
+
+```json
+{
+  "schema": "agent-review-receipt/v2",
+  "role": "adversarial",
+  "reviewer": "reviewer:projectpilot-offload-web-r3 (distinct from producer:codex-global-pressure)",
+  "work_id": "WP-LEO-V2-GLOBAL-PRESSURE-BRACKET",
+  "revision": 1,
+  "reviewed_commit": "fcfc1e42a7780a36ab8452c1659211f3d4c19da8",
+  "verdict": "PASS",
+  "blocking_findings": [],
+  "findings": ["F1", "F2", "F3", "F4", "F5", "F6", "F7"],
+  "evidence": [
+    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json L2-L6 (decision_sha256=9ad82a9a..., coverage_sha256=b5631b2d...)",
+    "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json L2-L21 (artifact_hashes triangle, execution_authorized=false)",
+    "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/analysis-request.json L33-L50, L95-L98 (bound_artifacts, WAITING_FOR_VERIFIED_RUNS)",
+    "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json L40-L61, L75-L96, L99-L103 (identical duplicate-cell identities, execution_authorized=false)",
+    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json L1 (16988 G1 endpoints, no never_visible:true, horizon 3600, step 60, summary never_visible 0)",
+    "CODE/leo_sim/scene_check.py L873-L891 (closed layered status order), L446-L450 (dual-use fate split), L936-L939 (F1), L307-L317 (F2), L531-L538 (F3)",
+    "CODE/leo_sim/matrix.py L621-L626 (frozen invocation), L943-L957 (path normalization), L901-L929 (recomputed identity), L572-L580 (canonical dir)",
+    "CODE/experiment_platform/authorize_experiment.py L84-L90 (three roles), L416-L426 (finalization hash binding)",
+    "CODE/leo_sim/governance.py L85-L98 (population_gravity empty-sites semantics, F5), L120-L136 (raster input_sha256)",
+    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json L44-L53 (acceptance, REVIEW status)"
+  ],
+  "pro_tier_routing_used": false,
+  "vm_results_claimed": false,
+  "unknowns": [
+    "所有 sha256 均为文本级交叉核验；本通道禁止本地 Shell，未重算任何字节哈希",
+    "CODE/leo_sim/receipt.py、coverage.py、fates.py、metrics.py、trace.py、config.py、CODE/experiment_platform/isl_pressure.py、CODE/scripts/remote/run-remote.sh、v2_serial_gate.py 不在允许读取路径内：receipt 对 trace.csv 的哈希绑定强度、verify_coverage_audit_v2 的内部模式校验、serial gate 的机器强制实现均未核",
+    "decision.observation 字段是否被 kernel/其他环节消费未知（F2 的完整影响面）",
+    "coverage-audit.json 的 scan/summary 字段经计数式文本核验（16988 端点、horizon 3600、step 60、never_visible 0），未做结构化解析"
+  ],
+  "required_revision": 1,
+  "safe_to_proceed": "safe for finalization/authorization; no VM run may start before accepted finalization + exact-SHA authorization + clean deployment + external witness gates"
+}
+```
+
+## 四、建议本地 Agent 下一步
+
+1. 在本地重算 9ad82a9a…/b5631b2d…/574880a7…/1db1953d…/a33c8b63… 五个关键哈希（本通道无 Shell，只做了交叉一致性核验）。
+2. 按本库规则补读 receipt.py/coverage.py/v2_serial_gate.py 后确认 F1 的残留保护成立、serial gate 确实机器强制。
+3. F1-F4 可另开小修 PR；不阻塞 R01 进入 finalization。
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:R3",
+  "status": "EVIDENCE_READY",
+  "summary": "Verdict PASS：无 blocking 发现。scene-check 合同哈希三角（contract/decision/coverage）在 scene-check-contract.json、compile-report.json、analysis-request.json 三处一致；覆盖账本 16988 端点、horizon 3600/step 60/never_visible 0 与决策合同一致；栅格身份 c5742d16… 贯穿 decision/coverage/manifest input_sha256。授权链 fail-closed：finalization 尚不存在、无 authorization.json、全部 execution_authorized=false，matrix verify 从 request 全量重算 cell 身份（含当前 code_sha256/execution_chain）。分类次序封闭分层抢占，access/route/downlink 失败不可能被误标为 ISL 压力；缺分母窗口打断连续段。7 条 minor/info：F1 scene_check CLI 自比较使 L0 trace 对照退化、F2 observation 字段只校验不消费、F3 排队等待缺失 at 静默取 0、F4 矩阵 RUNBOOK 缺授权步骤、F5 governance 报错文案漏 population_gravity、F6 trace 端点未对覆盖账本封闭校验、F7 verify 不扫杂散文件。未用 Pro-tier 路由；不声称任何 VM 结果；哈希为文本交叉核验未重算。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "minor",
+      "summary": "scene_check CLI 将 run_dir 同时作为 trace_dir 传入，L0『run trace.csv != scene trace.csv』退化为同一文件自比较，docstring 声称的双目录不可变对照在规范调用下不生效；残留保护依赖 receipt 验证器（未在允许路径内，未核）",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L936-L939",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L341-L345"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "minor",
+      "summary": "decision.observation（emission_end_s=20/observation_end_s=30）只做模式校验，分类与 ISL 固定窗口重算从不消费它；声明了却未执行的合同字段（方向偏保守）",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L307-L317",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L559-L572",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L29-L31"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "minor",
+      "summary": "_isl_queue_waits_per_link 对缺失 at 字段的 queue_enter/service_start 事件静默取 0.0，会把等待 inflate 为 started_at-0，与 require_positive_p95 闸叠加理论上有利假阳性（仍需利用率≥0.8 连续 2 窗口，触发难度高）",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L527-L538"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "summary": "矩阵 RUNBOOK 模板不含 finalization/authorize 命令，cell 命令直接引用尚不存在的 authorization.json；方向 fail-closed 但文档链不完整（单运行 runbook 含 authorize 步骤，矩阵版没有）",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/RUNBOOK.md#L11-L27",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L691-L699",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/governance.py#L349-L355"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "governance.py 在 sites<2 拒绝时的报错文案只提 mlab 例外、不提 population_gravity 例外；行为正确（raster 模式已放行），文案误导",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/governance.py#L85-L98"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "info",
+      "summary": "L2 demand 层只报告观察端点集合，从未校验 trace 端点 ⊆ 覆盖账本；L1 校验方向是账本对决策完整而非 trace 对账本封闭；残留风险靠同一栅格哈希 c5742d16… 间接闭合",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L702-L715",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L351-L383"
+      ]
+    },
+    {
+      "id": "F7",
+      "severity": "info",
+      "summary": "编译要求空输出目录，但 verify_compiled_matrix 不扫描实验目录内的新增杂散文件；不影响哈希绑定正确性",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L794-L802",
+        "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L857-L876"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "本地重算 9ad82a9a…/b5631b2d…/574880a7…/1db1953d…/a33c8b63… 五个关键哈希（本通道无 Shell，仅做文本交叉核验）",
+    "补读 receipt.py/coverage.py/v2_serial_gate.py 确认 F1 残留保护与 serial gate 机器强制成立",
+    "F1-F4 另开小修 PR，不阻塞 R01 进入 finalization/authorization",
+    "finalization 的 artifact hash map 必须包含 scene-decision/coverage-audit/scene-check-contract 三件（compile-report 已含，L2-L5）"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json#L1-L16",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/compile-report.json#L2-L21",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/analysis-request.json#L33-L50",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/run-manifest.json#L40-L61",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json#L1-L1",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml#L1-L31",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L873-L891",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/scene_check.py#L446-L450",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L943-L957",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/matrix.py#L621-L626",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/experiment_platform/authorize_experiment.py#L84-L90",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/experiment_platform/authorize_experiment.py#L416-L426",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/leo_sim/governance.py#L120-L136",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/brief.json#L44-L53",
+    "github://fuguther/leo-direct-sim/blob/fcfc1e42a7780a36ab8452c1659211f3d4c19da8/EXPERIMENTS/request-sources/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01.json#L60-L60"
+  ],
+  "open_items": [
+    "禁止本地 Shell：所有 sha256 未重算，仅三处文本交叉一致；本地 Agent 必须重算后再采信",
+    "receipt.py/coverage.py/fates.py/metrics.py/trace.py/config.py/isl_pressure.py/run-remote.sh/v2_serial_gate.py 不在允许路径内：receipt 对 trace 的绑定强度、verify_coverage_audit_v2 内部校验、serial gate 强制实现均未核，F1/F6 的最终严重度依赖这些文件",
+    "decision.observation 是否被 kernel 侧消费未知（F2 影响面）",
+    "coverage-audit.json 为单行大 JSON：scan/summary 经计数式文本核验（16988 端点、horizon 3600、step 60、never_visible 0），未做完整结构化解析"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
