@@ -172,6 +172,63 @@ def test_matrix_binds_and_renders_declared_post_analysis_decision(tmp_path):
         matrix.verify_compiled_matrix(tmp_path, out)
 
 
+def test_matrix_binds_scene_decision_and_coverage_artifacts(tmp_path):
+    request = _request()
+    work = tmp_path / "CODE" / "work" / "WP-MATRIX" / "R01"
+    work.mkdir(parents=True)
+    decision_path = work / "scene-decision.yaml"
+    coverage_path = work / "coverage-audit.json"
+    decision_path.write_text("schema: leo-sim-scene-decision/v1\n", encoding="utf-8")
+    coverage_path.write_text("{}\n", encoding="utf-8")
+    contract_path = work / "scene-check-contract.json"
+    contract = {
+        "schema": "leo-sim-scene-check-contract/v1",
+        "decision_path": "CODE/work/WP-MATRIX/R01/scene-decision.yaml",
+        "decision_sha256": file_sha256(decision_path),
+        "coverage_path": "CODE/work/WP-MATRIX/R01/coverage-audit.json",
+        "coverage_sha256": file_sha256(coverage_path),
+        "canonical_invocation": [
+            "python3", "-m", "CODE.leo_sim.scene_check", "--root", ".",
+            "--contract", "CODE/work/WP-MATRIX/R01/scene-check-contract.json",
+        ],
+    }
+    _write_json(contract_path, contract)
+    request["analysis"]["decision_contract"] = {
+        "path": "CODE/work/WP-MATRIX/R01/scene-check-contract.json",
+    }
+    source = tmp_path / "request.json"
+    source.write_text(json.dumps(request), encoding="utf-8")
+    out = tmp_path / "EXPERIMENTS" / request["experiment_id"]
+
+    matrix.compile_matrix_experiment(source, out, project_root=tmp_path)
+    analysis = json.loads((out / "analysis-request.json").read_text())
+    binding = analysis["decision_contract"]
+    assert binding["schema"] == "leo-sim-scene-check-contract/v1"
+    assert binding["bound_artifacts"] == {
+        contract["decision_path"]: contract["decision_sha256"],
+        contract["coverage_path"]: contract["coverage_sha256"],
+    }
+    report = json.loads((out / "compile-report.json").read_text())
+    assert report["artifact_hashes"][contract["decision_path"]] == \
+        contract["decision_sha256"]
+    assert report["artifact_hashes"][contract["coverage_path"]] == \
+        contract["coverage_sha256"]
+    runbook = (out / "RUNBOOK.md").read_text(encoding="utf-8")
+    assert "CODE.leo_sim.scene_check" in runbook
+    assert "CODE/Results/EXP-LEO-V2-MATRIX-control-s42" in runbook
+    matrix.verify_compiled_matrix(tmp_path, out)
+    _, authorization_artifacts, _ = authorize_experiment._verified_experiment(
+        tmp_path, out)
+    assert all((tmp_path / raw).is_file()
+               for raw in authorization_artifacts)
+    assert not any(raw.startswith(f"EXPERIMENTS/{request['experiment_id']}/CODE/")
+                   for raw in authorization_artifacts)
+
+    coverage_path.write_text("tampered\n", encoding="utf-8")
+    with pytest.raises(matrix.MatrixError, match="hash mismatch"):
+        matrix.verify_compiled_matrix(tmp_path, out)
+
+
 @pytest.mark.parametrize("mutation, message", [
     (lambda r: r.update(extra=True), "unknown request fields"),
     (lambda r: r["cells"].append(copy.deepcopy(r["cells"][0])), "duplicate run_id"),

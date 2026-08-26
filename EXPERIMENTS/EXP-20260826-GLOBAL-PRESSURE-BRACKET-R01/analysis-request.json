@@ -1,0 +1,99 @@
+{
+  "analysis": {
+    "analysis_id": "AN-GLOBAL-PRESSURE-BRACKET-R01-LOAD10-DUPLICATE",
+    "decision_contract": {
+      "path": "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json"
+    },
+    "estimand": "duplicate-run consistency at one declared nested global load; not a load-response or algorithm comparison",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "paired descriptive duplicate difference",
+        "left_arm": "load10_a",
+        "name": "load10_a_minus_load10_b",
+        "right_arm": "load10_b"
+      }
+    ],
+    "primary_metric": "delivery_rate"
+  },
+  "claim_boundary": {
+    "can_claim": [
+      "the two cells use the same population-proxy trace identity, seed and declared runtime contract",
+      "the duplicate pair provides an integrity and repeatability check for the 10 Mbps nested child trace",
+      "scene_check classification is applied only after receipt verification, the full population coverage ledger, and the frozen scene decision contract"
+    ],
+    "cannot_claim": [
+      "a global ISL pressure threshold or a load-response curve",
+      "that 10 Mbps is the first pressure point before the higher registered loads are checked",
+      "real subscriber traffic, universal global service, algorithm superiority, information value, reinforcement-learning value, or a new-algorithm contribution"
+    ]
+  },
+  "decision_contract": {
+    "bound_artifacts": {
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json": "b5631b2d4e40bc96b77e69459ae50b44b467d08b22373fcd4e63e7ebbe8912ae",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml": "9ad82a9ac4c4f86c13e38881236f8a438c2750140b7a6a8d49f7929e98b17d9b"
+    },
+    "canonical_invocation": [
+      "python3",
+      "-m",
+      "CODE.leo_sim.scene_check",
+      "--root",
+      ".",
+      "--contract",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json"
+    ],
+    "path": "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+    "schema": "leo-sim-scene-check-contract/v1",
+    "sha256": "574880a791f9f3276642caebed8f4329e3cd77f59d5fc528ef629fa774102ec5"
+  },
+  "experiment_id": "EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01",
+  "matrix_manifest_sha256": "a33c8b63cb17d88b787a1437b27f5a4051711aca7601fcd88fab74e14c67c545",
+  "planned_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 0,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": false,
+        "require_data_isl": false
+      },
+      "arm_id": "load10_a",
+      "config_sha256": "7f9cca0eca6c409169852e19d28b3d2c5b716c317ad5d1d4f23c2384d0136233",
+      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_a-s7",
+      "trace_identity_sha256": "0fdbe914aa9d7cdde44a84276b93d6b55b13ac3bc95a673e1f96b52399f6f761",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 0,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": false,
+        "require_data_isl": false
+      },
+      "arm_id": "load10_b",
+      "config_sha256": "7f9cca0eca6c409169852e19d28b3d2c5b716c317ad5d1d4f23c2384d0136233",
+      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_b-s7",
+      "trace_identity_sha256": "0fdbe914aa9d7cdde44a84276b93d6b55b13ac3bc95a673e1f96b52399f6f761",
+      "trace_seed": 7
+    }
+  ],
+  "planned_run_ids": [
+    "EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_a-s7",
+    "EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_b-s7"
+  ],
+  "request_sha256": "1db1953de69d9e8f94eadbdb79760cf76801ddb97f51aa94c986fcc4a72fee53",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-matrix-analysis-request/v1",
+  "status": "WAITING_FOR_VERIFIED_RUNS"
+}

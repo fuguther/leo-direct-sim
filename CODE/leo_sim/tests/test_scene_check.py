@@ -484,6 +484,46 @@ def test_isl_pressure_candidate_requires_same_link_p95_set(tmp_path):
     assert isl2["candidate"] is None
 
 
+def test_isl_pressure_consecutive_windows_are_adjacent_and_reported_from_best_run():
+    """A missing or low-utilization fixed window breaks an episode, and the
+    reported windows come from the qualifying episode rather than a later
+    shorter run."""
+    decision = default_decision(
+        isl_pressure={
+            "window_s": 1.0,
+            "min_consecutive_windows_same_directed_link": 2,
+            "min_window_utilization": 0.8,
+            "require_positive_p95_queue_delay_same_link": True,
+        })
+    link = "isl:0:1"
+    available = [
+        {"stage": "isl", "link_id": link, "start": float(k),
+         "end": float(k + 1), "rate_bps": 1000.0,
+         "capacity_bits": 1000.0}
+        for k in range(5)
+    ]
+    service = []
+    for k, bits in ((0, 900), (1, 900), (2, 100), (3, 900)):
+        service.append({"pid": k + 1, "stage": "isl", "link_id": link,
+                        "start": float(k), "end": float(k + 1),
+                        "rate_bps": 1000.0, "capacity_bits": 1000.0,
+                        "served_bits": bits, "bits": bits, "outcome": "ok"})
+    events = []
+    for k in (0, 1, 3):
+        events.extend([
+            {"kind": "queue_enter", "pid": k + 1, "at": float(k),
+             "queue": "isl", "link_id": link, "queue_id": k},
+            {"kind": "service_start", "pid": k + 1, "at": float(k) + 0.5,
+             "stage": "isl", "link_id": link, "queue_id": k,
+             "bits": 1000, "rate_bps": 1000.0},
+        ])
+    result = scene_check._recompute_isl_pressure(service, available, events,
+                                                 decision)
+    assert result["candidate"] is not None
+    assert result["candidate"]["qualifying_windows"] == [0, 1]
+    assert result["candidate"]["windows"] == {"0": 0.9, "1": 0.9}
+
+
 def test_tampered_ledger_or_trace_fails_invalid_evidence(tmp_path,
                                                          pop_loader):
     out, tdir, resolved, rows, result = make_scene(tmp_path)

@@ -50,6 +50,22 @@ def test_non_csv_intent_requires_two_sites():
         })
 
 
+def test_population_gravity_intent_uses_raster_universe_without_sites(tmp_path):
+    population = tmp_path / "population.tif"
+    population.write_bytes(b"fake-tiff-bytes-12345")
+    intent = governance.build_run_intent({
+        "runtime_kind": "leo_sim_v2",
+        "config": {
+            "endpoints": {"sites": []},
+            "demand": {
+                "mode": "population_gravity",
+                "population_path": "population.tif",
+            },
+        },
+    }, project_root=tmp_path)
+    assert intent["resolved"]["config"]["endpoints"]["sites"] == []
+
+
 def test_wrong_runtime_kind_rejected():
     with pytest.raises(governance.IntentError, match="runtime_kind"):
         governance.build_run_intent({"runtime_kind": "legacy_gateway", "config": {}})
