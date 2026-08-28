@@ -1,0 +1,72 @@
+我将读取合同允许的 7 个路径，核对授权路径契约。证据已收集完整。核心事实链：
+
+- RUNBOOK（`matrix.py:697,705` 生成）要求 `--authorization EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/authorization.json`（RUNBOOK.md L15/L25/L34）。
+- 该路径在此 commit 不存在（`git ls-files` 仅列出 7 个文件，无 authorization.json）；授权仅在 `CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/authorization.json`（PR #169 合入）。
+- `run-remote.sh:65-69` 只接受 `EXPERIMENTS/` 下路径，`:81` 对缺失文件 fail-closed `die`；`v2_serial_gate.py:49-51` 要求授权是实验目录直接子节点；`remote_job.py:288,295-296` 要求在 CANONICAL_EXPERIMENTS 内且名为 authorization.json。
+- 根因：`authorize_experiment.py` main() 的 `--out` 只校验在项目根内（L559），不强制规范路径；验证逻辑 `verify_authorization`（L464-490）纯内容重算、与文件位置无关，因此重新签发到规范路径即可闭合。
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:AUTH-PATH-REVIEW:independent_review",
+  "status": "EVIDENCE_READY",
+  "summary": "BLOCK（当前状态）：RUNBOOK 与启动链全部要求 EXPERIMENTS/<id>/authorization.json，但该文件在 commit 2009e1c 不存在，授权只在 CODE/work/.../R01/authorization.json。run-remote.sh L81 会 fail-closed 拒绝启动，无静默回退。最小安全修复：用 authorize_experiment.py 重新签发（全量重算）到规范路径，而非复制；verify_authorization 与文件位置无关，重签字节应与现有副本一致。复发防护：在 authorize_experiment.py main() 强制 --out == EXPERIMENTS/<experiment_id>/authorization.json 并加回归测试。CODE/work 副本属已跟踪路径，删除须用户批准，建议保留为工作记录。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "blocking",
+      "summary": "当前正式运行被阻断且为 fail-closed：编译 RUNBOOK 的两个 cell 命令和 v2_analysis 命令均引用 EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/authorization.json，但该路径在此 commit 不存在（git ls-files 仅含 RUNBOOK.md、request.json、compile-report.json、run-manifest.json、analysis-request.json 与 2 个 resolved 配置）。run-remote.sh 在本地预检 L81 即 die \"local authorization is missing or symbolic\"；即使绕过，v2_serial_gate L49-51 要求授权必须是实验目录直接子节点，remote_job L288/L295-296 要求在 CANONICAL_EXPERIMENTS 内且名为 authorization.json。任何把 --authorization 指向 CODE/work 的做法会被 run-remote.sh L65-69 直接拒绝。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/RUNBOOK.md#L11-L36",
+        "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/scripts/remote/run-remote.sh#L65-L81",
+        "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/experiment_platform/v2_serial_gate.py#L46-L51",
+        "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/leo_sim/matrix.py#L691-L709"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "根因：authorize_experiment.py main() 的 --out 仅校验在项目根内（L559 relative_project_path），不强制规范位置 EXPERIMENTS/<experiment_id>/authorization.json，因此授权被合法签发到 CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/authorization.json，与 matrix.py 生成的 RUNBOOK 路径（matrix.py L697/L705）、启动器和 serial gate 契约不一致。签发端无任何机制发现这一错配。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/experiment_platform/authorize_experiment.py#L547-L567",
+        "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/authorization.json#L154-L158"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "重算行为确认安全：verify_authorization（L464-490）先校验 payload_sha256，再从 payload 内嵌的 experiment_dir 与 work_finalization.path 全量重算 build_authorization 并做精确字典比较，与授权文件自身位置无关；现有 CODE/work 副本 payload 自洽（experiment_dir 已指向规范实验目录，experiment_artifact_hashes 绑定 EXPERIMENTS/ 下全部编译产物与 CODE/work 三份场景契约）。因此重新签发到规范路径即可通过全部下游校验，无需改 payload。注意重复副本风险：两个 authorization.json 并存时若其一被篡改，篡改方只会验证失败（fail-closed），但建议保留 CODE/work 副本作工作记录，删除已跟踪路径须按仓库规则逐条列清单经用户批准。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/experiment_platform/authorize_experiment.py#L464-L490",
+        "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/authorization.json#L142-L176"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "本地 Agent 重新签发（不要 cp）：python3 -m CODE.experiment_platform.authorize_experiment --experiment EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01 --finalization CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/finalization.json --out EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/authorization.json；期望 stdout 'AUTHORIZED: EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01 (2 runs)'、exit 0。",
+    "验收 1（字节一致性）：diff 新签发文件与 CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/authorization.json 必须为空（输出对文件位置无关，任何差异即说明输入漂移，须停止排查）。",
+    "验收 2（规范路径重算）：python3 -c \"from pathlib import Path; from CODE.experiment_platform.authorize_experiment import verify_authorization; a=verify_authorization(Path('.'), Path('EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/authorization.json')); assert a['status']=='AUTHORIZED' and a['payload_sha256']=='5e3fb511c289f5c321e463767d6842876c5fdb8ee3ebed96c8a910345ffb2de8'\" 。",
+    "验收 3（serial gate 首 cell）：python3 -m CODE.experiment_platform.v2_serial_gate --root . --experiment EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01 --authorization EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/authorization.json --next-run-id EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01-load10_a-s7；期望 status READY、verified_predecessors 为空（首 cell 在 L96-98 提前返回）。",
+    "验收 4（回归测试）：在 CODE/experiment_platform/tests/test_authorize_experiment.py 新增用例——main()/CLI 以 --out 指向 CODE/work/... 或实验目录内非 authorization.json 名称时必须 exit 2；以规范 EXPERIMENTS/<id>/authorization.json 为 --out 时 exit 0 且 verify_authorization 通过（现有夹具 L158 已把授权写到实验目录，可直接复用）。",
+    "防复发代码改动（最小、不削弱启动器）：在 authorize_experiment.py main() L559 之后增加 fail-closed 校验——out 必须等于 root/'EXPERIMENTS'/experiment_id/'authorization.json'（experiment_id 取自 build_authorization 返回 payload），否则 BLOCK exit 2；不改动 run-remote.sh、v2_serial_gate.py、remote_job.py 的任何现有检查。",
+    "CODE/work 下的 authorization.json 是已跟踪路径（PR #169 合入），保留或删除须按仓库规则列清单经用户批准；本任务未修改任何文件。"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/RUNBOOK.md#L11-L36",
+    "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/scripts/remote/run-remote.sh#L65-L81",
+    "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/scripts/remote/run-remote.sh#L115-L125",
+    "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/experiment_platform/v2_serial_gate.py#L46-L51",
+    "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/experiment_platform/authorize_experiment.py#L464-L490",
+    "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/experiment_platform/authorize_experiment.py#L547-L567",
+    "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/leo_sim/matrix.py#L691-L709",
+    "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/authorization.json#L142-L176",
+    "github://fuguther/leo-direct-sim/blob/2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57/CODE/experiment_platform/tests/test_authorize_experiment.py#L155-L181"
+  ],
+  "open_items": [
+    "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/authorization.json 在此 commit 不存在（git ls-files 仅 7 个跟踪文件），无法给出 blob 引用；缺失本身是 F1 的核心证据。",
+    "新签发授权与 CODE/work 副本的字节 diff、规范路径重算和 serial gate dry-run 需本地 Agent 执行（本 Worker 不做最终真实环境验收）。",
+    "CODE/work 副本的保留/删除需用户按删除已跟踪路径规则批准。"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
