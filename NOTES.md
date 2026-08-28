@@ -790,3 +790,9 @@
 - R03 暴露的启动缺口已复现到 `run-remote.sh`：tmux 内的正式子进程会先执行 `REMOTE_ENV_ACTIVATE`，但 tmux 外的 `remote_job.py prepare` 直接调用 `REMOTE_PYTHON`，因此配置为 `python3` 时会落到未激活的系统解释器，并在仿真启动前因缺少正式依赖 fail-closed。
 - 本修复只在远程 prepare/fail 所在的同一 shell 中、执行 prepare 之前加入现有 `REMOTE_ENV_ACTIVATE`；正式 tmux 子进程的激活与执行逻辑不变，实验参数、授权、回执和分析语义均未修改。
 - TDD 证据：新增 shell 模板回归先在当前代码上以 `substring not found` 失败，随后最小修复转绿。两轮两路 Kimi exact-commit 冷审均为 `PASS_WITH_LIMITS`、无 blocker；Codex 接受其“纯字符串断言可被注释伪装、未覆盖 fail/tmux、外层未锁定严格错误模式先于激活”意见，把回归加固为只认未注释独立命令行，并同时锁定外层 `set -euo pipefail → activation → prepare → fail` 与 tmux `set -euo pipefail → activation → run`。`bash -n` 通过，定向 `2 passed`，全套测试为 `714 passed, 2 skipped, 3 subtests passed`。当前最终修订仍需 PR/CI 合入和 clean-main 部署，不得写成默认远程路径已正式闭环。
+
+## 2026-08-28：全球压力实验授权链合入后补齐标准启动路径
+
+- PR #169 经重新触发 required `pytest` 后通过（run `33157858299`，job `98804853217`，约 9m6s），已 squash 合入 main，merge SHA=`2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57`。该 PR 只闭合三类复核、decision、finalization 与派生 authorization 证据，不代表 VM 已部署或实验已运行。
+- 合入后启动前检查发现：RUNBOOK、`run-remote.sh` 与 `v2_serial_gate` 均要求 `EXPERIMENTS/<experiment_id>/authorization.json`，但 PR #169 只保存了 `CODE/work/.../authorization.json`，正式命令会在仿真启动前 fail-closed。PR #170 将已审核 authorization 按原字节补入标准实验目录；两文件 `cmp` 一致，`verify_authorization` 返回 `AUTHORIZED`（2 runs），首格 serial gate 返回 `READY`。旧 work 工件保留，未删除或移动。
+- 当前仍未部署 PR #170 的最终 main，也未启动全球压力 cell；只有 PR #170 CI 通过并合入、合并后 main CI 绿、canonical VM 部署回执绑定该 exact SHA 后，才允许严格串行启动 `load10_a`、核验自然结束与场景分类，再决定是否启动 `load10_b`。
