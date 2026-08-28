@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "planId": "offload-021a39fe7d8dd1d8",
+  "relayManifest": {
+    "planId": "offload-021a39fe7d8dd1d8",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:AUTH-PATH-REVIEW",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57",
+        "paths": [
+          "CODE/experiment_platform/authorize_experiment.py",
+          "CODE/experiment_platform/v2_serial_gate.py",
+          "CODE/experiment_platform/tests/test_authorize_experiment.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/scripts/remote/run-remote.sh",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/authorization.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+        ],
+        "promptHash": "9fe52984390cd447f177d2cbb9c039e9dd7744738fc4598f220747902940ad63"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:AUTH-PATH-REVIEW:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57",
+        "paths": [
+          "CODE/experiment_platform/authorize_experiment.py",
+          "CODE/experiment_platform/v2_serial_gate.py",
+          "CODE/experiment_platform/tests/test_authorize_experiment.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/scripts/remote/run-remote.sh",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/authorization.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+        ],
+        "promptHash": "3c42df58d881a7538895ff501f8f3c56b721a60e54028c8d9f60b2d8626744ef"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "021a39fe7d8dd1d8058d4a9bcd18b6d49920b7feb4a30bbd895d37d01666552f"
+  },
+  "sourceBaseCommit": "2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:AUTH-PATH-REVIEW",
+      "promptHash": "9fe52984390cd447f177d2cbb9c039e9dd7744738fc4598f220747902940ad63",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57",
+        "paths": [
+          "CODE/experiment_platform/authorize_experiment.py",
+          "CODE/experiment_platform/v2_serial_gate.py",
+          "CODE/experiment_platform/tests/test_authorize_experiment.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/scripts/remote/run-remote.sh",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/authorization.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:AUTH-PATH-REVIEW:independent_review",
+      "promptHash": "3c42df58d881a7538895ff501f8f3c56b721a60e54028c8d9f60b2d8626744ef",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57",
+        "paths": [
+          "CODE/experiment_platform/authorize_experiment.py",
+          "CODE/experiment_platform/v2_serial_gate.py",
+          "CODE/experiment_platform/tests/test_authorize_experiment.py",
+          "CODE/leo_sim/matrix.py",
+          "CODE/scripts/remote/run-remote.sh",
+          "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/authorization.json",
+          "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
