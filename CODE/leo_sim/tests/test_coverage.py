@@ -364,6 +364,22 @@ def test_tampered_source_sha_or_candidate_count_fails_l1_verifier(tmp_path):
                for e in coverage.verify_coverage_audit_v2(bad_scan))
 
 
+def test_l1_verifier_accepts_json_rounding_noise_in_weighted_summary():
+    """Cross-runtime summation noise must not invalidate an untampered audit."""
+    geo = model.Constellation(num_satellites=1, num_planes=1,
+                              altitude_km=550.0, inclination_deg=53.0)
+    endpoints = [
+        _pop_endpoint("G1:0:0", 0.0, 0.0, 10.1),
+        _pop_endpoint("G1:1:1", 10.0, 10.0, 20.2),
+    ]
+    report = coverage.scan_constellation_coverage(
+        geo, endpoints, horizon_s=60.0, step_s=10.0,
+        endpoint_source=_population_source(2, 30.3))
+    report["summary"]["population_weighted_visible_fraction"] += 1e-15
+
+    assert coverage.verify_coverage_audit_v2(report) == []
+
+
 def test_vector_report_is_stable_json_and_chunked(tmp_path):
     geo = model.Constellation(num_satellites=12, num_planes=3,
                               altitude_km=550.0, inclination_deg=53.0,

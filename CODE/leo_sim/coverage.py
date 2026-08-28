@@ -643,12 +643,17 @@ def verify_coverage_audit_v2(report: dict[str, Any],
     if summary.get("never_visible") != never_count:
         errors.append("summary.never_visible != recomputed from ledger")
     if row_total_population > 0:
-        if summary.get("population_weighted_visible_fraction") != (
-                weighted_visible / row_total_population):
+        if not math.isclose(
+                summary.get("population_weighted_visible_fraction", math.nan),
+                weighted_visible / row_total_population,
+                rel_tol=0.0, abs_tol=2e-15):
             errors.append("summary.population_weighted_visible_fraction != "
                           "recomputed from ledger")
-        if summary.get("population_weighted_never_visible_fraction") != (
-                weighted_never / row_total_population):
+        if not math.isclose(
+                summary.get("population_weighted_never_visible_fraction",
+                            math.nan),
+                weighted_never / row_total_population,
+                rel_tol=0.0, abs_tol=2e-15):
             errors.append("summary.population_weighted_never_visible_fraction "
                           "!= recomputed from ledger")
     evaluation = report.get("evaluation")
