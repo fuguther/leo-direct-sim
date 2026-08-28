@@ -796,3 +796,9 @@
 - PR #169 经重新触发 required `pytest` 后通过（run `33157858299`，job `98804853217`，约 9m6s），已 squash 合入 main，merge SHA=`2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57`。该 PR 只闭合三类复核、decision、finalization 与派生 authorization 证据，不代表 VM 已部署或实验已运行。
 - 合入后启动前检查发现：RUNBOOK、`run-remote.sh` 与 `v2_serial_gate` 均要求 `EXPERIMENTS/<experiment_id>/authorization.json`，但 PR #169 只保存了 `CODE/work/.../authorization.json`，正式命令会在仿真启动前 fail-closed。PR #170 将已审核 authorization 按原字节补入标准实验目录；两文件 `cmp` 一致，`verify_authorization` 返回 `AUTHORIZED`（2 runs），首格 serial gate 返回 `READY`。旧 work 工件保留，未删除或移动。
 - 当前仍未部署 PR #170 的最终 main，也未启动全球压力 cell；只有 PR #170 CI 通过并合入、合并后 main CI 绿、canonical VM 部署回执绑定该 exact SHA 后，才允许严格串行启动 `load10_a`、核验自然结束与场景分类，再决定是否启动 `load10_b`。
+
+## 2026-08-28：覆盖审计跨环境末位舍入误报修复
+
+- 全球压力首格自然结束后，冻结 coverage ledger 的 16,988 个区域重新求和得到 `0.8600828566012921`，审计生成环境保存的汇总为 `0.8600828566012908`；差值约 `1.33e-15`，原 verifier 因逐位相等要求误判无效。
+- 本修复仅把两项人口加权比例的复算比较改为绝对误差 `2e-15`；候选区域、人口、逐区域可见率、总数、哈希和其他字段仍逐项核验，明显篡改 `1.0` 的既有反例仍拒绝。实验配置、场景阈值、授权和结果均未改动。
+- TDD 证据：新回归在修复前按预期失败，修复后 `test_coverage.py` 为 `14 passed`、`test_scene_check.py` 为 `15 passed`；冻结全球 coverage audit 的 L1 复核返回空错误列表。仍须 required CI 通过并合入 main 后，才能作为正式分析路径使用。
