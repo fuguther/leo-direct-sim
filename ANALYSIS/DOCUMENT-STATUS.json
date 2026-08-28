@@ -1,6 +1,6 @@
 {
   "schema": "leo-document-governance/v1",
-  "updated_at": "2026-08-24",
+  "updated_at": "2026-08-28",
   "allowed_statuses": [
     "CURRENT-CONTRACT",
     "CURRENT-VOLATILE",
@@ -16,6 +16,7 @@
     "README.md",
     "DECISIONS.md",
     "NOTES.md",
+    ".github/pull_request_template.md",
     "ANALYSIS/DOCUMENT-STATUS.json",
     "ANALYSIS/**/*.md",
     "EXPERIMENTS/experiment-program.yaml",
@@ -23,9 +24,11 @@
     "EXPERIMENTS/contracts/*.md",
     "EXPERIMENTS/EXP-*/RUNBOOK.md",
     "CODE/work/README.md",
+    "CODE/data/traffic/README.md",
     "CODE/experiment_platform/AGENT_EXPERIMENT_PROTOCOL.md",
     "docs/superpowers/**/*.md",
-    "LITERATURE/**/*.md"
+    "LITERATURE/**/*.md",
+    "PAPER/README.md"
   ],
   "entry_point_invariants": [
     {
@@ -122,6 +125,19 @@
       "last_reviewed": null,
       "review_interval_days": null,
       "replacement": "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "status": "CURRENT-CONTRACT",
+      "purpose": "PR evidence contract and lifecycle declaration",
+      "may_direct_current_work": true,
+      "owner": "repository-governance",
+      "last_reviewed": "2026-08-23",
+      "review_interval_days": 90,
+      "replacement": null,
       "require_banner": false,
       "archive_candidate": false,
       "suggested_archive_target": null
@@ -907,6 +923,19 @@
       "suggested_archive_target": null
     },
     {
+      "path": "CODE/data/traffic/README.md",
+      "status": "CURRENT-CONTRACT",
+      "purpose": "Measurement-proxy traffic input contract: fail-closed compile, provenance note, burst separation",
+      "may_direct_current_work": true,
+      "owner": "traffic-governance",
+      "last_reviewed": "2026-08-23",
+      "review_interval_days": 90,
+      "replacement": null,
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
       "path": "CODE/experiment_platform/AGENT_EXPERIMENT_PROTOCOL.md",
       "status": "CURRENT-CONTRACT",
       "purpose": "Current agent experiment protocol",
@@ -938,6 +967,19 @@
       "purpose": "Current literature verification rules",
       "may_direct_current_work": true,
       "owner": "literature-governance",
+      "last_reviewed": "2026-08-23",
+      "review_interval_days": 90,
+      "replacement": null,
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
+      "path": "PAPER/README.md",
+      "status": "CURRENT-CONTRACT",
+      "purpose": "Paper claim eligibility gate and evidence identity constraints",
+      "may_direct_current_work": true,
+      "owner": "paper-governance",
       "last_reviewed": "2026-08-23",
       "review_interval_days": 90,
       "replacement": null,
