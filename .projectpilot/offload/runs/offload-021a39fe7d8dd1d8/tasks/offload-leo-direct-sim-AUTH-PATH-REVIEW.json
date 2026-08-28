@@ -1,0 +1,73 @@
+{
+  "contract": {
+    "allowedPaths": [
+      "CODE/experiment_platform/authorize_experiment.py",
+      "CODE/experiment_platform/v2_serial_gate.py",
+      "CODE/experiment_platform/tests/test_authorize_experiment.py",
+      "CODE/leo_sim/matrix.py",
+      "CODE/scripts/remote/run-remote.sh",
+      "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/authorization.json",
+      "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+    ],
+    "metadata": {
+      "frozenPlanDigest": "sha256:c21a1c8436092fa8b048686265e9a95a2de39ef1d2f39a72d124b453185b02c7",
+      "digestVersion": "canonical-json-sha256-v1"
+    },
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:AUTH-PATH-REVIEW",
+    "title": "Review canonical authorization path mismatch",
+    "goal": "At exact main commit 2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57, verify that the compiled RUNBOOK and remote launcher require EXPERIMENTS/<experiment_id>/authorization.json while the merged global-pressure authorization exists only at CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/authorization.json. Determine the minimal safe fix and identify any code/test changes needed to prevent recurrence. Do not modify files. Explicitly check authorize_experiment.py output validation, matrix runbook generation, v2_serial_gate parent-directory contract, and the existing authorization payload/recomputation behavior. Treat duplicate copies, path binding, deletion/move restrictions, and formal-run claim boundaries as risks. Return PASS/BLOCK plus path-and-line evidence and exact acceptance tests.",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "deterministic",
+    "depthTier": "standard",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "2009e1c75fab50f7c441ce5a8dd57aeba4ae6d57",
+      "paths": [
+        "CODE/experiment_platform/authorize_experiment.py",
+        "CODE/experiment_platform/v2_serial_gate.py",
+        "CODE/experiment_platform/tests/test_authorize_experiment.py",
+        "CODE/leo_sim/matrix.py",
+        "CODE/scripts/remote/run-remote.sh",
+        "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/authorization.json",
+        "EXPERIMENTS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Clearly states whether the current formal run is blocked",
+      "Recommends one minimal fail-closed repair without weakening the launcher",
+      "Lists exact regression tests and checks authorization recomputation from the canonical path"
+    ],
+    "requiredEvidence": [
+      "Exact repository paths and line references",
+      "Contract comparison across authorizer, runbook, serial gate, and remote launcher"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "9fe52984390cd447f177d2cbb9c039e9dd7744738fc4598f220747902940ad63"
+}
