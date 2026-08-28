@@ -43,3 +43,11 @@ def test_tmux_child_uses_the_activated_formal_environment():
 
     assert tmux_script.count("$REMOTE_ENV_ACTIVATE") == 1
     assert strict_shell < activation < run
+
+
+def test_formal_runner_help_describes_runtime_specific_execution():
+    script = RUNNER.read_text(encoding="utf-8")
+
+    assert "It always executes the deployed\nCODE/run.py" not in script
+    assert "legacy_gateway -> deployed CODE/run.py" in script
+    assert "leo_sim_v2 -> python -m CODE.leo_sim run" in script
