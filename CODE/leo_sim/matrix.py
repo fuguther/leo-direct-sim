@@ -19,6 +19,7 @@ from . import governance
 MATRIX_REQUEST_SCHEMA = "leo-sim-experiment-matrix-request/v1"
 MATRIX_MANIFEST_SCHEMA = "leo-sim-experiment-matrix-manifest/v1"
 MATRIX_ANALYSIS_SCHEMA = "leo-sim-matrix-analysis-request/v1"
+MATRIX_COMPILE_REPORT_SCHEMA = "leo-sim-experiment-matrix-compile-report/v2"
 SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 EXPERIMENT_ID = re.compile(r"^EXP-[A-Za-z0-9][A-Za-z0-9_-]*$")
 PHASES = {"training", "evaluation", "train", "eval", "non_learning"}
@@ -544,6 +545,29 @@ def _artifact_hashes(out_dir: Path, paths: list[str]) -> dict[str, str]:
             for raw in sorted(paths)}
 
 
+def _design_accounting(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Count unique resolved configurations separately from re-executions."""
+    run_ids_by_config: dict[str, list[str]] = {}
+    for row in rows:
+        run_ids_by_config.setdefault(row["config_sha256"], []).append(
+            row["run_id"])
+    groups = [
+        {"config_sha256": digest, "run_ids": sorted(run_ids)}
+        for digest, run_ids in sorted(run_ids_by_config.items())
+        if len(run_ids) > 1
+    ]
+    unique = len(run_ids_by_config)
+    return {
+        "schema": "leo-sim-matrix-design-accounting/v1",
+        "planned_cells": len(rows),
+        "unique_resolved_configurations": unique,
+        "exact_reexecution_cells": len(rows) - unique,
+        "exact_reexecution_groups": groups,
+        "independent_condition_rule": (
+            "one independent condition per unique resolved config SHA256"),
+    }
+
+
 def _reject_symlink_ancestors(path: Path, stop: Path) -> None:
     """Reject caller-controlled symlink components up to a trusted root."""
     path = Path(path)
@@ -667,7 +691,8 @@ def _render_invocation(invocation: list[str]) -> list[str]:
 
 def _render_runbook(
         request: dict[str, Any], rows: list[dict[str, Any]],
-        decision_contract: dict[str, Any] | None) -> str:
+        decision_contract: dict[str, Any] | None,
+        design_accounting: dict[str, Any] | None = None) -> str:
     serial = (request.get("execution_policy", {}).get("mode")
               == "serial_fail_closed")
     command_contract = (
@@ -682,6 +707,17 @@ def _render_runbook(
         "Runtime: `leo_sim_v2`; compilation only, no run is launched.", "",
         command_contract, "",
     ]
+    if design_accounting is not None:
+        lines.extend([
+            "## Design accounting", "",
+            f"{design_accounting['planned_cells']} planned cells; "
+            f"{design_accounting['unique_resolved_configurations']} unique "
+            "resolved configurations; "
+            f"{design_accounting['exact_reexecution_cells']} exact "
+            "re-execution cells.", "",
+            "Exact re-executions are repeatability evidence only and do not "
+            "increase the independent-condition count.", "",
+        ])
     if serial:
         lines.extend([
             "Execution policy: `serial_fail_closed`. The canonical runner applies a "
@@ -746,7 +782,8 @@ def _render_runbook(
 
 def _analysis_document(request: dict[str, Any], manifest_sha: str,
                        request_sha: str, rows: list[dict[str, Any]],
-                       decision_contract: dict[str, Any] | None = None) -> dict[str, Any]:
+                       decision_contract: dict[str, Any] | None = None,
+                       design_accounting: dict[str, Any] | None = None) -> dict[str, Any]:
     document = {
         "schema": MATRIX_ANALYSIS_SCHEMA,
         "runtime_kind": governance.RUNTIME_KIND,
@@ -767,6 +804,8 @@ def _analysis_document(request: dict[str, Any], manifest_sha: str,
     }
     if decision_contract is not None:
         document["decision_contract"] = decision_contract
+    if design_accounting is not None:
+        document["design_accounting"] = design_accounting
     return document
 
 
@@ -789,6 +828,7 @@ def compile_matrix_experiment(request_path: Path, out_dir: Path,
     validated = validate_request(request)
     decision_contract = _load_decision_contract(project_root, validated)
     validated, rows = _resolve_cells(validated, project_root)
+    design_accounting = _design_accounting(rows)
     out_dir = _canonical_experiment_dir(project_root,
                                          validated["experiment_id"], out_dir)
     if out_dir.is_symlink():
@@ -829,14 +869,16 @@ def compile_matrix_experiment(request_path: Path, out_dir: Path,
     _write_json(out_dir / "run-manifest.json", manifest)
     manifest_sha = hashlib.sha256((out_dir / "run-manifest.json").read_bytes()).hexdigest()
     analysis = _analysis_document(
-        validated, manifest_sha, request_sha, rows, decision_contract)
+        validated, manifest_sha, request_sha, rows, decision_contract,
+        design_accounting)
     _write_json(out_dir / "analysis-request.json", analysis)
     (out_dir / "RUNBOOK.md").write_text(
-        _render_runbook(validated, rows, decision_contract), encoding="utf-8")
+        _render_runbook(validated, rows, decision_contract, design_accounting),
+        encoding="utf-8")
     bound_paths = ["request.json", "run-manifest.json", "analysis-request.json",
                    "RUNBOOK.md", *(row["config_path"] for row in rows)]
     report = {
-        "schema": governance.COMPILE_REPORT_SCHEMA,
+        "schema": MATRIX_COMPILE_REPORT_SCHEMA,
         "status": "COMPILED_REVIEW_REQUIRED",
         "runtime_kind": governance.RUNTIME_KIND,
         "experiment_id": validated["experiment_id"],
@@ -844,6 +886,7 @@ def compile_matrix_experiment(request_path: Path, out_dir: Path,
         "request_sha256": request_sha,
         "execution_authorized": False,
         "launcher_generated": False,
+        "design_accounting": design_accounting,
         "artifact_hashes": _artifact_hashes(out_dir, bound_paths),
     }
     if decision_contract is not None:
@@ -875,13 +918,17 @@ def verify_compiled_matrix(root: Path, experiment_dir: Path) -> tuple[str, dict[
     manifest = docs["run-manifest.json"]
     analysis = docs["analysis-request.json"]
     request_sha = hashlib.sha256((experiment_dir / "request.json").read_bytes()).hexdigest()
-    if set(report) != {
+    report_fields = {
             "schema", "status", "runtime_kind", "experiment_id", "errors",
             "request_sha256", "execution_authorized", "launcher_generated",
-            "artifact_hashes"}:
+            "artifact_hashes"}
+    legacy_report = (report.get("schema") == governance.COMPILE_REPORT_SCHEMA
+                     and set(report) == report_fields)
+    current_report = (report.get("schema") == MATRIX_COMPILE_REPORT_SCHEMA
+                      and set(report) == report_fields | {"design_accounting"})
+    if not legacy_report and not current_report:
         raise MatrixError("matrix compile report has an invalid field set")
-    if (report["schema"] != governance.COMPILE_REPORT_SCHEMA
-            or report["status"] != "COMPILED_REVIEW_REQUIRED"
+    if (report["status"] != "COMPILED_REVIEW_REQUIRED"
             or report["runtime_kind"] != governance.RUNTIME_KIND
             or report["experiment_id"] != request["experiment_id"]
             or report["errors"] != [] or report["request_sha256"] != request_sha
@@ -899,6 +946,9 @@ def verify_compiled_matrix(root: Path, experiment_dir: Path) -> tuple[str, dict[
             manifest.get("arms") != request["arms"]:
         raise MatrixError("matrix manifest identity/state mismatch")
     _, rows = _resolve_cells(request, root)
+    design_accounting = None if legacy_report else _design_accounting(rows)
+    if not legacy_report and report["design_accounting"] != design_accounting:
+        raise MatrixError("matrix compile report design accounting mismatch")
     expected_cells = [{key: row[key] for key in (
         "run_id", "runtime_kind", "arm_id", "phase", "trace_seed",
         "learning_seed", "pairing_key", "config_overrides", "checkpoint_lineage",
@@ -913,11 +963,12 @@ def verify_compiled_matrix(root: Path, experiment_dir: Path) -> tuple[str, dict[
     expected_manifest_sha = hashlib.sha256((experiment_dir / "run-manifest.json").read_bytes()).hexdigest()
     decision_contract = _load_decision_contract(root, request)
     expected_analysis = _analysis_document(
-        request, expected_manifest_sha, request_sha, rows, decision_contract)
+        request, expected_manifest_sha, request_sha, rows, decision_contract,
+        design_accounting)
     if analysis != expected_analysis:
         raise MatrixError("matrix analysis request does not bind the exact cohort")
     if runbook.read_text(encoding="utf-8") != _render_runbook(
-            request, rows, decision_contract):
+            request, rows, decision_contract, design_accounting):
         raise MatrixError("matrix RUNBOOK does not derive from the request")
     paths = ["request.json", "run-manifest.json", "analysis-request.json", "RUNBOOK.md",
              *(row["config_path"] for row in rows)]

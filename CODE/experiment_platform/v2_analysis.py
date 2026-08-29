@@ -627,6 +627,42 @@ def _compute_planned_contrasts(
     return output
 
 
+def _validated_design_accounting(
+        analysis_request: dict[str, Any],
+        cells: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Recompute optional compiler accounting before persisting it."""
+    declared = analysis_request.get("design_accounting")
+    if declared is None:
+        return None
+    run_ids_by_config: dict[str, list[str]] = {}
+    for cell in cells:
+        config_sha = cell.get("config_sha256")
+        run_id = cell.get("run_id")
+        if (not isinstance(config_sha, str)
+                or re.fullmatch(r"[0-9a-f]{64}", config_sha) is None
+                or not isinstance(run_id, str) or not run_id):
+            raise V2AnalysisError(
+                "design accounting requires cell config SHA and run id")
+        run_ids_by_config.setdefault(config_sha, []).append(run_id)
+    expected = {
+        "schema": "leo-sim-matrix-design-accounting/v1",
+        "planned_cells": len(cells),
+        "unique_resolved_configurations": len(run_ids_by_config),
+        "exact_reexecution_cells": len(cells) - len(run_ids_by_config),
+        "exact_reexecution_groups": [
+            {"config_sha256": digest, "run_ids": sorted(run_ids)}
+            for digest, run_ids in sorted(run_ids_by_config.items())
+            if len(run_ids) > 1
+        ],
+        "independent_condition_rule": (
+            "one independent condition per unique resolved config SHA256"),
+    }
+    if declared != expected:
+        raise V2AnalysisError(
+            "analysis request design accounting does not match matrix cells")
+    return expected
+
+
 def _verify_authorization_bound(
         root: Path, experiment_dir: Path, authorization_path: Path,
         strict_error: Exception) -> dict[str, Any]:
@@ -859,6 +895,8 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
     if not isinstance(cells, list) or not isinstance(planned_ids, list) \
             or planned_ids != [cell.get("run_id") for cell in cells]:
         raise V2AnalysisError("analysis cohort does not exactly match matrix cells")
+    design_accounting = _validated_design_accounting(
+        analysis_request, cells)
     authorized_rows = authorization.get("authorized_cells") or authorization.get("authorized_runs")
     if not isinstance(authorized_rows, list):
         raise V2AnalysisError("authorization has no authorized V2 cohort")
@@ -899,7 +937,7 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
         input_paths.extend(root / item["path"] for item in result["artifacts"])
     inputs = {str(path.relative_to(root)): file_sha256(path)
               for path in input_paths}
-    return {
+    manifest = {
         "schema": SCHEMA,
         "status": "VERIFIED",
         "errors": [],
@@ -925,6 +963,9 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
         "claim_status": ("LEGACY_INTERNAL_ONLY" if legacy_only
                           else "READY_FOR_INDEPENDENT_CLAIM_REVIEW"),
     }
+    if design_accounting is not None:
+        manifest["design_accounting"] = design_accounting
+    return manifest
 
 
 def write_outputs(root: Path, out_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:
@@ -941,6 +982,8 @@ def write_outputs(root: Path, out_dir: Path, manifest: dict[str, Any]) -> dict[s
         "planned_contrasts": manifest["planned_contrasts"],
         "claim_status": manifest["claim_status"],
     }
+    if "design_accounting" in manifest:
+        summary["design_accounting"] = manifest["design_accounting"]
     (out_dir / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     report = [
@@ -948,8 +991,20 @@ def write_outputs(root: Path, out_dir: Path, manifest: dict[str, Any]) -> dict[s
         f"- status: `{manifest['status']}`",
         f"- primary metric: `{manifest['primary_metric']}`",
         f"- verified runs: `{len(manifest['verified_run_ids'])}`", "",
-        "## Run diagnostics", "",
     ]
+    if "design_accounting" in manifest:
+        accounting = manifest["design_accounting"]
+        report.extend([
+            "## Design accounting", "",
+            f"- planned cells: `{accounting['planned_cells']}`",
+            f"- unique resolved configurations: "
+            f"`{accounting['unique_resolved_configurations']}`",
+            f"- exact re-execution cells: "
+            f"`{accounting['exact_reexecution_cells']}`",
+            "- exact re-executions are repeatability evidence, not additional "
+            "independent conditions", "",
+        ])
+    report.extend(["## Run diagnostics", ""])
     for result in manifest["run_results"]:
         diagnostics = result["diagnostics"]
         mcs = diagnostics["mcs"]
@@ -1074,6 +1129,9 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
             "planned_contrasts": manifest.get("planned_contrasts"),
             "claim_status": manifest.get("claim_status"),
         }
+        if "design_accounting" in manifest:
+            expected_summary["design_accounting"] = \
+                manifest["design_accounting"]
         if summary != expected_summary:
             raise V2AnalysisError("analysis summary differs from manifest")
         analysis_mode = manifest.get("analysis_mode")
@@ -1092,7 +1150,8 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
                     "run_results", "planned_contrasts", "claim_boundary",
                     "inputs", "authorization_sha256", "analyzer",
                     "analysis_mode", "authorization_verification",
-                    "authorization_strict_error", "claim_status"):
+                    "authorization_strict_error", "claim_status",
+                    "design_accounting"):
             if recomputed.get(key) != manifest.get(key):
                 raise V2AnalysisError(f"persisted analysis differs for {key}")
     except (OSError, ValueError, json.JSONDecodeError) as exc:

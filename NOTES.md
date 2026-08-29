@@ -5,6 +5,13 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-30：P1 实验设计记账与科研门分层
+
+- matrix compiler 新增 `design_accounting`：分别记录 planned cells、唯一 resolved config、精确重执行 cell 与 run-id 分组；analysis request 和 RUNBOOK 同步绑定。完全相同配置的重执行明确只算重复性证据，不增加独立条件数；旧格式编译包继续由 exact-SHA/后验兼容链处理，不改写正在运行的 R02 授权工件。
+- Run 产物契约明确拆分“运行/证据准入门”和“科研充分性门”：acceptance 与 governance `research_eligible=true` 不能替代场景、物理、统计和逐 claim gate。
+- 当前 R02 管理口径冻结为一次性描述性场景/稳定性诊断：24 cells=12 唯一配置+12 精确重执行，且预注册上界表明当前 bracket 无法回答 ISL 压力阈值。运行结果尚未在本条提前填写。
+- 验证：定向 matrix/v2-analysis/document-governance `94 passed`；全量 `837 passed, 2 skipped, 1 warning, 3 subtests passed`；document governance `0 errors, 0 warnings`；`git diff --check` 通过。
+
 ## 2026-08-29：Bracket R02 审阅链闭合与授权（PR #179-#183）
 
 - 链路：请求编译（#179）→ 24-cell 判定性设计修订（#180）→ brief schema 修复（#181）→ revision_reason（#182）→ 链工件（#183）。

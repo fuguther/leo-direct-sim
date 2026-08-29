@@ -1245,6 +1245,18 @@ def _sealed_matrix_analysis_fixture(root: Path) -> tuple[Path, Path, Path, list[
         "schema": v2_analysis.ANALYSIS_SCHEMA,
         "experiment_id": "EXP-V2-ANALYSIS",
         "planned_run_ids": [row["run_id"] for row in rows],
+        "design_accounting": {
+            "schema": "leo-sim-matrix-design-accounting/v1",
+            "planned_cells": 2,
+            "unique_resolved_configurations": 1,
+            "exact_reexecution_cells": 1,
+            "exact_reexecution_groups": [{
+                "config_sha256": rows[0]["config_sha256"],
+                "run_ids": sorted(row["run_id"] for row in rows),
+            }],
+            "independent_condition_rule": (
+                "one independent condition per unique resolved config SHA256"),
+        },
         "analysis": {
             "analysis_id": "AN-V2-ANALYSIS", "primary_metric": "delivery_rate",
             "planned_contrasts": [{"name": "treatment_minus_control",
@@ -1310,6 +1322,9 @@ def test_v2_analysis_auto_admits_sealed_historical_authorization(tmp_path):
     assert "no longer matches" in manifest["authorization_strict_error"]
     assert manifest["verified_run_ids"] == [row["run_id"] for row in rows]
     assert manifest["planned_contrasts"][0]["n_pairs"] == 1
+    assert manifest["design_accounting"]["planned_cells"] == 2
+    assert manifest["design_accounting"]["unique_resolved_configurations"] == 1
+    assert manifest["design_accounting"]["exact_reexecution_cells"] == 1
     out = root / "ANALYSIS" / "EXP-V2-ANALYSIS"
     with _deny_strict_auth():
         v2_analysis.write_outputs(root, out, manifest)
@@ -1383,4 +1398,3 @@ def test_v2_analysis_auto_rejects_wrong_recorded_artifact_digest(tmp_path):
         with pytest.raises(v2_analysis.V2AnalysisError,
                            match="bound artifact no longer matches"):
             v2_analysis.analyze(root, experiment, auth_path)
-
