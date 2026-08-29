@@ -24,6 +24,10 @@
 
 - Cell1 实跑（natural_end, conservation_ok, 170/132/38 同型 R01）证明 500 门不可满足；按 round-1 审阅者预案降级 {1,0,true,true}（#184）。round-5 三审 PASS（5e96b41）；链重建 rev4：decision/finalization ACCEPTED、authorization 24 runs 替换旧授权（#185）。
 
+## 2026-08-30：R02 执行上限修正与链 rev5（PR #187/#188）
+
+- Cell 13（load40_a-s7）实跑被 CapExceeded（entities 2001 > max_entities=2000）中断（natural_end=false, conservation_ok, 7.3M events, 零丢包）——R01 遗留容量门。limits 提升 max_entities=20000 / max_events=1e8（#187）；round-6 三审 PASS（fb75e31）；链 rev5 重建（#188）。前 12 cells（load10/20 旧 config）superseded，24 cells 全量重跑。
+
 ## 2026-08-29：状态包原子更新（PR #177）
 
 - 4 份 update_now 关闭：CURRENT-EXPERIMENT-READINESS / EXPERIMENT-PROGRAM / PLATFORM-CAPABILITY-LEDGER 新增 2026-08-29 CURRENT 快照节；experiment-program.yaml 补 preregistered 枚举并置 v2_formal_evidence_chain_verified / global_scene_repeat_analysis_verified=completed_verified；DOCUMENT-STATUS.json 4 条目 last_reviewed=2026-08-29。
