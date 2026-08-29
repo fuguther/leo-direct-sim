@@ -1,0 +1,25 @@
+{
+  "allowed_inputs": [
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/",
+    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/",
+    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
+    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json"
+  ],
+  "allowed_outputs": [
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/",
+    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/"
+  ],
+  "context": [
+    "The traffic source is a checked-in population raster proxy, not measured subscriber traffic (same provenance as R01).",
+    "Cells are paired by seed; contrasts load20-10 / load40-20 / load80-40 are paired descriptive differences, not inferential statistics.",
+    "The scene decision contract stays frozen from R01 (load-agnostic gates); R02 contract re-binds the same decision and coverage artifacts for auditability.",
+    "User-delegated parameters: loads {10,20,40,80}, seeds {7,11,19}; acceptance contract inherited from R01."
+  ],
+  "objective": "Run a bounded global population-proxy load-response bracket (10/20/40/80 Mbps x seeds 7/11/19, 12 cells) through the formal VM chain and classify each load with independent access, route, egress and ISL-pressure gates before any load-response or threshold claim is considered.",
+  "parent_revision": 1,
+  "producer_id": "producer:codex-global-pressure",
+  "producer_session_id": "P-bracket-r02-request",
+  "revision": 2,
+  "schema": "agent-work-package/v2",
+  "work_id": "WP-LEO-V2-GLOBAL-PRESSURE-BRACKET"
+}

@@ -1,0 +1,462 @@
+{
+  "acceptance": {
+    "min_delivered_packets": 0,
+    "min_multisat_deliveries": 0,
+    "require_control_delivery": false,
+    "require_data_isl": false
+  },
+  "analysis": {
+    "analysis_id": "AN-GLOBAL-PRESSURE-BRACKET-R02-LOAD-RESPONSE",
+    "decision_contract": {
+      "path": "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json"
+    },
+    "estimand": "paired descriptive load-increment differences (delivery_rate) over nested global child traces; not a threshold or algorithm comparison",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "paired descriptive difference at seeds 7/11/19",
+        "left_arm": "load20",
+        "name": "load20_minus_load10",
+        "right_arm": "load10"
+      },
+      {
+        "estimand": "paired descriptive difference at seeds 7/11/19, load20b is the dedicated duplicate arm",
+        "left_arm": "load40",
+        "name": "load40_minus_load20",
+        "right_arm": "load20b"
+      },
+      {
+        "estimand": "paired descriptive difference at seeds 7/11/19, load40b is the dedicated duplicate arm",
+        "left_arm": "load80",
+        "name": "load80_minus_load40",
+        "right_arm": "load40b"
+      }
+    ],
+    "primary_metric": "delivery_rate"
+  },
+  "arms": [
+    {
+      "arm_id": "load10",
+      "config_overrides": {
+        "demand": {
+          "offered_mbps": 10
+        }
+      },
+      "intervention_paths": [
+        "demand.offered_mbps"
+      ]
+    },
+    {
+      "arm_id": "load20",
+      "config_overrides": {
+        "demand": {
+          "offered_mbps": 20
+        }
+      },
+      "intervention_paths": [
+        "demand.offered_mbps"
+      ]
+    },
+    {
+      "arm_id": "load20b",
+      "config_overrides": {
+        "demand": {
+          "offered_mbps": 20
+        }
+      },
+      "intervention_paths": [
+        "demand.offered_mbps"
+      ]
+    },
+    {
+      "arm_id": "load40",
+      "config_overrides": {
+        "demand": {
+          "offered_mbps": 40
+        }
+      },
+      "intervention_paths": [
+        "demand.offered_mbps"
+      ]
+    },
+    {
+      "arm_id": "load40b",
+      "config_overrides": {
+        "demand": {
+          "offered_mbps": 40
+        }
+      },
+      "intervention_paths": [
+        "demand.offered_mbps"
+      ]
+    },
+    {
+      "arm_id": "load80",
+      "config_overrides": {
+        "demand": {
+          "offered_mbps": 80
+        }
+      },
+      "intervention_paths": [
+        "demand.offered_mbps"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "arm_id": "load10",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-7-20vs10",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "load20",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-7-20vs10",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "load20b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-7-40vs20",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "load40",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-7-40vs20",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "load40b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-7-80vs40",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "load80",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-7-80vs40",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "load10",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-11-20vs10",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s11",
+      "trace_seed": 11
+    },
+    {
+      "arm_id": "load20",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-11-20vs10",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s11",
+      "trace_seed": 11
+    },
+    {
+      "arm_id": "load20b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-11-40vs20",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s11",
+      "trace_seed": 11
+    },
+    {
+      "arm_id": "load40",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-11-40vs20",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s11",
+      "trace_seed": 11
+    },
+    {
+      "arm_id": "load40b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-11-80vs40",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s11",
+      "trace_seed": 11
+    },
+    {
+      "arm_id": "load80",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-11-80vs40",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s11",
+      "trace_seed": 11
+    },
+    {
+      "arm_id": "load10",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-19-20vs10",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s19",
+      "trace_seed": 19
+    },
+    {
+      "arm_id": "load20",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-19-20vs10",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s19",
+      "trace_seed": 19
+    },
+    {
+      "arm_id": "load20b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-19-40vs20",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s19",
+      "trace_seed": 19
+    },
+    {
+      "arm_id": "load40",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-19-40vs20",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s19",
+      "trace_seed": 19
+    },
+    {
+      "arm_id": "load40b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-19-80vs40",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s19",
+      "trace_seed": 19
+    },
+    {
+      "arm_id": "load80",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "cp-19-80vs40",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s19",
+      "trace_seed": 19
+    }
+  ],
+  "claim_boundary": {
+    "can_claim": [
+      "paired DESCRIPTIVE load-increment differences (20-10 / 40-20 / 80-40 Mbps) over the nested population-proxy child trace family at seeds {7,11,19}",
+      "per-load scene classification after receipt verification and the frozen scene decision contract (R02)",
+      "repeatability of the middle-load duplicate arms (load20b/load40b) plus R01 load10 pair as integrity checkpoints"
+    ],
+    "cannot_claim": [
+      "a global ISL pressure threshold or load-response CURVE",
+      "the first pressure point before higher registered loads are checked",
+      "causal or inferential statistics beyond paired descriptive differences",
+      "real subscriber traffic, universal global service, algorithm superiority, information value, RL value, new-algorithm contribution"
+    ]
+  },
+  "common_config": {
+    "access": {
+      "acquisition_delay_s": 0.1,
+      "association": "bbm",
+      "downlink_queue_bits": 64000000,
+      "downlink_rate_mbps": 100,
+      "hysteresis_deg": 0,
+      "min_dwell_s": 0,
+      "slots_per_satellite": 4,
+      "unavailable_policy": "queue",
+      "uplink_queue_bits": 64000000,
+      "uplink_rate_mbps": 100
+    },
+    "control_plane": {
+      "advertise_interval_s": 1,
+      "enabled": true,
+      "packet_bits": 8000,
+      "ttl_s": 10,
+      "vis_k": 17
+    },
+    "demand": {
+      "destination_population_exponent": 1,
+      "destination_rejection_max_draws": 10000,
+      "diurnal_amplitude": 0.5,
+      "diurnal_phase_h": 12,
+      "emission_end_s": 20,
+      "gravity_alpha": 1.25,
+      "gravity_d_floor_km": 100,
+      "mode": "population_gravity",
+      "nested_master_offered_mbps": 80,
+      "offered_mbps": 10,
+      "packet_bits": 1000000,
+      "population_destination_sampler": "alias_rejection",
+      "population_path": "CODE/population_map/gpw_v4_population_count_rev11_2020_15_min.tif",
+      "source_population_exponent": 1,
+      "temporal_model": "local_diurnal_cosine",
+      "utc_start_hour": 0
+    },
+    "endpoints": {
+      "aggregation_deg": 1.0,
+      "grid_deg": 0.25,
+      "sites": []
+    },
+    "execution": {
+      "available_capacity_interval_s": 1,
+      "max_entities": 2000,
+      "max_events": 20000000,
+      "max_packets": 5000
+    },
+    "learning": {
+      "algorithm": "none"
+    },
+    "links": {
+      "ge_enabled": false,
+      "rate_model": "mcs"
+    },
+    "outputs": {
+      "plotting": false
+    },
+    "routing": {
+      "contract": "C3",
+      "learning_enabled": false,
+      "max_hops": 64,
+      "policy": "hop"
+    },
+    "scenario": {
+      "altitude_km": 600,
+      "duration_s": 30,
+      "geometry_epoch_s": 0,
+      "inclination_deg": 98.6,
+      "min_elevation_deg": 25,
+      "name": "population-global-1deg-pressure-bracket-r01",
+      "num_planes": 14,
+      "num_satellites": 280,
+      "time_step_s": 0.1
+    },
+    "topology": {
+      "matching": "markovian",
+      "recompute_interval_s": 1
+    }
+  },
+  "execution_policy": {
+    "mode": "serial_fail_closed"
+  },
+  "experiment_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-matrix-request/v1",
+  "work_finalization": "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/finalization.json"
+}
