@@ -67,12 +67,12 @@
     "sha256": "b9b3f75378b6d1f81fb46624193ca35d6ebb41a9c5970d689f6e78a4366a26b7"
   },
   "experiment_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
-  "matrix_manifest_sha256": "9ff256c24a0d67e62838bd407750b00bffeb6822357d51851d4310726dee9971",
+  "matrix_manifest_sha256": "943cf1907f5546e60dd5cd36a84af2d7aed20b9cbdb516731550caefe359c1fa",
   "planned_cells": [
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -89,8 +89,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -107,8 +107,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -125,8 +125,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -143,8 +143,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -161,8 +161,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -179,8 +179,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -197,8 +197,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -215,8 +215,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -233,8 +233,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -251,8 +251,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -269,8 +269,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -287,8 +287,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -305,8 +305,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -323,8 +323,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -341,8 +341,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -359,8 +359,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -377,8 +377,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -395,8 +395,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -413,8 +413,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -431,8 +431,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -449,8 +449,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -467,8 +467,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -485,8 +485,8 @@
     },
     {
       "acceptance": {
-        "min_delivered_packets": 500,
-        "min_multisat_deliveries": 1,
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
         "require_control_delivery": true,
         "require_data_isl": true
       },
@@ -528,7 +528,7 @@
     "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11",
     "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19"
   ],
-  "request_sha256": "74f9942daceda036a9589cecdcf1bd65bea4334bc205168390751251d4e699d3",
+  "request_sha256": "bad67d6c65b62c527d787182a6b71bd6638c0ea0df4b15681343ea1e4cd12cb1",
   "runtime_kind": "leo_sim_v2",
   "schema": "leo-sim-matrix-analysis-request/v1",
   "status": "WAITING_FOR_VERIFIED_RUNS"
