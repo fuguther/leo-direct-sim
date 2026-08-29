@@ -4,6 +4,12 @@ Runtime: `leo_sim_v2`; compilation only, no run is launched.
 
 Cells are listed in mandatory order; every later command is blocked until its predecessors pass the serial evidence gate:
 
+## Design accounting
+
+24 planned cells; 12 unique resolved configurations; 12 exact re-execution cells.
+
+Exact re-executions are repeatability evidence only and do not increase the independent-condition count.
+
 Execution policy: `serial_fail_closed`. The canonical runner applies a machine-enforced serial predecessor gate before every cell after the first; missing or ineligible pulled predecessor evidence blocks the next launch.
 
 ## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7

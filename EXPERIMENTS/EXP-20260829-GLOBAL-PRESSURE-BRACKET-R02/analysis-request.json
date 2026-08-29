@@ -66,8 +66,101 @@
     "schema": "leo-sim-scene-check-contract/v1",
     "sha256": "b9b3f75378b6d1f81fb46624193ca35d6ebb41a9c5970d689f6e78a4366a26b7"
   },
+  "design_accounting": {
+    "exact_reexecution_cells": 12,
+    "exact_reexecution_groups": [
+      {
+        "config_sha256": "162069cf91e214f57dd2bb18eede5456d1480016328227dcca410645d6d2b108",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s11",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11"
+        ]
+      },
+      {
+        "config_sha256": "1d17c002260880d5af77db20de41f40e47abad88f3171e7c7ebcbb9c7e504f20",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s7",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7"
+        ]
+      },
+      {
+        "config_sha256": "29733b58225f304d196b48014139cc2701cf77cad61c315eecc885db8458cbf3",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s11",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s11"
+        ]
+      },
+      {
+        "config_sha256": "2e051c274d762bec3b3c307ded4b766598deab576a50fa76839aa0fa58a2170b",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s19",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s19"
+        ]
+      },
+      {
+        "config_sha256": "49bab54c88f2bc0a1efa3e87c9a9231829cc81cf8508bf4a6d09c7f6c2f0c9f7",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s7"
+        ]
+      },
+      {
+        "config_sha256": "4d3b30910f0920b9b413e35e699bb530fe0437c26e533c4e4da5f77b08ac1e03",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s7",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s7"
+        ]
+      },
+      {
+        "config_sha256": "4df9197bc27351aa47eb289ccefbe0c2ee810d16f2907b3fcd2eee707f139b21",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s19",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s19"
+        ]
+      },
+      {
+        "config_sha256": "6f5d474584735b0040293c489a572bbb69bcebc28eabb5cf03d52612bd598d84",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s19"
+        ]
+      },
+      {
+        "config_sha256": "886d191f452b4e61df1c8240bc16712beb94e678b8d7904f619be1849796267b",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s7",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s7"
+        ]
+      },
+      {
+        "config_sha256": "919cfe42c4a8fd70900c36c1acf9cd262eb27cb1fb85a993666ae8b9217e4e86",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s19",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19"
+        ]
+      },
+      {
+        "config_sha256": "a91c08041f3cffce9395fbf42cb5ceaf7554079a7aee87ea8742cea8aca1a515",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s11"
+        ]
+      },
+      {
+        "config_sha256": "e1f20bea6b4019258c61ead0f46901d03a6541b1dcd2437f9468d8f02c835d40",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s11",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s11"
+        ]
+      }
+    ],
+    "independent_condition_rule": "one independent condition per unique resolved config SHA256",
+    "planned_cells": 24,
+    "schema": "leo-sim-matrix-design-accounting/v1",
+    "unique_resolved_configurations": 12
+  },
   "experiment_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
-  "matrix_manifest_sha256": "943cf1907f5546e60dd5cd36a84af2d7aed20b9cbdb516731550caefe359c1fa",
+  "matrix_manifest_sha256": "39149c5fac76520c4ff06485c7fc4c0949fd971f1def4183688c03350e8b8ffe",
   "planned_cells": [
     {
       "acceptance": {
@@ -77,8 +170,8 @@
         "require_data_isl": true
       },
       "arm_id": "load10_a",
-      "config_sha256": "8a47d0e852a2f25f3d71076b43d41488ef35d8531f763d60a821d67c57cf3989",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "49bab54c88f2bc0a1efa3e87c9a9231829cc81cf8508bf4a6d09c7f6c2f0c9f7",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load10-s7",
@@ -95,8 +188,8 @@
         "require_data_isl": true
       },
       "arm_id": "load10_a",
-      "config_sha256": "a0d6e3b92b3119ff576a909bb2f8e044a52e03755261f7bd1a95037470011bc9",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "a91c08041f3cffce9395fbf42cb5ceaf7554079a7aee87ea8742cea8aca1a515",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load10-s11",
@@ -113,8 +206,8 @@
         "require_data_isl": true
       },
       "arm_id": "load10_a",
-      "config_sha256": "bd244676cf7494ca5b839fe6dea71fa57aaf9012ae956457f956d58388033a9c",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "6f5d474584735b0040293c489a572bbb69bcebc28eabb5cf03d52612bd598d84",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load10-s19",
@@ -131,8 +224,8 @@
         "require_data_isl": true
       },
       "arm_id": "load10_b",
-      "config_sha256": "8a47d0e852a2f25f3d71076b43d41488ef35d8531f763d60a821d67c57cf3989",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "49bab54c88f2bc0a1efa3e87c9a9231829cc81cf8508bf4a6d09c7f6c2f0c9f7",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load10-s7",
@@ -149,8 +242,8 @@
         "require_data_isl": true
       },
       "arm_id": "load10_b",
-      "config_sha256": "a0d6e3b92b3119ff576a909bb2f8e044a52e03755261f7bd1a95037470011bc9",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "a91c08041f3cffce9395fbf42cb5ceaf7554079a7aee87ea8742cea8aca1a515",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load10-s11",
@@ -167,8 +260,8 @@
         "require_data_isl": true
       },
       "arm_id": "load10_b",
-      "config_sha256": "bd244676cf7494ca5b839fe6dea71fa57aaf9012ae956457f956d58388033a9c",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "6f5d474584735b0040293c489a572bbb69bcebc28eabb5cf03d52612bd598d84",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load10-s19",
@@ -185,8 +278,8 @@
         "require_data_isl": true
       },
       "arm_id": "load20_a",
-      "config_sha256": "b855bdd9b8bf8dae78122da6a64f3f3849664327a4db75c123dca5603db85cbd",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "4d3b30910f0920b9b413e35e699bb530fe0437c26e533c4e4da5f77b08ac1e03",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load20-s7",
@@ -203,8 +296,8 @@
         "require_data_isl": true
       },
       "arm_id": "load20_a",
-      "config_sha256": "f8fb604145aefa3b25b4ea8f7da5ff149e58dccf55feeaf3500881635dd0e290",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "e1f20bea6b4019258c61ead0f46901d03a6541b1dcd2437f9468d8f02c835d40",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load20-s11",
@@ -221,8 +314,8 @@
         "require_data_isl": true
       },
       "arm_id": "load20_a",
-      "config_sha256": "356597a993b5a030314719c61ddbc5b7646230c025795161d425f7e6e3a56e11",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "2e051c274d762bec3b3c307ded4b766598deab576a50fa76839aa0fa58a2170b",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load20-s19",
@@ -239,8 +332,8 @@
         "require_data_isl": true
       },
       "arm_id": "load20_b",
-      "config_sha256": "b855bdd9b8bf8dae78122da6a64f3f3849664327a4db75c123dca5603db85cbd",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "4d3b30910f0920b9b413e35e699bb530fe0437c26e533c4e4da5f77b08ac1e03",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load20-s7",
@@ -257,8 +350,8 @@
         "require_data_isl": true
       },
       "arm_id": "load20_b",
-      "config_sha256": "f8fb604145aefa3b25b4ea8f7da5ff149e58dccf55feeaf3500881635dd0e290",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "e1f20bea6b4019258c61ead0f46901d03a6541b1dcd2437f9468d8f02c835d40",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load20-s11",
@@ -275,8 +368,8 @@
         "require_data_isl": true
       },
       "arm_id": "load20_b",
-      "config_sha256": "356597a993b5a030314719c61ddbc5b7646230c025795161d425f7e6e3a56e11",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "2e051c274d762bec3b3c307ded4b766598deab576a50fa76839aa0fa58a2170b",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load20-s19",
@@ -293,8 +386,8 @@
         "require_data_isl": true
       },
       "arm_id": "load40_a",
-      "config_sha256": "6ca9fdba6535d39254f2a2b52c0d883a8496912c9f8dcd3eae0d1dae61dd9d5a",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "886d191f452b4e61df1c8240bc16712beb94e678b8d7904f619be1849796267b",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load40-s7",
@@ -311,8 +404,8 @@
         "require_data_isl": true
       },
       "arm_id": "load40_a",
-      "config_sha256": "969bf8b8e0f97393684fb3a481eafe618744b0b10fa2688f507c660d3a001259",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "29733b58225f304d196b48014139cc2701cf77cad61c315eecc885db8458cbf3",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load40-s11",
@@ -329,8 +422,8 @@
         "require_data_isl": true
       },
       "arm_id": "load40_a",
-      "config_sha256": "ef89494e770d821ab6babc59e535959c52a3467ee22c9c21e51b4b71a7cf0c94",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "4df9197bc27351aa47eb289ccefbe0c2ee810d16f2907b3fcd2eee707f139b21",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load40-s19",
@@ -347,8 +440,8 @@
         "require_data_isl": true
       },
       "arm_id": "load40_b",
-      "config_sha256": "6ca9fdba6535d39254f2a2b52c0d883a8496912c9f8dcd3eae0d1dae61dd9d5a",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "886d191f452b4e61df1c8240bc16712beb94e678b8d7904f619be1849796267b",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load40-s7",
@@ -365,8 +458,8 @@
         "require_data_isl": true
       },
       "arm_id": "load40_b",
-      "config_sha256": "969bf8b8e0f97393684fb3a481eafe618744b0b10fa2688f507c660d3a001259",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "29733b58225f304d196b48014139cc2701cf77cad61c315eecc885db8458cbf3",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load40-s11",
@@ -383,8 +476,8 @@
         "require_data_isl": true
       },
       "arm_id": "load40_b",
-      "config_sha256": "ef89494e770d821ab6babc59e535959c52a3467ee22c9c21e51b4b71a7cf0c94",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "4df9197bc27351aa47eb289ccefbe0c2ee810d16f2907b3fcd2eee707f139b21",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load40-s19",
@@ -401,8 +494,8 @@
         "require_data_isl": true
       },
       "arm_id": "load80_a",
-      "config_sha256": "4d381a970d286a6712f8bbb668f992a5aee89652168f60e83f4411d0ef3a5473",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "1d17c002260880d5af77db20de41f40e47abad88f3171e7c7ebcbb9c7e504f20",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load80-s7",
@@ -419,8 +512,8 @@
         "require_data_isl": true
       },
       "arm_id": "load80_a",
-      "config_sha256": "4bc16782121771306f9c1454dccf3b3d3a1e0386a21000743de3a9509a61971d",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "162069cf91e214f57dd2bb18eede5456d1480016328227dcca410645d6d2b108",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load80-s11",
@@ -437,8 +530,8 @@
         "require_data_isl": true
       },
       "arm_id": "load80_a",
-      "config_sha256": "dcd92ef7b7ba3360cd6bb6d653cf7e9ec247e60dff478bb08e01b055f8e8c38a",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "919cfe42c4a8fd70900c36c1acf9cd262eb27cb1fb85a993666ae8b9217e4e86",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load80-s19",
@@ -455,8 +548,8 @@
         "require_data_isl": true
       },
       "arm_id": "load80_b",
-      "config_sha256": "4d381a970d286a6712f8bbb668f992a5aee89652168f60e83f4411d0ef3a5473",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "1d17c002260880d5af77db20de41f40e47abad88f3171e7c7ebcbb9c7e504f20",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load80-s7",
@@ -473,8 +566,8 @@
         "require_data_isl": true
       },
       "arm_id": "load80_b",
-      "config_sha256": "4bc16782121771306f9c1454dccf3b3d3a1e0386a21000743de3a9509a61971d",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "162069cf91e214f57dd2bb18eede5456d1480016328227dcca410645d6d2b108",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load80-s11",
@@ -491,8 +584,8 @@
         "require_data_isl": true
       },
       "arm_id": "load80_b",
-      "config_sha256": "dcd92ef7b7ba3360cd6bb6d653cf7e9ec247e60dff478bb08e01b055f8e8c38a",
-      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "config_sha256": "919cfe42c4a8fd70900c36c1acf9cd262eb27cb1fb85a993666ae8b9217e4e86",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
       "pairing_key": "load80-s19",
@@ -528,7 +621,7 @@
     "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11",
     "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19"
   ],
-  "request_sha256": "bad67d6c65b62c527d787182a6b71bd6638c0ea0df4b15681343ea1e4cd12cb1",
+  "request_sha256": "c3428fe71d5938a148f0f97a9a1b1e7d89f37e6f44d7ce209e49bf562bea37a2",
   "runtime_kind": "leo_sim_v2",
   "schema": "leo-sim-matrix-analysis-request/v1",
   "status": "WAITING_FOR_VERIFIED_RUNS"
