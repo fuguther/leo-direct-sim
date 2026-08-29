@@ -2,6 +2,18 @@
 
 > **CURRENT-VOLATILE**：实验问题和顺序仍由本文承载，但顶部诊断进度、SHA、VM 和 run 状态只表示最近一次核验。执行前必须通过 `DOCUMENT-STATUS.json` 的时效检查并实时核对外部证据。
 
+## 2026-08-29 快照：全球人口陆地场景后验分析与场景分类闭合（CURRENT）
+
+- 快照：`as_of_commit=c9ef45e`（origin/main；PR #172–#175 已合入，后验分析修复 #176 在合入流程中）；`last_verified_at=2026-08-29`；本文 2026-08-24/08-22 及更早节段按日期为历史快照，内容冲突处以本节为准。
+- 全球人口陆地场景 `EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01`（部署 `01c323a`、seed 7、双臂 `load10_a-s7`/`load10_b-s7`）：
+  - VM 正式运行：双臂 natural end、conservation 通过、外部 launch witness 完整、governance v2 `research_eligible=true`、receipt code identity `daf695aff5ab…`（01c323a 时代代码）、双臂 trace 与 fate 完全一致；
+  - 后验 V2 analysis（#176 语义；本地 Python 3.14 与 VM 3.11 身份差异下合法执行）：`status=VERIFIED`、verified_runs=2、`authorization_verification=bound_posterior`、`analysis_mode=posterior_governed_runtime`、双臂 `runtime_identity_binding=governance_bound_posterior`、`evidence_class=v2_external_witness`；delivery_rate=0.7764705882 双臂相同，重复对比 difference=0.0；`verify_persisted_analysis` ok=true；analysis manifest SHA=`c67c9c6c99f9d2f8b18eeb0da3dcabf58bcb2aff835fe075a2f03cd6fd60e9f7`、authorization 文件 SHA=`e60a19dc…`、deployment receipt SHA=`78d7c917…`；
+  - scene classification（绑定上述 manifest；contract SHA=`574880a7…`）：双臂完全相同——`status=ACCESS_LIMITED`、scope=`global_populated_land`、integrity_ok/coverage_ok=true、observed 155 destinations、82 ISL 暴露包、route-stalled 11 pids、downlink 干净、0 ISL 压力候选；
+  - 口径（claim_boundary）：10 Mbps 双臂=完整性/重复性检查点（差异 0.0），不升格为负载阈值、真实业务量、算法优越性或普适覆盖结论；负载分类须以多负载 bracket 数据为准。
+- 其余科研状态：R02（500/50 MHz）双臂正式完成但无压力差异（否定性工程证据，不构成压力臂）；R03（5/2 MHz）单 seed 压力候选（#164）不升格；Q0 真实窗口 F/I 比较、信息消融、统一条件算法矩阵、RL 正式矩阵、论文 claim（`CLAIM_MAP.csv` 仅表头）均未完成。
+- 文档治理：120/120 tracked Markdown 已纳入登记（#172）；2026-08-29 处置清单（as_of `a5cf727`）给出 4 份 update_now（含本文档）、13 个归档候选、1 consolidate、1 mark_superseded；归档/移动等受保护动作仍需用户逐项批准。
+- `next_gate`：多负载 bracket 预注册（以 10 Mbps 重复点与 ACCESS_LIMITED 分类为基准设计 bracket 与多 seed）→ Q0-F/Q0-I 真实窗口 → 信息切断消融 → 统一条件算法比较。
+
 ## 2026-08-22：E0 完整信息参考诊断（10M 已完成）
 
 动态 280/14 图在 `t=0,1,5,10,20,30` 均连通、每星 degree=4、diameter=17，
