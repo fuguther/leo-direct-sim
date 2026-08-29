@@ -1,5 +1,5 @@
 schema: leo-experiment-program/v1
-updated_at: "2026-08-22"
+updated_at: "2026-08-29"
 authority:
   human_plan: ANALYSIS/EXPERIMENT-PROGRAM.md
   readiness: ANALYSIS/CURRENT-EXPERIMENT-READINESS.md
@@ -12,6 +12,7 @@ status_values:
   - blocked
   - planned
   - pilot_required
+  - preregistered
   - rerun_required
   - ready_for_authorization
   - running
@@ -22,11 +23,12 @@ requirements:
   D1_merged_to_main: {status: completed_verified, evidence: "main_8e2f1df_ci_d1_tests_vm_mcs_multiod_t0_legacy_mcs_comparison_pending"}
   D2_merged_to_main: {status: completed_verified, evidence: "main_8e2f1df_ci_d2_holding_tests_vm_multiod_t0_long_window_receipt_metrics_verified"}
   reward_and_mask_blockers_closed: {status: completed_verified, evidence: main_ce2566b_reward_penalty_and_main_758b606_mask_regressions}
-  v2_formal_evidence_chain_verified: {status: blocked}
+  v2_formal_evidence_chain_verified: {status: completed_verified, evidence: "R02_20260824_v2_analysis_VERIFIED_manifest_bc69740ec1cb5f201a79cf4749908c64e7ff4f49196b0dde7ee412bb95a6eb23_plus_global_20260829_posterior_manifest_c67c9c6c99f9d2f8b18eeb0da3dcabf58bcb2aff835fe075a2f03cd6fd60e9f7_scene_ACCESS_LIMITED_x2_strict_error_recorded"}
   real_traffic_provenance_verified: {status: completed_verified, evidence: PR84_main_743d05c_mlab_source_sha_schema_and_manifest}
   multi_od_and_burst_verified: {status: completed_verified, evidence: main_0f7249f_pr93_vm_56cell_mlab_t0_receipt_and_metrics_recompute}
   mlab_multi_od_t0_verified: {status: completed_verified, evidence: main_0f7249f_trace_f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4_vm_receipt}
   topology_cadence_calibration_verified: {status: completed_verified, evidence: main_0f7249f_vm_cadence_0p5_1_2_5_receipts_raw_metrics_recompute}
+  global_scene_repeat_analysis_verified: {status: completed_verified, evidence: "manifest_c67c9c6c99f9d2f8b18eeb0da3dcabf58bcb2aff835fe075a2f03cd6fd60e9f7_verified_runs_2_repeat_diff_0_scene_ACCESS_LIMITED_x2"}
   e0_load_calibration_verified: {status: rerun_required, reason: access_boundary_queue_semantics_require_new_coverage_horizon_vm_smoke_and_e0_training, historical_evidence: main_0f7249f_vm_mlab_multiod_burst_50_100_200_receipts_metrics_recompute}
   link_utilization_recomputation_verified: {status: blocked}
   packet_delay_decomposition_verified: {status: blocked}

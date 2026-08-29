@@ -1,6 +1,10 @@
 # leo_sim V2 平台能力账本
 
-> **CURRENT-VOLATILE**；最后核验：2026-08-21。本文承担当前能力与迁移取舍，但其中代码基线、部署、候选合入和 VM 状态必须实时复核。不能把候选证据冒充已部署证据；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移理由见 `MIGRATION-BACKLOG-20260816.md`。
+> **CURRENT-VOLATILE**；最后核验：2026-08-29。本文承担当前能力与迁移取舍，但其中代码基线、部署、候选合入和 VM 状态必须实时复核。不能把候选证据冒充已部署证据；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移理由见 `MIGRATION-BACKLOG-20260816.md`。
+
+## 2026-08-29 快照要点
+
+- `as_of_commit=c9ef45e`；全球人口陆地场景双臂（10 Mbps，seed 7）后验分析 VERIFIED（`bound_posterior`/`governance_bound_posterior`、差异 0.0）与 scene 分类（ACCESS_LIMITED、integrity/coverage ok、0 压力候选）已闭合；R02 为否定性工程证据、R03 单 seed 候选不升格；Q0/算法矩阵/论文 claim 未完成。完整快照见 `CURRENT-EXPERIMENT-READINESS.md` 2026-08-29 节。
 
 ## 判定与优先级
 
@@ -24,7 +28,9 @@
 | 接入 FIFO / downlink 恢复 | 旧语义参照 | V2 #26/#25 已合入 main | 已关闭 | 保留回归 |
 | 奖励无正循环/物理目标一致 | 旧平台奖励族复杂 | **已关闭已知“额外转发跳数刷分”风险**（`ce2566b`/R1-A1，非正逐跳成本、反例和配置门禁）；仍不能把 shaped reward 当 Q0 物理最优目标 | BLOCKER-THEORY（Q0/正式结论） | 工程学习 pilot 已允许运行；正式上界和新方案仍须冻结 delivered/deadline/backlog/utilization 等物理目标 |
 | 动作 mask 与观测信息集一致 | 旧/新均需审 | 已修复明确的 cache-hop 偷看问题；仍缺逐动作物理特征和逐字段 AoI，不能宣称整体信息公平已完成 | BLOCKER-THEORY | 保留已通过的旁路回归；完成 per-action distance/rate/availability 与 field-age 合同 |
-| 正式证据链 | V2 目标更强 | **矩阵编译/授权 Stage 1 已完成**；artifact→指标重算→配对分析→claim 的真实授权闭环仍缺，当前没有正式 cohort 产物 | BLOCKER-P0 | 用当前 main 跑真实授权 cohort，核验持久化 analysis manifest、paired output 和 claim gate；禁止用 fixture 冒充论文数据 |
+| 正式证据链 | V2 目标更强 | **已闭合（自 R02 08-24）**：compile→review→authorization→clean-main deployment→serial run→receipt/witness→paired analysis/claim-gate 已在真实 cohort 上 VERIFIED；#176 起历史正式运行可在更新 checkout 上以后验语义合法重分析（`bound_posterior`，身份仍由 witness 链强制绑定） | BLOCKER-P0 已关闭 | 最新实例：全球场景 posterior 分析 + scene 分类（08-29，manifest `c67c9c6c…`） |
+| 后验运行时分析（历史身份绑定） | 无 | **#176 语义已可用**：strict 重推导优先；历史授权仅在 payload 封签/绑定工件哈希/行结构完整时以 `bound_posterior` 重准入，运行身份由 formal/governance v2/external witness/receipt 链绑定；篡改与伪造 fail-closed | 已关闭 | 真实样本：全球双臂 VERIFIED（`governance_bound_posterior`、重复差异 0.0） |
+| scene 分类与 analysis manifest 绑定 | 旧平台无 | scene_check 绑定持久化 VERIFIED manifest 与场景合同；历史运行（runtime 早于本地分析器）显式要求 `--analysis-manifest` | 已关闭 | 全球双臂 ACCESS_LIMITED、双臂一致性验证通过（08-29） |
 | Q0 当前全局快照 | 无等价严格接口 | snapshot 已进 main | Q0 前置已完成 | 保留只读、因果和版本测试 |
 | Q0 计划注入与执行归因 | 无 | kernel 已有 `JointPlan` 版本校验、原子注入/执行接口和回归测试；但每个真实运行的 planned-vs-executed 持久化归因仍未闭合 | BLOCKER-THEORY | action_id 贯穿真实执行；receipt 持久化 verdict/errors/executed；不阻塞工程 smoke，但阻塞 Q0 正式结论 |
 | Q0-I/Q0-F tiny | 无统一实现 | 已有依赖无关的有界离散原型：Q0-F 精确枚举、Q0-I 当前窗口滚动求解、独立无记忆枚举和 replay 均通过；不等同于真实 trace 或可扩展 MILP/CP-SAT | BLOCKER-THEORY | 保留 `Q0-TINY-20260821.*` 证据；继续完成真实诊断窗口抽取、planned-vs-executed 和信息阶梯 |
