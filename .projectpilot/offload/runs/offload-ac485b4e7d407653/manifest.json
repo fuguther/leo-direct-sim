@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "planId": "offload-ac485b4e7d407653",
+  "relayManifest": {
+    "planId": "offload-ac485b4e7d407653",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:P1-COLD-REVIEW",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "f329384863c418e116b19f6b8f5bc39b0a10a72d",
+        "paths": [
+          "CODE/leo_sim/matrix.py",
+          "CODE/leo_sim/tests/test_matrix_contract.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/tests/test_v2_analysis.py",
+          "EXPERIMENTS/contracts/run-artifact-contract.md",
+          "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+          "NOTES.md"
+        ],
+        "promptHash": "8563d367a7f7fab58a907f1d8a40612ca533f84d292384a89231f92739549cf0"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:P1-COLD-REVIEW:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "f329384863c418e116b19f6b8f5bc39b0a10a72d",
+        "paths": [
+          "CODE/leo_sim/matrix.py",
+          "CODE/leo_sim/tests/test_matrix_contract.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/tests/test_v2_analysis.py",
+          "EXPERIMENTS/contracts/run-artifact-contract.md",
+          "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+          "NOTES.md"
+        ],
+        "promptHash": "25b094490de4775c77ca2898c3689cd93f9c670ea4c61f3bfdbe1b7392b4cb9a"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "ac485b4e7d407653c27999d3f030a020e3eeb0a90768b1d581fff0cd47c4c3d1"
+  },
+  "sourceBaseCommit": "f329384863c418e116b19f6b8f5bc39b0a10a72d",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:P1-COLD-REVIEW",
+      "promptHash": "8563d367a7f7fab58a907f1d8a40612ca533f84d292384a89231f92739549cf0",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "f329384863c418e116b19f6b8f5bc39b0a10a72d",
+        "paths": [
+          "CODE/leo_sim/matrix.py",
+          "CODE/leo_sim/tests/test_matrix_contract.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/tests/test_v2_analysis.py",
+          "EXPERIMENTS/contracts/run-artifact-contract.md",
+          "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+          "NOTES.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:P1-COLD-REVIEW:independent_review",
+      "promptHash": "25b094490de4775c77ca2898c3689cd93f9c670ea4c61f3bfdbe1b7392b4cb9a",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "f329384863c418e116b19f6b8f5bc39b0a10a72d",
+        "paths": [
+          "CODE/leo_sim/matrix.py",
+          "CODE/leo_sim/tests/test_matrix_contract.py",
+          "CODE/experiment_platform/v2_analysis.py",
+          "CODE/experiment_platform/tests/test_v2_analysis.py",
+          "EXPERIMENTS/contracts/run-artifact-contract.md",
+          "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+          "NOTES.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
