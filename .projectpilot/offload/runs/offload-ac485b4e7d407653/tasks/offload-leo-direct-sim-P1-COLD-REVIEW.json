@@ -1,0 +1,74 @@
+{
+  "contract": {
+    "allowedPaths": [
+      "CODE/leo_sim/matrix.py",
+      "CODE/leo_sim/tests/test_matrix_contract.py",
+      "CODE/experiment_platform/v2_analysis.py",
+      "CODE/experiment_platform/tests/test_v2_analysis.py",
+      "EXPERIMENTS/contracts/run-artifact-contract.md",
+      "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+      "NOTES.md"
+    ],
+    "metadata": {
+      "frozenPlanDigest": "sha256:9c2553e861874f1815f0921649e1b597ceb4f8f55e5fe793a81c0b824a867692",
+      "digestVersion": "canonical-json-sha256-v1"
+    },
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:P1-COLD-REVIEW",
+    "title": "P1 matrix design accounting cold review",
+    "goal": "审查 exact commit f329384863c418e116b19f6b8f5bc39b0a10a72d。重点核对：1) unique_resolved_configurations 与 exact_reexecution_cells 的定义是否能防止把同配置重跑当独立条件；2) matrix compile report v2 与旧格式兼容分支是否 fail-closed；3) design_accounting 是否从编译贯穿 analysis request、后验 manifest、summary/report 和 persisted verification，且篡改会被拒绝；4) 是否意外破坏 authorize_experiment 或已有矩阵；5) acceptance/research_eligible 与科研充分性门的文档口径是否准确。只报告有可复现证据的 blocker/major；不要提出无关重构或纯风格意见。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "f329384863c418e116b19f6b8f5bc39b0a10a72d",
+      "paths": [
+        "CODE/leo_sim/matrix.py",
+        "CODE/leo_sim/tests/test_matrix_contract.py",
+        "CODE/experiment_platform/v2_analysis.py",
+        "CODE/experiment_platform/tests/test_v2_analysis.py",
+        "EXPERIMENTS/contracts/run-artifact-contract.md",
+        "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+        "NOTES.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "Verdict is PASS or REQUEST_CHANGES with blocker/major findings only",
+      "Every finding cites exact repository paths and a concrete failure mode",
+      "Explicitly state open_items and whether current tests cover the claimed compatibility"
+    ],
+    "requiredEvidence": [
+      "Exact commit binding",
+      "Repository path citations",
+      "Concrete counterexample or test/logic trace for every blocker or major finding"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "8563d367a7f7fab58a907f1d8a40612ca533f84d292384a89231f92739549cf0"
+}
