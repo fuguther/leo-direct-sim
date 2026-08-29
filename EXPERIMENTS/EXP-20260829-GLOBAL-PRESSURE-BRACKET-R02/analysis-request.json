@@ -1,45 +1,50 @@
 {
   "analysis": {
-    "analysis_id": "AN-GLOBAL-PRESSURE-BRACKET-R02-LOAD-RESPONSE",
+    "analysis_id": "AN-GLOBAL-PRESSURE-BRACKET-R02-DESCRIPTIVE",
     "decision_contract": {
       "path": "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json"
     },
-    "estimand": "paired descriptive load-increment differences (delivery_rate) over nested global child traces; not a threshold or algorithm comparison",
+    "estimand": "descriptive per-load delivery_rate and scene class; within-load a/b determinism differences; NOT a load-difference contrast (different child traces per load are not pair-cable under the analyzer contract)",
     "paired_by": [
       "pairing_key"
     ],
     "planned_contrasts": [
       {
-        "estimand": "paired descriptive difference at seeds 7/11/19",
-        "left_arm": "load20",
-        "name": "load20_minus_load10",
-        "right_arm": "load10"
+        "estimand": "determinism/re-execution integrity check of the SAME trace+seed+config at one load (n_pairs=3 across seeds)",
+        "left_arm": "load10_a",
+        "name": "load10_a_minus_load10_b",
+        "right_arm": "load10_b"
       },
       {
-        "estimand": "paired descriptive difference at seeds 7/11/19, load20b is the dedicated duplicate arm",
-        "left_arm": "load40",
-        "name": "load40_minus_load20",
-        "right_arm": "load20b"
+        "estimand": "determinism/re-execution integrity check of the SAME trace+seed+config at one load (n_pairs=3 across seeds)",
+        "left_arm": "load20_a",
+        "name": "load20_a_minus_load20_b",
+        "right_arm": "load20_b"
       },
       {
-        "estimand": "paired descriptive difference at seeds 7/11/19, load40b is the dedicated duplicate arm",
-        "left_arm": "load80",
-        "name": "load80_minus_load40",
-        "right_arm": "load40b"
+        "estimand": "determinism/re-execution integrity check of the SAME trace+seed+config at one load (n_pairs=3 across seeds)",
+        "left_arm": "load40_a",
+        "name": "load40_a_minus_load40_b",
+        "right_arm": "load40_b"
+      },
+      {
+        "estimand": "determinism/re-execution integrity check of the SAME trace+seed+config at one load (n_pairs=3 across seeds)",
+        "left_arm": "load80_a",
+        "name": "load80_a_minus_load80_b",
+        "right_arm": "load80_b"
       }
     ],
     "primary_metric": "delivery_rate"
   },
   "claim_boundary": {
     "can_claim": [
-      "paired DESCRIPTIVE load-increment differences (20-10 / 40-20 / 80-40 Mbps) over the nested population-proxy child trace family at seeds {7,11,19}",
-      "per-load scene classification after receipt verification and the frozen scene decision contract (R02)",
-      "repeatability of the middle-load duplicate arms (load20b/load40b) plus R01 load10 pair as integrity checkpoints"
+      "DESCRIPTIVE per-load delivery_rate and scene classification over the nested population-proxy child trace family at seeds 7/11/19",
+      "determinism/re-execution integrity checkpoints (a/b same trace+seed+config per load)",
+      "scene_check classification per load after receipt verification and the frozen scene decision contract (R02)"
     ],
     "cannot_claim": [
-      "a global ISL pressure threshold or load-response CURVE",
-      "the first pressure point before higher registered loads are checked",
-      "causal or inferential statistics beyond paired descriptive differences",
+      "a global ISL pressure threshold, a load-response CURVE, or the first pressure point",
+      "causal or inferential statistics beyond descriptive per-load values",
       "real subscriber traffic, universal global service, algorithm superiority, information value, RL value, new-algorithm contribution"
     ]
   },
@@ -62,354 +67,468 @@
     "sha256": "b9b3f75378b6d1f81fb46624193ca35d6ebb41a9c5970d689f6e78a4366a26b7"
   },
   "experiment_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
-  "matrix_manifest_sha256": "7f342992c09f9fd83dc21ad4b0ce9d122eb4c377a97057e1b3f0ff52386d3456",
+  "matrix_manifest_sha256": "9ff256c24a0d67e62838bd407750b00bffeb6822357d51851d4310726dee9971",
   "planned_cells": [
     {
       "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
       },
-      "arm_id": "load10",
-      "config_sha256": "7f9cca0eca6c409169852e19d28b3d2c5b716c317ad5d1d4f23c2384d0136233",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
+      "arm_id": "load10_a",
+      "config_sha256": "8a47d0e852a2f25f3d71076b43d41488ef35d8531f763d60a821d67c57cf3989",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
-      "pairing_key": "cp-7-20vs10",
+      "pairing_key": "load10-s7",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s7",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7",
       "trace_identity_sha256": "0fdbe914aa9d7cdde44a84276b93d6b55b13ac3bc95a673e1f96b52399f6f761",
       "trace_seed": 7
     },
     {
       "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
       },
-      "arm_id": "load20",
-      "config_sha256": "d8c4818e167fa9f7e8218471ee036a8e8cd95237614d3ae96adc924d1ce3cd5a",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
+      "arm_id": "load10_a",
+      "config_sha256": "a0d6e3b92b3119ff576a909bb2f8e044a52e03755261f7bd1a95037470011bc9",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
-      "pairing_key": "cp-7-20vs10",
+      "pairing_key": "load10-s11",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s7",
-      "trace_identity_sha256": "6992a9a77c8e381668e2fb03813dc4db48349e410843b5c7bd1b370306b69513",
-      "trace_seed": 7
-    },
-    {
-      "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
-      },
-      "arm_id": "load20b",
-      "config_sha256": "d8c4818e167fa9f7e8218471ee036a8e8cd95237614d3ae96adc924d1ce3cd5a",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
-      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
-      "learning_seed": null,
-      "pairing_key": "cp-7-40vs20",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s7",
-      "trace_identity_sha256": "6992a9a77c8e381668e2fb03813dc4db48349e410843b5c7bd1b370306b69513",
-      "trace_seed": 7
-    },
-    {
-      "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
-      },
-      "arm_id": "load40",
-      "config_sha256": "4af81eb2898c0f6956f39287f2cc9f44471712b53d47b60073d21219fbaf0580",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
-      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
-      "learning_seed": null,
-      "pairing_key": "cp-7-40vs20",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s7",
-      "trace_identity_sha256": "8935c9494f198e047c86231a8da1f4d3ce0bd957a1a8d540cca34de8359dc23c",
-      "trace_seed": 7
-    },
-    {
-      "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
-      },
-      "arm_id": "load40b",
-      "config_sha256": "4af81eb2898c0f6956f39287f2cc9f44471712b53d47b60073d21219fbaf0580",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
-      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
-      "learning_seed": null,
-      "pairing_key": "cp-7-80vs40",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s7",
-      "trace_identity_sha256": "8935c9494f198e047c86231a8da1f4d3ce0bd957a1a8d540cca34de8359dc23c",
-      "trace_seed": 7
-    },
-    {
-      "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
-      },
-      "arm_id": "load80",
-      "config_sha256": "620c52a929242eec164f475bdbac7bf2af2e6710035ae2f91236fcbd2088d601",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
-      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
-      "learning_seed": null,
-      "pairing_key": "cp-7-80vs40",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s7",
-      "trace_identity_sha256": "f883eb27e97154a7041fbad8d82d0a34fcecc2166ca74afcd4555397c2571f5d",
-      "trace_seed": 7
-    },
-    {
-      "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
-      },
-      "arm_id": "load10",
-      "config_sha256": "3502e89b38d4c3b69ed7ed6c58d1b660a2ee3f5703efdc4a93d3ebe02a3e2c34",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
-      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
-      "learning_seed": null,
-      "pairing_key": "cp-11-20vs10",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s11",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11",
       "trace_identity_sha256": "7d25795030d7ec9683899800c4d1f3803c40ec2235ad27601b61e9daee20cd43",
       "trace_seed": 11
     },
     {
       "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
       },
-      "arm_id": "load20",
-      "config_sha256": "f119fad20e515a52c31b42ef18cfdcb50d8c9b5b6f922fc50cadfb9ab52fe97e",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
+      "arm_id": "load10_a",
+      "config_sha256": "bd244676cf7494ca5b839fe6dea71fa57aaf9012ae956457f956d58388033a9c",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
-      "pairing_key": "cp-11-20vs10",
+      "pairing_key": "load10-s19",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s11",
-      "trace_identity_sha256": "5531e0d628665516b8630a3019560987c88f8d58fa0cea2083957d099913c7f7",
-      "trace_seed": 11
-    },
-    {
-      "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
-      },
-      "arm_id": "load20b",
-      "config_sha256": "f119fad20e515a52c31b42ef18cfdcb50d8c9b5b6f922fc50cadfb9ab52fe97e",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
-      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
-      "learning_seed": null,
-      "pairing_key": "cp-11-40vs20",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s11",
-      "trace_identity_sha256": "5531e0d628665516b8630a3019560987c88f8d58fa0cea2083957d099913c7f7",
-      "trace_seed": 11
-    },
-    {
-      "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
-      },
-      "arm_id": "load40",
-      "config_sha256": "8d84479332653476772dbfa2541c0e82cec276c7c1f094607d8115a009c75aab",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
-      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
-      "learning_seed": null,
-      "pairing_key": "cp-11-40vs20",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s11",
-      "trace_identity_sha256": "157e227d80e776a51f44b8ad65d4dda988b5d60cde6829e904c0edcdbbbe1a1a",
-      "trace_seed": 11
-    },
-    {
-      "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
-      },
-      "arm_id": "load40b",
-      "config_sha256": "8d84479332653476772dbfa2541c0e82cec276c7c1f094607d8115a009c75aab",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
-      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
-      "learning_seed": null,
-      "pairing_key": "cp-11-80vs40",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s11",
-      "trace_identity_sha256": "157e227d80e776a51f44b8ad65d4dda988b5d60cde6829e904c0edcdbbbe1a1a",
-      "trace_seed": 11
-    },
-    {
-      "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
-      },
-      "arm_id": "load80",
-      "config_sha256": "80fc93623afc98e88bc23c02b547a50f173bc880702ab750ac063512759eefd5",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
-      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
-      "learning_seed": null,
-      "pairing_key": "cp-11-80vs40",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s11",
-      "trace_identity_sha256": "0dac3699bdb706d628615c8b51e446f0f9e93ecda84425ac9e08a8198302242c",
-      "trace_seed": 11
-    },
-    {
-      "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
-      },
-      "arm_id": "load10",
-      "config_sha256": "40a64b8f184cf50e1db58a6631633aadd92681c6a7d1573ba9b88c96ef1d924f",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
-      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
-      "learning_seed": null,
-      "pairing_key": "cp-19-20vs10",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s19",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19",
       "trace_identity_sha256": "a780c7faa31587093cc500a8799a97c47c8f6f1ec0169c0ba2f62aeb5f4b19f1",
       "trace_seed": 19
     },
     {
       "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
       },
-      "arm_id": "load20",
-      "config_sha256": "c03e04f6990a12c3cda3bc9455fb3ae7a9b9045c71d90d3396c0749639f8e0de",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
+      "arm_id": "load10_b",
+      "config_sha256": "8a47d0e852a2f25f3d71076b43d41488ef35d8531f763d60a821d67c57cf3989",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
-      "pairing_key": "cp-19-20vs10",
+      "pairing_key": "load10-s7",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s19",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s7",
+      "trace_identity_sha256": "0fdbe914aa9d7cdde44a84276b93d6b55b13ac3bc95a673e1f96b52399f6f761",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load10_b",
+      "config_sha256": "a0d6e3b92b3119ff576a909bb2f8e044a52e03755261f7bd1a95037470011bc9",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s11",
+      "trace_identity_sha256": "7d25795030d7ec9683899800c4d1f3803c40ec2235ad27601b61e9daee20cd43",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load10_b",
+      "config_sha256": "bd244676cf7494ca5b839fe6dea71fa57aaf9012ae956457f956d58388033a9c",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s19",
+      "trace_identity_sha256": "a780c7faa31587093cc500a8799a97c47c8f6f1ec0169c0ba2f62aeb5f4b19f1",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_a",
+      "config_sha256": "b855bdd9b8bf8dae78122da6a64f3f3849664327a4db75c123dca5603db85cbd",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s7",
+      "trace_identity_sha256": "6992a9a77c8e381668e2fb03813dc4db48349e410843b5c7bd1b370306b69513",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_a",
+      "config_sha256": "f8fb604145aefa3b25b4ea8f7da5ff149e58dccf55feeaf3500881635dd0e290",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s11",
+      "trace_identity_sha256": "5531e0d628665516b8630a3019560987c88f8d58fa0cea2083957d099913c7f7",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_a",
+      "config_sha256": "356597a993b5a030314719c61ddbc5b7646230c025795161d425f7e6e3a56e11",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s19",
       "trace_identity_sha256": "b9c8a9c70bbdfa8702d3a385385502ce247498d7b1c901be90d2f69c0e0ff752",
       "trace_seed": 19
     },
     {
       "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
       },
-      "arm_id": "load20b",
-      "config_sha256": "c03e04f6990a12c3cda3bc9455fb3ae7a9b9045c71d90d3396c0749639f8e0de",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
+      "arm_id": "load20_b",
+      "config_sha256": "b855bdd9b8bf8dae78122da6a64f3f3849664327a4db75c123dca5603db85cbd",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
-      "pairing_key": "cp-19-40vs20",
+      "pairing_key": "load20-s7",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s19",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s7",
+      "trace_identity_sha256": "6992a9a77c8e381668e2fb03813dc4db48349e410843b5c7bd1b370306b69513",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_b",
+      "config_sha256": "f8fb604145aefa3b25b4ea8f7da5ff149e58dccf55feeaf3500881635dd0e290",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s11",
+      "trace_identity_sha256": "5531e0d628665516b8630a3019560987c88f8d58fa0cea2083957d099913c7f7",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_b",
+      "config_sha256": "356597a993b5a030314719c61ddbc5b7646230c025795161d425f7e6e3a56e11",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s19",
       "trace_identity_sha256": "b9c8a9c70bbdfa8702d3a385385502ce247498d7b1c901be90d2f69c0e0ff752",
       "trace_seed": 19
     },
     {
       "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
       },
-      "arm_id": "load40",
-      "config_sha256": "79c09cc5919ee1fa92a6548e16e6d5420335263cdd2cc35b8dc06994da481b0b",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
+      "arm_id": "load40_a",
+      "config_sha256": "6ca9fdba6535d39254f2a2b52c0d883a8496912c9f8dcd3eae0d1dae61dd9d5a",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
-      "pairing_key": "cp-19-40vs20",
+      "pairing_key": "load40-s7",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s19",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s7",
+      "trace_identity_sha256": "8935c9494f198e047c86231a8da1f4d3ce0bd957a1a8d540cca34de8359dc23c",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_a",
+      "config_sha256": "969bf8b8e0f97393684fb3a481eafe618744b0b10fa2688f507c660d3a001259",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s11",
+      "trace_identity_sha256": "157e227d80e776a51f44b8ad65d4dda988b5d60cde6829e904c0edcdbbbe1a1a",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_a",
+      "config_sha256": "ef89494e770d821ab6babc59e535959c52a3467ee22c9c21e51b4b71a7cf0c94",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s19",
       "trace_identity_sha256": "93c1a2aedfe9d33486bb55fcfdf62fbe68c310e7b27438555daa112f1adbedc7",
       "trace_seed": 19
     },
     {
       "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
       },
-      "arm_id": "load40b",
-      "config_sha256": "79c09cc5919ee1fa92a6548e16e6d5420335263cdd2cc35b8dc06994da481b0b",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
+      "arm_id": "load40_b",
+      "config_sha256": "6ca9fdba6535d39254f2a2b52c0d883a8496912c9f8dcd3eae0d1dae61dd9d5a",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
-      "pairing_key": "cp-19-80vs40",
+      "pairing_key": "load40-s7",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s19",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s7",
+      "trace_identity_sha256": "8935c9494f198e047c86231a8da1f4d3ce0bd957a1a8d540cca34de8359dc23c",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_b",
+      "config_sha256": "969bf8b8e0f97393684fb3a481eafe618744b0b10fa2688f507c660d3a001259",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s11",
+      "trace_identity_sha256": "157e227d80e776a51f44b8ad65d4dda988b5d60cde6829e904c0edcdbbbe1a1a",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_b",
+      "config_sha256": "ef89494e770d821ab6babc59e535959c52a3467ee22c9c21e51b4b71a7cf0c94",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s19",
       "trace_identity_sha256": "93c1a2aedfe9d33486bb55fcfdf62fbe68c310e7b27438555daa112f1adbedc7",
       "trace_seed": 19
     },
     {
       "acceptance": {
-        "min_delivered_packets": 0,
-        "min_multisat_deliveries": 0,
-        "require_control_delivery": false,
-        "require_data_isl": false
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
       },
-      "arm_id": "load80",
-      "config_sha256": "5576c04c63638254eea32655c3b7bacac94519a508a41a286ae98423ec9f32b9",
-      "controlled_signature": "dce7e1d73ffa50dadb41ca795aefbae794b257bde252962ff24aefe738c573d6",
+      "arm_id": "load80_a",
+      "config_sha256": "4d381a970d286a6712f8bbb668f992a5aee89652168f60e83f4411d0ef3a5473",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
       "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
       "learning_seed": null,
-      "pairing_key": "cp-19-80vs40",
+      "pairing_key": "load80-s7",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s19",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s7",
+      "trace_identity_sha256": "f883eb27e97154a7041fbad8d82d0a34fcecc2166ca74afcd4555397c2571f5d",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_a",
+      "config_sha256": "4bc16782121771306f9c1454dccf3b3d3a1e0386a21000743de3a9509a61971d",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s11",
+      "trace_identity_sha256": "0dac3699bdb706d628615c8b51e446f0f9e93ecda84425ac9e08a8198302242c",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_a",
+      "config_sha256": "dcd92ef7b7ba3360cd6bb6d653cf7e9ec247e60dff478bb08e01b055f8e8c38a",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s19",
+      "trace_identity_sha256": "19266c4ef9d4c2e154d69979c01b4f5b8e1c7697bb1eefb50fb61e158585e5a9",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_b",
+      "config_sha256": "4d381a970d286a6712f8bbb668f992a5aee89652168f60e83f4411d0ef3a5473",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7",
+      "trace_identity_sha256": "f883eb27e97154a7041fbad8d82d0a34fcecc2166ca74afcd4555397c2571f5d",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_b",
+      "config_sha256": "4bc16782121771306f9c1454dccf3b3d3a1e0386a21000743de3a9509a61971d",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11",
+      "trace_identity_sha256": "0dac3699bdb706d628615c8b51e446f0f9e93ecda84425ac9e08a8198302242c",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 500,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_b",
+      "config_sha256": "dcd92ef7b7ba3360cd6bb6d653cf7e9ec247e60dff478bb08e01b055f8e8c38a",
+      "controlled_signature": "befb611fd68d6d7d264a0836da011b2147802d45fa62a65c74efe1e586657c08",
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19",
       "trace_identity_sha256": "19266c4ef9d4c2e154d69979c01b4f5b8e1c7697bb1eefb50fb61e158585e5a9",
       "trace_seed": 19
     }
   ],
   "planned_run_ids": [
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s7",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s7",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s7",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s7",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s7",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s7",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s11",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s11",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s11",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s11",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s11",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s11",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s19",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s19",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s19",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s19",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s19",
-    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s19"
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s7",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s11",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s19",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s7",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s11",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s19",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s7",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s11",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s19",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s7",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s11",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s19",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s7",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s11",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s19",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s7",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s11",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s19",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11",
+    "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19"
   ],
-  "request_sha256": "cd02fa96fe3edb870d9403a0c43d0bfae61284f69fffc97c3e997762be4b9985",
+  "request_sha256": "74f9942daceda036a9589cecdcf1bd65bea4334bc205168390751251d4e699d3",
   "runtime_kind": "leo_sim_v2",
   "schema": "leo-sim-matrix-analysis-request/v1",
   "status": "WAITING_FOR_VERIFIED_RUNS"
