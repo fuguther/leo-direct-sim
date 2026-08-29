@@ -1,0 +1,19 @@
+{
+  "claim_status": "READY_FOR_INDEPENDENT_CLAIM_REVIEW",
+  "experiment_id": "EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01",
+  "planned_contrasts": [
+    {
+      "differences": [
+        0.0
+      ],
+      "left_arm": "load10_a",
+      "mean_difference": 0.0,
+      "metric": "delivery_rate",
+      "n_pairs": 1,
+      "name": "load10_a_minus_load10_b",
+      "right_arm": "load10_b"
+    }
+  ],
+  "primary_metric": "delivery_rate",
+  "schema": "leo-sim-v2-analysis-summary/v1"
+}
