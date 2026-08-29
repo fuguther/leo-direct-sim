@@ -5,7 +5,7 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
-## 2026-08-30：P1 实验设计记账与科研门分层
+## 2026-08-30：P1 实验设计记账与科研门分层（PR #186）
 
 - matrix compiler 新增 `design_accounting`：分别记录 planned cells、唯一 resolved config、精确重执行 cell 与 run-id 分组；analysis request 和 RUNBOOK 同步绑定。完全相同配置的重执行明确只算重复性证据，不增加独立条件数；旧格式编译包继续由 exact-SHA/后验兼容链处理，不改写正在运行的 R02 授权工件。
 - Run 产物契约明确拆分“运行/证据准入门”和“科研充分性门”：acceptance 与 governance `research_eligible=true` 不能替代场景、物理、统计和逐 claim gate。
