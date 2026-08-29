@@ -1072,18 +1072,55 @@ def _validate_ledgers(ledgers, receipt: dict, trace_rows: dict,
 
 
 def verify_receipt_dir(out_dir: str) -> list[str]:
-    """Recompute every checkable claim. Empty list = verified."""
+    """Strict exact-runtime verification, unchanged: recompute every
+    checkable claim AND require the local analyzer sources/dependencies to
+    equal the run-time identity recorded in the receipt.  Empty list =
+    verified.  Any local != runtime difference (code sha or dependency
+    versions) still FAILS."""
+    errors, _identity = _verify_receipt_dir_impl(
+        out_dir, require_local_runtime_identity=True)
+    return errors
+
+
+def _verify_receipt_dir_artifacts_unbound(
+        out_dir: str) -> tuple[list[str], dict]:
+    """Internal, unbound artifact-integrity primitive.
+
+    Recomputed here, exactly as in the strict verifier: receipt/manifest/
+    trace/config/ledgers/fates/totals/conservation/mechanisms/eligibility
+    flag plus every hash binding.  The ONE thing this path does not require
+    is that the LOCAL analyzer source code and dependencies equal the
+    run-time record -- that local-equality gate is a statement about the
+    verifying checkout, not about the historical artifact set.
+
+    Returns (errors, run_identity) where run_identity carries the
+    run-time identity recorded in the receipt (code_sha256, deps).
+    This function is deliberately private and its empty error list is NOT an
+    evidence verdict.  Only the higher-level V2 analyzer may call it, after
+    binding run_identity through authorization + formal run + governance
+    receipt + external launch witness.  The public verify_receipt_dir remains
+    strict and rejects every local/runtime identity difference.
+    """
+    return _verify_receipt_dir_impl(out_dir, require_local_runtime_identity=False)
+
+
+def _verify_receipt_dir_impl(out_dir: str, *,
+                             require_local_runtime_identity: bool,
+                             ) -> tuple[list[str], dict]:
+    """Shared verification core.  require_local_runtime_identity selects
+    the strict local==runtime gate (public strict verify) or the posterior
+    artifacts path that returns the recorded run-time identity instead."""
     out = Path(out_dir)
     errors: list[str] = []
     rcp_path = out / "receipt.json"
     if not rcp_path.exists():
-        return [f"missing receipt: {rcp_path}"]
+        return [f"missing receipt: {rcp_path}"], {}
     try:
         receipt = json.loads(rcp_path.read_text(encoding="utf-8"))
     except Exception as exc:  # corrupted JSON must never crash verify
-        return [f"receipt.json unreadable: {exc}"]
+        return [f"receipt.json unreadable: {exc}"], {}
     if not isinstance(receipt, dict):
-        return ["receipt.json must be a JSON object"]
+        return ["receipt.json must be a JSON object"], {}
 
     # 0. strict versioned receipt contract.  The metrics contract comes from
     # this receipt schema, never from mutable ledgers.congestion_metrics.
@@ -1296,17 +1333,29 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
             if receipt.get("trace_identity_sha256") != expected_identity:
                 errors.append("receipt trace identity mismatch")
 
-    # 3. code and dependency identity (deps are REQUIRED, exact key set;
-    # DDQN runs additionally pin tensorflow)
-    if code_sha256() != receipt.get("code_sha256"):
-        errors.append("leo_sim code sha mismatch (sources changed since the run)")
+    # 3. code and dependency identity.  The strict default requires the
+    #    local analyzer source/deps to equal the run-time record.  The
+    #    internal unbound artifact-integrity path instead
+    #    records the run-time identity for the caller to bind through the
+    #    formal governance chain (authorization + formal witness + governance
+    #    receipt + external launch witness), never through a local copy.
+    run_identity = {
+        "code_sha256": receipt.get("code_sha256"),
+        "deps": receipt.get("deps"),
+    }
+    code_sha = receipt.get("code_sha256")
+    if not (isinstance(code_sha, str) and len(code_sha) == 64
+            and all(ch in "0123456789abcdef" for ch in code_sha)):
+        errors.append("receipt code_sha256 must be a lowercase SHA256")
     want_tf = bool(resolved_cfg) and (
         (resolved_cfg.get("learning") or {}).get("algorithm") == "ddqn")
     expected_dep_keys = DEP_KEYS | ({TF_DEP_KEY} if want_tf else set())
     deps = receipt.get("deps")
+    if require_local_runtime_identity and code_sha256() != code_sha:
+        errors.append("leo_sim code sha mismatch (sources changed since the run)")
     if not isinstance(deps, dict) or set(deps) != expected_dep_keys:
         errors.append(f"deps must be exactly {sorted(expected_dep_keys)}")
-    else:
+    elif require_local_runtime_identity:
         try:
             local_deps = dependency_versions(with_tensorflow=want_tf)
         except ImportError:
@@ -1317,6 +1366,7 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
             if deps != local_deps:
                 errors.append(f"dependency versions differ from the run: "
                               f"{deps} vs {local_deps}")
+
 
     # 4. run completion state
     if not receipt.get("natural_end") or receipt.get("interrupted"):
@@ -1524,4 +1574,4 @@ def verify_receipt_dir(out_dir: str) -> list[str]:
         errors.append(f"research_eligible should be {expected_eligible}")
     if req.get("monitor") and not (out / "monitor.log").exists():
         errors.append("monitor requested but monitor.log missing")
-    return errors
+    return errors, run_identity

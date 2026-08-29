@@ -22,6 +22,19 @@ recomputes every classification from those artifacts:
 The status vocabulary is closed:
 INVALID_EVIDENCE, COVERAGE_INCOMPLETE, ACCESS_LIMITED, ROUTE_LIMITED,
 DOWNLINK_LIMITED, NO_ISL_EXPOSURE, NO_ISL_PRESSURE, ISL_PRESSURE_CANDIDATE
+
+HISTORICAL RUNTIMES: a run whose receipt records a runtime identity older
+than the local analyzer (posterior analysis) must NOT be classified from a
+self-modifiable run directory alone.  The only posterior evidence path is a
+persisted VERIFIED V2 analysis manifest (--analysis-manifest): the manifest
+is re-verified through verify_persisted_analysis (full artifact recomputation
+plus authorization/formal/governance/external-witness binding), the run_id
+must be in its verified cohort, and its inputs must hash-bind the run's key
+formal evidence files (receipt/ledgers/resolved_config/manifest/formal_run/
+governance_receipt); the run trace is additionally bound by the receipt
+inside that manifest.  Without the manifest the strict exact-runtime
+integrity gate applies unchanged and an identity mismatch fails closed as
+INVALID_EVIDENCE.
 """
 from __future__ import annotations
 
@@ -43,6 +56,13 @@ from . import trace as trace_mod
 SCENE_DECISION_SCHEMA = "leo-sim-scene-decision/v1"
 SCENE_CHECK_SCHEMA = "leo-sim-scene-check/v1"
 SCENE_CHECK_CONTRACT_SCHEMA = "leo-sim-scene-check-contract/v1"
+SCENE_ANALYSIS_BINDING_SCHEMA = "leo-sim-scene-analysis-binding/v1"
+# key formal evidence files of a run that a verified analysis manifest must
+# hash-bind before the run may be classified as historical evidence
+SCENE_EVIDENCE_KEYS = (
+    "receipt.json", "ledgers.json", "resolved_config.json",
+    "manifest.json", "formal_run.json", "governance_receipt.json",
+)
 
 SCENE_STATUSES = (
     "INVALID_EVIDENCE",
@@ -327,12 +347,142 @@ def load_trace_dir(trace_dir: str) -> list[dict[str, Any]]:
     return trace_mod.load_trace(str(tpath))
 
 
+def _safe_analysis_manifest_path(root: Path, raw: Any, label: str) -> Path:
+    """Require a real non-symbolic JSON file inside the project root.
+
+    Symlinks are rejected on the UNRESOLVED lexical candidate, one
+    component at a time below the root (the leaf included): resolving
+    first would hide a terminal symlink from is_symlink().  Only after
+    that rejection is the candidate resolved and re-checked for
+    containment and presence.
+    """
+    if not (isinstance(raw, str) and raw
+            and Path(raw).suffix.lower() == ".json"
+            and ".." not in Path(raw).parts):
+        raise SceneCheckError(
+            f"{label} must be a JSON path inside the project")
+    candidate = (root / raw) if not Path(raw).is_absolute() else Path(raw)
+    try:
+        rel = candidate.relative_to(root)
+    except ValueError as exc:
+        raise SceneCheckError(f"{label} escapes project root") from exc
+    # Reject every symlink component on the lexical path before any
+    # resolution can hide it behind its target.
+    probe = root
+    for part in rel.parts:
+        probe = probe / part
+        if probe.is_symlink():
+            raise SceneCheckError(
+                f"{label} must not be a symlink component: {probe}")
+    path = candidate.resolve()
+    try:
+        path.relative_to(root.resolve())
+    except ValueError as exc:
+        raise SceneCheckError(f"{label} escapes project root") from exc
+    if path.is_symlink() or not path.is_file():
+        raise SceneCheckError(f"{label} is missing or symbolic: {raw}")
+    return path
+
+
+def _verify_analysis_manifest_binding(root: Path, manifest_path: Path,
+                                      run_dir: Path) -> dict[str, Any]:
+    """Bind a run directory to a persisted VERIFIED V2 analysis manifest.
+
+    This is the ONLY posterior evidence path for scene classification: the
+    manifest is re-verified through verify_persisted_analysis (full artifact
+    recomputation plus the authorization/formal/governance/external-witness
+    chain), the run_id must be in its verified cohort, every key formal
+    evidence file of the run must be hash-bound in the manifest inputs, and
+    the on-disk run trace must be bound by the receipt inside that manifest.
+    Any failure raises SceneCheckError (fail closed).
+    """
+    from CODE.experiment_platform import v2_analysis as v2_mod
+    ok, errors = v2_mod.verify_persisted_analysis(root, manifest_path)
+    if not ok:
+        raise SceneCheckError(
+            "analysis manifest is not fully verified: " + "; ".join(errors))
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise SceneCheckError(f"analysis manifest unreadable: {exc}") from exc
+    if not (isinstance(manifest, dict)
+            and manifest.get("schema") == v2_mod.SCHEMA
+            and manifest.get("status") == "VERIFIED"):
+        raise SceneCheckError(
+            "analysis manifest is not a VERIFIED V2 analysis manifest")
+    formal_path = run_dir / "formal_run.json"
+    if formal_path.is_symlink() or not formal_path.is_file():
+        raise SceneCheckError("run directory lacks a real formal_run.json")
+    try:
+        formal = json.loads(formal_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise SceneCheckError(f"run formal_run.json unreadable: {exc}") from exc
+    run_id = formal.get("run_id") if isinstance(formal, dict) else None
+    if not isinstance(run_id, str) or not run_id or run_dir.name != run_id:
+        raise SceneCheckError("run directory name != formal_run.json run_id")
+    verified_ids = manifest.get("verified_run_ids")
+    if not isinstance(verified_ids, list) or run_id not in verified_ids:
+        raise SceneCheckError(
+            f"run {run_id} is not in the VERIFIED analysis cohort")
+    inputs = manifest.get("inputs")
+    if not isinstance(inputs, dict):
+        raise SceneCheckError("analysis manifest inputs contract is missing")
+    key_evidence: dict[str, str] = {}
+    for name in SCENE_EVIDENCE_KEYS:
+        path = run_dir / name
+        if path.is_symlink() or not path.is_file():
+            raise SceneCheckError(f"run key evidence missing or unsafe: {name}")
+        rel = str(path.relative_to(root))
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        if inputs.get(rel) != digest:
+            raise SceneCheckError(
+                f"run key evidence {name} is not hash-bound by the "
+                "analysis manifest")
+        key_evidence[name] = digest
+    rcp_path = run_dir / "receipt.json"
+    try:
+        bound_receipt = json.loads(rcp_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise SceneCheckError(f"run receipt.json unreadable: {exc}") from exc
+    trace_sha = (bound_receipt.get("trace_sha256")
+                 if isinstance(bound_receipt, dict) else None)
+    tpath = run_dir / "trace.csv"
+    if not (isinstance(trace_sha, str)
+            and not tpath.is_symlink() and tpath.is_file()
+            and hashlib.sha256(tpath.read_bytes()).hexdigest() == trace_sha):
+        raise SceneCheckError(
+            "run trace.csv is not bound by the receipt in the analysis "
+            "manifest")
+    return {
+        "schema": SCENE_ANALYSIS_BINDING_SCHEMA,
+        "analysis_manifest": str(manifest_path.relative_to(root)),
+        "analysis_manifest_sha256": hashlib.sha256(
+            manifest_path.read_bytes()).hexdigest(),
+        "run_id": run_id,
+        "verified_run_ids": list(verified_ids),
+        "key_evidence": key_evidence,
+    }
+
+
 def _check_integrity(run_dir: str, trace_rows: list[dict],
-                     trace_dir: str) -> list[str]:
-    """L0: the run directory must be receipt-verified and the trace must be
-    immutable and identical to the receipt's trace."""
+                     trace_dir: str,
+                     *, analysis_manifest_binding=None) -> list[str]:
+    """L0: the run directory must be receipt-verified (strict default) or
+    bound to a VERIFIED V2 analysis manifest, and the trace must be
+    immutable and identical to the receipt's trace.
+
+    analysis_manifest_binding (built by _verify_analysis_manifest_binding)
+    replaces the strict local exact-runtime receipt gate: integrity is then
+    established by the manifested analysis chain (full artifact recomputation
+    + formal governance/external-witness binding + hash-bound key evidence
+    files), never by a self-modifiable run directory alone and never by
+    weakening verify_receipt_dir."""
     errors: list[str] = []
-    errors.extend(receipt_mod.verify_receipt_dir(run_dir))
+    if analysis_manifest_binding is None:
+        errors.extend(receipt_mod.verify_receipt_dir(run_dir))
+    # else: the manifest binding gate already proved the full artifact
+    # recomputation under the formal chain and the hash-binding of the run's
+    # key evidence files including the trace-vs-receipt binding.
     out = Path(run_dir)
     tpath = out / "trace.csv"
     if not tpath.is_file() or tpath.is_symlink():
@@ -717,7 +867,9 @@ def _recompute_demand_layer(trace_rows) -> dict[str, Any]:
 
 def check_scene(run_dir: str, trace_dir: str,
                 coverage_report: dict[str, Any],
-                decision: dict[str, Any]) -> dict[str, Any]:
+                decision: dict[str, Any], *,
+                analysis_manifest: str | None = None,
+                project_root: str | Path | None = None) -> dict[str, Any]:
     """Pure read-only layered single-run classification.
 
     Returns a scene-check v1 report whose ``status`` is one of the closed
@@ -733,8 +885,19 @@ def check_scene(run_dir: str, trace_dir: str,
                 "integrity_ok": False,
                 "decision_errors": integrity_errors}
     trace_rows = load_trace_dir(trace_dir)
+    manifest_binding = None
+    if analysis_manifest is not None:
+        if project_root is None:
+            raise SceneCheckError("analysis_manifest requires project_root")
+        root = Path(project_root).resolve()
+        manifest_path = _safe_analysis_manifest_path(
+            root, analysis_manifest, "analysis_manifest")
+        manifest_binding = _verify_analysis_manifest_binding(
+            root, manifest_path, Path(run_dir))
     integrity_ok = True
-    integrity_errors = list(_check_integrity(run_dir, trace_rows, trace_dir))
+    integrity_errors = list(_check_integrity(
+        run_dir, trace_rows, trace_dir,
+        analysis_manifest_binding=manifest_binding))
     if integrity_errors:
         integrity_ok = False
         errors.extend(integrity_errors)
@@ -888,6 +1051,8 @@ def check_scene(run_dir: str, trace_dir: str,
         status = "NO_ISL_PRESSURE"
     else:
         status = "ISL_PRESSURE_CANDIDATE"
+    if manifest_binding is not None:
+        report["analysis_manifest_binding"] = manifest_binding
     report["status"] = status
     return report
 
@@ -918,6 +1083,11 @@ def _cli(argv=None) -> int:
                         help="bound scene-check contract, relative to root")
     parser.add_argument("--run-dir", type=Path, required=True,
                         help="verified V2 result directory, relative to root")
+    parser.add_argument(
+        "--analysis-manifest", type=Path,
+        help="persisted VERIFIED V2 analysis manifest, relative to root; "
+             "required to classify historical runs whose runtime predates "
+             "the local analyzer")
     parser.add_argument("--out", type=Path, required=True,
                         help="scene-check JSON output, relative to root")
     args = parser.parse_args(argv)
@@ -935,8 +1105,11 @@ def _cli(argv=None) -> int:
 
     run_dir = rooted(args.run_dir, "run-dir")
     bound = load_scene_check_contract(root / args.contract, root)
-    report = check_scene(str(run_dir), str(run_dir), bound["coverage"],
-                         bound["decision"])
+    report = check_scene(
+        str(run_dir), str(run_dir), bound["coverage"], bound["decision"],
+        analysis_manifest=(str(args.analysis_manifest)
+                           if args.analysis_manifest else None),
+        project_root=root)
     report["contract_binding"] = {
         "schema": SCENE_CHECK_CONTRACT_SCHEMA,
         "contract_path": bound["contract_path"],

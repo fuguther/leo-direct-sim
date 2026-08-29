@@ -267,3 +267,126 @@ def test_non_nested_manifest_keeps_only_canonical_demand_mapping(
     assert manifest["rng_streams"] == {"demand": "SeedSequence(7).spawn[0]"}
     assert receipt._validate_manifest(manifest, resolved["config"],
                                       resolved["version"]) == []
+
+# ---------------------------------------------------------------- P0 fix:
+# posterior (historical-runtime) artifact verification.  The strict default
+# verify_receipt_dir must keep rejecting any directory whose recorded runtime
+# identity (code sha + dependency versions) differs from the local checkout;
+# the internal unbound primitive performs the same full artifact recomputation
+# WITHOUT that local==runtime gate and returns the recorded runtime identity
+# so a caller holding a formal governance binding can still analyze the run.
+
+VM_RUNTIME_DEPS = {
+    "python": "3.11.15", "numpy": "1.24.3",
+    "simpy": "4.0.1", "pyyaml": "6.0.2",
+}
+
+
+def _build_small_run(tmp_path: Path) -> Path:
+    """A fast full run directory (receipt v5, manifest v2, identity v3)."""
+    from CODE.leo_sim.tests.helpers import StaticGeometry, cell, make_cfg
+    cfg = make_cfg({
+        "scenario": {"duration_s": 1.0, "num_satellites": 1,
+                     "num_planes": 1},
+        "endpoints": {"sites": [
+            {"name": "a", "lat": 0.0, "lon": 0.0},
+            {"name": "b", "lat": 0.0, "lon": 10.0},
+        ]}})
+    geometry = StaticGeometry(1, visible=lambda *_: True)
+    tdir = tmp_path / "compiled"
+    manifest = trace.compile_trace(cfg, str(tdir))
+    tbytes = (tdir / "trace.csv").read_bytes()
+    manifest["__trace_sha256"] = hashlib.sha256(tbytes).hexdigest()
+    manifest["__sha256"] = hashlib.sha256(
+        (tdir / "manifest.json").read_bytes()).hexdigest()
+    rows = trace.load_trace(
+        str(tdir / "trace.csv"),
+        horizon_s=cfg["config"]["scenario"]["duration_s"],
+        max_packets=cfg["config"]["execution"]["max_packets"])
+    result = kernel.run_simulation(cfg, rows, geometry=geometry)
+    out = tmp_path / "run"
+    receipt.write_run(str(out), cfg, tbytes, manifest, result, rows)
+    return out
+
+
+def _stamp_historical_runtime(out: Path, code_sha: str = "0" * 64) -> None:
+    """Stamp the receipt with an alien (historical VM) runtime identity."""
+    rcp_path = out / "receipt.json"
+    rcp = json.loads(rcp_path.read_text(encoding="utf-8"))
+    rcp["code_sha256"] = code_sha
+    rcp["deps"] = dict(VM_RUNTIME_DEPS)
+    rcp_path.write_text(
+        json.dumps(rcp, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def test_strict_receipt_verify_still_rejects_different_runtime_identity(
+        tmp_path):
+    """Constraint 6a: the default exact-runtime verify must keep FAILING on a
+    code OR deps mismatch with the historical runtime."""
+    out = _build_small_run(tmp_path)
+    assert receipt.verify_receipt_dir(str(out)) == []
+    _stamp_historical_runtime(out)
+    errors = receipt.verify_receipt_dir(str(out))
+    assert any("code sha mismatch" in e for e in errors)
+    assert any("dependency versions differ" in e for e in errors)
+
+
+def test_unbound_artifact_integrity_separates_runtime_identity(tmp_path):
+    """The posterior artifacts path recomputes everything else and returns
+    the recorded runtime identity instead of the local==runtime gate."""
+    out = _build_small_run(tmp_path)
+    _stamp_historical_runtime(out)
+    errors, identity = receipt._verify_receipt_dir_artifacts_unbound(str(out))
+    assert errors == []
+    assert identity["code_sha256"] == "0" * 64
+    assert identity["deps"] == VM_RUNTIME_DEPS
+    # the strict gate still rejects the same directory
+    assert any("code sha mismatch" in e
+               for e in receipt.verify_receipt_dir(str(out)))
+
+
+def test_unbound_artifact_integrity_identity_matches_local_on_fresh_run(
+        tmp_path):
+    out = _build_small_run(tmp_path)
+    errors, identity = receipt._verify_receipt_dir_artifacts_unbound(str(out))
+    assert errors == []
+    assert identity["code_sha256"] == receipt.code_sha256()
+    assert identity["deps"] == receipt.dependency_versions()
+
+
+def test_unbound_artifact_integrity_still_rejects_artifact_tampering(
+        tmp_path):
+    """Posterior mode never relaxes artifact integrity: a tampered receipt
+    summary must still fail even when the runtime identity is alien."""
+    out = _build_small_run(tmp_path)
+    _stamp_historical_runtime(out)
+    rcp_path = out / "receipt.json"
+    rcp = json.loads(rcp_path.read_text(encoding="utf-8"))
+    rcp["totals"]["delivered_bits"] += 1
+    rcp_path.write_text(
+        json.dumps(rcp, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    errors, _identity = receipt._verify_receipt_dir_artifacts_unbound(str(out))
+    assert any("totals" in e for e in errors)
+
+
+def test_unbound_artifact_integrity_rejects_missing_dep_key(tmp_path):
+    out = _build_small_run(tmp_path)
+    _stamp_historical_runtime(out)
+    rcp_path = out / "receipt.json"
+    rcp = json.loads(rcp_path.read_text(encoding="utf-8"))
+    del rcp["deps"]["pyyaml"]
+    rcp_path.write_text(
+        json.dumps(rcp, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    errors, _identity = receipt._verify_receipt_dir_artifacts_unbound(str(out))
+    assert any("deps must be exactly" in e for e in errors)
+
+
+def test_unbound_artifact_integrity_is_not_a_public_verifier_api():
+    """Only the strict exact-runtime verifier is public at receipt level.
+
+    Posterior evidence must be admitted by the higher-level V2 governance
+    chain, never by a generally callable receipt helper whose empty error
+    list could be mistaken for an evidence verdict.
+    """
+    assert not hasattr(receipt, "verify_receipt_dir_artifacts")
+    assert callable(receipt._verify_receipt_dir_artifacts_unbound)
