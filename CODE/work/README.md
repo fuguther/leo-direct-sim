@@ -5,13 +5,13 @@
 你以导师/领导身份提出目标、边界和决策；Agent 用可交接的版本化工作包执行。
 
 ```text
-ARCHIVE-20260803/WORK/WP-.../
-├── r01/
+CODE/work/WP-.../
+├── R01/
 │   ├── brief.json
 │   ├── producer/
 │   ├── reviews/
 │   └── decision.json
-└── r02/                     # 只有 REVISE 后才建立
+└── R02/                     # 只有 REVISE 后才建立
     └── ...
 ```
 
@@ -35,9 +35,9 @@ ACCEPT 决定先由机器重算为 finalization receipt：
 
 ```bash
 python3 CODE/work/finalize_decision.py \
-  --brief ARCHIVE-20260803/WORK/WP-.../r01/brief.json \
-  --decision ARCHIVE-20260803/WORK/WP-.../r01/decision.json \
-  --out ARCHIVE-20260803/WORK/WP-.../r01/finalization.json
+  --brief CODE/work/WP-.../R01/brief.json \
+  --decision CODE/work/WP-.../R01/decision.json \
+  --out CODE/work/WP-.../R01/finalization.json
 ```
 
 `finalize_decision.py` 先执行 work-package、review-receipt 和 decision 的完整结构校验，再重新计算产物和审阅回执 hash，并要求 `brief.review_roles`
