@@ -2,12 +2,12 @@
   "artifact_hashes": {
     "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json": "b5631b2d4e40bc96b77e69459ae50b44b467d08b22373fcd4e63e7ebbe8912ae",
     "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml": "9ad82a9ac4c4f86c13e38881236f8a438c2750140b7a6a8d49f7929e98b17d9b",
-    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/brief.json": "fc66703cdef7ec05208eb391e3aec2c58a0a50e5748361b533bc50d3cc09457c",
+    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/brief.json": "9507d159aa23c5d9cbed76430bcc8c8a593473de9dee3edd8a35bf7dda076998",
     "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json": "b9b3f75378b6d1f81fb46624193ca35d6ebb41a9c5970d689f6e78a4366a26b7",
     "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/RUNBOOK.md": "cfbb1aae33c418fa61d47123d67c329bb4226e99a0aac2ef61169c8875d4bf93",
-    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/analysis-request.json": "0ddab6383cf5c0fedfea491ba3c2cbbfa8269c3fd5528b83be7730d5887dfe35",
-    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/compile-report.json": "051bbdede5e42cce6a20c5787438b960a2cc9f84516807fa611d1134fb2e4a7c",
-    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/request.json": "74f9942daceda036a9589cecdcf1bd65bea4334bc205168390751251d4e699d3",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/analysis-request.json": "5c8e9783a57613cd329a308c2e0e39ce489489def54fb8ff8b25b36014379341",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/compile-report.json": "bebe088b2e2194f08fc19fadf4fafe5bf5b972b1a407eacc8b772c64d6b3fa4a",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/request.json": "bad67d6c65b62c527d787182a6b71bd6638c0ea0df4b15681343ea1e4cd12cb1",
     "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11.leo-sim.yaml": "5536b6637912e7e022f5b932f00f65f24e982f41a57f61224c419a6bb5f09c80",
     "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19.leo-sim.yaml": "61aa04352644e1f5ba525f757ec8c51dd01419c222d87abd491ed3a56cbd1a24",
     "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7.leo-sim.yaml": "c140bd87a11e1e837f1fd9d3cb1c26aec21e895d289ca24243a79b310d1c9631",
@@ -32,12 +32,12 @@
     "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11.leo-sim.yaml": "e283d0d3b052cbbd113cbb68e322b8b95d720d75611bae87e5ec6166901f8cb3",
     "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19.leo-sim.yaml": "e71ee40633210ca8efa2e779682e3eb8b86c28a11e0439505efd8c904db1e485",
     "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7.leo-sim.yaml": "5a99a5175df9c02a5b2e60482dfd9e712d243b47ddd4b7800d27af4f3980f91a",
-    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/run-manifest.json": "9ff256c24a0d67e62838bd407750b00bffeb6822357d51851d4310726dee9971"
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/run-manifest.json": "943cf1907f5546e60dd5cd36a84af2d7aed20b9cbdb516731550caefe359c1fa"
   },
   "blocking_findings": [],
   "evidence": [
-    "Round-4 scoped closure at exact commit 609f9892: all four scoped checks pass; working tree clean for in-scope paths; PR #182 is a brief-metadata-only fix satisfying the schema contract.",
-    "Domain assessment: per-load a/b determinism pairs at seeds 7/11/19 adequate for the DESCRIPTIVE claim; preregistered expectation (ISL util gate unreachable in bracket; expected ACCESS_LIMITED per load) correctly carried in brief; acceptance 500/1/true/true satisfiable at all loads (ge disabled: ISL is the only data path); VM budget 24 arms x ~18 min ~7.2h serial plausible; truncation disclosure (30s horizon, in_system_at_stop residue) required in analysis reporting."
+    "Round-5 scoped review at 5e96b41: acceptance {1,0,true,true} satisfiable at all loads (170-1600 offered packets) and still rejects zero-delivery degenerate runs; no blocking findings; chain closed for decision/finalization/authorization rebuild.",
+    "Domain chain: per-load a/b determinism pairs adequate; preregistered ISL-unreachability expectation and 30s truncation disclosure carried in brief; VM budget 24 x ~18 min serial plausible; old superseded authorization/verdicts must not survive (addressed by rebuild)."
   ],
   "independence": {
     "producer_and_reviewer_are_distinct": true,
@@ -47,9 +47,9 @@
   "producer_session_id": "P-bracket-r02-request",
   "receipt_id": "RR-GLOBAL-PRESSURE-R02-SAT",
   "required_revision": [],
-  "reviewer_id": "reviewer:kimi-cli-995ca332a994",
-  "reviewer_session_id": "R-kimi-cli-995ca332-a994-4ec2-83a4-86ff6872b2f3",
-  "revision": 3,
+  "reviewer_id": "reviewer:kimi-cli-716b4cf6d806",
+  "reviewer_session_id": "R-kimi-cli-716b4cf6-d806-48f0-b8a6-9f542dcad13d",
+  "revision": 4,
   "role": "satellite_drl",
   "schema": "agent-review-receipt/v2",
   "unknowns": [],
