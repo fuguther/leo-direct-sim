@@ -49,7 +49,7 @@
     "unverified worker completion claims"
   ],
   "objective": "Run a bounded global population-proxy load bracket (24 cells: loads 10/20/40/80 Mbps x seeds 7/11/19, within-load a/b determinism re-executions) through the formal VM chain and classify each load with independent access, route, egress and ISL-pressure gates before any descriptive per-load claim is considered.",
-  "parent_revision": 1,
+  "parent_revision": 2,
   "producer_id": "producer:codex-global-pressure",
   "producer_session_id": "P-bracket-r02-request",
   "review_roles": [
@@ -57,7 +57,8 @@
     "satellite_drl",
     "adversarial"
   ],
-  "revision": 2,
+  "revision": 3,
+  "revision_reason": "Round-1/2/3 review: redesign to 24-cell determinism-pair bracket with formal acceptance, v2 brief schema completion, and round-3 schema-compliance fix (revision_reason).",
   "schema": "agent-work-package/v2",
   "status": "REVIEW",
   "work_id": "WP-LEO-V2-GLOBAL-PRESSURE-BRACKET"
