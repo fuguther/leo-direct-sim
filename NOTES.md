@@ -12,6 +12,10 @@
 - finalize_decision.py ACCEPTED；authorize_experiment.py AUTHORIZED（24 runs）。
 - 同日 GitHub runner 池异常引起 CI 多次冻结，最终以本地全量 836 passed x2 佐证内容，远端 CI 各 PR 均已绿。
 
+## 2026-08-29：R02 acceptance 尺度修正与链重建（PR #184/#185）
+
+- Cell1 实跑（natural_end, conservation_ok, 170/132/38 同型 R01）证明 500 门不可满足；按 round-1 审阅者预案降级 {1,0,true,true}（#184）。round-5 三审 PASS（5e96b41）；链重建 rev4：decision/finalization ACCEPTED、authorization 24 runs 替换旧授权（#185）。
+
 ## 2026-08-29：状态包原子更新（PR #177）
 
 - 4 份 update_now 关闭：CURRENT-EXPERIMENT-READINESS / EXPERIMENT-PROGRAM / PLATFORM-CAPABILITY-LEDGER 新增 2026-08-29 CURRENT 快照节；experiment-program.yaml 补 preregistered 枚举并置 v2_formal_evidence_chain_verified / global_scene_repeat_analysis_verified=completed_verified；DOCUMENT-STATUS.json 4 条目 last_reviewed=2026-08-29。
