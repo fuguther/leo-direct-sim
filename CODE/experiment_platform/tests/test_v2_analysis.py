@@ -25,6 +25,7 @@ def _stable_analyzer_identity(monkeypatch):
             "CODE/experiment_platform/isl_pressure.py": "d" * 64,
             "CODE/experiment_platform/isl_pressure_decision.py": "e" * 64,
             "CODE/leo_sim/metrics.py": "c" * 64,
+            "CODE/leo_sim/receipt.py": "9" * 64,
         },
     }
     monkeypatch.setattr(v2_analysis, "_analyzer_identity", lambda: identity)
@@ -392,6 +393,7 @@ def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
             "CODE/experiment_platform/isl_pressure.py": "0" * 64,
             "CODE/experiment_platform/isl_pressure_decision.py": "1" * 64,
             "CODE/leo_sim/metrics.py": "f" * 64,
+            "CODE/leo_sim/receipt.py": "8" * 64,
         },
     }
     with mock.patch.object(v2_analysis.authorize_experiment,
@@ -478,6 +480,24 @@ def test_v2_analysis_binds_two_real_receipts_and_persisted_outputs(tmp_path):
     assert "matched/unmatched ISL queue entries" in report
 
 
+def test_verify_persisted_analysis_rejects_nonmapping_inputs(tmp_path,
+                                                              monkeypatch):
+    """Malformed persisted manifests fail closed through the normal error API."""
+    root = tmp_path
+    manifest_path = root / "analysis-manifest.json"
+    analyzer = {"git_commit": "d" * 40, "files": {}}
+    _write(manifest_path, {
+        "schema": v2_analysis.SCHEMA,
+        "status": "VERIFIED",
+        "analyzer": analyzer,
+        "inputs": [],
+    })
+    monkeypatch.setattr(v2_analysis, "_analyzer_identity", lambda: analyzer)
+    ok, errors = v2_analysis.verify_persisted_analysis(root, manifest_path)
+    assert not ok
+    assert any("inputs contract" in item for item in errors)
+
+
 def test_v2_analysis_rejects_empty_authorized_cohort(tmp_path):
     experiment = tmp_path / "EXPERIMENTS" / "EXP-EMPTY"
     _write(experiment / "request.json", {
@@ -521,6 +541,7 @@ def test_v2_analysis_rejects_legacy_receipt_without_explicit_internal_mode(
     governed = json.loads(governed_path.read_text(encoding="utf-8"))
     governed["schema"] = v2_analysis.GOVERNANCE_SCHEMA_V1
     governed["run_receipt_sha256"] = receipt_sha
+    governed["authorization_sha256"] = "a" * 64
     _write(governed_path, governed)
     formal = json.loads(formal_path.read_text(encoding="utf-8"))
     formal["receipt_sha256"] = receipt_sha
@@ -735,6 +756,439 @@ def test_v2_analysis_rejects_external_launch_witness_terminal_identity(
                            "verify_authorization", return_value=auth):
         with pytest.raises(v2_analysis.V2AnalysisError, match="external launch witness"):
             v2_analysis.analyze(root, experiment, auth_path)
+
+# ---------------------------------------------------------------- P0 fix:
+# posterior analysis of governed historical runtimes.  A v5 run whose
+# receipt records a runtime identity different from the local analyzer may be
+# analyzed ONLY when the full formal chain (authorization cell + formal run
+# witness + governance receipt v2 + nonce external witness) cross-binds the
+# historical runtime code/config/auth/result hashes.  Default fail-closed;
+# any tamper of the chain rejects.  Legacy v3/v4 (no external witness) keeps
+# the exact-runtime requirement.
+
+VM_RUNTIME_DEPS = {
+    "python": "3.11.15", "numpy": "1.24.3",
+    "simpy": "4.0.1", "pyyaml": "6.0.2",
+}
+POSTERIOR_CODE_SHA = "1" * 64
+
+
+def _posterior_run_fixture(root: Path, run_id: str, arm_id: str,
+                           pair: str) -> dict:
+    """A fully chain-bound run whose receipt records an alien (historical)
+    runtime identity: code sha and dependency versions differ from the local
+    checkout while authorization/formal/governance/witness all bind that
+    historical identity consistently."""
+    row = _run_fixture(root, run_id, arm_id, pair)
+    row["code_sha256"] = POSTERIOR_CODE_SHA
+    result_dir = root / "CODE" / "Results" / run_id
+    rcp_path = result_dir / "receipt.json"
+    rcp = json.loads(rcp_path.read_text(encoding="utf-8"))
+    rcp["code_sha256"] = POSTERIOR_CODE_SHA
+    rcp["deps"] = dict(VM_RUNTIME_DEPS)
+    _write(rcp_path, rcp)
+    receipt_sha = v2_analysis.file_sha256(rcp_path)
+    formal_path = result_dir / "formal_run.json"
+    formal = json.loads(formal_path.read_text(encoding="utf-8"))
+    formal["code_sha256"] = POSTERIOR_CODE_SHA
+    formal["receipt_sha256"] = receipt_sha
+    _write(formal_path, formal)
+    governed_path = result_dir / "governance_receipt.json"
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    governed["run_receipt_sha256"] = receipt_sha
+    governed["authorization_sha256"] = "a" * 64
+    _seal_governed(governed)
+    _write(governed_path, governed)
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    _write_external_witness(root, run_id, governed,
+                            authorization_sha256="a" * 64)
+    return row
+
+
+def _package_experiment(root: Path, name: str, rows: list[dict],
+                        *, primary: str = "delivery_rate") -> tuple[
+                            Path, Path, dict]:
+    """Write a V2 experiment package (request/matrix/analysis/auth) whose
+    authorization hash is propagated back into formal/governed/witness."""
+    experiment = root / "EXPERIMENTS" / name
+    experiment.mkdir(parents=True)
+    cells = [{**row, "trace_seed": 1} for row in rows]
+    _write(experiment / "request.json", {
+        "experiment_id": name,
+        "claim_boundary": {"can_claim": ["none"],
+                           "cannot_claim": ["not independently reviewed"]},
+    })
+    _write(experiment / "run-manifest.json", {
+        "schema": v2_analysis.MATRIX_SCHEMA,
+        "experiment_id": name, "cells": cells,
+    })
+    _write(experiment / "analysis-request.json", {
+        "schema": v2_analysis.ANALYSIS_SCHEMA,
+        "experiment_id": name,
+        "planned_run_ids": [row["run_id"] for row in rows],
+        "analysis": {
+            "analysis_id": f"AN-{name}", "primary_metric": primary,
+            "planned_contrasts": [],
+        },
+    })
+    auth = {"status": "AUTHORIZED", "experiment_id": name,
+            "authorized_cells": cells}
+    auth_path = experiment / "authorization.json"
+    _write(auth_path, auth)
+    auth_sha = v2_analysis.file_sha256(auth_path)
+    for row in rows:
+        formal_path = root / "CODE" / "Results" / row["run_id"] / "formal_run.json"
+        formal = json.loads(formal_path.read_text(encoding="utf-8"))
+        formal["authorization_sha256"] = auth_sha
+        _write(formal_path, formal)
+        governed_path = root / "CODE" / "Results" / row["run_id"]             / "governance_receipt.json"
+        governed = json.loads(governed_path.read_text(encoding="utf-8"))
+        governed["authorization_sha256"] = auth_sha
+        _seal_governed(governed)
+        _write(governed_path, governed)
+        governed = json.loads(governed_path.read_text(encoding="utf-8"))
+        _write_external_witness(root, row["run_id"], governed,
+                                authorization_sha256=auth_sha)
+    with open(auth_path, "r", encoding="utf-8") as handle:
+        auth_on_disk = json.load(handle)
+    return experiment, auth_path, auth_on_disk
+
+
+_STABLE_ANALYZER = {
+    "git_commit": "d" * 40,
+    "files": {
+        "CODE/experiment_platform/v2_analysis.py": "e" * 64,
+        "CODE/experiment_platform/isl_pressure.py": "0" * 64,
+        "CODE/experiment_platform/isl_pressure_decision.py": "1" * 64,
+        "CODE/leo_sim/metrics.py": "f" * 64,
+        "CODE/leo_sim/receipt.py": "7" * 64,
+    },
+}
+
+
+def test_v2_analysis_posterior_runtime_identity_succeeds(tmp_path):
+    """Constraint 6b: a run whose historical runtime identity differs from
+    the local analyzer IS analyzable when the full authorization + formal +
+    governance + nonce-witness chain binds that identity."""
+    root = tmp_path
+    row = _posterior_run_fixture(
+        root, "EXP-POSTERIOR-s1", "control", "pair-1")
+    experiment, auth_path, auth = _package_experiment(
+        root, "EXP-POSTERIOR", [row])
+    with mock.patch.object(v2_analysis.authorize_experiment,
+                           "verify_authorization", return_value=auth),             mock.patch.object(v2_analysis, "_analyzer_identity",
+                              return_value=_STABLE_ANALYZER, create=True):
+        manifest = v2_analysis.analyze(root, experiment, auth_path)
+        out = root / "ANALYSIS" / "EXP-POSTERIOR"
+        persisted = v2_analysis.write_outputs(root, out, manifest)
+        ok, errors = v2_analysis.verify_persisted_analysis(
+            root, out / "analysis-manifest.json")
+    assert manifest["status"] == "VERIFIED"
+    assert manifest["analysis_mode"] == "posterior_governed_runtime"
+    assert all(result["runtime_identity_binding"] == "governance_bound_posterior"
+               for result in manifest["run_results"])
+    assert manifest["run_results"][0]["runtime_deps"] == VM_RUNTIME_DEPS
+    assert manifest["run_results"][0]["code_sha256"] == POSTERIOR_CODE_SHA
+    assert ok, errors
+    assert persisted["status"] == "VERIFIED"
+
+
+def test_verify_result_rejects_formal_code_hash_tamper(tmp_path):
+    root, row, authorized = _posterior_single_fixture(tmp_path)
+    result_dir = root / "CODE" / "Results" / row["run_id"]
+    formal_path = result_dir / "formal_run.json"
+    formal = json.loads(formal_path.read_text(encoding="utf-8"))
+    formal["code_sha256"] = "3" * 64
+    _write(formal_path, formal)
+    with pytest.raises(v2_analysis.V2AnalysisError,
+                       match="formal witness identity mismatch"):
+        v2_analysis._verify_result(
+            root, root / "CODE" / "Results",
+            root / "CODE" / "Results" / "_external_launch_witness",
+            row, authorized, "delivery_rate", require_external_witness=True)
+
+
+def test_verify_result_rejects_authorized_code_hash_tamper(tmp_path):
+    root, row, authorized = _posterior_single_fixture(tmp_path)
+    authorized["code_sha256"] = "4" * 64
+    with pytest.raises(v2_analysis.V2AnalysisError,
+                       match="authorized cell identity mismatch"):
+        v2_analysis._verify_result(
+            root, root / "CODE" / "Results",
+            root / "CODE" / "Results" / "_external_launch_witness",
+            row, authorized, "delivery_rate", require_external_witness=True)
+
+
+def test_verify_result_rejects_governance_auth_hash_tamper(tmp_path):
+    root, row, authorized = _posterior_single_fixture(tmp_path)
+    governed_path = (root / "CODE" / "Results" / row["run_id"]
+                     / "governance_receipt.json")
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    governed["authorization_sha256"] = "5" * 64
+    _write(governed_path, governed)
+    with pytest.raises(v2_analysis.V2AnalysisError,
+                       match="governance authorization hash mismatch"):
+        v2_analysis._verify_result(
+            root, root / "CODE" / "Results",
+            root / "CODE" / "Results" / "_external_launch_witness",
+            row, authorized, "delivery_rate", require_external_witness=True)
+
+
+def test_verify_result_rejects_external_witness_receipt_hash_tamper(
+        tmp_path):
+    root, row, authorized = _posterior_single_fixture(tmp_path)
+    witness_path = (root / "CODE" / "Results" / "_external_launch_witness"
+                    / f"{row['run_id']}.json")
+    witness = json.loads(witness_path.read_text(encoding="utf-8"))
+    witness["governance_receipt_sha256"] = "6" * 64
+    _write(witness_path, witness)
+    with pytest.raises(v2_analysis.V2AnalysisError,
+                       match="external launch witness"):
+        v2_analysis._verify_result(
+            root, root / "CODE" / "Results",
+            root / "CODE" / "Results" / "_external_launch_witness",
+            row, authorized, "delivery_rate", require_external_witness=True)
+
+
+def test_verify_result_rejects_unbound_receipt_code_hash(tmp_path):
+    """The receipt may not claim a runtime code identity the chain does not
+    bind: receipt stamped with yet another code sha must be rejected."""
+    root, row, authorized = _posterior_single_fixture(tmp_path)
+    rcp_path = root / "CODE" / "Results" / row["run_id"] / "receipt.json"
+    rcp = json.loads(rcp_path.read_text(encoding="utf-8"))
+    rcp["code_sha256"] = "7" * 64
+    _write(rcp_path, rcp)
+    receipt_sha = v2_analysis.file_sha256(rcp_path)
+    formal_path = root / "CODE" / "Results" / row["run_id"] / "formal_run.json"
+    formal = json.loads(formal_path.read_text(encoding="utf-8"))
+    formal["receipt_sha256"] = receipt_sha
+    _write(formal_path, formal)
+    governed_path = (root / "CODE" / "Results" / row["run_id"]
+                     / "governance_receipt.json")
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    governed["run_receipt_sha256"] = receipt_sha
+    _seal_governed(governed)
+    _write(governed_path, governed)
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    _write_external_witness(root, row["run_id"], governed,
+                            authorization_sha256="a" * 64)
+    with pytest.raises(v2_analysis.V2AnalysisError,
+                       match="result identity mismatch"):
+        v2_analysis._verify_result(
+            root, root / "CODE" / "Results",
+            root / "CODE" / "Results" / "_external_launch_witness",
+            row, authorized, "delivery_rate", require_external_witness=True)
+
+
+def test_v2_analysis_rejects_mixed_exact_and_posterior_cohort(tmp_path):
+    root = tmp_path
+    exact = _run_fixture(root, "EXP-MIXED-exact-s1", "exact", "pair-1")
+    posterior = _posterior_run_fixture(
+        root, "EXP-MIXED-post-s1", "post", "pair-1")
+    experiment, auth_path, auth = _package_experiment(
+        root, "EXP-MIXED", [exact, posterior])
+    with mock.patch.object(v2_analysis.authorize_experiment,
+                           "verify_authorization", return_value=auth),             mock.patch.object(v2_analysis, "_analyzer_identity",
+                              return_value=_STABLE_ANALYZER, create=True):
+        with pytest.raises(v2_analysis.V2AnalysisError,
+                           match="mixes exact-runtime and posterior"):
+            v2_analysis.analyze(root, experiment, auth_path)
+
+
+def _posterior_single_fixture(tmp_path):
+    root = tmp_path
+    row = _posterior_run_fixture(
+        root, "EXP-POSTERIOR-TAMP-s1", "control", "pair-1")
+    authorized = {**row, "authorization_sha256": "a" * 64}
+    return root, row, authorized
+
+
+def test_legacy_receipt_rejects_different_runtime_identity(tmp_path):
+    """Constraint 6c-minus: v3/v4 legacy evidence has no external witness,
+    so a different analyzer/runtime identity must fail closed."""
+    root = tmp_path
+    row = _run_fixture(root, "EXP-LEGACY-POST-s1", "control", "pair-1")
+    result_dir = root / "CODE" / "Results" / row["run_id"]
+    rcp_path = result_dir / "receipt.json"
+    rcp = json.loads(rcp_path.read_text(encoding="utf-8"))
+    rcp["schema"] = v2_analysis.receipt_mod.LEGACY_RECEIPT_SCHEMA_V4
+    _write(rcp_path, rcp)
+    receipt_sha = v2_analysis.file_sha256(rcp_path)
+    formal_path = result_dir / "formal_run.json"
+    formal = json.loads(formal_path.read_text(encoding="utf-8"))
+    formal["receipt_sha256"] = receipt_sha
+    _write(formal_path, formal)
+    governed_path = result_dir / "governance_receipt.json"
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    governed["schema"] = v2_analysis.GOVERNANCE_SCHEMA_V1
+    governed["run_receipt_sha256"] = receipt_sha
+    governed["authorization_sha256"] = "a" * 64
+    _write(governed_path, governed)
+    authorized = {**row, "authorization_sha256": "a" * 64}
+    alien_identity = {"code_sha256": POSTERIOR_CODE_SHA,
+                      "deps": VM_RUNTIME_DEPS}
+    with mock.patch.object(
+            v2_analysis.receipt_mod, "_verify_receipt_dir_artifacts_unbound",
+            return_value=([], alien_identity)):
+        with pytest.raises(v2_analysis.V2AnalysisError,
+                           match="legacy receipt cannot be analyzed"):
+            v2_analysis._verify_result(
+                root, root / "CODE" / "Results",
+                root / "CODE" / "Results" / "_external_launch_witness",
+                row, authorized, "delivery_rate",
+                require_external_witness=False)
+
+
+def test_legacy_receipt_exact_runtime_still_analyzes(tmp_path):
+    """The old v3/v4 diagnostic contract keeps working when the local
+    analyzer identity exactly matches the run-time record."""
+    root = tmp_path
+    row = _run_fixture(root, "EXP-LEGACY-EXACT-s1", "control", "pair-1")
+    result_dir = root / "CODE" / "Results" / row["run_id"]
+    rcp_path = result_dir / "receipt.json"
+    rcp = json.loads(rcp_path.read_text(encoding="utf-8"))
+    rcp["schema"] = v2_analysis.receipt_mod.LEGACY_RECEIPT_SCHEMA_V4
+    _write(rcp_path, rcp)
+    receipt_sha = v2_analysis.file_sha256(rcp_path)
+    formal_path = result_dir / "formal_run.json"
+    formal = json.loads(formal_path.read_text(encoding="utf-8"))
+    formal["receipt_sha256"] = receipt_sha
+    _write(formal_path, formal)
+    governed_path = result_dir / "governance_receipt.json"
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    governed["schema"] = v2_analysis.GOVERNANCE_SCHEMA_V1
+    governed["run_receipt_sha256"] = receipt_sha
+    governed["authorization_sha256"] = "a" * 64
+    _write(governed_path, governed)
+    authorized = {**row, "authorization_sha256": "a" * 64}
+    local_identity = {
+        "code_sha256": v2_analysis.receipt_mod.code_sha256(),
+        "deps": v2_analysis.receipt_mod.dependency_versions(),
+    }
+    with mock.patch.object(
+            v2_analysis.receipt_mod, "_verify_receipt_dir_artifacts_unbound",
+            return_value=([], local_identity)):
+        verified = v2_analysis._verify_result(
+            root, root / "CODE" / "Results",
+            root / "CODE" / "Results" / "_external_launch_witness",
+            row, authorized, "delivery_rate",
+            require_external_witness=False)
+    assert verified["evidence_class"] == "legacy_v3_v4_internal_only"
+    assert verified["runtime_identity_binding"] == "local_exact_match"
+# ---------------------------------------------------------------- Re-review:
+# 1) posterior semantics do NOT require the local host to reproduce the
+#    historical runtime dependencies.  An unresolvable local dependency set
+#    (e.g. tensorflow absent) only means "exact cannot be proven": a fully
+#    bound v5 external-witness chain admits posterior, legacy (no witness)
+#    still fails closed.
+# 2) the posterior artifact verifier (receipt.py) itself must be bound by
+#    the persisted analyzer identity.
+
+def test_analyzer_identity_binds_receipt_verifier_file(monkeypatch):
+    """receipt.py is load-bearing for posterior artifact verification, so a
+    persisted analysis manifest must bind its exact bytes."""
+    responses = [
+        mock.Mock(stdout="1" * 40 + "\n"),
+        mock.Mock(stdout=""),
+    ]
+    monkeypatch.setattr(v2_analysis.subprocess, "run",
+                        mock.Mock(side_effect=responses))
+    identity = _REAL_ANALYZER_IDENTITY()
+    assert "CODE/leo_sim/receipt.py" in v2_analysis.ANALYZER_FILES
+    repo_root = Path(__file__).resolve().parents[3]
+    expected_sha = v2_analysis.file_sha256(
+        repo_root / "CODE" / "leo_sim" / "receipt.py")
+    assert identity["files"]["CODE/leo_sim/receipt.py"] == expected_sha
+
+
+def _ddqn_unresolvable_fixture(tmp_path, run_id):
+    """A fully chain-bound v5 run whose receipt records a historical DDQN
+    runtime identity (deps key set includes tensorflow) while the local host
+    cannot import tensorflow at all."""
+    root = tmp_path
+    row = _posterior_run_fixture(root, run_id, "control", "pair-1")
+    result_dir = root / "CODE" / "Results" / run_id
+    rcp_path = result_dir / "receipt.json"
+    rcp = json.loads(rcp_path.read_text(encoding="utf-8"))
+    rcp["mechanisms"]["requested"]["learning_algorithm"] = "ddqn"
+    rcp["deps"] = dict(VM_RUNTIME_DEPS)
+    rcp["deps"]["tensorflow"] = "2.12.0"
+    _write(rcp_path, rcp)
+    receipt_sha = v2_analysis.file_sha256(rcp_path)
+    formal_path = result_dir / "formal_run.json"
+    formal = json.loads(formal_path.read_text(encoding="utf-8"))
+    formal["receipt_sha256"] = receipt_sha
+    _write(formal_path, formal)
+    governed_path = result_dir / "governance_receipt.json"
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    governed["run_receipt_sha256"] = receipt_sha
+    _seal_governed(governed)
+    _write(governed_path, governed)
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    _write_external_witness(root, run_id, governed,
+                            authorization_sha256="a" * 64)
+    identity = {"code_sha256": POSTERIOR_CODE_SHA, "deps": rcp["deps"]}
+    return root, row, identity
+
+
+def test_verify_result_ddq_runtime_with_unresolvable_local_tf_is_posterior(
+        tmp_path):
+    """Historical DDQN runtime + local tensorflow ImportError: the full v5
+    governance chain admits posterior (never exact, never rejected)."""
+    root, row, identity = _ddqn_unresolvable_fixture(
+        tmp_path, "EXP-POSTERIOR-DDQN-s1")
+    authorized = {**row, "authorization_sha256": "a" * 64}
+    with mock.patch.object(
+            v2_analysis.receipt_mod, "_verify_receipt_dir_artifacts_unbound",
+            return_value=([], identity)), \
+            mock.patch.object(
+                v2_analysis.receipt_mod, "dependency_versions",
+                side_effect=ImportError("no tensorflow on this host")):
+        verified = v2_analysis._verify_result(
+            root, root / "CODE" / "Results",
+            root / "CODE" / "Results" / "_external_launch_witness",
+            row, authorized, "delivery_rate",
+            require_external_witness=True)
+    assert verified["runtime_identity_binding"] == "governance_bound_posterior"
+    assert verified["runtime_deps"]["tensorflow"] == "2.12.0"
+
+
+def test_legacy_receipt_unresolvable_local_deps_still_rejected(tmp_path):
+    """The same unresolvable local dependency set must still fail closed for
+    legacy v3/v4 evidence: without an external witness nothing binds the
+    historical runtime identity."""
+    root, row, identity = _ddqn_unresolvable_fixture(
+        tmp_path, "EXP-LEGACY-DDQN-s1")
+    result_dir = root / "CODE" / "Results" / row["run_id"]
+    rcp_path = result_dir / "receipt.json"
+    rcp = json.loads(rcp_path.read_text(encoding="utf-8"))
+    rcp["schema"] = v2_analysis.receipt_mod.LEGACY_RECEIPT_SCHEMA_V4
+    _write(rcp_path, rcp)
+    receipt_sha = v2_analysis.file_sha256(rcp_path)
+    formal_path = result_dir / "formal_run.json"
+    formal = json.loads(formal_path.read_text(encoding="utf-8"))
+    formal["receipt_sha256"] = receipt_sha
+    _write(formal_path, formal)
+    governed_path = result_dir / "governance_receipt.json"
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    governed["schema"] = v2_analysis.GOVERNANCE_SCHEMA_V1
+    governed["run_receipt_sha256"] = receipt_sha
+    governed["authorization_sha256"] = "a" * 64
+    _write(governed_path, governed)
+    authorized = {**row, "authorization_sha256": "a" * 64}
+    with mock.patch.object(
+            v2_analysis.receipt_mod, "_verify_receipt_dir_artifacts_unbound",
+            return_value=([], identity)), \
+            mock.patch.object(
+                v2_analysis.receipt_mod, "dependency_versions",
+                side_effect=ImportError("no tensorflow on this host")):
+        with pytest.raises(v2_analysis.V2AnalysisError,
+                           match="legacy receipt cannot be analyzed"):
+            v2_analysis._verify_result(
+                root, root / "CODE" / "Results",
+                root / "CODE" / "Results" / "_external_launch_witness",
+                row, authorized, "delivery_rate",
+                require_external_witness=False)
 
 
 @pytest.mark.parametrize("field", [

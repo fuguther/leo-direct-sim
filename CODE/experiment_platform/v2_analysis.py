@@ -9,6 +9,21 @@ reviews before any claim can be promoted.  Receipt/v5 results additionally
 require the nonce-bound launch status pulled from the canonical VM
 ``.remote_runtime/launches`` directory; historical receipt/v3/v4 results use
 an explicit legacy/internal-only branch and cannot masquerade as v5 evidence.
+
+POSTERIOR RUNTIME ANALYSIS: a v5 run whose receipt records a runtime
+identity different from the local analyzer (code sha and/or dependency
+versions, e.g. a VM Python 3.11 environment vs a newer local checkout) may
+still be analyzed when authorization + formal_run + governance_receipt v2 +
+nonce external witness FULLY cross-bind the historical runtime
+code/config/auth/result hashes.  Artifact integrity is then recomputed
+without the local==runtime gate (an internal, unbound receipt primitive)
+and the recorded run-time identity is bound by that chain (analysis_mode
+"posterior_governed_runtime").  Fail-closed by default: any hash, identity,
+eligibility or verification_errors anomaly rejects; legacy v3/v4 evidence
+keeps the strict exact-runtime requirement (no external witness exists to
+bind it); the strict default verify_receipt_dir is never weakened, and the
+receipt.json research_eligible=false vs governance research_eligible=true
+semantic difference is never rewritten.
 """
 from __future__ import annotations
 
@@ -33,6 +48,12 @@ ANALYSIS_SCHEMA = "leo-sim-matrix-analysis-request/v1"
 GOVERNANCE_SCHEMA_V1 = "leo-sim-governance-receipt/v1"
 GOVERNANCE_SCHEMA_V2 = "leo-sim-governance-receipt/v2"
 EXTERNAL_STATUS_SCHEMA = "leo-remote-launch-status/v2"
+# how a result's runtime identity was bound: reproduced by the local
+# analyzer exactly, or governed through the formal chain because the local
+# analyzer is a newer version than the historical runtime
+RUNTIME_BINDING_EXACT = "local_exact_match"
+RUNTIME_BINDING_POSTERIOR = "governance_bound_posterior"
+ANALYSIS_MODE_POSTERIOR = "posterior_governed_runtime"
 GOVERNANCE_WITNESS_FIELDS = (
     "receipt_schema", "resolved_config_sha256", "trace_manifest_schema",
     "trace_identity_contract", "trace_manifest_sha256",
@@ -44,6 +65,7 @@ ANALYZER_FILES = (
     "CODE/experiment_platform/isl_pressure_decision.py",
     "CODE/leo_sim/coverage.py",
     "CODE/leo_sim/metrics.py",
+    "CODE/leo_sim/receipt.py",
     "CODE/leo_sim/scene_check.py",
 )
 GIT_COMMIT = re.compile(r"^[0-9a-f]{40}$")
@@ -375,10 +397,12 @@ def _verify_result(root: Path, results_root: Path, witness_root: Path,
     )
     paths = {name: result_dir / name for name in required}
     docs = {name: _read_json(path) for name, path in paths.items()}
-    receipt_errors = receipt_mod.verify_receipt_dir(str(result_dir))
-    if receipt_errors:
-        raise V2AnalysisError(
-            f"{run_id} receipt verification failed: {'; '.join(receipt_errors)}")
+    # Verification order: the formal binding chain (authorization cell,
+    # formal run witness, governance receipt, external launch witness) runs
+    # FIRST because it binds the historical runtime code/config/result
+    # identity independently of the local analyzer checkout.  Only after the
+    # chain binds the run is artifact integrity recomputed and the runtime
+    # identity resolved (exact local match vs posterior governed runtime).
     formal = docs["formal_run.json"]
     governed = docs["governance_receipt.json"]
     receipt = docs["receipt.json"]
@@ -457,6 +481,55 @@ def _verify_result(root: Path, results_root: Path, witness_root: Path,
             external_witness_by_nonce=external_witness_by_nonce)
     else:
         external_witness = None
+    # Artifact integrity: full recomputation of receipt/manifest/trace/
+    # config/ledgers/fates/totals/conservation/mechanisms WITHOUT the
+    # local==runtime gate.  Any artifact anomaly fails closed regardless of
+    # the identity mode resolved below.
+    artifact_errors, run_identity = (
+        receipt_mod._verify_receipt_dir_artifacts_unbound(str(result_dir)))
+    if artifact_errors:
+        raise V2AnalysisError(
+            f"{run_id} receipt verification failed: "
+            f"{'; '.join(artifact_errors)}")
+    # Runtime identity: is the local analyzer exactly the run-time code, or
+    # a (newer) analyzer analyzing a governed historical runtime?  The
+    # posterior mode is admitted ONLY because the formal chain above bound
+    # the historical identity; legacy v3/v4 evidence has no external witness
+    # and keeps the strict exact-runtime requirement.
+    runtime_code = run_identity.get("code_sha256")
+    runtime_deps = run_identity.get("deps")
+    requested_learning = (receipt.get("mechanisms") or {}).get(
+        "requested", {}).get("learning_algorithm")
+    try:
+        local_deps = receipt_mod.dependency_versions(
+            with_tensorflow=requested_learning == "ddqn")
+    except ImportError:
+        # Posterior semantics never require the local host to reproduce
+        # the historical runtime dependencies (e.g. a TF-less host
+        # analyzing a historical DDQN run).  An unresolvable local
+        # dependency set only means "exact cannot be proven": the
+        # binding falls through to the governed chain below, and
+        # legacy evidence without an external witness still fails
+        # closed.
+        local_deps = None
+    if not (isinstance(runtime_code, str) and len(runtime_code) == 64
+            and all(ch in "0123456789abcdef" for ch in runtime_code)):
+        raise V2AnalysisError(f"{run_id} receipt code identity is malformed")
+    # exact requires the LOCAL analyzer to reproduce the full run-time
+    # identity; anything short (unresolvable or different local deps,
+    # or a different local code sha) is posterior when the v5
+    # external-witness chain bound the historical identity, and
+    # rejection when it did not.
+    if (local_deps is not None
+            and runtime_code == receipt_mod.code_sha256()
+            and runtime_deps == local_deps):
+        runtime_identity_binding = RUNTIME_BINDING_EXACT
+    elif external_witness is None:
+        raise V2AnalysisError(
+            f"{run_id} legacy receipt cannot be analyzed with a different "
+            "analyzer/runtime identity (no external witness binding)")
+    else:
+        runtime_identity_binding = RUNTIME_BINDING_POSTERIOR
     diagnostics = _run_diagnostics(ledgers)
     metric = _metric_from_result(receipt, ledgers, primary)
     artifacts = [{
@@ -488,6 +561,8 @@ def _verify_result(root: Path, results_root: Path, witness_root: Path,
         "result_path": str(result_dir.relative_to(root)),
         "evidence_class": ("v2_external_witness" if external_witness is not None
                             else "legacy_v3_v4_internal_only"),
+        "runtime_identity_binding": runtime_identity_binding,
+        "runtime_deps": run_identity.get("deps"),
         "artifacts": artifacts,
     }
 
@@ -597,6 +672,13 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
     if len(evidence_classes) > 1:
         raise V2AnalysisError("analysis cohort mixes v5 external and v3/v4 legacy evidence")
     legacy_only = evidence_classes == {"legacy_v3_v4_internal_only"}
+    runtime_bindings = {
+        result["runtime_identity_binding"] for result in results}
+    if len(runtime_bindings) > 1:
+        raise V2AnalysisError(
+            "analysis cohort mixes exact-runtime and posterior-governed "
+            "evidence")
+    posterior = runtime_bindings == {RUNTIME_BINDING_POSTERIOR}
     contrasts = analysis_request.get("analysis", {}).get("planned_contrasts", [])
     output_contrasts = _compute_planned_contrasts(results, contrasts, primary)
     input_paths = [experiment_dir / name for name in (
@@ -620,8 +702,9 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
         "inputs": inputs,
         "authorization_sha256": authorization_sha256,
         "analyzer": analyzer,
-        "analysis_mode": ("legacy_internal" if allow_legacy_internal
-                            else "current_external_witness"),
+        "analysis_mode": (ANALYSIS_MODE_POSTERIOR if posterior
+                          else ("legacy_internal" if allow_legacy_internal
+                                else "current_external_witness")),
         "experiment_dir": str(experiment_dir.relative_to(root)),
         "authorization_path": str(Path(authorization_path).resolve().relative_to(root)),
         "results_root": str(results_root.relative_to(root)),
@@ -722,7 +805,14 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
             raise V2AnalysisError("analysis manifest is not VERIFIED")
         if manifest.get("analyzer") != _analyzer_identity():
             raise V2AnalysisError("analysis manifest analyzer identity mismatch")
-        for raw, digest in manifest.get("inputs", {}).items():
+        inputs = manifest.get("inputs")
+        if not isinstance(inputs, dict) or any(
+                not isinstance(raw, str) or not raw
+                or not isinstance(digest, str)
+                or not re.fullmatch(r"[0-9a-f]{64}", digest)
+                for raw, digest in inputs.items()):
+            raise V2AnalysisError("analysis manifest inputs contract is invalid")
+        for raw, digest in inputs.items():
             path = (root / raw).resolve(strict=True)
             path.relative_to(root)
             if file_sha256(path) != digest:
@@ -774,7 +864,8 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
         if summary != expected_summary:
             raise V2AnalysisError("analysis summary differs from manifest")
         analysis_mode = manifest.get("analysis_mode")
-        if analysis_mode not in {"current_external_witness", "legacy_internal"}:
+        if analysis_mode not in {"current_external_witness", "legacy_internal",
+                                 ANALYSIS_MODE_POSTERIOR}:
             raise V2AnalysisError("analysis manifest mode is invalid")
         recomputed = analyze(
             root,

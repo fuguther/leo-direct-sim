@@ -9,9 +9,12 @@ overflow, lack of ISL exposure and ISL pressure.
 import hashlib
 import json
 from pathlib import Path
+from unittest import mock
 
 import pytest
+import yaml
 
+from CODE.experiment_platform import v2_analysis
 from CODE.leo_sim import config, coverage, kernel, population, receipt, trace
 from CODE.leo_sim import scene_check
 from CODE.leo_sim.tests.helpers import StaticGeometry, cell, cell_center
@@ -541,6 +544,387 @@ def test_tampered_ledger_or_trace_fails_invalid_evidence(tmp_path,
     report = scene_check.check_scene(out, tdir, small_coverage_report(),
                                      default_decision())
     assert report["status"] == "INVALID_EVIDENCE"
+
+# ---------------------------------------------------------------- P0 fix:
+# scene_check must NOT classify historical (posterior) runs from a
+# self-modifiable run directory alone.  The only posterior evidence path is
+# a persisted VERIFIED V2 analysis manifest that recomputes the full
+# artifact + governance chain and hash-binds the run's key formal evidence
+# files; without it the strict exact-runtime integrity gate applies and a
+# runtime-identity mismatch fails closed as INVALID_EVIDENCE.
+
+SCENE_RUN_DEPS = {
+    "python": "3.11.15", "numpy": "1.24.3",
+    "simpy": "4.0.1", "pyyaml": "6.0.2",
+}
+
+
+def _scene_posterior_run(root, run_id):
+    """A small formally-bound run whose receipt records an alien (historical)
+    runtime identity; returns (run_dir, trace_dir, row)."""
+    user = {
+        "scenario": {"duration_s": 2.0, "seed": 7,
+                     "num_satellites": 2, "num_planes": 1},
+        "endpoints": {"sites": [{"name": "a", "lat": 0.1, "lon": 0.1},
+                                {"name": "b", "lat": 2.0, "lon": 3.0}]},
+        "demand": {"offered_mbps": 1.0},
+        "control_plane": {"enabled": False},
+        "routing": {"policy": "oracle"},
+    }
+    resolved = config.resolve_config(user)
+    tdir = root / "trace-scene"
+    manifest = trace.compile_trace(resolved, str(tdir))
+    tbytes = (tdir / "trace.csv").read_bytes()
+    manifest["__trace_sha256"] = hashlib.sha256(tbytes).hexdigest()
+    manifest["__sha256"] = hashlib.sha256(
+        (tdir / "manifest.json").read_bytes()).hexdigest()
+    rows = trace.load_trace(
+        str(tdir / "trace.csv"),
+        horizon_s=resolved["config"]["scenario"]["duration_s"],
+        max_packets=resolved["config"]["execution"]["max_packets"])
+    geometry = StaticGeometry(2, neighbors_map={0: {"E": 1}, 1: {"W": 0}},
+                              visible=lambda s, lat, lon, t: True)
+    result = kernel.run_simulation(resolved, rows, geometry=geometry)
+    out = root / "CODE" / "Results" / run_id
+    receipt.write_run(str(out), resolved, tbytes, manifest, result, rows)
+    rcp_path = out / "receipt.json"
+    rcp = json.loads(rcp_path.read_text(encoding="utf-8"))
+    rcp["code_sha256"] = "1" * 64
+    rcp["deps"] = dict(SCENE_RUN_DEPS)
+    rcp_path.write_text(
+        json.dumps(rcp, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    receipt_sha = hashlib.sha256(rcp_path.read_bytes()).hexdigest()
+    (out / "formal_run.json").write_text(json.dumps({
+        "schema": "leo-sim-formal-run/v1", "run_id": run_id,
+        "launch_nonce": "b" * 32, "authorization_sha256": "a" * 64,
+        "config_sha256": rcp["config_sha256"],
+        "code_sha256": rcp["code_sha256"],
+        "receipt_sha256": receipt_sha,
+        "natural_end": True, "conservation_ok": True,
+    }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    governed = {
+        "schema": "leo-sim-governance-receipt/v2", "research_eligible": True,
+        "run_id": run_id, "launch_nonce": "b" * 32,
+        "verification_errors": [], "authorization_sha256": "a" * 64,
+        "source_git_commit": "d" * 40, "source_tree_sha256": "e" * 64,
+        "deployment_receipt_sha256": "f" * 64,
+        "execution_chain_sha256": {"CODE/example.py": "9" * 64},
+        "receipt_schema": rcp["schema"],
+        "resolved_config_sha256": hashlib.sha256(
+            (out / "resolved_config.json").read_bytes()).hexdigest(),
+        "trace_manifest_schema": manifest["schema"],
+        "trace_identity_contract": rcp["trace_identity_contract"],
+        "trace_manifest_sha256": hashlib.sha256(
+            (out / "manifest.json").read_bytes()).hexdigest(),
+        "run_receipt_sha256": receipt_sha,
+    }
+    governed["payload_sha256"] = v2_analysis.canonical_sha(governed)
+    (out / "governance_receipt.json").write_text(
+        json.dumps(governed, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
+    governed = json.loads(
+        (out / "governance_receipt.json").read_text(encoding="utf-8"))
+    witness = {
+        "schema": "leo-remote-launch-status/v2", "status": "success",
+        "exit_code": 0, "launch_nonce": "b" * 32, "run_id": run_id,
+        "authorization_sha256": "a" * 64,
+        "last_results_dir": "/data/论文/leo-direct-sim/CODE/Results/"
+                            + run_id,
+        "governance_receipt_sha256": hashlib.sha256(
+            (out / "governance_receipt.json").read_bytes()).hexdigest(),
+        "governance_witness": {
+            key: governed[key] for key in v2_analysis.GOVERNANCE_WITNESS_FIELDS
+        },
+    }
+    wdir = root / "CODE" / "Results" / "_external_launch_witness"
+    wdir.mkdir(parents=True, exist_ok=True)
+    (wdir / f"{run_id}.json").write_text(
+        json.dumps(witness, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
+    row = {
+        "run_id": run_id, "runtime_kind": "leo_sim_v2", "arm_id": "control",
+        "phase": "non_learning", "pairing_key": "pair-1",
+        "trace_seed": rcp["seed"],
+        "config_sha256": rcp["config_sha256"],
+        "trace_identity_sha256": rcp["trace_identity_sha256"],
+        "input_sha256": manifest["input_sha256"],
+        "code_sha256": rcp["code_sha256"],
+        "execution_chain_sha256": {"CODE/example.py": "9" * 64},
+        "controlled_signature": "c" * 64,
+    }
+    return out, tdir, row
+
+
+_SCENE_ANALYZER = {
+    "git_commit": "d" * 40,
+    "files": {
+        "CODE/experiment_platform/v2_analysis.py": "e" * 64,
+        "CODE/experiment_platform/isl_pressure.py": "0" * 64,
+        "CODE/experiment_platform/isl_pressure_decision.py": "1" * 64,
+        "CODE/leo_sim/metrics.py": "f" * 64,
+        "CODE/leo_sim/receipt.py": "7" * 64,
+    },
+}
+
+
+def _scene_analysis_manifest(root, run_id, row):
+    """Run the full V2 analysis on the posterior scene run and persist the
+    VERIFIED manifest; returns its path."""
+    name = "EXP-SCENE-POSTERIOR"
+    experiment = root / "EXPERIMENTS" / name
+    experiment.mkdir(parents=True)
+    cells = [{**row, "trace_seed": row["trace_seed"]}]
+    (experiment / "request.json").write_text(json.dumps({
+        "experiment_id": name,
+        "claim_boundary": {"can_claim": ["none"],
+                           "cannot_claim": ["not independently reviewed"]},
+    }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (experiment / "run-manifest.json").write_text(json.dumps({
+        "schema": v2_analysis.MATRIX_SCHEMA,
+        "experiment_id": name, "cells": cells,
+    }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (experiment / "analysis-request.json").write_text(json.dumps({
+        "schema": v2_analysis.ANALYSIS_SCHEMA,
+        "experiment_id": name,
+        "planned_run_ids": [run_id],
+        "analysis": {"analysis_id": "AN-SCENE", "primary_metric":
+                     "delivery_rate", "planned_contrasts": []},
+    }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    auth_path = experiment / "authorization.json"
+    auth_path.write_text(json.dumps({
+        "status": "AUTHORIZED", "experiment_id": name,
+        "authorized_cells": cells,
+    }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    auth_sha = v2_analysis.file_sha256(auth_path)
+    result_dir = root / "CODE" / "Results" / run_id
+    formal_path = result_dir / "formal_run.json"
+    formal = json.loads(formal_path.read_text(encoding="utf-8"))
+    formal["authorization_sha256"] = auth_sha
+    formal_path.write_text(
+        json.dumps(formal, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
+    governed_path = result_dir / "governance_receipt.json"
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    governed["authorization_sha256"] = auth_sha
+    governed.pop("payload_sha256", None)
+    governed["payload_sha256"] = v2_analysis.canonical_sha(governed)
+    governed_path.write_text(
+        json.dumps(governed, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
+    governed = json.loads(governed_path.read_text(encoding="utf-8"))
+    witness_path = (root / "CODE" / "Results" / "_external_launch_witness"
+                    / f"{run_id}.json")
+    witness = json.loads(witness_path.read_text(encoding="utf-8"))
+    witness["authorization_sha256"] = auth_sha
+    witness["governance_receipt_sha256"] = v2_analysis.file_sha256(
+        governed_path)
+    witness_path.write_text(
+        json.dumps(witness, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
+    with mock.patch.object(v2_analysis.authorize_experiment,
+                           "verify_authorization",
+                           return_value=auth_path.read_text()
+                           if False else json.loads(
+                               auth_path.read_text(encoding="utf-8"))),             mock.patch.object(v2_analysis, "_analyzer_identity",
+                              return_value=_SCENE_ANALYZER, create=True):
+        manifest = v2_analysis.analyze(root, experiment, auth_path)
+        out = root / "ANALYSIS" / name
+        v2_analysis.write_outputs(root, out, manifest)
+    assert manifest["status"] == "VERIFIED"
+    assert manifest["analysis_mode"] == "posterior_governed_runtime"
+    return out / "analysis-manifest.json"
+
+
+def test_scene_check_requires_analysis_manifest_for_historical_runtime(
+        tmp_path):
+    """Constraint 6g/6h: strict path without a manifest fails closed
+    (INVALID_EVIDENCE) on a posterior run; the manifest-bound path
+    classifies it and binds the manifest path+sha in the output."""
+    root = tmp_path
+    run_dir, tdir, row = _scene_posterior_run(
+        root, "EXP-SCENE-POSTERIOR-s1")
+    decision = default_decision()
+    coverage_report = small_coverage_report()
+    strict_report = scene_check.check_scene(
+        str(run_dir), str(tdir), coverage_report, decision)
+    assert strict_report["status"] == "INVALID_EVIDENCE"
+    assert any("code sha mismatch" in error
+               for error in strict_report["errors"])
+    manifest_path = _scene_analysis_manifest(root, row["run_id"], row)
+    assert receipt.verify_receipt_dir(str(run_dir)) != []  # still alien
+    with mock.patch.object(
+            v2_analysis.authorize_experiment, "verify_authorization",
+            return_value=json.loads((
+                root / "EXPERIMENTS" / "EXP-SCENE-POSTERIOR"
+                / "authorization.json").read_text(encoding="utf-8"))),             mock.patch.object(v2_analysis, "_analyzer_identity",
+                              return_value=_SCENE_ANALYZER, create=True):
+        bound_report = scene_check.check_scene(
+            str(run_dir), str(tdir), coverage_report, decision,
+            analysis_manifest=str(manifest_path.relative_to(root)),
+            project_root=root)
+    assert bound_report["integrity_ok"] is True
+    assert bound_report["status"] != "INVALID_EVIDENCE"
+    binding = bound_report["analysis_manifest_binding"]
+    assert binding["schema"] == "leo-sim-scene-analysis-binding/v1"
+    assert binding["analysis_manifest"] == str(
+        manifest_path.relative_to(root))
+    assert binding["analysis_manifest_sha256"] == hashlib.sha256(
+        manifest_path.read_bytes()).hexdigest()
+    assert binding["run_id"] == row["run_id"]
+    assert row["run_id"] in binding["verified_run_ids"]
+
+
+def test_scene_check_missing_analysis_manifest_fails(tmp_path):
+    root = tmp_path
+    run_dir, tdir, row = _scene_posterior_run(
+        root, "EXP-SCENE-MISSING-s1")
+    with pytest.raises(scene_check.SceneCheckError,
+                       match="missing or symbolic"):
+        scene_check.check_scene(
+            str(run_dir), str(tdir), small_coverage_report(),
+            default_decision(),
+            analysis_manifest="CODE/Results/does-not-exist.json",
+            project_root=root)
+
+
+def test_scene_check_rejects_unverified_analysis_manifest(tmp_path):
+    root = tmp_path
+    run_dir, tdir, row = _scene_posterior_run(
+        root, "EXP-SCENE-UNVERIFIED-s1")
+    manifest_path = _scene_analysis_manifest(root, row["run_id"], row)
+    tampered = json.loads(manifest_path.read_text(encoding="utf-8"))
+    tampered["analyzer"]["git_commit"] = "0" * 40
+    manifest_path.write_text(
+        json.dumps(tampered, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
+    with pytest.raises(scene_check.SceneCheckError,
+                       match="not fully verified"):
+        scene_check.check_scene(
+            str(run_dir), str(tdir), small_coverage_report(),
+            default_decision(),
+            analysis_manifest=str(manifest_path.relative_to(root)),
+            project_root=root)
+
+
+def test_scene_check_rejects_manifest_not_covering_run(tmp_path):
+    root = tmp_path
+    run_dir, tdir, row = _scene_posterior_run(
+        root, "EXP-SCENE-COVERED-s1")
+    manifest_path = _scene_analysis_manifest(root, row["run_id"], row)
+    other_dir, other_tdir, _other_row = _scene_posterior_run(
+        root, "EXP-SCENE-OTHER-s1")
+    with pytest.raises(scene_check.SceneCheckError,
+                       match="not in the VERIFIED analysis cohort"):
+        with mock.patch.object(
+                v2_analysis.authorize_experiment, "verify_authorization",
+                return_value=json.loads((
+                    root / "EXPERIMENTS" / "EXP-SCENE-POSTERIOR"
+                    / "authorization.json").read_text(encoding="utf-8"))),                 mock.patch.object(v2_analysis, "_analyzer_identity",
+                                  return_value=_SCENE_ANALYZER,
+                                  create=True):
+            scene_check.check_scene(
+                str(other_dir), str(other_tdir),
+                small_coverage_report(), default_decision(),
+                analysis_manifest=str(manifest_path.relative_to(root)),
+                project_root=root)
+
+
+def test_scene_check_rejects_tampered_run_despite_manifest(tmp_path):
+    root = tmp_path
+    run_dir, tdir, row = _scene_posterior_run(
+        root, "EXP-SCENE-TAMPER-s1")
+    manifest_path = _scene_analysis_manifest(root, row["run_id"], row)
+    ledgers_path = run_dir / "ledgers.json"
+    ledgers_path.write_bytes(ledgers_path.read_bytes() + b" ")
+    with pytest.raises(scene_check.SceneCheckError,
+                       match="not fully verified"):
+        scene_check.check_scene(
+            str(run_dir), str(tdir), small_coverage_report(),
+            default_decision(),
+            analysis_manifest=str(manifest_path.relative_to(root)),
+            project_root=root)
+
+
+def test_scene_check_cli_binds_analysis_manifest(tmp_path):
+    """The CLI --analysis-manifest flag wires the manifest-bound integrity
+    gate and the output binds the manifest path+sha."""
+    root = tmp_path
+    run_dir, tdir, row = _scene_posterior_run(
+        root, "EXP-SCENE-CLI-s1")
+    manifest_path = _scene_analysis_manifest(root, row["run_id"], row)
+    work = root / "CODE" / "work"
+    work.mkdir(parents=True, exist_ok=True)
+    decision_path = work / "scene-decision.yaml"
+    decision_path.write_text(
+        yaml.safe_dump(default_decision()), encoding="utf-8")
+    coverage_path = work / "coverage-audit.json"
+    coverage_path.write_text(
+        json.dumps(small_coverage_report(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
+    contract_path = work / "scene-check-contract.json"
+    contract = {
+        "schema": scene_check.SCENE_CHECK_CONTRACT_SCHEMA,
+        "decision_path": "CODE/work/scene-decision.yaml",
+        "decision_sha256": hashlib.sha256(
+            decision_path.read_bytes()).hexdigest(),
+        "coverage_path": "CODE/work/coverage-audit.json",
+        "coverage_sha256": hashlib.sha256(
+            coverage_path.read_bytes()).hexdigest(),
+        "canonical_invocation": [
+            "python3", "-m", "CODE.leo_sim.scene_check",
+            "--root", ".", "--contract",
+            "CODE/work/scene-check-contract.json",
+            "--analysis-manifest", str(manifest_path.relative_to(root)),
+        ],
+    }
+    contract_path.write_text(
+        json.dumps(contract, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
+    out_path = "CODE/work/scene-out.json"
+    with mock.patch.object(
+            v2_analysis.authorize_experiment, "verify_authorization",
+            return_value=json.loads((
+                root / "EXPERIMENTS" / "EXP-SCENE-POSTERIOR"
+                / "authorization.json").read_text(encoding="utf-8"))),             mock.patch.object(v2_analysis, "_analyzer_identity",
+                              return_value=_SCENE_ANALYZER, create=True):
+        rc = scene_check._cli([
+            "--root", str(root),
+            "--contract", "CODE/work/scene-check-contract.json",
+            "--run-dir", str(run_dir.relative_to(root)),
+            "--analysis-manifest", str(manifest_path.relative_to(root)),
+            "--out", out_path,
+        ])
+    assert rc == 0
+    report = json.loads((root / out_path).read_text(encoding="utf-8"))
+    assert report["status"] != "INVALID_EVIDENCE"
+    binding = report["analysis_manifest_binding"]
+    assert binding["analysis_manifest"] == str(
+        manifest_path.relative_to(root))
+    assert binding["analysis_manifest_sha256"] == hashlib.sha256(
+        manifest_path.read_bytes()).hexdigest()
+    assert report["contract_binding"]["contract_sha256"] == hashlib.sha256(
+        contract_path.read_bytes()).hexdigest()
+# ---------------------------------------------------------------- Re-review:
+# _safe_analysis_manifest_path must reject a symlink on the UNRESOLVED
+# candidate: resolving first would hide the terminal symlink from
+# is_symlink() and let a link masquerade as a real manifest path.
+
+def test_scene_check_rejects_symlink_analysis_manifest(tmp_path):
+    """A real symlink pointing at a valid manifest must be rejected before
+    resolution can hide it."""
+    root = tmp_path
+    run_dir, tdir, row = _scene_posterior_run(
+        root, "EXP-SCENE-SYMLINK-s1")
+    manifest_path = _scene_analysis_manifest(root, row["run_id"], row)
+    link = root / "CODE" / "Results" / "manifest-link.json"
+    link.symlink_to(manifest_path)
+    with pytest.raises(scene_check.SceneCheckError,
+                       match="symlink"):
+        scene_check.check_scene(
+            str(run_dir), str(tdir), small_coverage_report(),
+            default_decision(),
+            analysis_manifest="CODE/Results/manifest-link.json",
+            project_root=root)
 
 
 def test_tampered_scene_trace_fails_invalid_evidence(tmp_path, pop_loader):
