@@ -12,6 +12,10 @@
   "context": [
     "The traffic source is a checked-in population raster proxy, not measured subscriber traffic (same provenance as R01).",
     "Cells are paired by seed; contrasts load20-10 / load40-20 / load80-40 are paired descriptive differences, not inferential statistics.",
+    "ROUND-1 REVIEW RESPONSES: acceptance raised to formal convention {min_delivered_packets:500, min_multisat_deliveries:1, require_control_delivery:true, require_data_isl:true} (cold_start + adversarial major findings; ge disabled so ISL is the only data path and data_isl is satisfiable); design revised to within-load a/b determinism pairs (24 cells) because analyzer _compute_planned_contrasts requires identical trace identity per pair - cross-load pairs are impossible with nested child traces (adversarial finding 8); claim wording uses determinism/re-execution checkpoint (adversarial minor).",
+    "PREREGISTERED EXPECTATION (satellite_drl major advisory): with per-link MCS rates >= 594 Mbps and observed max 1s utilization ~0.004 at load10, the ISL-pressure gate (util >= 0.8) is physically unreachable in this bracket (worst-case single-link funnel at load80 <= ~0.135). All loads are expected ACCESS_LIMITED; NO_ISL_PRESSURE results are an out-of-range gate, not evidence of absent pressure.",
+    "Truncation disclosure (satellite_drl): all metrics are 30s-horizon truncated (emission 20s + 10s drain); delivery_rate and route-stalled verdicts must be reported together with in_system_at_stop residue.",
+    "Operator flow (adversarial minor): after each serial cell, pull-results-remote.sh + verify-pulled-run.py per RUNBOOK contract; on failure stop the chain, pull logs, do not relaunch without diagnosis."
     "The scene decision contract stays frozen from R01 (load-agnostic gates); R02 contract re-binds the same decision and coverage artifacts for auditability.",
     "User-delegated parameters: loads {10,20,40,80}, seeds {7,11,19}; acceptance contract inherited from R01."
   ],

@@ -1,44 +1,50 @@
 {
   "acceptance": {
-    "min_delivered_packets": 0,
-    "min_multisat_deliveries": 0,
-    "require_control_delivery": false,
-    "require_data_isl": false
+    "min_delivered_packets": 500,
+    "min_multisat_deliveries": 1,
+    "require_control_delivery": true,
+    "require_data_isl": true
   },
   "analysis": {
-    "analysis_id": "AN-GLOBAL-PRESSURE-BRACKET-R02-LOAD-RESPONSE",
+    "analysis_id": "AN-GLOBAL-PRESSURE-BRACKET-R02-DESCRIPTIVE",
     "decision_contract": {
       "path": "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json"
     },
-    "estimand": "paired descriptive load-increment differences (delivery_rate) over nested global child traces; not a threshold or algorithm comparison",
+    "estimand": "descriptive per-load delivery_rate and scene class; within-load a/b determinism differences; NOT a load-difference contrast (different child traces per load are not pair-cable under the analyzer contract)",
     "paired_by": [
       "pairing_key"
     ],
     "planned_contrasts": [
       {
-        "estimand": "paired descriptive difference at seeds 7/11/19",
-        "left_arm": "load20",
-        "name": "load20_minus_load10",
-        "right_arm": "load10"
+        "estimand": "determinism/re-execution integrity check of the SAME trace+seed+config at one load (n_pairs=3 across seeds)",
+        "left_arm": "load10_a",
+        "name": "load10_a_minus_load10_b",
+        "right_arm": "load10_b"
       },
       {
-        "estimand": "paired descriptive difference at seeds 7/11/19, load20b is the dedicated duplicate arm",
-        "left_arm": "load40",
-        "name": "load40_minus_load20",
-        "right_arm": "load20b"
+        "estimand": "determinism/re-execution integrity check of the SAME trace+seed+config at one load (n_pairs=3 across seeds)",
+        "left_arm": "load20_a",
+        "name": "load20_a_minus_load20_b",
+        "right_arm": "load20_b"
       },
       {
-        "estimand": "paired descriptive difference at seeds 7/11/19, load40b is the dedicated duplicate arm",
-        "left_arm": "load80",
-        "name": "load80_minus_load40",
-        "right_arm": "load40b"
+        "estimand": "determinism/re-execution integrity check of the SAME trace+seed+config at one load (n_pairs=3 across seeds)",
+        "left_arm": "load40_a",
+        "name": "load40_a_minus_load40_b",
+        "right_arm": "load40_b"
+      },
+      {
+        "estimand": "determinism/re-execution integrity check of the SAME trace+seed+config at one load (n_pairs=3 across seeds)",
+        "left_arm": "load80_a",
+        "name": "load80_a_minus_load80_b",
+        "right_arm": "load80_b"
       }
     ],
     "primary_metric": "delivery_rate"
   },
   "arms": [
     {
-      "arm_id": "load10",
+      "arm_id": "load10_a",
       "config_overrides": {
         "demand": {
           "offered_mbps": 10
@@ -49,7 +55,18 @@
       ]
     },
     {
-      "arm_id": "load20",
+      "arm_id": "load10_b",
+      "config_overrides": {
+        "demand": {
+          "offered_mbps": 10
+        }
+      },
+      "intervention_paths": [
+        "demand.offered_mbps"
+      ]
+    },
+    {
+      "arm_id": "load20_a",
       "config_overrides": {
         "demand": {
           "offered_mbps": 20
@@ -60,7 +77,7 @@
       ]
     },
     {
-      "arm_id": "load20b",
+      "arm_id": "load20_b",
       "config_overrides": {
         "demand": {
           "offered_mbps": 20
@@ -71,7 +88,7 @@
       ]
     },
     {
-      "arm_id": "load40",
+      "arm_id": "load40_a",
       "config_overrides": {
         "demand": {
           "offered_mbps": 40
@@ -82,7 +99,7 @@
       ]
     },
     {
-      "arm_id": "load40b",
+      "arm_id": "load40_b",
       "config_overrides": {
         "demand": {
           "offered_mbps": 40
@@ -93,7 +110,18 @@
       ]
     },
     {
-      "arm_id": "load80",
+      "arm_id": "load80_a",
+      "config_overrides": {
+        "demand": {
+          "offered_mbps": 80
+        }
+      },
+      "intervention_paths": [
+        "demand.offered_mbps"
+      ]
+    },
+    {
+      "arm_id": "load80_b",
       "config_overrides": {
         "demand": {
           "offered_mbps": 80
@@ -106,7 +134,7 @@
   ],
   "cells": [
     {
-      "arm_id": "load10",
+      "arm_id": "load10_a",
       "checkpoint_lineage": {
         "mode": "not_applicable",
         "source_run_id": null,
@@ -114,13 +142,13 @@
       },
       "config_overrides": {},
       "learning_seed": null,
-      "pairing_key": "cp-7-20vs10",
+      "pairing_key": "load10-s7",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s7",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7",
       "trace_seed": 7
     },
     {
-      "arm_id": "load20",
+      "arm_id": "load10_a",
       "checkpoint_lineage": {
         "mode": "not_applicable",
         "source_run_id": null,
@@ -128,83 +156,13 @@
       },
       "config_overrides": {},
       "learning_seed": null,
-      "pairing_key": "cp-7-20vs10",
+      "pairing_key": "load10-s11",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s7",
-      "trace_seed": 7
-    },
-    {
-      "arm_id": "load20b",
-      "checkpoint_lineage": {
-        "mode": "not_applicable",
-        "source_run_id": null,
-        "source_sha256": null
-      },
-      "config_overrides": {},
-      "learning_seed": null,
-      "pairing_key": "cp-7-40vs20",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s7",
-      "trace_seed": 7
-    },
-    {
-      "arm_id": "load40",
-      "checkpoint_lineage": {
-        "mode": "not_applicable",
-        "source_run_id": null,
-        "source_sha256": null
-      },
-      "config_overrides": {},
-      "learning_seed": null,
-      "pairing_key": "cp-7-40vs20",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s7",
-      "trace_seed": 7
-    },
-    {
-      "arm_id": "load40b",
-      "checkpoint_lineage": {
-        "mode": "not_applicable",
-        "source_run_id": null,
-        "source_sha256": null
-      },
-      "config_overrides": {},
-      "learning_seed": null,
-      "pairing_key": "cp-7-80vs40",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s7",
-      "trace_seed": 7
-    },
-    {
-      "arm_id": "load80",
-      "checkpoint_lineage": {
-        "mode": "not_applicable",
-        "source_run_id": null,
-        "source_sha256": null
-      },
-      "config_overrides": {},
-      "learning_seed": null,
-      "pairing_key": "cp-7-80vs40",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s7",
-      "trace_seed": 7
-    },
-    {
-      "arm_id": "load10",
-      "checkpoint_lineage": {
-        "mode": "not_applicable",
-        "source_run_id": null,
-        "source_sha256": null
-      },
-      "config_overrides": {},
-      "learning_seed": null,
-      "pairing_key": "cp-11-20vs10",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s11",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11",
       "trace_seed": 11
     },
     {
-      "arm_id": "load20",
+      "arm_id": "load10_a",
       "checkpoint_lineage": {
         "mode": "not_applicable",
         "source_run_id": null,
@@ -212,83 +170,13 @@
       },
       "config_overrides": {},
       "learning_seed": null,
-      "pairing_key": "cp-11-20vs10",
+      "pairing_key": "load10-s19",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s11",
-      "trace_seed": 11
-    },
-    {
-      "arm_id": "load20b",
-      "checkpoint_lineage": {
-        "mode": "not_applicable",
-        "source_run_id": null,
-        "source_sha256": null
-      },
-      "config_overrides": {},
-      "learning_seed": null,
-      "pairing_key": "cp-11-40vs20",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s11",
-      "trace_seed": 11
-    },
-    {
-      "arm_id": "load40",
-      "checkpoint_lineage": {
-        "mode": "not_applicable",
-        "source_run_id": null,
-        "source_sha256": null
-      },
-      "config_overrides": {},
-      "learning_seed": null,
-      "pairing_key": "cp-11-40vs20",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s11",
-      "trace_seed": 11
-    },
-    {
-      "arm_id": "load40b",
-      "checkpoint_lineage": {
-        "mode": "not_applicable",
-        "source_run_id": null,
-        "source_sha256": null
-      },
-      "config_overrides": {},
-      "learning_seed": null,
-      "pairing_key": "cp-11-80vs40",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s11",
-      "trace_seed": 11
-    },
-    {
-      "arm_id": "load80",
-      "checkpoint_lineage": {
-        "mode": "not_applicable",
-        "source_run_id": null,
-        "source_sha256": null
-      },
-      "config_overrides": {},
-      "learning_seed": null,
-      "pairing_key": "cp-11-80vs40",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s11",
-      "trace_seed": 11
-    },
-    {
-      "arm_id": "load10",
-      "checkpoint_lineage": {
-        "mode": "not_applicable",
-        "source_run_id": null,
-        "source_sha256": null
-      },
-      "config_overrides": {},
-      "learning_seed": null,
-      "pairing_key": "cp-19-20vs10",
-      "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s19",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19",
       "trace_seed": 19
     },
     {
-      "arm_id": "load20",
+      "arm_id": "load10_b",
       "checkpoint_lineage": {
         "mode": "not_applicable",
         "source_run_id": null,
@@ -296,13 +184,41 @@
       },
       "config_overrides": {},
       "learning_seed": null,
-      "pairing_key": "cp-19-20vs10",
+      "pairing_key": "load10-s7",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s19",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "load10_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load10-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s11",
+      "trace_seed": 11
+    },
+    {
+      "arm_id": "load10_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load10-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s19",
       "trace_seed": 19
     },
     {
-      "arm_id": "load20b",
+      "arm_id": "load20_a",
       "checkpoint_lineage": {
         "mode": "not_applicable",
         "source_run_id": null,
@@ -310,13 +226,41 @@
       },
       "config_overrides": {},
       "learning_seed": null,
-      "pairing_key": "cp-19-40vs20",
+      "pairing_key": "load20-s7",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s19",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "load20_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load20-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s11",
+      "trace_seed": 11
+    },
+    {
+      "arm_id": "load20_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load20-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s19",
       "trace_seed": 19
     },
     {
-      "arm_id": "load40",
+      "arm_id": "load20_b",
       "checkpoint_lineage": {
         "mode": "not_applicable",
         "source_run_id": null,
@@ -324,13 +268,41 @@
       },
       "config_overrides": {},
       "learning_seed": null,
-      "pairing_key": "cp-19-40vs20",
+      "pairing_key": "load20-s7",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s19",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "load20_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load20-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s11",
+      "trace_seed": 11
+    },
+    {
+      "arm_id": "load20_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load20-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s19",
       "trace_seed": 19
     },
     {
-      "arm_id": "load40b",
+      "arm_id": "load40_a",
       "checkpoint_lineage": {
         "mode": "not_applicable",
         "source_run_id": null,
@@ -338,13 +310,41 @@
       },
       "config_overrides": {},
       "learning_seed": null,
-      "pairing_key": "cp-19-80vs40",
+      "pairing_key": "load40-s7",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s19",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "load40_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load40-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s11",
+      "trace_seed": 11
+    },
+    {
+      "arm_id": "load40_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load40-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s19",
       "trace_seed": 19
     },
     {
-      "arm_id": "load80",
+      "arm_id": "load40_b",
       "checkpoint_lineage": {
         "mode": "not_applicable",
         "source_run_id": null,
@@ -352,22 +352,133 @@
       },
       "config_overrides": {},
       "learning_seed": null,
-      "pairing_key": "cp-19-80vs40",
+      "pairing_key": "load40-s7",
       "phase": "non_learning",
-      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s19",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "load40_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load40-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s11",
+      "trace_seed": 11
+    },
+    {
+      "arm_id": "load40_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load40-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s19",
+      "trace_seed": 19
+    },
+    {
+      "arm_id": "load80_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load80-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "load80_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load80-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s11",
+      "trace_seed": 11
+    },
+    {
+      "arm_id": "load80_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load80-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s19",
+      "trace_seed": 19
+    },
+    {
+      "arm_id": "load80_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load80-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "load80_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load80-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11",
+      "trace_seed": 11
+    },
+    {
+      "arm_id": "load80_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "load80-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19",
       "trace_seed": 19
     }
   ],
   "claim_boundary": {
     "can_claim": [
-      "paired DESCRIPTIVE load-increment differences (20-10 / 40-20 / 80-40 Mbps) over the nested population-proxy child trace family at seeds {7,11,19}",
-      "per-load scene classification after receipt verification and the frozen scene decision contract (R02)",
-      "repeatability of the middle-load duplicate arms (load20b/load40b) plus R01 load10 pair as integrity checkpoints"
+      "DESCRIPTIVE per-load delivery_rate and scene classification over the nested population-proxy child trace family at seeds 7/11/19",
+      "determinism/re-execution integrity checkpoints (a/b same trace+seed+config per load)",
+      "scene_check classification per load after receipt verification and the frozen scene decision contract (R02)"
     ],
     "cannot_claim": [
-      "a global ISL pressure threshold or load-response CURVE",
-      "the first pressure point before higher registered loads are checked",
-      "causal or inferential statistics beyond paired descriptive differences",
+      "a global ISL pressure threshold, a load-response CURVE, or the first pressure point",
+      "causal or inferential statistics beyond descriptive per-load values",
       "real subscriber traffic, universal global service, algorithm superiority, information value, RL value, new-algorithm contribution"
     ]
   },
@@ -442,7 +553,7 @@
       "geometry_epoch_s": 0,
       "inclination_deg": 98.6,
       "min_elevation_deg": 25,
-      "name": "population-global-1deg-pressure-bracket-r01",
+      "name": "population-global-1deg-pressure-bracket-r02",
       "num_planes": 14,
       "num_satellites": 280,
       "time_step_s": 0.1

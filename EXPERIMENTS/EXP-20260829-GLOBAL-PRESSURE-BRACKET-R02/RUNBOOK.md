@@ -6,184 +6,244 @@ Cells are listed in mandatory order; every later command is blocked until its pr
 
 Execution policy: `serial_fail_closed`. The canonical runner applies a machine-enforced serial predecessor gate before every cell after the first; missing or ineligible pulled predecessor evidence blocks the next launch.
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s7
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s7.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load10-s7
+  --session exp-20260829-global-pressure-bracket-r02-load10_a-s7
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s7
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s7.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load20-s7
+  --session exp-20260829-global-pressure-bracket-r02-load10_a-s11
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s7
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s7.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load20b-s7
+  --session exp-20260829-global-pressure-bracket-r02-load10_a-s19
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s7
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s7
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s7.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s7.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load40-s7
+  --session exp-20260829-global-pressure-bracket-r02-load10_b-s7
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s7
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s11
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s7.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s11.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load40b-s7
+  --session exp-20260829-global-pressure-bracket-r02-load10_b-s11
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s7
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s19
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s7.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s19.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load80-s7
+  --session exp-20260829-global-pressure-bracket-r02-load10_b-s19
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s11
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s7
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s11.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s7.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load10-s11
+  --session exp-20260829-global-pressure-bracket-r02-load20_a-s7
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s11
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s11
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s11.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s11.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load20-s11
+  --session exp-20260829-global-pressure-bracket-r02-load20_a-s11
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s11
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s19
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s11.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s19.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load20b-s11
+  --session exp-20260829-global-pressure-bracket-r02-load20_a-s19
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s11
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s7
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s11.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s7.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load40-s11
+  --session exp-20260829-global-pressure-bracket-r02-load20_b-s7
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s11
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s11
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s11.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s11.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load40b-s11
+  --session exp-20260829-global-pressure-bracket-r02-load20_b-s11
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s11
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s19
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s11.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s19.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load80-s11
+  --session exp-20260829-global-pressure-bracket-r02-load20_b-s19
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s19
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s7
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s19.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s7.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load10-s19
+  --session exp-20260829-global-pressure-bracket-r02-load40_a-s7
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s19
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s11
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s19.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s11.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load20-s19
+  --session exp-20260829-global-pressure-bracket-r02-load40_a-s11
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s19
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s19
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s19.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s19.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load20b-s19
+  --session exp-20260829-global-pressure-bracket-r02-load40_a-s19
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s19
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s7
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s19.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s7.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load40-s19
+  --session exp-20260829-global-pressure-bracket-r02-load40_b-s7
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s19
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s11
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s19.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s11.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load40b-s19
+  --session exp-20260829-global-pressure-bracket-r02-load40_b-s11
 ```
 
-## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s19
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s19
 
 ```bash
 CODE/scripts/remote/run-remote.sh \
   --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s19.leo-sim.yaml \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s19.leo-sim.yaml \
   --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
-  --session exp-20260829-global-pressure-bracket-r02-load80-s19
+  --session exp-20260829-global-pressure-bracket-r02-load40_b-s19
+```
+
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s7
+
+```bash
+CODE/scripts/remote/run-remote.sh \
+  --runtime-kind leo_sim_v2 \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s7.leo-sim.yaml \
+  --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
+  --session exp-20260829-global-pressure-bracket-r02-load80_a-s7
+```
+
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s11
+
+```bash
+CODE/scripts/remote/run-remote.sh \
+  --runtime-kind leo_sim_v2 \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s11.leo-sim.yaml \
+  --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
+  --session exp-20260829-global-pressure-bracket-r02-load80_a-s11
+```
+
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s19
+
+```bash
+CODE/scripts/remote/run-remote.sh \
+  --runtime-kind leo_sim_v2 \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s19.leo-sim.yaml \
+  --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
+  --session exp-20260829-global-pressure-bracket-r02-load80_a-s19
+```
+
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7
+
+```bash
+CODE/scripts/remote/run-remote.sh \
+  --runtime-kind leo_sim_v2 \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7.leo-sim.yaml \
+  --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
+  --session exp-20260829-global-pressure-bracket-r02-load80_b-s7
+```
+
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11
+
+```bash
+CODE/scripts/remote/run-remote.sh \
+  --runtime-kind leo_sim_v2 \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11.leo-sim.yaml \
+  --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
+  --session exp-20260829-global-pressure-bracket-r02-load80_b-s11
+```
+
+## EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19
+
+```bash
+CODE/scripts/remote/run-remote.sh \
+  --runtime-kind leo_sim_v2 \
+  --config EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19.leo-sim.yaml \
+  --authorization EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/authorization.json \
+  --session exp-20260829-global-pressure-bracket-r02-load80_b-s19
 ```
 
 ## V2 analysis after every authorized cell has a natural-end result
@@ -205,144 +265,192 @@ Run scene_check once per verified natural-end result. The contract freezes both 
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s7 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s7.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s7 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s7.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s7 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s7.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s7 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s7.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s7 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s7.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s7 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s7.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s11 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s11.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s7 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s7.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s19 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s19.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s11 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s11.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s7 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s7.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s11 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s11.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s11 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s11.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s11 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s11.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s19 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s19.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s11 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s11.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s7 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s7.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s11 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s11.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s11 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s11.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s11 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s11.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s19 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s19.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s19 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10-s19.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s7 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s7.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s19 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20-s19.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s11 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s11.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s19 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20b-s19.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s19 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s19.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s19 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40-s19.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s7 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s7.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s19 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40b-s19.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s11 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s11.json
 ```
 
 ```bash
 python3 -m CODE.leo_sim.scene_check \
   --root . \
   --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
-  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s19 \
-  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80-s19.json
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s19 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s19.json
+```
+
+```bash
+python3 -m CODE.leo_sim.scene_check \
+  --root . \
+  --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s7 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s7.json
+```
+
+```bash
+python3 -m CODE.leo_sim.scene_check \
+  --root . \
+  --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s11 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s11.json
+```
+
+```bash
+python3 -m CODE.leo_sim.scene_check \
+  --root . \
+  --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s19 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s19.json
+```
+
+```bash
+python3 -m CODE.leo_sim.scene_check \
+  --root . \
+  --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7.json
+```
+
+```bash
+python3 -m CODE.leo_sim.scene_check \
+  --root . \
+  --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11.json
+```
+
+```bash
+python3 -m CODE.leo_sim.scene_check \
+  --root . \
+  --contract CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json \
+  --run-dir CODE/Results/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19 \
+  --out ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/scene-check/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19.json
 ```
 
 The command and all bound inputs are frozen in `CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json`. Do not substitute a different decision, coverage report, or in-memory threshold.
