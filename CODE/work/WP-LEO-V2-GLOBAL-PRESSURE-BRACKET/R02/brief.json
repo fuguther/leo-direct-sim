@@ -1,29 +1,64 @@
 {
+  "acceptance": [
+    "cell acceptance follows the formal convention {min_delivered_packets:500, min_multisat_deliveries:1, require_control_delivery:true, require_data_isl:true}",
+    "matrix compile and receipt/authorization gates remain fail-closed",
+    "scene-decision.yaml (R01 frozen), coverage-audit.json (R01 frozen), and R02 scene-check-contract.json are in the finalization artifact hash map; a tamper check fails before authorization",
+    "coverage L1, access L3, route L4, egress L5, and ISL L6 are reported separately per load",
+    "no VM run starts before exact-SHA independent review of the final state, accepted finalization, clean-main deployment, and external-witness gates"
+  ],
   "allowed_inputs": [
     "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/",
+    "EXPERIMENTS/request-sources/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02.json",
     "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/",
     "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml",
-    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json"
+    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-check-contract.json",
+    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json",
+    "CODE/leo_sim/scene_check.py",
+    "CODE/experiment_platform/authorize_experiment.py",
+    "CODE/experiment_platform/v2_analysis.py",
+    "CODE/scripts/remote/run-remote.sh"
   ],
-  "allowed_outputs": [
-    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/",
-    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/"
+  "cannot_claim": [
+    "a global ISL pressure threshold, a load-response curve, or the first pressure point",
+    "causal or inferential statistics beyond descriptive per-load values",
+    "real subscriber traffic, universal global service, algorithm superiority, information value, reinforcement-learning value, or a new-algorithm contribution"
   ],
   "context": [
     "The traffic source is a checked-in population raster proxy, not measured subscriber traffic (same provenance as R01).",
-    "Cells are paired by seed; contrasts load20-10 / load40-20 / load80-40 are paired descriptive differences, not inferential statistics.",
-    "ROUND-1 REVIEW RESPONSES: acceptance raised to formal convention {min_delivered_packets:500, min_multisat_deliveries:1, require_control_delivery:true, require_data_isl:true} (cold_start + adversarial major findings; ge disabled so ISL is the only data path and data_isl is satisfiable); design revised to within-load a/b determinism pairs (24 cells) because analyzer _compute_planned_contrasts requires identical trace identity per pair - cross-load pairs are impossible with nested child traces (adversarial finding 8); claim wording uses determinism/re-execution checkpoint (adversarial minor).",
-    "PREREGISTERED EXPECTATION (satellite_drl major advisory): with per-link MCS rates >= 594 Mbps and observed max 1s utilization ~0.004 at load10, the ISL-pressure gate (util >= 0.8) is physically unreachable in this bracket (worst-case single-link funnel at load80 <= ~0.135). All loads are expected ACCESS_LIMITED; NO_ISL_PRESSURE results are an out-of-range gate, not evidence of absent pressure.",
-    "Truncation disclosure (satellite_drl): all metrics are 30s-horizon truncated (emission 20s + 10s drain); delivery_rate and route-stalled verdicts must be reported together with in_system_at_stop residue.",
-    "Operator flow (adversarial minor): after each serial cell, pull-results-remote.sh + verify-pulled-run.py per RUNBOOK contract; on failure stop the chain, pull logs, do not relaunch without diagnosis."
+    "The 24-cell layout is 12 within-load a/b pairs; each pair is a determinism/re-execution integrity checkpoint of the SAME trace+seed+config (cross-load paired contrasts are impossible: the analyzer pairing gate requires identical trace identity per pair, and nested child traces differ per load).",
+    "Load-response is DESCRIPTIVE per load only; no load-difference contrast, curve, or threshold claim is registered.",
     "The scene decision contract stays frozen from R01 (load-agnostic gates); R02 contract re-binds the same decision and coverage artifacts for auditability.",
-    "User-delegated parameters: loads {10,20,40,80}, seeds {7,11,19}; acceptance contract inherited from R01."
+    "Round-1 review responses applied: acceptance raised to formal convention {min_delivered_packets:500, min_multisat_deliveries:1, require_control_delivery:true, require_data_isl:true} (ge disabled makes ISL the only data path, so data_isl is satisfiable); scenario renamed to population-global-1deg-pressure-bracket-r02.",
+    "PREREGISTERED EXPECTATION (satellite_drl round-1 advisory): with per-link MCS rates >= 594 Mbps and observed max 1s utilization ~0.004 at load10, the ISL-pressure gate (util >= 0.8) is physically unreachable in this bracket (worst-case single-link funnel at load80 <= ~0.135). All loads are expected ACCESS_LIMITED; NO_ISL_PRESSURE is an out-of-range gate, not evidence of absent pressure.",
+    "Truncation disclosure (satellite_drl advisory): all metrics are 30s-horizon truncated (emission 20s + 10s drain); delivery_rate and route-stalled verdicts are reported together with in_system_at_stop residue.",
+    "Operator flow (adversarial round-1 minor): after each serial cell, pull-results-remote.sh + verify-pulled-run.py per RUNBOOK contract; on failure stop the chain, pull logs, do not relaunch without diagnosis."
   ],
-  "objective": "Run a bounded global population-proxy load-response bracket (10/20/40/80 Mbps x seeds 7/11/19, 12 cells) through the formal VM chain and classify each load with independent access, route, egress and ISL-pressure gates before any load-response or threshold claim is considered.",
+  "cost_tier": "high_judgment",
+  "deliverables": [
+    "a clean compiled matrix with 24 cells (4 loads x 3 seeds x a/b determinism pairs) and 0 errors",
+    "natural-end, conservation-verified external-witness receipts for each of the 24 cells",
+    "a scene_check report per load using the full population coverage ledger and the frozen scene decision contract",
+    "a finalization artifact hash map that includes the scene decision, coverage audit, and scene-check contract before authorization",
+    "one closed classification per load: ACCESS_LIMITED, ROUTE_LIMITED, NO_ISL_PRESSURE, or ISL_PRESSURE_CANDIDATE"
+  ],
+  "excluded_inputs": [
+    "historical M-Lab load results",
+    "algorithm comparison results",
+    "information-ablation results",
+    "reinforcement-learning checkpoints",
+    "unverified worker completion claims"
+  ],
+  "objective": "Run a bounded global population-proxy load bracket (24 cells: loads 10/20/40/80 Mbps x seeds 7/11/19, within-load a/b determinism re-executions) through the formal VM chain and classify each load with independent access, route, egress and ISL-pressure gates before any descriptive per-load claim is considered.",
   "parent_revision": 1,
   "producer_id": "producer:codex-global-pressure",
   "producer_session_id": "P-bracket-r02-request",
+  "review_roles": [
+    "cold_start",
+    "satellite_drl",
+    "adversarial"
+  ],
   "revision": 2,
   "schema": "agent-work-package/v2",
+  "status": "REVIEW",
   "work_id": "WP-LEO-V2-GLOBAL-PRESSURE-BRACKET"
 }
