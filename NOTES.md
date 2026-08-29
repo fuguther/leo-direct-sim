@@ -10,6 +10,12 @@
 - 4 份 update_now 关闭：CURRENT-EXPERIMENT-READINESS / EXPERIMENT-PROGRAM / PLATFORM-CAPABILITY-LEDGER 新增 2026-08-29 CURRENT 快照节；experiment-program.yaml 补 preregistered 枚举并置 v2_formal_evidence_chain_verified / global_scene_repeat_analysis_verified=completed_verified；DOCUMENT-STATUS.json 4 条目 last_reviewed=2026-08-29。
 - 证据：document-governance 0/0、test_document_governance 18 passed、YAML 解析通过、diff --check 干净。
 
+## 2026-08-29：R02 round-2/3 审阅管线（PR #180/#181）
+
+- round-2 于 7169192d：cold PASS；sat/adv REQUEST_CHANGES——全部集中在 brief.json（JSON 语法错误 + 缺 agent-work-package/v2 必填字段 + v1 陈旧文案）；编译链 31 绑定哈希全绿。
+- 修复：brief 重写（16 字段合法 JSON）→ PR #181。
+- 同日 GitHub runner 池异常：10:20 起多次 pull_request run 在 Run test suite 冻结（status 页 operational 但实测 3/7 冻结），本地同树全量 836 passed 两次佐证内容无虞；用并发 cancel-in-progress 推新提交重启。
+
 ## 2026-08-29：R02 round-1 三角色 Kimi 审阅证据记录
 
 - cold_start: REQUEST_CHANGES（major: acceptance 全零；minor: 无 per-cell execution_authorized 字段，与 R01 同构，非缺陷）。
