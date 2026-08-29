@@ -5,6 +5,13 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-29：Bracket R02 审阅链闭合与授权（PR #179-#183）
+
+- 链路：请求编译（#179）→ 24-cell 判定性设计修订（#180）→ brief schema 修复（#181）→ revision_reason（#182）→ 链工件（#183）。
+- 四轮三角色 Kimi 审阅（4096c2f / 7169192d / bd1dea4 / 609f9892）：round-1 两 REQUEST_CHANGES（跨负载配对合同阻断、零 acceptance）→ 设计修订；round-2 两 REQUEST_CHANGES（brief JSON 语法 + v2 schema 缺字段）→ 重写；round-3 cold/sat 命中 revision_reason 阻塞 → #182；round-4 三 PASS 闭链（矩阵字节级未动）。
+- finalize_decision.py ACCEPTED；authorize_experiment.py AUTHORIZED（24 runs）。
+- 同日 GitHub runner 池异常引起 CI 多次冻结，最终以本地全量 836 passed x2 佐证内容，远端 CI 各 PR 均已绿。
+
 ## 2026-08-29：状态包原子更新（PR #177）
 
 - 4 份 update_now 关闭：CURRENT-EXPERIMENT-READINESS / EXPERIMENT-PROGRAM / PLATFORM-CAPABILITY-LEDGER 新增 2026-08-29 CURRENT 快照节；experiment-program.yaml 补 preregistered 枚举并置 v2_formal_evidence_chain_verified / global_scene_repeat_analysis_verified=completed_verified；DOCUMENT-STATUS.json 4 条目 last_reviewed=2026-08-29。
