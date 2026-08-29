@@ -5,6 +5,11 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-29：状态包原子更新（PR #177）
+
+- 4 份 update_now 关闭：CURRENT-EXPERIMENT-READINESS / EXPERIMENT-PROGRAM / PLATFORM-CAPABILITY-LEDGER 新增 2026-08-29 CURRENT 快照节；experiment-program.yaml 补 preregistered 枚举并置 v2_formal_evidence_chain_verified / global_scene_repeat_analysis_verified=completed_verified；DOCUMENT-STATUS.json 4 条目 last_reviewed=2026-08-29。
+- 证据：document-governance 0/0、test_document_governance 18 passed、YAML 解析通过、diff --check 干净。
+
 ## 2026-08-29：后验分析授权身份重准入（P0 闭环，PR #176）
 
 - 根因：strict `verify_authorization` 用当前代码重推 code_sha256/execution_chain/config 身份，更新的分析 checkout 无法合法分析历史正式运行（01c323a 全球压力双臂），W6 分析闸门卡死。
