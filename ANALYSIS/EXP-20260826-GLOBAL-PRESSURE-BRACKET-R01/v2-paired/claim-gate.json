@@ -1,0 +1,11 @@
+{
+  "analysis_manifest": "ANALYSIS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/v2-paired/analysis-manifest.json",
+  "analysis_manifest_sha256": "1d97624b0e05606f01a6381b01efb7a273864bb2036019068e4a3201236a96df",
+  "cannot_claim": [
+    "a global ISL pressure threshold or a load-response curve",
+    "that 10 Mbps is the first pressure point before the higher registered loads are checked",
+    "real subscriber traffic, universal global service, algorithm superiority, information value, reinforcement-learning value, or a new-algorithm contribution"
+  ],
+  "schema": "leo-sim-v2-claim-gate/v1",
+  "status": "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
+}
