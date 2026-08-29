@@ -13,9 +13,10 @@ Usage:
       [--session SESSION] [--no-monitor] [--bundle] [--bundle-stages STAGES]
       [--cpu-list CPU_LIST] [--exclusive-simulation]
 
-This is only a FORMAL_EXPERIMENT entrypoint. It always executes the deployed
-CODE/run.py and does not accept a shell command. Use an audited direct SSH
-maintenance session for administration; such commands are not formal runs.
+This is only a FORMAL_EXPERIMENT entrypoint and does not accept a shell command.
+Runtime dispatch: legacy_gateway -> deployed CODE/run.py;
+leo_sim_v2 -> python -m CODE.leo_sim run. Use an audited direct SSH maintenance
+session for administration; such commands are not formal runs.
 EOF
 }
 
