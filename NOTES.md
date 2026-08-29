@@ -10,6 +10,11 @@
 - 4 份 update_now 关闭：CURRENT-EXPERIMENT-READINESS / EXPERIMENT-PROGRAM / PLATFORM-CAPABILITY-LEDGER 新增 2026-08-29 CURRENT 快照节；experiment-program.yaml 补 preregistered 枚举并置 v2_formal_evidence_chain_verified / global_scene_repeat_analysis_verified=completed_verified；DOCUMENT-STATUS.json 4 条目 last_reviewed=2026-08-29。
 - 证据：document-governance 0/0、test_document_governance 18 passed、YAML 解析通过、diff --check 干净。
 
+## 2026-08-29：Bracket R02 请求包与 round-1 三角色审阅（PR #179/#180）
+
+- PR #179 合入 18-cell 初版；round-1 Kimi 三审（cold_start REQUEST_CHANGES、satellite_drl PASS、adversarial REQUEST_CHANGES）发现：分析器配对合同阻断跨负载对比（设计级）、全零 acceptance 不 fail-loud（证据级）、scenario 名残留、claim 措辞。
+- 修订为 24-cell 逐负载 a/b 确定性对 + 正式 acceptance {500,1,true,true} + scenario r02 命名（PR #180）。
+
 ## 2026-08-29：后验分析授权身份重准入（P0 闭环，PR #176）
 
 - 根因：strict `verify_authorization` 用当前代码重推 code_sha256/execution_chain/config 身份，更新的分析 checkout 无法合法分析历史正式运行（01c323a 全球压力双臂），W6 分析闸门卡死。
