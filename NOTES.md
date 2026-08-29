@@ -5,6 +5,17 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-29：后验分析授权身份重准入（P0 闭环，PR #176）
+
+- 根因：strict `verify_authorization` 用当前代码重推 code_sha256/execution_chain/config 身份，更新的分析 checkout 无法合法分析历史正式运行（01c323a 全球压力双臂），W6 分析闸门卡死。
+- 修复（`CODE/experiment_platform/v2_analysis.py`）：新增私有 `_verify_authorization_bound()`（payload 封签 + work_finalization/绑定工件哈希 + 行结构身份，快照级校验，不重推当前身份）；`analyze()` `authorization_mode=auto` 仅在 strict 拒绝且 bound 校验通过时回退，manifest 记录 `authorization_verification=bound_posterior` 与 strict 原错误；`--authorization-mode strict` 永不回退；篡改工件/改写 finalization/重封签伪造身份全部 fail-closed，运行身份仍由 formal/governance v2/external witness/receipt 链强制绑定。
+- 证据：
+  - 焦点测试 `test_v2_analysis.py` 52 passed（新增 7 项反例：历史授权 bound 回退、strict 不回退、篡改工件、改写 finalization、重封签伪造、错误记录摘要、unsupported mode）；相邻六文件 131 passed；全量 pytest 以 PR #176 required CI 为准。
+  - 真实样本端到端（历史 01c323a 授权 + VM 回执 + external witness，本地 3.14.2 vs VM 3.11.15）：status=VERIFIED、2 runs、`authorization_verification=bound_posterior`、`analysis_mode=posterior_governed_runtime`、双臂 `runtime_identity_binding=governance_bound_posterior`、evidence_class=v2_external_witness、重复对比差异 0.0；`verify_persisted_analysis` ok=true。
+  - scene_check（`--analysis-manifest` 绑定后验清单）：双臂 status=ACCESS_LIMITED、integrity_ok/coverage_ok=true、双臂完全一致（155 目的地、82 ISL 暴露包、0 压力候选、route-stalled 11 pids、downlink 干净）。
+- 科研口径：10 Mbps 双臂为完整性/重复性检查点（差异 0.0），不升格为负载阈值；global 场景当前 classify 为 access-limited，ISL 压力候选为 0，新负载 bracket 决策须以本证据为基础。
+- 现场：分析详见独立工作树 `/private/tmp/leo-posterior-analysis-20260829`（`ANALYSIS/EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01/v2-analysis/` 与 `scene-check-load10_{a,b}.json`），结果目录不入库。
+
 ## 2026-08-25：全球人口区域直连接入场景实施完成（DeepSeek Harness，PR_READY_FOR_INDEPENDENT_REVIEW）
 
 - 2026-08-26 PR #167 首次 CI 在干净 Ubuntu runner 上为 `13 failed, 745 passed, 3 skipped, 3 subtests passed`；13 项同源于 workflow 未安装运行时已使用的 Pillow（`ModuleNotFoundError: PIL`），不是 13 个独立仿真缺陷。最小修复仅在 CI 安装清单钉住 `pillow==12.0.0`；受影响的 platform/receipt/trace 测试本地复验（排除约 4 分钟的 scene smoke）为 `51 passed, 1 deselected`，最终状态以修复提交后的 GitHub required CI 为准。
