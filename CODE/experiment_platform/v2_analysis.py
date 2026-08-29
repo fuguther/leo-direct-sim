@@ -24,6 +24,16 @@ keeps the strict exact-runtime requirement (no external witness exists to
 bind it); the strict default verify_receipt_dir is never weakened, and the
 receipt.json research_eligible=false vs governance research_eligible=true
 semantic difference is never rewritten.
+
+Authorization verification mirrors the same rule: the strict recomputation
+is attempted first (today's code/config identities); when it can no longer
+match only because the analyzer checkout differs from the historical
+runtime, the issue-time authorization is re-admitted through BOUND snapshot
+verification (payload seal, every recorded artifact hash, structural row
+identity) and the witness chain below must still bind every run identity.
+The manifest records this as ``bound_posterior`` under
+``authorization_verification``; it is never a bypass of the strict gate for
+tampered or drifted snapshots.
 """
 from __future__ import annotations
 
@@ -54,6 +64,11 @@ EXTERNAL_STATUS_SCHEMA = "leo-remote-launch-status/v2"
 RUNTIME_BINDING_EXACT = "local_exact_match"
 RUNTIME_BINDING_POSTERIOR = "governance_bound_posterior"
 ANALYSIS_MODE_POSTERIOR = "posterior_governed_runtime"
+# how the cohort authorization was admitted: recomputed strictly from
+# current artifacts, or bound to its own issue-time snapshots because the
+# analyzer checkout can no longer reproduce the historical code identity
+AUTHORIZATION_VERIFICATION_STRICT = "strict_recomputed"
+AUTHORIZATION_VERIFICATION_BOUND = "bound_posterior"
 GOVERNANCE_WITNESS_FIELDS = (
     "receipt_schema", "resolved_config_sha256", "trace_manifest_schema",
     "trace_identity_contract", "trace_manifest_sha256",
@@ -69,6 +84,7 @@ ANALYZER_FILES = (
     "CODE/leo_sim/scene_check.py",
 )
 GIT_COMMIT = re.compile(r"^[0-9a-f]{40}$")
+_SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
 
 
 class V2AnalysisError(ValueError):
@@ -611,11 +627,194 @@ def _compute_planned_contrasts(
     return output
 
 
+def _verify_authorization_bound(
+        root: Path, experiment_dir: Path, authorization_path: Path,
+        strict_error: Exception) -> dict[str, Any]:
+    """Bounded re-verification of a HISTORICAL authorization.
+
+    The strict gate (``authorize_experiment.verify_authorization``) recomputes
+    the entire authorization with CURRENT code identities: ``code_sha256``,
+    the execution chain and config/trace identities are re-derived by
+    today's checker, so a newer analyzer checkout can never match an
+    authorization issued for an older runtime that already executed.
+    Posterior analysis instead binds the authorization to its OWN immutable
+    snapshots:
+
+    * the payload seal (``payload_sha256``) proves the file is the exact
+      issue-time artifact;
+    * every path recorded in ``work_finalization`` and
+      ``experiment_artifact_hashes`` must still exist and hash to the
+      recorded value (tamper/edition check over the bound snapshots);
+    * the authorized run/cell rows must be structurally complete with
+      well-formed identity fields.
+
+    No current-code identity is recomputed or trusted here.  This function
+    is deliberately private and its return value is NOT an evidence
+    verdict: ``analyze()`` still requires the full formal witness +
+    governance receipt v2 + external launch witness + receipt cross-hash
+    chain in ``_verify_result``, which rejects any identity that the
+    historical witnesses do not bind.  Any snapshot drift fails closed with
+    the original strict error preserved for the record.
+    """
+    root = Path(root).resolve()
+    auth_path = Path(authorization_path).resolve()
+    try:
+        authorize_experiment.relative_project_path(root, auth_path)
+    except authorize_experiment.AuthorizationError as exc:
+        raise V2AnalysisError(
+            f"authorization snapshot verification failed: {exc}"
+        ) from strict_error
+    auth = _read_json(auth_path)
+    if auth.get("schema") != authorize_experiment.SCHEMA:
+        raise V2AnalysisError(
+            "authorization snapshot verification failed: unsupported "
+            "authorization schema") from strict_error
+    claimed_payload = auth.get("payload_sha256")
+    unsigned = {key: value for key, value in auth.items()
+                if key != "payload_sha256"}
+    if claimed_payload != canonical_sha(unsigned):
+        raise V2AnalysisError(
+            "authorization snapshot verification failed: payload seal "
+            "mismatch") from strict_error
+    if auth.get("status") != "AUTHORIZED" \
+            or not isinstance(auth.get("experiment_id"), str) \
+            or not auth["experiment_id"]:
+        raise V2AnalysisError(
+            "authorization snapshot verification failed: status/identity "
+            "is incomplete") from strict_error
+    experiment_raw = auth.get("experiment_dir")
+    if not isinstance(experiment_raw, str) or not experiment_raw:
+        raise V2AnalysisError(
+            "authorization snapshot verification failed: no experiment "
+            "path") from strict_error
+    try:
+        bound_experiment_dir = root / experiment_raw
+        authorize_experiment.relative_project_path(root, bound_experiment_dir)
+    except (TypeError, ValueError,
+            authorize_experiment.AuthorizationError) as exc:
+        raise V2AnalysisError(
+            "authorization snapshot verification failed: experiment path "
+            f"is invalid: {exc}") from strict_error
+    if bound_experiment_dir.resolve() != Path(experiment_dir).resolve():
+        raise V2AnalysisError(
+            "authorization snapshot verification failed: authorization is "
+            "not for this experiment directory") from strict_error
+    finalization = auth.get("work_finalization")
+    finalization_raw = (finalization or {}).get("path")
+    finalization_sha = (finalization or {}).get("sha256")
+    if not isinstance(finalization_raw, str) or not isinstance(
+            finalization_sha, str) or not _SHA256_HEX.fullmatch(
+                finalization_sha):
+        raise V2AnalysisError(
+            "authorization snapshot verification failed: work "
+            "finalization identity is incomplete") from strict_error
+    try:
+        finalization_path = root / finalization_raw
+        authorize_experiment.relative_project_path(root, finalization_path)
+    except (TypeError, ValueError,
+            authorize_experiment.AuthorizationError) as exc:
+        raise V2AnalysisError(
+            "authorization snapshot verification failed: finalization "
+            f"path is invalid: {exc}") from strict_error
+    if finalization_path.is_symlink() or not finalization_path.is_file() \
+            or file_sha256(finalization_path) != finalization_sha:
+        raise V2AnalysisError(
+            "authorization snapshot verification failed: work "
+            "finalization no longer matches the bound snapshot"
+        ) from strict_error
+    artifact_hashes = auth.get("experiment_artifact_hashes")
+    if not isinstance(artifact_hashes, dict):
+        raise V2AnalysisError(
+            "authorization snapshot verification failed: bound artifact "
+            "hash map is missing") from strict_error
+    for raw, digest in sorted(artifact_hashes.items()):
+        if not isinstance(raw, str) or not isinstance(digest, str) \
+                or not _SHA256_HEX.fullmatch(digest):
+            raise V2AnalysisError(
+                "authorization snapshot verification failed: bound "
+                "artifact hash map is malformed") from strict_error
+        try:
+            path = root / raw
+            authorize_experiment.relative_project_path(root, path)
+        except (TypeError, ValueError,
+                authorize_experiment.AuthorizationError) as exc:
+            raise V2AnalysisError(
+                "authorization snapshot verification failed: bound "
+                f"artifact path is invalid: {raw}") from strict_error
+        if path.is_symlink() or not path.is_file() \
+                or file_sha256(path) != digest:
+            raise V2AnalysisError(
+                "authorization snapshot verification failed: bound "
+                f"artifact no longer matches its recorded hash: {raw}"
+            ) from strict_error
+    rows = auth.get("authorized_cells") or auth.get("authorized_runs")
+    if not isinstance(rows, list) or not rows or any(
+            not isinstance(row, dict) for row in rows):
+        raise V2AnalysisError(
+            "authorization snapshot verification failed: authorized "
+            "cohort is missing or malformed") from strict_error
+    for row in rows:
+        # Identity spine: every authorized run must at least carry a
+        # run id, runtime kind, arm/pairing anatomy and the two hashes
+        # the witness chain will cross-bind (config + code).  The
+        # remaining identity fields are re-checked when present; their
+        # authoritative binding happens in _verify_result against the
+        # formal witness / governance receipt / external witness, so a
+        # structurally weaker row can never bypass that chain.
+        missing = [key for key in (
+            "run_id", "runtime_kind", "arm_id", "pairing_key",
+            "config_sha256", "code_sha256",
+        ) if not isinstance(row.get(key), str) or not row.get(key)]
+        if missing:
+            raise V2AnalysisError(
+                "authorization snapshot verification failed: authorized "
+                f"row {row.get('run_id')} lacks bound identity: "
+                + ", ".join(missing)) from strict_error
+        if not _SHA256_HEX.fullmatch(row["config_sha256"]) \
+                or not _SHA256_HEX.fullmatch(row["code_sha256"]):
+            raise V2AnalysisError(
+                "authorization snapshot verification failed: authorized "
+                f"row {row.get('run_id')} has a malformed identity hash"
+            ) from strict_error
+        for optional_key in ("trace_identity_sha256", "input_sha256",
+                             "controlled_signature"):
+            value = row.get(optional_key)
+            # None/"" mean the identity is left to the witness chain to
+            # bind (or reject); any concrete value must be well-formed.
+            if value not in (None, "") and (
+                    not isinstance(value, str)
+                    or not _SHA256_HEX.fullmatch(value)):
+                raise V2AnalysisError(
+                    "authorization snapshot verification failed: "
+                    f"authorized row {row.get('run_id')} has a malformed "
+                    f"{optional_key}") from strict_error
+        execution_chain = row.get("execution_chain_sha256")
+        if execution_chain is not None and (
+                not isinstance(execution_chain, dict) or not execution_chain
+                or any(not isinstance(chain_raw, str) or not isinstance(
+                    chain_digest, str)
+                       or not _SHA256_HEX.fullmatch(chain_digest)
+                       for chain_raw, chain_digest
+                       in execution_chain.items())):
+            raise V2AnalysisError(
+                "authorization snapshot verification failed: authorized "
+                f"row {row.get('run_id')} execution chain is malformed"
+            ) from strict_error
+    return auth
+
+
 def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
             results_root: Path | None = None,
             external_witness_root: Path | None = None,
-            *, allow_legacy_internal: bool = False) -> dict[str, Any]:
-    """Verify an authorized V2 cohort and return a persisted analysis manifest."""
+            *, allow_legacy_internal: bool = False,
+            authorization_mode: str = "auto") -> dict[str, Any]:
+    """Verify an authorized V2 cohort and return a persisted analysis manifest.
+
+    ``authorization_mode``: ``"auto"`` (default) tries the strict recomputed
+    authorization gate first and falls back to the bound snapshot
+    verification only when the strict gate rejects a complete, sealed
+    historical authorization; ``"strict"`` never falls back.
+    """
     root = Path(root).resolve()
     experiment_dir = Path(experiment_dir).resolve()
     results_root = (Path(results_root) if results_root is not None
@@ -635,11 +834,23 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
     if request.get("experiment_id") != matrix.get("experiment_id") \
             or analysis_request.get("experiment_id") != matrix.get("experiment_id"):
         raise V2AnalysisError("V2 experiment identity mismatch")
+    if authorization_mode not in ("auto", "strict"):
+        raise V2AnalysisError(
+            f"unsupported authorization mode: {authorization_mode}")
     try:
         authorization = authorize_experiment.verify_authorization(
             root, Path(authorization_path))
-    except Exception as exc:
-        raise V2AnalysisError(f"authorization verification failed: {exc}") from exc
+        authorization_verification = AUTHORIZATION_VERIFICATION_STRICT
+        authorization_strict_error = None
+    except Exception as strict_exc:
+        if authorization_mode == "strict":
+            raise V2AnalysisError(
+                f"authorization verification failed: {strict_exc}"
+            ) from strict_exc
+        authorization = _verify_authorization_bound(
+            root, experiment_dir, Path(authorization_path), strict_exc)
+        authorization_verification = AUTHORIZATION_VERIFICATION_BOUND
+        authorization_strict_error = str(strict_exc)
     if authorization.get("status") != "AUTHORIZED" \
             or authorization.get("experiment_id") != matrix.get("experiment_id"):
         raise V2AnalysisError("authorization is not for this V2 experiment")
@@ -705,6 +916,8 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
         "analysis_mode": (ANALYSIS_MODE_POSTERIOR if posterior
                           else ("legacy_internal" if allow_legacy_internal
                                 else "current_external_witness")),
+        "authorization_verification": authorization_verification,
+        "authorization_strict_error": authorization_strict_error,
         "experiment_dir": str(experiment_dir.relative_to(root)),
         "authorization_path": str(Path(authorization_path).resolve().relative_to(root)),
         "results_root": str(results_root.relative_to(root)),
@@ -878,7 +1091,8 @@ def verify_persisted_analysis(root: Path, manifest_path: Path) -> tuple[bool, li
         for key in ("experiment_id", "primary_metric", "verified_run_ids",
                     "run_results", "planned_contrasts", "claim_boundary",
                     "inputs", "authorization_sha256", "analyzer",
-                    "analysis_mode", "claim_status"):
+                    "analysis_mode", "authorization_verification",
+                    "authorization_strict_error", "claim_status"):
             if recomputed.get(key) != manifest.get(key):
                 raise V2AnalysisError(f"persisted analysis differs for {key}")
     except (OSError, ValueError, json.JSONDecodeError) as exc:
@@ -898,12 +1112,17 @@ def main() -> int:
     parser.add_argument(
         "--allow-legacy-internal", action="store_true",
         help="opt in to diagnostic-only v3/v4 evidence without external witness")
+    parser.add_argument(
+        "--authorization-mode", choices=("auto", "strict"), default="auto",
+        help="strict=never fall back; auto=fall back to bound snapshot "
+             "verification for sealed historical authorizations (default)")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     try:
         manifest = analyze(args.root, args.experiment, args.authorization,
                            args.results_root, args.external_witness_root,
-                           allow_legacy_internal=args.allow_legacy_internal)
+                           allow_legacy_internal=args.allow_legacy_internal,
+                           authorization_mode=args.authorization_mode)
         write_outputs(args.root, args.out, manifest)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"V2 ANALYSIS BLOCKED: {exc}")

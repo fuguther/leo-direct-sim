@@ -8,7 +8,7 @@ from unittest import mock
 
 import pytest
 
-from CODE.experiment_platform import v2_analysis
+from CODE.experiment_platform import authorize_experiment, v2_analysis
 from CODE.leo_sim import kernel, receipt, trace
 from CODE.leo_sim.tests.helpers import StaticGeometry, cell, make_cfg, row
 
@@ -1220,3 +1220,167 @@ def test_v2_analysis_rejects_external_launch_witness_field_mismatch(tmp_path, fi
                            "verify_authorization", return_value=auth):
         with pytest.raises(v2_analysis.V2AnalysisError, match="external launch witness"):
             v2_analysis.analyze(root, experiment, auth_path)
+def _sealed_matrix_analysis_fixture(root: Path) -> tuple[Path, Path, Path, list[dict]]:
+    """Two-arm matrix run whose authorization is a realistic ISSUE-TIME
+    artifact: sealed payload, bound work-finalization and artifact
+    snapshots, authorized cells.  The strict recomputation gate is expected
+    to be mocked away (simulating a newer analyzer checkout)."""
+    rows = [
+        _run_fixture(root, "EXP-V2-ANALYSIS-ctrl-s1", "control", "pair-1"),
+        _run_fixture(root, "EXP-V2-ANALYSIS-treat-s1", "treatment", "pair-1"),
+    ]
+    experiment = root / "EXPERIMENTS" / "EXP-V2-ANALYSIS"
+    experiment.mkdir(parents=True)
+    cells = [dict(row) for row in rows]
+    _write(experiment / "request.json", {
+        "experiment_id": "EXP-V2-ANALYSIS",
+        "claim_boundary": {"can_claim": ["none"],
+                            "cannot_claim": ["not independently reviewed"]},
+    })
+    _write(experiment / "run-manifest.json", {
+        "schema": v2_analysis.MATRIX_SCHEMA,
+        "experiment_id": "EXP-V2-ANALYSIS", "cells": cells,
+    })
+    _write(experiment / "analysis-request.json", {
+        "schema": v2_analysis.ANALYSIS_SCHEMA,
+        "experiment_id": "EXP-V2-ANALYSIS",
+        "planned_run_ids": [row["run_id"] for row in rows],
+        "analysis": {
+            "analysis_id": "AN-V2-ANALYSIS", "primary_metric": "delivery_rate",
+            "planned_contrasts": [{"name": "treatment_minus_control",
+                                   "left_arm": "treatment",
+                                   "right_arm": "control"}],
+        },
+    })
+    finalization = root / "CODE" / "work" / "WP-V2-ANALYSIS" / "DECISION.md"
+    finalization.parent.mkdir(parents=True, exist_ok=True)
+    finalization.write_text("sealed decision snapshot\n", encoding="utf-8")
+    auth = {
+        "schema": "experiment-execution-authorization/v1",
+        "status": "AUTHORIZED",
+        "experiment_id": "EXP-V2-ANALYSIS",
+        "experiment_dir": str(experiment.relative_to(root)),
+        "work_finalization": {
+            "path": str(finalization.relative_to(root)),
+            "sha256": v2_analysis.file_sha256(finalization),
+        },
+        "experiment_artifact_hashes": {
+            str((experiment / name).relative_to(root)):
+                v2_analysis.file_sha256(experiment / name)
+            for name in ("request.json", "run-manifest.json",
+                         "analysis-request.json")
+        },
+        "verification_policy": {"require_exact_matrix_cohort": True},
+        "authorized_cells": rows,
+    }
+    auth["payload_sha256"] = v2_analysis.canonical_sha(auth)
+    auth_path = experiment / "authorization.json"
+    _write(auth_path, auth)
+    auth_sha = v2_analysis.file_sha256(auth_path)
+    for row in rows:
+        result_dir = root / "CODE" / "Results" / row["run_id"]
+        formal_path = result_dir / "formal_run.json"
+        formal = json.loads(formal_path.read_text(encoding="utf-8"))
+        formal["authorization_sha256"] = auth_sha
+        _write(formal_path, formal)
+        governed_path = result_dir / "governance_receipt.json"
+        governed = json.loads(governed_path.read_text(encoding="utf-8"))
+        governed["authorization_sha256"] = auth_sha
+        _seal_governed(governed)
+        _write(governed_path, governed)
+        _write_external_witness(root, row["run_id"], governed,
+                                authorization_sha256=auth_sha)
+    return root, experiment, auth_path, rows
+
+
+def _deny_strict_auth():
+    return mock.patch.object(
+        v2_analysis.authorize_experiment, "verify_authorization",
+        side_effect=authorize_experiment.AuthorizationError(
+            "authorization no longer matches recomputed evidence"))
+
+
+def test_v2_analysis_auto_admits_sealed_historical_authorization(tmp_path):
+    root, experiment, auth_path, rows = _sealed_matrix_analysis_fixture(tmp_path)
+    with _deny_strict_auth():
+        manifest = v2_analysis.analyze(root, experiment, auth_path)
+    assert manifest["status"] == "VERIFIED"
+    assert manifest["authorization_verification"] == \
+        v2_analysis.AUTHORIZATION_VERIFICATION_BOUND
+    assert "no longer matches" in manifest["authorization_strict_error"]
+    assert manifest["verified_run_ids"] == [row["run_id"] for row in rows]
+    assert manifest["planned_contrasts"][0]["n_pairs"] == 1
+    out = root / "ANALYSIS" / "EXP-V2-ANALYSIS"
+    with _deny_strict_auth():
+        v2_analysis.write_outputs(root, out, manifest)
+        ok, errors = v2_analysis.verify_persisted_analysis(
+            root, out / "analysis-manifest.json")
+    assert ok, errors
+
+
+def test_v2_analysis_strict_mode_never_falls_back(tmp_path):
+    root, experiment, auth_path, _rows = _sealed_matrix_analysis_fixture(tmp_path)
+    with _deny_strict_auth():
+        with pytest.raises(v2_analysis.V2AnalysisError,
+                           match="authorization verification failed"):
+            v2_analysis.analyze(root, experiment, auth_path,
+                                authorization_mode="strict")
+
+
+def test_v2_analysis_auto_rejects_unsupported_authorization_mode(tmp_path):
+    root, experiment, auth_path, _rows = _sealed_matrix_analysis_fixture(tmp_path)
+    with pytest.raises(v2_analysis.V2AnalysisError,
+                       match="unsupported authorization mode"):
+        v2_analysis.analyze(root, experiment, auth_path,
+                            authorization_mode="sneaky")
+
+
+def test_v2_analysis_auto_rejects_tampered_bound_artifact(tmp_path):
+    root, experiment, auth_path, _rows = _sealed_matrix_analysis_fixture(tmp_path)
+    request_path = experiment / "request.json"
+    request_path.write_text(
+        request_path.read_text(encoding="utf-8") + "\t", encoding="utf-8")
+    with _deny_strict_auth():
+        with pytest.raises(v2_analysis.V2AnalysisError,
+                           match="bound artifact no longer matches"):
+            v2_analysis.analyze(root, experiment, auth_path)
+
+
+def test_v2_analysis_auto_rejects_rewritten_finalization(tmp_path):
+    root, experiment, auth_path, _rows = _sealed_matrix_analysis_fixture(tmp_path)
+    finalization = root / "CODE" / "work" / "WP-V2-ANALYSIS" / "DECISION.md"
+    finalization.write_text("edited decision\n", encoding="utf-8")
+    with _deny_strict_auth():
+        with pytest.raises(v2_analysis.V2AnalysisError,
+                           match="finalization no longer matches"):
+            v2_analysis.analyze(root, experiment, auth_path)
+
+
+def test_v2_analysis_auto_rejects_resealed_identity_forgery(tmp_path):
+    """Even a forger who reseals the payload cannot inject an identity the
+    historical witness chain does not bind: the cell cross-check rejects it."""
+    root, experiment, auth_path, _rows = _sealed_matrix_analysis_fixture(tmp_path)
+    auth = json.loads(auth_path.read_text(encoding="utf-8"))
+    auth["authorized_cells"][0]["code_sha256"] = "1" * 64
+    auth.pop("payload_sha256", None)
+    auth["payload_sha256"] = v2_analysis.canonical_sha(auth)
+    _write(auth_path, auth)
+    with _deny_strict_auth():
+        with pytest.raises(v2_analysis.V2AnalysisError,
+                           match="authorized cell identity mismatch"):
+            v2_analysis.analyze(root, experiment, auth_path)
+
+
+def test_v2_analysis_auto_rejects_wrong_recorded_artifact_digest(tmp_path):
+    root, experiment, auth_path, _rows = _sealed_matrix_analysis_fixture(tmp_path)
+    auth = json.loads(auth_path.read_text(encoding="utf-8"))
+    raw = "EXPERIMENTS/EXP-V2-ANALYSIS/request.json"
+    auth["experiment_artifact_hashes"][raw] = "2" * 64
+    auth.pop("payload_sha256", None)
+    auth["payload_sha256"] = v2_analysis.canonical_sha(auth)
+    _write(auth_path, auth)
+    with _deny_strict_auth():
+        with pytest.raises(v2_analysis.V2AnalysisError,
+                           match="bound artifact no longer matches"):
+            v2_analysis.analyze(root, experiment, auth_path)
+
