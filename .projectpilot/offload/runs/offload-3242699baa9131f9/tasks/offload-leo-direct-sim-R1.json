@@ -1,0 +1,78 @@
+{
+  "contract": {
+    "allowedPaths": [
+      "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+      "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+      "CODE/leo_sim/routing.py",
+      "CODE/leo_sim/q0.py",
+      "CODE/leo_sim/learning.py",
+      "LITERATURE/SOURCES.csv",
+      "LITERATURE/related-work-notes/lit-survey-20260813-drl-gnn-leo-routing.md"
+    ],
+    "metadata": {
+      "frozenPlanDigest": "sha256:94034077f7052eba843efb9b6d6b2f53d9812fa1fb70f9ca8f7c1456fd98a26d",
+      "digestVersion": "canonical-json-sha256-v1"
+    },
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R1",
+    "title": "LEO 路由分层对比算法与上界方法深度调研",
+    "goal": "基于原始论文、权威教材或官方实现，形成一份中文、证据可追踪、可落地的算法分层建议。必须超越项目已有的 Dijkstra/Q-routing/DDQN/GAT 简单列表，重点解决上界算法没有说明白的问题。\n\n研究问题：\n1. Q0-F：若已知完整未来到达、拓扑、链路容量和服务过程，严格离线参照应使用时空扩展网络上的哪类精确优化（有限时域 DP、MILP、CP-SAT、时间扩展多商品流等）？分别在什么变量、约束、目标和离散化条件下才是原问题严格最优；哪些只能给 LP 松弛上界；规模上限和验证方式是什么？\n2. Q0-I：只知道全部过去和当前真实状态、不知道未来时，因果全状态最优应如何表述为有限时域 MDP/SMDP 的 backward induction、value iteration 或 policy iteration？它能否只在 tiny 实例作为严格参照？滚动时域/MPC 是否只能称近似强基线？\n3. Q0-L：局部、延迟或被掩蔽信息下，POMDP/belief-state DP、Dec-POMDP 或信息类约束策略各自适用什么情形？如何表达“给定信息结构内最优”，避免误称全局上界？\n4. 当前逐包下一跳动作权限下，应选哪些公平而有辨识度的确定性基线：最短路、ECMP、K-shortest/候选集、容量/队列/时延加权最短路、约束最短路、路由专用 backpressure 变体等。逐一说明它们是否需要链路激活或服务排序权；不兼容当前动作空间的算法必须单列。\n5. 学习算法应按什么递进层次比较：Q-routing/表格法、DQN/DDQN、带记忆的部分可观测策略、GNN/GAT/MPNN、多智能体方法。需要指出哪些是必要基线、哪些只是可选扩展，以及与非学习强基线相比能验证什么研究问题。\n6. Q0-J：如果未来扩展为联合路由、链路激活、服务调度或资源分配，MaxWeight、经典 Backpressure、Lyapunov drift-plus-penalty、matching/MILP 应放在哪一层；为什么不能直接与当前 routing-only 算法混排。\n7. 给出最小正式矩阵与扩展矩阵。每行必须包含：层次、推荐算法、信息权限、动作权限、目标、科学角色、严格性标签、适用规模、实现成本、预计代码/开源可得性、是否建议本轮纳入。明确指出一条真正可执行的上界路线和一条备用路线。\n\n证据要求：至少检索并实际核对 20 个一手来源，其中至少 12 个与动态网络路由、网络优化、MDP/POMDP、backpressure 或卫星路由直接相关。优先原始论文、出版社页面、作者论文页、标准文档和官方代码仓库；不得用营销文、聚合博客或二手综述替代关键依据。每个关键结论附标题、作者、年份、可访问链接/DOI，并说明该来源直接支持什么，不允许只列参考文献。开源实现、许可证和维护状态只有核实后才能写；不确定就标 UNVERIFIED。\n\n必须进行动作空间审计：把 routing decision、link activation、service ordering、admission control、spectrum/power allocation 分栏，逐算法标出所需权限。必须检查反例和术语误用：RL 不是天然上界；MPC 不是严格在线最优；LP relaxation 的界方向取决于目标；经典 throughput-optimal backpressure 不自动等于有限时域时延/交付率最优；离线最优若使用了当前仿真器没有的动作，也不是公平上界。\n\n输出要求：中文；先给一页式结论，再给证据表和最终推荐矩阵；明确区分 FACT、INFERENCE、UNVERIFIED；至少给出 5 条排除项及原因；最后单列 open_items，并说明还需要在本地代码或实验合同里验证什么。总长度以充分解决问题为准，不能为了简短省略论证。不要修改仓库文件，不要启动实验，不要把计划写成已完成结果。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "web_chat",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "4096c2f492ea65fbc3486651e788e5a9f6c5cd17",
+      "paths": [
+        "ANALYSIS/Q0-ALGO-RESEARCH-20260818.md",
+        "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
+        "CODE/leo_sim/routing.py",
+        "CODE/leo_sim/q0.py",
+        "CODE/leo_sim/learning.py",
+        "LITERATURE/SOURCES.csv",
+        "LITERATURE/related-work-notes/lit-survey-20260813-drl-gnn-leo-routing.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result",
+      "web_research"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "给出六层比较框架，逐层明确算法、信息权限、动作权限和科学角色",
+      "严格区分严格上界、松弛界、信息类最优、强基线和学习算法",
+      "至少核对 20 个一手来源并把关键结论绑定到具体来源",
+      "给出一条可执行的 Q0-F 上界路线、一条备用路线和可验收的最小正式矩阵",
+      "对 routing-only 与 joint routing-scheduling 的不兼容性给出逐算法审计",
+      "明确列出 open_items、反例、排除项和本地待验证事项"
+    ],
+    "requiredEvidence": [
+      "原始论文或官方来源的题名、作者、年份、URL/DOI 与具体支持关系",
+      "每个推荐算法的严格性条件、信息条件、动作条件和规模限制",
+      "对现有仓库动作接口与 Q0 设计边界的精确路径引用"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "662ddc608757279a4526a4e25f261f88ce8dd32604d40808a2906b703224b6b5"
+}
