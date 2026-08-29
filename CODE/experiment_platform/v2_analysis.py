@@ -629,11 +629,16 @@ def _compute_planned_contrasts(
 
 def _validated_design_accounting(
         analysis_request: dict[str, Any],
-        cells: list[dict[str, Any]]) -> dict[str, Any] | None:
-    """Recompute optional compiler accounting before persisting it."""
+        cells: list[dict[str, Any]]) -> dict[str, Any]:
+    """Derive design accounting and validate it when the compiler declared it.
+
+    Historical sealed matrices predate the compiler field, but their cells
+    still carry the resolved config digest needed for exact accounting.  The
+    analyzer must therefore emit the derived counts for both old and new
+    authorizations; otherwise exact re-executions in a historical matrix can
+    still be mistaken for additional independent conditions.
+    """
     declared = analysis_request.get("design_accounting")
-    if declared is None:
-        return None
     run_ids_by_config: dict[str, list[str]] = {}
     for cell in cells:
         config_sha = cell.get("config_sha256")
@@ -657,7 +662,7 @@ def _validated_design_accounting(
         "independent_condition_rule": (
             "one independent condition per unique resolved config SHA256"),
     }
-    if declared != expected:
+    if declared is not None and declared != expected:
         raise V2AnalysisError(
             "analysis request design accounting does not match matrix cells")
     return expected
@@ -963,8 +968,7 @@ def analyze(root: Path, experiment_dir: Path, authorization_path: Path,
         "claim_status": ("LEGACY_INTERNAL_ONLY" if legacy_only
                           else "READY_FOR_INDEPENDENT_CLAIM_REVIEW"),
     }
-    if design_accounting is not None:
-        manifest["design_accounting"] = design_accounting
+    manifest["design_accounting"] = design_accounting
     return manifest
 
 

@@ -16,7 +16,7 @@
 - **运行/证据准入门**：请求中的 `acceptance` 用于拒绝完全退化、与配置意图不符或证据链不完整的运行；`governance_receipt.json` 的 `research_eligible=true` 只表示该运行可以进入后验分析。它不表示样本量充分、场景达到目标工作区、干预可识别或论文 claim 成立。
 - **科研充分性门**：由预注册 analysis/decision contract、场景分类、物理有效性、独立条件数、统计设计和逐 claim 审阅共同决定。即使所有运行均为 `research_eligible=true`，未通过这一层也只能作为工程或描述性证据。
 
-`min_delivered_packets` 等低门槛可以在有记录的诊断实验中作为非退化门，但必须同时冻结更强的场景/物理判定；不得把低门槛通过表述为“实验质量充分”。完全相同的 resolved config 重执行只增加可重复性证据，不增加独立实验条件数。
+`min_delivered_packets` 等低门槛可以在有记录的诊断实验中作为非退化门，但必须同时冻结更强的场景/物理判定；不得把低门槛通过表述为“实验质量充分”。完全相同的 resolved config 重执行只增加可重复性证据，不增加独立实验条件数。后验 V2 analyzer 必须从 matrix cells 重算并输出这组记账；旧授权中即使没有 compiler 预填字段，也不得省略。
 
 ## 通用/legacy 产物族
 
