@@ -694,6 +694,32 @@ def arm_constraints(config: dict[str, Any], request: dict[str, Any], arm: dict[s
 
 def render_runbook(request: dict[str, Any], manifest: dict[str, Any]) -> str:
     experiment_id = request["identity"]["experiment_id"]
+    if manifest.get("runtime_kind") == "legacy_gateway_external":
+        planned = [row["run_id"] for row in manifest["planned_runs"]]
+        lines = [
+            "# Agent runbook",
+            "",
+            "> **EXTERNAL LEGACY COMPATIBILITY — NOT RUNNABLE IN THIS REPOSITORY**",
+            "",
+            "This generated file is an external legacy platform compatibility artifact.",
+            "Its `*.config.json` outputs require the external old platform runtime and",
+            "cannot be executed from this repository. `execution_authorized=false`;",
+            "compilation does not grant authorization or create a current launch route.",
+            "",
+            f"- experiment: `{experiment_id}`",
+            f"- planned legacy runs: `{len(planned)}`",
+            "- config family: `resolved/*.config.json`",
+            "- current in-repository formal runtime: `leo_sim_v2` only",
+            "",
+            "Do not invoke the in-repository formal runner for these configs and do not",
+            "reconstruct the absent legacy runtime. Reviving a legacy experiment requires",
+            "a separately governed external-platform work package and a new full review.",
+            "",
+            "## Planned compatibility artifacts",
+            "",
+        ]
+        lines.extend(f"- `{run_id}`" for run_id in planned)
+        return "\n".join(lines) + "\n"
     lines = [
         "# Agent runbook",
         "",
@@ -979,6 +1005,7 @@ def compile_request(request_path: Path, out_dir: Path) -> int:
 
     manifest = {
         "schema": "experiment-run-manifest/v2",
+        "runtime_kind": "legacy_gateway_external",
         "experiment_id": request["identity"]["experiment_id"],
         "request_sha256": report["request_sha256"],
         "base_profile": profile_id,
