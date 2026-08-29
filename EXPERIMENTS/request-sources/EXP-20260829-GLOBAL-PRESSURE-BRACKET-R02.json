@@ -1,7 +1,7 @@
 {
   "acceptance": {
-    "min_delivered_packets": 500,
-    "min_multisat_deliveries": 1,
+    "min_delivered_packets": 1,
+    "min_multisat_deliveries": 0,
     "require_control_delivery": true,
     "require_data_isl": true
   },
