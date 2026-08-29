@@ -1,0 +1,1695 @@
+{
+  "authorized_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load10_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7.leo-sim.yaml",
+      "config_sha256": "49bab54c88f2bc0a1efa3e87c9a9231829cc81cf8508bf4a6d09c7f6c2f0c9f7",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "0fdbe914aa9d7cdde44a84276b93d6b55b13ac3bc95a673e1f96b52399f6f761",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load10_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11.leo-sim.yaml",
+      "config_sha256": "a91c08041f3cffce9395fbf42cb5ceaf7554079a7aee87ea8742cea8aca1a515",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "7d25795030d7ec9683899800c4d1f3803c40ec2235ad27601b61e9daee20cd43",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load10_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19.leo-sim.yaml",
+      "config_sha256": "6f5d474584735b0040293c489a572bbb69bcebc28eabb5cf03d52612bd598d84",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "a780c7faa31587093cc500a8799a97c47c8f6f1ec0169c0ba2f62aeb5f4b19f1",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load10_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s7.leo-sim.yaml",
+      "config_sha256": "49bab54c88f2bc0a1efa3e87c9a9231829cc81cf8508bf4a6d09c7f6c2f0c9f7",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "0fdbe914aa9d7cdde44a84276b93d6b55b13ac3bc95a673e1f96b52399f6f761",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load10_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s11.leo-sim.yaml",
+      "config_sha256": "a91c08041f3cffce9395fbf42cb5ceaf7554079a7aee87ea8742cea8aca1a515",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "7d25795030d7ec9683899800c4d1f3803c40ec2235ad27601b61e9daee20cd43",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load10_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s19.leo-sim.yaml",
+      "config_sha256": "6f5d474584735b0040293c489a572bbb69bcebc28eabb5cf03d52612bd598d84",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "a780c7faa31587093cc500a8799a97c47c8f6f1ec0169c0ba2f62aeb5f4b19f1",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s7.leo-sim.yaml",
+      "config_sha256": "4d3b30910f0920b9b413e35e699bb530fe0437c26e533c4e4da5f77b08ac1e03",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "6992a9a77c8e381668e2fb03813dc4db48349e410843b5c7bd1b370306b69513",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s11.leo-sim.yaml",
+      "config_sha256": "e1f20bea6b4019258c61ead0f46901d03a6541b1dcd2437f9468d8f02c835d40",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "5531e0d628665516b8630a3019560987c88f8d58fa0cea2083957d099913c7f7",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s19.leo-sim.yaml",
+      "config_sha256": "2e051c274d762bec3b3c307ded4b766598deab576a50fa76839aa0fa58a2170b",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "b9c8a9c70bbdfa8702d3a385385502ce247498d7b1c901be90d2f69c0e0ff752",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s7.leo-sim.yaml",
+      "config_sha256": "4d3b30910f0920b9b413e35e699bb530fe0437c26e533c4e4da5f77b08ac1e03",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "6992a9a77c8e381668e2fb03813dc4db48349e410843b5c7bd1b370306b69513",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s11.leo-sim.yaml",
+      "config_sha256": "e1f20bea6b4019258c61ead0f46901d03a6541b1dcd2437f9468d8f02c835d40",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "5531e0d628665516b8630a3019560987c88f8d58fa0cea2083957d099913c7f7",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s19.leo-sim.yaml",
+      "config_sha256": "2e051c274d762bec3b3c307ded4b766598deab576a50fa76839aa0fa58a2170b",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "b9c8a9c70bbdfa8702d3a385385502ce247498d7b1c901be90d2f69c0e0ff752",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s7.leo-sim.yaml",
+      "config_sha256": "886d191f452b4e61df1c8240bc16712beb94e678b8d7904f619be1849796267b",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "8935c9494f198e047c86231a8da1f4d3ce0bd957a1a8d540cca34de8359dc23c",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s11.leo-sim.yaml",
+      "config_sha256": "29733b58225f304d196b48014139cc2701cf77cad61c315eecc885db8458cbf3",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "157e227d80e776a51f44b8ad65d4dda988b5d60cde6829e904c0edcdbbbe1a1a",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s19.leo-sim.yaml",
+      "config_sha256": "4df9197bc27351aa47eb289ccefbe0c2ee810d16f2907b3fcd2eee707f139b21",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "93c1a2aedfe9d33486bb55fcfdf62fbe68c310e7b27438555daa112f1adbedc7",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s7.leo-sim.yaml",
+      "config_sha256": "886d191f452b4e61df1c8240bc16712beb94e678b8d7904f619be1849796267b",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "8935c9494f198e047c86231a8da1f4d3ce0bd957a1a8d540cca34de8359dc23c",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s11.leo-sim.yaml",
+      "config_sha256": "29733b58225f304d196b48014139cc2701cf77cad61c315eecc885db8458cbf3",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "157e227d80e776a51f44b8ad65d4dda988b5d60cde6829e904c0edcdbbbe1a1a",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s19.leo-sim.yaml",
+      "config_sha256": "4df9197bc27351aa47eb289ccefbe0c2ee810d16f2907b3fcd2eee707f139b21",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "93c1a2aedfe9d33486bb55fcfdf62fbe68c310e7b27438555daa112f1adbedc7",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s7.leo-sim.yaml",
+      "config_sha256": "1d17c002260880d5af77db20de41f40e47abad88f3171e7c7ebcbb9c7e504f20",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "f883eb27e97154a7041fbad8d82d0a34fcecc2166ca74afcd4555397c2571f5d",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s11.leo-sim.yaml",
+      "config_sha256": "162069cf91e214f57dd2bb18eede5456d1480016328227dcca410645d6d2b108",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "0dac3699bdb706d628615c8b51e446f0f9e93ecda84425ac9e08a8198302242c",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s19.leo-sim.yaml",
+      "config_sha256": "919cfe42c4a8fd70900c36c1acf9cd262eb27cb1fb85a993666ae8b9217e4e86",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "19266c4ef9d4c2e154d69979c01b4f5b8e1c7697bb1eefb50fb61e158585e5a9",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7.leo-sim.yaml",
+      "config_sha256": "1d17c002260880d5af77db20de41f40e47abad88f3171e7c7ebcbb9c7e504f20",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "f883eb27e97154a7041fbad8d82d0a34fcecc2166ca74afcd4555397c2571f5d",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11.leo-sim.yaml",
+      "config_sha256": "162069cf91e214f57dd2bb18eede5456d1480016328227dcca410645d6d2b108",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "0dac3699bdb706d628615c8b51e446f0f9e93ecda84425ac9e08a8198302242c",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19.leo-sim.yaml",
+      "config_sha256": "919cfe42c4a8fd70900c36c1acf9cd262eb27cb1fb85a993666ae8b9217e4e86",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "19266c4ef9d4c2e154d69979c01b4f5b8e1c7697bb1eefb50fb61e158585e5a9",
+      "trace_seed": 19
+    }
+  ],
+  "authorized_runs": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load10_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7.leo-sim.yaml",
+      "config_sha256": "49bab54c88f2bc0a1efa3e87c9a9231829cc81cf8508bf4a6d09c7f6c2f0c9f7",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "0fdbe914aa9d7cdde44a84276b93d6b55b13ac3bc95a673e1f96b52399f6f761",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load10_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11.leo-sim.yaml",
+      "config_sha256": "a91c08041f3cffce9395fbf42cb5ceaf7554079a7aee87ea8742cea8aca1a515",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "7d25795030d7ec9683899800c4d1f3803c40ec2235ad27601b61e9daee20cd43",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load10_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19.leo-sim.yaml",
+      "config_sha256": "6f5d474584735b0040293c489a572bbb69bcebc28eabb5cf03d52612bd598d84",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "a780c7faa31587093cc500a8799a97c47c8f6f1ec0169c0ba2f62aeb5f4b19f1",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load10_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s7.leo-sim.yaml",
+      "config_sha256": "49bab54c88f2bc0a1efa3e87c9a9231829cc81cf8508bf4a6d09c7f6c2f0c9f7",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "0fdbe914aa9d7cdde44a84276b93d6b55b13ac3bc95a673e1f96b52399f6f761",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load10_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s11.leo-sim.yaml",
+      "config_sha256": "a91c08041f3cffce9395fbf42cb5ceaf7554079a7aee87ea8742cea8aca1a515",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "7d25795030d7ec9683899800c4d1f3803c40ec2235ad27601b61e9daee20cd43",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load10_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s19.leo-sim.yaml",
+      "config_sha256": "6f5d474584735b0040293c489a572bbb69bcebc28eabb5cf03d52612bd598d84",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load10-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "a780c7faa31587093cc500a8799a97c47c8f6f1ec0169c0ba2f62aeb5f4b19f1",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s7.leo-sim.yaml",
+      "config_sha256": "4d3b30910f0920b9b413e35e699bb530fe0437c26e533c4e4da5f77b08ac1e03",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "6992a9a77c8e381668e2fb03813dc4db48349e410843b5c7bd1b370306b69513",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s11.leo-sim.yaml",
+      "config_sha256": "e1f20bea6b4019258c61ead0f46901d03a6541b1dcd2437f9468d8f02c835d40",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "5531e0d628665516b8630a3019560987c88f8d58fa0cea2083957d099913c7f7",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s19.leo-sim.yaml",
+      "config_sha256": "2e051c274d762bec3b3c307ded4b766598deab576a50fa76839aa0fa58a2170b",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "b9c8a9c70bbdfa8702d3a385385502ce247498d7b1c901be90d2f69c0e0ff752",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s7.leo-sim.yaml",
+      "config_sha256": "4d3b30910f0920b9b413e35e699bb530fe0437c26e533c4e4da5f77b08ac1e03",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "6992a9a77c8e381668e2fb03813dc4db48349e410843b5c7bd1b370306b69513",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s11.leo-sim.yaml",
+      "config_sha256": "e1f20bea6b4019258c61ead0f46901d03a6541b1dcd2437f9468d8f02c835d40",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "5531e0d628665516b8630a3019560987c88f8d58fa0cea2083957d099913c7f7",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load20_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s19.leo-sim.yaml",
+      "config_sha256": "2e051c274d762bec3b3c307ded4b766598deab576a50fa76839aa0fa58a2170b",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load20-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "b9c8a9c70bbdfa8702d3a385385502ce247498d7b1c901be90d2f69c0e0ff752",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s7.leo-sim.yaml",
+      "config_sha256": "886d191f452b4e61df1c8240bc16712beb94e678b8d7904f619be1849796267b",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "8935c9494f198e047c86231a8da1f4d3ce0bd957a1a8d540cca34de8359dc23c",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s11.leo-sim.yaml",
+      "config_sha256": "29733b58225f304d196b48014139cc2701cf77cad61c315eecc885db8458cbf3",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "157e227d80e776a51f44b8ad65d4dda988b5d60cde6829e904c0edcdbbbe1a1a",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s19.leo-sim.yaml",
+      "config_sha256": "4df9197bc27351aa47eb289ccefbe0c2ee810d16f2907b3fcd2eee707f139b21",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "93c1a2aedfe9d33486bb55fcfdf62fbe68c310e7b27438555daa112f1adbedc7",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s7.leo-sim.yaml",
+      "config_sha256": "886d191f452b4e61df1c8240bc16712beb94e678b8d7904f619be1849796267b",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "8935c9494f198e047c86231a8da1f4d3ce0bd957a1a8d540cca34de8359dc23c",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s11.leo-sim.yaml",
+      "config_sha256": "29733b58225f304d196b48014139cc2701cf77cad61c315eecc885db8458cbf3",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "157e227d80e776a51f44b8ad65d4dda988b5d60cde6829e904c0edcdbbbe1a1a",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load40_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s19.leo-sim.yaml",
+      "config_sha256": "4df9197bc27351aa47eb289ccefbe0c2ee810d16f2907b3fcd2eee707f139b21",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load40-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "93c1a2aedfe9d33486bb55fcfdf62fbe68c310e7b27438555daa112f1adbedc7",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s7.leo-sim.yaml",
+      "config_sha256": "1d17c002260880d5af77db20de41f40e47abad88f3171e7c7ebcbb9c7e504f20",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "f883eb27e97154a7041fbad8d82d0a34fcecc2166ca74afcd4555397c2571f5d",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s11.leo-sim.yaml",
+      "config_sha256": "162069cf91e214f57dd2bb18eede5456d1480016328227dcca410645d6d2b108",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "0dac3699bdb706d628615c8b51e446f0f9e93ecda84425ac9e08a8198302242c",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_a",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s19.leo-sim.yaml",
+      "config_sha256": "919cfe42c4a8fd70900c36c1acf9cd262eb27cb1fb85a993666ae8b9217e4e86",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "19266c4ef9d4c2e154d69979c01b4f5b8e1c7697bb1eefb50fb61e158585e5a9",
+      "trace_seed": 19
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7.leo-sim.yaml",
+      "config_sha256": "1d17c002260880d5af77db20de41f40e47abad88f3171e7c7ebcbb9c7e504f20",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "f883eb27e97154a7041fbad8d82d0a34fcecc2166ca74afcd4555397c2571f5d",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11.leo-sim.yaml",
+      "config_sha256": "162069cf91e214f57dd2bb18eede5456d1480016328227dcca410645d6d2b108",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s11",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "0dac3699bdb706d628615c8b51e446f0f9e93ecda84425ac9e08a8198302242c",
+      "trace_seed": 11
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 0,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "load80_b",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "5c80f2b31c9f42297e658e76aaa3cc76abb1adb77b1b6fca28dbbae73cfad9f6",
+      "config_path": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19.leo-sim.yaml",
+      "config_sha256": "919cfe42c4a8fd70900c36c1acf9cd262eb27cb1fb85a993666ae8b9217e4e86",
+      "controlled_signature": "ac824b1c45b752fdc69d94158da58478725aad0650e455db551658e29a9c2e4b",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "c5742d16fc01d454e8ac5c5345a7e7716883acd28ac4d0d34c24613bc315e59a",
+      "learning_seed": null,
+      "pairing_key": "load80-s19",
+      "phase": "non_learning",
+      "run_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "19266c4ef9d4c2e154d69979c01b4f5b8e1c7697bb1eefb50fb61e158585e5a9",
+      "trace_seed": 19
+    }
+  ],
+  "experiment_artifact_hashes": {
+    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/coverage-audit.json": "b5631b2d4e40bc96b77e69459ae50b44b467d08b22373fcd4e63e7ebbe8912ae",
+    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R01/scene-decision.yaml": "9ad82a9ac4c4f86c13e38881236f8a438c2750140b7a6a8d49f7929e98b17d9b",
+    "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/scene-check-contract.json": "b9b3f75378b6d1f81fb46624193ca35d6ebb41a9c5970d689f6e78a4366a26b7",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/RUNBOOK.md": "5bb03c92d3d821a971cb8c0af3e449a2bfa652befdacf95c38dfb5a6ed3fa735",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/analysis-request.json": "9b38b054c26b0f057d34ac1729b0804263344f810fb8bf5fd14cd11c3d28261c",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/compile-report.json": "3cdecca676c2cd2e76f6efe3e40386c33cad5d85e56b2e8d55acaebc176e9d46",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/request.json": "c3428fe71d5938a148f0f97a9a1b1e7d89f37e6f44d7ce209e49bf562bea37a2",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11.leo-sim.yaml": "6c9ad101101036b740cd822f881081bd2728c63bab0853202f4ae4d03e602e73",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19.leo-sim.yaml": "8793d827a10367e748f9c8ee576e656fb0dddacc8f80293d47c3009b34eb4a58",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7.leo-sim.yaml": "f74684451a314174a8dccc38ae56294f73d57e7de0e489fa9f6ea8ed546c70f4",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s11.leo-sim.yaml": "6c9ad101101036b740cd822f881081bd2728c63bab0853202f4ae4d03e602e73",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s19.leo-sim.yaml": "8793d827a10367e748f9c8ee576e656fb0dddacc8f80293d47c3009b34eb4a58",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s7.leo-sim.yaml": "f74684451a314174a8dccc38ae56294f73d57e7de0e489fa9f6ea8ed546c70f4",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s11.leo-sim.yaml": "74fde0058267950366ae49c9c9e5721020b36c226c30f20c30f1ce72c4a9f8e2",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s19.leo-sim.yaml": "64f92c2d08b2287cd5a1a7faad9c598f70a317019069ee0e574883c80a9ecc48",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s7.leo-sim.yaml": "779b17adda9defe9b6beadbcf4310828619a6b1539811b490fa8eb2e92f8a504",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s11.leo-sim.yaml": "74fde0058267950366ae49c9c9e5721020b36c226c30f20c30f1ce72c4a9f8e2",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s19.leo-sim.yaml": "64f92c2d08b2287cd5a1a7faad9c598f70a317019069ee0e574883c80a9ecc48",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s7.leo-sim.yaml": "779b17adda9defe9b6beadbcf4310828619a6b1539811b490fa8eb2e92f8a504",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s11.leo-sim.yaml": "6313047a59e1c5287c0e72b5b8212e48e4b4a04fd63c1b4b784b973dfc1d91b2",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s19.leo-sim.yaml": "b12b4f8551928c2de1204b69542559bf57869bb73cf72d66379850245c16b791",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s7.leo-sim.yaml": "d0311b13c4f23e2ff0ebbbdb9d5986d2bc720eeb8c480f859b474bd6f62a4082",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s11.leo-sim.yaml": "6313047a59e1c5287c0e72b5b8212e48e4b4a04fd63c1b4b784b973dfc1d91b2",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s19.leo-sim.yaml": "b12b4f8551928c2de1204b69542559bf57869bb73cf72d66379850245c16b791",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s7.leo-sim.yaml": "d0311b13c4f23e2ff0ebbbdb9d5986d2bc720eeb8c480f859b474bd6f62a4082",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s11.leo-sim.yaml": "c231baa447683b7e0be6cd64316c361fb2bdc4bc4e9159c71af08074d0cc60a7",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s19.leo-sim.yaml": "762b98846282aa955c20eb801f71192c58900eacfe6d4f6267f4eac45f1eae4f",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s7.leo-sim.yaml": "55f0d7d4149b500b0895293df5e1d26377b07de535cbac2ae5be4a8ffe8981ad",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11.leo-sim.yaml": "c231baa447683b7e0be6cd64316c361fb2bdc4bc4e9159c71af08074d0cc60a7",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19.leo-sim.yaml": "762b98846282aa955c20eb801f71192c58900eacfe6d4f6267f4eac45f1eae4f",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/resolved/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7.leo-sim.yaml": "55f0d7d4149b500b0895293df5e1d26377b07de535cbac2ae5be4a8ffe8981ad",
+    "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/run-manifest.json": "39149c5fac76520c4ff06485c7fc4c0949fd971f1def4183688c03350e8b8ffe"
+  },
+  "experiment_dir": "EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+  "experiment_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+  "payload_sha256": "423dbdcb02a1a46f1849e4ef9a252b85e5bde6e544624605303656db33dbd292",
+  "schema": "experiment-execution-authorization/v1",
+  "status": "AUTHORIZED",
+  "verification_policy": {
+    "recompute_work_finalization": true,
+    "require_all_bound_artifact_hashes": true,
+    "require_current_scenario_source_hashes": true,
+    "require_current_trace_input_hashes": true,
+    "require_exact_matrix_cohort": true,
+    "require_exact_run_config_hash": true
+  },
+  "work_finalization": {
+    "brief_path": "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/brief.json",
+    "brief_sha256": "054b311e7bbb874a078a42c1a0cfc077761675867bbd984d1d9c94e93856187d",
+    "decision_path": "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/decision.json",
+    "decision_sha256": "e73030ad6b59be65a1cb84756b74e3c98e8933d87718d5a63e837adbcd36aec7",
+    "path": "CODE/work/WP-LEO-V2-GLOBAL-PRESSURE-BRACKET/R02/finalization.json",
+    "revision": 5,
+    "sha256": "e3675e72445beb7a3ac600e7f2a497ce6e81a8bd093e03758cc550f61bdf2d3c",
+    "work_id": "WP-LEO-V2-GLOBAL-PRESSURE-BRACKET"
+  }
+}
