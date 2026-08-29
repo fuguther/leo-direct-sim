@@ -5,6 +5,14 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-30：P1 实验设计记账与科研门分层（PR #186）
+
+- matrix compiler 新增 `design_accounting`：分别记录 planned cells、唯一 resolved config、精确重执行 cell 与 run-id 分组；analysis request 和 RUNBOOK 同步绑定。完全相同配置的重执行明确只算重复性证据，不增加独立条件数；旧格式编译包继续由 exact-SHA/后验兼容链处理，不改写正在运行的 R02 授权工件。
+- Run 产物契约明确拆分“运行/证据准入门”和“科研充分性门”：acceptance 与 governance `research_eligible=true` 不能替代场景、物理、统计和逐 claim gate。
+- 当前 R02 管理口径冻结为一次性描述性场景/稳定性诊断：24 cells=12 唯一配置+12 精确重执行，且预注册上界表明当前 bracket 无法回答 ISL 压力阈值。运行结果尚未在本条提前填写。
+- 独立 Luna 冷审发现一个 major：旧授权矩阵没有 compiler 预填的 `design_accounting` 时，analyzer 仍会省略独立条件记账；当前 R02 正属于该兼容路径。修复改为始终从授权 matrix cells 派生并输出，声明字段存在时仍严格核对，既不重写旧授权也不改变 exact-SHA 绑定。新增 sealed historical authorization 回归先以 `KeyError: design_accounting` 失败，最小修复后通过。
+- 验证：首轮定向 matrix/v2-analysis/document-governance `94 passed`；首轮全量 `837 passed, 2 skipped, 1 warning, 3 subtests passed`。冷审修复后定向 matrix/v2-analysis `77 passed`，最终全量 `842 passed, 2 skipped, 1 warning, 3 subtests passed`；document governance `0 errors, 0 warnings`；`git diff --check` 通过。唯一 warning 为既有未注册 `scene_smoke` mark。
+
 ## 2026-08-29：Bracket R02 审阅链闭合与授权（PR #179-#183）
 
 - 链路：请求编译（#179）→ 24-cell 判定性设计修订（#180）→ brief schema 修复（#181）→ revision_reason（#182）→ 链工件（#183）。

@@ -103,6 +103,47 @@ def test_compile_matrix_emits_one_bound_v2_config_and_runbook_command_per_cell(t
     assert "python3 CODE/scripts/remote/run-remote.sh" not in runbook
 
 
+def test_matrix_accounts_exact_reexecutions_as_nonindependent_conditions(tmp_path):
+    request = _request()
+    request["arms"][1]["config_overrides"] = {}
+    request["arms"][1]["intervention_paths"] = []
+    source = tmp_path / "request.json"
+    source.write_text(json.dumps(request), encoding="utf-8")
+    out = tmp_path / "EXPERIMENTS" / request["experiment_id"]
+
+    report = matrix.compile_matrix_experiment(
+        source, out, project_root=tmp_path)
+
+    assert report["schema"] == matrix.MATRIX_COMPILE_REPORT_SCHEMA
+    accounting = report["design_accounting"]
+    assert accounting["planned_cells"] == 2
+    assert accounting["unique_resolved_configurations"] == 1
+    assert accounting["exact_reexecution_cells"] == 1
+    assert accounting["independent_condition_rule"] == \
+        "one independent condition per unique resolved config SHA256"
+    assert accounting["exact_reexecution_groups"] == [{
+        "config_sha256": accounting["exact_reexecution_groups"][0][
+            "config_sha256"],
+        "run_ids": [
+            "EXP-LEO-V2-MATRIX-control-s42",
+            "EXP-LEO-V2-MATRIX-treatment-s42",
+        ],
+    }]
+    analysis = json.loads((out / "analysis-request.json").read_text())
+    assert analysis["design_accounting"] == accounting
+    runbook = (out / "RUNBOOK.md").read_text(encoding="utf-8")
+    assert "2 planned cells; 1 unique resolved configurations" in runbook
+    assert "do not increase the independent-condition count" in runbook
+    matrix.verify_compiled_matrix(tmp_path, out)
+
+    report_path = out / "compile-report.json"
+    tampered = json.loads(report_path.read_text(encoding="utf-8"))
+    tampered["design_accounting"]["unique_resolved_configurations"] = 2
+    _write_json(report_path, tampered)
+    with pytest.raises(matrix.MatrixError, match="design accounting"):
+        matrix.verify_compiled_matrix(tmp_path, out)
+
+
 def test_serial_fail_closed_policy_is_preserved_in_compiled_runbook(tmp_path):
     request = _request()
     request["execution_policy"] = {"mode": "serial_fail_closed"}

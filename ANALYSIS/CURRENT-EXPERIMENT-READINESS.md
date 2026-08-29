@@ -2,6 +2,13 @@
 
 > **CURRENT-VOLATILE**：本文是最近一次仓库内状态快照，不是外部实时查询结果。引用其中的 branch、SHA、PR、CI、VM、run、完成状态或时间估计前，必须在当前 checkout、GitHub 和 VM 重新核验；过期检查由 `DOCUMENT-STATUS.json` 与 `scripts/check_document_governance.py` fail-loud。
 
+## 2026-08-30 管理口径：全球 R02 是描述性场景/稳定性诊断
+
+- `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24 个计划 cell 只有 12 个唯一 resolved config；其余 12 个是同 load、同 seed、同配置的 a/b 精确重执行。a/b 只提供确定性/重复执行证据，不能计作额外 seed、独立样本或独立实验条件。
+- 冻结 brief 已预注册：本 bracket 内最坏单链路漏斗利用率上界约 `0.135`，低于 ISL 压力门 `0.8`。因此该 cohort 能回答不同 load/seed 下的场景分类、描述性指标和重复一致性，不能回答全局 ISL 压力阈值、首个压力点或负载响应曲线；名称中的 `PRESSURE-BRACKET` 不扩大其 claim scope。
+- acceptance `{1,0,true,true}` 是运行非退化与证据准入门，不是科研充分性门。只有后验 V2 analysis、冻结 scene classification、物理有效性和逐 claim 审阅全部通过后，结果才可进入相应科研结论；`governance research_eligible=true` 也不等于 paper-ready。
+- 本节只冻结设计与解释边界，不提前填写运行结果。24-cell 串行 cohort 的完成状态、聚合指标和最终 scene 分类必须在自然结束、拉回和持久化重算后另行更新。
+
 ## 2026-08-29 快照：全球人口陆地场景后验分析与场景分类闭合（CURRENT）
 
 - 快照：`as_of_commit=c9ef45e`（origin/main；PR #172–#175 已合入，后验分析修复 #176 在合入流程中）；`last_verified_at=2026-08-29`；本文 2026-08-24/08-22 及更早节段按日期为历史快照，内容冲突处以本节为准。

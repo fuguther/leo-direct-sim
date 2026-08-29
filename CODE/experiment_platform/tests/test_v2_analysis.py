@@ -1220,7 +1220,9 @@ def test_v2_analysis_rejects_external_launch_witness_field_mismatch(tmp_path, fi
                            "verify_authorization", return_value=auth):
         with pytest.raises(v2_analysis.V2AnalysisError, match="external launch witness"):
             v2_analysis.analyze(root, experiment, auth_path)
-def _sealed_matrix_analysis_fixture(root: Path) -> tuple[Path, Path, Path, list[dict]]:
+def _sealed_matrix_analysis_fixture(
+        root: Path, *, include_design_accounting: bool = True,
+        ) -> tuple[Path, Path, Path, list[dict]]:
     """Two-arm matrix run whose authorization is a realistic ISSUE-TIME
     artifact: sealed payload, bound work-finalization and artifact
     snapshots, authorized cells.  The strict recomputation gate is expected
@@ -1241,7 +1243,7 @@ def _sealed_matrix_analysis_fixture(root: Path) -> tuple[Path, Path, Path, list[
         "schema": v2_analysis.MATRIX_SCHEMA,
         "experiment_id": "EXP-V2-ANALYSIS", "cells": cells,
     })
-    _write(experiment / "analysis-request.json", {
+    analysis_request = {
         "schema": v2_analysis.ANALYSIS_SCHEMA,
         "experiment_id": "EXP-V2-ANALYSIS",
         "planned_run_ids": [row["run_id"] for row in rows],
@@ -1251,7 +1253,21 @@ def _sealed_matrix_analysis_fixture(root: Path) -> tuple[Path, Path, Path, list[
                                    "left_arm": "treatment",
                                    "right_arm": "control"}],
         },
-    })
+    }
+    if include_design_accounting:
+        analysis_request["design_accounting"] = {
+            "schema": "leo-sim-matrix-design-accounting/v1",
+            "planned_cells": 2,
+            "unique_resolved_configurations": 1,
+            "exact_reexecution_cells": 1,
+            "exact_reexecution_groups": [{
+                "config_sha256": rows[0]["config_sha256"],
+                "run_ids": sorted(row["run_id"] for row in rows),
+            }],
+            "independent_condition_rule": (
+                "one independent condition per unique resolved config SHA256"),
+        }
+    _write(experiment / "analysis-request.json", analysis_request)
     finalization = root / "CODE" / "work" / "WP-V2-ANALYSIS" / "DECISION.md"
     finalization.parent.mkdir(parents=True, exist_ok=True)
     finalization.write_text("sealed decision snapshot\n", encoding="utf-8")
@@ -1310,12 +1326,35 @@ def test_v2_analysis_auto_admits_sealed_historical_authorization(tmp_path):
     assert "no longer matches" in manifest["authorization_strict_error"]
     assert manifest["verified_run_ids"] == [row["run_id"] for row in rows]
     assert manifest["planned_contrasts"][0]["n_pairs"] == 1
+    assert manifest["design_accounting"]["planned_cells"] == 2
+    assert manifest["design_accounting"]["unique_resolved_configurations"] == 1
+    assert manifest["design_accounting"]["exact_reexecution_cells"] == 1
     out = root / "ANALYSIS" / "EXP-V2-ANALYSIS"
     with _deny_strict_auth():
         v2_analysis.write_outputs(root, out, manifest)
         ok, errors = v2_analysis.verify_persisted_analysis(
             root, out / "analysis-manifest.json")
     assert ok, errors
+
+
+def test_v2_analysis_derives_design_accounting_for_sealed_legacy_matrix(tmp_path):
+    root, experiment, auth_path, rows = _sealed_matrix_analysis_fixture(
+        tmp_path, include_design_accounting=False)
+    with _deny_strict_auth():
+        manifest = v2_analysis.analyze(root, experiment, auth_path)
+    assert manifest["verified_run_ids"] == [row["run_id"] for row in rows]
+    assert manifest["design_accounting"] == {
+        "schema": "leo-sim-matrix-design-accounting/v1",
+        "planned_cells": 2,
+        "unique_resolved_configurations": 1,
+        "exact_reexecution_cells": 1,
+        "exact_reexecution_groups": [{
+            "config_sha256": rows[0]["config_sha256"],
+            "run_ids": sorted(row["run_id"] for row in rows),
+        }],
+        "independent_condition_rule": (
+            "one independent condition per unique resolved config SHA256"),
+    }
 
 
 def test_v2_analysis_strict_mode_never_falls_back(tmp_path):
@@ -1383,4 +1422,3 @@ def test_v2_analysis_auto_rejects_wrong_recorded_artifact_digest(tmp_path):
         with pytest.raises(v2_analysis.V2AnalysisError,
                            match="bound artifact no longer matches"):
             v2_analysis.analyze(root, experiment, auth_path)
-
