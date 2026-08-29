@@ -14,6 +14,20 @@ sys.path.insert(0, str(ROOT))
 from CODE.experiment_platform.compile_experiment import arm_constraints, compile_request, load_json
 
 
+def test_default_generic_template_is_external_legacy_only(tmp_path) -> None:
+    request_path = ROOT / "EXPERIMENTS" / "templates" / "experiment-request.example.json"
+    compiled = tmp_path / "compiled"
+
+    assert compile_request(request_path, compiled) == 0
+    manifest = load_json(compiled / "run-manifest.json")
+    runbook = (compiled / "RUNBOOK.md").read_text(encoding="utf-8")
+
+    assert manifest["runtime_kind"] == "legacy_gateway_external"
+    assert "external legacy platform compatibility artifact" in runbook
+    assert "CODE/scripts/remote/run-remote.sh" not in runbook
+    assert "CODE/run.py" not in runbook
+
+
 class NonLearningContractTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
@@ -77,15 +91,15 @@ class NonLearningContractTests(unittest.TestCase):
 
     def test_r04_compiles_as_non_learning(self) -> None:
         manifest = json.loads((self.compiled / "run-manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["runtime_kind"], "legacy_gateway_external")
         self.assertTrue(all(row["run_phase"] == "non_learning" for row in manifest["planned_runs"]))
         self.assertTrue(all(row["checkpoint_lineage"]["mode"] == "not_applicable" for row in manifest["planned_runs"]))
         runbook = (self.compiled / "RUNBOOK.md").read_text(encoding="utf-8")
-        self.assertIn("set -euo pipefail", runbook)
-        self.assertIn("SECONDS + 900", runbook)
-        self.assertIn("--launch-nonce", runbook)
-        self.assertIn("--run-attempt-id", runbook)
-        self.assertIn("verify-pulled-run.py", runbook)
-        self.assertNotIn("while :", runbook)
+        self.assertIn("external legacy platform compatibility artifact", runbook)
+        self.assertIn("cannot be executed from this repository", runbook)
+        self.assertIn("execution_authorized=false", runbook)
+        self.assertNotIn("CODE/scripts/remote/run-remote.sh", runbook)
+        self.assertNotIn("CODE/run.py", runbook)
 
     def test_non_learning_rejects_learning_identity_budget_eval_and_checkpoint(self) -> None:
         arm = copy.deepcopy(self.request["design"]["arms"][0])
