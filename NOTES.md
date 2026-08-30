@@ -13,6 +13,12 @@
 - 13 份已登记为 `HISTORICAL`/`SUPERSEDED` 的 Markdown 移入 `ANALYSIS/HISTORY/`，同步更新登记、历史索引与 `experiment-program.yaml` 证据路径；不删除历史内容，不改变现行合同或实验语义。
 - 归档暴露出治理检查器用 `fnmatch` 解释 glob、与 `Path.glob` 展开语义不一致；已用先红后绿的回归测试改为路径语义匹配。归档后审计为 0 error / 0 warning / 0 archive candidate；本地全量 `843 passed / 2 skipped / 3 subtests passed`（另有 1 个既有未知 mark warning）。
 
+## 2026-08-30：Q0 长版源稿与剩余资产收口（PR #190）
+
+- 用户批准剩余资产按推荐收口：Q0 长版说明书不再作为第二权威入口，原文移入 `ANALYSIS/HISTORY/`；其中仍有价值的 oracle 边界、四层算法验证门、求解状态/最优性差距要求已提炼进当前 Q0 协议。
+- 浏览器临时日志、已被 main/PR 吸收的旧草稿与测试修改不入库；相关 stash、旧分支和 b228 旧任务只在本 PR 合入后删除。
+- 归档正文与 stash 原稿逐字 diff 一致；document governance 为 0 error / 0 warning / 0 archive candidate；文档专项 `19 passed`，本地全量 `843 passed / 2 skipped / 3 subtests passed`（另有 1 个既有未知 mark warning）。
+
 ## 2026-08-30：P1 实验设计记账与科研门分层（PR #186）
 
 - matrix compiler 新增 `design_accounting`：分别记录 planned cells、唯一 resolved config、精确重执行 cell 与 run-id 分组；analysis request 和 RUNBOOK 同步绑定。完全相同配置的重执行明确只算重复性证据，不增加独立条件数；旧格式编译包继续由 exact-SHA/后验兼容链处理，不改写正在运行的 R02 授权工件。

@@ -226,7 +226,7 @@
       "purpose": "Current Q0-F/Q0-I/Q0-J and information-ablation contract",
       "may_direct_current_work": true,
       "owner": "q0-research",
-      "last_reviewed": "2026-08-20",
+      "last_reviewed": "2026-08-30",
       "review_interval_days": 30,
       "replacement": null,
       "require_banner": false,

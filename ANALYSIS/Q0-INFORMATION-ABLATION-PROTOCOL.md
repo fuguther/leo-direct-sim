@@ -1,6 +1,6 @@
 # Q0 信息裁剪与双向实验协议
 
-> **CURRENT-CONTRACT**；最后核验：2026-08-20。本文合并 Q0 研究目的、算法选型、接口与 tiny 验证要求；旧版 Q0 日期文档仅作 supporting evidence。具体实现与运行状态仍须按当前 checkout 和回执核验。
+> **CURRENT-CONTRACT**；最后核验：2026-08-30。本文合并 Q0 研究目的、算法选型、接口与 tiny 验证要求；长版研究边界原稿已归档为 `ANALYSIS/HISTORY/Q0-FULL-INFORMATION-BENCHMARK-SPEC-20260820.md`，仅作历史追溯。具体实现与运行状态仍须按当前 checkout 和回执核验。
 
 ## 1. 研究问题
 
@@ -21,6 +21,8 @@ Q0 只放松调度器的信息与可选控制能力，不取消传播时延、�
 | Q0-J | 可与 Q0-I/F 组合 | 路由+WAIT+服务次序+接入分配 | tiny 联合调度 DP/MILP | 控制范围扩大带来的价值 |
 
 普通时间扩展 min-cost flow 允许流体化、可分流或抢占时，只能作为乐观松弛或候选路径生成器。普通 MPC 是强基线，不自动成为严格上界。
+
+平台现有 `routing.oracle` 仍是逐包逐跳的全局信息 next-hop 基线，不是联合考虑竞争、等待和服务次序的全局最优解；名称里出现 `oracle` 不能作为 Q0 身份或最优性证据。
 
 ## 3. 主线：从最优向下裁剪信息
 
@@ -69,6 +71,8 @@ Q0 只放松调度器的信息与可选控制能力，不取消传播时延、�
 - 是否固定 FIFO/DRR/forced-deliver；
 - 是否允许 WAIT、服务顺序和 access assignment。
 
+确定性轨道和由轨道可计算的未来可见窗口，与未来业务、队列、其他决策和随机故障的 realization 不是同一种“未来信息”。每个 Q0-I/Q0-F 工件必须逐项声明这些来源，不能把可预测几何与随机未来统称为 clairvoyance。
+
 ## 6. 接口与执行证据
 
 - `snapshot_global()`：同一仿真时刻的不可变当前状态，不推进事件，不读取未授权未来。
@@ -85,7 +89,18 @@ Q0 只放松调度器的信息与可选控制能力，不取消传播时延、�
 4. 计划注入 kernel 后逐事件 replay；任何瞬移、FIFO 绕过、非原子部分执行或归因歧义 fail-loud。
 5. 对未来 arrival、随机中断和控制权限分别做负测试，证明信息边界不是口头约定。
 
-## 8. 当前状态
+## 8. 算法选择与上界可信度门
+
+候选算法不能因为“看起来适合动态路由”就升格为 Q0。正式采用前至少关闭四层证据：
+
+1. 文献层：确认动态网络 routing/scheduling 的成熟建模条件和适用边界；
+2. 数学层：写清决策变量、目标、容量/竞争/等待约束，以及相对 kernel 的抽象；
+3. 复杂度层：按卫星数、包数和 horizon 递增测量变量规模、求解时间与失败边界；
+4. 平台层：把计划回放进 SimPy，证明 planned outcome 与 executed outcome 一致。
+
+除交付率、吞吐、均值/尾部时延和队列指标外，Q0 结果必须报告 solver status、solver time，以及可用时的 upper/lower bound 或 optimality gap。拿不到严格最优或可核验界时，只能称“强参照”，不能称“性能上界”。
+
+## 9. 当前状态
 
 - FACT：snapshot 已合入 main。
 - FACT：kernel 已有计划版本校验、原子注入/执行接口；真实 receipt 的逐事件 planned-vs-executed 归因仍未闭合。
