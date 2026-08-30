@@ -59,7 +59,7 @@
 
 现有文档至少包含两条实验线：
 
-- 路由观测/AoI 线：`ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/07-experiment-plan-20260814.md`
+- 路由观测/AoI 线：`ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/07-experiment-plan-20260814.md`
   与 `08-experiment-matrix-20260814.md`，包含跳数、聚合、特征消融、年龄信息实验。
 - 平台验收/机制线：`EXPERIMENTS/`、`ACCEPTANCE-LADDER-20260816.md`，用于 direct/k-hop/BBM/MBB/GE
   等机制验收，不等同于算法效果实验。

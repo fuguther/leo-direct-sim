@@ -5,6 +5,14 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
+## 2026-08-30：本地 Git 资产与历史文档第一批收口（PR 待建立）
+
+- 根入口保持 clean `main@b3a66d2`；10 个已合入或已建立恢复点的临时 worktree 已解除，worktree 总数由 15 降至 5。R02 driver、两个含忽略结果的 evidence worktree 与 Codex 管理的 b228 均未触碰。
+- 43 个经 PR source/squash patch 或 main 祖先逐项核验的本地分支已删除，本地分支总数由 61 降至 18；11 个含独有增量或来源不明的分支继续保留。
+- 三个 dirty DSH worktree 已分别保存为 stash `b66b08e…`（posterior 分析早期稿）、`3a4d811…`（Markdown disposition 审计）、`ddc738c…`（控制面文档源稿）；原 Q0/b228 用户内容继续由 stash `6318b7a…` 保护。
+- 13 份已登记为 `HISTORICAL`/`SUPERSEDED` 的 Markdown 移入 `ANALYSIS/HISTORY/`，同步更新登记、历史索引与 `experiment-program.yaml` 证据路径；不删除历史内容，不改变现行合同或实验语义。
+- 归档暴露出治理检查器用 `fnmatch` 解释 glob、与 `Path.glob` 展开语义不一致；已用先红后绿的回归测试改为路径语义匹配。归档后审计为 0 error / 0 warning / 0 archive candidate；本地全量 `843 passed / 2 skipped / 3 subtests passed`（另有 1 个既有未知 mark warning）。
+
 ## 2026-08-30：P1 实验设计记账与科研门分层（PR #186）
 
 - matrix compiler 新增 `design_accounting`：分别记录 planned cells、唯一 resolved config、精确重执行 cell 与 run-id 分组；analysis request 和 RUNBOOK 同步绑定。完全相同配置的重执行明确只算重复性证据，不增加独立条件数；旧格式编译包继续由 exact-SHA/后验兼容链处理，不改写正在运行的 R02 授权工件。

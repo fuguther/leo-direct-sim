@@ -152,6 +152,13 @@ def _registry(*entries: dict, coverage: list[str] | None = None) -> dict:
     }
 
 
+def test_shallow_glob_does_not_match_nested_document():
+    entry = {"glob": "ANALYSIS/HISTORY/*.md"}
+
+    assert _matches(entry, "ANALYSIS/HISTORY/root.md") is True
+    assert _matches(entry, "ANALYSIS/HISTORY/topic/nested.md") is False
+
+
 def test_repository_document_governance_is_clean():
     registry = load_registry(ROOT / "ANALYSIS" / "DOCUMENT-STATUS.json")
     report = audit_repository(ROOT, registry, today=date(2026, 8, 23))
