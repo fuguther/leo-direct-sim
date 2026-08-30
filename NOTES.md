@@ -18,6 +18,7 @@
 - 用户批准剩余资产按推荐收口：Q0 长版说明书不再作为第二权威入口，原文移入 `ANALYSIS/HISTORY/`；其中仍有价值的 oracle 边界、四层算法验证门、求解状态/最优性差距要求已提炼进当前 Q0 协议。
 - 浏览器临时日志、已被 main/PR 吸收的旧草稿与测试修改不入库；相关 stash、旧分支和 b228 旧任务只在本 PR 合入后删除。
 - 归档正文与 stash 原稿逐字 diff 一致；document governance 为 0 error / 0 warning / 0 archive candidate；文档专项 `19 passed`，本地全量 `843 passed / 2 skipped / 3 subtests passed`（另有 1 个既有未知 mark warning）。
+- PR #190 CI `pytest` 通过并合入 main 后完成实体收口（结果留痕 PR #191）：旧 Codex 任务“明确并行实验规划需求 (2)”已归档，b228 worktree 已移除；15 个本地旧/任务分支与 9 个 GitHub 普通旧分支已删除，4 个 stash 已逐个核对哈希后删除。最终仅保留 main、R02/证据所需 3 个本地分支与 4 个 worktree；77 个 namespaced ProjectPilot 审阅证据分支继续保留，不作为当前工作入口。
 
 ## 2026-08-30：P1 实验设计记账与科研门分层（PR #186）
 
