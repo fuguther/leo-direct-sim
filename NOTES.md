@@ -5,7 +5,7 @@
 > 当前状态见 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`；截至 2026-08-19 的原记录见
 > `ANALYSIS/HISTORY/NOTES-THROUGH-20260819.md`。
 
-## 2026-08-30：本地 Git 资产与历史文档第一批收口（PR 待建立）
+## 2026-08-30：本地 Git 资产与历史文档第一批收口（PR #189）
 
 - 根入口保持 clean `main@b3a66d2`；10 个已合入或已建立恢复点的临时 worktree 已解除，worktree 总数由 15 降至 5。R02 driver、两个含忽略结果的 evidence worktree 与 Codex 管理的 b228 均未触碰。
 - 43 个经 PR source/squash patch 或 main 祖先逐项核验的本地分支已删除，本地分支总数由 61 降至 18；11 个含独有增量或来源不明的分支继续保留。
