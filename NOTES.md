@@ -39,6 +39,12 @@
 
 - Cell1 实跑（natural_end, conservation_ok, 170/132/38 同型 R01）证明 500 门不可满足；按 round-1 审阅者预案降级 {1,0,true,true}（#184）。round-5 三审 PASS（5e96b41）；链重建 rev4：decision/finalization ACCEPTED、authorization 24 runs 替换旧授权（#185）。
 
+## 2026-08-30：Bracket R02 运行完成与验证分析（24/24 VERIFIED）
+
+- 24 cells（新 limits config 全量重跑）全部自然结束：receipt 全绿（natural_end/conservation/research_eligible），v2_analysis VERIFIED 24/24（bound manifest 链）；确定性 a/b 对 12/12 差值恰为 0；delivery_rate 描述性：load10 ~0.76-0.78 / load20 ~0.78-0.81 / load40 ~0.72-0.76 / load80 ~0.60-0.65（load80 出现下降）。
+- scene_check 24/24（manifest 绑定路径）：全 ACCESS_LIMITED（admission_rate < 0.95 门）；ISL 压力候选 0（与预注册期望一致：ISL 门在 bracket 物理不可达）；route-stalled 截断残留伴报（预注册披露）。
+- claim-gate 状态：READY_FOR_INDEPENDENT_CLAIM_REVIEW。证据快照入库（本 PR 同批）。
+
 ## 2026-08-30：R02 执行上限修正与链 rev5（PR #187/#188）
 
 - Cell 13（load40_a-s7）实跑被 CapExceeded（entities 2001 > max_entities=2000）中断（natural_end=false, conservation_ok, 7.3M events, 零丢包）——R01 遗留容量门。limits 提升 max_entities=20000 / max_events=1e8（#187）；round-6 三审 PASS（fb75e31）；链 rev5 重建（#188）。前 12 cells（load10/20 旧 config）superseded，24 cells 全量重跑。
