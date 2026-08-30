@@ -1,6 +1,6 @@
 {
   "schema": "leo-document-governance/v1",
-  "updated_at": "2026-08-28",
+  "updated_at": "2026-08-30",
   "allowed_statuses": [
     "CURRENT-CONTRACT",
     "CURRENT-VOLATILE",
@@ -611,45 +611,6 @@
       "suggested_archive_target": null
     },
     {
-      "path": "ANALYSIS/MORNING-REPORT-20260817.md",
-      "status": "HISTORICAL",
-      "purpose": "Dated morning report",
-      "may_direct_current_work": false,
-      "owner": "project-history",
-      "last_reviewed": null,
-      "review_interval_days": null,
-      "replacement": "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
-      "require_banner": false,
-      "archive_candidate": true,
-      "suggested_archive_target": "ANALYSIS/HISTORY/MORNING-REPORT-20260817.md"
-    },
-    {
-      "path": "ANALYSIS/MORNING-REPORT-20260819.md",
-      "status": "HISTORICAL",
-      "purpose": "Dated morning report",
-      "may_direct_current_work": false,
-      "owner": "project-history",
-      "last_reviewed": null,
-      "review_interval_days": null,
-      "replacement": "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
-      "require_banner": false,
-      "archive_candidate": true,
-      "suggested_archive_target": "ANALYSIS/HISTORY/MORNING-REPORT-20260819.md"
-    },
-    {
-      "path": "ANALYSIS/OVERNIGHT-REPORT-20260816.md",
-      "status": "HISTORICAL",
-      "purpose": "Dated overnight report",
-      "may_direct_current_work": false,
-      "owner": "project-history",
-      "last_reviewed": null,
-      "review_interval_days": null,
-      "replacement": "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
-      "require_banner": false,
-      "archive_candidate": true,
-      "suggested_archive_target": "ANALYSIS/HISTORY/OVERNIGHT-REPORT-20260816.md"
-    },
-    {
       "glob": "ANALYSIS/PLATFORM-V2-CLEANUP-CANDIDATES-*.md",
       "status": "HISTORICAL",
       "purpose": "Historical cleanup candidate list",
@@ -715,45 +676,6 @@
       "suggested_archive_target": null
     },
     {
-      "path": "ANALYSIS/EXPERIMENT-READINESS-ROADMAP-20260819.md",
-      "status": "SUPERSEDED",
-      "purpose": "Old readiness route replaced by the current readiness document",
-      "may_direct_current_work": false,
-      "owner": "experiment-readiness",
-      "last_reviewed": null,
-      "review_interval_days": null,
-      "replacement": "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
-      "require_banner": true,
-      "archive_candidate": true,
-      "suggested_archive_target": "ANALYSIS/HISTORY/EXPERIMENT-READINESS-ROADMAP-20260819.md"
-    },
-    {
-      "path": "ANALYSIS/LEGACY-FEATURE-LEDGER-20260819.md",
-      "status": "SUPERSEDED",
-      "purpose": "Old capability status replaced by the current capability ledger",
-      "may_direct_current_work": false,
-      "owner": "platform-readiness",
-      "last_reviewed": null,
-      "review_interval_days": null,
-      "replacement": "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md",
-      "require_banner": true,
-      "archive_candidate": true,
-      "suggested_archive_target": "ANALYSIS/HISTORY/LEGACY-FEATURE-LEDGER-20260819.md"
-    },
-    {
-      "path": "ANALYSIS/PLATFORM-DOCUMENTATION/05-new-repo-plan.md",
-      "status": "SUPERSEDED",
-      "purpose": "Repository creation plan completed and replaced by current entry points",
-      "may_direct_current_work": false,
-      "owner": "repository-governance",
-      "last_reviewed": null,
-      "review_interval_days": null,
-      "replacement": "AGENT-START-HERE.md",
-      "require_banner": true,
-      "archive_candidate": true,
-      "suggested_archive_target": "ANALYSIS/HISTORY/PLATFORM-DOCUMENTATION-05-new-repo-plan.md"
-    },
-    {
       "path": "ANALYSIS/Q0-ALGO-RESEARCH-20260817.md",
       "status": "SUPERSEDED",
       "purpose": "Earlier Q0 algorithm draft replaced by the current protocol",
@@ -767,7 +689,7 @@
       "suggested_archive_target": null
     },
     {
-      "path": "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/07-experiment-plan-20260814.md",
+      "path": "ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/07-experiment-plan-20260814.md",
       "status": "SUPERSEDED",
       "purpose": "Old experiment plan",
       "may_direct_current_work": false,
@@ -776,11 +698,11 @@
       "review_interval_days": null,
       "replacement": "ANALYSIS/EXPERIMENT-PROGRAM.md",
       "require_banner": true,
-      "archive_candidate": true,
-      "suggested_archive_target": "ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/07-experiment-plan-20260814.md"
+      "archive_candidate": false,
+      "suggested_archive_target": null
     },
     {
-      "path": "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/08-experiment-matrix-20260814.md",
+      "path": "ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/08-experiment-matrix-20260814.md",
       "status": "SUPERSEDED",
       "purpose": "Old experiment matrix",
       "may_direct_current_work": false,
@@ -789,11 +711,11 @@
       "review_interval_days": null,
       "replacement": "ANALYSIS/EXPERIMENT-PROGRAM.md",
       "require_banner": true,
-      "archive_candidate": true,
-      "suggested_archive_target": "ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/08-experiment-matrix-20260814.md"
+      "archive_candidate": false,
+      "suggested_archive_target": null
     },
     {
-      "path": "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/09-experiment-config-20260814.md",
+      "path": "ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/09-experiment-config-20260814.md",
       "status": "SUPERSEDED",
       "purpose": "Old experiment configuration guide",
       "may_direct_current_work": false,
@@ -802,11 +724,11 @@
       "review_interval_days": null,
       "replacement": "ANALYSIS/EXPERIMENT-PROGRAM.md",
       "require_banner": true,
-      "archive_candidate": true,
-      "suggested_archive_target": "ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/09-experiment-config-20260814.md"
+      "archive_candidate": false,
+      "suggested_archive_target": null
     },
     {
-      "path": "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/10-e0-load-finalization-20260815.md",
+      "path": "ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/10-e0-load-finalization-20260815.md",
       "status": "SUPERSEDED",
       "purpose": "Old load-finalization snapshot",
       "may_direct_current_work": false,
@@ -815,11 +737,11 @@
       "review_interval_days": null,
       "replacement": "ANALYSIS/EXPERIMENT-PROGRAM.md",
       "require_banner": true,
-      "archive_candidate": true,
-      "suggested_archive_target": "ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/10-e0-load-finalization-20260815.md"
+      "archive_candidate": false,
+      "suggested_archive_target": null
     },
     {
-      "path": "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/11-formal-run-status-20260815.md",
+      "path": "ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/11-formal-run-status-20260815.md",
       "status": "SUPERSEDED",
       "purpose": "Old formal-run status snapshot",
       "may_direct_current_work": false,
@@ -828,11 +750,11 @@
       "review_interval_days": null,
       "replacement": "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
       "require_banner": true,
-      "archive_candidate": true,
-      "suggested_archive_target": "ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/11-formal-run-status-20260815.md"
+      "archive_candidate": false,
+      "suggested_archive_target": null
     },
     {
-      "path": "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/12-preliminary-observations-20260815.md",
+      "path": "ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/12-preliminary-observations-20260815.md",
       "status": "SUPERSEDED",
       "purpose": "Old preliminary observations",
       "may_direct_current_work": false,
@@ -841,11 +763,11 @@
       "review_interval_days": null,
       "replacement": "ANALYSIS/EXPERIMENT-PROGRAM.md",
       "require_banner": true,
-      "archive_candidate": true,
-      "suggested_archive_target": "ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/12-preliminary-observations-20260815.md"
+      "archive_candidate": false,
+      "suggested_archive_target": null
     },
     {
-      "path": "ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/13-e1-results-20260815.md",
+      "path": "ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/13-e1-results-20260815.md",
       "status": "SUPERSEDED",
       "purpose": "Old E1 result snapshot",
       "may_direct_current_work": false,
@@ -854,8 +776,8 @@
       "review_interval_days": null,
       "replacement": "ANALYSIS/EXPERIMENT-PROGRAM.md",
       "require_banner": true,
-      "archive_candidate": true,
-      "suggested_archive_target": "ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/13-e1-results-20260815.md"
+      "archive_candidate": false,
+      "suggested_archive_target": null
     },
     {
       "path": "EXPERIMENTS/README.md",

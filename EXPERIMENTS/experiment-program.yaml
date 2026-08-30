@@ -308,7 +308,7 @@ experiments:
     arms: [obs_hops_1, obs_hops_2, obs_hops_3]
     loads: [low, medium, high]
     purpose: Run only if the congestion diagnosis or formal result implicates observation range.
-    historical_evidence: ANALYSIS/ROUTING-OBSERVATION-AGE-20260814/13-e1-results-20260815.md
+    historical_evidence: ANALYSIS/HISTORY/ROUTING-OBSERVATION-AGE-20260814/13-e1-results-20260815.md
 
   - id: EXP2-AGG
     class: conditional_followup

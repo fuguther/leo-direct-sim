@@ -4,12 +4,11 @@
 from __future__ import annotations
 
 import argparse
-import fnmatch
 import hashlib
 import json
 import sys
 from datetime import date, datetime, timedelta
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
 
 
@@ -61,7 +60,7 @@ def _matches(entry: dict[str, Any], relative_path: str) -> bool:
     if "path" in entry:
         return entry["path"] == relative_path
     pattern = entry.get("glob")
-    return isinstance(pattern, str) and fnmatch.fnmatchcase(relative_path, pattern)
+    return isinstance(pattern, str) and PurePosixPath(relative_path).match(pattern)
 
 
 def _expand_pattern(root: Path, pattern: str) -> list[str]:
