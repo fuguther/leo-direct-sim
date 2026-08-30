@@ -1,0 +1,11 @@
+{
+  "analysis_manifest": "ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/v2-paired/analysis-manifest.json",
+  "analysis_manifest_sha256": "4ed749aeb9362aa37c80330779b92b654cad31d5a15d87a7f3317b3d60200455",
+  "cannot_claim": [
+    "a global ISL pressure threshold, a load-response CURVE, or the first pressure point",
+    "causal or inferential statistics beyond descriptive per-load values",
+    "real subscriber traffic, universal global service, algorithm superiority, information value, RL value, new-algorithm contribution"
+  ],
+  "schema": "leo-sim-v2-claim-gate/v1",
+  "status": "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
+}

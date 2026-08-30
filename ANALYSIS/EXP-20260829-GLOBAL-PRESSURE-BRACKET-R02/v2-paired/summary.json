@@ -1,0 +1,153 @@
+{
+  "claim_status": "READY_FOR_INDEPENDENT_CLAIM_REVIEW",
+  "design_accounting": {
+    "exact_reexecution_cells": 12,
+    "exact_reexecution_groups": [
+      {
+        "config_sha256": "162069cf91e214f57dd2bb18eede5456d1480016328227dcca410645d6d2b108",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s11",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s11"
+        ]
+      },
+      {
+        "config_sha256": "1d17c002260880d5af77db20de41f40e47abad88f3171e7c7ebcbb9c7e504f20",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s7",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s7"
+        ]
+      },
+      {
+        "config_sha256": "29733b58225f304d196b48014139cc2701cf77cad61c315eecc885db8458cbf3",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s11",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s11"
+        ]
+      },
+      {
+        "config_sha256": "2e051c274d762bec3b3c307ded4b766598deab576a50fa76839aa0fa58a2170b",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s19",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s19"
+        ]
+      },
+      {
+        "config_sha256": "49bab54c88f2bc0a1efa3e87c9a9231829cc81cf8508bf4a6d09c7f6c2f0c9f7",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s7",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s7"
+        ]
+      },
+      {
+        "config_sha256": "4d3b30910f0920b9b413e35e699bb530fe0437c26e533c4e4da5f77b08ac1e03",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s7",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s7"
+        ]
+      },
+      {
+        "config_sha256": "4df9197bc27351aa47eb289ccefbe0c2ee810d16f2907b3fcd2eee707f139b21",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s19",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s19"
+        ]
+      },
+      {
+        "config_sha256": "6f5d474584735b0040293c489a572bbb69bcebc28eabb5cf03d52612bd598d84",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s19",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s19"
+        ]
+      },
+      {
+        "config_sha256": "886d191f452b4e61df1c8240bc16712beb94e678b8d7904f619be1849796267b",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_a-s7",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load40_b-s7"
+        ]
+      },
+      {
+        "config_sha256": "919cfe42c4a8fd70900c36c1acf9cd262eb27cb1fb85a993666ae8b9217e4e86",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_a-s19",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load80_b-s19"
+        ]
+      },
+      {
+        "config_sha256": "a91c08041f3cffce9395fbf42cb5ceaf7554079a7aee87ea8742cea8aca1a515",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_a-s11",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load10_b-s11"
+        ]
+      },
+      {
+        "config_sha256": "e1f20bea6b4019258c61ead0f46901d03a6541b1dcd2437f9468d8f02c835d40",
+        "run_ids": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_a-s11",
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load20_b-s11"
+        ]
+      }
+    ],
+    "independent_condition_rule": "one independent condition per unique resolved config SHA256",
+    "planned_cells": 24,
+    "schema": "leo-sim-matrix-design-accounting/v1",
+    "unique_resolved_configurations": 12
+  },
+  "experiment_id": "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+  "planned_contrasts": [
+    {
+      "differences": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "left_arm": "load10_a",
+      "mean_difference": 0.0,
+      "metric": "delivery_rate",
+      "n_pairs": 3,
+      "name": "load10_a_minus_load10_b",
+      "right_arm": "load10_b"
+    },
+    {
+      "differences": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "left_arm": "load20_a",
+      "mean_difference": 0.0,
+      "metric": "delivery_rate",
+      "n_pairs": 3,
+      "name": "load20_a_minus_load20_b",
+      "right_arm": "load20_b"
+    },
+    {
+      "differences": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "left_arm": "load40_a",
+      "mean_difference": 0.0,
+      "metric": "delivery_rate",
+      "n_pairs": 3,
+      "name": "load40_a_minus_load40_b",
+      "right_arm": "load40_b"
+    },
+    {
+      "differences": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "left_arm": "load80_a",
+      "mean_difference": 0.0,
+      "metric": "delivery_rate",
+      "n_pairs": 3,
+      "name": "load80_a_minus_load80_b",
+      "right_arm": "load80_b"
+    }
+  ],
+  "primary_metric": "delivery_rate",
+  "schema": "leo-sim-v2-analysis-summary/v1"
+}
