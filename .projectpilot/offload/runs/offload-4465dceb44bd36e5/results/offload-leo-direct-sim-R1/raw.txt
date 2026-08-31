@@ -1,0 +1,139 @@
+我先确认本地 checkout 是否处于绑定 commit，然后读取规格文件与相关治理文件。规格已读。现在并行读取全部交叉引用文件。交叉证据基本齐了。补取 AGENTS.md 与 DOCUMENT-STATUS.json 的精确行号用于引用。```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:R1",
+  "status": "EVIDENCE_READY",
+  "summary": "Verdict: REQUEST_CHANGES。规格总体不构成第二套治理系统（单脚本约200行、无daemon/db/hook、复用现有 entry_point_invariants 做 CI 强制、含 stop-and-redesign 护栏），只读/禁删边界可被代码审查+测试验证，与 AGENT-START-HERE/AGENTS/PR 模板/gitignore 及文档治理检查器机制兼容；remote.env.template 漂移与空 claim registry 两处 Phase-1 修复均经本 commit 实证属实；约200行/无依赖/约1秒预算现实。但有 3 个 major 规格缺口会导致验收标准明确点名的误报：①DIRTY 的'声明 owner 续作'例外无任何机制（接口无 flag，只读 Git 元数据无法判定所有权），正常开发中的新 untracked 文件会阻塞同任务续作；②分类优先级未定义——GROUP-MEETINGS-LOCAL/ 在 .gitignore 条目落地前（本 commit 确认尚无该条目）是普通 untracked，会先命中 DIRTY 而非规格承诺非致命的 PROTECTED_LOCAL；③--report PATH 位置未约束，写入 worktree 内会在下次 start 自报 DIRTY。另有 3 个 minor（家族清单未覆盖 .env/*.pem/*.pyc、分类→退出码合同缺失、delivery order 未含 DOCUMENT-STATUS.json 同步）。均为小规格修正，不涉及重构。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "DIRTY 的豁免'declared owner continuing the same task'没有可验证机制：接口只有 --phase/--all-worktrees/--report 三个参数（无 owner/continuation 标志），而脚本'只读 Git 元数据与路径名'无法判定当前操作者是否为声明 owner。后果：同一任务进行中产生的普通新文件（尚未 git add）在续作 start 时被当作'新写入者'阻塞——正是验收标准点名的正常开发误报；或者实现者被迫发明不可验证的旁路。最小修正：明确规定 start 相位对 DIRTY 只报告不阻塞（阻塞专属 handoff），或增加显式 --continue-task <id> 标志并把该声明记入 JSON 报告供审计。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L57-L67",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L84-L84",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/AGENTS.md#L30-L30"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "分类优先级未定义：家族识别与 tracked/untracked/ignored 判定的先后未规定。本 commit 的 .gitignore 尚无 GROUP-MEETINGS-LOCAL/ 条目（Phase 1 第2步才添加），此前该目录是普通 untracked；若实现按 Git 状态先行分类，它会命中 DIRTY（block new writer）而非规格承诺在主锚点非致命的 PROTECTED_LOCAL，旧 commit 的 worktree 同理。后果：默认启动检查对主锚点产生规格自身声明不可接受的误报。最小修正：在 Classifications 节前明确'路径家族匹配先于 Git 状态判定'，并给出固定优先级（如 EVIDENCE_PRESENT > PROTECTED_LOCAL > EPHEMERAL > DIRTY > UNEXPECTED_IGNORED）。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L37-L38",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L78-L90",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/.gitignore#L1-L18"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "--report PATH 的落点未约束：报告若写入 worktree 内，其本身就是普通 untracked 文件，下一次 start 会把自己报成 DIRTY（自致误报）。对照现有文档治理入口把报告固定写到 /tmp。最小修正：默认不产生报告；规定 PATH 必须位于被检 worktree 之外，或工具将自身报告路径从分类中显式排除。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L63-L74",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/AGENT-START-HERE.md#L9-L11"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "minor",
+      "summary": "'declared private/cache/evidence families' 的声明位置未指定，且示例只点名 GROUP-MEETINGS-LOCAL/ 与 remote.env：现有 .gitignore 中的 .env、*.pem（私密）和散落的 *.pyc（缓存）若未被家族清单覆盖，会落入 UNEXPECTED_IGNORED 并 block。最小修正：在规格中枚举家族清单并覆盖 .gitignore 全部现有私密/缓存条目，声明其为脚本内常量而非新配置文件（避免变相引入第二注册表）。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L81-L85",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/.gitignore#L7-L18"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "分类到退出码的合同缺失：Error and safety behavior 只定义了故障（Git 失败、输出畸形等）非零退出，未定义各分类在 start/handoff 相位的退出码（PROTECTED_LOCAL/EPHEMERAL 是否 0，EVIDENCE_PRESENT 在 start 是否非零）。Agent 与 CI 无法可靠消费'block'语义。最小修正：加一张 phase × class → exit code 表。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L92-L115"
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "minor",
+      "summary": "Delivery order 遗漏文档治理同步义务：修改 AGENT-START-HERE.md 与 PR 模板（均为 registry 中 CURRENT-CONTRACT 条目）后须按文档生命周期更新 DOCUMENT-STATUS.json（last_reviewed 等），规格五个交付步骤未提及。机制本身兼容——entry_point_invariants 的 contains/excludes 检查已存在且规格第3执法点正是复用它，扩展不变量即可让删除启动命令 fail CI。最小修正：在交付顺序第2或第4步加入 registry 同步。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L92-L100",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L148-L157",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/AGENT-START-HERE.md#L44-L50",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/scripts/check_document_governance.py#L250-L269",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/ANALYSIS/DOCUMENT-STATUS.json#L55-L63"
+      ]
+    },
+    {
+      "id": "F7",
+      "severity": "info",
+      "summary": "臃肿评估（通过）：单个约200行只读脚本+一个测试模块，无第三方依赖、无 daemon/db/hook/第二注册表，并含'若需要持久状态或第二状态注册表则停下重设计'的硬护栏；CI 强制复用现有文档治理不变量而非新建框架。规格文件本身落在 docs/superpowers/**/*.md 的 EVIDENCE-SNAPSHOT glob 内，不违反'不再建 CURRENT 状态文档'的约束。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L20-L28",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L117-L126",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/ANALYSIS/DOCUMENT-STATUS.json#L874-L874"
+      ]
+    },
+    {
+      "id": "F8",
+      "severity": "info",
+      "summary": "只读与禁删边界可验证（通过）：脚本承诺不读文件内容、不算哈希、不调 rm/git clean/stash/reset/worktree remove/分支删除，清理候选仅作清单项且沿用'逐条列出+用户批准'规则；与 AGENTS.md 第5、12条（DIRTY-PROTECT/ORPHAN-UNVERIFIED）一致，约200行规模使该边界可被逐行审查与测试锁定。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L106-L115",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/AGENTS.md#L14-L14",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/AGENTS.md#L43-L43"
+      ]
+    },
+    {
+      "id": "F9",
+      "severity": "info",
+      "summary": "Phase 1 两处修复经实证属实：①remote.env.template 仍指向旧工作区 /data/论文/LEO-Research-Workspace（第3-4行），而 common.sh 第13、35-36行强制 canonical /data/论文/leo-direct-sim，template 与 guard 漂移属实；②ANALYSIS/claims/RESEARCH_CLAIMS.yaml 在本 commit 不存在，eligible_claims.py 缺文件即报错退出2，与 PAPER/README 承诺的空登记输出 [] 矛盾，'物化空 YAML 登记表'修复属实。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/CODE/scripts/remote/remote.env.template#L3-L4",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/CODE/scripts/remote/common.sh#L13-L13",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/CODE/scripts/remote/common.sh#L35-L36",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/PAPER/eligible_claims.py#L21-L21",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/PAPER/eligible_claims.py#L331-L335",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/PAPER/README.md#L19-L19",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L47-L53"
+      ]
+    },
+    {
+      "id": "F10",
+      "severity": "info",
+      "summary": "预算现实性（通过）：start 只需 git status（含 --ignored）与路径前缀分类，无依赖、约200行实现（不含测试）和约1秒耗时对本仓库规模现实；全 worktree 审计被明确排除在热路径之外。分类体系对 ignored 证据/普通 untracked/未知 ignored/全 worktree 审计的区分充分且互斥（EVIDENCE_PRESENT/DIRTY/UNEXPECTED_IGNORED/--all-worktrees 仅审计不授权清理）。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L69-L74",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L78-L85",
+        "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L117-L126"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "修正 F1：在规格中定义 owner 续作的显式机制（start 只报告不阻塞，或 --continue-task 标志并记入 JSON 报告）",
+    "修正 F2：在 Classifications 节前增加固定优先级规则，路径家族匹配先于 Git tracked/untracked/ignored 状态判定",
+    "修正 F3：约束 --report PATH 必须位于被检 worktree 之外（或工具自排除），默认不写报告",
+    "修正 F4：枚举私密/缓存/证据家族清单，覆盖 .gitignore 现有 .env、*.pem、*.pyc 等条目，声明为脚本内常量",
+    "修正 F5/F6：补 phase × class 退出码表；delivery order 增加 DOCUMENT-STATUS.json 同步步骤",
+    "修正后按规格第5步走独立候选复核与 Codex 裁决，再进入正常合并门"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L1-L159",
+    "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/.gitignore#L1-L18",
+    "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/AGENT-START-HERE.md#L5-L18",
+    "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/AGENTS.md#L30-L30",
+    "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/AGENTS.md#L43-L43",
+    "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/scripts/check_document_governance.py#L250-L269",
+    "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/CODE/scripts/remote/common.sh#L35-L36",
+    "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/CODE/scripts/remote/remote.env.template#L3-L4",
+    "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/PAPER/eligible_claims.py#L21-L21",
+    "github://fuguther/leo-direct-sim/blob/7ceeb62420caee6b2a82022af60105624f6f121b/.github/pull_request_template.md#L34-L43"
+  ],
+  "open_items": [
+    "规格 L42-46 断言的 EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02 证据事实（24 verified runs=12 配置+12 重执行、全部 ACCESS_LIMITED、claim gate READY_FOR_INDEPENDENT_CLAIM_REVIEW）不在允许读取路径内，须由本地 Agent 从 origin/main 回执重算核实后才可写入状态文档",
+    "GROUP-MEETINGS-LOCAL/03-CURRENT-PREP/2026-08-31 方向文件为本地未跟踪内容，其存在性与'唯一可指导'地位无法从本 commit 核验",
+    "扩展后的 entry_point_invariant 是否真在 CI 运行（workflow 文件不在允许路径内）须本地确认",
+    "'三个现有证据 worktree'（规格 Verification 第4条）的实际存在与分类结果只能在本地环境验收"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
