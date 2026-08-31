@@ -131,14 +131,14 @@ git commit -m "docs: 收口当前实验事实与执行入口"
 
 - [ ] **Step 1: Add a failing CLI test**
 
-Add a subprocess test that creates an empty registry containing:
+Add a subprocess test that exercises the documented default registry containing:
 
 ```yaml
 schema: leo-research-claims/v1
 claims: []
 ```
 
-Run `PAPER/eligible_claims.py --registry <path>` and assert exit code 0 and parsed stdout `[]`.
+Run `PAPER/eligible_claims.py` and assert exit code 0 and parsed stdout `[]`.
 
 - [ ] **Step 2: Run the targeted test**
 

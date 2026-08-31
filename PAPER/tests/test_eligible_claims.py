@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -14,6 +15,18 @@ sys.path.insert(0, str(ROOT))
 import eligible_claims as ec
 from ANALYSIS.tests.test_paired_analysis import PairedAnalysisTests
 from ANALYSIS import paired_analysis as pa
+
+
+def test_default_empty_registry_cli_outputs_empty_list() -> None:
+    completed = subprocess.run(
+        [sys.executable, str(ROOT / "PAPER" / "eligible_claims.py")],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout) == []
 
 
 def sha(path: Path) -> str:
