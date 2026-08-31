@@ -170,7 +170,9 @@ def test_report_inside_worktree_is_rejected_without_writing(tmp_path: Path) -> N
 
 def test_outside_report_matches_human_inventory(tmp_path: Path) -> None:
     repo = make_repo(tmp_path / "repo")
-    (repo / "out" / "run").mkdir(parents=True)
+    receipt = repo / "out" / "run" / "receipt.json"
+    receipt.parent.mkdir(parents=True)
+    receipt.write_text("{}\n", encoding="utf-8")
     completed, payload = report_for(tmp_path, repo, "--phase", "start")
 
     assert completed.returncode == 1
