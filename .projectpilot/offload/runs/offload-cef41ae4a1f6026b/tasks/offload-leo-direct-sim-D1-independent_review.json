@@ -1,0 +1,72 @@
+{
+  "contract": {
+    "allowedPaths": [
+      "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+      "ANALYSIS/EXPERIMENT-PROGRAM.md",
+      "ANALYSIS/Q0-INFORMATION-ABLATION-PROTOCOL.md",
+      "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md",
+      "NOTES.md"
+    ],
+    "metadata": {
+      "frozenPlanDigest": "sha256:5b5384fe0887c44fcf6889298fce6d166dbdc0b37cee13ac0eb079ac7bbdc680",
+      "digestVersion": "canonical-json-sha256-v1"
+    },
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:D1:independent_review",
+    "title": "导师视角的缺口诊断与任务收敛",
+    "goal": "你是独立、严格但不吹毛求疵的科研导师审阅者。请根据下面的会议材料和当前汇报结构，判断导师真正要检查什么、李广下一步必须拿出什么。只读分析，不改文件、不运行实验、不提交代码。\n\n证据边界：会议材料来自自动会议助手，不是人工逐字稿；诸如‘一针见血’‘最优解’等评价属于自动模型修辞，不能算导师原话。你必须把明确要求、上下文推断、无法确认三类分开，并给出最强的替代解释。\n\n与李广有关的会议事实：\n[01:17:40] 李广汇报拥塞和链路利用率研究，真实流量接入被作为开展研究的基础。\n[01:19:26] 李广说明直连接入点增加后，旧设计出现大量时段无法连星；回顾跳数、神经网络、信息年龄等旧实验，同时指出旧实验归因不充分。\n[01:21:12] 李广提出从理想信息条件逐步削减观测范围、加入延迟，观察性能在哪里下降，并比较不同算法与理想参照的差距；同时说明旧平台耦合使直连接入难以改造。\n[01:22:57] 李广称最终重写并拆分内核，目前在查新平台问题和规划实验；老师追问是重写还是修改，李广回答重写。\n[01:24:46] 老师明确要求两份材料：一份按‘背景—挑战—思路—进展’组织的研究工作报告；一份聚焦强化学习在路由/调度中应用的调研报告，并选取对比工作。李广补充理想上界因瞬时全局信息而不应由强化学习承担；老师第一次没听清，要求重述。纪要随后结束，无法确认老师对该补充的最终表态。\n\n自动小结提到：新平台内核重构；从理想参照逐步削减信息；两份报告。\n\n本次共享文件包含：拥塞位置、信息价值、算法是否用好信息、是否联合调度；信用回传/GNN/GAT/信息陈旧历史；Q0-F/Q0-I/Q0-L；新平台压力校准；传统路由、Q-routing、DDQN/PPO、GNN/MAPPO 等候选算法。用户使用后仍被大量追问。\n\n请输出：\n1. 逐条列出明确要求并引用时间戳；\n2. 给出‘为何被追问’的根因树：研究问题、工程事实、实验闭环、文献调研、表达/答辩能力分别判断；没有证据的问题不要硬找；\n3. 说明老师可能期待的两份报告分别是什么，不是什么；给出目录骨架和每节最低证据；\n4. 下次组会前 3—5 个最小可验收产物，以及未来两周按依赖排序的行动矩阵；\n5. 哪些内容应立即停止继续扩写或暂缓；\n6. 最可能追问的 10 个问题、合格回答所需的证据；\n7. strongest alternative interpretations：对导师意图至少给出两种其他合理解释，并说明如何低成本验证；\n8. open_items：纪要无法支持的判断。\n\n约束：每个结论标 FACT / INFERENCE / UNVERIFIED；引用会议时间戳或仓库路径；不得把重写平台当论文贡献；不得虚构进展、期限或导师态度；不得把理想上界和普通 RL 混为一谈；建议必须能验收，不要泛泛说‘继续完善’。",
+    "mode": "REMOTE",
+    "policyMode": "balanced",
+    "lane": "independent_review",
+    "taskType": "exploratory",
+    "depthTier": "deep",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "deepseek_harness",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "d8879b1f9454bd96ca7156ce34c2698fae6ff91d",
+      "paths": [
+        "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+        "ANALYSIS/EXPERIMENT-PROGRAM.md",
+        "ANALYSIS/Q0-INFORMATION-ABLATION-PROTOCOL.md",
+        "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md",
+        "NOTES.md"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "明确区分 FACT、INFERENCE、UNVERIFIED",
+      "给出根因树但不为找问题而找问题",
+      "两份报告骨架与每节证据可直接验收",
+      "包含替代解释、验证方法和 open_items"
+    ],
+    "requiredEvidence": [
+      "会议时间戳",
+      "仓库路径与行号",
+      "每项交付物的验收条件",
+      "替代解释与低成本验证方式"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "d5f6453028501f60196814f6aacd2a6be480077b358be720d8daca129b93f49d"
+}
