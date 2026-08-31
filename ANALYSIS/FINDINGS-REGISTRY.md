@@ -50,7 +50,7 @@
 | R5-G1 | trace | minor | FACT | fixed | csv 模式 deadline_at_s="0" 被 `or ""` 当空处理，静默丢失 deadline | trace.py csv 分支 | #44（已合并）：strip 后判空串 |
 | R5-G2 | governance | major | INFERENCE | fixed | 正式实验身份不绑定 learning.checkpoint 文件本体（仅绑定声明哈希），授权可先绿、加载时才失败 | governance.build_run_intent | #47（已合并）：seal 时校验文件存在+哈希+symlink（resolve 前逐级扫描）+metadata 未解析父目录语义 |
 | R5-G3 | comparison | minor | INFERENCE | dismissed | legacy/direct 资源参数不等价（H2-13） | comparison.py 声明 | 工程对比范围明确声明 scientific_effect_claim=False，非隐藏缺陷 |
-| R6-F1 | Q0 设计 | blocking | INFERENCE | open | 必须区分 Q0-I（在线最优）/Q0-J（联合调度）/Q0-F（clairvoyant 离线最优），否则未来信息优势被错误归因为当前信息优势 | Q0 研究 op 13934832 | 设计合同，§5 冻结后实现 |
+| R6-F1 | Q0 设计 | blocking | INFERENCE | open | Q0-I（在线最优）/Q0-J（联合调度）/Q0-F（clairvoyant 离线最优）的定义已冻结；真实窗口、planned-vs-executed 归因和独立求解验证仍未闭合，不能据此声称信息价值 | Q0 研究 op 13934832；`Q0-INFORMATION-ABLATION-PROTOCOL.md` | 定义不再重复设计；按协议关闭真实执行与求解证据门 |
 | R6-F3 | Q0 设计 | blocking | INFERENCE | open | M1 逐跳 queue reward 与物理按时交付/时延目标不序等价，不能作 Q0 最优性判据 | 同上 | 冻结 lexicographic 物理目标 |
 | R6-M1 | Q0 设计 | major | INFERENCE | open | 普通时间扩展网络流/min-cost flow 仅松弛/候选路径，不精确表达不可分/非抢占/deadline/中断 | 同上 | tiny 用 CP-SAT/event DP 交叉验证 |
 | R4A4-F1RESIDUAL | learning | major | FACT/INFERENCE | fixed | save 侧仍 hash-parse 分离；DDQN save/reload 重开 pathname（威胁模型外） | R4A4 终审 | #42 2eabd72：save 单次读取；DDQN 重开按威胁模型声明 |

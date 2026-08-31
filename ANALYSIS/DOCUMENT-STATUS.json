@@ -63,6 +63,41 @@
       "excludes": []
     }
   ],
+  "current_fact_sync": {
+    "source_glob": "ANALYSIS/EXP-*/**/claim-gate.json",
+    "current_source": "ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/v2-paired/claim-gate.json",
+    "current_source_sha256": "601d6a6c815706f3ecf464e48188d09aacd20934d92e090f5d340ccfdf54653a",
+    "targets": [
+      {
+        "path": "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+        "contains": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+          "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
+        ]
+      },
+      {
+        "path": "ANALYSIS/EXPERIMENT-PROGRAM.md",
+        "contains": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+          "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
+        ]
+      },
+      {
+        "path": "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md",
+        "contains": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+          "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
+        ]
+      },
+      {
+        "path": "EXPERIMENTS/experiment-program.yaml",
+        "contains": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+          "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
+        ]
+      }
+    ]
+  },
   "entries": [
     {
       "path": "AGENTS.md",

@@ -1,5 +1,7 @@
 # 热点流量模式专项审计（2026-08-03）
 
+> **EVIDENCE-SNAPSHOT / HISTORICAL**：本文记录 2026-08-03 旧平台代码树与旧 VM 路径下的机制证据，不是 leo-direct-sim 当前运行入口、当前代码行为或当前实验方案。现行任务从 `AGENT-START-HERE.md` 进入；引用下列结论前必须在当前平台重新核验。
+
 审计范围：uniform / h2 / gravity / gravity_corridors / mlab 五种 OD 模式在当前代码树（VM `/data/论文/LEO-Research-Workspace/CODE/`，新旧两树 `traffic_od.py` 逐字相同，diff exit 0）下的真实行为。
 动机：用户要求保留四模式，但需确认"保留的东西能否适配新流量框架"。结论：**四模式机制可保留，但 h2 与 gravity_corridors 的所有现存触发路径都静默退化，必须修复后才可用。**
 

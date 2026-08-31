@@ -48,7 +48,7 @@ python3 CODE/experiment_platform/compile_experiment.py \
 配合 `--runtime-kind leo_sim_v2` 运行）：
 
 ```bash
-python -m CODE.leo_sim experiment compile \
+python3 -m CODE.leo_sim experiment compile \
   --request <compact-v2-request.json> \
   --out EXPERIMENTS/EXP-...
 ```
@@ -107,13 +107,13 @@ CODE/scripts/remote/run-remote.sh \
 外部旧平台，不能从本仓库独立完成；这里不提供可复制执行的 legacy 启动示例。
 
 V2 正式运行由远端 `CODE/scripts/remote/remote_job.py` 以
-`python -m CODE.leo_sim run`（绑定 authorization、launch nonce、expect run id）
+`python3 -m CODE.leo_sim run`（绑定 authorization、launch nonce、expect run id）
 执行。`formal_run.json` 只由 leo_sim 自身在自然结束（`natural_end=true`）时写入；
 `governance_receipt.json` 由 remote_job 在结果目录可用后生成，即使存在
 verification errors、子进程失败或非自然结束也可能存在，此时其 `research_eligible`
 必须为 `false`——文件存在不等于正式准入。正式准入另要求 `natural_end=true`、
 conservation、无 verification errors、外部启动证人与全部身份绑定，并经
-`v2_analysis` 后验确认。本地 CLI/冒烟命令（如 `python -m CODE.leo_sim run`
+`v2_analysis` 后验确认。本地 CLI/冒烟命令（如 `python3 -m CODE.leo_sim run`
 不带正式参数）只用于编译、预览与本地检查，不属于正式执行，其输出不能作为
 实验证据。
 

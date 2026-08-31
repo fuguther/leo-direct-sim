@@ -28,7 +28,7 @@ requirements:
   multi_od_and_burst_verified: {status: completed_verified, evidence: main_0f7249f_pr93_vm_56cell_mlab_t0_receipt_and_metrics_recompute}
   mlab_multi_od_t0_verified: {status: completed_verified, evidence: main_0f7249f_trace_f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4_vm_receipt}
   topology_cadence_calibration_verified: {status: completed_verified, evidence: main_0f7249f_vm_cadence_0p5_1_2_5_receipts_raw_metrics_recompute}
-  global_scene_repeat_analysis_verified: {status: completed_verified, evidence: "origin_main_79796b6_R02_manifest_4ed749aeb9362aa37c80330779b92b654cad31d5a15d87a7f3317b3d60200455_VERIFIED_24_runs_12_unique_configs_plus_12_exact_reexecutions_scene_ACCESS_LIMITED_x24_claim_READY_FOR_INDEPENDENT_CLAIM_REVIEW"}
+  global_scene_repeat_analysis_verified: {status: completed_verified, evidence: "origin_main_79796b6_EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02_manifest_4ed749aeb9362aa37c80330779b92b654cad31d5a15d87a7f3317b3d60200455_VERIFIED_24_runs_12_unique_configs_plus_12_exact_reexecutions_scene_ACCESS_LIMITED_x24_claim_READY_FOR_INDEPENDENT_CLAIM_REVIEW"}
   e0_load_calibration_verified: {status: rerun_required, reason: access_boundary_queue_semantics_require_new_coverage_horizon_vm_smoke_and_e0_training, historical_evidence: main_0f7249f_vm_mlab_multiod_burst_50_100_200_receipts_metrics_recompute}
   link_utilization_recomputation_verified: {status: blocked}
   packet_delay_decomposition_verified: {status: blocked}
@@ -63,7 +63,7 @@ gates:
       - exact_main_deployed_to_vm
   formal_analysis_available:
     status: completed_verified
-    evidence: origin_main_79796b6_R02_v2_paired_manifest_VERIFIED_and_claim_gate_bound
+    evidence: origin_main_79796b6_EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02_v2_paired_manifest_VERIFIED_and_claim_gate_READY_FOR_INDEPENDENT_CLAIM_REVIEW
   real_diagnostic_ready:
     status: blocked
     requires:

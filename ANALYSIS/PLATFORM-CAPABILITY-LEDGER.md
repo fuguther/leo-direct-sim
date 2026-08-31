@@ -4,7 +4,7 @@
 
 ## 2026-09-01 快照要点（CURRENT）
 
-- `origin/main=79796b6d2bf9e471f951b6e4a6a80f11701eda81` 已保存全球 R02 的 24/24 `VERIFIED` 分析：12 个唯一 resolved config + 12 个精确重执行；24/24 scene check 都是 `ACCESS_LIMITED`，claim gate 为 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`。
+- `origin/main=79796b6d2bf9e471f951b6e4a6a80f11701eda81` 已保存 `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24/24 `VERIFIED` 分析：12 个唯一 resolved config + 12 个精确重执行；24/24 scene check 都是 `ACCESS_LIMITED`，claim gate 为 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`。
 - 这关闭的是正式工件、重复执行和描述性场景分类的工程证据缺口，不关闭场景适用性、真实 ISL 压力、Q0、信息价值、公平算法矩阵、RL 效果或论文 claim。测试与回执能力也不是平台研究贡献已经成立的证明。
 - 当前不因平台“能跑”而扩矩阵。先按 2026-08-31 组会方向用文献调研冻结一个可证伪的论文问题；随后只为该问题设计最小场景/参照/信息/算法合同。下面 2026-08-29 及更早表项保留为当时能力证据，冲突时以本节和实际代码/回执为准。
 
