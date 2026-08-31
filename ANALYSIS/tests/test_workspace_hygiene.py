@@ -202,6 +202,26 @@ def test_all_worktrees_inventory_protects_evidence_without_failing(tmp_path: Pat
     assert evidence["protection"] == "DIRTY-PROTECT"
 
 
+def test_all_worktrees_skips_bare_repository_record(tmp_path: Path) -> None:
+    bare = tmp_path / "repo.git"
+    worktree = tmp_path / "worktree"
+    run("git", "init", "--bare", "-q", str(bare), cwd=tmp_path)
+    run("git", "--git-dir", str(bare), "worktree", "add", "-q", "-b", "main", str(worktree), cwd=tmp_path)
+    run("git", "config", "user.name", "Workspace Hygiene Test", cwd=worktree)
+    run("git", "config", "user.email", "workspace-hygiene@example.invalid", cwd=worktree)
+    (worktree / "tracked.txt").write_text("base\n", encoding="utf-8")
+    run("git", "add", "tracked.txt", cwd=worktree)
+    run("git", "commit", "-q", "-m", "base", cwd=worktree)
+    report = tmp_path / "bare-layout-report.json"
+
+    completed = check_repo(worktree, "--all-worktrees", "--report", str(report))
+
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert [item["path"] for item in payload["worktrees"]] == [str(worktree.resolve())]
+    assert payload["worktrees"][0]["classes"] == ["CLEAN"]
+
+
 def test_non_git_directory_fails_loud(tmp_path: Path) -> None:
     completed = check_repo(tmp_path, "--phase", "start")
 

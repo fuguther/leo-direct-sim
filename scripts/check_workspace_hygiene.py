@@ -131,11 +131,14 @@ def inspect_worktree(path: Path, phase: str) -> dict[str, Any]:
 
 def worktree_paths(cwd: Path) -> list[Path]:
     output = git(cwd, "worktree", "list", "--porcelain")
-    paths = [
-        Path(line.removeprefix("worktree ")).resolve()
-        for line in output.splitlines()
-        if line.startswith("worktree ")
-    ]
+    paths: list[Path] = []
+    for block in output.strip().split("\n\n"):
+        lines = block.splitlines()
+        if not lines or not lines[0].startswith("worktree "):
+            raise CheckerError(f"malformed git worktree record: {block!r}")
+        if "bare" in lines[1:]:
+            continue
+        paths.append(Path(lines[0].removeprefix("worktree ")).resolve())
     if not paths:
         raise CheckerError("git worktree list returned no worktrees")
     return paths
