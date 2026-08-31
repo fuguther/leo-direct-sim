@@ -1,0 +1,89 @@
+检查 .gitignore 全文与 hygiene 脚本的真实行为（临时 worktree 实测）。`--all-worktrees` 在真实 worktree 集群上报 exit 2，需定位是哪个条目触发。定位完毕：bare 主 worktree 条目导致 `--all-worktrees` 必败。抓取精确行号作为证据锚点。核查完成，临时 worktree 已无需保留，清理后输出结论。```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:R2",
+  "status": "EVIDENCE_READY",
+  "summary": "verdict=REQUEST_CHANGES。核心实现质量高：checker 只读（仅 git rev-parse/status/worktree list + 写 report）、不扫内容、无任何删除/变异命令；porcelain 用 -z+--no-renames+ malformed 记录 fail-loud；git_state 与 family 双轴独立，tracked dirt 不被 family 隐藏（有专项测试）；退出码/report 出树校验/防自污染/DIRTY-PROTECT 均符合设计规格；入口不变量三角（AGENT-START-HERE+PR 模板+DOCUMENT-STATUS contains）一致；README 命令、remote.env.template 与 common.sh 规范根、空 claim registry 均实测修复真实；CURRENT 文档 24=12 unique+12 repeats、ACCESS_LIMITED、READY_FOR_INDEPENDENT_CLAIM_REVIEW 与 summary.json/claim-gate.json 交叉一致，未把回执升级为科研结论；无第二状态系统。但发现 1 个 major：worktree_paths 不跳过 git worktree list --porcelain 的 bare 条目，在 bare 主仓+linked worktree 布局（常见 worktree 集群组织方式，本环境实测复现）下 --all-worktrees 必 exit 2、不出报告，而测试只用 git init 非 bare 仓所以从未覆盖。另有 1 minor（单个不可读/prunable worktree 会中断整个审计）与 1 info（PR 模板 handoff 行无 contains 不变量保护）。20/20 新测试与文档治理实测通过。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "--all-worktrees 在 bare 主仓布局下必败：worktree_paths() 把 git worktree list --porcelain 的每个 'worktree ' 行当路径收集，不识别紧随其后的 'bare' 属性行；bare 主仓（如 repo.git）被当作 worktree 后，inspect_worktree 在其中跑 git rev-parse --show-toplevel 失败，整个命令 CheckerError→exit 2、无报告。实测：在含 bare 主条目（repo.git + 'bare' 行）的真实 worktree 集群上运行，stderr='fatal: this operation must be run in a work tree'、exit=2；其余 28 个真实 worktree 全部 OK。影响：AGENT-START-HERE.md:54 文档化的项目负责人审计命令在这类布局下完全不可用（fail-loud 而非静默，但功能缺失）。测试只覆盖 git init 非 bare 仓（test_workspace_hygiene.py:185-202 经 make_repo），属盲点。最小修正：worktree_paths 按记录块解析 porcelain，跳过含 'bare' 行的条目（可顺带把 'prunable' 条目标记为清单项而非中断），并加一个 git init --bare + git worktree add 的回归测试。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/scripts/check_workspace_hygiene.py#L132-L140",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/scripts/check_workspace_hygiene.py#L106-L107",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/ANALYSIS/tests/test_workspace_hygiene.py#L185-L202",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/AGENT-START-HERE.md#L54-L54",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md#L121-L131"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "minor",
+      "summary": "审计鲁棒性：任一 worktree 不可读/已删除（prunable）时，inspect_worktree 抛错会使整个 --all-worktrees 审计 exit 2 中断，拿不到其余 worktree 的清单。影响：审计覆盖度对单个坏条目过于脆弱（与 F1 同源区域）。最小修正：--all-worktrees 模式按 worktree 捕获 CheckerError，在报告中以错误条目记录后继续，聚合退出码仍按规格为 0。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/scripts/check_workspace_hygiene.py#L172-L196",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/scripts/check_workspace_hygiene.py#L30-L42"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "info",
+      "summary": "入口不变量不对称：AGENT-START-HERE 的 start 命令已进入 DOCUMENT-STATUS.json 的 contains 不变量（删除会 fail CI，实测治理检查通过），但 PR 模板新增的 handoff 行没有对应 contains 保护，静默删除不会被治理检查发现。影响低（PR 模板改动人工可见，设计也只强制 start 命令的不变量）。最小修正：可选地在 DOCUMENT-STATUS.json 的 pull_request_template 条目 contains 中加入该命令行。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/ANALYSIS/DOCUMENT-STATUS.json#L55-L62",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/.github/pull_request_template.md#L19-L19",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/.github/pull_request_template.md#L42-L42"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "info",
+      "summary": "已核验为真的正面事实（非缺陷）：checker 无任何 rm/clean/stash/reset/worktree-remove 调用；report 路径在写入前校验出树（validate_report_path）；git_state×family 双轴使 tracked dirt 不被 family 隐藏（test_workspace_hygiene.py:138-161）；.gitignore 全部模式与三族常量一一对齐、当前无 UNEXPECTED_IGNORED 误报面；remote.env.template 与 common.sh 的 CANONICAL_REMOTE_WORKSPACE_DIR=/data/论文/leo-direct-sim 一致；空 claim registry 物化为 claims: [] 且 eligible_claims.py CLI 实测输出 []；README 的 'config validate' 位置参数实测可执行；20/20 新测试通过。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/scripts/check_workspace_hygiene.py#L148-L153",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/ANALYSIS/tests/test_workspace_hygiene.py#L138-L161",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/.gitignore#L1-L21",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/CODE/scripts/remote/remote.env.template#L1-L4",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/CODE/scripts/remote/common.sh#L13-L13",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/ANALYSIS/claims/RESEARCH_CLAIMS.yaml#L1-L2",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/PAPER/tests/test_eligible_claims.py#L20-L30",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/README.md#L27-L27"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "info",
+      "summary": "CURRENT 文档事实交叉核对一致：'24 runs=12 unique+12 exact reexecutions' 与 summary.json 的 design_accounting（planned_cells=24、unique_resolved_configurations=12、12 组×2）一致；claim gate=READY_FOR_INDEPENDENT_CLAIM_REVIEW 与 claim-gate.json status 一致；cannot-claim 边界（无 ISL 压力阈值/曲线/因果/算法优越性/信息价值/RL 价值/新方法）与 claim-gate.json cannot_claim 对应；experiment-program.yaml 证据串中的 manifest SHA 4ed749ae… 与 claim-gate.json 的 analysis_manifest_sha256 一致；未把测试/回执升级为科研结论。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L7-L9",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/v2-paired/summary.json",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/v2-paired/claim-gate.json",
+        "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/EXPERIMENTS/experiment-program.yaml#L31-L31"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "修复 F1：worktree_paths 按 porcelain 记录块解析并跳过 'bare' 条目，加 git init --bare + git worktree add 回归测试；顺手评估 F2 的逐 worktree 容错",
+    "修复后在 bare 主仓布局实测 python3 scripts/check_workspace_hygiene.py --all-worktrees 出完整报告，再重跑全部测试与文档治理",
+    "本地 Agent 复检：24 个 scene-check JSON 的 status 逐个确认均为 ACCESS_LIMITED（本人仅核到文件数量与命名，内容不在允许路径内）；确认新测试已纳入 CI 工作流；确认 git diff --check 与全量测试在被审 exact commit 绿"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/scripts/check_workspace_hygiene.py#L1-L207",
+    "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/ANALYSIS/tests/test_workspace_hygiene.py#L1-L209",
+    "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md",
+    "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/AGENT-START-HERE.md#L10-L54",
+    "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L5-L9",
+    "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/ANALYSIS/EXPERIMENT-PROGRAM.md#L5-L9",
+    "github://fuguther/leo-direct-sim/blob/60965cecf68687b19693c16105641b9360eb0f1b/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L5-L9"
+  ],
+  "open_items": [
+    "24 个 scene-check JSON 的 status 内容不在允许读取路径内，'24/24 ACCESS_LIMITED' 仅由文件计数（24）与 yaml 证据串间接支持，需本地 Agent 逐个核验",
+    "CI 工作流文件不在允许路径内，新测试是否被 CI 实际执行、以及设计要求的完整验证清单（全量测试、git diff --check）需本地 Agent 在被审 commit 上确认",
+    "docs/superpowers/plans/2026-09-01-workspace-hygiene.md 在 write set 内但不在允许读取路径内，未审阅；若其含与规格冲突的内容需本地 Agent 核对",
+    "仓库所有者日常使用的主仓是否为 bare 布局未知；若是，F1 即为主线阻断，若否，F1 仍属真实布局缺陷但紧迫度可降一档",
+    "本 Worker 的测试结果与命令实测均为 RESULT_CANDIDATE，最终验收权属本地 Agent"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
