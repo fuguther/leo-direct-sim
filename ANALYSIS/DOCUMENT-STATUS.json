@@ -55,6 +55,7 @@
     {
       "path": "AGENT-START-HERE.md",
       "contains": [
+        "python3 scripts/check_workspace_hygiene.py --phase start",
         "python3 scripts/check_document_governance.py --mode all",
         "CURRENT-VOLATILE",
         "不得自动移动"
@@ -83,7 +84,7 @@
       "purpose": "Mandatory routing entry point for agents",
       "may_direct_current_work": true,
       "owner": "document-governance",
-      "last_reviewed": "2026-08-23",
+      "last_reviewed": "2026-09-01",
       "review_interval_days": 45,
       "replacement": null,
       "require_banner": false,
@@ -135,7 +136,7 @@
       "purpose": "PR evidence contract and lifecycle declaration",
       "may_direct_current_work": true,
       "owner": "repository-governance",
-      "last_reviewed": "2026-08-23",
+      "last_reviewed": "2026-09-01",
       "review_interval_days": 90,
       "replacement": null,
       "require_banner": false,

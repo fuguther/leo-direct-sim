@@ -7,11 +7,13 @@
 先在当前 checkout 运行：
 
 ```bash
+python3 scripts/check_workspace_hygiene.py --phase start
 python3 scripts/check_document_governance.py --mode all --report /tmp/leo-document-governance.json
 ```
 
 检查失败时：
 
+- 工作区检查返回 `1`：先读清单。`DIRTY`、`EVIDENCE_PRESENT` 或 `UNEXPECTED_IGNORED` 时，新写入者不得开工，也不得回收 worktree；已声明的唯一 owner 续作同一任务时也必须保留并核对该分类，工具不会替人推断所有权。检查器只读，不授权删除。
 - `STALE_CURRENT`：实时核对对应代码、GitHub、VM 或实验回执；在完成核对前把相关状态写成 `UNVERIFIED`，不能沿旧结论执行。
 - `UNCLASSIFIED_DOCUMENT`：先把新指导/记录文件登记到 `ANALYSIS/DOCUMENT-STATUS.json`。
 - `PROTECTED_CONTENT_CHANGED`：停止修改 `AGENTS.md`；只有经过明确设计和用户确认的稳定规则变化才能更新受保护哈希。
@@ -49,3 +51,4 @@ python3 scripts/check_document_governance.py --mode all --report /tmp/leo-docume
 - 检查器可以报告建议降级和归档候选，但不得自动移动、删除或改写结论。
 - 物理归档必须逐路径检查引用并取得用户批准；生成证据继续留在原 revision 目录。
 - `AGENTS.md` 是稳定规则，不记录项目进度。正常实验推进只更新状态表和对应事实文档。
+- 项目负责人审计全部 worktree 时使用 `python3 scripts/check_workspace_hygiene.py --all-worktrees --report /tmp/leo-workspaces.json`；该命令只做清单，退出成功不表示其中 worktree 可回收。
