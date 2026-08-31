@@ -2,14 +2,21 @@
 
 > **CURRENT-VOLATILE**：本文是最近一次仓库内状态快照，不是外部实时查询结果。引用其中的 branch、SHA、PR、CI、VM、run、完成状态或时间估计前，必须在当前 checkout、GitHub 和 VM 重新核验；过期检查由 `DOCUMENT-STATUS.json` 与 `scripts/check_document_governance.py` fail-loud。
 
-## 2026-08-30 管理口径：全球 R02 是描述性场景/稳定性诊断
+## 2026-09-01 当前裁决：R02 已闭合描述性证据，研究问题尚未冻结（CURRENT）
+
+- 仓库证据基线：`origin/main=79796b6d2bf9e471f951b6e4a6a80f11701eda81`（PR #192）。`EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的持久化分析为 `VERIFIED`，共 24 个 verified run；设计账本明确它们是 **12 个唯一 resolved config + 12 个相同配置精确重执行**，不能按 24 个独立条件或 24 个独立样本解释。
+- 24/24 scene check 均为 `ACCESS_LIMITED`；claim gate 是 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`，不是 `SUPPORTED`、论文可用或科研结论已成立。当前证据允许报告各 load 的描述值、运行完整性和精确重执行一致性；不能声称全球 ISL 压力阈值/响应曲线、因果效应、算法优越性、信息价值、RL 价值或新方法贡献。
+- **当前最重要的项目任务不是继续挑旧实验跑。** 组会侧先按 2026-08-31 方向完成问题导向的强化学习路由/调度文献调研，从候选问题中收窄一个可证伪的中心问题；不预设新算法，不启动完整 RL 复现。实验侧保持暂停扩矩阵，先解释 `ACCESS_LIMITED` 对场景与可回答问题的约束，再由冻结后的研究问题决定最小新合同。
+- GitHub、VM deployment 和本地 checkout 是不同状态：本节只确认已进入 `origin/main` 的证据工件，不据此宣称当前 main 已重新部署或 VM 可直接继续运行。任何新正式实验仍须重新走编译、审阅、授权、clean-main 部署、自然结束回执与分析重算。
+
+## 2026-08-30 历史设计口径：全球 R02 是描述性场景/稳定性诊断
 
 - `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24 个计划 cell 只有 12 个唯一 resolved config；其余 12 个是同 load、同 seed、同配置的 a/b 精确重执行。a/b 只提供确定性/重复执行证据，不能计作额外 seed、独立样本或独立实验条件。
 - 冻结 brief 已预注册：本 bracket 内最坏单链路漏斗利用率上界约 `0.135`，低于 ISL 压力门 `0.8`。因此该 cohort 能回答不同 load/seed 下的场景分类、描述性指标和重复一致性，不能回答全局 ISL 压力阈值、首个压力点或负载响应曲线；名称中的 `PRESSURE-BRACKET` 不扩大其 claim scope。
 - acceptance `{1,0,true,true}` 是运行非退化与证据准入门，不是科研充分性门。只有后验 V2 analysis、冻结 scene classification、物理有效性和逐 claim 审阅全部通过后，结果才可进入相应科研结论；`governance research_eligible=true` 也不等于 paper-ready。
 - 本节只冻结设计与解释边界，不提前填写运行结果。24-cell 串行 cohort 的完成状态、聚合指标和最终 scene 分类必须在自然结束、拉回和持久化重算后另行更新。
 
-## 2026-08-29 快照：全球人口陆地场景后验分析与场景分类闭合（CURRENT）
+## 2026-08-29 历史快照：全球人口陆地场景后验分析与场景分类闭合
 
 - 快照：`as_of_commit=c9ef45e`（origin/main；PR #172–#175 已合入，后验分析修复 #176 在合入流程中）；`last_verified_at=2026-08-29`；本文 2026-08-24/08-22 及更早节段按日期为历史快照，内容冲突处以本节为准。
 - 全球人口陆地场景 `EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01`（部署 `01c323a`、seed 7、双臂 `load10_a-s7`/`load10_b-s7`）：

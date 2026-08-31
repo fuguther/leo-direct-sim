@@ -2,7 +2,14 @@
 
 > **CURRENT-VOLATILE**：实验问题和顺序仍由本文承载，但顶部诊断进度、SHA、VM 和 run 状态只表示最近一次核验。执行前必须通过 `DOCUMENT-STATUS.json` 的时效检查并实时核对外部证据。
 
-## 2026-08-29 快照：全球人口陆地场景后验分析与场景分类闭合（CURRENT）
+## 2026-09-01 当前实验裁决：不扩矩阵，先冻结一个论文问题（CURRENT）
+
+- `origin/main=79796b6d2bf9e471f951b6e4a6a80f11701eda81`（PR #192）已保存 `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24/24 `VERIFIED` 分析证据。设计有效样本口径是 12 个唯一 resolved config 加 12 个精确重执行，不得把 a/b 重执行当作额外 seed 或不同实验条件。
+- 24/24 scene check 均为 `ACCESS_LIMITED`，claim gate 为 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`。该 cohort 只支持描述性场景/load 指标与重复一致性审阅；不支持 ISL 压力阈值或曲线、因果统计、算法优越性、信息/RL 价值、新算法贡献或 paper-ready 结论。
+- 当前组会任务优先于继续扩实验：先进行问题导向的文献调研，在“远端信息价值、状态陈旧、图模型收益来源、是否扩大到联合路由调度”等候选中收窄一个中心问题，并给出最接近工作、代码/复现成本和可证伪实验。未冻结研究问题前，不预注册新大矩阵、不启动完整 RL 复现、不包装新方法。
+- 若恢复实验设计，第一门是解释 `ACCESS_LIMITED` 场景是否还能回答冻结后的研究问题；不能再从下方历史 `next_gate`、旧 run 状态或日期较新的文件名直接选择任务。任何正式运行仍须从当前 clean `main` 重编译、独立审阅和授权。
+
+## 2026-08-29 历史快照：全球人口陆地场景后验分析与场景分类闭合
 
 - 快照：`as_of_commit=c9ef45e`（origin/main；PR #172–#175 已合入，后验分析修复 #176 在合入流程中）；`last_verified_at=2026-08-29`；本文 2026-08-24/08-22 及更早节段按日期为历史快照，内容冲突处以本节为准。
 - 全球人口陆地场景 `EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01`（部署 `01c323a`、seed 7、双臂 `load10_a-s7`/`load10_b-s7`）：
