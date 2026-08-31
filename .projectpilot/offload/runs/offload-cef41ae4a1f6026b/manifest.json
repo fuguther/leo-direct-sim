@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "planId": "offload-cef41ae4a1f6026b",
+  "relayManifest": {
+    "planId": "offload-cef41ae4a1f6026b",
+    "projectId": "leo-direct-sim",
+    "backend": "deepseek_harness",
+    "policyMode": "balanced",
+    "maxParallelWorkers": 3,
+    "analysisLanes": 2,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:D1",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "d8879b1f9454bd96ca7156ce34c2698fae6ff91d",
+        "paths": [
+          "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+          "ANALYSIS/EXPERIMENT-PROGRAM.md",
+          "ANALYSIS/Q0-INFORMATION-ABLATION-PROTOCOL.md",
+          "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md",
+          "NOTES.md"
+        ],
+        "promptHash": "9aedf12b6bacd16ba9e28d848db2a4811af5f858f827c14ab0a7c7559491c034"
+      },
+      {
+        "taskId": "offload:leo-direct-sim:D1:independent_review",
+        "lane": "independent_review",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "d8879b1f9454bd96ca7156ce34c2698fae6ff91d",
+        "paths": [
+          "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+          "ANALYSIS/EXPERIMENT-PROGRAM.md",
+          "ANALYSIS/Q0-INFORMATION-ABLATION-PROTOCOL.md",
+          "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md",
+          "NOTES.md"
+        ],
+        "promptHash": "d5f6453028501f60196814f6aacd2a6be480077b358be720d8daca129b93f49d"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "cef41ae4a1f6026bff36a2d8e8b37df0e40a56d066b1013c08ce8e38a2f23abe"
+  },
+  "sourceBaseCommit": "d8879b1f9454bd96ca7156ce34c2698fae6ff91d",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:D1",
+      "promptHash": "9aedf12b6bacd16ba9e28d848db2a4811af5f858f827c14ab0a7c7559491c034",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "d8879b1f9454bd96ca7156ce34c2698fae6ff91d",
+        "paths": [
+          "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+          "ANALYSIS/EXPERIMENT-PROGRAM.md",
+          "ANALYSIS/Q0-INFORMATION-ABLATION-PROTOCOL.md",
+          "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md",
+          "NOTES.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    },
+    {
+      "taskId": "offload:leo-direct-sim:D1:independent_review",
+      "promptHash": "d5f6453028501f60196814f6aacd2a6be480077b358be720d8daca129b93f49d",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "d8879b1f9454bd96ca7156ce34c2698fae6ff91d",
+        "paths": [
+          "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+          "ANALYSIS/EXPERIMENT-PROGRAM.md",
+          "ANALYSIS/Q0-INFORMATION-ABLATION-PROTOCOL.md",
+          "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md",
+          "NOTES.md"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
