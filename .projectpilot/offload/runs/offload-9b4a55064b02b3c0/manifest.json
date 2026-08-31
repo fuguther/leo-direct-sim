@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "planId": "offload-9b4a55064b02b3c0",
+  "relayManifest": {
+    "planId": "offload-9b4a55064b02b3c0",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "fast",
+    "maxParallelWorkers": 1,
+    "analysisLanes": 1,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:R2",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "60965cecf68687b19693c16105641b9360eb0f1b",
+        "paths": [
+          "scripts/check_workspace_hygiene.py",
+          "ANALYSIS/tests/test_workspace_hygiene.py",
+          "docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md",
+          "AGENT-START-HERE.md",
+          ".github/pull_request_template.md",
+          ".gitignore",
+          "ANALYSIS/DOCUMENT-STATUS.json",
+          "scripts/check_document_governance.py",
+          "README.md",
+          "CODE/scripts/remote/remote.env.template",
+          "CODE/scripts/remote/common.sh",
+          "ANALYSIS/claims/RESEARCH_CLAIMS.yaml",
+          "PAPER/eligible_claims.py",
+          "PAPER/tests/test_eligible_claims.py",
+          "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+          "ANALYSIS/EXPERIMENT-PROGRAM.md",
+          "EXPERIMENTS/experiment-program.yaml",
+          "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md",
+          "ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/v2-paired/summary.json",
+          "ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/v2-paired/claim-gate.json"
+        ],
+        "promptHash": "acba1267eeb401e9a3e90b7193675eeb5a1812abedc49d543f4a1bd6573f422a"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "9b4a55064b02b3c0f1b0d34964377131346761170ee3b06c9846b0911047091a"
+  },
+  "sourceBaseCommit": "60965cecf68687b19693c16105641b9360eb0f1b",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:R2",
+      "promptHash": "acba1267eeb401e9a3e90b7193675eeb5a1812abedc49d543f4a1bd6573f422a",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "60965cecf68687b19693c16105641b9360eb0f1b",
+        "paths": [
+          "scripts/check_workspace_hygiene.py",
+          "ANALYSIS/tests/test_workspace_hygiene.py",
+          "docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md",
+          "AGENT-START-HERE.md",
+          ".github/pull_request_template.md",
+          ".gitignore",
+          "ANALYSIS/DOCUMENT-STATUS.json",
+          "scripts/check_document_governance.py",
+          "README.md",
+          "CODE/scripts/remote/remote.env.template",
+          "CODE/scripts/remote/common.sh",
+          "ANALYSIS/claims/RESEARCH_CLAIMS.yaml",
+          "PAPER/eligible_claims.py",
+          "PAPER/tests/test_eligible_claims.py",
+          "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+          "ANALYSIS/EXPERIMENT-PROGRAM.md",
+          "EXPERIMENTS/experiment-program.yaml",
+          "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md",
+          "ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/v2-paired/summary.json",
+          "ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/v2-paired/claim-gate.json"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
