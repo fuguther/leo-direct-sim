@@ -1,0 +1,101 @@
+{
+  "contract": {
+    "allowedPaths": [
+      "scripts/check_workspace_hygiene.py",
+      "ANALYSIS/tests/test_workspace_hygiene.py",
+      "docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md",
+      "AGENT-START-HERE.md",
+      ".github/pull_request_template.md",
+      ".gitignore",
+      "ANALYSIS/DOCUMENT-STATUS.json",
+      "scripts/check_document_governance.py",
+      "README.md",
+      "CODE/scripts/remote/remote.env.template",
+      "CODE/scripts/remote/common.sh",
+      "ANALYSIS/claims/RESEARCH_CLAIMS.yaml",
+      "PAPER/eligible_claims.py",
+      "PAPER/tests/test_eligible_claims.py",
+      "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+      "ANALYSIS/EXPERIMENT-PROGRAM.md",
+      "EXPERIMENTS/experiment-program.yaml",
+      "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md",
+      "ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/v2-paired/summary.json",
+      "ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/v2-paired/claim-gate.json"
+    ],
+    "metadata": {
+      "frozenPlanDigest": "sha256:1603538b4a9673e6890df33dff150496979cfab6388d49c64aa0075c91c69674",
+      "digestVersion": "canonical-json-sha256-v1"
+    },
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R2",
+    "title": "冷启动审阅工作区清理与防污染实现",
+    "goal": "审阅 origin/main..60965cecf68687b19693c16105641b9360eb0f1b 的声明 write set。重点检查：1) scripts/check_workspace_hygiene.py 是否只读、无内容扫描、无破坏性操作，Git porcelain 解析是否可靠；2) Git state 与 path family 是否都保留，tracked dirt 不会被 family 隐藏；3) start/handoff/all-worktrees 的退出码、report 路径、防自污染、证据保护是否符合规格；4) tests 是否覆盖真实风险而非只验证实现细节；5) AGENT-START-HERE、PR 模板、DOCUMENT-STATUS 的入口不变量是否一致；6) README/remote template/空 claim registry 是否真实修复；7) CURRENT 文档对 R02 的 24 runs=12 unique+12 repeats、ACCESS_LIMITED、READY_FOR_INDEPENDENT_CLAIM_REVIEW 及 cannot-claim 边界是否一致且没有把测试/回执升级成科研结论；8) 是否引入不必要的臃肿或第二套状态系统。只审阅，不修改文件，不建议无关重构。每条 finding 必须给 severity、精确文件/行号、证据、后果和最小修正。最终 verdict 只能 APPROVE 或 REQUEST_CHANGES，并列 open_items。",
+    "mode": "REMOTE",
+    "policyMode": "fast",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "standard",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "60965cecf68687b19693c16105641b9360eb0f1b",
+      "paths": [
+        "scripts/check_workspace_hygiene.py",
+        "ANALYSIS/tests/test_workspace_hygiene.py",
+        "docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md",
+        "AGENT-START-HERE.md",
+        ".github/pull_request_template.md",
+        ".gitignore",
+        "ANALYSIS/DOCUMENT-STATUS.json",
+        "scripts/check_document_governance.py",
+        "README.md",
+        "CODE/scripts/remote/remote.env.template",
+        "CODE/scripts/remote/common.sh",
+        "ANALYSIS/claims/RESEARCH_CLAIMS.yaml",
+        "PAPER/eligible_claims.py",
+        "PAPER/tests/test_eligible_claims.py",
+        "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+        "ANALYSIS/EXPERIMENT-PROGRAM.md",
+        "EXPERIMENTS/experiment-program.yaml",
+        "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md",
+        "ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/v2-paired/summary.json",
+        "ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/v2-paired/claim-gate.json"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "只输出只读审阅，不修改仓库文件",
+      "每条发现含 severity、精确路径和行号、证据、实际影响和最小修正",
+      "显式检查误报、漏报、自污染、证据保护、事实夸大和臃肿风险",
+      "最终 verdict 只能是 APPROVE 或 REQUEST_CHANGES",
+      "显式列出 open_items；没有则写 none"
+    ],
+    "requiredEvidence": [
+      "绑定 exact commit 的文件行号",
+      "实现、测试、入口不变量与事实证据之间的交叉核对"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "acba1267eeb401e9a3e90b7193675eeb5a1812abedc49d543f4a1bd6573f422a"
+}
