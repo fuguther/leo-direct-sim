@@ -1,0 +1,198 @@
+# 导师意图与下次交付分析
+
+## 说明
+- 以下时间戳全部来自你提供的会议纪要片段。
+- 自动小结中的修辞性评价（如“一针见血”“推倒重来是最优解”）不在片段中出现，也不作为导师原话引用。
+- 仓库证据仅引用合同允许读取的 5 个路径，且全部锚定到 commit `d8879b1f9454bd96ca7156ce34c2698fae6ff91d`。
+
+---
+
+## A. 导师明确说了什么（FACT，绑定时间戳）
+
+| # | 导师原话/直接要求 | 时间戳 | 证据性质 |
+|---|-------------------|--------|----------|
+| A1 | 要求李广按 **“背景—挑战—思路—进展”** 整理一份**研究工作进展报告**。 | `[01:24:46]` | FACT |
+| A2 | 要求李广 **“聚焦强化学习在路由/调度方面的应用”** 写一份**调研报告**，并“选取对比工作”。 | `[01:24:46]` | FACT |
+| A3 | 追问新平台到底是 **“重写”还是“简单改造”**；在李广回答是“重写”后，片段未再记录导师进一步评价。 | `[01:22:57]` | FACT |
+| A4 | 在`[01:24:46]`，李广补充“理想上界假设瞬时获得全局信息，因此理想上界算法不会是强化学习”，导师**第一次没有听清并要求重述**；但纪要到此结束，**没有留下导师听清后的确认或表态**。 | `[01:24:46]` | FACT |
+
+导师**没有明确说**的内容（这些属于 Li Guang 自述或未被确认）：
+- “逐步削减观测范围、加入信息延迟”是 Li Guang 在 `[01:21:12]` 提出的研究路线，不是导师下达的任务。
+- “旧实验归因存在不足”是 Li Guang 在 `[01:19:26]` 的回顾与承认，不是导师的判定。
+- 任何具体截止时间、论文投稿节点、下次检查形式均未在片段中出现。
+
+---
+
+## B. 导师大概率在检查什么能力（INFERENCE）
+
+| # | 能力 | 推断依据 | 证据性质 |
+|---|------|----------|----------|
+| B1 | **把工程进展组织成科研叙事的能力**：要求“背景—挑战—思路—进展”说明导师不满当前汇报像技术清单，而希望看到问题驱动的研究故事。 | `[01:24:46]` 明确要求四段式结构 | INFERENCE |
+| B2 | **问题归因的严谨性**：Li Guang 承认旧实验归因不足，导师很可能要求他能区分“物理容量不足 / 信息不足 / 决策能力不足”。 | `[01:19:26]` 自述归因不足；仓库 Q0 协议正是为分解这三类差距而设 | INFERENCE |
+| B3 | **理论边界意识**：导师要求聚焦“RL 在路由/调度中的应用”，结合 Li Guang 主动补充“理想上界不是 RL”，说明导师在意他是否能区分 **理想上界 / 强基线 / RL / 实际可部署算法**。 | `[01:24:46]`；`Q0-INFORMATION-ABLATION-PROTOCOL.md` 明确将 Q0-F/Q0-I/Q0-J 分开 | INFERENCE |
+| B4 | **工程判断的合理性**：追问“重写还是改造”说明导师要确认 Li Guang 不是把简单改造包装成重大工程决策。 | `[01:22:57]` | INFERENCE |
+| B5 | **文献调研的聚焦能力**：不是泛泛调研“强化学习”，而是限定在“路由/调度”并选取对比工作，说明导师要看到与自身研究边界的对照。 | `[01:24:46]` | INFERENCE |
+
+---
+
+## C. 当前共享文件为何可能未命中要求
+
+你描述的共享文件结构包含：研究问题、历史工作、三个信息参照、新平台压力校准、算法公平比较。它可能“被拷打”的原因如下：
+
+### 1. 内容缺失
+| 缺失项 | 导师要求 | 仓库状态 |
+|--------|----------|----------|
+| **“背景—挑战—思路—进展”四段式结构** | 明确要求 `[01:24:46]` | 当前结构是技术模块罗列，缺少叙事主线 |
+| **RL 路由/调度专项调研** | 明确要求 `[01:24:46]` | 文件中“算法公平比较”混合了传统路由/Q-routing/DDQN/PPO/GNN/MAPPO，没有聚焦 RL 在路由/调度中的边界 |
+| **理想上界与 RL 的明确区分** | Li Guang 主动提出但未获确认 `[01:24:46]` | 三个信息参照把 Q0-F/Q0-I/Q0-L 并列，但没有说明 Q0-F 是 clairvoyant 严格上界、不能由 RL 担任 |
+
+### 2. 叙事层次问题
+- **把工程标定数字当成研究结论**：文件中“200 Mbps 接入主导、500/50 MHz 无压力、5/2 MHz 单 seed 候选、全球 10 Mbps 接入受限、24-cell 扫描”更像实验进度清单。但仓库文档明确：
+  - R02（500/50 MHz）双臂只是**否定性工程证据**，不构成压力臂；
+  - 全球 10 Mbps 双臂只是**完整性/重复性检查点**，不能升格为负载阈值；
+  - 24-cell 扫描只有 12 个唯一配置，其余 12 个是 a/b 精确重执行。
+  见 `CURRENT-EXPERIMENT-READINESS.md` 第 7–9 行、第 20 行。
+- **缺少“先诊断、再归因、最后提方案”的主线**：仓库计划已经锁定这一顺序，见 `EXPERIMENT-PROGRAM.md` 第 81–88 行。当前文件更像是“平台能力+算法列表”，没有展示诊断→归因→方案的逻辑。
+
+### 3. 证据不足
+- **“算法公平比较”缺少统一信息集和配对条件**：`EXPERIMENT-PROGRAM.md` 第 226–230 行要求正式实验必须同 trace × traffic seed × training seed 配对，并在相同信息集下比较。当前文件只列算法名，没有说明信息集边界。
+- **Q0-L（局部/陈旧）与 Q0-I/F 的关系未解释清楚**：`Q0-INFORMATION-ABLATION-PROTOCOL.md` 第 31–44 行要求主线是“从最优向下裁剪信息”，辅线是“从现实向上增加信息”。文件把三者并列，但没有展示裁剪顺序和对应的 claim 边界。
+- **平台缺口未披露**：`PLATFORM-CAPABILITY-LEDGER.md` 第 11–16 行把 BLOCKER-DIAG 和 BLOCKER-THEORY 列为未关闭。当前文件如果直接跳到算法比较，会给人“在诊断门未关闭时就下结论”的印象。
+
+---
+
+## D. 下次组会前最应交付的 3—5 个具体产物
+
+| # | 产物 | 用途 | 最低内容 | 验收条件 |
+|---|------|------|----------|----------|
+| D1 | **工作进展报告（背景—挑战—思路—进展）** | 直接回应导师 `[01:24:46]` 的四段式要求 | 背景：LEO 动态网络拥塞与利用率问题；挑战：旧平台耦合/理想化、归因不足；思路：先诊断、再用 Q0 归因、最后提方案；进展：V2 平台底座闭合到什么门、哪些还 open | 每章都有仓库文档或 VM 回执作为证据；明确区分“已关闭的门”和“未关闭的门” |
+| D2 | **强化学习路由/调度调研报告** | 直接回应导师 `[01:24:46]` 的调研要求 | 分类：Q-routing、DDQN/DQN、PPO/A3C、GNN/MAPPO 在动态路由/调度中的代表性工作；适用条件：集中/分散、离散/连续动作、是否需要未来信息；与本研究的边界：哪些适合作为基线、哪些不能担任 Q0-F | 明确回答“RL 是否适合作为理想上界”“RL 在本问题中适合解决哪一类子问题”；至少 3–5 篇对比工作并说明对比维度 |
+| D3 | **Q0 信息参照与裁剪计划** | 把 Q0-F/Q0-I/Q0-L 从并列概念变成可操作实验链 | 三类参照的严格定义；裁剪主线（F → I → 局部/陈旧）和辅线（本地队列 → +速率/可用性 → +远端信息 → +AoI）；每个裁剪节点对应的 claim 和限制 | 与 `Q0-INFORMATION-ABLATION-PROTOCOL.md` 第 17–56 行一致；能解释“为什么 Q0-F 不是 RL” |
+| D4 | **两周缺口清单与推进计划** | 向导师展示工程门与研究门的分离，避免“一汇报就仿佛要发论文” | 列出 BLOCKER-P0/BLOCKER-DIAG/BLOCKER-THEORY/BLOCKER-LONGTRAIN 的当前状态；未来两周只做哪些、明确暂缓哪些 | 引用 `PLATFORM-CAPABILITY-LEDGER.md` 第 11–52 行；每项状态标注 FACT/INFERENCE |
+| D5 | **（可选）真实压力窗口的预注册或 tiny 诊断结果** | 把“削减观测范围”从口头路线变成可核验实验 | 若已跑：一个代表性小窗口的 Q0-I/Q0-F 数值与 learner 差距；若未跑：预注册 brief（负载、seed、trace SHA、claim 边界） | 若给结果，必须绑定 VM receipt/artifact SHA；若只给计划，必须说明“这是预注册，不是结论” |
+
+---
+
+## E. 未来两周研究推进顺序
+
+### 第一周：回应导师直接要求 + 冻结叙事与计划
+1. **完成 D1 工作进展报告**（1–2 天）：严格按“背景—挑战—思路—进展”四段写，不混算法细节。
+2. **完成 D2 RL 路由/调度调研报告**（2–3 天）：聚焦“RL 能做什么、不能做什么、为什么不能当理想上界”。
+3. **完成 D3 Q0 信息裁剪计划**（1–2 天）：把 Q0-F/Q0-I/Q0-L 与 info-ladder、age-ladder 对应。
+4. **内部审阅**：用 `Q0-INFORMATION-ABLATION-PROTOCOL.md` 第 92–101 行的四层证据门检查 Q0 计划是否自洽。
+
+### 第二周：准备可执行的下一步实验（不启动正式长训）
+1. **预注册小型多负载 bracket**：以 10 Mbps 重复点和 ACCESS_LIMITED 分类为基准，按 `CURRENT-EXPERIMENT-READINESS.md` 第 22 行的 `next_gate` 推进；**明确不扩成大矩阵**。
+2. **从真实/代理 trace 抽取代表性压力窗口**：为 Q0-I/Q0-F 真实窗口做准备，先完成 tiny 窗口的 planned-vs-executed 归因，见 `Q0-INFORMATION-ABLATION-PROTOCOL.md` 第 76–90 行。
+3. **暂缓**：正式 RL 长训、新方案实现、论文 claim 撰写——这些受 BLOCKER-LONGTRAIN 和 BLOCKER-THEORY 约束，见 `PLATFORM-CAPABILITY-LEDGER.md` 第 13–14 行。
+
+---
+
+## F. 最容易再次被追问的 10 个问题及需准备的证据
+
+| # | 问题 | 需要准备的证据 |
+|---|------|----------------|
+| F1 | “重写内核到底是工程必需还是研究贡献？” | 旧平台耦合导致接入改造困难的自述 `[01:21:12]`；`PLATFORM-CAPABILITY-LEDGER.md` 第 22–26 行说明 D1/D2 在新内核中如何被正确分离；明确结论：**重写是研究可信度的工程前提，不是研究贡献本身**。 |
+| F2 | “理想上界为什么不是强化学习？” | `Q0-INFORMATION-ABLATION-PROTOCOL.md` 第 19–25 行：Q0-F 是完整未来 trace + MILP/CP-SAT 的 clairvoyant 上界；第 66–67 行明确“学习奖励不能作为 Q0 最优性定义”。 |
+| F3 | “你现在的压力场景真的有压力吗？” | `CURRENT-EXPERIMENT-READINESS.md` 第 7–9 行：R02 单链路利用率上界约 0.135，低于 0.8 压力门；第 20 行：R02 无压力差异，R03 单 seed 不升格。 |
+| F4 | “逐步削减观测范围的实验设计好了吗？” | `Q0-INFORMATION-ABLATION-PROTOCOL.md` 第 31–44 行裁剪主线 + 第 46–56 行辅线；必须说明每个节点的 claim 和限制。 |
+| F5 | “RL 在路由/调度里到底适不适合你的问题？” | D2 调研报告 + `EXPERIMENT-PROGRAM.md` 第 242–248 行关于 Q0-F 是严格参照、普通 MPC 只是强基线的解释纪律。 |
+| F6 | “旧实验归因不足具体指什么？” | Li Guang 自述 `[01:19:26]`；`PLATFORM-CAPABILITY-LEDGER.md` 第 29–30 行（shaped reward 不能当 Q0 目标）、第 35–36 行（planned-vs-executed 归因未闭合）。 |
+| F7 | “新平台比旧平台强在哪、弱在哪？” | `PLATFORM-CAPABILITY-LEDGER.md` 第 31–52 行列出 V2 优势；第 64–68 行明确“不能说 V2 已优于旧平台”“不能把未校准物理细节当真实性”。 |
+| F8 | “两周后我要看到什么？” | 直接引用 D1–D5 交付物清单，每个产物写清验收条件。 |
+| F9 | “Q0-F、Q0-I、Q0-L 的关系是什么？” | `Q0-INFORMATION-ABLATION-PROTOCOL.md` 第 17–25 行定义表 + 第 31–44 行裁剪顺序。 |
+| F10 | “你说的真实流量到底是原始包还是测量代理？” | `EXPERIMENT-PROGRAM.md` 第 89 行、第 244 行；`CURRENT-EXPERIMENT-READINESS.md` 第 116 行：M-Lab/人口是测量代理，不能冒充原始 packet trace。 |
+
+---
+
+## G. Open Items：原纪要不足以判断的事项
+
+| # | 事项 | 影响 | 性质 |
+|---|------|------|------|
+| G1 | 导师在重述后是否听清并接受了“理想上界不是 RL”这一补充 | 决定 D3 中是否需要反复解释 Q0-F 与 RL 的关系 | UNVERIFIED |
+| G2 | 导师是否同意 Li Guang 提出的“逐步削减观测范围 + 加入信息延迟”路线 | 决定该路线能否作为组会默认共识继续推进，还是需要重新论证 | UNVERIFIED |
+| G3 | 导师期望的调研报告深度、篇幅、文献数量、是否需口头 presentation | 影响 D2 的工作量和呈现形式 | UNVERIFIED |
+| G4 | 下次组会具体日期、是否有中间检查节点 | 影响两周计划的优先级排序 | UNVERIFIED |
+| G5 | 导师对“工程推进”与“科研产出”的当前权重 | 影响是否应优先补报告/理论，还是优先跑实验 | UNVERIFIED |
+| G6 | 导师是否认为当前重写内核本身值得作为一个独立工程章节写入论文 | 影响工作进展报告中对重写工作的定位 | UNVERIFIED |
+
+---
+
+```json
+===PROJECTPILOT_OFFLOAD_RESULT===
+{
+  "task_id": "offload:leo-direct-sim:K1",
+  "status": "EVIDENCE_READY",
+  "summary": "导师在[01:24:46]明确提出了两项交付物：按“背景—挑战—思路—进展”整理的工作进展报告，以及聚焦强化学习在路由/调度中应用的调研报告。当前共享文件的问题在于：把工程标定数字当作研究结论、缺少四段式叙事、没有清楚区分理想上界/强基线/RL、未披露BLOCKER-DIAG/BLOCKER-THEORY缺口。建议下次组会前交付：工作进展报告、RL路由/调度调研、Q0信息裁剪计划、两周缺口清单；第二周准备小型多负载bracket预注册和真实压力窗口的Q0-I/Q0-F tiny诊断。最可能被追问的问题集中在“重写是否必要”“压力场景是否真的有压力”“理想上界为何不是RL”。",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "major",
+      "summary": "导师明确提出了两项独立交付物：四段式工作进展报告和RL路由/调度调研报告，当前共享文件结构未直接回应。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/EXPERIMENT-PROGRAM.md#L79-L90"
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "major",
+      "summary": "当前共享文件将工程标定数字（200 Mbps/500/50 MHz/全球10 Mbps/24-cell）呈现为进度或压力结论，但仓库文档明确这些只是工程候选或重复性检查点，不能升格为压力阈值或论文结论。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L7-L9",
+        "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L20"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "major",
+      "summary": "理想上界(Q0-F)是完整未来clairvoyant严格上界，不能由强化学习担任；该区分在会议中由李广提出但未获导师确认，属于需要继续解释的风险点。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/Q0-INFORMATION-ABLATION-PROTOCOL.md#L19-L25",
+        "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/Q0-INFORMATION-ABLATION-PROTOCOL.md#L66-L67"
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "major",
+      "summary": "BLOCKER-DIAG和BLOCKER-THEORY尚未关闭，正式拥塞归因和信息vs决策归因无法完成，当前共享文件若直接跳到算法比较会显得证据不足。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L11-L16",
+        "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L29-L42"
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "minor",
+      "summary": "仓库已形成“先实验诊断→再理论归因→最后提出方案”的固定研究顺序，当前共享文件缺少这一叙事主线。",
+      "evidence": [
+        "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/EXPERIMENT-PROGRAM.md#L81-L90"
+      ]
+    }
+  ],
+  "recommended_actions": [
+    "本地Agent复核当前worktree是否确实位于commit d8879b1f9454bd96ca7156ce34c2698fae6ff91d，并确认允许读取的5个文件路径与内容一致",
+    "由李广本人核对上述A/G项与会议实际记忆是否一致，尤其是[01:24:46]导师重述后的反应",
+    "按D1-D4准备下次组会材料；D5仅在已获取VM压力窗口artifact时加入",
+    "两周推进顺序按E执行：第一周完成报告与计划，第二周准备bracket预注册与Q0 tiny窗口"
+  ],
+  "evidence": [
+    "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L7-L9",
+    "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/CURRENT-EXPERIMENT-READINESS.md#L20-L22",
+    "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/EXPERIMENT-PROGRAM.md#L79-L90",
+    "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/EXPERIMENT-PROGRAM.md#L178-L189",
+    "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/Q0-INFORMATION-ABLATION-PROTOCOL.md#L17-L56",
+    "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/Q0-INFORMATION-ABLATION-PROTOCOL.md#L92-L101",
+    "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L11-L16",
+    "github://fuguther/leo-direct-sim/blob/d8879b1f9454bd96ca7156ce34c2698fae6ff91d/ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md#L29-L42"
+  ],
+  "open_items": [
+    "导师在[01:24:46]重述后是否听清并接受“理想上界不是RL”，纪要未记录",
+    "导师是否同意李广在[01:21:12]提出的“逐步削减观测范围+加入信息延迟”研究路线",
+    "导师对D2调研报告的深度、篇幅、文献数量、是否需口头汇报的期望",
+    "下次组会具体日期与是否有中间检查节点",
+    "导师当前对工程推进与科研产出的权重偏好",
+    "导师是否认为内核重写本身应作为论文独立章节"
+  ]
+}
+===END_OFFLOAD_RESULT===
+```
