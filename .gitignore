@@ -16,3 +16,6 @@ __pycache__/
 CODE/scripts/remote/remote.env
 .env
 *.pem
+
+# 本地组会与导师材料（含原始纪要，不进入 GitHub）
+GROUP-MEETINGS-LOCAL/

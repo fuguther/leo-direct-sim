@@ -1,6 +1,6 @@
 {
   "schema": "leo-document-governance/v1",
-  "updated_at": "2026-08-30",
+  "updated_at": "2026-09-01",
   "allowed_statuses": [
     "CURRENT-CONTRACT",
     "CURRENT-VOLATILE",
@@ -55,6 +55,7 @@
     {
       "path": "AGENT-START-HERE.md",
       "contains": [
+        "python3 scripts/check_workspace_hygiene.py --phase start",
         "python3 scripts/check_document_governance.py --mode all",
         "CURRENT-VOLATILE",
         "不得自动移动"
@@ -62,6 +63,41 @@
       "excludes": []
     }
   ],
+  "current_fact_sync": {
+    "source_glob": "ANALYSIS/EXP-*/**/claim-gate.json",
+    "current_source": "ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/v2-paired/claim-gate.json",
+    "current_source_sha256": "601d6a6c815706f3ecf464e48188d09aacd20934d92e090f5d340ccfdf54653a",
+    "targets": [
+      {
+        "path": "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
+        "contains": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+          "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
+        ]
+      },
+      {
+        "path": "ANALYSIS/EXPERIMENT-PROGRAM.md",
+        "contains": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+          "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
+        ]
+      },
+      {
+        "path": "ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md",
+        "contains": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+          "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
+        ]
+      },
+      {
+        "path": "EXPERIMENTS/experiment-program.yaml",
+        "contains": [
+          "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+          "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
+        ]
+      }
+    ]
+  },
   "entries": [
     {
       "path": "AGENTS.md",
@@ -83,7 +119,7 @@
       "purpose": "Mandatory routing entry point for agents",
       "may_direct_current_work": true,
       "owner": "document-governance",
-      "last_reviewed": "2026-08-23",
+      "last_reviewed": "2026-09-01",
       "review_interval_days": 45,
       "replacement": null,
       "require_banner": false,
@@ -96,7 +132,7 @@
       "purpose": "Current platform identity and repository map",
       "may_direct_current_work": true,
       "owner": "platform-documentation",
-      "last_reviewed": "2026-08-23",
+      "last_reviewed": "2026-09-01",
       "review_interval_days": 90,
       "replacement": null,
       "require_banner": false,
@@ -135,7 +171,7 @@
       "purpose": "PR evidence contract and lifecycle declaration",
       "may_direct_current_work": true,
       "owner": "repository-governance",
-      "last_reviewed": "2026-08-23",
+      "last_reviewed": "2026-09-01",
       "review_interval_days": 90,
       "replacement": null,
       "require_banner": false,
@@ -161,7 +197,7 @@
       "purpose": "Machine-readable document authority and lifecycle registry",
       "may_direct_current_work": true,
       "owner": "document-governance",
-      "last_reviewed": "2026-08-23",
+      "last_reviewed": "2026-09-01",
       "review_interval_days": 30,
       "replacement": null,
       "require_banner": false,
@@ -174,7 +210,7 @@
       "purpose": "Latest repository snapshot of readiness and blockers",
       "may_direct_current_work": true,
       "owner": "experiment-readiness",
-      "last_reviewed": "2026-08-29",
+      "last_reviewed": "2026-09-01",
       "review_interval_days": 7,
       "replacement": null,
       "require_banner": false,
@@ -187,7 +223,7 @@
       "purpose": "Current experiment sequence plus recent diagnostic snapshot",
       "may_direct_current_work": true,
       "owner": "experiment-design",
-      "last_reviewed": "2026-08-29",
+      "last_reviewed": "2026-09-01",
       "review_interval_days": 7,
       "replacement": null,
       "require_banner": false,
@@ -200,7 +236,7 @@
       "purpose": "Current capability and migration disposition ledger",
       "may_direct_current_work": true,
       "owner": "platform-readiness",
-      "last_reviewed": "2026-08-29",
+      "last_reviewed": "2026-09-01",
       "review_interval_days": 14,
       "replacement": null,
       "require_banner": false,
@@ -798,7 +834,7 @@
       "purpose": "Machine-readable experiment status and dependency snapshot",
       "may_direct_current_work": true,
       "owner": "experiment-readiness",
-      "last_reviewed": "2026-08-29",
+      "last_reviewed": "2026-09-01",
       "review_interval_days": 7,
       "replacement": null,
       "require_banner": false,

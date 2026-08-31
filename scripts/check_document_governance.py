@@ -89,6 +89,129 @@ def _first_lines(path: Path, limit: int = 12) -> str:
         return ""
 
 
+def _audit_current_fact_sync(
+    root: Path,
+    registry: dict[str, Any],
+    errors: list[dict[str, str]],
+) -> None:
+    """Fail when a newer claim gate is not reflected in current entries."""
+
+    sync = registry.get("current_fact_sync")
+    if sync is None:
+        return
+    if not isinstance(sync, dict):
+        errors.append(_error("INVALID_CURRENT_FACT_SYNC", "current_fact_sync must be an object"))
+        return
+
+    source_glob = sync.get("source_glob")
+    current_source = sync.get("current_source")
+    expected_sha256 = sync.get("current_source_sha256")
+    targets = sync.get("targets")
+    if not isinstance(source_glob, str) or not isinstance(current_source, str):
+        errors.append(
+            _error(
+                "INVALID_CURRENT_FACT_SYNC",
+                "current_fact_sync requires source_glob and current_source strings",
+            )
+        )
+        return
+    if not isinstance(expected_sha256, str) or len(expected_sha256) != 64:
+        errors.append(
+            _error(
+                "INVALID_CURRENT_FACT_SYNC",
+                "current_source_sha256 must contain 64 hex characters",
+            )
+        )
+        return
+    if not isinstance(targets, list):
+        errors.append(_error("INVALID_CURRENT_FACT_SYNC", "targets must be a list"))
+        return
+
+    sources = _expand_pattern(root, source_glob)
+    if not sources:
+        errors.append(
+            _error(
+                "CURRENT_FACT_SOURCE_MISSING",
+                "source_glob matches no claim gates",
+                path=source_glob,
+                kind="staleness",
+            )
+        )
+        return
+    latest_source = max(sources)
+    if current_source != latest_source:
+        errors.append(
+            _error(
+                "CURRENT_FACT_SOURCE_OUTDATED",
+                f"current source is {current_source}; latest tracked source is {latest_source}",
+                path=current_source,
+                kind="staleness",
+            )
+        )
+
+    source_path = root / current_source
+    if not source_path.is_file():
+        errors.append(
+            _error(
+                "CURRENT_FACT_SOURCE_MISSING",
+                "configured current source does not exist",
+                path=current_source,
+                kind="staleness",
+            )
+        )
+    else:
+        actual_sha256 = hashlib.sha256(source_path.read_bytes()).hexdigest()
+        if actual_sha256 != expected_sha256:
+            errors.append(
+                _error(
+                    "CURRENT_FACT_SOURCE_CHANGED",
+                    "current fact source hash changed without a synchronized status update",
+                    path=current_source,
+                    kind="staleness",
+                )
+            )
+
+    for target in targets:
+        if not isinstance(target, dict) or not isinstance(target.get("path"), str):
+            errors.append(_error("INVALID_CURRENT_FACT_TARGET", "each target requires a path"))
+            continue
+        relative_path = target["path"]
+        required_tokens = target.get("contains")
+        if not isinstance(required_tokens, list) or not all(
+            isinstance(token, str) for token in required_tokens
+        ):
+            errors.append(
+                _error(
+                    "INVALID_CURRENT_FACT_TARGET",
+                    "target contains must be a list of strings",
+                    path=relative_path,
+                )
+            )
+            continue
+        target_path = root / relative_path
+        if not target_path.is_file():
+            errors.append(
+                _error(
+                    "CURRENT_FACT_TARGET_MISSING",
+                    "current fact target does not exist",
+                    path=relative_path,
+                    kind="staleness",
+                )
+            )
+            continue
+        content = target_path.read_text(encoding="utf-8")
+        for token in required_tokens:
+            if token not in content:
+                errors.append(
+                    _error(
+                        "CURRENT_FACT_TEXT_MISSING",
+                        f"current fact token missing: {token}",
+                        path=relative_path,
+                        kind="staleness",
+                    )
+                )
+
+
 def audit_repository(
     root: Path,
     registry: dict[str, Any],
@@ -267,6 +390,8 @@ def audit_repository(
             for forbidden in invariant.get("excludes", []):
                 if forbidden in content:
                     errors.append(_error("FORBIDDEN_ENTRY_POINT_TEXT", f"forbidden text remains: {forbidden}", path=relative_path))
+
+    _audit_current_fact_sync(root, registry, errors)
 
     return {
         "schema": SCHEMA,

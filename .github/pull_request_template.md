@@ -16,6 +16,7 @@
 ## 验证证据
 
 - 命令：
+- 交接检查：`python3 scripts/check_workspace_hygiene.py --phase handoff`
 - 结果：`passed / failed / skipped`
 - 行为对照或回执：
 
@@ -38,6 +39,7 @@
 - [ ] CI 绿，真实 passed/failed/skipped 已记录
 - [ ] 必需独立复核绑定当前 Head SHA 并通过
 - [ ] 没有未解决 blocker
+- [ ] `handoff` 工作区检查通过；若未通过，已按 exact path 标记 `DIRTY-PROTECT`，本 PR 不宣称可回收
 - [ ] 不包含未获授权的删除、移动、force-push、仓库设置或 release 操作
 
 > `push != READY`；`CI green != independent review`；`merged != deployed/receipt`。

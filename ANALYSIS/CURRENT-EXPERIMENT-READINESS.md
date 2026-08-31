@@ -2,14 +2,23 @@
 
 > **CURRENT-VOLATILE**：本文是最近一次仓库内状态快照，不是外部实时查询结果。引用其中的 branch、SHA、PR、CI、VM、run、完成状态或时间估计前，必须在当前 checkout、GitHub 和 VM 重新核验；过期检查由 `DOCUMENT-STATUS.json` 与 `scripts/check_document_governance.py` fail-loud。
 
-## 2026-08-30 管理口径：全球 R02 是描述性场景/稳定性诊断
+## 2026-09-01 当前裁决：EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02 已闭合描述性证据，研究问题尚未冻结（CURRENT）
+
+- 仓库证据基线：`origin/main=79796b6d2bf9e471f951b6e4a6a80f11701eda81`（PR #192）。`EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的持久化分析为 `VERIFIED`，共 24 个 verified run；设计账本明确它们是 **12 个唯一 resolved config + 12 个相同配置精确重执行**，不能按 24 个独立条件或 24 个独立样本解释。
+- 24/24 scene check 均为 `ACCESS_LIMITED`；claim gate 是 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`，不是 `SUPPORTED`、论文可用或科研结论已成立。当前证据允许报告各 load 的描述值、运行完整性和精确重执行一致性；不能声称全球 ISL 压力阈值/响应曲线、因果效应、算法优越性、信息价值、RL 价值或新方法贡献。
+- **当前最重要的项目任务不是继续挑旧实验跑。** 组会侧先按 2026-08-31 方向完成问题导向的强化学习路由/调度文献调研，从候选问题中收窄一个可证伪的中心问题；不预设新算法，不启动完整 RL 复现。实验侧保持暂停扩矩阵，先解释 `ACCESS_LIMITED` 对场景与可回答问题的约束，再由冻结后的研究问题决定最小新合同。
+- GitHub、VM deployment 和本地 checkout 是不同状态：本节只确认已进入 `origin/main` 的证据工件，不据此宣称当前 main 已重新部署或 VM 可直接继续运行。任何新正式实验仍须重新走编译、审阅、授权、clean-main 部署、自然结束回执与分析重算。
+
+> **历史分界**：从下一节开始均为按日期保留的历史设计或状态快照，只用于追溯证据与决策变化；其中的“当前”“下一步”和运行中状态均不得指导新任务，冲突时只采用本节。
+
+## 2026-08-30 历史设计口径：全球 R02 是描述性场景/稳定性诊断
 
 - `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24 个计划 cell 只有 12 个唯一 resolved config；其余 12 个是同 load、同 seed、同配置的 a/b 精确重执行。a/b 只提供确定性/重复执行证据，不能计作额外 seed、独立样本或独立实验条件。
 - 冻结 brief 已预注册：本 bracket 内最坏单链路漏斗利用率上界约 `0.135`，低于 ISL 压力门 `0.8`。因此该 cohort 能回答不同 load/seed 下的场景分类、描述性指标和重复一致性，不能回答全局 ISL 压力阈值、首个压力点或负载响应曲线；名称中的 `PRESSURE-BRACKET` 不扩大其 claim scope。
 - acceptance `{1,0,true,true}` 是运行非退化与证据准入门，不是科研充分性门。只有后验 V2 analysis、冻结 scene classification、物理有效性和逐 claim 审阅全部通过后，结果才可进入相应科研结论；`governance research_eligible=true` 也不等于 paper-ready。
 - 本节只冻结设计与解释边界，不提前填写运行结果。24-cell 串行 cohort 的完成状态、聚合指标和最终 scene 分类必须在自然结束、拉回和持久化重算后另行更新。
 
-## 2026-08-29 快照：全球人口陆地场景后验分析与场景分类闭合（CURRENT）
+## 2026-08-29 历史快照：全球人口陆地场景后验分析与场景分类闭合
 
 - 快照：`as_of_commit=c9ef45e`（origin/main；PR #172–#175 已合入，后验分析修复 #176 在合入流程中）；`last_verified_at=2026-08-29`；本文 2026-08-24/08-22 及更早节段按日期为历史快照，内容冲突处以本节为准。
 - 全球人口陆地场景 `EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01`（部署 `01c323a`、seed 7、双臂 `load10_a-s7`/`load10_b-s7`）：
@@ -21,7 +30,7 @@
 - 文档治理：120/120 tracked Markdown 已纳入登记（#172）；2026-08-29 处置清单（as_of `a5cf727`）给出 4 份 update_now（含本文档）、13 个归档候选、1 consolidate、1 mark_superseded；归档/移动等受保护动作仍需用户逐项批准。
 - `next_gate`：多负载 bracket 预注册（以 10 Mbps 重复点与 ACCESS_LIMITED 分类为基准设计 bracket 与多 seed）→ Q0-F/Q0-I 真实窗口 → 信息切断消融 → 统一条件算法比较。
 
-## 2026-08-24 当前覆盖：R02 正式带宽双臂完成
+## 2026-08-24 历史快照：EXP-20260824-ISL-BANDWIDTH-PILOT-R02 正式带宽双臂完成
 
 本节覆盖下方较早快照中关于 exact main、VM deployment 和“V2 artifact→claim
 仍未闭合”的状态描述；下方历史诊断数字仍须按各自日期理解。
@@ -46,7 +55,7 @@
   可用，不等于 Kimi 双通道外审通过；最终路线仍由 Codex 裁决为先做小型低带宽
   bracket，不先扩 seed、不转 demand 轴、不扩成大矩阵。
 
-## 2026-08-22：280/14 E0 完整信息参考诊断（10M 已完成）
+## 2026-08-22 历史诊断：280/14 E0 完整信息参考（10M 已完成）
 
 这是一项配置/证据边界修正，不是内核或 trace schema 变更。动态 280/14 图在
 `t={0,1,5,10,20,30}` 均连通、每星 degree=4、diameter=17；因此 E0 完整信息参考
@@ -92,7 +101,7 @@ holding/in-system 诊断”的判断，但不能单独宣称普遍因果结论�
 > `1869052 KiB`，events `9618761`。50 Mbps 是较高负载候选而非无损低负载；10/25/50 的 low/medium/high 标签待同口径 VM
 > 结果后判定，旧 50/100/200 仅 historical-only。
 
-## 1. 两个目标
+## 2026-08-22 历史规划 1：两个目标
 
 | 目标 | 完成定义 | 当前位置 | 剩余工作的性质 | 时间估计 |
 |---|---|---|---|---|
@@ -101,7 +110,7 @@ holding/in-system 诊断”的判断，但不能单独宣称普遍因果结论�
 
 目标 B 必须定义为“本研究范围内的 practical ceiling”，不能定义成所有卫星网络机制都完美。未校准的 Doppler、天线、ARQ、天气或链路参数即使代码存在，也不自动提高科研可信度。
 
-## 2. 当前事实快照
+## 2026-08-22 历史规划 2：当时事实快照
 
 | 项目 | 当前事实 | 判定 |
 |---|---|---|
@@ -121,7 +130,7 @@ holding/in-system 诊断”的判断，但不能单独宣称普遍因果结论�
 | 续训 | continuation bundle 已绑定 replay、optimizer、target network、训练计数器、NumPy/TF RNG、schema/config/SHA；VM 已验证恢复后继续一步的动作/计数/权重一致；完整长窗中断/不间断等价仍未跑 | FACT；完整长训前仍需等价门 |
 | 三轮三方无新问题 | 只完成局部 PR/局部模块审阅，没有在最终冻结平台上完成连续三轮 | FACT，未满足 |
 
-## 3. 目标 A：真实流量诊断/pilot 就绪门禁
+## 2026-08-22 历史规划 3：目标 A——真实流量诊断/pilot 就绪门禁
 
 工期按“代码和评审资源连续可用、VM 正常、没有新 blocking”估计；任务可部分并行，但最终审计与 VM 部署必须在冻结代码之后串行。
 
@@ -137,7 +146,7 @@ holding/in-system 诊断”的判断，但不能单独宣称普遍因果结论�
 
 最早的真实流量 smoke 会早于目标 A 完成，但它只能暴露工程问题。Q0 不阻塞这个 smoke 或 E0-REAL；V2 分析链、利用率分母和三段时延才是把诊断升级为论文证据的硬门。
 
-## 4. 目标 B：论文主结论就绪路线
+## 2026-08-22 历史规划 4：目标 B——论文主结论就绪路线
 
 | 层 | 需要补到什么程度 | 当前主要缺口 | 是否阻塞目标 A |
 |---|---|---|---|
@@ -151,7 +160,7 @@ holding/in-system 诊断”的判断，但不能单独宣称普遍因果结论�
 
 目标 B 应以论文 claim 为边界逐项验收，而不是一次性把旧平台全部功能搬回。能力取舍见 `PLATFORM-CAPABILITY-LEDGER.md`。
 
-## 5. 下一步顺序
+## 2026-08-22 历史规划 5：当时下一步顺序（已被顶部裁决取代）
 
 1. 已知 R1-A1 额外跳数刷分风险已关闭；下一硬门是把 shaped reward 与 Q0 的物理目标分离，并在正式实验前冻结 claim 目标。
 2. available-capacity 分母代码已合入并有新多 OD VM T0 ledger；10M vis17 已证明完整信息参考会改变 holding/in-system 诊断，25M/50M vis17 正在运行。待三档完成后再补齐逐窗口独立重算、每包 queue/tx/prop 三段时延及三段和校验，并冻结低/中/压力档。

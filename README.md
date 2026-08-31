@@ -24,13 +24,13 @@ Agent 或维护者开始工作前先读 `AGENT-START-HERE.md`；文档权威、�
 
 ```sh
 pip install simpy numpy pyyaml  # 学习功能另需 tensorflow（无 TF 时学习路径 fail-closed）
-python -m CODE.leo_sim config validate --config CODE/leo_sim/profiles/smoke.yaml
-python -m CODE.leo_sim run --config CODE/leo_sim/profiles/smoke.yaml --out out/smoke
-python -m CODE.leo_sim receipt verify --out out/smoke
-python -m CODE.leo_sim platform check --out out/platform-check
+python3 -m CODE.leo_sim config validate CODE/leo_sim/profiles/smoke.yaml
+python3 -m CODE.leo_sim run --config CODE/leo_sim/profiles/smoke.yaml --out out/smoke
+python3 -m CODE.leo_sim receipt verify --out out/smoke
+python3 -m CODE.leo_sim platform check --out out/platform-check
 ```
 
-测试：`python -m pytest CODE/leo_sim/tests CODE/tests -q`
+测试：`python3 -m pytest CODE/leo_sim/tests CODE/tests -q`
 （学习相关测试需要 TensorFlow；无 TF 环境下相应用例按设计 fail-closed 跳过或报错。）
 
 ## 目录

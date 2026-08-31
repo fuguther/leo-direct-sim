@@ -2,7 +2,16 @@
 
 > **CURRENT-VOLATILE**：实验问题和顺序仍由本文承载，但顶部诊断进度、SHA、VM 和 run 状态只表示最近一次核验。执行前必须通过 `DOCUMENT-STATUS.json` 的时效检查并实时核对外部证据。
 
-## 2026-08-29 快照：全球人口陆地场景后验分析与场景分类闭合（CURRENT）
+## 2026-09-01 当前实验裁决：不扩矩阵，先冻结一个论文问题（CURRENT）
+
+- `origin/main=79796b6d2bf9e471f951b6e4a6a80f11701eda81`（PR #192）已保存 `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24/24 `VERIFIED` 分析证据。设计有效样本口径是 12 个唯一 resolved config 加 12 个精确重执行，不得把 a/b 重执行当作额外 seed 或不同实验条件。
+- 24/24 scene check 均为 `ACCESS_LIMITED`，claim gate 为 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`。该 cohort 只支持描述性场景/load 指标与重复一致性审阅；不支持 ISL 压力阈值或曲线、因果统计、算法优越性、信息/RL 价值、新算法贡献或 paper-ready 结论。
+- 当前组会任务优先于继续扩实验：先进行问题导向的文献调研，在“远端信息价值、状态陈旧、图模型收益来源、是否扩大到联合路由调度”等候选中收窄一个中心问题，并给出最接近工作、代码/复现成本和可证伪实验。未冻结研究问题前，不预注册新大矩阵、不启动完整 RL 复现、不包装新方法。
+- 若恢复实验设计，第一门是解释 `ACCESS_LIMITED` 场景是否还能回答冻结后的研究问题；不能再从下方历史 `next_gate`、旧 run 状态或日期较新的文件名直接选择任务。任何正式运行仍须从当前 clean `main` 重编译、独立审阅和授权。
+
+> **历史分界**：从下一节开始均为日期快照或旧方案全文，只用于研究谱系、证据追溯和反例复用；其中的“当前”“实际执行顺序”和待运行项目均不得直接派活，冲突时只采用本节。
+
+## 2026-08-29 历史快照：全球人口陆地场景后验分析与场景分类闭合
 
 - 快照：`as_of_commit=c9ef45e`（origin/main；PR #172–#175 已合入，后验分析修复 #176 在合入流程中）；`last_verified_at=2026-08-29`；本文 2026-08-24/08-22 及更早节段按日期为历史快照，内容冲突处以本节为准。
 - 全球人口陆地场景 `EXP-20260826-GLOBAL-PRESSURE-BRACKET-R01`（部署 `01c323a`、seed 7、双臂 `load10_a-s7`/`load10_b-s7`）：
@@ -14,7 +23,7 @@
 - 文档治理：120/120 tracked Markdown 已纳入登记（#172）；2026-08-29 处置清单（as_of `a5cf727`）给出 4 份 update_now（含本文档）、13 个归档候选、1 consolidate、1 mark_superseded；归档/移动等受保护动作仍需用户逐项批准。
 - `next_gate`：多负载 bracket 预注册（以 10 Mbps 重复点与 ACCESS_LIMITED 分类为基准设计 bracket 与多 seed）→ Q0-F/Q0-I 真实窗口 → 信息切断消融 → 统一条件算法比较。
 
-## 2026-08-22：E0 完整信息参考诊断（10M 已完成）
+## 2026-08-22 历史诊断：E0 完整信息参考（10M 已完成）
 
 动态 280/14 图在 `t=0,1,5,10,20,30` 均连通、每星 degree=4、diameter=17，
 因此当前 E0 完整信息参考臂使用 `control_plane.vis_k=17`。这不是所有实验的默认值；
@@ -40,7 +49,7 @@ witness，因此不是正式论文结果。25M/50M vis17 正在 VM 并行执行�
 
 > **当前门禁**：access boundary 是 E0 重标定前门禁；必须先完成 coverage/horizon audit、有限 queue 阶段指标和 VM 小样，随后重新执行 E0，不能沿用下方历史曲线。
 
-### 当前 coverage 候选（工程诊断，非论文结果）
+### 2026-08-22 当时 coverage 候选（历史工程诊断，非论文结果）
 
 旧 140 星/7 面/30° VM smoke 已完成但覆盖不足。固定 M-Lab trace
 `f6981c327f4c36e659d3f7b5ef66128f94a199d0203591401c88ed0e8ab22de4` 的几何扫描登记
@@ -53,7 +62,7 @@ witness，因此不是正式论文结果。25M/50M vis17 正在 VM 并行执行�
 in-system；wall/user/sys=133.93/132.47/1.06 s）；macOS max RSS 因权限未核验。该候选阶段已由 exact-main VM
 trial 关闭，并在下一节升级为 E0 工程基线；仍非容量证明或 paper-ready 全局冻结。
 
-### 当前 E0 工程基线（非 paper-ready 全局冻结）
+### 2026-08-22 当时 E0 工程基线（历史快照，非 paper-ready 全局冻结）
 
 当前 main/deployed 为 `66c5a68`；此前 exact-main `29e41c8` 的 VM 部署 receipt
 `11688f2f2fae23c250b535aa439057c01eebd8b386f132c00ba654c4003b31a8`，
@@ -68,7 +77,7 @@ VM 资源为 wall/user/sys `424.1882/429.4386/2.0247 s`、max RSS `1869052 KiB`�
 vis17 同 trace 诊断已完成，25M/50M vis17 正在 VM 并行执行；三档结果齐全后再按预注册规则
 判定负载区间。完成前不进入 long-haul/容量压力轴，也不因低交付率直接修改星座规模。
 
-> CURRENT；最后核验：2026-08-22。20 s 10/25/50 Mbps 旧运行被标为 `diagnostic_truncated_horizon`，不能用于负载分类；`emission_end_s=20`、`scenario.duration_s=30` 的 drain-aware profiles 已执行 10M vis17 同 trace 诊断，25M/50M vis17 正在 VM 并行执行。三档返回后再冻结负载区间；旧 50/100/200 仅 historical-only，不是正式论文结果；V2 artifact→claim、正式三段时延 gate、正式授权 cohort 仍未完成。
+> HISTORICAL；最后核验：2026-08-22。20 s 10/25/50 Mbps 旧运行被标为 `diagnostic_truncated_horizon`，不能用于负载分类；`emission_end_s=20`、`scenario.duration_s=30` 的 drain-aware profiles 已执行 10M vis17 同 trace 诊断，25M/50M vis17 当时仍在 VM 并行执行。该运行中状态已失效，不得据此继续任务；旧 50/100/200 仅 historical-only，不是正式论文结果。
 
 ### Emission window 与 drain-aware E0（工程诊断，非论文结果）
 
@@ -76,7 +85,7 @@ vis17 同 trace 诊断已完成，25M/50M vis17 正在 VM 并行执行；三档�
 
 新的 E0 profiles 固定 emission window 20 s、simulation horizon 30 s，manifest 明确记录 `simulation_horizon_s`、`emission_end_s` 和 `drain_s=10`。下一步 VM 为每个负载分别复用其 20 s run 的精确 trace，完成 10/25/50 三个 drain-aware cell，再依据完整尾部指标判定负载区间。
 
-## 1. 研究主线与工作方法
+## 2026-08-22 历史方案 1：研究主线与工作方法
 
 主线锁定为：**LEO 动态网络中的拥塞控制与链路利用率**。
 
@@ -88,7 +97,7 @@ vis17 同 trace 诊断已完成，25M/50M vis17 正在 VM 并行执行；三档�
 
 真实流量是主证据。uniform synthetic 仍保留，但只用于守恒/边界 sanity、可控负载标定和敏感性对照，不能替代外部有效性。
 
-## 2. 什么必须做，以及何时做
+## 2026-08-22 历史方案 2：当时认为必须做的工作
 
 用户已指定下列能力全部纳入项目范围。“全部要做”不等于“全部阻塞第一次工程 smoke”；每项只在最早会影响结论的阶段成为硬门。
 
@@ -104,7 +113,7 @@ vis17 同 trace 诊断已完成，25M/50M vis17 正在 VM 并行执行；三档�
 | 逐字段信息年龄 | AGE-LADDER 前 | cache 整体年龄不能冒充每个字段的生成、接收和来源年龄 |
 | replay buffer 续训 | 长时学习/新方案训练前 | 一次完整短训练不依赖它；昂贵训练需要恢复 replay、optimizer、target 与 RNG 才可复现 |
 
-## 3. 实际执行顺序
+## 2026-08-22 历史方案 3：当时执行顺序（不得直接派活）
 
 ### P0：论文级平台底座
 
@@ -239,7 +248,7 @@ coverage/horizon audit 和 VM 小样，再冻结 offered load。历史 20 s 50/1
 - 观测跳数、GAT/MPNN、信息内容/信息年龄只保留与主机制相关的消融；
 - 不再默认按旧 EXP1→EXP2→EXP2B→EXP3 全部跑完。如果它们不能解释拥塞控制主结论，就降为条件性实验。
 
-## 4. 解释纪律
+## 2026-08-22 历史方案 4：解释纪律
 
 - “真实流量”必须准确标注：原始 trace、实测聚合代理、人口重力代理或合成流量。
 - 高链路利用率不是天然更好：必须同时检查交付、排队、丢包和公平性。
@@ -250,7 +259,7 @@ coverage/horizon audit 和 VM 小样，再冻结 offered load。历史 20 s 50/1
 - 调优、训练、流量、评估 seed 分池且不重叠；跨 arm 使用相同 trace 配对。
 - 先 pilot 冻结样本量、预算、主指标和主对比，再看正式效果。
 
-## 5. 文件与证据形式
+## 2026-08-22 历史方案 5：文件与证据形式
 
 | 层级 | 文件 | 作用 |
 |---|---|---|

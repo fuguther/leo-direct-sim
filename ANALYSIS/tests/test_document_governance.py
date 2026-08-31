@@ -389,6 +389,107 @@ def test_stale_current_document_fails_loud(tmp_path):
     assert report["stale"] == ["CURRENT.md"]
 
 
+def _write_claim_gate(root: Path, experiment_id: str, status: str) -> tuple[str, str]:
+    relative = f"ANALYSIS/{experiment_id}/v2-paired/claim-gate.json"
+    path = root / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        '{"schema":"leo-sim-v2-claim-gate/v1","status":"'
+        + status
+        + '"}\n',
+        encoding="utf-8",
+    )
+    return relative, hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _fact_sync(source: str, source_sha256: str) -> dict:
+    return {
+        "source_glob": "ANALYSIS/EXP-*/**/claim-gate.json",
+        "current_source": source,
+        "current_source_sha256": source_sha256,
+        "targets": [
+            {
+                "path": "CURRENT.md",
+                "contains": [
+                    source.split("/")[1],
+                    "READY_FOR_INDEPENDENT_CLAIM_REVIEW",
+                ],
+            }
+        ],
+    }
+
+
+def test_newer_claim_gate_than_current_fact_source_fails_loud(tmp_path):
+    current_source, current_sha = _write_claim_gate(
+        tmp_path,
+        "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+        "READY_FOR_INDEPENDENT_CLAIM_REVIEW",
+    )
+    _write_claim_gate(
+        tmp_path,
+        "EXP-20260902-NEXT-R01",
+        "READY_FOR_INDEPENDENT_CLAIM_REVIEW",
+    )
+    (tmp_path / "CURRENT.md").write_text(
+        "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02 "
+        "READY_FOR_INDEPENDENT_CLAIM_REVIEW\n",
+        encoding="utf-8",
+    )
+    registry = _registry(_entry("CURRENT.md"))
+    registry["current_fact_sync"] = _fact_sync(current_source, current_sha)
+
+    report = audit_repository(tmp_path, registry, today=date(2026, 9, 2))
+
+    assert any(
+        error["code"] == "CURRENT_FACT_SOURCE_OUTDATED"
+        for error in report["errors"]
+    )
+
+
+def test_changed_current_fact_source_hash_fails_loud(tmp_path):
+    current_source, current_sha = _write_claim_gate(
+        tmp_path,
+        "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+        "READY_FOR_INDEPENDENT_CLAIM_REVIEW",
+    )
+    (tmp_path / "CURRENT.md").write_text(
+        "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02 "
+        "READY_FOR_INDEPENDENT_CLAIM_REVIEW\n",
+        encoding="utf-8",
+    )
+    registry = _registry(_entry("CURRENT.md"))
+    registry["current_fact_sync"] = _fact_sync(current_source, current_sha)
+    (tmp_path / current_source).write_text(
+        '{"schema":"leo-sim-v2-claim-gate/v1","status":"SUPPORTED"}\n',
+        encoding="utf-8",
+    )
+
+    report = audit_repository(tmp_path, registry, today=date(2026, 9, 1))
+
+    assert any(
+        error["code"] == "CURRENT_FACT_SOURCE_CHANGED"
+        for error in report["errors"]
+    )
+
+
+def test_current_fact_tokens_must_reach_every_target(tmp_path):
+    current_source, current_sha = _write_claim_gate(
+        tmp_path,
+        "EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02",
+        "READY_FOR_INDEPENDENT_CLAIM_REVIEW",
+    )
+    (tmp_path / "CURRENT.md").write_text("stale state\n", encoding="utf-8")
+    registry = _registry(_entry("CURRENT.md"))
+    registry["current_fact_sync"] = _fact_sync(current_source, current_sha)
+
+    report = audit_repository(tmp_path, registry, today=date(2026, 9, 1))
+
+    assert any(
+        error["code"] == "CURRENT_FACT_TEXT_MISSING"
+        for error in report["errors"]
+    )
+
+
 def test_unregistered_governed_document_fails_loud(tmp_path):
     (tmp_path / "known.md").write_text("# known\n", encoding="utf-8")
     (tmp_path / "forgotten.md").write_text("# forgotten\n", encoding="utf-8")

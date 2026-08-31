@@ -1,8 +1,14 @@
 # leo_sim V2 平台能力账本
 
-> **CURRENT-VOLATILE**；最后核验：2026-08-29。本文承担当前能力与迁移取舍，但其中代码基线、部署、候选合入和 VM 状态必须实时复核。不能把候选证据冒充已部署证据；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移理由见 `MIGRATION-BACKLOG-20260816.md`。
+> **CURRENT-VOLATILE**；最后核验：2026-09-01。本文承担当前能力与迁移取舍，但其中代码基线、部署、候选合入和 VM 状态必须实时复核。不能把候选证据冒充已部署证据；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移理由见 `MIGRATION-BACKLOG-20260816.md`。
 
-## 2026-08-29 快照要点
+## 2026-09-01 快照要点（CURRENT）
+
+- `origin/main=79796b6d2bf9e471f951b6e4a6a80f11701eda81` 已保存 `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24/24 `VERIFIED` 分析：12 个唯一 resolved config + 12 个精确重执行；24/24 scene check 都是 `ACCESS_LIMITED`，claim gate 为 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`。
+- 这关闭的是正式工件、重复执行和描述性场景分类的工程证据缺口，不关闭场景适用性、真实 ISL 压力、Q0、信息价值、公平算法矩阵、RL 效果或论文 claim。测试与回执能力也不是平台研究贡献已经成立的证明。
+- 当前不因平台“能跑”而扩矩阵。先按 2026-08-31 组会方向用文献调研冻结一个可证伪的论文问题；随后只为该问题设计最小场景/参照/信息/算法合同。下面 2026-08-29 及更早表项保留为当时能力证据，冲突时以本节和实际代码/回执为准。
+
+## 2026-08-29 历史快照要点
 
 - `as_of_commit=c9ef45e`；全球人口陆地场景双臂（10 Mbps，seed 7）后验分析 VERIFIED（`bound_posterior`/`governance_bound_posterior`、差异 0.0）与 scene 分类（ACCESS_LIMITED、integrity/coverage ok、0 压力候选）已闭合；R02 为否定性工程证据、R03 单 seed 候选不升格；Q0/算法矩阵/论文 claim 未完成。完整快照见 `CURRENT-EXPERIMENT-READINESS.md` 2026-08-29 节。
 
