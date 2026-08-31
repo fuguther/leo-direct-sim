@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "planId": "offload-4465dceb44bd36e5",
+  "relayManifest": {
+    "planId": "offload-4465dceb44bd36e5",
+    "projectId": "leo-direct-sim",
+    "backend": "kimi_acp",
+    "policyMode": "fast",
+    "maxParallelWorkers": 1,
+    "analysisLanes": 1,
+    "tasks": [
+      {
+        "taskId": "offload:leo-direct-sim:R1",
+        "lane": "primary",
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "7ceeb62420caee6b2a82022af60105624f6f121b",
+        "paths": [
+          "docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md",
+          "AGENTS.md",
+          "AGENT-START-HERE.md",
+          ".gitignore",
+          ".github/pull_request_template.md",
+          "ANALYSIS/DOCUMENT-STATUS.json",
+          "scripts/check_document_governance.py",
+          "ANALYSIS/tests/test_document_governance.py",
+          "PAPER/eligible_claims.py",
+          "PAPER/README.md",
+          "CODE/scripts/remote/remote.env.template",
+          "CODE/scripts/remote/common.sh"
+        ],
+        "promptHash": "c6c67ab7c413efd9953e3fabe7617dd87699d3abfac317708c0e3e581c7c4c7d"
+      }
+    ],
+    "pendingRelaySnapshots": [],
+    "manifestDigest": "4465dceb44bd36e578eaba09349fb237609f5d074e91d6ce4ce9531f957c01c8"
+  },
+  "sourceBaseCommit": "7ceeb62420caee6b2a82022af60105624f6f121b",
+  "tasks": [
+    {
+      "taskId": "offload:leo-direct-sim:R1",
+      "promptHash": "c6c67ab7c413efd9953e3fabe7617dd87699d3abfac317708c0e3e581c7c4c7d",
+      "githubContext": {
+        "repository": "fuguther/leo-direct-sim",
+        "commit": "7ceeb62420caee6b2a82022af60105624f6f121b",
+        "paths": [
+          "docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md",
+          "AGENTS.md",
+          "AGENT-START-HERE.md",
+          ".gitignore",
+          ".github/pull_request_template.md",
+          "ANALYSIS/DOCUMENT-STATUS.json",
+          "scripts/check_document_governance.py",
+          "ANALYSIS/tests/test_document_governance.py",
+          "PAPER/eligible_claims.py",
+          "PAPER/README.md",
+          "CODE/scripts/remote/remote.env.template",
+          "CODE/scripts/remote/common.sh"
+        ],
+        "relayBranch": null,
+        "inputDigest": null
+      }
+    }
+  ]
+}
