@@ -1,0 +1,85 @@
+{
+  "contract": {
+    "allowedPaths": [
+      "docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md",
+      "AGENTS.md",
+      "AGENT-START-HERE.md",
+      ".gitignore",
+      ".github/pull_request_template.md",
+      "ANALYSIS/DOCUMENT-STATUS.json",
+      "scripts/check_document_governance.py",
+      "ANALYSIS/tests/test_document_governance.py",
+      "PAPER/eligible_claims.py",
+      "PAPER/README.md",
+      "CODE/scripts/remote/remote.env.template",
+      "CODE/scripts/remote/common.sh"
+    ],
+    "metadata": {
+      "frozenPlanDigest": "sha256:743963dc6ac0ca095fd77b6678ebd123b19f6a6d15d5513dbb9aba18278f9f40",
+      "digestVersion": "canonical-json-sha256-v1"
+    },
+    "projectId": "leo-direct-sim",
+    "taskId": "offload:leo-direct-sim:R1",
+    "title": "冷启动审阅精简工作区防污染设计",
+    "goal": "审阅 docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md。逐项检查：1) 是否建立了第二套臃肿治理系统；2) 默认启动检查是否可能因 GROUP-MEETINGS-LOCAL、remote.env、缓存或正常开发改动产生不可接受的误报；3) ignored 实验证据、普通 untracked、未知 ignored、全 worktree 审计是否区分充分；4) 只读和禁止自动删除边界是否可验证；5) 与 AGENT-START-HERE、AGENTS、现有文档治理、PR 模板和 gitignore 是否兼容；6) 约 200 行、无依赖、约 1 秒的预算是否现实。只审规格，不修改文件，不提出无关重构。每条 blocking/major/minor finding 必须给出精确文件和行号、代码或合同证据、实际后果和最小修正。最后输出 APPROVE 或 REQUEST_CHANGES，并列 open_items。",
+    "mode": "REMOTE",
+    "policyMode": "fast",
+    "lane": "primary",
+    "taskType": "exploratory",
+    "depthTier": "standard",
+    "sessionKey": null,
+    "chatgptUrl": null,
+    "chatgptProjectRequired": false,
+    "backend": "kimi_acp",
+    "githubContext": {
+      "repository": "fuguther/leo-direct-sim",
+      "commit": "7ceeb62420caee6b2a82022af60105624f6f121b",
+      "paths": [
+        "docs/superpowers/specs/2026-09-01-workspace-hygiene-design.md",
+        "AGENTS.md",
+        "AGENT-START-HERE.md",
+        ".gitignore",
+        ".github/pull_request_template.md",
+        "ANALYSIS/DOCUMENT-STATUS.json",
+        "scripts/check_document_governance.py",
+        "ANALYSIS/tests/test_document_governance.py",
+        "PAPER/eligible_claims.py",
+        "PAPER/README.md",
+        "CODE/scripts/remote/remote.env.template",
+        "CODE/scripts/remote/common.sh"
+      ],
+      "relayBranch": null,
+      "inputDigest": null
+    },
+    "capabilities": [
+      "github_read",
+      "structured_result"
+    ],
+    "dependencies": [],
+    "allowedOperations": [
+      "read_github_exact_commit",
+      "write_structured_result"
+    ],
+    "forbiddenOperations": [
+      "access_local_files",
+      "run_local_shell",
+      "use_local_credentials",
+      "merge_pull_request",
+      "force_push",
+      "claim_final_verification"
+    ],
+    "acceptance": [
+      "只输出设计审阅，不修改任何仓库文件",
+      "每条发现含 severity、精确路径和行号、证据、影响、最小修正",
+      "明确评估臃肿、性能、误报、漏报和不可逆操作风险",
+      "最终 verdict 只能是 APPROVE 或 REQUEST_CHANGES",
+      "显式列出 open_items；没有则写 none"
+    ],
+    "requiredEvidence": [
+      "绑定 exact commit 的文件行号",
+      "与现有 AGENTS/入口/治理测试/远端路径 guard 的交叉证据"
+    ],
+    "localContinuationRequired": false
+  },
+  "promptHash": "c6c67ab7c413efd9953e3fabe7617dd87699d3abfac317708c0e3e581c7c4c7d"
+}
