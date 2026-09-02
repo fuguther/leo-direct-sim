@@ -23,13 +23,21 @@ python3 scripts/check_document_governance.py --mode all --report /tmp/leo-docume
 
 1. `AGENTS.md`：稳定、长期的仓库硬规则。
 2. `ANALYSIS/DOCUMENT-STATUS.json`：每份指导和记录文档的状态、用途、替代入口及复核周期。
-3. `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`：最近一次平台和实验就绪快照；其中外部状态必须实时复核。
-4. `ANALYSIS/EXPERIMENT-PROGRAM.md` 与 `EXPERIMENTS/experiment-program.yaml`：当前实验顺序和机器合同。
-5. 按任务读取当前专题合同：
+3. **论文选题任务**：先读 `LITERATURE/README.md`，按其中的证据防火墙形成冷启动问题草图。在草图和第一轮外部文献碰撞完成前，不读取详细实验计划、历史结果、旧候选排序或平台功能清单。
+4. **实验、实现和复核任务**：读取 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`、`ANALYSIS/EXPERIMENT-PROGRAM.md` 与 `EXPERIMENTS/experiment-program.yaml`，实时核对其中的外部状态。
+5. 选题候选已经独立形成后，才可把上一步的 CURRENT 文档作为本地证据揭示，用于反证、边界和可行性判断，不得据此生成或排序候选。
+6. 按任务读取当前专题合同：
    - Q0/信息裁剪：`ANALYSIS/Q0-INFORMATION-ABLATION-PROTOCOL.md`
    - 平台能力与迁移取舍：`ANALYSIS/PLATFORM-CAPABILITY-LEDGER.md`
    - 已知问题与复核：`ANALYSIS/FINDINGS-REGISTRY.md`
    - 正式实验：`CODE/experiment_platform/AGENT_EXPERIMENT_PROTOCOL.md`
+
+## 论文选题材料隔离
+
+- 冷启动草图不得出现仅由项目历史产生的实验编号、内部候选名、既有算法清单或平台现成功能。
+- 旧实验必须拆成“原始观测”和“历史解释”；前者可在本地证据揭示阶段检验候选，后者只能作为待攻击解释。
+- `SUPPORTING`、`ROLLING-LOG`、`EVIDENCE-SNAPSHOT`、`HISTORICAL` 和 `SUPERSEDED` 文档不得推荐、冻结或否决中心问题。
+- 证据不足时保留候选和下一项廉价核验，不强制推荐一个中心问题，也不得把用户反馈本身当作杀题证据。
 
 ## 权威顺序
 

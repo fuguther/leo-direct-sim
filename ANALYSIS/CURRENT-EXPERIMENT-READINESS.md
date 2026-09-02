@@ -2,11 +2,11 @@
 
 > **CURRENT-VOLATILE**：本文是最近一次仓库内状态快照，不是外部实时查询结果。引用其中的 branch、SHA、PR、CI、VM、run、完成状态或时间估计前，必须在当前 checkout、GitHub 和 VM 重新核验；过期检查由 `DOCUMENT-STATUS.json` 与 `scripts/check_document_governance.py` fail-loud。
 
-## 2026-09-01 当前裁决：EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02 已闭合描述性证据，研究问题尚未冻结（CURRENT）
+## 2026-09-03 当前裁决：描述性证据已闭合，研究问题未冻结且选题须去锚定（CURRENT）
 
 - 仓库证据基线：`origin/main=79796b6d2bf9e471f951b6e4a6a80f11701eda81`（PR #192）。`EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的持久化分析为 `VERIFIED`，共 24 个 verified run；设计账本明确它们是 **12 个唯一 resolved config + 12 个相同配置精确重执行**，不能按 24 个独立条件或 24 个独立样本解释。
 - 24/24 scene check 均为 `ACCESS_LIMITED`；claim gate 是 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`，不是 `SUPPORTED`、论文可用或科研结论已成立。当前证据允许报告各 load 的描述值、运行完整性和精确重执行一致性；不能声称全球 ISL 压力阈值/响应曲线、因果效应、算法优越性、信息价值、RL 价值或新方法贡献。
-- **当前最重要的项目任务不是继续挑旧实验跑。** 组会侧先按 2026-08-31 方向完成问题导向的强化学习路由/调度文献调研，从候选问题中收窄一个可证伪的中心问题；不预设新算法，不启动完整 RL 复现。实验侧保持暂停扩矩阵，先解释 `ACCESS_LIMITED` 对场景与可回答问题的约束，再由冻结后的研究问题决定最小新合同。
+- **当前最重要的项目任务不是继续挑旧实验跑，也不是从历史候选中强行选一个。** 论文选题先按 `LITERATURE/README.md` 完成冷启动问题生成和外部文献碰撞；在独立候选形成前，不读取旧实验解释、旧候选排序或平台功能清单。随后才可把 `ACCESS_LIMITED`、既有诊断和平台能力作为反证、边界与可行性材料。中心问题冻结前继续暂停扩矩阵，不启动完整 RL 复现，不包装新方法。
 - GitHub、VM deployment 和本地 checkout 是不同状态：本节只确认已进入 `origin/main` 的证据工件，不据此宣称当前 main 已重新部署或 VM 可直接继续运行。任何新正式实验仍须重新走编译、审阅、授权、clean-main 部署、自然结束回执与分析重算。
 
 > **历史分界**：从下一节开始均为按日期保留的历史设计或状态快照，只用于追溯证据与决策变化；其中的“当前”“下一步”和运行中状态均不得指导新任务，冲突时只采用本节。
