@@ -1,12 +1,12 @@
-# 阅读队列与筛选台账（36 篇）
+# 旧问题种子语料的阅读队列与状态台账
 
-> 两遍法：全量过摘要 → 选出精读队列 → 读全文 → 写笔记。本表是唯一筛选台账。
-> 分级：A=直接相关（LEO+路由+DRL/GNN）｜B=机制相关（AoI/部分观测/拥塞）｜C=方法基础｜D=测量/模型。
+> **SUPPORTING**：本表记录的是围绕旧问题和旧关键词形成的种子语料，不是系统综述总体，也不能证明某个领域空白已经成立或关闭。选题冷启动阶段不得读取本表。
+> 下列 A/B/C/D 是当时语料整理标签，不代表当前研究重要性、质量或推荐顺序。
 > 状态：queued（未筛）→ abstracted（已过摘要）→ full-read（已读全文）→ notes-done（笔记已写）。
 
-## 精读队列（第一批）
+## 历史精读顺序（第一批）
 
-按"离我们战场最近"排序，前 8 优先全文精读：
+以下顺序反映当时旧问题的接近度，只用于追溯阅读过程，不得用于新的候选排序：
 
 1. **GraphPR**（最近邻设定逐点对齐，多方基线）
 2. **RAoI**（AoI 机制正面对标，ToN）
@@ -67,7 +67,7 @@
 
 | `OPENALEX-LEOCC` | LeoCC：LEO 拥塞控制鲁棒性（SIGCOMM 2025） | B | ACM gold | queued | 渠道扩展新增 |
 | `OPENALEX-SENSORS-DRL-ROUT` | DRL 路由（Sensors 2025，OA） | A | gold | full-readqueued 渠道扩展新增 |
-| `OPENALEX-FSO-SCHED-ROUT` | FSO 调度+路由联合（IoT-J 2025） | A | 付费墙 | queued | 联合调度候选线 |
+| `OPENALEX-FSO-SCHED-ROUT` | FSO 调度+路由联合（IoT-J 2025） | A | 付费墙 | queued | 2026-09-03 引用链新增 |
 | `OPENALEX-HIER-MWC2026` | 多层星座分层智能路由（MWC 2026） | A | 付费墙 | queued | 2026 最新线 |
 | `OPENALEX-LYAPUNOV-WCNC` | Lyapunov 分布式路由（WCNC 2025） | B | 付费墙 | queued | 非学习对照 |
 | `OPENALEX-HIER-TE-3D` | 3D 分层 TE 图 DRL（Electronics 2025，OA） | C | gold | queued | 引用链发现 |
@@ -75,14 +75,14 @@
 | `OPENALEX-AI-SATCOM-SURVEY` | AI 卫通综述（COMST 2025） | D | 付费墙 | queued | 查缺补漏 |
 | `OPENALEX-ANTIJAM-TAES` | 抗干扰 GNN 路由（TAES 2026） | A | 付费墙 | queued | 安全线 |
 
-| `ARXIV-2509.08455` | SKYLINK 链路管理（新线） | B | arXiv | queued | F3 候选 |
-| `ARXIV-2512.09453` | BlockFlex 韧性虚拟覆盖（新线） | B | arXiv | queued | F3 候选 |
-| `ARXIV-2601.21914` | 激光 ISL 匹配+路由联合（新线） | B | arXiv | queued | 联合调度线 |
+| `ARXIV-2509.08455` | SKYLINK 链路管理 | B | arXiv | queued | 2026-09-03 扩展检索新增 |
+| `ARXIV-2512.09453` | BlockFlex 韧性虚拟覆盖 | B | arXiv | queued | 2026-09-03 扩展检索新增 |
+| `ARXIV-2601.21914` | 激光 ISL 匹配+路由联合 | B | arXiv | queued | 2026-09-03 扩展检索新增 |
 
 ## 变更日志
-- 2026-09-03（第五轮）：深读批 17/17 全部完成（全文级）；9 关定稿+中心问题拟冻结；T1 设计 v0.3；CLOSED：空白点 4 重证据、共性证据 7 家同构。
+- 2026-09-03（第五轮）：本轮选择的 17 篇全文阅读完成；该完成状态不产生选题冻结、领域空白或实验设计结论。
 - 2026-09-03（第四轮）：36/36 笔记全部落地；OpenAlex/引用链新增 9 篇（含 LeoCC SIGCOMM2025、FSO 调度+路由、MWC2026 分层路由）；MATGCIR DOI 修正为 10.1109/lcomm.2025.3601011；DONG 队列值以摘要 5%/13% 为准。
-- 2026-09-03（第三轮）：sa1+sa3 两批 20 篇笔记落地（raw/），空白点经 sa1 逐篇复核+arXiv API 双重确认。
-- 2026-09-03（第二轮）：arXiv 反向检索复核空白点 → 新增 4 篇队列文献（详见 KNOWLEDGE-MAP 空白点独立复核）。
+- 2026-09-03（第三轮）：sa1+sa3 两批 20 篇笔记落地（raw/），并记录逐篇检查与 arXiv API 查询范围。
+- 2026-09-03（第二轮）：arXiv 反向检索新增 4 篇相邻文献；查询无命中不等于系统性空白。
 
 - 2026-09-03：从 SOURCES.csv + 2026-08-13 调研笔记初始化台账；全 36 篇进入筛选（子代理并行，摘要笔记写入 raw/）。
