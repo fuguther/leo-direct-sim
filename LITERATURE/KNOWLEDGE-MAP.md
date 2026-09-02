@@ -107,6 +107,27 @@
 | E | 清楚 | 低-中 | 有(StarTCP) | 中 | 低 | 中 | 低(无真数据) | 外部有效性 | 初筛降级 |
 
 > 下一步：深读批回来后逐条补引用、杀题/升格，产出幸存 2-3 个 RQ 的竞争假设表。
+## T1 可行性附件（平台取证，2026-09-03）
+
+> 结论先行：T1（瓶颈迁移×信息档位）**平台可行**，且与 ISL-BANDWIDTH-PILOT 裁决的既定路线天然咬合。
+
+### 旋钮取证
+- `links.isl_rate_mbps`（config.py:133/320，默认 1000.0）：仅当 `rate_model=constant` 时生效，kernel.py:1086 直接 `*1e6` 作 ISL 服务速率——**纯容量乘子，无 SNR/MCS 混淆**；
+- `rate_model=mcs`（当前实验 profile 使用）：ISL 速率取 `link_budget.mcs_rate_bps(isl_range, rf_isl, mcs_table)`（kernel.py:1335），**不受 isl_rate_mbps 钳制**；容量驱动是 `links.rf_isl.bandwidth_hz`，但 bandwidth 同时改变噪声/SNR/MCS 分段（pilot 审阅 R02 已确认此混淆，不能当纯容量因果）；
+- receipt.py:64/157 把 rate_model 纳入回执身份——改动需走正常授权链。
+
+### 压力档设计依据（pilot 裁决承接）
+- ISL-BANDWIDTH-PILOT-R02：500→50 MHz 时 max ISL util 0.59%→2.08%，仍无饱和、fate 不变（单 seed 工程证据）；审查裁决给出的 bracket 思路：max link served bits=131 Mbit / 30 s horizon ⇒ 平均需 4.37 Mbps；
+- T1 采用 constant 模式干净轴：`isl_rate_mbps` ≈ 90 / 14 / 6 Mbps ⇒ 理论利用率 ≈ 0.05 / 0.3 / 0.7（以 4.37 Mbps 为分子的估计，需预注册时按实际 served bits 冻结）；
+- 第二轴（pilot 裁决预注册的 fallback）：若容量缩档只改分母不动 queue/fate，则转 **offered load / OD hotspot 放大**轴，不同时改两个轴以保归因。
+
+### T1 设计定格（v0.2，未授权）
+- 干预 1：`links.rate_model: constant` + `isl_rate_mbps ∈ {基准, 0.05, 0.3, 0.7}`（利用率 bracket，基准=现状）；
+- 干预 2：信息档位 `routing.policy ∈ {hop, info_queue(F0), info_physical(F1)}`（已实现，F0/F1 双 seed 已验）；
+- 固定：R03 合同其余全部（trace、280×14、M-Lab burst、seed 7/11、MCS→constant 声明边界）；
+- 度量矩阵：delivery、P99 e2e、holding area、route-change count、ISL queue area、每档位逐 link 分子/分母；
+- 规格：3 容量 × 3 信息 × 2 seed = 18 cells，全部非学习诊断（零训练成本）；
+- 门禁：任何 cell 非自然结束/守恒失败即停；正式运行仍走 编译→审阅→授权→VM→回执；**在 RQ 冻结前不预注册，此设计仅作可行性与判别结构证据**。
 ## T1 判别实验草案（信息价值 × 瓶颈位置，2026-09-03 苏格拉底 S1 产物）
 
 **现象**：F0/F1 加入局部信息 → 1/3 包改道，聚合交付率零差异。
