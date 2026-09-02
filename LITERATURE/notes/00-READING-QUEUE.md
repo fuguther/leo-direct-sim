@@ -75,6 +75,10 @@
 | `OPENALEX-AI-SATCOM-SURVEY` | AI 卫通综述（COMST 2025） | D | 付费墙 | queued | 查缺补漏 |
 | `OPENALEX-ANTIJAM-TAES` | 抗干扰 GNN 路由（TAES 2026） | A | 付费墙 | queued | 安全线 |
 
+| `ARXIV-2509.08455` | SKYLINK 链路管理（新线） | B | arXiv | queued | F3 候选 |
+| `ARXIV-2512.09453` | BlockFlex 韧性虚拟覆盖（新线） | B | arXiv | queued | F3 候选 |
+| `ARXIV-2601.21914` | 激光 ISL 匹配+路由联合（新线） | B | arXiv | queued | 联合调度线 |
+
 ## 变更日志
 - 2026-09-03（第五轮）：深读批 17/17 全部完成（全文级）；9 关定稿+中心问题拟冻结；T1 设计 v0.3；CLOSED：空白点 4 重证据、共性证据 7 家同构。
 - 2026-09-03（第四轮）：36/36 笔记全部落地；OpenAlex/引用链新增 9 篇（含 LeoCC SIGCOMM2025、FSO 调度+路由、MWC2026 分层路由）；MATGCIR DOI 修正为 10.1109/lcomm.2025.3601011；DONG 队列值以摘要 5%/13% 为准。
