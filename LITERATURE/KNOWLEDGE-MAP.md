@@ -156,6 +156,19 @@
 - **Age Debt（2111.09217）**：作为确定性 AoI 基线加入未来对照家族（可复用部件）。
 
 > 拟冻结状态：等 LOZANO/ALMASAN/LIAQ 三篇落地 + 用户确认后转正（v1.0）。
+## RQ-A 年龄扫描设计草案 v0（2026-09-03；未授权，RQ 冻结后转正）
+
+### 平台取证：年龄仪器已内建
+- `control.py`：`CacheEntry(generated_at, received_at, ttl_s, hops)` + **`aoi(now)` 方法**（control.py:44-65）——每个路由状态广告的年龄在决策时刻可直接读取；
+- 旋钮：`control_plane.advertise_interval_s`（config.py:150/338，kernel.py:2785 驱动周期广播）、`control_plane.ttl_s`（config.py:691 校验）、`vis_k`（广告扩散半径/远端信息）——三个现成年龄/扩散旋钮；
+- F0/F1 策略消费的队列/到达广告全部经由 `LocalCache`（control.py:57-83），逐包决策可绑定其 `aoi()`。
+
+### 年龄扫描规格（v0 草案）
+- 干预：`advertise_interval_s ∈ {0.25, 0.5, 1, 2, 5, 10}s`（对应决策时状态平均年龄的 6 档）× `routing.policy ∈ {hop, F0, F1}` × seed 2 = 36 cells，全非学习诊断；
+- 测量：每决策的**实际状态年龄分布**（aoi() 直读，作为协变量/处理变量双用）+ 交付/P99 时延/路径熵；
+- 预期曲线：HA2（slack zone）⇒ 低龄段无差异、高龄段悬崖；HA1 ⇒ 单调损失；HA3 ⇒ 曲线形态随瓶颈格改变（与 T1 交叉）；
+- 与 T1 的关系：T1 打「瓶颈×信息增量」格，年龄扫描打「营养×年龄」格——两层正交，共享非学习诊断架构与授权链；
+- 门禁：任何 cell 非自然结束即停；控制面 ttl 默认不变（只动 interval）；预注册前先做 1 格 smoke 验证 aoi() 分布可测。
 ## 竞争假设表 v0.2（筛选级证据；深读后升级）
 
 ### RQ-C 表：为什么信息改变行为却不改变结局（F0/F1 脱钩）
