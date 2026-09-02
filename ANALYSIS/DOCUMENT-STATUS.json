@@ -957,6 +957,45 @@
       "require_banner": false,
       "archive_candidate": false,
       "suggested_archive_target": null
+    },
+    {
+      "path": "LITERATURE/KNOWLEDGE-MAP.md",
+      "status": "SUPPORTING",
+      "purpose": "Living knowledge map (claim/assumption/evidence); requires re-verification against notes and experiments",
+      "may_direct_current_work": false,
+      "owner": "literature-research",
+      "last_reviewed": null,
+      "review_interval_days": null,
+      "replacement": "LITERATURE/README.md",
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
+      "glob": "LITERATURE/notes/*.md",
+      "status": "SUPPORTING",
+      "purpose": "Reading-process ledger and guide (screening queue, note rules)",
+      "may_direct_current_work": false,
+      "owner": "literature-research",
+      "last_reviewed": null,
+      "review_interval_days": null,
+      "replacement": "LITERATURE/README.md",
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
+      "glob": "LITERATURE/notes/raw/*.md",
+      "status": "SUPPORTING",
+      "purpose": "Per-paper researcher reading notes; require source re-verification before claims",
+      "may_direct_current_work": false,
+      "owner": "literature-research",
+      "last_reviewed": null,
+      "review_interval_days": null,
+      "replacement": "LITERATURE/README.md",
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
     }
   ]
 }
