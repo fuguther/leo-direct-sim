@@ -19,3 +19,6 @@ CODE/scripts/remote/remote.env
 
 # 本地组会与导师材料（含原始纪要，不进入 GitHub）
 GROUP-MEETINGS-LOCAL/
+
+# 文献 PDF（版权文件，本地留存，不入 GitHub；清单见 LITERATURE/notes/FETCH-LIST.md）
+LITERATURE/papers/
