@@ -33,15 +33,15 @@
 | `CHOU-2026-STL` | Chou STL：时空学习分布式路由（预印本） | A | arXiv:2605.02413 | notes-done | 补读 |
 | `HE-2025-PRIMAL` | PRIMAL：异步 CVaR 尾部时延 MARL（预印本） | B | arXiv:2510.27506 | notes-done | 补读 |
 | `LIAQ-2026-QARR` | QARR：队列感知韧性路由（预印本） | A | arXiv:2605.04448 | notes-done | 补读 |
-| `CHEN-2025-TMIX` | Transformer-MIX：CTDE 多智能体路由 | A | IoT-J 2025 | queued | 补读 |
-| `RAO-2025-DGAT` | DGAT：深度图注意力+增量演化 RL | A | IoT-J 2025 | queued | 补读 |
-| `XIANG-2025-MATGCIR` | MATGCIR：时序图卷积+模仿加速 | A | Comm. Lett. 2025，DOI 未核 | queued | 补读 |
-| `BAI-2025-GRLRR` | GRL-RR：SDN 域控 GNN 链路权重韧性路由 | A | Computer Networks 2025 | queued | 补读 |
-| `HUANG-2024-GMR` | GMR：GNN 多径流量工程 | A | TVT 2024 | queued | 补读 |
-| `HAN-2024-DMR` | DMR：GNN+PPO 多径流量工程 | A | Electronics 2024 | queued | 补读 |
-| `SORET-2024-QLEARN` | Q-learning 分布式路由（MA-DRL 系列前身） | A | ICMLCN 2024 | queued | 补读 |
-| `WANG-2021-GROUTING` | GRouting：line-graph MPNN+DQN（GraphPR 前作） | A | HotICN 2021 | queued | 补读 |
-| `DONG-2023-DQNLLRA` | DQN-LLRA：负载均衡逐跳 DQN | A | Remote Sensing 2023 | queued | 补读 |
+| `CHEN-2025-TMIX` | Transformer-MIX：CTDE 多智能体路由 | A | IoT-J 2025 | notes-done | 补读 |
+| `RAO-2025-DGAT` | DGAT：深度图注意力+增量演化 RL | A | IoT-J 2025 | notes-done | 补读 |
+| `XIANG-2025-MATGCIR` | MATGCIR：时序图卷积+模仿加速 | A | Comm. Lett. 2025，DOI 未核 | notes-done | 补读 |
+| `BAI-2025-GRLRR` | GRL-RR：SDN 域控 GNN 链路权重韧性路由 | A | Computer Networks 2025 | notes-done | 补读 |
+| `HUANG-2024-GMR` | GMR：GNN 多径流量工程 | A | TVT 2024 | notes-done | 补读 |
+| `HAN-2024-DMR` | DMR：GNN+PPO 多径流量工程 | A | Electronics 2024 | notes-done | 补读 |
+| `SORET-2024-QLEARN` | Q-learning 分布式路由（MA-DRL 系列前身） | A | ICMLCN 2024 | notes-done | 补读 |
+| `WANG-2021-GROUTING` | GRouting：line-graph MPNN+DQN（GraphPR 前作） | A | HotICN 2021 | notes-done | 补读 |
+| `DONG-2023-DQNLLRA` | DQN-LLRA：负载均衡逐跳 DQN | A | Remote Sensing 2023 | notes-done | 补读 |
 | `SHI-2024-GNNDQN` | GNN+DQN（GraphSAGE，NSFNet 训练） | A | Applied Sciences 2024 | notes-done | 补读 |
 | `ZHOU-2026-DTAR` | DTAR：流量感知域划分+域间路由（预印本） | A | arXiv:2604.12382 | notes-done | 补读 |
 | `WEIL-2024-RMP` | Weil：循环消息传递抗陈旧观测（泛图） | B/C | AAMAS 2024，代码公开 | notes-done | 补读 |
@@ -52,20 +52,31 @@
 | `MANFREDI-2021-RELATIONAL` | Manfredi：关系 DRL 无线路由（排队等待显式建模） | C | WoWMoM 2021 | notes-done | 补读 |
 | `WIGMORE-2025-MAGNN` | Wigmore：多轴 GNN 排队网络（平均+最坏时延） | C | MobiHoc 2025 | notes-done | 补读 |
 | `TALEB-2009-ELB` | ELB：经典队列占用负载均衡基线 | B | ToN 2009 | notes-done | 补读 |
-| `SONG-2014-TLR` | TLR：红绿灯拥塞指示绕行 | B | TWC 2014 | queued | 补读 |
-| `STARTCAP-2024` | StarTCP：Starlink 切换感知传输（测量） | D | APNet 2024 | queued | 补读 |
-| `IZHIKEVICH-2024` | Izhikevich：Starlink 路径测量 | D | SIGMETRICS 2024 | queued | 补读 |
-| `MA-2022` | Ma：时变传输距离马尔可夫信道 | D | TVT 2022 | queued | 补读 |
-| `GUVEN-2023` | Güven：多态 ISL 信道模型 | D | arXiv:2305.07207 | queued | 补读 |
-| `GANNON-2024` | Gannon：make-before-break 波束切换 | D | ICC 2024 | queued | 补读 |
-| `GILBERT-ELLIOTT` | Gilbert-Elliott 两态突发错误模型 | D | 标准模型 | queued | 补读 |
+| `SONG-2014-TLR` | TLR：红绿灯拥塞指示绕行 | B | TWC 2014 | notes-done | 补读 |
+| `STARTCAP-2024` | StarTCP：Starlink 切换感知传输（测量） | D | APNet 2024 | notes-done | 补读 |
+| `IZHIKEVICH-2024` | Izhikevich：Starlink 路径测量 | D | SIGMETRICS 2024 | notes-done | 补读 |
+| `MA-2022` | Ma：时变传输距离马尔可夫信道 | D | TVT 2022 | notes-done | 补读 |
+| `GUVEN-2023` | Güven：多态 ISL 信道模型 | D | arXiv:2305.07207 | notes-done | 补读 |
+| `GANNON-2024` | Gannon：make-before-break 波束切换 | D | ICC 2024 | notes-done | 补读 |
+| `GILBERT-ELLIOTT` | Gilbert-Elliott 两态突发错误模型 | D | 标准模型 | notes-done | 补读 |
 
 | `ARXIV-2512.00985` | Age Optimal Sampling and Routing（间歇链路+能量） | B | arXiv | queued | 反向检索新增 |
 | `ARXIV-2007.05449` | LEO 多跳更新包新鲜度（2007.05449） | B | arXiv | queued | 反向检索新增 |
 | `ARXIV-2111.09217` | Multi-Hop 无线网络信息新鲜度（Yates） | B | arXiv | queued | 反向检索新增 |
 | `ARXIV-2310.03969` | NTN AoI 分析（2310.03969） | B | arXiv | queued | 反向检索新增 |
 
+| `OPENALEX-LEOCC` | LeoCC：LEO 拥塞控制鲁棒性（SIGCOMM 2025） | B | ACM gold | queued | 渠道扩展新增 |
+| `OPENALEX-SENSORS-DRL-ROUT` | DRL 路由（Sensors 2025，OA） | A | gold | queued | 渠道扩展新增 |
+| `OPENALEX-FSO-SCHED-ROUT` | FSO 调度+路由联合（IoT-J 2025） | A | 付费墙 | queued | 联合调度候选线 |
+| `OPENALEX-HIER-MWC2026` | 多层星座分层智能路由（MWC 2026） | A | 付费墙 | queued | 2026 最新线 |
+| `OPENALEX-LYAPUNOV-WCNC` | Lyapunov 分布式路由（WCNC 2025） | B | 付费墙 | queued | 非学习对照 |
+| `OPENALEX-HIER-TE-3D` | 3D 分层 TE 图 DRL（Electronics 2025，OA） | C | gold | queued | 引用链发现 |
+| `OPENALEX-CENTRAL-DIST-JOINT` | 集中-分布联合路由（Appl. Sci. 2025，OA） | A | gold | queued | 渠道扩展新增 |
+| `OPENALEX-AI-SATCOM-SURVEY` | AI 卫通综述（COMST 2025） | D | 付费墙 | queued | 查缺补漏 |
+| `OPENALEX-ANTIJAM-TAES` | 抗干扰 GNN 路由（TAES 2026） | A | 付费墙 | queued | 安全线 |
+
 ## 变更日志
+- 2026-09-03（第四轮）：36/36 笔记全部落地；OpenAlex/引用链新增 9 篇（含 LeoCC SIGCOMM2025、FSO 调度+路由、MWC2026 分层路由）；MATGCIR DOI 修正为 10.1109/lcomm.2025.3601011；DONG 队列值以摘要 5%/13% 为准。
 - 2026-09-03（第三轮）：sa1+sa3 两批 20 篇笔记落地（raw/），空白点经 sa1 逐篇复核+arXiv API 双重确认。
 - 2026-09-03（第二轮）：arXiv 反向检索复核空白点 → 新增 4 篇队列文献（详见 KNOWLEDGE-MAP 空白点独立复核）。
 

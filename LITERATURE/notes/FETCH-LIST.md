@@ -35,6 +35,13 @@
 | `ALMASAN-2022-DRLGNN` | edge-MPNN 表示研究 | Elsevier ComCom 196:184-194 · doi:10.1016/j.comcom.2022.09.029（作者主页可能有 OA 版） |
 | `GANNON-2024` | make-before-break 切换 | IEEE ICC 2024 · doi:10.1109/ICC51166.2024.10622772 |
 
+| `OPENALEX-FSO-SCHED-ROUT` | FSO 链路调度+路由联合（引 GraphPR，联合调度候选线） | IEEE IoT-J 2025 · doi:10.1109/jiot.2025.3566744 |
+| `OPENALEX-HIER-MWC2026` | 多层星座分层智能路由 | IEEE Wireless Comm. 2026 · doi:10.1109/mwc.2026.3654918 |
+| `OPENALEX-LYAPUNOV-WCNC` | Lyapunov 分布式路由（非学习对照候选） | IEEE WCNC 2025 · doi:10.1109/wcnc61545.2025.10978609 |
+| `OPENALEX-ANTIJAM-TAES` | 抗干扰 GNN 路由 | IEEE TAES 2026 · doi:10.1109/taes.2026.3677860 |
+| `OPENALEX-AI-SATCOM-SURVEY` | AI 卫通综述（查缺补漏用） | IEEE COMST 2025 · doi:10.1109/comst.2025.3534617 |
+| `OPENALEX-SENSORS-DRL-ROUT` | DRL 路由（MDPI，OA 我可自取，无需你） | Sensors 2025 · doi:10.3390/s25041232 |
+
 ## C 档：开放获取 · 🔄 我自己抓 arXiv/MDPI（无需你管）
 
 - `LOZANO-2025-CONTINUAL` arXiv:2405.12308 ｜ `CHOU-2026-STL` arXiv:2605.02413 ｜ `LIAQ-2026-QARR` arXiv:2605.04448
