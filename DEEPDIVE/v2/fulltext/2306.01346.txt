@@ -1,0 +1,417 @@
+ 
+
+ Report GitHub Issue 
+ × 
+
+ Title: 
+
+Content selection saved. Describe the issue below: 
+
+ Description: 
+
+ Submit without GitHub 
+ Submit in GitHub 
+
+ arXiv is now an independent nonprofit! 
+ Learn more 
+ × 
+
+ Back to arXiv 
+
+ Why HTML? 
+
+ Report Issue 
+
+ Back to Abstract 
+
+ Download PDF 
+
+ Abstract 
+
+ I Introduction 
+
+ II System Model 
+
+ III Learning framework 
+
+ IV Results and discussion 
+
+ V Conclusions 
+
+ References 
+
+ License: arXiv.org perpetual non-exclusive license
+
+arXiv:2306.01346v1 [cs.IT] 02 Jun 2023 
+
+Q-learning for distributed routing in LEO satellite constellations 
+
+ Beatriz Soret 1 , Israel Leyva-Mayorga 2 , Federico Lozano-Cuadra 1 , and Mathias D. Thorsager 2 
+
+ Affiliation:  1 Telecommunications Research Institute, University of Malaga, Spain (bsoret@ic.uma.es, fedeloz@uma.es)
+ 2 Department of Electronic Systems, Aalborg University, Denmark (ilm@es.aau.dk, mthors18@student.aau.dk)
+
+ Abstract 
+
+End-to-end routing in LEO Satellite Constellations (LEOs) is a complex and dynamic problem. The topology, of finite size, is dynamic and predictable, the traffic from/to Earth and transiting the space segment is highly imbalanced, and the delay is dominated by the propagation time in non-congested routes and by the queueing time at Inter-Satellite Links (ISLs) in congested routes. Traditional routing algorithms depend on excessive communication with ground or other satellites, and oversimplify the characterization of the path links towards the destination. We model the problem as a multi-agent Partially Observable Markov Decision Problem (POMDP) where the nodes (i.e., the satellites) interact only with nearby nodes. We propose a distributed Q-learning solution that leverages on the knowledge of the neighbours and the correlation of the routing decisions of each node. We compare our results to two centralized algorithms based on the shortest path: one aiming at using the highest data rate links and a second genie algorithm that knows the instantaneous queueing delays at all satellites. The results of our proposal are positive on every front: (1) it experiences delays that are comparable to the benchmarks in steady-state conditions; (2) it increases the supported traffic load without congestion; and (3) it can be easily implemented in a LSatC as it does not depend on the ground segment and minimizes the signaling overhead among satellites. 
+
+ I Introduction 
+
+ Low Earth Orbit (LEO) Satellite Constellations (LEOs) , with hundreds or even thousands of satellites working all together as a communication network, are one of the pillars to attain global connectivity  [ 1 ] by extending cellular coverage, serving as a global backbone, and offloading congested terrestrial infrastructure, as well as supporting new remote inference and intelligent applications. Realizing this vision will require technical solutions for an efficient use of the scarce wireless and computing resources on space. 
+
+At the network level, a packet-based network requires a routing algorithm for deciding the directions which must be used to reach the destination. To make these decisions, the network is modeled as a graph where the network nodes are the transmitters and receivers and the edges represent the links between nodes. The weights of the edges are defined as a function of the target network performance metric. Hence, the routing problem is that of finding an optimal path, defined as a sequence of vertices or edges, to forward the packets from source to destination that minimize the sum of the weights.
+In wired terrestrial networks, the links of the routers are fixed, have a mostly stable capacity, and do not suffer from interference, so the routing problem can be readily solved with well-known Dijkstra’s shortest path algorithm  [ 2 ] .
+On the other hand, the underlying graph in wireless networks is time-varying, i.e., prone to capacity degradation due to the movement of the terminals, to blockages, and to interference, and the routing algorithm must dynamically adapt to the changes in the network graph. 
+
+While there have been attempts to adapt routing algorithms for terrestrial wireless ad hoc networks to LSatCs , these have not yet proven to be successful because LSatC s presents distinctive characteristics that are not considered in their design. First, the network topology is mostly symmetric yet the satellites move rapidly with respect to the ground infrastructure and with respect to some other satellites. Because of the dynamic nature of the constellations, traditional routing protocols may suffer from excessive signaling overhead to maintain the routing tables, whereas routing protocols for ad hoc networks cannot exploit the symmetry of the constellation. Second, the movement is fully predictable once the ephemeris, that is, the orbital parameters of the satellites, is known and the size of the constellation is finite and well known. Because of this, the network topology can be easily calculated in advance to generate, at least partially, the routing tables to be used at a specific point in time. In fact, we have exploited this knowledge to develop simple and efficient algorithms to find establish the best Inter-Satellite Link (ISL) matching as part of such network discovery for LSatC s  [ 3 ] , which then can be used as an input to the routing algorithm. Third, the links connect satellites separated by long distances. As a consequence, the propagation latency is a dominant factor in the total latency. This was observed in  [ 4 ] , where traditional unipath source routing lead to an end-to-end average routing latency of around 100 100  ms, where the contribution of the propagation delay ranged from 37 37 % to up to 66 66 % on average, depending on the load level. Finally, the ground traffic injected to the constellation network is highly imbalanced and dependent on the connectivity to the ground segment, which requires a realistic model of the ground topology, too. 
+
+This paper studies the problem of E2E routing between nodes in the ground segment, consisting of multiple gateways, through the LSatC without relying on further ground infrastructure (see Fig.  1 ). We aim at developing a fully-distributed learning approach to achieve robust and low latency E2E communication while minimizing the signaling overhead. Previous works have employed different Machine Learning (ML) algorithms  [ 5 ] , including Reinforcement Learning (RL) and supervised learning. Deep RL has been used to account for the battery ageing on the centralized routing decisions in  [ 6 ] , but it is not clear whether the routing agent can find a stable solution when multiple routing agents interact with each other.
+Even when utilizing deep learning models, it is challenging to account for the time-varying queueing time at the links. For example, Deep Neural Networks (DNNs) have been used for multi-agent multi-objective optimization by exploiting the optimal substructure of the routing problem: if a node knows the latency to communicate to each of its neighbors and the latency to communicate from these neighbors to the destination, it can readily compute the shortest path  [ 7 ] . Therefore, the task of the DNN is to estimate the latency from a satellite’s neighbors to the destination. However, even in these cases and with this optimal substructure, the model of the queueing time is too simplistic, e.g., using truncated Gaussian distributions  [ 7 ] . Our work differentiates from the state-of-the art, including the previous two studies  [ 6 , 7 ] , in the sense that we consider the ground segment topology and its connectivity to the space segment, and solve the routing problem in a realistic setup with queues at each ISL and multiple simultaneous data flows that affect these queues. 
+
+In this paper, we have a comprehensive model of the LSatC and ground infrastructure, based on which we formulate the routing as a Partially Observable Markov Decision Problem (POMDP) . Then, we propose a Q-learning algorithm where each satellite is an agent that collects only local information for a fully distributed solution.
+This learning has analogies with the Q-routing first proposed in [ 8 ] for dynamically changing terrestrial networks and using only local communication at each node to keep accurate statistics on which routing decisions lead to minimal delivery times.
+We evaluate and compare our solution with two benchmark algorithms, one state-of-the-art shortest-path and a genie-aided scheme to minimize the latency. The results show the advantage of our Q-routing algorithm in terms of latency, supported load and, primarily, implementability. 
+
+ II System Model 
+
+The communication network is composed of the space segment and the ground segment. Although the system is dynamic, we omit the time index in the notation related to the graphs for the sake of simplicity. 
+
+ Fig. 1: Example of a route connecting a gateway in Málaga and a gateway in Los Angeles. 
+
+ Space segment. The satellite communication network modeled as a graph consisting of a total of N N satellites evenly distributed in M M orbital planes. 𝕊 \mathbb{S} denotes the finite set of satellite nodes and ℰ \mathcal{E} the set of transmission links that are the edges of the graph.
+Each orbital plane m ∈ { 1 , 2 , … , M } m\in\{1,2,\dotsc,M\} is deployed at a given altitude h m h_{m}  km above the Earth’s surface, at a given longitude ϵ m \epsilon_{m}  radians, has a given inclination δ \delta , and consists of N m = N / M N_{m}=N/M evenly-spaced satellites.
+The LEO satellites are equipped with one antenna for ground-to-satellite communication and four antennas for inter-satellite communication. Two of the latter antennas are located at both sides of the roll axis (i.e., front and back of the satellite) and are used to communicate with immediate neighbors in the same orbital plane (intra-plane ISL ). The other two antennas are located at both sides of the pitch axis and are used to communicate with satellites in different orbital planes through (inter-plane ISL ). We denote ℰ i \mathcal{E}_{i} the set of feasible edges of satellite i i , i.e., the ISL that are currently available for communication. ℰ i \mathcal{E}_{i} has a maximum size of four: | ℰ i | ≤ 4 |\mathcal{E}_{i}|\leq 4 . ℰ i \mathcal{E}_{i} is dynamically updated using the algorithm in  [ 3 ] . ℰ S \mathcal{E}_{S} is the set of edges of the space segment, i.e., ℰ S = ∑ i ∈ 𝕊 ℰ i \mathcal{E}_{S}=\sum_{i\in\mathbb{S}}\mathcal{E}_{i} . 
+
+ Ground segment. 
+Let 𝔾 \mathbb{G} to be the set of gateways distributed across the Earth in relevant locations, denoted as ( g lat , g lon ) \left(g_{\text{lat}},g_{\text{lon}}\right) for g ∈ 𝔾 g\in\mathbb{G} . The mobile devices at ground level communicate with the constellation through these gateways, which 1) generate relatively large packets that are transmitted to the nearest satellite (a.k.a. feeder link) by collecting data from the nearby users and/or data centers and 2) collect the data transmitted by other gateways through the LSatC to the users in the vicinity (a.k.a. service link). 
+
+The gateways maintain one ground-to-satellite link (GSL) with their closest satellite at all times. These GSL s constitute the set of edges ℰ G \mathcal{E}_{G} , and ℰ i G \mathcal{E}_{i_{G}} is the GSL between satellite i i and the closest gateway, which takes the value null when there is none. With these definitions, we distinguish three cases for the link i ​ j ij between node i i and node j j : (1) i ∈ 𝔾 i\in\mathbb{G} and j ∈ 𝕊 j\in\mathbb{S} corresponds to a feeder link: uplink from a gateway to a satellite, and i ​ j ∈ ℰ G ij\in\mathcal{E}_{G} ; (2) i ∈ 𝕊 i\in\mathbb{S} and j ∈ 𝔾 j\in\mathbb{G} corresponds to a service link: downlink from a satellite to a gateway, and i ​ j ∈ ℰ G ij\in\mathcal{E}_{G} ; (3) otherwise, both i i and j j are satellites and we have an ISL , and i ​ j ∈ ℰ i ⊂ ℰ S ij\in\mathcal{E}_{i}\subset\mathcal{E}_{S} . The slant range between nodes i i and j j is denoted as ‖ i ​ j ‖ ||ij|| . 
+
+In both cases, ISL and GSL , the data rate between nodes i i and j j is selected by using the highest modulation and coding scheme, among those defined for DVB-S2, that ensures reliable communication with the current Signal-to-Noise Ratio (SNR) . That is, let { ρ } \left\{\rho\right\} be the set of spectral efficiencies ρ \rho  bits/s/Hz that can be achieved with the DVB-S2 modulation and coding schemes [ 9 ] and SNR min ​ ( R ′ ) \text{SNR}_{\text{min}}(R^{\prime}) be the minimum SNR to achieve reliable communication with ρ \rho . We assume a free-space path loss model, so the data rate for communication from node i i to j j is set to 
+
+ R ⁡ ( i , j ) = W ​ max ⁡ { ρ : P r ​ ( i , j ) k B ​ T S ​ B ≥ SNR min ​ ( ρ ) } , R(i,j)=W\max\left\{\rho:\frac{P_{r}(i,j)}{k_{B}T_{S}B}\geq\text{SNR}_{\text{min}}(\rho)\right\}, 
+
+ (1) 
+
+where W W is the bandwidth, P r ​ ( i , j ) P_{r}(i,j) is the received power at node j j from i i including the antenna gains and free-space path loss, k B k_{B} is the Boltzmann’s constant, and T S T_{S} is the system noise temperature. 
+
+ Traffic generation. 
+We consider a scenario with realistic packet generation, queueing, and transmission, where each active gateway transmits an equal amount of data among the rest of the gateways in 𝔾 \mathbb{G} through the LSatC , which then distribute the data among the users connected to it. The case in which a gateway generates data to the users directly connected to it is not considered as does not lead to the transmission of data through the LSatC . Let λ UL ( g ) \lambda_{\text{UL}}^{(g)} be the uplink data generation (i.e., arrival) rate at gateway g g and λ ∗ \lambda^{*} be the maximum supported traffic load in the network, calculated from the uplink and downlink GSL rates. Next, we define the total traffic load as ℓ = ∑ g ∈ 𝔾 λ UL ( g ) / λ ∗ \ell=\sum_{g\in\mathbb{G}}\lambda_{\text{UL}}^{(g)}/\lambda^{*} . Building on these, the amount of data transmitted to a gateway is 
+
+ λ DL ( g ) = ∑ i ∈ 𝔾 ∖ { g } λ UL ( i ) | 𝔾 | − 1 = ℓ ​ λ ∗ − λ UL ( g ) | 𝔾 | − 1 ≤ R ⁡ ( i , g ) , \lambda_{\text{DL}}^{(g)}=\sum_{i\in\mathbb{G}\setminus\{g\}}\frac{\lambda_{\text{UL}}^{(i)}}{|\mathbb{G}|-1}=\frac{\ell\lambda^{*}-\lambda_{\text{UL}}^{(g)}}{|\mathbb{G}|-1}\leq R(i,g), 
+
+ (2) 
+
+ where R ⁡ ( i , g ) R(i,g) is the downlink data rate for gateway g g . 
+Data is generated at the gateways following a Poisson distribution with rate λ UL ( g ) \lambda_{\text{UL}}^{(g)} and a block of B B  bits is generated when a source gateway has B B bits with the same destination gateway. 
+
+ Routing. The routing algorithm at each satellite aims at relying each received packet p ⁡ ( d ) p(d) towards the destination d d . For this, each satellite has a transmitting buffer of maximum size Q m ​ a ​ x Q_{max} that follows a First-In First-Out (FIFO) policy. If the buffer is not empty, the satellite takes the Head of Line (HOL) data packet and delivers it to one of the neighbouring nodes. Packets arriving to a full buffer are discarded. The set of nodes visited by packet p p is denoted by 𝒫 p \mathcal{P}_{p} . 
+
+ Latency. 
+The one-hop latency to transmit a packet p p of length B B  bits from i i to j j can be calculated as follows.
+First, the queue time at the transmission queue t q ​ ( i ) t_{q}(i) is the time elapsed since the packet is ready to be transmitted until the beginning of its transmission. The transmitting buffer at satellite i i has a length q i q_{i} , a constant packet size B B , and follows a FIFO policy. Although we consider a transmission from i i to j j , the rest of packets in the queue can have different destinations and therefore use different links from the set ℰ i \mathcal{E}_{i} and ℰ i G \mathcal{E}_{i_{G}} , with different rates R ⁡ ( i , ⋅ ) R(i,\cdot) . The queue time is hence given by t q ​ ( i ) = q i ⋅ B R ⁡ ( i , ⋅ ) t_{q}(i)=\frac{q_{i}\cdot B}{R(i,\cdot)} where R ⁡ ( i , ⋅ ) R(i,\cdot) is calculated with equation ( 1 ) and depends on the link used for the transmission of each en-queued data packet ahead p p . Second, the transmission time , which is the time it takes to transmit B B  bits at R ⁡ ( i , j ) R(i,j)  bps. Third, the propagation time , which is the time it takes for the electromagnetic radiation to travel the distance ‖ i ​ j ‖ ||ij|| from i i to j j . Hence, we have 
+
+ L ⁡ ( i , j ) = t q ​ ( i ) ⏟ Queue time + B R ⁡ ( i , j ) ⏟ Transmission time + ‖ i ​ j ‖ c ⏟ Propagation time . L(i,j)=\!\underbrace{t_{q}(i)}_{\text{Queue time}}+\!\underbrace{\dfrac{B}{R(i,j)}}_{\text{Transmission time}}+\underbrace{\dfrac{||ij||}{c}}_{\text{Propagation time}}. 
+
+ (3) 
+
+ Fig. 2: Dynamics of the Q-learning algorithm: Each satellite maintains its own Q-table. (1) Upon arrival of packet p ⁡ ( d ) p(d) at sat i i , the best action a t a_{t} is selected, i.e., forward the packet to sat j j . (2) Sat j j calculates the new Q-value and sends it to sat i i , who (3) updates the Q-table accordingly. 
+
+It was observed in  [ 4 ] that the propagation time is the dominating factor in a non-congested satellite constellation, whereas the queueing time grows with the system load. 
+
+ Benchmarks. 
+We compare the performance of our proposed intelligent Q-routing algorithm to two source routing approaches that use Dijkstra’s algorithm to find the shortest path to the destination. In the first one, called the data rate benchmark (BM) , the weights of the edges are the inverse of the data rate, namely w i , j = 1 / R ⁡ ( i , j ) w_{i,j}=1/R(i,j) . This is a traditional routing approach that leads to choosing routes with high data rate links. In the second one, called the latency genie BM , we assume instantaneous knowledge of the state of the queues at all satellites. By doing so, the source gateway is able to choose the route that minimizes the E2E latency based on the queueing time at the time a new packet is ready to be transmitted. Note that due to the long E2E latency, the latency genie BM is not optimal, as the state of the queues at the satellites at the time the packet is received at each of them might be different to the one used to calculate the route. 
+
+ III Learning framework 
+
+A LSatC represents a networked multi-agent problem where agents are partially connected and interact uniquely with nearby agents. Although there is a global objective, we aim at a fully-distributed solution where each satellite is an independent learning agent that learns its routing policy. Since each satellite only has a local observation of the environment founded on the local network state and the restricted communication with the neighbouring satellites, the decision-making problem is based on a partially observable state. 
+
+The problem is formulated as a POMDP with a 4-tuple ( 𝒮 , 𝒜 , P ⁡ ( s , a ) , ℛ ⁡ ( s , a ) ) (\mathcal{S},\mathcal{A},P(s,a),\mathcal{R}(s,a)) where the observation agents have a partial knowledge of the underlying system state, specifically obtained from their own queues and links and from the feedback of the neighbouring satellites. 𝒮 \mathcal{S} is the state space, 𝒜 \mathcal{A} is the action space, and P ⁡ ( s , a ) P(s,a) and ℛ ⁡ ( s , a ) \mathcal{R}(s,a) are the probability of choosing action a a and its corresponding reward when in state s s , respectively. 
+
+In Q-learning, the agent aims at finding out the optimal policy that maximizes the long-term accumulated reward. For this, we define the state-action value Q Q to describe the expected reward of taking action a t a_{t} under state s t s_{t} at time t t from which the agent learns. Mathematically, 
+
+ Q ⁡ ( s t , a t ) = ( 1 − α ) ​ Q ​ ( s t , a t ) + α ⁡ ( r t + γ ​ max 𝑎 ​ Q ​ ( s t + 1 , a ) ) , Q(s_{t},a_{t})=(1-\alpha){Q(s_{t},a_{t})}+\alpha\left(r_{t}+\gamma\underset{a}{\max}{Q(s_{t+1},a)}\right), 
+
+ (4) 
+
+where γ \gamma is the discount factor that adjusts the importance of rewards over time. The goal is
+to find out the optimum policy so that the total reward can
+be maximized (or the total penalty can be minimized) over
+a horizon of future time intervals given the current state of the agent. At each time instant t t the agent takes an action a t a_{t} , observes the reward r t r_{t} , and enters a new state s t + 1 s_{t+1} that depends on the previous state s t s_{t} and the selected action. The Q-table is updated in each step. At a given state, the algorithm compares the expected utility of all the available actions and chooses the action accordingly. 
+
+ Time. An episode is an instance to be solved by the learning algorithm. The episode is composed by T T steps, indexed by t = 0 , 1 , … , T t=0,1,...,T . The agent uses the environment’s rewards to learn, over time, the best action to take in a given state. In the notation, subindex t t to indicates the dependency upon the steps.
+At different time steps, the state observed by the agent is time varying due to the dynamic change of network traffic and the dynamic change of the topology. However, we note that these two time scales are very different. First, the satellite constellation moves following the laws of orbital motion, determined by the altitude of LEO satellites. The satellite passes for an observer at the Earth surface or between satellites in different orbital planes are at the scale of few minutes  [ 3 ] . Second, the time scale of the learning episodes is dictated by the arrival of packets, which is typically, much shorterAs observed in the results, the agents learn the new paths in less than 0.5 0.5 s, therefore at a much faster pace than the movement of the constellation. Hence, we can model the system as an observation of the environment at specific time instants and keep the time index only for the learning episodes. 
+
+ Environment. The environment is the directed graph communication network described in Section  II . 
+
+ State space. 
+We denote the state space of agent i i as S i : { L i , N i } S_{i}:\{L_{i},N_{i}\} , where d p d_{p} is the destination of the current packet, L n L_{n} is the local information at i i and N i N_{i} is the information shared by neighbouring satellites to i i .
+Specifically, L i L_{i} is the information of the packet destination extracted from the packet header and the link connectivity ℰ i \mathcal{E}_{i} , whereas N i N_{i} contains the link quality and buffer congestion to the two intra-plane and two inter-plane neighbours each of them encoded with two bits: s t = 2 s_{t}=2 is reserved for the case with a long queue or unavailable link, and s t = 0 s_{t}=0 and s t = 1 s_{t}=1 reflect uncongested cases (empty/short queues) with high and low link capacity, respectively. This simple encoding minimizes the state space and alleviates the computation cost, which is an advantage for satellites with limited computation capabilities. In the future, we will extend the space space and apply other advanced learning techniques to characterize the tradeoff between complexity of the learning algorithm and performance gain. 
+
+ Reward. 
+Let us assume a packet p p from source s s with destination d d arrives to satellite i i . Satellite i i forwards the packet to satellite j j . For this action, the immediate reward considers the two main contributors to the end-2-end delay: (1) the propagation time, for which the topology and the slant range of each decision should be considered; (2) the queueing time, which becomes dominant when the system gets congested  [ 4 ] . Moreover, extra rewards/penalties are given when reaching the destination and for avoiding loops. The reward for the action at satellite i i is defined as 
+
+ r t = { r del j ​ d ∈ ℰ G r loop j ∈ 𝒫 p r queue + r dist otherwise r_{t}=\begin{cases}r_{\text{del}}&jd\in\mathcal{E}_{G}\\
+r_{\text{loop}}&j\in\mathcal{P}_{p}\\
+r_{\text{queue}}+r_{\text{dist}}&\text{otherwise}\end{cases} 
+
+ (5) 
+
+ r queue = w 1 ⋅ ( 1 − 10 t q ​ ( j ) ) r_{\text{queue}}=w_{1}\cdot\left(1-10^{t_{q}(j)}\right) 
+
+ (6) 
+
+ r dist = w 2 ⋅ ‖ i ​ d ‖ − ‖ j ​ d ‖ + ‖ s ​ d ‖ ‖ s ​ d ‖ r_{\text{dist}}=w_{2}\cdot\frac{||id||-||jd||+||sd||}{||sd||} 
+
+ (7) 
+
+where w 1 , w 2 w_{1},w_{2} are adjustment constants, t q ​ ( j ) t_{q}(j) is the time spent in the queue of the next hop, i.e., satellite j j ; ‖ i ​ d ‖ − ‖ j ​ d ‖ ||id||-||jd|| is the slant range reduction of the decision, i.e., the distance difference between j j and d d and between i i and d d ; ‖ s ​ d ‖ ||sd|| is the total slant range between i i and d d ; and r loop r_{\text{loop}} and r del r_{\text{del}} are extra penalties/rewards for loops and delivery, respectively. If the data block has been sent to a satellite whose linked gateway matches the destination of the data block, the agent will receive the extra reward r del r_{\text{del}} . To avoid loops, the penalty r loop r_{\text{loop}} is applied if the agent sends the data block to a satellite where it has already been. Otherwise, the first exponential term makes the penalty grow faster as the queue time increases. The second term in the sum, related to the slant range, quantifies and normalizes the distance towards the destination. 
+
+ Action space. 
+The action decision a t a_{t} is the next hop j j selected from the set ℰ i ∪ ℰ i G \mathcal{E}_{i}\cup\mathcal{E}_{i_{G}} , i.e., one of the neighbouring satellites or the link towards a gateway. 
+
+ Q-routing algorithm. The pseudo-code of the Q-routing algorithm is in Algorithm 1 , and the dynamics of the routing and Q-tables updates in Fig. 2 . The algorithm has the following characteristics: 
+
+ ε \varepsilon -greedy policy :
+The agent explores with probability ε \varepsilon new paths (i.e., selects a random action), and with probability 1 − ε 1-\varepsilon chooses the one that maximizes the expected reward. The value of ε \varepsilon is high in the beginning, when the agent has not learnt the routes, and then it is exponentially decreased. 
+
+ Updating the Q-tables :
+In the conventional formulation of Q-learning, each agent updates its own q-table based on the new state and reward. However, this is not effective in our problem, because the actions taken by satellite i i are observable in the state change of the neighbouring satellites, more specifically in the increased queue length of the next hop j j . Therefore, we modify the usual formulation to reflect this partial knowledge and correlation among actions. Mathematically, the new Q-value Q ∗ Q^{*} is updated as 
+
+ Q i ∗ ​ ( s t , a t ) = ( 1 − α ) ​ Q i ​ ( s t , a t ) + α ⁡ ( r t + γ ​ max 𝑎 ​ Q j ​ ( s t + 1 , a ) ) Q^{*}_{i}(s_{t},a_{t})=(1-\alpha){Q_{i}(s_{t},a_{t})}+\alpha\left(r_{t}+\gamma\underset{a}{\max}{Q_{j}(s_{t+1},a)}\right) 
+
+ (8) 
+
+ Minimal feedback information :
+As illustrated in the steps of Fig.  2 , the algorithm minimizes the interaction with nearby satellites. Specifically, the Q-value is the only feedback after the successful reception of a packet, over a link that has been previously established. 
+
+ IV Results and discussion 
+
+ Algorithm 1 Q-routing algorithm. 
+
+ 0: 
+
+  Initialize Q i ​ ( s , a ) ​ ∀ i Q_{i}(s,a)\;\;\forall i arbitrarily
+
+ 1: 
+
+   for t = 1 , 2 , … , T t=1,2,\dotsc,T do 
+
+ 2: 
+
+   Get next packet p i ∈ ℙ p_{i}\in\mathbb{P} arriving at satellite i i with destination d d 
+
+ 3: 
+
+   Update ℰ S \mathcal{E}_{S} and ℰ G \mathcal{E}_{G} using [ 3 ] 
+
+ 4: 
+
+    if ‖ i ​ d ‖ ∈ ℰ G ||id||\in\mathcal{E}_{G} then 
+
+ 5: 
+
+    Deliver p i p_{i} to destination d d 
+
+ 6: 
+
+     r t = r del r_{t}=r_{\text{del}} 
+
+ 7: 
+
+    else 
+
+ 8: 
+
+     if r ∼ U ⁡ ( 0 , 1 ) < ε r\sim U(0,1)<\varepsilon then 
+
+ 9: 
+
+     Select a random action a t a_{t} 
+
+ 10: 
+
+     else 
+
+ 11: 
+
+     Select a t = arg ​ max a ⁡ Q i ​ ( s t , a ) a_{t}={\argmax}_{a}Q_{i}(s_{t},a) 
+
+ 12: 
+
+     end if 
+
+ 13: 
+
+     if a t = j ​  AND  ​ j ∈ 𝒫 p a_{t}=j\text{ AND }j\in\mathcal{P}_{p} then 
+
+ 14: 
+
+      r t = r loop r_{t}=r_{\text{loop}} 
+
+ 15: 
+
+     else 
+
+ 16: 
+
+      r t = r queue + r dist r_{t}=r_{\text{queue}}+r_{\text{dist}} 
+
+ 17: 
+
+     end if 
+
+ 18: 
+
+     Q i ∗ ​ ( s t , a t ) ← Eq. ​ ( 8 ) Q_{i}^{*}(s_{t},a_{t})\leftarrow\text{Eq.}(\ref{eq:q}) 
+
+ 19: 
+
+    end if 
+
+ 20: 
+
+   end for 
+
+Results were obtained by a simulator developed in Python. We consider a Kepler constellation with M = 7 M=7 orbital planes at heights h m = 600 h_{m}=600 km and N m = 20 N_{m}=20 satellites per orbital plane. There are up to 18 18 transmitting gateways at ground positions around the globe, mostly taken from the existing KSAT network 1 1 
+ 1 
+
+ https://www.ksat.no/services/ground-station-services/ . Specifically, we locate the gateways in Malaga (Spain), Los Angeles (US), Aalborg (Denmark), Cordoba (Argentina), Tolhuin (Argentina), Inuvik (Canada), Nemea (Greece), Nuuk (Greenland), Bangalore (India), Tokyo (Japan), Port Louis (Mauritius),
+Awarua (New Zealand), Svalbard (Norway), Vardø (Norway), Panama (Panama), Azores (Portugal), and
+Singapore (Singapore). In the results, the simulator takes the first | 𝔾 | |\mathbb{G}| from the sorted list above, with 2 ≤ | 𝔾 | ≤ 18 2\leq|\mathbb{G}|\leq 18 and traffic load ℓ = 0.85 \ell=0.85 . We observed, through our simulations, that this range and traffic load allow us to analyze very low load up to scenarios with high congestion. 
+The communication parameters used for the simulations are as follows. The transmission power is 10 10  W for the satellites and 20 20  W for the gateways. The carrier frequencies are 20 20  GHz for downlink, 30 30  GHz for uplink, and 26 26  GHz for ISL . We consider parabolic antennas of diameter 33 33  cm at the gateways and of 26 26  cm at the satellites. The system bandwidth for all the links is W = 500 W=500  MHz. The packets length is B = 64.8 B=64.8  kbits. 
+
+We first do an analysis of the stability (congestion level) of each of the routing schemes, which determines the maximum traffic load supported by the algorithms.
+For this, we define that a path (i.e., source-destination pair) has stable E2E communication if it has reached a steady state where the E2E latency is not increasing with time. That is, an increase in E2E latency indicates that congestion is building up. To determine whether a route is stable, we perform a t-test based on the estimated slope β ^ 1 \hat{\beta}_{1} obtained from performing linear regression over the E2E latency of the packets in the route. Specifically, the independent variable is set to be the packet index in the route and the dependent variable is set to be the latency in ms for each packet. Then, we perform linear regression with the model Y i = β 0 + β 1 ​ X i + ϵ Y_{i}=\beta_{0}+\beta_{1}X_{i}+\epsilon using the last 200 200 packets received at the destination to avoid considering the training period. Then, we perform a t-test with the null hypothesis H 0 : β 1 ≤ 0 \text{H}_{0}\!:\beta_{1}\leq 0 with significance level 0.05 0.05 . If the test is not passed, the route is labeled as unstable. 
+
+Fig.  3 shows the ratio of unstable paths: the source-destination pairs for which the null hypothesis H 0 : β 1 ≤ 0 \text{H}_{0}\!:\beta_{1}\leq 0 is rejected and, hence, it is concluded that the slope β 1 \beta_{1} is positive. The ratio of unstable paths increases rapidly for the data rate BM from 9 9 active gateways. This is because, even though a path with high data rates is selected, the metric cannot adapt the path to the presence of congestion. In contrast, the ratio of unstable paths for the latency genie BM increases at a slower pace than for the data rate BM despite the initial increase occurs with 8 8 active gateways. Finally, the initial increase in the ratio of unstable paths with Q-routing is slower than with both of the other metrics. It is only with more than 14 14 gateways that Q-routing presents more unstable paths, but the ratio of unstable paths for all schemes is above 0.1 0.1 , which clearly makes the network unstable at this point. We conclude that the Q-routing metric is more robust to congestion than both the data rate and the latency genie BMs in every case where the network is still operative. The fact that the ratio of unstable paths with the latency genie BM increases with less active gateways than with the data rate BM and with Q-routing illustrates that this is not an optimal routing approach even though it has instantaneous knowledge about the state of the queues. We have further looked at the individual paths with congestion in the cases with 8 8 and 9 9 active gateways and it turns out that all the unstable paths share similar characteristics: 1) the distance between the gateways is large, 2) go from south to north, and 3) most of them have the same destination. Because the latency genie BM scheme selects the route for the packets from the source based on the instantaneous state of the queues, it cannot consider the state of the queues when the packets arrive to the corresponding links but only when these are about to leave the source. If the distance is long, the queue of a distant satellite might be empty at the time the packet is transmitted from the source, but increase significantly before the packet arrives. This clearly shows that source routing is sub-optimal, even under the assumption of global and instantaneous knowledge. In contrast, there are no unstable paths with Q-routing and 8 8 active gateways. For the case of 9 9 active gateways, the only unstable path with Q-routing is from Inuvik, Canada to Cordoba, Argentina. Hence, we conclude that Q-routing supports a higher traffic load as compared to the benchmarks. 
+
+ Fig. 3: Ratio of unstable paths, for which H 0 : β 1 ≤ 0 \text{H}_{0}\!:\beta_{1}\leq 0 is rejected for a significance level 0.05 0.05 , for the three schemes. 
+
+Once the system congestion is characterized, we analyze the different contributors to the E2E latency in Fig.  4 . The transmission latency in all cases is below 0.72 0.72  ms. Therefore, it is negligible compared to the propagation and queueing latency and not depicted. We plot the cases between 2 2 and 10 10 active gateways, for which the ratio of unstable paths is below 0.2 0.2 . As it can be seen, the latency genie BM leads to the minimum propagation latency in all cases. Nevertheless, its queueing latency increases significantly with | 𝔾 | ≥ 8 |\mathbb{G}|\geq 8 . The propagation latency with Q-routing is a bit larger than the other two in all cases. There are two reasons for this: (1) we include the exploration stage at the beginning of the simulation when the satellites are mostly trying random paths (see Fig.  5 ); (2) we use a simple encoding of the status of the link to limit the size of the state space. In the future, we will explore the use of Deep RL (RL) which allows enlarging the state space, although at the expenses of a higher computation complexity. 
+
+ Fig. 4: Average E2E propagation and queueing latency for the three schemes as a function of the number of active gateways. 
+
+ Fig. 5: E2E latency versus simulation time. Comparison of Q-routing with the data rate BM . 
+
+Finally, Fig.  5 shows the time-evolution of the E2E latency of Q-routing and compares it to the data rate BM with 3 and 9 gateways. It is observed that the Q-routing latency is larger in the beginning, when the system explores new paths, and rapidly decreases to a stable value and exploitation-intensive operation. The BM keeps a low value with | 𝔾 | = 3 |\mathbb{G}|=3 , but experiences a linear increase with | 𝔾 | = 9 |\mathbb{G}|=9 which reflects the system congestion. 
+
+ V Conclusions 
+
+We propose a distributed Q-learning solution for E2E routing in LSatC that leverages on the knowledge of the neighbours and the correlation of the routing decisions of each node. The results are compared to centralized benchmark solutions based on shortest path and full knowledge of the network. The Q-routing algorithm is demonstrated to be comparable in terms of E2E delay, while it supports a higher traffic load and it is simple enough to be implemented in practice, which is a key advantage in satellite technology. Future work will look at the extension of the state space to DRL and the evaluation in scenarios with heterogeneous QoS requirements and policies. 
+
+References 
+
+ [1] 
+
+I. Leyva-Mayorga, B. Soret, M. Röper et al. , “LEO
+small-satellite constellations for 5G and Beyond-5G communications,”
+ IEEE Access , vol. 8, pp. 184 955–184 964, 2020.
+
+ [2] 
+
+E. W. Dijkstra, “A note on two problems in connexion with graphs,”
+ Numerische mathematik , vol. 1, no. 1, p. 269–271, 1959.
+
+ [3] 
+
+I. Leyva-Mayorga, B. Soret, and P. Popovski, “Inter-plane inter-satellite
+connectivity in dense leo constellations,” IEEE Trans. on Wireless
+Comms. , vol. 20, pp. 3430–3443, 6 2021.
+
+ [4] 
+
+J. W. Rabjerg, I. Leyva-Mayorga, B. Soret, and P. Popovski, “Exploiting
+topology awareness for routing in LEO satellite constellations,” in
+ Proc. IEEE GLOBECOM , 2021.
+
+ [5] 
+
+Z. M. Fadlullah, F. Tang, B. Mao et al. , “State-of-the-art deep
+learning: Evolving machine intelligence toward tomorrow’s intelligent
+network traffic control systems,” IEEE Comms. Surveys & Tutorials ,
+vol. 19, no. 4, pp. 2432–2455, 2017.
+
+ [6] 
+
+J. Liu, B. Zhao, Q. Xin et al. , “DRL-ER: An intelligent
+energy-aware routing protocol with guaranteed delay bounds in satellite
+mega-constellations,” IEEE Trans. on Netw Sci. and Eng. , vol. 8, pp.
+2872–2884, 2021.
+
+ [7] 
+
+D. Liu, J. Zhang, J. Cui et al. , “Deep learning aided routing for
+space-air-ground integrated networks relying on real satellite, flight, and
+shipping data,” IEEE Wireless Communications , vol. 29, no. 2, pp.
+177–184, 2022.
+
+ [8] 
+
+J. Boyan and M. Littman, “Packet routing in dynamically changing networks: A
+reinforcement learning approach,” in Advances in Neural Information
+Processing Systems , J. Cowan, G. Tesauro, and J. Alspector, Eds.,
+vol. 6. Morgan-Kaufmann, 1993.
+
+ [9] 
+
+“Digital Video Broadcasting (DVB); Second generation framing structure,
+channel coding and modulation systems for broadcasting, interactive services,
+news gathering and other broadband satellite applications (DVB-S2),” ETSI,
+France, Standard, October 2014.
+
+ Experimental support, please
+ view the build logs 
+ for errors. Generated by
+
+ L
+ A 
+ T
+ E 
+
+ xml 
+
+ .
+
+Instructions for reporting errors 
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+ support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+ methods listed below: 
+
+Click the "Report Issue" ( 
+
+ ) button, located in the page header. 
+
+ Tip: You can select the relevant text first, to include it in your report. 
+
+Our team has already identified the following issues . We appreciate your time reviewing and reporting rendering errors we
+ may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+ should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+ all. 
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion , and welcome developer contributions . 
+
+ We gratefully acknowledge support from
+ our major funders ,
+ member institutions , ,
+ and all contributors.
+
+ About 
+ · 
+ Help 
+ · 
+ Contact 
+ · 
+ Subscribe 
+ · 
+ Copyright 
+ · 
+ Privacy 
+ · 
+ Accessibility 
+ · 
+ Operational Status (opens in new tab) 
+
+Major funding support from 
+

@@ -1,0 +1,1158 @@
+
+
+LLM-Driven Automated Reward Design for Reinforcement Learning-Based Routing in LEO Satellite Networks
+
+Report GitHub Issue
+
+×
+
+Title:
+
+Content selection saved. Describe the issue below:
+
+Description:
+
+Submit without GitHub
+
+Submit in GitHub
+
+arXiv is now an independent nonprofit!
+
+Learn more
+
+×
+
+Back to arXiv
+
+Why HTML?
+
+ [MATH] 
+
+Report Issue
+
+ [MATH] 
+
+Back to Abstract
+
+ [MATH] 
+
+Download PDF
+
+ [MATH] 
+
+ [MATH] 
+
+ [MATH] 
+
+ [MATH] 
+
+ [MATH] 
+
+Abstract
+
+I 
+
+Introduction
+
+II 
+
+Problem Formulation
+
+III 
+
+LARGE: LLM-Automated Reward Generation and Enhancement
+
+III-A
+
+Cold Start Reward Generation
+
+III-B
+
+Iterative Reward Improvement
+
+IV 
+
+Performance Evaluation
+
+IV-A
+
+Network Simulation Environment
+
+IV-B
+
+Experimental Setup
+
+IV-C
+
+Evaluation Metrics
+
+IV-D
+
+Results
+
+IV-E
+
+Reward Analysis
+
+IV-F
+
+Discussion
+
+V 
+
+Conclusion
+
+References
+
+ License: arXiv.org perpetual non-exclusive license
+
+arXiv:2608.01649v1 [cs.NI] 03 Aug 2026
+
+LLM-Driven Automated Reward Design for Reinforcement Learning-Based Routing in 
+
+LEO Satellite Networks
+
+Walter P. Casas, Nelson L. S. da Fonseca, and Carlos A. Astudillo
+
+Affiliation: 
+Institute of Computing - State University of Campinas, Brazil 
+
+E-mail: w187990@dac.unicamp.br, nfonseca@ic.unicamp.br, and castudillo@unicamp.br
+
+Abstract
+
+Routing in 
+LEO
+ (
+LEO
+) satellite networks is challenging due to highly dynamic topologies and spatio-temporal network conditions. 
+RL
+ (
+RL
+) has emerged as a promising approach for adaptive routing; however, its performance critically depends on reward function design, which must balance objectives such as goodput and end-to-end delay. In practice, reward design remains a complex manual process requiring significant domain expertise and extensive trial-and-error. Recent works have explored 
+LLM
+ for automated reward design, but their application to highly dynamic systems such as 
+LEO
+ satellite networks remains largely unexplored. We propose 
+LARGE
+, a framework that automates reward design for 
+RL
+-based routing by combining 
+LLM
+-driven generation with iterative simulator-in-the-loop evaluation. LARGE generates an initial reward from 
+LLM
+ prior knowledge and iteratively refines it using simulation feedback. This loop enables exploration of diverse reward formulations while aligning them with network objectives. Results show that LARGE improves reward quality within a few iterations through feedback-driven refinement. Across different backbones, the framework achieves performance comparable to an expert-designed baseline, with the best-performing configuration reaching goodput within approximately 3% of the baseline and slightly lower end-to-end delay, without manual reward engineering. These results indicate that effectiveness emerges from the iterative feedback-driven process enabled by LARGE, highlighting the potential of framework-driven 
+LLM
+-in-the-loop optimization for 
+RL
+-based routing in dynamic satellite networks.
+
+Index Terms: 
+LEO satellite networks, Large Language Models, Reinforcement Learning, reward design, routing
+
+I 
+
+Introduction
+
+LEO
+ satellite constellations are becoming a key component of future global connectivity, particularly in the context of 6G networks, which target ubiquitous, low-latency, and high-capacity communication services. Operating at altitudes typically ranging from 400 to 1200 km, 
+LEO
+ systems offer significantly lower propagation latency compared to geostationary satellites 
+[
+1
+]
+. However, their movement at speeds of approximately 7.6 km/s causes the network topology to change constantly. In such a dynamic environment, routing requires selecting sequences of satellite nodes and inter-satellite links to forward data units, from source to destination. The resulting time-varying 
+ISL
+ (
+ISL
+) availability, frequent link disruptions, and changing resource conditions make traditional routing algorithms less effective 
+[
+2
+, 
+3
+]
+.
+
+RL
+ has recently emerged as a promising solution for these challenges, allowing satellites to make distributed routing decisions with only partial knowledge of the environment. However, the effectiveness of any 
+RL
+ agent critically depends on the design of the reward function, which guides the policy toward desired behaviors. A poorly specified reward can lead to slow convergence, inefficient, or unintended strategies. Moreover, designing an appropriate reward requires expert knowledge and repeated trial-and-error experimentation 
+[
+4
+, 
+5
+]
+. This motivates the need for automated reward design methods that address the specific challenges of 
+LEO
+ satellite routing.
+
+Recent work has demonstrated that LLMs can automate reward function design across multiple domains. Early approaches leveraged LLMs to evaluate agent behavior and provide reward signals during RL training 
+[
+4
+]
+ or to generate reward functions from language for direct optimization in robotic control 
+[
+6
+]
+. Subsequent efforts moved toward generating executable reward code, with Text2Reward 
+[
+7
+]
+ producing reward functions from task descriptions using structured environment representations and optional human feedback, and 
+[
+8
+]
+ introducing intermediate reward components to improve logical structure in robotic assembly tasks. However, these methods rely on human input or annotated datasets, which may limit scalability and generalization.
+
+More recent frameworks close the loop between LLMs and RL agents by iteratively refining rewards using training feedback: CARD 
+[
+9
+]
+ updates reward code based on trajectory-derived success–failure preferences, AutoReward 
+[
+10
+]
+ leverages simulation metrics such as success rates in autonomous driving, and 
+[
+11
+, 
+12
+]
+ employs Chain-of-Thought reasoning to iteratively decompose and refine reward design. Despite these advances, such approaches primarily target robotic or game environments, where feedback signals are well defined and closely aligned with task objectives.
+
+In the context of networking, recent surveys 
+[
+13
+, 
+14
+]
+ highlight the growing role of LLMs in network management and RL optimization. Building on this trend, Zheng et al. 
+[
+15
+]
+ propose a taxonomy of LLM roles in 6G RL optimization and explore UAV–satellite scenarios, while 
+[
+16
+]
+ uses LLMs to design enriched reward signals and process environment feedback for UAV data collection. Nevertheless, these works neither consider iterative reward refinement across training runs nor address the highly dynamic, topology-driven characteristics of LEO satellite networks. To the best of our knowledge, no prior work proposes a closed-loop framework in which an LLM autonomously generates and refines reward functions based on structured network metrics for DDQN-based routing in LEO satellite constellations, which is the main focus of this paper.
+
+Thus, this work proposes 
+LARGE
+ (
+LARGE
+), a 
+LLM
+-based framework that generates an initial reward function from a problem description and iteratively refines it using feedback from network state and routing performance. Rather than relying on manual reward engineering, 
+LARGE
+ explores whether structured performance feedback can guide an LLM toward reward functions that are competitive with expert-designed alternatives in dynamic 
+LEO
+ satellite routing. The main contributions of this work are as follows. First, we introduce 
+LARGE
+, an automated framework for reward generation and refinement in 
+RL
+-based routing for 
+LEO
+ satellite networks. Second, we design a feedback-driven optimization loop in which the reward function is iteratively revised based on observed network conditions and policy performance. Third, we evaluate the proposed approach through simulation in a dynamic routing environment and show that LLM-generated rewards can achieve performance comparable to an expert-designed baseline within a few refinement iterations, with the best-performing configuration reaching goodput within approximately 3% of the baseline and slightly lower delay, without requiring manual reward engineering.
+
+II 
+
+Problem Formulation
+
+Consider an agent operating in a Markov decision process (MDP) defined by [MATH] , where [MATH] is the state space, [MATH] is the action space, and [MATH] is the transition function. The space of candidate reward functions is denoted by [MATH] , where each [MATH] maps states and actions to scalar values guiding the learning process. A 
+RL
+ algorithm operating on [MATH] is denoted by [MATH] , which takes a reward function [MATH] as input and produces a policy [MATH] . The fitness function [MATH] evaluates the quality of a learned policy [MATH] .
+
+Based on these definitions, the 
+reward design problem
+
+[
+17
+]
+ consists of finding a reward function [MATH] such that the induced policy maximizes the fitness, as given in Eq. 
+
+1
+
+.
+
+ [MATH] 
+
+(1)
+
+The 
+reward generation problem
+ consists of finding a reward function [MATH] that approximates the optimal reward [MATH] . In our context, we employ a pretrained 
+LLM
+ [MATH] , where [MATH] denotes the model parameters, together with a prompt [MATH] that describes the network task and optimization objectives. The model generates a candidate reward function as [MATH] , which is then used by the training algorithm [MATH] to produce a policy [MATH] . The fitness function [MATH] evaluates [MATH] using network performance metrics obtained via simulation.
+
+III 
+
+LARGE: LLM-Automated Reward Generation and Enhancement
+
+This section introduces 
+LARGE
+, a framework based on 
+LLM
+ for the automated generation and optimization of reward functions for RL-based routing in LEO satellite network constellations. LARGE operates in two stages: 
+Cold Start Reward Generation
+, which produces an initial reward function, and 
+Iterative Reward Improvement
+, which iteratively refines the reward function until it converges toward a predefined objective, expressed as a target goodput value. The framework relies on three 
+LLM
+ agents. The 
+Metrics Interpreter Agent
+ analyzes network performance metrics and translates them into a structured prompt. The 
+Reward Design Agent
+ generates reward function definitions based on its internal knowledge and the provided context. The 
+Code Generator Agent
+ implements those definitions as executable code, verifying that all required variables are available in the Network Simulation Environment.
+
+Figure 1: 
+Cold Start Generation stage of LARGE. The Reward Design agent generates a reward function from a problem description prompt; the Code Generator implements it with available variables and, if unsuccessful, requests a revision.
+
+Figure 2: 
+Iterative Reward Improvement stage of LARGE. The Metrics Interpreter Agent analyzes the performance metrics returned by the Network Simulation Environment, the Reward Design Agent generates a new reward function definition, and the Code Generator Agent implements it. This loop continues until the convergence criterion is met.
+
+III-A
+
+Cold Start Reward Generation
+
+The goal of this stage is to produce an initial reward function without bias toward environment specific variables. The Reward Design Agent receives a prompt describing the routing problem and the optimization objective and generates a reward function definition, which is passed to the Code Generator Agent. The Code Generator Agent verifies whether each variable is available in the Network Simulation Environment, either directly or through derivation from other variables. If a variable is not available for implementation in Python, the Code Generator Agent returns the definition along with a report listing the missing variables and requests a revised version. This loop continues until a valid definition is obtained, preventing the Reward Design Agent from relying only on a limited set of variables and encouraging the Code Generator Agent to derive the required ones from available knowledge. Once all variables are confirmed, the Code Generator Agent implements the reward function in code and deploys it in the Network Simulation Environment, as shown in Fig. 
+
+1
+
+. At this point, the process proceeds to the second stage of 
+LARGE
+.
+
+III-B
+
+Iterative Reward Improvement
+
+In this stage, the process, illustrated in Fig. 
+
+2
+
+, begins with training the 
+RL
+ agent in the Network Simulation Environment using the reward function implemented in the previous stage. Once the training phase is completed, the environment returns a set of network performance metrics, including goodput in Mbps, path stretch, and end to end delay in ms, along with training indicators such as cumulative reward and training loss. The Metrics Interpreter Agent evaluates whether the convergence criterion, defined according to state of the art metrics, is satisfied; if so, the process stops and the trained agent is ready for evaluation. Otherwise, it converts the metrics obtained at the end of training into a structured prompt that highlights areas for improvement, reinforces the optimization objective, and indicates whether the reward function improved or degraded compared to the previous run, and sends it to the Reward Design Agent for refinement.
+
+The structured prompt is then passed to the Reward Design Agent, initiating an inner loop between the Reward Design Agent and the Code Generator Agent, similar to that of the previous stage. The Reward Design Agent interprets the feedback from the previous training run and proposes improvements by defining a new reward function, along with a brief rationale. This definition is sent to the Code Generator Agent, which verifies that all required variables are available in the environment and attempts to implement the reward function in Python. If implementation fails due to missing variables, the Code Generator Agent returns an error specifying the unavailable elements and requests a revised proposal. This interaction continues until a valid implementation is obtained using only available variables. Once successful, the Code Generator Agent generates a markdown document explaining the reward function and the reasoning behind its design. The newly implemented reward function replaces the previous one, the 
+RL
+ agent is retrained under the same conditions, and the cycle repeats until the convergence criterion is satisfied.
+
+This iterative process produces the final optimized reward function. The experimental setup and baseline used for its evaluation are described in the following section.
+
+IV 
+
+Performance Evaluation
+
+IV-A
+
+Network Simulation Environment
+
+The experiments are conducted using the open-source routing simulator proposed in 
+[
+18
+]
+, which models packet routing in 
+LEO
+ satellite constellations. The simulator represents a realistic scenario where ground gateways aggregate terrestrial traffic from nearby users into blocks of [MATH] bits with the same destination and inject them into the constellation as packets, which are then routed through a dynamic network of satellites until they reach their destination gateway. The environment is implemented using an event-based discrete-time approach and built on a dynamic time-varying graph, where nodes represent satellites and gateways, and edges correspond to communication links, including inter-satellite links (ISLs) and ground-to-satellite links (GSLs). This allows the simulator to model traffic generation, packet forwarding, queuing, transmission, and propagation dynamics.
+
+In this setting, the routing problem consists of deciding, at each satellite, the next hop to which a packet should be forwarded among the currently available neighboring nodes. Thus, satellites act as routers within the 
+LEO
+ constellation, and the selected sequence of next-hop decisions determines the end-to-end path followed by each packet. The 
+RL
+ framework follows a multi-agent setting, where each satellite acts as an independent agent responsible for making local routing decisions based on partial network information. The learning process includes two phases: during the online phase, agents learn from interactions with the environment through exploration, while during the offline phase, pre-trained models are deployed for decision making. The agents are trained using a 
+DDQN
+ (
+DDQN
+) algorithm, which is used in all experiments. Since the focus of this work is on reward optimization, we primarily analyze the behavior of the agents during the training phase.
+
+IV-B
+
+Experimental Setup
+
+The proposed framework is evaluated on the Kepler constellation, which consists of 140 satellites distributed across seven orbital planes at an altitude of 600 km. We use a fixed constellation to isolate the effect of reward optimization from changes in orbital topology, link dynamics, and path-length distributions. This controlled setting enables a direct comparison between reward functions while keeping the routing environment unchanged. The hyperparameters of the 
+DDQN
+ agent are kept fixed across all experiments and set to the default values provided by the simulator 
+[
+18
+]
+, ensuring that only the reward function varies. As a baseline, we use the reward function provided by the original simulator, designed by domain experts. The framework is evaluated using two generative 
+LLM
+ backbones: GPT-5.4, developed by OpenAI 
+[
+19
+]
+, referred to as LARGE-GPT, and Claude Opus 4.6, developed by Anthropic 
+[
+20
+]
+, referred to as LARGE-Opus. Each backbone is used consistently across all 
+LLM
+ agents in the pipeline and evaluated independently until the convergence criterion is satisfied.
+
+The evaluation follows a three-phase protocol. First, during the 
+search phase
+, the proposed LARGE framework is used to optimize the reward function. Each candidate reward function generated by LARGE is evaluated by training the 
+DDQN
+ agent for 0.2 seconds, producing approximately 70,000 hop-level reward events and 35,000 training steps. This short evaluation window provides sufficient signal to estimate early convergence behavior while keeping the 
+LLM
+-in-the-loop reward search computationally feasible. The 
+LARGE
+ search loop terminates once a candidate reward function achieves a goodput higher than that of the baseline reward, and the selected reward function is then carried forward to the subsequent validation phases. Then, during the 
+training phase
+, a new agent is trained from scratch for a full second using only the selected reward function, with performance recorded at checkpoints every 0.2 seconds. This phase verifies that the selected reward captures genuine routing objectives rather than exploiting the short search horizon used during 
+LARGE
+ optimization. Finally, during the 
+inference phase
+, the trained policy is deployed without further learning for 12 seconds, during which satellite positions are updated over time. This phase serves as the primary benchmark for assessing generalization under realistic dynamic conditions. To account for the stochastic nature of the training process, all results are reported as mean [MATH] standard deviation over 10 independent runs with different random seeds.
+
+IV-C
+
+Evaluation Metrics
+
+The performance of the 
+RL
+ agent is evaluated using the following network metrics:
+
+•
+
+Path stretch
+: ratio between the hop count of the path followed by a routed packet and the hop count of the shortest path computed by Dijkstra’s algorithm. A value of 1 indicates an optimal route in terms of hop count.
+
+•
+
+Goodput
+: amount of data successfully delivered to its destination per unit of time, measured in Mbps.
+
+•
+
+Delay
+: average time elapsed from the moment a traffic block of [MATH] bits is generated at the source gateway until it reaches its destination gateway, measured in milliseconds.
+
+IV-D
+
+Results
+
+When 
+LARGE
+ is applied during the search phase, the framework reaches the goodput-based stopping criterion by the third iteration, using only a training window of 0.2 seconds per candidate reward, as shown in Fig. 
+
+3
+
+. The same figure also illustrates the cold-start behavior of the reward generation process: the reward proposed in the first iteration is not sufficient to satisfy the criterion, which motivates the need for iterative refinement. Once this refinement starts, the feedback from the previous training run leads to improved reward proposals, which is reflected in the increase in goodput. In addition, after the stopping criterion is reached, subsequent iterations do not produce substantial performance gains. This behavior is associated with more conservative reward proposals, where the modifications mainly consist of small changes to the coefficient values.
+
+Figure 3: 
+Goodput achieved by LARGE across iterations. The dashed line represents the reward baseline designed by experts. LARGE converges once the generated reward function surpasses the baseline performance.
+
+Based on this behavior, the best-performing reward functions obtained during the search phase are selected for further analysis. These rewards are then used in the second phase, where new 
+DDQN
+ agents are trained from scratch for a full second, with performance recorded at checkpoints every 0.2 seconds, as shown in Fig. 
+
+4
+
+. This stage evaluates whether the rewards that satisfied the stopping criterion in the short 0.2-second search window remain effective when training is extended. The results show that both LARGE-GPT and LARGE-Opus maintain competitive performance throughout the full training interval. LARGE-GPT achieves the highest goodput in most checkpoints, although this comes with a higher path stretch, especially toward the end of training. In contrast, LARGE-Opus exhibits a more conservative behavior, with lower path stretch and performance closer to the expert baseline across the evaluated metrics. Overall, both rewards preserve the gains observed during the search phase and consistently achieve higher goodput than the shortest-path routing strategy, confirming that the selected rewards capture useful routing behavior beyond the initial search window.
+
+Figure 4: 
+Network performance metrics across LARGE iterations and training
+checkpoints for GPT-5.4 and Claude Opus 4.6.
+
+Finally, the agents trained during the second phase are evaluated in a 12-second inference scenario, where no further learning is performed and satellite positions are updated over time. This stage assesses whether the rewards selected during the short search phase and validated during the one-second training phase produce consistent routing behavior under a longer dynamic evaluation. The results, reported in Table 
+
+I
+
+, show that the generated rewards remain competitive with the expert-designed baseline. LARGE-Opus achieves the closest overall performance to the baseline, with comparable goodput, slightly lower delay, and a similar path stretch. LARGE-GPT obtains lower goodput and a higher path stretch, indicating a less stable transfer from training to inference, although its delay remains close to the baseline. Overall, these results suggest that the proposed framework can generate rewards that preserve meaningful routing behavior beyond the short optimization window, with LARGE-Opus showing the most consistent generalization across metrics.
+
+TABLE I: 
+Performance comparison between LLM-generated rewards and the expert
+baseline during the inference phase.
+
+Method
+
+Goodput
+
+(Mbps)
+
+Delay
+
+(ms)
+
+Path
+
+stretch
+
+Baseline
+
+ [MATH] 
+
+ [MATH] 
+
+ [MATH] 
+
+LARGE-GPT
+
+ [MATH] 
+
+ [MATH] 
+
+ [MATH] 
+
+LARGE-Opus
+
+ [MATH] 
+
+ [MATH] 
+
+ [MATH] 
+
+IV-E
+
+Reward Analysis
+
+To better understand the type of reward structures produced by 
+LARGE
+, we analyze the reward function generated by LARGE-Opus and compare it with the expert-designed baseline. The baseline reward follows a relatively compact design, mainly combining a distance-based term, a queue-based term, and fixed penalties or bonuses for special events such as delivery, unavailable links, and loop formation. In contrast, the generated reward adopts a more structured goodput-oriented formulation. Rather than evaluating only the selected hop in isolation, it compares the chosen action against the set of currently available neighboring satellites and assigns reward components based on local ranking criteria.
+
+The generated reward introduces several mechanisms that are not present in the expert baseline. First, it includes local ranking terms that favor neighbors with higher data rate and better progress-time efficiency. Second, it modifies the queue component by relating the observed queueing delay to the best available service time, making the penalty depend on the relative quality of the selected hop rather than only on the absolute queueing time. Third, it adds an explicit hop cost, discouraging unnecessarily long routes. Finally, it strengthens loop avoidance by penalizing repeated visits and ping-pong behavior, using satellite identifiers to detect revisits more robustly.
+
+These changes indicate that 
+LARGE
+ is able to produce reward functions that go beyond simple coefficient tuning and introduce additional routing-aware structure. However, the inference results also show that a more expressive reward does not necessarily lead to uniformly better generalization. In particular, the goodput-oriented design of LARGE-GPT can increase throughput during training, but it also tends to produce larger path stretch and less stable inference performance than LARGE-Opus. Therefore, the reward analysis suggests that the main value of 
+LARGE
+ is not only in improving a single metric, but also in exposing alternative reward-design trade-offs between throughput, delay, and route efficiency. Table 
+
+II
+
+ summarizes the main differences between the expert baseline and the reward generated by LARGE-Opus.
+
+TABLE II: 
+Main structural differences between the expert baseline reward and the reward generated by LARGE-Opus.
+
+Aspect
+
+Baseline
+
+LARGE-Opus
+
+Action evaluation
+
+Selected hop only
+
+Local neighbor ranking
+
+Rate awareness
+
+Not explicit
+
+Data-rate ranking term
+
+Efficiency term
+
+Distance-based
+
+Progress-time efficiency
+
+Queue penalty
+
+Absolute queue time
+
+Relative service-time penalty
+
+Hop cost
+
+Not explicit
+
+Explicit per-hop cost
+
+Loop handling
+
+Fixed revisit penalty
+
+Revisit and ping-pong penalties
+
+Delivery reward
+
+Mostly fixed
+
+Scaled with additional bonuses
+
+Invalid action
+
+Fixed penalty
+
+Stronger penalty
+
+IV-F
+
+Discussion
+
+The results show that 
+LARGE
+ can generate reward functions that remain competitive with the expert-designed baseline after a short feedback-driven search process. During the search phase, both LARGE-GPT and LARGE-Opus satisfy the goodput-based stopping criterion within a few iterations, and the subsequent training and inference phases indicate that the selected rewards preserve meaningful routing behavior beyond the 0.2-second search window.
+
+The two backbones exhibit different trade-offs. LARGE-Opus produces a more aggressive and structurally richer reward, but this additional complexity does not translate into uniformly better inference performance, as it shows lower goodput and higher path stretch than the expert baseline in the 12-second evaluation. In contrast, LARGE-GPT produces a more conservative reward that remains closer to the baseline across metrics, achieving comparable goodput, slightly lower delay, and similar path stretch. These results suggest that 
+LARGE
+ is useful not only for automating reward design, but also for exposing alternative trade-offs between goodput, delay, and route efficiency.
+
+V 
+
+Conclusion
+
+In this work, we proposed 
+LARGE
+, an 
+LLM
+-based framework for automated reward generation and optimization in 
+RL
+-based routing for 
+LEO
+ satellite networks. The framework uses three 
+LLM
+ agents within two nested loops: an outer loop that refines candidate rewards using simulator feedback and network metrics, and an inner loop that validates their executable implementation. Experimental results show that 
+LARGE
+ can transform initially imperfect proposals into competitive rewards within a few refinement iterations, without manual reward engineering. The generated rewards satisfy the goodput-based stopping criterion during search and preserve meaningful routing behavior during longer training and inference, showing that the benefit comes from the closed-loop interaction between reward design, code validation, simulation, and feedback-driven refinement.
+
+By connecting 
+LLM
+-based reward design with simulator-based evaluation, 
+LARGE
+ provides a practical mechanism for translating high-level network objectives into executable reward functions for dynamic communication environments. The results also show that different 
+LLM
+ backbones lead to routing trade-offs between goodput, delay, and route efficiency. Although this work focuses on a controlled Kepler constellation scenario to isolate reward optimization, future work will extend the evaluation to additional constellation architectures, traffic loads, gateway deployments, and longer inference horizons. Further directions include robust multi-objective stopping criteria, prompt sensitivity analysis, and fine-tuned 
+LLM
+s to improve convergence speed and reward quality.
+
+Acknowledgments
+
+This work was partially funded by the INCT of Intelligent Communications Networks and the Internet of Things (ICoNIoT) funded by CNPq (process 405940/2022-0) and CAPES (Finance Code 88887.954253/2024-00), and CNPq grant 403979/2023-4.
+
+References
+
+[1]
+
+B. Koosha, P. Madani, and M. D. Ardakani
+
+ (2025)
+
+Comprehensive analysis of recent leo satellite constellations: capabilities and innovative trends
+.
+
+In 
+2025 IEEE Aerospace Conference
+,
+
+Vol. 
+
+, 
+pp. 1–12
+.
+
+External Links: 
+
+Document
+
+Cited by: 
+
+§I
+
+.
+
+[2]
+
+Y. Shi, W. Wang, X. Zhu, and H. Zhu
+
+ (2024)
+
+Low earth orbit satellite network routing algorithm based on graph neural networks and deep q-network
+.
+
+Applied Sciences
+
+14
+ (
+9
+), 
+pp. 3840
+.
+
+Cited by: 
+
+§I
+
+.
+
+[3]
+
+Z. Feng, B. Li, H. Ding, and F. Hou
+
+ (2025)
+
+An integrated routing and data fragmentation strategy for optimizing end-to-end delay in leo satellite networks
+.
+
+Ad Hoc Networks
+
+175
+.
+
+Cited by: 
+
+§I
+
+.
+
+[4]
+
+M. Kwon, S. M. Xie, K. Bullard, and D. Sadigh
+
+ (2023)
+
+Reward design with language models
+.
+
+In 
+The Eleventh International Conference on Learning Representations
+,
+
+Cited by: 
+
+§I
+
+,
+
+§I
+
+.
+
+[5]
+
+S. Booth, W. B. Knox, J. Shah, S. Niekum, P. Stone, and A. Allievi
+
+ (2023)
+
+The perils of trial-and-error reward design: misdesign through overfitting and invalid task specifications
+.
+
+In 
+Proceedings of the AAAI Conference on Artificial Intelligence
+,
+
+Vol. 
+37
+, 
+pp. 5920–5929
+.
+
+Cited by: 
+
+§I
+
+.
+
+[6]
+
+W. Yu, N. Gileadi, C. Fu, S. Kirmani, K. Lee, M. G. Arenas, H. L. Chiang, T. Erez, L. Hasenclever, J. Humplik, brian ichter, T. Xiao, P. Xu, A. Zeng, T. Zhang, N. Heess, D. Sadigh, J. Tan, Y. Tassa, and F. Xia
+
+ (2023)
+
+Language to rewards for robotic skill synthesis
+.
+
+In 
+7th Annual Conference on Robot Learning
+,
+
+Cited by: 
+
+§I
+
+.
+
+[7]
+
+T. Xie, S. Zhao, C. H. Wu, Y. Liu, Q. Luo, V. Zhong, Y. Yang, and T. Yu
+
+ (2024)
+
+Text2reward: automated dense reward function generation for reinforcement learning
+.
+
+In 
+International Conference on Learning Representations (ICLR), 2024 (07/05/2024-11/05/2024, Vienna, Austria)
+,
+
+Cited by: 
+
+§I
+
+.
+
+[8]
+
+K. Jin, G. Tian, B. Huang, Y. Cui, and X. Zheng
+
+ (2024)
+
+Reward design framework based on reward components and large language models
+.
+
+In 
+2024 4th International Conference on Artificial Intelligence, Robotics, and Communication (ICAIRC)
+,
+
+pp. 278–282
+.
+
+Cited by: 
+
+§I
+
+.
+
+[9]
+
+S. Sun, R. Liu, J. Lyu, J. Yang, L. Zhang, and X. Li
+
+ (2025)
+
+A large language model-driven reward design framework via dynamic feedback for reinforcement learning
+.
+
+Knowledge-Based Systems
+
+326
+, 
+pp. 114065
+.
+
+Cited by: 
+
+§I
+
+.
+
+[10]
+
+X. Han, Q. Yang, X. Chen, Z. Cai, X. Chu, and M. Zhu
+
+ (2024)
+
+Autoreward: closed-loop reward design with large language models for autonomous driving
+.
+
+IEEE Transactions on Intelligent Vehicles
+.
+
+Cited by: 
+
+§I
+
+.
+
+[11]
+
+I. Baek, T. Park, J. Noh, C. Bae, and K. Kim
+
+ (2024)
+
+Chatpcg: large language model-driven reward design for procedural content generation
+.
+
+In 
+2024 IEEE Conference on Games (CoG)
+,
+
+pp. 1–4
+.
+
+Cited by: 
+
+§I
+
+.
+
+[12]
+
+X. Zhu, J. Du, Q. Fu, and L. Chen
+
+ (2025)
+
+LLM-based reward engineering for reinforcement learning: a chain of thought approach
+.
+
+In 
+2025 10th International Conference on Cloud Computing and Big Data Analytics (ICCCBDA)
+,
+
+pp. 222–227
+.
+
+Cited by: 
+
+§I
+
+.
+
+[13]
+
+H. Zhou, C. Hu, Y. Yuan, Y. Cui, Y. Jin, C. Chen, H. Wu, D. Yuan, L. Jiang, D. Wu, 
+et al.
+
+ (2024)
+
+Large language model (llm) for telecommunications: a comprehensive survey on principles, key techniques, and opportunities
+.
+
+IEEE Communications Surveys & Tutorials
+
+27
+ (
+3
+), 
+pp. 1955–2005
+.
+
+Cited by: 
+
+§I
+
+.
+
+[14]
+
+F. Jiang, C. Pan, L. Dong, K. Wang, M. Debbah, D. Niyato, and Z. Han
+
+ (2026)
+
+A comprehensive survey of large ai models for future communications: foundations, applications and challenges
+.
+
+IEEE Communications Surveys & Tutorials
+.
+
+Cited by: 
+
+§I
+
+.
+
+[15]
+
+J. Zheng, R. Zhang, D. Niyato, H. Zhang, J. Wang, H. Du, J. Kang, and Z. Xiong
+
+ (2026)
+
+Large language model-enabled reinforcement learning for wireless network optimization
+.
+
+IEEE Communications Magazine
+.
+
+Cited by: 
+
+§I
+
+.
+
+[16]
+
+L. Cai, R. Zhang, J. Wang, Y. Zhang, M. Peng, T. Jiang, D. Niyato, W. Ni, A. Jamalipour, and D. I. Kim
+
+ (2026)
+
+Large language model-enhanced deep reinforcement learning for secure data collection in low-altitude economy networking
+.
+
+IEEE Transactions on Mobile Computing
+.
+
+Cited by: 
+
+§I
+
+.
+
+[17]
+
+S. Singh, R. L. Lewis, and A. G. Barto
+
+ (2009)
+
+Where do rewards come from
+.
+
+In 
+Proceedings of the annual conference of the cognitive science society
+,
+
+pp. 2601–2606
+.
+
+Cited by: 
+
+§II
+
+.
+
+[18]
+
+F. Lozano-Cuadra, M. D. Thorsager, I. Leyva-Mayorga, and B. Soret
+
+ (2024)
+
+An open source multi-agent deep reinforcement learning routing simulator for satellite networks
+.
+
+In 
+Proceedings of SPAICE2024: The First Joint European Space Agency / IAA Conference on AI in and for Space
+,
+
+pp. 420–424
+.
+
+External Links: 
+
+Document
+
+Cited by: 
+
+§IV-A
+
+,
+
+§IV-B
+
+.
+
+[19]
+
+OpenAI
+
+ (2026)
+
+GPT-5.4 Thinking System Card
+.
+
+Note: 
+
+https://deploymentsafety.openai.com/gpt-5-4-thinking/gpt-5-4-thinking.pdf
+Accessed: 2026-05-01
+
+Cited by: 
+
+§IV-B
+
+.
+
+[20]
+
+Anthropic
+
+ (2026)
+
+Claude Opus 4.6 System Card
+.
+
+Note: 
+
+https://www-cdn.anthropic.com/6a5fa276ac68b9aeb0c8b6af5fa36326e0e166dd.pdf
+Accessed: 2026-05-01
+
+Cited by: 
+
+§IV-B
+
+.
+
+ Experimental support, please
+
+view the build logs
+
+ for errors. Generated by
+
+ L
+
+A
+
+ T
+
+E
+
+xml
+
+.
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+ support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+ methods listed below:
+
+Click the "Report Issue" 
+( [MATH] )
+ button, located in the page header.
+
+Tip:
+ You can select the relevant text first, to include it in your report.
+
+Our team has already identified 
+the following issues
+. We appreciate your time reviewing and reporting rendering errors we
+ may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+ should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+ all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a 
+list of packages that need conversion
+, and welcome 
+developer contributions
+.
+
+ We gratefully acknowledge support from
+ our 
+major funders
+,
+
+member institutions
+
+, 
+
+,
+ and all contributors.
+
+About
+
+·
+
+Help
+
+·
+
+Contact
+
+·
+
+Subscribe
+
+·
+
+Copyright
+
+·
+
+Privacy
+
+·
+
+Accessibility
+
+·
+
+Operational Status
+ (opens in new tab)
+
+Major funding support from
+
+ [MATH] 
+

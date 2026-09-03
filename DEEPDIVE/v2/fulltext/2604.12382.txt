@@ -1,0 +1,924 @@
+ 
+
+ Report GitHub Issue 
+ × 
+
+ Title: 
+
+ Content selection saved. Describe the issue below: 
+
+ Description: 
+
+ Submit without GitHub 
+ Submit in GitHub 
+
+ arXiv is now an independent nonprofit! 
+ Learn more 
+ × 
+
+ Back to arXiv 
+
+ Why HTML? 
+
+ Report Issue 
+
+ Back to Abstract 
+
+ Download PDF 
+
+ Abstract 
+ I Introduction 
+ II System Model 
+
+ II-A Network Model 
+ II-B Traffic and Link State Model 
+ II-C Problem Formulation 
+
+ III Domain Partitioning and Inter-Domain Routing 
+
+ III-A Traffic-Aware Domain Partitioning via NSGA-II 
+ III-B GAT-based Domain State Encoding 
+ III-C Action-Masked PPO for Online Routing 
+
+ IV Simulation Results 
+
+ IV-A Simulation Setup 
+ IV-B Comparison with Baselines 
+ IV-C Ablation Study 
+ IV-D Training Convergence 
+
+ V Conclusion 
+ References 
+
+ License: arXiv.org perpetual non-exclusive license
+
+arXiv:2604.12382v1 [cs.NI] 14 Apr 2026 
+
+ Traffic-Aware Domain Partitioning and Load-Balanced
+Inter-Domain Routing for LEO Satellite Networks
+ Thanks:  Jiangtao Luo and Yongyi Ran are the
+corresponding authors. (Email: luojt@cqupt.edu.cn,
+ranyy@cqupt.edu.cn). This work is supported by the National
+Natural Science Foundation of China (No. U25B2033, No. U23A20275
+and No. 62171072). 
+
+ Chen Zhou
+
+ Affiliation:  School of Communications and 
+ Information Engineering 
+ Chongqing University of Posts and 
+ Telecommunications
+ Chongqing, China 
+ s240132075@stu.cqupt.edu.cn
+
+ Jiangtao Luo
+
+ Affiliation:  School of Communications and 
+ Information Engineering 
+ Chongqing University of Posts and 
+ Telecommunications
+ Chongqing, China 
+ luojt@cqupt.edu.cn
+
+ Yongyi Ran
+
+ Affiliation:  School of Communications and 
+ Information Engineering 
+ Chongqing University of Posts and 
+ Telecommunications
+ Chongqing, China 
+ ranyy@cqupt.edu.cn
+
+ Abstract 
+
+ Low Earth Orbit (LEO) satellite networks provide global coverage
+and low latency, yet high node mobility, uneven traffic distribution,
+and stochastic link failures pose severe challenges for inter-domain
+routing. Existing approaches either neglect graph-structured topology
+or lack dynamic awareness of real-time link states, struggling to
+balance load distribution and routing reliability. This paper proposes
+DTAR, a traffic-aware deep reinforcement learning approach for
+inter-domain routing in LEO satellite networks. A multi-objective
+NSGA-II algorithm first generates an offline domain partition
+maximizing intra-domain traffic ratio and minimizing load imbalance.
+A Graph Attention Network dynamically encodes inter-domain
+link traffic intensity, load distribution, and fault status, upon
+which an action-masked PPO agent learns routing decisions online. Simulations on a 288-satellite Walker constellation
+against multiple baselines demonstrate that DTAR
+significantly reduces link load imbalance and end-to-end
+delay, while improving routing success rate and reducing
+packet loss rate across normal, traffic surge, and fault
+scenarios. 
+
+ Index Terms:  LEO satellite network, inter-domain routing, graph attention network, deep reinforcement learning
+
+ I Introduction 
+
+ With the rapid deployment of large-scale
+Low Earth Orbit (LEO) satellite constellations such as
+Starlink and OneWeb, LEO satellite networks have emerged
+as a critical component of future 6G communications due
+to their low propagation delay and wide coverage [ 1 ] .
+To efficiently manage inter-satellite link resources in
+large-scale constellations, satellite networks are
+typically partitioned into domains, with inter-domain
+routing protocols coordinating cross-domain traffic
+scheduling. As the core function of the satellite network
+control plane, inter-domain routing directly determines
+end-to-end latency, load balancing capability, and fault
+resilience. 
+
+ However, inter-domain routing in LEO networks faces three
+fundamental challenges: frequent topology changes, spatiotemporally
+uneven traffic distribution, and stochastic link failures.
+Existing methods fall short in addressing these challenges.
+Traditional shortest-path algorithms such as Dijkstra are
+load-oblivious and prone to hotspot congestion.
+Q-learning-based methods such as QRLSN  [ 2 ] suffer from
+poor Q-table generalization in large-scale multi-domain topologies.
+ELB  [ 3 ] adopts load-weighted shortest-path routing for
+non-geostationary satellite networks, yet relies on static
+link weights without real-time traffic state awareness.
+Domain partitioning-based methods have been actively
+explored: SHORT  [ 4 ] organizes LEO networks into
+stable hierarchical routing domains based on
+orbital-geodetic coordinates, and Eunomia  [ 5 ] 
+leverages spectral clustering for mobility-aware domain
+assignment. CDPAR  [ 6 ] combines domain partitioning
+with DQN routing for adaptive routing decisions.
+However, these methods do not sufficiently account for
+traffic distribution during partitioning, and lack
+real-time inter-domain link state awareness. 
+
+ Graph neural networks and deep reinforcement learning
+have shown strong potential for LEO routing optimization:
+Rao et al. combined deep graph attention with
+incremental evolutionary strategies for dynamic LEO
+routing [ 7 ] , Zhang et al. proposed GRLR jointly
+optimizing routing for mega-constellations with GNN and
+reinforcement learning [ 8 ] , Li et al. proposed
+a multi-agent hierarchical DRL approach for multi-domain
+collaborative satellite routing [ 9 ] , Xu et al. integrated GNN and DRL for inter-satellite
+routing with load balancing objectives [ 10 ] , and
+Xia et al. proposed distributed DRL for joint computing
+and routing in LEO constellations [ 11 ] . Nevertheless,
+none of these works explicitly model domain-based structures
+with real-time inter-domain link state encoding for
+load-balanced routing. 
+
+ To address these limitations, this paper proposes DTAR
+(Deep Traffic-Aware inter-domain Routing),
+a traffic-aware deep reinforcement learning approach for
+load-balanced inter-domain routing in LEO satellite
+networks. A two-stage framework decouples offline
+traffic-aware domain partitioning from online adaptive
+routing decision-making. Extensive simulations on a
+288-satellite Walker constellation demonstrate that DTAR
+outperforms four baseline methods across normal, traffic
+surge, and link failure scenarios.
+The main contributions are as follows: 
+
+ 1. 
+
+ A multi-objective NSGA-II-based domain partitioning
+method simultaneously maximizes intra-domain traffic ratio
+and minimizes inter-domain load imbalance, providing a
+structured topological foundation for routing. 
+
+ 2. 
+
+ A GAT-based domain-level state encoder explicitly
+encodes inter-domain link traffic intensity, load
+distribution, and fault status for real-time perception
+of dynamic network conditions. 
+
+ 3. 
+
+ An action-masked PPO-based routing policy ensures routing feasibility under topology
+dynamics, link congestion, and fault scenarios. 
+
+ II System Model 
+
+ II-A Network Model 
+
+ A LEO satellite constellation forms a network modeled as an
+undirected graph 𝒢 s = ( 𝒱 s , ℰ s ) \mathcal{G}_{s}=(\mathcal{V}_{s},\mathcal{E}_{s}) ,
+where 𝒱 s = { v 1 , v 2 , … , v N } \mathcal{V}_{s}=\{v_{1},v_{2},\ldots,v_{N}\} denotes the set
+of satellite nodes and ℰ s \mathcal{E}_{s} the set of inter-satellite
+links (ISLs). The constellation is distributed across P P orbital
+planes with S S satellites per plane. Under the standard 4-ISL
+topology, each satellite v i v_{i} maintains links to its two
+intra-plane neighbors and two inter-plane counterparts.
+An edge e i , j = e j , i ∈ ℰ s e_{i,j}=e_{j,i}\in\mathcal{E}_{s} represents the
+physical ISL between v i v_{i} and v j v_{j} , characterized at time
+step t t by link load w i ​ j ​ ( t ) w_{ij}(t) and fault status
+ b i ​ j ​ ( t ) ∈ { 0 , 1 } b_{ij}(t)\in\{0,1\} . 
+
+ To reduce routing complexity in large-scale constellations,
+satellites are grouped into K K domains, forming a domain-level
+graph 𝒢 = ( 𝒱 , ℰ ) \mathcal{G}=(\mathcal{V},\mathcal{E}) , where
+ 𝒱 = { D 1 , … , D K } \mathcal{V}=\{D_{1},\ldots,D_{K}\} is the set of domain nodes
+and ℰ \mathcal{E} is the set of inter-domain edges.
+An edge ( D i , D j ) ∈ ℰ (D_{i},D_{j})\in\mathcal{E} exists if at least one
+physical ISL connects satellites in the respective domains.
+Each domain D k D_{k} comprises a set of geographically adjacent
+satellites and is characterized at time step t t by:
+normalized intra-domain satellite count n k n_{k} ,
+traffic load L k ​ ( t ) L_{k}(t) , cross-domain link count c k c_{k} ,
+intra-domain fault node ratio f k ​ ( t ) f_{k}(t) , and surge hotspot
+indicator s k ​ ( t ) ∈ { 0 , 1 } s_{k}(t)\in\{0,1\} .
+Note that c k c_{k} is time-invariant, as the domain partition
+is fixed offline and the inter-domain edge set ℰ \mathcal{E} 
+does not change during online routing.
+Each inter-domain edge ( D i , D j ) ∈ ℰ (D_{i},D_{j})\in\mathcal{E} carries
+three dynamic attributes: available link ratio a i ​ j ​ ( t ) a_{ij}(t) ,
+inter-domain link load W i ​ j ​ ( t ) W_{ij}(t) , and fault status flag
+ B i ​ j ​ ( t ) ∈ { 0 , 1 } B_{ij}(t)\in\{0,1\} .
+When B i ​ j ​ ( t ) = 1 B_{ij}(t)=1 , all cross-domain ISLs between D i D_{i} and
+ D j D_{j} are simultaneously failed, i.e., a i ​ j ​ ( t ) = 0 a_{ij}(t)=0 , and
+routing between these two domains is blocked. When
+ B i ​ j ​ ( t ) = 0 B_{ij}(t)=0 , the inter-domain link is fully operational.
+The domain partition is generated offline by NSGA-II and
+remains static throughout online routing. 
+
+ Fig. 1: The LEO satellite inter-domain routing problem:
+load-balanced path selection across partitioned domains. 
+
+ II-B Traffic and Link State Model 
+
+ Traffic demands within the constellation follow a
+spatiotemporally uneven distribution reflecting the peak-hour
+patterns of terrestrial hotspot regions. At each time step,
+a daily-pattern generator produces the satellite-level traffic
+matrix 𝐓 ⁡ ( t ) ∈ ℝ N × N \mathbf{T}(t)\in\mathbb{R}^{N\times N} , where
+ T i ​ j ​ ( t ) T_{ij}(t) denotes the traffic intensity from satellite v i v_{i} 
+to v j v_{j} at time t t . The aggregated traffic load of domain
+ D k D_{k} is defined as: 
+
+ L k ​ ( t ) = ∑ i ∈ D k ( ∑ j = 1 N T i ​ j ​ ( t ) + ∑ j = 1 N T j ​ i ​ ( t ) ) L_{k}(t)=\sum_{i\in D_{k}}\!\left(\sum_{j=1}^{N}T_{ij}(t)+\sum_{j=1}^{N}T_{ji}(t)\right) 
+
+ (1) 
+
+ which aggregates bidirectional traffic associated with all
+satellites in domain D k D_{k} .
+In the traffic surge scenario, a random cross-domain link pair
+is selected as the hotspot and the traffic of satellites within
+its surrounding region is amplified by a factor of μ \mu to
+emulate burst load conditions. 
+
+ Link failures are injected at the inter-domain edge level as
+a stochastic process: each inter-domain link fails independently
+at each time step with probability p f p_{f} and recovers with
+probability p r p_{r} . Fault injection is constrained to preserve
+the connectivity of 𝒢 \mathcal{G} , ensuring routing feasibility
+under all fault scenarios. 
+
+ II-C Problem Formulation 
+
+ For a routing request from source domain D s D_{s} to destination
+domain D dst D_{\mathrm{dst}} , the objective is to find a
+domain-level path
+ 𝒫 = { D s , D h 1 , … , D dst } \mathcal{P}=\{D_{s},D_{h_{1}},\ldots,D_{\mathrm{dst}}\} 
+in 𝒢 \mathcal{G} that minimizes inter-domain link load
+imbalance and maximizes routing success rate SR ⁡ ( t ) \mathrm{SR}(t) ,
+where SR ⁡ ( t ) \mathrm{SR}(t) denotes the ratio of successfully
+delivered routing requests to the total number of requests
+at time step t t .
+Load imbalance is measured by the coefficient of variation
+(CV) of inter-domain link loads: 
+
+ CV ⁡ ( t ) = std ​ ( W i ​ j ​ ( t ) ) mean ​ ( W i ​ j ​ ( t ) ) , ( D i , D j ) ∈ ℰ \mathrm{CV}(t)=\frac{\mathrm{std}(W_{ij}(t))}{\mathrm{mean}(W_{ij}(t))},\quad(D_{i},D_{j})\in\mathcal{E} 
+
+ (2) 
+
+ where CV ⁡ ( t ) \mathrm{CV}(t) is defined when
+ mean ​ ( W i ​ j ​ ( t ) ) > 0 \mathrm{mean}(W_{ij}(t))>0 ; in the degenerate case of
+zero network load, CV ⁡ ( t ) \mathrm{CV}(t) is set to  0 0 . 
+
+ The optimization problem is formulated as: 
+
+ min 𝒫 ⁡ CV ⁡ ( t ) , max 𝒫 ⁡ SR ⁡ ( t ) \min_{\mathcal{P}}\ \mathrm{CV}(t),\quad\max_{\mathcal{P}}\ \mathrm{SR}(t) 
+
+ (3) 
+
+ s . t . | 𝒫 | − 1 ≤ H max , ∀ ( D i , D j ) ∈ 𝒫 : B i ​ j ​ ( t ) = 0 \mathrm{s.t.}\quad|\mathcal{P}|-1\leq H_{\max},\quad\forall\,(D_{i},D_{j})\in\mathcal{P}:\ B_{ij}(t)=0 
+
+ where D s D_{s} and D dst D_{\mathrm{dst}} are connected in
+ 𝒢 \mathcal{G} under the current fault state. 
+
+ The two objectives are jointly addressed within the Markov
+Decision Process (MDP) framework: CV ⁡ ( t ) \mathrm{CV}(t) and
+ SR ⁡ ( t ) \mathrm{SR}(t) are incorporated into a scalar reward function
+through a weighted combination of a load balancing term and
+terminal success/failure rewards, enabling the DRL agent to
+optimize both objectives simultaneously via policy gradient updates. 
+
+ Due to the dynamic nature of the domain-level
+topology—including traffic fluctuations, stochastic link
+failures, and surge events—this problem is intractable for
+conventional optimization methods in real time. This problem is therefore formulated as an MDP, and deep reinforcement learning is employed for online decision-making,
+as detailed in Section  III . 
+
+ III Domain Partitioning and Inter-Domain Routing 
+
+ This section presents the DTAR framework for load-balanced inter-domain routing in LEO satellite networks. DTAR adopts a two-stage design: in the offline stage, NSGA-II generates a traffic-aware domain partition that provides a structured topological foundation for routing; in the online stage, a GAT-PPO agent perceives real-time inter-domain link states and makes adaptive routing decisions. The two stages address optimization problems at different timescales, decoupling the combinatorial complexity of domain partitioning from the real-time dynamics of routing decisions.
+Within each domain, intra-domain forwarding follows shortest-path routing based on hop count, which is orthogonal to the inter-domain routing problem addressed in this work. 
+
+ Fig. 2: The proposed DTAR framework. 
+
+ III-A Traffic-Aware Domain Partitioning via NSGA-II 
+
+ Given the satellite topology 𝒢 s \mathcal{G}_{s} and traffic
+matrix 𝐓 \mathbf{T} , the partitioning problem seeks an
+assignment π : 𝒱 s → { 0 , … , K − 1 } \pi:\mathcal{V}_{s}\to\{0,\ldots,K-1\} that
+jointly optimizes two objectives. 
+
+ Objective 1: Maximizing Intra-Domain Traffic Ratio
+(IDTR). 
+
+ IDTR ⁡ ( π ) = ∑ i ∑ j T i ​ j ⋅ 𝟏 [ π ( i ) = π ( j ) ] ∑ i ∑ j T i ​ j \mathrm{IDTR}(\pi)=\frac{\sum_{i}\sum_{j}T_{ij}\cdot\mathbf{1}[\pi(i)=\pi(j)]}{\sum_{i}\sum_{j}T_{ij}} 
+
+ (4) 
+
+ A higher IDTR confines more traffic within domains, reducing
+cross-domain routing overhead. 
+
+ Objective 2: Minimizing Inter-Domain Load Deviation. 
+The aggregated load of domain 𝒟 d \mathcal{D}_{d} is: 
+
+ L d = ∑ i ∈ 𝒟 d ( ∑ j T i ​ j + ∑ j T j ​ i ) L_{d}=\sum_{i\in\mathcal{D}_{d}}\!\left(\sum_{j}T_{ij}+\sum_{j}T_{ji}\right) 
+
+ (5) 
+
+ The load deviation σ L = std ⁡ ( L 0 , … , L K − 1 ) \sigma_{L}=\mathrm{std}(L_{0},\ldots,L_{K-1}) 
+is minimized to achieve balanced load distribution across
+domains. 
+
+ NSGA-II  [ 11 ] is applied to solve this bi-objective
+problem, with each individual encoding π \pi as a vector
+of N N domain labels. The algorithm maintains a population
+of M M individuals and evolves them over G G generations
+via non-dominated sorting and crowding-distance selection,
+preserving solution diversity along the Pareto front.
+Single-point crossover exchanges domain assignment segments
+between parent individuals to explore new partition
+configurations. Three mutation modes are applied
+stochastically:
+ intra-orbit perturbation (60%) preserves traffic
+locality by reassigning satellites to the domain of an
+orbitally adjacent neighbor;
+ traffic-aware migration (20%) moves a border node
+from the most-loaded domain to the least-loaded to reduce
+ σ L \sigma_{L} ;
+ random boundary exploration (20%) maintains
+population diversity. 
+
+ After each genetic operation, a multi-stage repair operator
+enforces hard constraints through the following sequential
+stages:
+(1)  empty-domain revival : splits nodes from the
+largest domain to repopulate any empty domain;
+(2)  upper-bound repair : migrates boundary nodes
+from oversized domains to adjacent ones;
+(3)  lower-bound repair : borrows boundary nodes
+from neighboring large domains to undersized ones;
+(4)  connectivity repair : reassigns nodes in
+disconnected components to the nearest adjacent domain;
+(5)  post-connectivity lower-bound re-check :
+re-applies lower-bound repair with donor eligibility
+relaxed to 2-hop neighbors to handle residual undersized
+domains after connectivity repair.
+The operator enforces domain size within [ n min , n max ] [n_{\min},n_{\max}] and intra-domain connectivity, leaving IDTR
+and σ L \sigma_{L} fully subject to NSGA-II optimization.
+The final partition is selected from the Pareto front by
+maximizing a normalized score with equal weight on IDTR
+improvement and σ L \sigma_{L} reduction. 
+
+ III-B GAT-based Domain State Encoding 
+
+ To enable real-time perception of dynamic inter-domain
+topology states, we design a GAT-based domain-level state
+encoder that jointly encodes inter-domain link traffic
+intensity, load distribution, and fault status into
+structured embeddings. 
+
+ Input Features. 
+Each domain node v ∈ 𝒱 v\in\mathcal{V} carries a
+ 6-dimensional feature vector comprising:
+normalized intra-domain satellite count n k n_{k} ,
+domain traffic load L k ​ ( t ) L_{k}(t) ,
+normalized cross-domain link count c k c_{k} ,
+intra-domain fault node ratio f k ​ ( t ) f_{k}(t) ,
+normalized domain load index ℓ k ​ ( t ) \ell_{k}(t) ,
+and surge hotspot indicator s k ​ ( t ) s_{k}(t) .
+Each inter-domain edge ( D i , D j ) ∈ ℰ (D_{i},D_{j})\in\mathcal{E} carries a
+3-dimensional feature vector comprising: available link
+ratio a i ​ j ​ ( t ) a_{ij}(t) , inter-domain link load W i ​ j ​ ( t ) W_{ij}(t) ,
+and fault status flag B i ​ j ​ ( t ) B_{ij}(t) . 
+
+ Architecture. 
+The encoder consists of an input projection layer followed
+by two GAT layers  [ 13 ] with hidden dimension 64,
+ H = 4 H{=}4 attention heads, and output dimension 32. In each
+layer, attention coefficients are computed jointly from
+node and edge features. Let the pre-activation score be: 
+
+ α i ​ j = softmax i ​ ( LeakyReLU ⁡ ( 𝐰 a ⊤ ​ [ 𝐖 n ​ 𝐡 i ​ ‖ 𝐖 n ​ 𝐡 j ‖ ​ 𝐖 e ​ 𝐟 i ​ j ] ) ) \footnotesize\alpha_{ij}=\mathrm{softmax}_{i}\!\left(\mathrm{LeakyReLU}\!\left(\mathbf{w}_{a}^{\top}\![\mathbf{W}_{n}\mathbf{h}_{i}\|\mathbf{W}_{n}\mathbf{h}_{j}\|\mathbf{W}_{e}\mathbf{f}_{ij}]\right)\right) 
+
+ (6) 
+
+ where 𝐟 i ​ j \mathbf{f}_{ij} is the edge feature vector and ∥ \| 
+denotes concatenation. Node representations are updated via
+weighted aggregation with a residual connection and
+LayerNorm for training stability: 
+
+ 𝐡 v ( l ) = LayerNorm ⁡ ( ELU ⁡ ( ∑ u ∈ 𝒩 ⁡ ( v ) α u ​ v ​ 𝐖 n ( l ) ​ 𝐡 u ( l − 1 ) ) + 𝐡 v ( l − 1 ) ) \footnotesize\mathbf{h}_{v}^{(l)}=\mathrm{LayerNorm}\!\left(\mathrm{ELU}\!\left(\sum_{u\in\mathcal{N}(v)}\!\alpha_{uv}\mathbf{W}_{n}^{(l)}\mathbf{h}_{u}^{(l-1)}\right)+\mathbf{h}_{v}^{(l-1)}\right) 
+
+ (7) 
+
+ State Representation. 
+The 89-dimensional PPO observation is formed by
+concatenating: current domain embedding
+ 𝐡 c ∈ ℝ 32 \mathbf{h}_{c}\in\mathbb{R}^{32} , destination domain
+embedding 𝐡 d ∈ ℝ 32 \mathbf{h}_{d}\in\mathbb{R}^{32} , a 3-dimensional
+flow state (normalized current domain index, destination
+index, and elapsed hops), an 18-dimensional neighbor
+distance vector encoding shortest-hop distances to the
+destination, and a 4-dimensional global state (time
+progress, link load CV, surge indicator, fault indicator). 
+
+ III-C Action-Masked PPO for Online Routing 
+
+ In the online routing stage, DTAR employs
+an action-masked PPO  [ 14 ] to solve hop-by-hop routing
+decisions on the domain-level graph 𝒢 \mathcal{G} .
+Compared with conventional DRL approaches, the action
+masking mechanism explicitly guarantees routing feasibility
+under topology dynamics and link failures, eliminating
+gradient waste on infeasible actions. 
+
+ Reward Function. 
+The per-step reward comprises a direction shaping term,
+a per-hop penalty, and terminal rewards: 
+
+ R ⁡ ( c , a , c ′ ) = \displaystyle R(c,a,c^{\prime})= 
+ δ ⋅ ( d ⁡ ( c , D dst ) − d ⁡ ( c ′ , D dst ) ) − β \displaystyle\delta\cdot(d(c,D_{\mathrm{dst}})-d(c^{\prime},D_{\mathrm{dst}}))-\beta 
+
+ (8) 
+
+ + 𝟏 [ c ′ = D dst ] ⋅ ( r s − β ⋅ h ) − r f ⋅ 𝟏 [ failure ] \displaystyle+\mathbf{1}[c^{\prime}=D_{\mathrm{dst}}]\cdot(r_{s}-\beta\cdot h)-r_{f}\cdot\mathbf{1}[\text{failure}] 
+
+ where d ⁡ ( ⋅ , D dst ) d(\cdot,D_{\mathrm{dst}}) denotes the shortest-hop
+distance to the destination in 𝒢 \mathcal{G} , δ \delta is
+the direction shaping coefficient, β \beta is the per-hop
+penalty, h h is the number of hops taken upon arrival,
+ r s r_{s} is the arrival reward, and r f r_{f} is the failure
+penalty. The arrival reward r s − β ⋅ h r_{s}-\beta\cdot h 
+incentivizes not only successful delivery but also shorter
+paths, jointly encouraging high success rate and low
+average path hops. 
+
+ Load balancing is promoted through two complementary
+mechanisms: the NSGA-II partition structurally confines
+traffic within domains, while the GAT encoder exposes
+real-time link loads W i ​ j ​ ( t ) W_{ij}(t) as state inputs for
+implicit congestion-aware path selection. 
+
+ Action Masking. 
+Prior to each decision step, two categories of actions are
+masked: (1) neighboring domains whose every cross-domain
+ISL is simultaneously faulty, ensuring physical
+reachability; (2) neighboring domains whose shortest-hop
+distance to the destination exceeds the remaining hop
+budget H max − h t H_{\max}-h_{t} , enforcing the hop constraint
+ | 𝒫 | − 1 ≤ H max |\mathcal{P}|-1\leq H_{\max} at the execution level. 
+
+ Training Strategy. 
+Each episode independently samples a scenario
+(normal / surge / fault) without curriculum scheduling.
+Hyperparameters are listed in Table  I and
+the training procedure is summarized in
+Algorithm  1 . 
+
+ Algorithm 1 Training Procedure of Action-Masked PPO for Inter-Domain
+Routing 
+
+ 0: 
+
+  Domain partition π ∗ \pi^{*} , domain-level graph
+ 𝒢 \mathcal{G} , total timesteps T T , rollout buffer
+size N steps N_{\mathrm{steps}} , mini-batch size B B ,
+update epochs E E 
+
+ 0: 
+
+  Trained routing policy θ ∗ \theta^{*} 
+
+ 1: 
+
+  Initialize policy π θ \pi_{\theta} and value network
+ V ϕ V_{\phi} with random weights
+
+ 2: 
+
+  Build domain graph 𝒢 \mathcal{G} and initialize
+GAT encoder with edge index from π ∗ \pi^{*} 
+
+ 3: 
+
+  Initialize rollout buffer ℬ \mathcal{B} 
+
+ 4: 
+
+   for each training iteration do 
+
+ 5: 
+
+    Sample scenario ω ∼ { normal , surge , fault } \omega\sim\{\text{normal},\,\text{surge},\,\text{fault}\} 
+
+ 6: 
+
+    Reset environment, obtain initial observation
+ o 0 o_{0} 
+
+ 7: 
+
+     for t = 1 t=1 to N steps N_{\mathrm{steps}} do 
+
+ 8: 
+
+     Encode domain graph via GAT to obtain
+embeddings { 𝐡 v } \{\mathbf{h}_{v}\} 
+
+ 9: 
+
+     Construct observation o t o_{t} by concatenating
+ 𝐡 c \mathbf{h}_{c} , 𝐡 d \mathbf{h}_{d} , flow state,
+neighbor distances, global state
+
+ 10: 
+
+     Compute valid action mask 𝐦 t \mathbf{m}_{t} 
+by checking fault status and remaining
+hop budget of each neighboring domain
+
+ 11: 
+
+     Sample action a t ∼ π θ ( ⋅ ∣ o t , 𝐦 t ) a_{t}\sim\pi_{\theta}(\cdot\mid o_{t},\mathbf{m}_{t}) 
+
+ 12: 
+
+     Execute a t a_{t} , observe o t + 1 o_{t+1} and reward
+ R t R_{t} 
+
+ 13: 
+
+     Store ( o t , a t , R t , o t + 1 , 𝐦 t ) (o_{t},a_{t},R_{t},o_{t+1},\mathbf{m}_{t}) in ℬ \mathcal{B} 
+
+ 14: 
+
+     end for 
+
+ 15: 
+
+    Compute advantages A ^ t \hat{A}_{t} via GAE
+
+ 16: 
+
+     for e = 1 e=1 to E E do 
+
+ 17: 
+
+      for each mini-batch of size B B from ℬ \mathcal{B} do 
+
+ 18: 
+
+      Compute clipped PPO objective
+ ℒ ⁡ ( θ ) \mathcal{L}(\theta) and update
+ θ ← θ − ∇ θ ℒ ​ ( θ ) \theta\leftarrow\theta-\nabla_{\theta}\mathcal{L}(\theta) 
+
+ 19: 
+
+      Update ϕ \phi via value loss
+ ℒ V ​ ( ϕ ) \mathcal{L}_{V}(\phi) 
+
+ 20: 
+
+      end for 
+
+ 21: 
+
+     end for 
+
+ 22: 
+
+    Clear rollout buffer ℬ \mathcal{B} 
+
+ 23: 
+
+   end for 
+
+ 24: 
+
+   return θ ∗ = θ \theta^{*}=\theta 
+
+ IV Simulation Results 
+
+ IV-A Simulation Setup 
+
+ A system-level simulator is developed in Python using
+NetworkX for topology modeling, PyTorch for the DRL network,
+and Stable-Baselines3 for training, supporting
+mixed-scenario sampling across normal, surge, and fault
+conditions. Detailed simulation parameters are listed in
+Table  I .
+ † † 
+
+ Source code is available at
+ https://github.com/ChenZ-code/DTAR_Routing . 
+
+ TABLE I: Simulation Parameters 
+
+ Parameter 
+ Value 
+
+ No. of satellites N N 
+ 288 
+
+ No. of orbital planes P P 
+ 12 
+
+ Satellites per plane S S 
+ 24 
+
+ Orbital altitude 
+ 1,450 km 
+
+ Inclination 
+ 89 ∘ 89^{\circ} 
+
+ No. of domains K K 
+ 18 
+
+ Population size M M 
+ 100 
+
+ Generations G G 
+ 200 
+
+ Steps per episode 
+ 144 
+
+ Flows per step 
+ 3 
+
+ Max hops H max H_{\max} 
+ 9 
+
+ Fault probability p f p_{f} 
+ 0.02 
+
+ Recovery probability p r p_{r} 
+ 0.02 
+
+ Surge multiplier μ \mu 
+ 5 × 5\times 
+
+ Learning rate 
+ 3 × 10 − 4 3\times 10^{-4} 
+
+ Total timesteps 
+ 2.5 × 10 6 2.5\times 10^{6} 
+
+ Mini-batch size 
+ 256 
+
+ Entropy coefficient 
+ 0.03 
+
+ The following four baseline methods are adopted for
+comparison. Dijkstra is a classic shortest-path
+algorithm using hop count as cost, oblivious to link load
+states and prone to hotspot congestion under heavy traffic.
+ ELB   [ 3 ] is an explicit load-balancing routing
+protocol for non-geostationary satellite networks that uses
+load-weighted shortest-path routing, but relies on static
+link weights without real-time traffic state awareness.
+ QRLSN   [ 2 ] is a Q-learning-based routing
+method for LEO networks whose Q-table scale limits
+generalization in large-scale multi-domain topologies.
+ CDPAR   [ 6 ] is a DQN-based adaptive routing
+method combined with domain partitioning, but lacking
+real-time inter-domain link state encoding. 
+
+ All DRL baselines are trained for 2.5 × 10 6 2.5\times 10^{6} steps
+under the same mixed-scenario schedule and evaluated over
+100 episodes. All quantitative results reported in the
+following subsections are averaged over 100 evaluation
+episodes. Evaluation metrics include the coefficient
+of variation of inter-domain link loads (CV, lower is
+better), end-to-end delay approximated as the number of
+inter-domain hops multiplied by average per-hop
+propagation delay (ms), packet loss rate (PLR, defined
+as the ratio of failed routing requests to total requests),
+and routing success rate (SR, defined as the ratio of
+successfully delivered routing requests to total requests). 
+
+ IV-B Comparison with Baselines 
+
+ Fig.  3 presents CV, end-to-end delay,
+packet loss rate, and routing success rate of all methods
+under normal, surge, and fault scenarios. 
+
+ Normal scenario. 
+DTAR significantly reduces CV compared to all baselines.
+The GAT encoder continuously encodes real-time inter-domain
+link loads, guiding the agent to steer flows toward less
+congested paths. Notably, ELB and QRLSN produce CV values
+even higher than Dijkstra, demonstrating that
+load-spreading heuristics without domain-level topology
+awareness are counterproductive in multi-domain routing.
+DTAR also achieves the lowest end-to-end delay owing to
+its congestion-aware path selection. 
+
+ Traffic surge scenario. 
+Under a 5 × 5\times localized traffic surge, DTAR achieves
+the lowest CV across all methods. The surge hotspot
+indicator in the node feature vector enables the agent
+to detect congested domains and reroute flows before
+congestion propagates. CDPAR, despite adopting domain
+partitioning, performs comparably to Dijkstra due to its
+lack of real-time link state encoding. The reduction in
+CV is accompanied by a corresponding decrease in
+end-to-end delay under surge conditions. 
+
+ Link failure scenario. 
+DTAR improves routing success rate by 9.25 and 8.89
+percentage points over Dijkstra and CDPAR, respectively.
+The action masking mechanism eliminates routing attempts
+over fully failed inter-domain edges, while the fault
+status edge feature guides the agent toward resilient
+alternative paths. ELB and QRLSN exhibit success rates
+below 80% due to the absence of explicit fault-aware
+path selection, resulting in significantly higher packet
+loss rates. Across all scenarios, DTAR consistently
+reduces end-to-end delay and packet loss rate compared
+to all baselines. 
+
+ (a) 
+
+ (b) 
+
+ (c) 
+
+ (d) 
+
+ Fig. 3: Performance comparison of routing algorithms under
+normal, surge, and fault scenarios. 
+
+ IV-C Ablation Study 
+
+ To isolate the contribution of each component, two ablation
+variants are evaluated: DTAR-MLP replaces the GAT
+encoder with a multilayer perceptron, and
+ DTAR-RandPart substitutes the NSGA-II partition
+with a uniform orbital partition. Both variants are trained
+under identical conditions to DTAR.
+Fig.  4 reports CV across all three scenarios.
+Removing either component consistently degrades load balancing
+performance across all scenarios. NSGA-II-based partitioning
+plays a dominant role under fault scenarios, as traffic-aware
+domain boundaries structurally limit cross-domain congestion
+under topology disruption. GAT-based encoding contributes
+more under surge conditions, where adaptive perception of
+real-time link states enables timely rerouting around
+congested domains. These results confirm that the two
+components are complementary and both essential to DTAR’s
+robustness. 
+
+ Fig. 4: Ablation study: CV comparison across three
+scenarios. 
+
+ IV-D Training Convergence 
+
+ Fig.  5 shows training reward curves of
+DTAR, CDPAR, and QRLSN. DTAR converges stably within
+approximately 1.5 × 10 6 1.5\times 10^{6} steps with the highest final
+reward. CDPAR converges more slowly without graph-structured
+encoding, while QRLSN exhibits the slowest convergence,
+limited by Q-table generalization in large-scale topologies. 
+
+ Fig. 5: Training convergence comparison. 
+
+ V Conclusion 
+
+ This paper proposes DTAR, a traffic-aware deep reinforcement
+learning framework for load-balanced inter-domain routing in
+LEO satellite networks. NSGA-II generates an offline
+traffic-aware domain partition, while a GAT encoder and
+action-masked PPO agent realize online adaptive routing.
+Simulations on a 288-satellite Walker constellation
+demonstrate significant improvements in load balance, routing
+success rate, and end-to-end delay over four baselines across
+normal, surge, and fault scenarios. Two limitations remain:
+DTAR operates solely at the domain level without jointly
+optimizing intra-domain paths, and generalization to
+heterogeneous constellations remains to be verified.
+Future work will address both directions. 
+
+ References 
+
+ [1] 
+ I. del Portillo, B. G. Cameron, and E. F. Crawley, “A technical comparison of three low earth orbit satellite constellation systems to provide global broadband,” Acta Astronautica, vol. 159, pp. 123–135, 2019.
+
+ [2] 
+ Y. Huang, S. Wu, Z. Kang, Z. Mu, H. Huang, X. Wu, A. J. Tang, and X. Cheng, “Reinforcement learning based dynamic distributed routing scheme for mega LEO satellite networks,” Chinese Journal of Aeronautics, vol. 36, no. 2, pp. 284–291, 2023.
+
+ [3] 
+ T. Taleb, D. Kouamè, and A. Hasegawa, “ELB: An explicit load-balancing routing protocol for multi-hop NGEO satellite networks,” in Proc. IEEE GLOBECOM , San Francisco, CA, USA, Nov. 2006, pp. 1–5.
+
+ [4] 
+ Y. Li, L. Liu, H. Li et al., “Stable hierarchical routing for operational LEO networks,” in Proc. 30th Annual International Conference on Mobile Computing and Networking, 2024, pp. 296–311.
+
+ [5] 
+ Q. Zhang, K. Qiu, Z. Chen, W. Zhu, X. Xu, P. Du, and Y. Gao, “Eunomia: A multicontroller domain partitioning framework in hierarchical satellite networks,” IEEE J. Sel. Areas Commun., early access, Dec. 2025, doi: 10.48550/arXiv.2512.09345.
+
+ [6] 
+ P. Zhang, Z. Xian, M. Liao, H. Huang, and J. Yang, “Adaptive routing mechanism for LEO satellite network based on control domain partition,” IEEE Trans. Green Commun. Netw., early access, 2024, doi: 10.1109/TGCN.2024.3425458.
+
+ [7] 
+ Z. Rao, Y. Zhao, Y. Ran et al., “Dynamic LEO satellite routing approach based on deep graph attention and incremental evolutionary reinforcement learning,” IEEE Trans. Netw. Service Manag., early access, 2025, doi: 10.1109/TNSM.2025.11153769.
+
+ [8] 
+ S. Zhang, A. Liu, C. Han et al., “GRLR: Routing with graph neural network and reinforcement learning for mega LEO satellite constellations,” IEEE Trans. Veh. Technol., vol. 73, no. 7, pp. 9598–9612, 2024.
+
+ [9] 
+ Y. Li, Q. Zhang, H. Yao, R. Gao, X. Xin, and F. R. Yu, “Stigmergy and hierarchical learning for routing optimization in multi-domain collaborative satellite networks,” IEEE J. Sel. Areas Commun., vol. 42, no. 5, pp. 1188–1203, 2024.
+
+ [10] 
+ P. Xu, M. Feng, J. Zhou, L. Xiao, and T. Jiang, “Inter-satellite routing for LEO satellite networks: A GNN and DRL integrated approach,” in Proc. IEEE/CIC Int. Conf. Commun. China (ICCC), 2024, doi: 10.1109/ICCC62479.2024.10681995.
+
+ [11] 
+ S. Xia, J. Luo, and Y. Ran, “Joint optimization of computing and routing in LEO satellite constellations with distributed deep reinforcement learning,” in Proc. IEEE 100th Veh. Technol. Conf. (VTC2024-Fall), 2024, doi: 10.1109/VTC2024-Fall63153.2024.10758053.
+
+ [12] 
+ K. Deb, A. Pratap, S. Agarwal, and T. Meyarivan, “A fast and elitist multiobjective genetic algorithm: NSGA-II,” IEEE Trans. Evol. Comput., vol. 6, no. 2, pp. 182–197, 2002.
+
+ [13] 
+ P. Velickovic, G. Cucurull, A. Casanova, A. Romero, P. Lio, and Y. Bengio, “Graph attention networks,” in Proc. Int. Conf. Learning Representations, 2018.
+
+ [14] 
+ J. Schulman, F. Wolski, P. Dhariwal, A. Radford, and O. Klimov, “Proximal policy optimization algorithms,” arXiv preprint arXiv:1707.06347, 2017.
+
+ Experimental support, please
+ view the build logs 
+ for errors. Generated by
+
+ L
+ A 
+ T
+ E 
+
+ xml 
+
+ .
+
+ Instructions for reporting errors 
+ We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+ support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+ methods listed below: 
+
+ Click the "Report Issue" ( 
+
+ ) button, located in the page header. 
+
+ Tip: You can select the relevant text first, to include it in your report. 
+ Our team has already identified the following issues . We appreciate your time reviewing and reporting rendering errors we
+ may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+ should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+ all. 
+ Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion , and welcome developer contributions . 
+
+ We gratefully acknowledge support from
+ our major funders ,
+ member institutions , ,
+ and all contributors.
+
+ About 
+ · 
+ Help 
+ · 
+ Contact 
+ · 
+ Subscribe 
+ · 
+ Copyright 
+ · 
+ Privacy 
+ · 
+ Accessibility 
+ · 
+ Operational Status (opens in new tab) 
+
+ Major funding support from 
+

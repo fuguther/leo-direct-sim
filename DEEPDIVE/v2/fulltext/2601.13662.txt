@@ -1,0 +1,620 @@
+Reinforcement Learning for Opportunistic Routing in Software-Defined LEO–Terrestrial Systems
+
+ Report GitHub Issue
+
+ ×
+
+ Title:
+
+ Content selection saved. Describe the issue below:
+
+ Description:
+
+ Submit without GitHub
+ Submit in GitHub
+
+ arXiv is now an independent nonprofit!
+ Learn more
+ ×
+
+ Back to arXiv
+
+ Why HTML?
+
+ [MATH] 
+ Report Issue
+
+ [MATH] 
+ Back to Abstract
+
+ [MATH] 
+ Download PDF
+
+ [MATH] 
+
+ [MATH] 
+
+ [MATH] 
+
+ [MATH] 
+
+ [MATH] 
+
+Abstract
+
+I Introduction
+
+I-A Our Contributions
+
+II System Model
+
+II-A Network Structure
+
+II-B Queue Modeling
+
+II-B1 Packet Arrival Model
+
+II-B2 Ground to channel link
+
+II-B3 ISL links
+
+II-B4 Queue Dynamics
+
+II-C Optimization Problem Formulation
+
+III SDN-based Reinforcement Learning Approach
+
+III-A Proposed Solution
+
+III-B Proposed Approach
+
+IV Simulation Results
+
+IV-A Environment Setup
+
+IV-B Results
+
+IV-B1 Training Convergence
+
+IV-B2 Performance Against Other Methods
+
+IV-B3 Varying Gateway Availability
+
+V Conclusion
+
+References
+
+ License: CC BY 4.0
+
+arXiv:2601.13662v1 [cs.NI] 20 Jan 2026
+
+Reinforcement Learning for Opportunistic Routing in Software-Defined LEO–Terrestrial Systems
+
+Sivaram Krishnan
+
+Zhouyou Gu
+
+Jihong Park
+
+Sung-Min Oh
+
+Jinho Choi
+††thanks: 
+S. Krishnan and J. Choi are with the School of Electrical and Mechanical Engineering, University of Adelaide, Adelaide 5000, Australia (email: {sivaram.krishnan, jinho.choi}@adelaide.edu.au)
+Z. Gu and J. Park are with the Singapore University of Technology and Design, Singapore (email: {zhouyou_gu, jihong_park}@sutd.edu.sg)
+S. Oh is with the Electronics and Telecommunications Research Institute, Daejeon, Korea (email: smoh@etri.re.kr)
+This study was supported by Institute of Information & Communications Technology Planning & evaluation (IITP) grant funded by the Korean government (MSIT) (No. RS-2024-00359235, Development of Ground Station Core Technology for Low Earth Orbit Cluster Satellite Communications).
+
+Abstract
+
+The proliferation of large-scale low Earth orbit (LEO) satellite constellations is driving the need for intelligent routing strategies that can effectively deliver data to terrestrial networks under rapidly time-varying topologies and intermittent gateway visibility. Leveraging the global control capabilities of a geostationary (GEO)-resident software-defined networking (SDN) controller, we introduce opportunistic routing, which aims to minimize delivery delay by forwarding packets to any currently available ground gateways rather than fixed destinations. This makes it a promising approach for achieving low-latency and robust data delivery in highly dynamic LEO networks. Specifically, we formulate a constrained stochastic optimization problem and employ a residual reinforcement learning framework to optimize opportunistic routing for reducing transmission delay. Simulation results over multiple days of orbital data demonstrate that our method achieves significant improvements in queue length reduction compared to classical backpressure and other well-known queueing algorithms.
+
+Index Terms: 
+Non-Terrestrial Networks; Software-Defined Networking; Machine Learning; Reinforcement Learning
+
+I Introduction
+
+Satellite communication systems have traditionally been developed independently from terrestrial networks, often with distinct design goals and architectures. Most early satellite systems were primarily intended for signal relay between ground stations and remote locations on Earth, typically using satellites as passive or transparent repeaters [1]. However, recent advances—especially the deployment of low Earth orbit (LEO) satellite constellations—have sparked increasing interest in enabling inter-satellite links (ISLs), which allow LEO satellites to communicate directly with one another [2]. This shift, driven by regenerative payloads [3], enables autonomous LEO networks and their integration with terrestrial infrastructure [4, 5]. For beyond-5G/6G NTNs, such integration promises global coverage and low latency, but also demands new architectures and control frameworks tailored to LEO dynamics [6, 7].
+
+Software-defined networking (SDN) offers centralized, software-based control for satellite systems, enhancing flexibility and scalability over traditional distributed architectures [8]. It aligns well with LEO constellations, whose predictable motion allows accurate modeling of network dynamics and supports a global, time-evolving view in SDN.
+Studies show SDN improves handover performance [9] and enables efficient routing through global network awareness [10].
+SDN-based control is particularly beneficial in complex scenarios involving multiple LEO constellations operating at different altitudes or in distinct orbital planes. By centralizing control, potentially at the geostationary orbit (GEO) level, inter-satellite communication on ISLs can be systematically managed and optimized.
+Furthermore, this paradigm also supports the integration of LEO satellite systems as extensions of terrestrial infrastructures, i.e., enabling a LEO-terrestrial system.
+In this context, backhaul transmissions from remote devices, e.g., sensors, do not require a fixed end-to-end path; instead, packets can be forwarded to any satellite connected to a ground gateway providing the terrestrial backbone. This flexible approach, referred to as opportunistic routing, is the focus of our study, and differs from conventional static routing, which relies on designated source–destination pairs. Opportunistic routing holds promise for enabling low-latency applications such as industrial IoT telemetry.
+
+Fig. 1: Aggregated activity rate over the globe with the ground-track of three Starlink satellites (Orbit A, Orbit B, Orbit C), together with gateway locations and their access periods. Aggregated activity denotes the total user traffic demand (MB per time step) summed over the satellite footprint.
+
+I-A Our Contributions
+
+We consider a GEO satellite that acts as a central controller [8] coordinating the LEO satellite network providing connections to terrestrial infrastructures.
+Here, the GEO satellite operates the control plane and each LEO satellite functions as a switch of the data plane, enabling SDN in LEO-terrestrial systems.
+In particular, as discussed in [9] [10], the GEO satellite provides control signals to the LEO satellites, while the LEO satellites send their status information back to the GEO satellite. Notably, during most of their orbital period, LEO satellites remain idle with respect to data collection and have only limited time windows for offloading buffered data to ground gateways. This constraint is illustrated in Fig. 1, which shows the Starlink orbits together with their access opportunities to well-known ground gateways.
+Leveraging the wide signaling coverage over the LEO constellation, the GEO-satellite controller can coordinate ISL switching intelligently to facilitate efficient packet forwarding toward satellites with gateway accesses.
+The contributions of the paper are listed as follows.
+
+• 
+
+We formulate SDN for opportunistic routing in LEO constellations with centralized GEO control, where packets are forwarded to any satellite with the available gateway to minimize delay. Unlike the architectures considered in [9, 10], where SDN-based LEO networks are studied in isolation from terrestrial networks, this paper assumes an integrated LEO-terrestrial system.
+
+• 
+
+For our problem scenario, we incorporate spatio-temporal traffic generation using population-density data and simulate actual satellite orbits to capture realistic queue evolution, ISL capacities, and gateway availability, achieving a realistic LEO-terrestrial system model.
+
+• 
+
+We design a residual policy framework (Fig. 2) that augments a queue-stabilizing baseline such as backpressure with reinforcement learning. This retains a stabilizing backpressure bias while adapting to dynamic network conditions, and achieves superior performance over classical algorithms in both mean and peak queue metrics.
+
+Fig. 2: Residual reinforcement learning for opportunistic routing in the LEO-terrestrial system.
+
+II System Model
+
+This section models a LEO satellite network that collects traffic from ground users and forwards it to terrestrial gateways through ISLs. The model captures the satellite constellation and its dynamic connectivity, the set of ground gateways acting as entry points to the terrestrial backbone, and the evolution of traffic queues at each satellite.
+
+II-A Network Structure
+
+Let [MATH] denote the total number of LEO satellites in consideration. The position of the satellite [MATH] at time slot [MATH] is represented by its Earth-centered inertial (ECI) coordinate, denoted as [MATH] . The time of the satellite network is synchronized and is slotted with the indices [MATH] , with the slot duration being [MATH] step long, in seconds. Since each satellite can only maintain a limited number of active inter-satellite links (due to finite number of transceivers), we define the neighborhood of satellite [MATH] at time [MATH] using
+
+ [MATH] 
+
+(1)
+
+ [MATH] 
+
+where the inter-satellite Euclidean distance is
+ [MATH] 
+(in km), with a range mask [MATH] (km). The plane-separation angle
+ [MATH] must satisfy
+ [MATH] (radians). We also assume each satellite maintains at most [MATH] neighbors.
+
+We consider the presence of a set of [MATH] gateways, denoted using the set representation [MATH] . The location of gateway [MATH] is represented in the ECI frame as [MATH] , which is obtained by converting its geodetic latitude/longitude into the ECI coordinates at time [MATH] . These gateways serve as entry points to the terrestrial backbone network and act as final destinations for data transmitted through the satellite constellation. It is assumed that LEO satellites are capable of offloading buffered data packets to a gateway whenever it lies within the satellite’s communication footprint, given using
+
+ [MATH] 
+
+(4)
+
+where [MATH] is the Earth’s radius (in km) and [MATH] is the minimum elevation angle (in radians) required for communication.
+At each time step [MATH] , satellite [MATH] associates with the closest gateway within its coverage area [MATH] 
+
+ [MATH] 
+
+(5)
+
+II-B Queue Modeling
+
+II-B1 Packet Arrival Model
+
+Each LEO satellite in the LEO network is a node that receives packets from ground users within its footprint, and offloads stored packets either to an accessible ground gateway (if one lies within its coverage radius), or opportunistically to neighboring LEO satellites within [MATH] for further relaying. Let [MATH] represent the queue for the LEO satellite [MATH] .
+
+Over the coverage area [MATH] , the aggregate arrival rate is
+
+ [MATH] 
+
+(6)
+
+where [MATH] denotes a ground location, [MATH] with [MATH] the hour of day, [MATH] is the spatial traffic intensity. Additionally [MATH] is the diurnal amplitude, [MATH] is the baseline offset, and [MATH] is the peak-hour phase. The arrivals are modeled as a Poisson random variable
+
+ [MATH] 
+
+(7)
+
+II-B2 Ground to channel link
+
+It is also assumed that the transmitted packets to a ground gateway by LEO satellite [MATH] , [MATH] , is a random variable, while its distribution is known. The ground gateway is usually equipped with a directional antenna. Thus, without severe interference, a reasonably high data rate can be achieved under good channel conditions.
+Let [MATH] denote the signal-to-noise ratio (SNR) for the link from LEO [MATH] to its associated closest ground gateway, which is given by
+
+ [MATH] 
+
+(8)
+
+where [MATH] is the transmit power, [MATH] is the path-loss exponent, and [MATH] is the noise variance. The short-term channel fading is modeled by a shadowed-Rician distribution [11], with small-scale fading gain [MATH] having pdf
+ [MATH] ,
+where [MATH] , [MATH] , and [MATH] are the functions of the elevation angle, denoted by [MATH] , and [MATH] is the confluent hypergeometric function. In [12], [MATH] , [MATH] , and [MATH] are determined as polynomial functions of [MATH] through polynomial fitting. Taking [MATH] as a small-scaling fading term, we can show that [MATH] . Let [MATH] denote the (fixed) packet size in bits. Then, the achievable rate (in terms of the spectral efficiency) becomes
+ [MATH] .
+In particular, we can see that
+
+ [MATH] 
+
+(9)
+
+where [MATH] 
+is a constant that depends on the system bandwidth ( [MATH] ), the length of time slot, and so on.
+
+II-B3 ISL links
+
+:
+Similarly, the large-scale SNR for the ISL from satellite [MATH] to a neighbor
+ [MATH] follows a free-space path loss model as
+
+ [MATH] 
+
+(10)
+
+where [MATH] and [MATH] are the transmit and receive antenna gains, respectively. [MATH] , [MATH] , [MATH] and [MATH] represent the Boltzmann’s constant, system noise temperature, carrier wavelength and ISL channel bandwidth, respectively.
+We denote [MATH] , which represents the number of packets that the satellite [MATH] forwards to its neighbor [MATH] . This decision is constrained by the capacity of the specific ISL channel, such that:
+
+ [MATH] 
+
+(11)
+
+where [MATH] 
+is a constant depending on the bandwidth ( [MATH] ) allocated to the inter-satellite links.
+
+Let [MATH] represent the total number of packets transmitted from LEO satellite [MATH] to its nearest ground gateway. While the total number of transmitted and received packets over ISLs for satellite [MATH] is given using
+
+ [MATH] 
+
+(12)
+
+and the total transmitted packets must satisfy the queue feasibility constraint
+
+ [MATH] 
+
+(13)
+
+II-B4 Queue Dynamics
+
+The queue state [MATH] of satellite [MATH] evolves over time based on packet arrivals and transmissions:
+
+ [MATH] 
+
+(14)
+
+where [MATH] .
+
+II-C Optimization Problem Formulation
+
+Given the dynamics in (14), the overall goal is to design a control strategy that decides the forwarding actions [MATH] such that the network remains stable while efficiently utilizing both ground gateways and the other ISLs. The objective is to minimize queue congestion by minimizing the maximum queue length as
+
+ [MATH] 
+
+(15)
+
+III SDN-based Reinforcement Learning Approach
+
+Traditional scheduling algorithms like MaxWeight [13] and backpressure [13] are proven to maintain network stability and achieve maximum throughput.
+However, applying them directly is challenging due to the rapid change of neighborhoods, non-stationary arrivals, and time-varying channels.
+Moreover, due to the geographical distribution of the LEO satellites and the terrestrial infrastructure, each satellite only has access to local information on the constellation, making it challenging for satellites to collaborate across the constellations to make optimal scheduling decisions.
+
+III-A Proposed Solution
+
+To further enhance adaptability under dynamic traffic and topology changes reinforcement learning[14] provides a natural alternative by framing the routing problem as a sequential decision process. The agent can, in principle, adapt its policy [MATH] to both the stochastic traffic arrivals [MATH] and the non-stationary network topology [MATH] , with the objective of minimizing long-term congestion as described in (15). Crucially, although the network topology changes rapidly, it exhibits quasi-periodic patterns driven by orbital mechanics, allowing the reinforcement learning agent to exploit these patterns and improve over purely reactive scheduling rules.
+
+Furthermore, enabling the SDN architecture to incorporate the reinforcement learning framework leverages the strength of global coordination over the GEO satellite and the dynamic learning policy via training neural networks as the policies. The SDN-based reinforcement learning framework can benefit from the global view of the network provided by the SDN controller on the GEO satellites, enabling centralized decision-making, while still allowing for distributed packet forwarding in the data plane.
+
+Challenges: Nevertheless, directly applying reinforcement learning can be challenging as follows: 1) The action space is not fixed but varies with the number of neighbors [MATH] , as seen in (II-A). Furthermore, the dimensionality of the action vector [MATH] grows with the constellation size [MATH] and neighborhood size [MATH] , making naive exploration intractable and leading to poor performance. 2) The reward feedback is delayed and highly coupled, since the queue dynamics in (14) depend jointly on all agents’ actions across the network.
+
+To address these issues, we adopt a residual policy learning framework [15], which augments a strong baseline controller with a learned residual term. Specifically, we use a backpressure-based policy [13] as the baseline. As depicted in Fig. 2, the learned policy then outputs an additive correction (or residual) to the backpressure-derived action, enabling the agent to adapt to network dynamics while preserving desirable baseline properties. The backpressure policy determines link activation based on the score
+
+ [MATH] 
+
+(16)
+
+where [MATH] is the ISL capacity and a link is activated between two satellites [MATH] and its neighbor [MATH] if [MATH] . Although backpressure guarantees stability and throughput optimality, it does not directly account for time-varying gateway availability or the rapidly changing network
+topology in LEO constellations.
+
+III-B Proposed Approach
+
+To address these limitations, we introduce our residual reinforcement learning. We define the system state at time [MATH] as
+
+ [MATH] 
+
+(17)
+
+The binary action set is given by
+
+ [MATH] 
+
+(18)
+
+with scheduled packets given as: [MATH] .
+
+We denote our residual policy as [MATH] , which augments the original backpressure policy [MATH] by incorporating link-to-ground (LG) awareness. The link-activation scores are
+
+ [MATH] 
+ [MATH] 
+
+(19)
+
+where [MATH] 
+is the downlink capacity of neighbor [MATH] and [MATH] is a weight balancing ISL backlog reduction against downstream LG availability.
+The reward function is given as:
+
+ [MATH] 
+ [MATH] 
+
+ [MATH] 
+
+(20)
+
+where [MATH] and [MATH] are the mean and maximum queue lengths under the agent’s actions, respectively, and [MATH] and [MATH] are the corresponding values under backpressure, respectively. The weights [MATH] control the trade-off between reducing overall congestion and protecting the worst-case queues. We learn a policy [MATH] by maximizing the expected discounted return as follows:
+
+ [MATH] 
+
+(21)
+
+where [MATH] represents the
+discount rate.
+
+IV Simulation Results
+
+We first evaluate our proposed approaches for opportunistic routing, namely Agent (the residual policy control), LG-BP, and vanilla reinforcement learning approach. Based on these results, we select the best-performing approach and compare it against the following baselines: Backpressure [13], Equalize (in which the most congested satellite forwards packets to its least loaded feasible neighbor at each step), No-ISL, Max-Weight [13], and Random.
+
+IV-A Environment Setup
+
+We use Space-Track [16] APIs to obtain TLE data for satellite positions, and the 2020 Gridded Population of the World dataset to model ground traffic. The locations of the gateways are depicted in Fig. 1.
+Simulations span three consecutive days with slot length [MATH] s. Unless specified otherwise, the Starlink constellation with [MATH] satellites is used for the simulation, with [MATH] neighbors per satellite. Queues for the satellites are assumed unbounded, so buffer overflow is not explicitly modeled, though reducing queue length inherently lowers overflow risk. To ensure robustness, the reported results are averaged over five independent runs of the evaluated methods. The environment is implemented in PyTorch and Gymnasium, and the reinforcement learning model was trained using the NVIDIA A100 GPU.
+
+Fig. 3: Training reward versus episode. The proposed residual-learning policy (blue) consistently outperforms the vanilla DDQN baseline (green).
+
+IV-B Results
+
+IV-B1 Training Convergence
+
+To learn a residual policy over the backpressure baseline, we adopt a Double Deep Q-Network (DDQN) agent [17], which extends the classical Q-learning framework by approximating the state–action value function with a DNN,
+and by decoupling the action selection and action evaluation through a target network.
+
+In Fig. 3, we compare our residual-learning DDQN with a vanilla DDQN baseline over 100 episodes under identical settings (3 layers, 256 hidden units each). Leveraging the LG-aware backpressure prior yields substantially higher rewards from the early episodes—achieving a 643.81% improvement over vanilla DDQN and a 34.01% improvement over the residual policy baseline.
+
+IV-B2 Performance Against Other Methods
+
+Firstly, in Fig. 4 (left), it can be seen that our approach outperforms the vanilla DDQN baseline, reducing mean queue length by 3.9–18.1% across neighborhood sizes [MATH] , with varying maximum neighbors of each satellite.
+Compared to classical policies, our method consistently yields the lowest queue lengths, with gains over backpressure increasing from 1.6% at [MATH] to 12.1% at [MATH] . In Fig. 4 (right), we compare performance of various methods across Starlink, Iridium, and OneWeb constellations. Our method consistently lowers queue lengths, achieving an average reduction of 7.6–16.1% compared to backpressure. In Fig. 5 (left), we compare the mean queue length for different numbers of satellites in the constellation. Compared to the next-best performing approach, our residual method reduces congestion by 5.3 - 14.8%. In Fig. 5 (right), we also present the empirical cumulative distribution function (ECDF) of queue lengths observed over a single orbital period, which shows that our method outperforms.
+
+Fig. 4: Queue length across varying maximum number of neighbors per satellite (left) and varying constellations (right) for different policies. 
+
+Fig. 5: Performance evaluation: (a) Varying number of satellites, and (b) empirical CDF when [MATH] satellites.
+
+Fig. 6: Empirical ECDF over varying placement of gateways.
+
+IV-B3 Varying Gateway Availability
+
+We evaluate gateway placement in Fig. 6. The hybrid (global) deployment performs best by balancing load across regions. Among single-region cases, Asia performs relatively well, while Europe and North America suffer from limited coverage and bottlenecks.
+
+V Conclusion
+
+We presented the SDN-based residual reinforcement learning approach for opportunistic routing in LEO satellite networks, leveraging a link-to-ground-aware backpressure baseline. Our method consistently reduces mean and peak queue lengths compared to the baselines, while remaining scalable over varying settings. Reinforcement learning shows particular promise for low-latency applications, as its adaptive decision-making can react to rapid topology changes and transient congestion, enabling faster delivery than fixed-rule schedulers. Future work will address scalability to mega-constellations, account for delays between the GEO controller and LEO satellites, and ensure consistent implementation of the reinforcement learning framework.
+
+References
+
+[1]
+B. Evans (2011)
+
+Satellite communication systems.
+
+IET Telecommun., Institution of Engineering & Technology.
+
+External Links: ISBN 9781849192675
+
+Cited by: §I.
+
+[2]
+B. Al Homssi, A. Al-Hourani, K. Wang, P. Conder, S. Kandeepan, J. Choi, B. Allen, and B. Moores (2022)
+
+Next generation mega satellite networks for access equality: opportunities, challenges, and performance.
+
+IEEE Commun. Mag. 60 (4), pp. 18–24.
+
+External Links: Document
+
+Cited by: §I.
+
+[3]
+O. Ben Yahia, Z. Garroussi, B. Sansò, J. Frigon, S. Martel, A. Lesage-Landry, and G. Karabulut Kurt (2025)
+
+A scalable architecture for future regenerative satellite payloads.
+
+IEEE Wirel. Commun. Lett. 14 (2), pp. 514–518.
+
+External Links: Document
+
+Cited by: §I.
+
+[4]
+R. Gopal and N. BenAmmar (2018)
+
+Framework for unifying 5G and next generation satellite communications.
+
+IEEE Network 32 (5), pp. 16–24.
+
+External Links: Document
+
+Cited by: §I.
+
+[5]
+L. Boero, R. Bruschi, F. Davoli, M. Marchese, and F. Patrone (2018)
+
+Satellite networking integration in the 5G ecosystem: research trends and open challenges.
+
+IEEE Network 32 (5), pp. 9–15.
+
+External Links: Document
+
+Cited by: §I.
+
+[6]
+M. M. Saad, M. A. Tariq, M. T. R. Khan, and D. Kim (2024)
+
+Non-terrestrial networks: an overview of 3GPP release 17 & 18.
+
+IEEE Internet Things Mag. 7 (1), pp. 20–26.
+
+External Links: Document
+
+Cited by: §I.
+
+[7]
+M. A. Jamshed, A. Kaushik, S. Manzoor, M. Z. Shakir, J. Seong, M. Toka, W. Shin, and M. Schellmann (2025)
+
+A tutorial on non-terrestrial networks: towards global and ubiquitous 6G connectivity.
+
+Found. Trends® Netw. 14 (3), pp. 160–253 (en).
+
+Cited by: §I.
+
+[8]
+D. Kreutz, F. M. V. Ramos, P. E. Veríssimo, C. E. Rothenberg, S. Azodolmolky, and S. Uhlig (2015)
+
+Software-defined networking: a comprehensive survey.
+
+Proc. IEEE 103 (1), pp. 14–76.
+
+External Links: Document
+
+Cited by: §I-A,
+§I.
+
+[9]
+B. Yang, Y. Wu, X. Chu, and G. Song (2016)
+
+Seamless handover in software-defined satellite networking.
+
+IEEE Comm. Lett. 20 (9), pp. 1768–1771.
+
+External Links: Document
+
+Cited by: 1st item,
+§I-A,
+§I.
+
+[10]
+P. Kumar, S. Bhushan, D. Halder, and A. M. Baswade (2022)
+
+FybrrLink: efficient QoS-aware routing in SDN enabled future satellite networks.
+
+IEEE Trans. Netw. Serv. Manag. 19 (3), pp. 2107–2118.
+
+External Links: Document
+
+Cited by: 1st item,
+§I-A,
+§I.
+
+[11]
+C. Loo (1985)
+
+A statistical model for a land mobile satellite link.
+
+IEEE Trans. Veh. Technol. 34 (3), pp. 122–127.
+
+External Links: Document
+
+Cited by: §II-B2.
+
+[12]
+A. Abdi, W.C. Lau, M.-S. Alouini, and M. Kaveh (2003)
+
+A new simple model for land mobile satellite channels: first- and second-order statistics.
+
+IEEE Trans. Wireless Commun. 2 (3), pp. 519–528.
+
+External Links: Document
+
+Cited by: §II-B2.
+
+[13]
+L. Tassiulas and A. Ephremides (1990)
+
+Stability properties of constrained queueing systems and scheduling policies for maximum throughput in multihop radio networks.
+
+In Proc. IEEE Conf. Decis. Control (CDC),
+
+pp. 2130–2132.
+
+Cited by: §III-A,
+§III,
+§IV.
+
+[14]
+G. J. Sutton, J. Zeng, R. P. Liu, W. Ni, D. N. Nguyen, B. A. Jayawickrama, X. Huang, M. Abolhasan, Z. Zhang, E. Dutkiewicz, and T. Lv (2019)
+
+Enabling technologies for ultra-reliable and low latency communications: from PHY and MAC layer perspectives.
+
+IEEE Communications Surveys Tutorials 21 (3), pp. 2488–2524.
+
+External Links: Document
+
+Cited by: §III-A.
+
+[15]
+T. Silver, K. Allen, J. Tenenbaum, and L. Kaelbling (2018)
+
+Residual policy learning.
+
+arXiv preprint arXiv:1812.06298.
+
+Cited by: §III-A.
+
+[16]
+Space-Track.org
+
+Space-track.org api and python client.
+
+Note: https://www.space-track.orgProvides two-line element sets (TLEs) for Earth-orbiting satellites. Accessed: 2025-08-13
+
+Cited by: §IV-A.
+
+[17]
+H. Van Hasselt, A. Guez, and D. Silver (2016)
+
+Deep reinforcement learning with double q-learning.
+
+In Proc. AAAI Conf. Artif. Intell.,
+
+Vol. 30.
+
+Cited by: §IV-B1.
+
+ Experimental support, please
+ view the build logs
+ for errors. Generated by
+
+ L
+ A
+ T
+ E
+
+ xml
+
+ .
+
+ Instructions for reporting errors
+
+ We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+ support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+ methods listed below:
+
+ Click the "Report Issue" ( [MATH] ) button, located in the page header.
+
+ Tip: You can select the relevant text first, to include it in your report.
+
+ Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+ may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+ should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+ all.
+
+ Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+ We gratefully acknowledge support from
+ our major funders,
+ member institutions, ,
+ and all contributors.
+
+ About
+ ·
+ Help
+ ·
+ Contact
+ ·
+ Subscribe
+ ·
+ Copyright
+ ·
+ Privacy
+ ·
+ Accessibility
+ ·
+ Operational Status (opens in new tab)
+
+ Major funding support from
+
+ [MATH]
