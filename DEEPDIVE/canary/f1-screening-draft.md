@@ -1,0 +1,47 @@
+# F-I 精读候选草案（机器初筛，待人工过目；基于金丝雀 333 存量池，未做新检索）
+
+- [6分] arXiv:2601.21383 (2026) KubeSpace: A Low-Latency and Stable Control Plane for LEO Satellite Container Orchestratio ｜ 命中: {'core-rho': ['control plane'], 'blind-vocab': ['handover']}
+- [6分] DOI:10.36227/techrxiv.176948718.83469266/v1 (2026) KubeSpace: A Low-Latency and Stable Control Plane for LEO Satellite Container Orchestratio ｜ 命中: {'core-rho': ['control plane'], 'blind-vocab': ['handover']}
+- [5分] arXiv:2410.15546 (2024) Improved Contact Graph Routing in Delay Tolerant Networks with Capacity and Buffer Constra ｜ 命中: {'blind-vocab': ['contact graph', 'cgr', 'dtn', 'delay tolerant']}
+- [5分] arXiv:2209.06324 (2022) Routing heterogeneous traffic in delay tolerant satellite networks ｜ 命中: {'blind-vocab': ['contact plan', 'contact graph', 'cgr', 'dtn', 'delay tolerant']}
+- [5分] DOI:10.1109/ICDCS51616.2021.00129 (2021) A Refined Dijkstra's Algorithm with Stable Route Generation for Topology-Varying Satellite ｜ 命中: {'core-rho': ['convergence'], 'blind-vocab': ['handover']}
+- [4分] arXiv:2304.13501 (2023) Routing Heterogeneous Traffic in Delay-Tolerant Satellite Networks ｜ 命中: {'blind-vocab': ['contact plan', 'contact graph', 'cgr', 'dtn']}
+- [3分] arXiv:2412.07964 (2024) Geometry helps in routing scalability ｜ 命中: {'blind-vocab': ['dtn', 'delay tolerant']}
+- [3分] DOI:10.1109/aero58975.2024.10521114 (2024) Contact Plan Optimization and Distributed State Estimation for Delay Tolerant Satellite Ne ｜ 命中: {'blind-vocab': ['contact plan', 'delay tolerant']}
+- [3分] DOI:10.1016/j.adhoc.2014.07.006 (2015) Routing-aware fair contact plan design for predictable delay tolerant networks ｜ 命中: {'predict-gap': ['predictab'], 'blind-vocab': ['contact plan', 'delay tolerant']}
+- [3分] DOI:10.1002/sat.1138 (2015) Analysis of contact graph routing enhancements for DTN space communications ｜ 命中: {'blind-vocab': ['contact graph', 'cgr', 'dtn']}
+- [2分] arXiv:2607.04405 (2026) Deadline-Bound Finite-Object Delivery over Intermittent LEO Satellite Contact Plans under  ｜ 命中: {'blind-vocab': ['contact plan']}
+- [2分] arXiv:2608.00263 (2026) Compliant Sphere Lattice Contact: Distributed Contact Modeling for Sphere-Based Robot Repr ｜ 命中: {'blind-vocab': ['contact plan']}
+- [2分] arXiv:2603.07987 (2026) PreHO: Predictive Handover for LEO Satellite Networks ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] arXiv:2607.04829 (2026) Handover-Optimal User Association Policy for LEO Satellite-based 5G NTN ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] arXiv:2603.07434 (2026) Handover-Aware Power Minimization for Networked LEO Satellite Communications: Joint Cooper ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] arXiv:2605.02416 (2026) Dueling DDQN-Based Adaptive Multi-Objective Handover Optimization for LEO Satellite Networ ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] arXiv:2603.00470 (2026) Seamless Handover in Direct-to-Device Satellite Networks: From an Interference-Aware Persp ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] arXiv:2608.00125 (2026) Learning the LoS Skyline from LEO Satellite Observations for Proactive Handover ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] DOI:10.1002/sat.70063 (2026) A Time‐Slotted Dynamic Graph Model for Handover Management in LEO Satellite Networks ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] DOI:10.1109/infocom59046.2026.11571195 (2026) KubeSpace: A Low-Latency and Stable Control Plane for LEO Satellite Container Orchestratio ｜ 命中: {'core-rho': ['control plane']}
+- [2分] DOI:10.5194/egusphere-2026-509 (2026) Confidence-Aware Framework for Mapping Satellite-Derived River Reaches to Gridded Routing  ｜ 命中: {'predict-gap': ['mismatch']}
+- [2分] DOI:10.1016/j.comnet.2026.112555 (2026) OSPF in Low Earth Orbit: Stability, overhead, and routing dynamics ｜ 命中: {'core-rho': ['stability']}
+- [2分] DOI:10.1109/ECNCT70535.2026.11661488 (2026) Local Graph-Aware Hop-by-Hop Routing for Dynamic LEO Satellite Networks ｜ 命中: {'core-rho': ['stale']}
+- [2分] arXiv:2501.13280 (2025) Time-Dependent Network Topology Optimization for LEO Satellite Constellations ｜ 命中: {'blind-vocab': ['time-expanded']}
+- [2分] arXiv:2510.09409 (2025) 3C Resources Joint Allocation for Time-Deterministic Remote Sensing Image Backhaul in the  ｜ 命中: {'blind-vocab': ['time-expanded']}
+- [2分] arXiv:2511.19745 (2025) Joint Satellite Power Consumption and Handover Optimization for LEO Constellations ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] arXiv:2507.07437 (2025) PHandover: Parallel Handover in Mobile Satellite Network ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] arXiv:2512.02449 (2025) Ergodic Capacity and Optimal Handover in Satellite Mega-Constellations under Finite Servin ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] arXiv:2506.22745 (2025) Trusted Routing for Blockchain-Enabled Low-Altitude Intelligent Networks ｜ 命中: {'core-rho': ['stability']}
+- [2分] arXiv:2509.14909 (2025) Hybrid Table-Assisted and RL-Based Dynamic Routing for NGSO Satellite Networks ｜ 命中: {'core-rho': ['convergence']}
+- [2分] arXiv:2512.20835 (2025) QoS- and Physics-Aware Routing in Optical LEO Satellite Networks via Deep Reinforcement Le ｜ 命中: {'core-rho': ['stability']}
+- [2分] DOI:10.1109/iwcmc65282.2025.11059452 (2025) A Novel Handover Management Scheme for LEO Satellite Internet ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] DOI:10.1109/eict68394.2025.11355604 (2025) Velocity Aware Predictive Geometry Based Handover Management in LEO Satellite NTNs ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] DOI:10.1109/ifeea66847.2025.11388857 (2025) ST-QoS-A*: Spatio-Temporal QoS-Aware A* Routing on Time-Expanded Graphs for LEO Satellite  ｜ 命中: {'blind-vocab': ['time-expanded']}
+- [2分] DOI:10.1109/WIECON-ECE69386.2025.11526062 (2025) Quantum Resilient Routing and Beam Assignment for Secure and Intelligent 6G LEO Non-Terres ｜ 命中: {'core-rho': ['stability']}
+- [2分] DOI:10.1109/COMNETSAT68601.2025.11324934 (2025) Cross-Layer Optimization of LEO Routing via DoA Statistics and SDN Domain Assignment ｜ 命中: {'core-rho': ['stability']}
+- [2分] DOI:10.1109/IFEEA66847.2025.11388857 (2025) ST-QoS-A*: Spatio-Temporal QoS-Aware A* Routing on Time-Expanded Graphs for LEO Satellite  ｜ 命中: {'blind-vocab': ['time-expanded']}
+- [2分] DOI:10.1109/ICCT67417.2025.11374276 (2025) Gateway-Free Distributed Mobility Management for 5G Integrated Satellite-Terrestrial Netwo ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] DOI:10.1109/WiSEE57913.2025.11229869 (2025) Joint Satellite Power Consumption and Handover Optimization for LEO Constellations ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] DOI:10.1109/ISNCC66965.2025.11250490 (2025) Probabilistic Link Weighting via Feature Fusion for Routing in LEO Satellite Networks ｜ 命中: {'core-rho': ['stability']}
+- [2分] DOI:10.3390/network5030032 (2025) A Comprehensive Review of Satellite Orbital Placement and Coverage Optimization for Low Ea ｜ 命中: {'core-rho': ['stability']}
+- [2分] arXiv:2402.00091 (2024) Nash Soft Actor-Critic LEO Satellite Handover Management Algorithm for Flying Vehicles ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] arXiv:2403.15131 (2024) Uplink soft handover for LEO constellations: how strong the inter-satellite link should be ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] arXiv:2403.11502 (2024) Accelerating Handover in Mobile Satellite Network ｜ 命中: {'blind-vocab': ['handover']}
+- [2分] arXiv:2404.08967 (2024) Beam Management in Low Earth Orbit Satellite Communication With Handover Frequency Control ｜ 命中: {'blind-vocab': ['handover']}
