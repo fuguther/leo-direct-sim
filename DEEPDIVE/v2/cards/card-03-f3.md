@@ -1,3 +1,5 @@
+【死亡登记】2026-09-04 品味门判死（独立形态），打捞并入 card-04；复活条件：见 adjudication/taste-gate.md
+
 # 选题卡：F-III 切片化静态近似误差的坐标依赖结构
 
 > 谱系：阶段2 出生 → R1 对抗生长（round1-growth.md F-III v2）→ R2 设计要求并入（round2-growth.md F-III v2 设计要求包，5 条全部落入第 8 节）。
