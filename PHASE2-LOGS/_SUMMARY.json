@@ -1,0 +1,443 @@
+[
+ {
+  "family": "f1-latency-spike-attribution",
+  "systems": {
+   "arxiv": [
+    {
+     "phrase": "LEO satellite latency spike handover rerouting",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "Starlink latency spike cause attribution measurement",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite internet latency anomaly switching congestion",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite latency spike attribution existing measurement study",
+     "n_total": 0,
+     "top": []
+    }
+   ],
+   "ddg": [
+    {
+     "phrase": "LEO satellite latency spike handover rerouting",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "Starlink latency spike cause attribution measurement",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite internet latency anomaly switching congestion",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite latency spike attribution existing measurement study",
+     "n_hits": 0,
+     "top": []
+    }
+   ]
+  }
+ },
+ {
+  "family": "f2-orbital-rhythm-beat",
+  "systems": {
+   "arxiv": [
+    {
+     "phrase": "LEO constellation capacity demand mismatch periodic",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "orbital period traffic rhythm satellite network service quality",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "mega constellation supply demand temporal imbalance population",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite network orbital periodicity performance measurement",
+     "n_total": 0,
+     "top": []
+    }
+   ],
+   "ddg": [
+    {
+     "phrase": "LEO constellation capacity demand mismatch periodic",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "orbital period traffic rhythm satellite network service quality",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "mega constellation supply demand temporal imbalance population",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite network orbital periodicity performance measurement",
+     "n_hits": 0,
+     "top": []
+    }
+   ]
+  }
+ },
+ {
+  "family": "f3-fast-topology-slow-control",
+  "systems": {
+   "arxiv": [
+    {
+     "phrase": "LEO constellation control plane latency topology change",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite routing convergence time dynamic topology",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "space network control loop delay fast topology decision",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "SDN control plane delay impact routing convergence network",
+     "n_total": 0,
+     "top": []
+    }
+   ],
+   "ddg": [
+    {
+     "phrase": "LEO constellation control plane latency topology change",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite routing convergence time dynamic topology",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "space network control loop delay fast topology decision",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "SDN control plane delay impact routing convergence network",
+     "n_hits": 0,
+     "top": []
+    }
+   ]
+  }
+ },
+ {
+  "family": "f4-topology-predictability-gap",
+  "systems": {
+   "arxiv": [
+    {
+     "phrase": "LEO topology predictability routing behavior deviation",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite constellation deterministic topology routing deviation prediction",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "predictable topology routing performance prediction satellite",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "ephemeris prediction routing planning satellite network",
+     "n_total": 0,
+     "top": []
+    }
+   ],
+   "ddg": [
+    {
+     "phrase": "LEO topology predictability routing behavior deviation",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite constellation deterministic topology routing deviation prediction",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "predictable topology routing performance prediction satellite",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "ephemeris prediction routing planning satellite network",
+     "n_hits": 0,
+     "top": []
+    }
+   ]
+  }
+ },
+ {
+  "family": "f5-on-demand-link-boundary",
+  "systems": {
+   "arxiv": [
+    {
+     "phrase": "on-demand laser inter-satellite link establishment routing",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "laser inter-satellite link scheduling fixed grid tradeoff",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite link resource scarcity temporal spatial hotspots",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "dynamic ISL establishment energy efficiency satellite routing",
+     "n_total": 0,
+     "top": []
+    }
+   ],
+   "ddg": [
+    {
+     "phrase": "on-demand laser inter-satellite link establishment routing",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "laser inter-satellite link scheduling fixed grid tradeoff",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite link resource scarcity temporal spatial hotspots",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "dynamic ISL establishment energy efficiency satellite routing",
+     "n_hits": 0,
+     "top": []
+    }
+   ]
+  }
+ },
+ {
+  "family": "f6-architecture-vs-measurement",
+  "systems": {
+   "arxiv": [
+    {
+     "phrase": "Starlink OneWeb architecture performance comparison measurement",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "LEO operator architecture difference latency measurement methodology",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite internet provider independent measurement comparison",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "transparent vs onboard processing satellite network performance",
+     "n_total": 0,
+     "top": []
+    }
+   ],
+   "ddg": [
+    {
+     "phrase": "Starlink OneWeb architecture performance comparison measurement",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "LEO operator architecture difference latency measurement methodology",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite internet provider independent measurement comparison",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "transparent vs onboard processing satellite network performance",
+     "n_hits": 0,
+     "top": []
+    }
+   ]
+  }
+ },
+ {
+  "family": "f7-handover-cost-amplification",
+  "systems": {
+   "arxiv": [
+    {
+     "phrase": "satellite handover impact duration performance degradation",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "LEO handover transport performance degradation window",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "handover loss recovery transport protocol satellite",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "handover cost amplification path change endpoint state",
+     "n_total": 0,
+     "top": []
+    }
+   ],
+   "ddg": [
+    {
+     "phrase": "satellite handover impact duration performance degradation",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "LEO handover transport performance degradation window",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "handover loss recovery transport protocol satellite",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "handover cost amplification path change endpoint state",
+     "n_hits": 0,
+     "top": []
+    }
+   ]
+  }
+ },
+ {
+  "family": "f8-load-balance-breaking",
+  "systems": {
+   "arxiv": [
+    {
+     "phrase": "LEO load balancing hotspot failure congestion",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite network congestion spatial distribution population geography",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "mega constellation hotspot overload link degree constraints",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite network congestion hotspot mitigation capacity",
+     "n_total": 0,
+     "top": []
+    }
+   ],
+   "ddg": [
+    {
+     "phrase": "LEO load balancing hotspot failure congestion",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite network congestion spatial distribution population geography",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "mega constellation hotspot overload link degree constraints",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "satellite network congestion hotspot mitigation capacity",
+     "n_hits": 0,
+     "top": []
+    }
+   ]
+  }
+ },
+ {
+  "family": "f9-static-approximation-error",
+  "systems": {
+   "arxiv": [
+    {
+     "phrase": "time-expanded graph approximation error dynamic network",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "snapshot static approximation time-varying network routing error",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "time varying graph discrete time approximation network analysis",
+     "n_total": 0,
+     "top": []
+    },
+    {
+     "phrase": "temporal graph routing approximation accuracy granularity",
+     "n_total": 0,
+     "top": []
+    }
+   ],
+   "ddg": [
+    {
+     "phrase": "time-expanded graph approximation error dynamic network",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "snapshot static approximation time-varying network routing error",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "time varying graph discrete time approximation network analysis",
+     "n_hits": 0,
+     "top": []
+    },
+    {
+     "phrase": "temporal graph routing approximation accuracy granularity",
+     "n_hits": 0,
+     "top": []
+    }
+   ]
+  }
+ }
+]
