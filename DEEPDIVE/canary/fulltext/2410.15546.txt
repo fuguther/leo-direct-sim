@@ -1,0 +1,2231 @@
+
+
+Improved Contact Graph Routing in Delay Tolerant Networks with Capacity and Buffer Constraints
+
+ Report GitHub Issue
+ ×
+
+ Title:
+
+Content selection saved. Describe the issue below:
+
+ Description:
+
+ Submit without GitHub
+ Submit in GitHub
+
+ arXiv is now an independent nonprofit!
+ Learn more
+ ×
+
+ Back to arXiv
+
+ Why HTML?
+
+ Report Issue
+
+ Back to Abstract
+
+ Download PDF
+
+Abstract
+
+I Introduction
+
+II Background and motivations
+
+II-A Key notions
+
+II-B Contact graph routing (history)
+
+II-C Recent trends in DTN routing and further elements on the SoA
+
+II-C1 Contact segmentation in [20]
+
+II-C2 Machine-learning routing.
+
+II-C3 Buffer-aware routing and resource reservation in DTNs.
+
+II-D Contact graph routing (implementation)
+
+II-D1 CP construction
+
+II-D2 Route search
+
+II-D3 Validation and forwarding
+
+II-D4 Additional comments on CGR
+
+II-E Source-routing CGR
+
+II-E1 Bundle-independent SR
+
+II-E2 Bundle-dependent SR
+
+III Contact-capacity and node-buffer challenges in DTNs: 
+
+Presentation and problem formulation
+
+III-A Contact-capacity management
+
+III-B Buffer management
+
+III-C Mathematical problem formulation
+
+III-C1 Contact-capacity feasibility
+
+III-C2 Buffer feasibility
+
+III-C3 Feasible route set
+
+III-C4 Problem to solve: Feasible Earliest-Arrival Path with Capacity and Buffer constraints (FEAP-CB)
+
+IV Proposed global capacity and buffer management solution
+
+IV-A Model-parameter modifications
+
+IV-A1 Contact splitting to modify the CP
+
+IV-A2 Edge pruning
+
+IV-B Capacity and buffer managements
+
+IV-B1 Capacity management
+
+IV-B2 Buffer management
+
+IV-C Optimality of the proposed approach
+
+IV-D Booking resources for forwarding safety margin
+
+IV-E Information sharing in the network
+
+V Benchmark: source-routing CGR
+
+V-1 Contact-capacity management after the route search
+
+V-2 Buffer management after the route search
+
+VI Simulation environment and setup
+
+VI-A Environment
+
+VI-B Communication parameters
+
+VI-C Other simulation parameters and assumptions
+
+VI-D Simulation tools
+
+VII Simulation results
+
+VII-A Impact of contact-capacity management
+
+VII-B Impact of buffer management
+
+VIII Future work: traffic-level extension and information sharing
+
+IX Conclusion
+
+A Summary of Symbols
+
+References
+
+ License: CC BY 4.0
+
+arXiv:2410.15546v3 [cs.NI] 07 Mar 2026
+
+Improved Contact Graph Routing in Delay Tolerant Networks with Capacity and Buffer Constraints
+
+Tania Alhajj
+
+Vincent Corlay
+††thanks: 
+The authors are with Mitsubishi Electric Research and Development Centre Europe, 35700 Rennes, France (e-mail: v.corlay@fr.merce.mee.com).
+
+Abstract
+
+Satellite communications present challenging characteristics.
+Continuous end-to-end connectivity may not be available due to the large distances between satellites.
+Moreover, resources such as link capacity and buffer memory may be limited.
+Routing in satellite networks is therefore both complex and crucial to avoid packet losses and long delays.
+The Delay Tolerant Network (DTN) paradigm has emerged as an efficient solution for managing these challenging networks.
+Contact Graph Routing (CGR), a deterministic routing algorithm, is one of the most popular DTN algorithms.
+CGR is compatible with the “store, carry, and forward” principle, whereby a node receives a message and stores it in its buffer until a transmission opportunity becomes available.
+However, CGR relies on simplified models to incorporate potential constraints in the route search. For instance, the linear volume assumption is often used to consider capacity constraints.
+Moreover, capacity management and buffer management are mostly performed during the forwarding phase, once an issue has occurred.
+These reactive management techniques cause many collisions and increase the average delivery time.
+In this paper, we propose taking measures before or during the route search in order to find routes that respect both contact-capacity and node-buffer limits.
+We introduce the contact splitting and edge pruning operations to effectively account for the routing constraints.
+This ensures that CGR outputs the optimal solution in terms of delivery time among the subset of valid solutions. The problem is formalized as the Feasible Earliest-Arrival Path with Capacity and Buffer constraints (FEAP-CB) and optimality is proved.
+The proposed approach can also be used to book resources to be used in case of issues during the forwarding phase.
+
+Index Terms: Delay tolerant networks, contact graph routing, satellite communications, buffer, contact capacity.
+
+I Introduction
+
+Satellite networks are becoming increasingly important for many applications such as global coverage [1] and scientific missions in space [2].
+These networks often face challenges such as long delays, limited connectivity, dynamic topology, and limited resources. Routing algorithms play an important role in this category of networks to ensure efficient data transmission.
+
+As a first networking solution for satellite systems, traditional Internet Protocol (IP)-based routing algorithms have been adapted for satellite scenarios where the network topology can be assumed stable and where the connectivity can be considered continuous.
+These IP-based algorithms require explicit topology-update notifications [3][4].
+In case of frequent network-topology changes, this approach therefore results in significant overhead which can drain the limited storage and processing resources of satellites. Moreover, these IP-based algorithms are designed for scenarios where end-to-end connectivity is available. However, satellite networks are often characterized by intermittent connectivity. This intermittent nature induces multiple discontinuous episodes of communication opportunities between pairs of nodes (so-called contacts, see Section II-A). Limited effectiveness is therefore observed in non-dense satellite scenarios, such as the initial-stage deployment of a constellation.
+
+Since traditional Internet protocols are not suited to the mentioned challenges, the need for new protocols arose.
+The Delay Tolerant Network (DTN) [5] architecture with a new protocol layer has been proposed by the Internet Engineering Task Force (IETF) to handle these issues.
+The Bundle Protocol (BP) [6], considered by the Consultative Committee for Space Data Systems (CCSDS), is an instance of such protocols.
+One of the main advantages of a DTN architecture is the ability to “store, carry, and forward” data when immediate transmission is not possible.
+DTNs have become essential in modern space communications and are being used in recent projects [7, 8].
+
+In addition to suitable network capabilities via the above-mentioned protocols, efficient routing algorithms are also needed.
+Routing algorithms in DTNs can be classified into three categories depending on the availability of network information.
+They can be opportunistic [9, 10, 11], probabilistic [12], or deterministic [13], depending on whether the contacts are unpredictable, determined with a certain probability, or completely predetermined, respectively.
+
+Opportunistic algorithms rely on message replication, aiming to ensure that at least one copy reaches the destination.
+They are often categorized as epidemic algorithms [10].
+These algorithms are highly efficient when energy, buffer space, and link capacity are high or unlimited, as they achieve high delivery ratio and low latency.
+However, such ideal conditions are unrealistic, especially in satellite communication systems where capacity and buffer space are limited and must be used efficiently.
+To address this challenge, algorithms that limit the number of copies have been proposed [9, 14, 11]. In the latter reference, the number of copies generated by each node is adjusted based on its resource availability. Nevertheless, even with limited copies, resource wastage persists, as the forwarding process remains opportunistic.
+In satellite networks, this wastage can be significantly minimized by leveraging the predictable nature of satellite motion.
+
+Probabilistic algorithms use statistical models and historical data to predict future network information (i.e., node encounters or contacts) [15]. However, such algorithms are not useful for most satellite networks where node connectivity patterns can be pre-determined.
+
+Deterministic algorithms use comprehensive and pre-computed network information, such as satellite connectivity windows (i.e., contacts) for efficient routing. Unlike opportunistic methods, deterministic algorithms avoid unnecessary transmissions by calculating optimal routes in advance, ensuring that packets (also called bundles, the data units of the BP) are forwarded only when a path to the destination is available.
+This approach aligns well with the predictable topology of satellite networks, where orbital mechanics allow precise predictions of link availability.
+
+In this paper, we focus on space communications, where natural and artificial satellites have deterministic motions. Thus, contacts can be predetermined, making deterministic routing algorithms suitable.
+The widely used deterministic routing algorithm in DTNs is Contact Graph Routing (CGR) [13]. CGR is well suited to satellite systems with limited resources.
+By prioritizing routing based on link availability and predetermined contact duration, the algorithm minimize unnecessary transmissions and optimize delivery time.
+The reader is invited to consult Section II-B for a review of recent improvements of CGR.
+
+Moreover, in addition to the delivery-time objective, optimizing the delivery rate and the resource consumption should also be considered.
+For instance, the use of transmission resources must be carefully optimized because of their limited availability.
+Additionally, as data units are often held in the node buffers for long periods, optimizing storage resources to avoid congestion and loss is crucial.
+Nevertheless, the current version of CGR and the related latest research do not fully consider or fail to optimize contact capacity and buffer occupancy. Instead, they only provide local and reactive management during the forwarding phase. This leads to potential resource waste, delays, errors, and more generally sub-optimal solutions which may be harmful especially in a resource-constrained environment (see also Section III-A for more details on this aspect). It is therefore important to explore alternative approaches.
+
+One modern application where capacity and buffer management may be critical is cislunar communications. With the advent of the Artemis Program [2], many projects in the lunar environment have arisen, triggering a high need for communication resources [16, 17].
+Another application is low-earth orbit satellite constellations, which are expected to be utilized extensively in the future.
+
+Moreover, the IOAG Mars &\& Beyond Communications (MBC) architecture explicitly plans the infusion of DTN-based network management to orchestrate relay orbiters, surface hubs, and Earth stations.[18][19].
+
+In this paper, we highlight the need to enhance the DTN routing algorithms, mainly CGR, to consider capacity and buffer management before or during the route search, bridging a critical gap in the current literature.
+
+Main contributions.
+We provide a routing solution based on CGR with a global and proactive congestion control.
+We propose to ensure contact-capacity management and buffer-limit management before or during the route search such that the obtained route is optimal and respects these two constraints. Optimality means achieving the lowest possible delivery time. The formal optimization problem (FEAP-CB) is given in Section III, and the optimality proof in Section IV-C.
+The objective is achieved as follows.
+
+• 
+
+We propose managing the contact capacity before the route search by modifying the network information, such as the provided contact lists, using contact splitting. Contact splitting removes the part of the contacts used by a routed bundle.
+
+• 
+
+We propose to track node buffer occupancy as function of time using forecast buffer tables. The buffer occupancy is then managed by:
+
+– 
+
+Temporarily modifying the network information, also via contact splitting, before routing a specific bundle to avoid buffer overflows.
+
+– 
+
+Temporarily forbidding some edges between contacts (i.e., a given contact succession) during the route search for a specific bundle to avoid buffer overflows.
+
+The modified network information enables the removal of routes that do not respect the constraints (and only these routes). Subsequently, the route-search algorithm, such as CGR, can find the optimal solution among the subset of valid solutions. It means that the algorithm will automatically find the optimal storage location of bundles (from delivery time perspective) considering the forecasted buffer status.
+
+The proposed approach can also be used to reserve resources to be utilized in case of failure events during the forwarding phase.
+These resources, referred to as safety margin in the paper, are to be used by intermediate nodes having limited information on the network state.
+
+Assumptions in this paper.
+This study proposes a solution in an ideal scenario. We have the main three assumptions:
+
+• 
+
+We assume instantaneous sharing of the network information among source routing nodes, perfect topology knowledge, no unexpected disruptions.
+
+• 
+
+We do sequential per packet optimization not full traffic optimization.
+
+• 
+
+Complexity is not the main concern.
+
+Under these assumptions, we show that the proposed solution avoids all routing errors, both theoretically and with simulations.
+We acknowledge that these assumptions are not realistic. This work can therefore be understood as a theoretical foundation under ideal assumptions and may serve as a benchmark in the future for suboptimal solutions operating with partial knowledge, such as Machine Learning (ML)-based approaches.
+
+Nevertheless, note that [20, Sec. IV] also investigates the notion of contact segments (conceptually close to contact splitting, proposed at the same period) but considers the complementary simulations in a distributed setting with local, unsynchronized volume views (i.e., without assuming a globally shared, up‑to‑date CP volume state). Simulations show the advantage also in this case, see Section II-C1 for more details.
+
+Structure of the paper. The paper is structured as follows.
+In Section II, we first introduce key terms used in the paper and we provide a review of CGR.
+In Section III, we focus on existing capacity and buffer management challenges in DTNs to introduce our motivations and we present the mathematical problem formulation (FEAP-CB).
+The proposed solution is described in Section IV, which also includes a proof of optimality of the approach. The source-routing CGR benchmark is detailed in Section V. Simulation assumptions and results comparing our method with the benchmark are given in Sections VI and VII, respectively. Symbols used in the paper are summarized in the Appendix (Table IV).
+
+II Background and motivations
+
+II-A Key notions
+
+We first define some key terms used in this paper.
+
+• 
+
+Node: In a satellite communication scenario, a node can be a satellite or a Ground Station (GS) as illustrated in Figure 1. The set of all nodes is 𝒩\mathcal{N}. In the text we denote a node by nn or by context-specific letters (ss, dd for source and destination of a bundle, uiu_{i}, viv_{i} for sender and receiver of contact Ci\text{C}_{i}). In the figures we use capital letters (XX, AA, BB, etc.) for clarity.
+
+• 
+
+Contact: A contact Cj\text{C}_{j} is defined by a communication opportunity between two nodes. It is characterized by sender and receiver nodes, a start time t1,jt_{1,j}, an end time t2,jt_{2,j}, and a data rate/capacity RjR_{j} in bits per second (bps). The volume of a contact is its rate multiplied by its duration.
+Each contact Ci\text{C}_{i} is therefore a tuple
+
+Ci=(ui,vi,t1,i,t2,i,Ri,δi),t1,i<t2,i,Ri>0,δi≥0,\displaystyle\begin{split}&\text{C}_{i}=(u_{i},\,v_{i},\,t_{1,i},\,t_{2,i},\,R_{i},\,\delta_{i}),\quad\\
+&t_{1,i}<t_{2,i},\ \ R_{i}>0,\ \ \delta_{i}\geq 0,\end{split}
+
+(1)
+
+where δi≥0\delta_{i}\geq 0 is the one-way propagation delay.
+
+• 
+
+Contact Plan (CP): A CP is the list of contacts for a time period. It reflects the evolution of the network topology over time. An example is provided in Table I.
+The set of contacts is either denoted by Vc0V_{c}^{0} or simply CP.
+
+• 
+
+Bundle: A bundle is the data unit encoded by the BP. A bundle ii is characterized by its size SiS_{i} in bits.
+A bundle of size S>0S>0 is released at source s∈𝒩s\in\mathcal{N} at time t0t_{0} and must reach
+destination d∈𝒩d\in\mathcal{N}.
+
+• 
+
+Edge: An edge (i→j)(i\to j) exists between two contacts when the receiver of the first contact ii matches the sender of the second contact jj (vi=ujv_{i}=u_{j}).
+Ec0={(i→j):vi=uj}E_{c}^{0}=\{(i\to j):v_{i}=u_{j}\} is the set of such edges, for all contacts in Vc0V_{c}^{0}.
+
+For a given bundle of size SS, the feasible window of contact Ci\text{C}_{i} is Wi=[t1,i,t2,i−S/Ri]W_{i}=[t_{1,i},\,t_{2,i}-S/R_{i}]: the set of start times at which a transmission of SS bits on Ci\text{C}_{i} finishes by t2,it_{2,i}. Thus each transmission must finish before the contact ends, and each next hop must start no earlier than the arrival fi=τi+S/Ri+δif_{i}=\tau_{i}+S/R_{i}+\delta_{i} from the previous hop. For a given bundle of size SS, only a subset of Ec0E_{c}^{0} that satisfy these timing constraints is actually usable11
+ 1
+
+ An equivalent modeling is to enforce this condition and the schedulability directly in the contact graph by reducing Ec0E_{c}^{0}..
+
+• 
+
+Buffer capacity.
+For each node nn, let Bn​(t)B_{n}(t) denote the (full) buffer capacity (in bits) available at time tt. In this paper, the buffer capacity is constant over time, so Bn​(t)=BmaxB_{n}(t)=B_{\text{max}} for all tt.
+Let Qn​(t)Q_{n}(t) be the booked buffer load due to previously scheduled bundles (Qn​(t)=0Q_{n}(t)=0 if no prior bookings).
+We define the residual buffer capacity as
+
+B¯n​(t)=max⁡{ 0,Bn​(t)−Qn​(t)}.\bar{B}_{n}(t)=\max\{\,0,\ B_{n}(t)-Q_{n}(t)\,\}.
+
+• 
+
+Connectivity-only contact graph (Vc0,Ec0)(V_{c}^{0},E_{c}^{0}): We denote by (Vc0,Ec0)(V_{c}^{0},E_{c}^{0}) the connectivity-only contact graph before any splitting: vertices are the contacts in the CP, and edges are as in the ones described in the paragraph above.
+
+• 
+
+Feasible contact graph (Vc,Ec)(V_{c},E_{c}): Contact splitting (see Section IV-A1) turns Vc0V_{c}^{0} into the vertex set VcV_{c} of split contacts. On VcV_{c}, the connectivity-only edge set is again denoted Ec0E_{c}^{0}. The feasible contact graph (Vc,Ec)(V_{c},E_{c}) is obtained by removing additional edges from Ec0E_{c}^{0} via edge pruning (see Section IV-A2), so Ec⊆Ec0E_{c}\subseteq E_{c}^{0}. How (Vc,Ec)(V_{c},E_{c}) is built is detailed in Section IV.
+
+• 
+
+Route (path) and schedulability:
+A route (or path) is a sequence of contacts P=(C1,…,Ck)P=(\text{C}_{1},\ldots,\text{C}_{k}) used to deliver a bundle from source ss to destination dd, with the basic connectivity constraint that the receiver of Ci\text{C}_{i} equals the sender of Ci+1\text{C}_{i+1}:
+
+u1=s,vk=d,vi=ui+1(i=1,…,k−1).u_{1}=s,\quad v_{k}=d,\quad v_{i}=u_{i+1}\ \ (i=1,\ldots,k-1).
+
+In the connectivity-only contact graph (Vc0,Ec0)(V_{c}^{0},E_{c}^{0}), this means Ci∈Vc0\text{C}_{i}\in V_{c}^{0} and (Ci,Ci+1)∈Ec0(\text{C}_{i},\text{C}_{i+1})\in E_{c}^{0} for all ii, so PP is a path in (Vc0,Ec0)(V_{c}^{0},E_{c}^{0}).
+
+When considering transmission timing for a given bundle, a path P=(C1,…,Ck)P=(\text{C}_{1},\ldots,\text{C}_{k}) is schedulable if it satisfies the timing constraints (feasible windows and precedence) introduced in the Edge paragraph above. This schedulability is enforced in the path selected by CGR when the route search runs on the contact graph: the (time-dependent) Dijkstra search explores only contact successions that respect these constraints.
+
+• 
+
+Feasible route: A feasible route is a path (in the connectivity graph (Vc0,Ec0)(V_{c}^{0},E_{c}^{0})) that is schedulable, contact-capacity feasible, and buffer feasible (see Section III-C). The set of feasible routes for a bundle of size SS and release time t0t_{0} is denoted 𝒫f​(S,t0)\mathcal{P}_{f}(S,t_{0}). We will show (Lemma 3, Section IV-C) that 𝒫f​(S,t0)\mathcal{P}_{f}(S,t_{0}) coincides with the set of schedulable paths in the feasible graph (Vc,Ec)(V_{c},E_{c}).
+
+Fig. 1: Snapshot of a satellite communication scenario at time tt (e.g., t1,1≤t≤t2,1t_{1,1}\leq t\leq t_{2,1} and t1,4≤t≤t2,4t_{1,4}\leq t\leq t_{2,4}, see Table I).
+
+II-B Contact graph routing (history)
+
+Since its invention, CGR has gained attention in the research community and several improvements have been proposed.
+Using Dijkstra’s algorithm for the route search and choosing the Best-case Delivery Time (BDT) as objective were presented in [21]. Then, the Earliest Transmission Opportunity (ETO) was introduced to compute the time at which a bundle is transmitted through the contact [22]. The ETO takes into account the time a bundle has to wait before being transmitted because of other scheduled bundle transmissions on the same contact. Later, a complementary overbooking management was added to the ETO to improve routing decisions [23]. Nevertheless, these management techniques are performed during the forwarding phase. Furthermore, a route list-management technique using Yen’s algorithm was proposed to further enhance the standard CGR algorithm [24]. Note however that this route management technique increases processing complexity during scheduling [25].
+These enhancements among others result in the currently used version of CGR [13].
+
+II-C Recent trends in DTN routing and further elements on the SoA
+
+Research continues to improve the latest version of CGR, focusing on the optimization of limited resources including energy [26], computation [27, 28], heterogeneous traffic and buffer-related aspects [29], and link capacity [30].
+
+II-C1 Contact segmentation in [20]
+
+Contact segmentation was proposed independently around the same period as the first version of this paper [20, Sec. IV]. It follows the same idea as contact splitting: instead of splitting the contacts, that approach adds a new parameter to the contacts which describes the available segments of the contact. That work however considers simulations for the distributed case with local, unsynchronized volume views (i.e., without assuming a globally shared, up‑to‑date CP volume state). In [20], the capability of the node is implemented using a new library [31].
+
+The following improvement compared to the benchmark is summarized in the conclusion of [20]: contact segementation delivers up to a 10 % improvement in delivery ratios, reductions in delivery delay of up to 11 % and up to a 16 % decrease in hop counts.
+
+II-C2 Machine-learning routing.
+
+Recent works apply Graph Neural Networks (GNNs) and Deep Reinforcement Learning (DRL) to LEO/DTN routing to adapt under dynamic environments, potentially with partial network knowledge and unexpected events. This is promising for traffic-level optimization where load, not just individual bundles, must be steered and complexity is an issue.
+However, these methods generally lack shortest-path optimality guarantees and usually handle contact-capacity and buffer limits via rewards or post-hoc checks rather than hard feasibility at selection time [32, 33, 34]. Therefore, current research investigates the trade-off between the theoretical guarantees given by CGR under simplified assumptions and the flexibility brought by ML.
+
+We review some existing works.
+GAUSS [35] learns to accelerate route selection in scheduled DTNs, reporting up to 2×2\times compute reduction and 3×3\times lower variability versus CGR-style search. However, Section 4.1.2 of that work explicitly notes that this better computational profile comes at the expense of decreased efficacy, with degraded delivery time compared to standard CGR.
+
+Under congestion or schedule errors, learned policies can rebalance load and improve throughput/delay, making ML a practical fallback or online refinement atop deterministic baselines [36, 37].
+Other works learn next-hop or path-selection policies and show gains in simulations, e.g., multi-agent DRL adapts under load. DRL +GNN combinations improve aggregate metrics in mega-constellations [38, 36, 37]. GraphSAGE+DQN and graph attention handle topology changes [37, 39].
+
+II-C3 Buffer-aware routing and resource reservation in DTNs.
+
+Many opportunistic DTN schemes have long intertwined routing with buffer management. As mentioned in the introduction, opportunistic refers to networks with stochastic contacts and typically rely on replication/priority and local queue control to mitigate uncertainty [40, 41, 42]. This line of work also considers the dropping policy at the buffer node, which is beyond the scope of this paper.
+
+Within this opportunistic family, MaxProp orders both transmissions and drops (explicit buffer eviction policy) using path-likelihood estimates and global ACKs [43]. RAPID treats routing as a resource allocation problem, replicating bundles in decreasing marginal utility to optimize metrics such as mean delay or deadline-meet ratio [44]. PRoPHET prunes epidemic flooding via delivery predictabilities. Variants such as PRoPHETv2 add energy/buffer awareness in forwarding and queue control [45]. Constrained Spray-and-Wait methods cap replication and incorporate congestion control or dynamic copy allocation to reduce buffer pressure [46, 47, 48]. Beyond replication caps, ORWAR is explicitly resource-aware: it estimates contact windows to avoid partial transmissions and orders replication/drops by message utility (buffer-, time-, and contact-aware scheduling) [49]. This is closer to the approach proposed in this paper, as our routing algorithm considers forecasted buffer resources when choosing the route.
+Recent surveys emphasize that these approaches largely enforce soft feasibility (via prioritization, dropping, replication limits), whereas our CGR formulation guarantees feasibility during route computation in scheduled DTNs [40, 41, 50].
+
+II-D Contact graph routing (implementation)
+
+CGR is divided into three main phases [50, 13].
+First, the CP, for example constructed at a mission control unit, is forwarded to all nodes in the network.
+Second, in the forwarding (i.e., transmission) phase, each node receiving a bundle performs the route search using Dijkstra’s algorithm to determine the next hop.
+Third, checks are performed at each intermediate node before transmission to verify that system constraints are respected.
+
+II-D1 CP construction
+
+In a deterministic network case, the CP is constructed at the source nodes using the network information and transmitted to all intermediate nodes for the route-search phase.
+
+II-D2 Route search
+
+Route search is performed using an adapted version of Dijkstra’s algorithm [51]. This adaptation considers the discontinuities of Intermittently Connected Networks (ICNs) by using a contact-graph representation of the network rather than a node-graph representation. In this standard implementation, the route search runs on the connectivity-only contact graph (Vc0,Ec0)(V_{c}^{0},E_{c}^{0}). In the proposed algorithm (Section IV), it runs on the feasible graph (Vc,Ec)(V_{c},E_{c}). The output of a Dijkstra search is the route, consisting of a succession of contacts from the CP, connecting the source to the destination with the lowest BDT.
+
+The detailed implementation can be found in [13]. Here, we explain the aspects of the route search that are essential for understanding our contribution.
+The idea is to explore the available contacts in the CP to determine the shortest route.
+The exploration of the CP is performed by analysing successively selected contacts denoted by Cs\text{C}_{s}.
+For the first iteration, the selected contact Cs\text{C}_{s} is a root contact, which is virtual and whose sender and receiver are the bundle’s source node.
+At each iteration, a new contact Cs\text{C}_{s} is selected and used in the next iteration.
+Two main procedures are executed at each iteration. The first procedure is the Contact Review Procedure (CRP), used to explore the CP. The second one is the Contact Selection Procedure (CSP), used to determine the following Cs\text{C}_{s}.
+
+Algorithm 1 presents both the original CRP and our contributions. Our modifications are marked with asterisks (**, lines 22 and 8−128-12) in the algorithm.
+In this section, we explain only the original CRP. The modifications will be explained in Section IV-B2.
+
+In the CRP, the CP is explored starting from a selected contact Cs\text{C}_{s}.
+During this procedure, all contacts are considered for exploration. In the algorithm, the following characteristics of a contact are updated and used:
+
+• 
+
+A successor of a contact (the contact that comes after in a route). A successor of Cs\text{C}_{s} is a contact Ci\text{C}_{i} with (Cs,Ci)∈Ec0(\text{C}_{s},\text{C}_{i})\in E_{c}^{0}.
+
+• 
+
+A predecessor of a contact (the contact that comes before in a route).
+
+• 
+
+An arrival time fif_{i} at the receiver of the contact. fi=τi+S/Ri+δif_{i}=\tau_{i}+S/R_{i}+\delta_{i}.
+
+• 
+
+Visited nodes, which are the nodes that exist in the route or the succession of contacts that led to this contact.
+
+• 
+
+A visited flag, which indicates if this contact has been visited, meaning that it has been previously selected and used to start exploring contacts in the CP.
+
+• 
+
+A suppressed indicator, which indicates if the use of the contact is forbidden (for security reasons for example).
+
+A contact Ci∈\text{C}_{i}\in CP must meet the following criteria to be explored (otherwise it is ignored) (lines 5−75-7). If these criteria are met Ci\text{C}_{i} will be considered as a potential successor of Cs\text{C}_{s}. 
+
+a) Ci\text{C}_{i} must have the selected contact’s receiver as its sender. (Connectivity: vs=uiv_{s}=u_{i}, so (Cs,Ci)∈Ec0(\text{C}_{s},\text{C}_{i})\in E_{c}^{0}.) 
+
+b) For a bundle of size SS, Ci\text{C}_{i} is schedulable if fs≤t2,i−S/Rif_{s}\leq t_{2,i}-S/R_{i}
+and t1,i≤t2,i−S/Rit_{1,i}\leq t_{2,i}-S/R_{i}, that is, the earliest feasible start
+τi⋆=max⁡{t1,i,fs}\tau_{i}^{\star}=\max\{t_{1,i},f_{s}\} lies in the feasible window
+Wi=[t1,i,t2,i−S/Ri]W_{i}=[t_{1,i},\,t_{2,i}-S/R_{i}]. For readability,
+Algorithm 1 reference the weaker condition t2,i≤fst_{2,i}\leq f_{s}. 
+
+c) Ci\text{C}_{i} should not have been visited, meaning that it should not have been selected as Cs\text{C}_{s} in a previous CRP iteration.
+
+d) The receiver node of Ci\text{C}_{i} must not be visited i.e., be a node of the contact sequence that led to Ci\text{C}_{i}, to avoid loops. 
+
+e) Ci\text{C}_{i} must not be suppressed (e.g., removed or forbidden). 
+
+f) The remaining volume of Ci\text{C}_{i} must be greater than zero. (So the contact has capacity for the bundle, and the feasible window WiW_{i} is non-empty.) This means that after allocating Ci\text{C}_{i} to bundles and deducting bundle size from the volume of Ci\text{C}_{i}, some volume must remain available in Ci\text{C}_{i} to allow more data to pass through.
+
+Once a contact has passed all checks, it is considered as an explored contact.
+The arrival time of an explored contact is computed according to the time taken to reach the receiver of the explored contact following the route that led to it (line 1313).
+If the computed arrival time is less than its last calculated value fif_{i} (in the case where Ci\text{C}_{i} has already been explored), it is updated (lines 1414 and 1515).
+In addition, the selected contact Cs\text{C}_{s} becomes the predecessor of Ci\text{C}_{i} and the visited nodes of Ci\text{C}_{i} are updated by adding the visited nodes of the nodes within the succession of contacts that led to Ci\text{C}_{i} (lines 1616 and 1717) (to avoid getting back to them, which would induce loops).
+
+Each time the destination node is reached (i.e., when the receiver of an explored Ci\text{C}_{i} is the bundle’s destination), the arrival time fif_{i} is saved as BDT if it is lower than the previously calculated BDT. In such cases, Ci\text{C}_{i} is considered as a final contact Cend\text{C}_{\text{end}} with its corresponding BDT (lines 18−2118-21). After finishing all contacts in the CP, the currently selected contact Cs\text{C}_{s} is marked as visited to avoid repeating the same work later (line 2424).
+
+Algorithm 1 Updated Contact Review Procedure (CRP)
+
+ 1:
+
+ Input: CP, Cs\text{C}_{s}, Cend\text{C}_{\text{end}}, BDT 
+
+ 2:
+
+ ** Additional input: Bundle b, T1,s={t1,ol}|ol∈𝒪Z1T_{1,s}=\{t_{1,o_{l}}\}\mid o_{l}\in\mathcal{O}_{Z_{1}}
+, where Z1{Z_{1}} is the receiver of Cs\text{C}_{s} **
+
+ 3:
+
+ Output: updated CP, Cend\text{C}_{\text{end}}, BDT 
+
+ 4:
+
+ for Ci∈\text{C}_{i}\in CP do
+
+ 5:
+
+   if sender of Ci≠\text{C}_{i}\neq receiver of Cs\text{C}_{s} or t2,i≤fst_{2,i}\leq f_{s} or Ci\text{C}_{i} is already visited or receiver of Ci\text{C}_{i} is a visited node by Cs\text{C}_{s} or Ci\text{C}_{i} is suppressed or remaining volume of Ci==0\text{C}_{i}==0 then
+
+ 6:
+
+    ignore Ci\text{C}_{i}
+
+ 7:
+
+   end if
+
+ 8:
+
+ ** Additional condition
+
+ 9:
+
+   ⊳\triangleright Comment: Compute the first overflow start strictly after fsf_{s}: successors must start before it to avoid buffer overflows.
+
+ 10:
+
+   anext←min⁡{t∈T1,s∣t>fs}a_{\text{next}}\leftarrow\min\{\,t\in T_{1,s}\mid t>f_{s}\,\}; if no such tt then anext←+∞a_{\text{next}}\leftarrow+\infty
+
+ 11:
+
+   if t1,i≥anextt_{1,i}\geq a_{\text{next}} then
+
+ 12:
+
+    ignore Ci\text{C}_{i}
+
+ 13:
+
+   end if
+
+ 14:
+
+ **
+
+ 15:
+
+   compute arrival time ff at the receiver of Ci\text{C}_{i} (when extending from Cs\text{C}_{s})
+
+ 16:
+
+   if f<fif<f_{i} then
+
+ 17:
+
+    fi=ff_{i}=f
+
+ 18:
+
+    predecessor of Ci=Cs\text{C}_{i}=\text{C}_{s}
+
+ 19:
+
+    Ci\text{C}_{i}’s visited nodes =Cs=\text{C}_{s}’s visited nodes and Ci\text{C}_{i}’s
+  receiver
+
+ 20:
+
+    if Ci\text{C}_{i}’s receiver is bundle’s destination and
+  fi<f_{i}< BDT then
+
+ 21:
+
+      BDT =fi=f_{i}
+
+ 22:
+
+      Cend=Ci\text{C}_{\text{end}}=\text{C}_{i}
+
+ 23:
+
+    end if
+
+ 24:
+
+   end if
+
+ 25:
+
+ end for
+
+ 26:
+
+ Consider Cs\text{C}_{s} as visited
+
+In the CSP, the best contact among the explored contacts from CRP is selected based on the shortest arrival time. This contact becomes the new selected contact for the next CRP iteration. The iterations continue until no additional contacts can be selected for further exploration. The final contact of the route is then the one with the lowest BDT.
+
+Once these procedures are complete, the route is constructed in reverse order. Starting from the final contact (which has the lowest BDT), the algorithm traces back through the predecessors until reaching the root contact. For each Dijkstra call, the CP is reset to its initial state (i.e., as if no contacts had been explored).
+
+Yen’s algorithm [52] enables the determination of the kk shortest routes by iteratively exploring paths between a source and a destination.
+It uses Dijkstra’s algorithm with the contact-graph representation while avoiding loops and previously discovered paths.
+
+In the standard CGR implementation, each node computes a list of the kk shortest routes to each node in the network using Yen’s algorithm, where kk is an input parameter. This is referred to as per-hop routing. When a bundle reaches an intermediate node, this node selects a feasible pre-computed route from its route list to determine the next hop.
+
+II-D3 Validation and forwarding
+
+In the forwarding phase, the system examines both the remaining contact volume and the buffer queuing time for bundles scheduled on the same contact.
+These validation checks verify the feasibility of previously computed routes and prevent local congestion.
+
+The system determines valid route candidates from the kk shortest routes. A valid route must guarantee sufficient contact volume for the bundle’s size. Additionally, the system must verify that the bundle can complete transmission, including queuing time, before the contact ends (see ETO [22]).
+
+The system selects the optimal route from valid candidates to determine the bundle’s next hop. After the route selection, the system queues the bundle for transmission and decreases the contact’s available volume by the bundle’s size.
+
+II-D4 Additional comments on CGR
+
+Although widely used, CGR is computationally complex. Each node must perform multiple checks per bundle simply to determine the next contact. Since validation occurs after the route search, the system might find no valid solutions among the candidate routes. Such situations often trigger time-consuming iterations between Dijkstra’s algorithm and validation checks.
+
+II-E Source-routing CGR
+
+Source Routing (SR) [53] offers an effective approach to reduce CGR’s complexity. Unlike per-hop routing, SR computes the complete route at the source node and encodes it into the bundle’s extension block [54].
+
+When a bundle with a pre-calculated route arrives at an intermediate node, a verification of the encoded route’s validity is performed. Upon detecting an invalid route, the intermediate node reverts to traditional CGR to compute a new route to the destination. The following two types of SR can be implemented.
+
+II-E1 Bundle-independent SR
+
+In bundle-independent SR, the source node computes routes without considering bundle properties or queuing information. During forwarding, the system performs standard CGR checks such as ETO and volume availability. The system validates the encapsulated route using bundle properties (e.g., size) and local queue states [55].
+
+II-E2 Bundle-dependent SR
+
+Bundle-dependent SR utilizes available bundle properties (e.g., size and priority) during initial route computation [13]. During forwarding, the system evaluates route viability using local queue information.
+
+Our solution extends this approach by incorporating both network information and bundle properties during initial route computation.
+
+III Contact-capacity and node-buffer challenges in DTNs: 
+
+Presentation and problem formulation
+
+III-A Contact-capacity management
+
+CGR manages capacity consumption and availability during the forwarding phase. The route search implements the so-called linear approach that verifies whether available contact volume exceeds the bundle size [13]. This approach fails to prevent capacity limit violations because it does not track the temporal usage of contacts. The linear volume model is illustrated in Figure 2 (right). As shown in the figure, the linear model incorrectly indicates that bundle ii (hatched rectangle) arriving at node C at time tit_{i} has immediate access to contact C3\text{C}_{3}. In contrast, the actual contact volume consumption (Figure 2, left) reveals that bundle ii cannot use contact C3\text{C}_{3} immediately because bundle aa (striped rectangle) occupies the entire capacity at that time. When traditional CGR detects this conflict during forwarding through ETO, the transmission must be delayed.
+
+Nevertheless, delaying the transmission of bundle ii in the forwarding phase may cause multiple problems such as inaccurate estimates of delivery time, the end or unavailability of current or future contacts on the planned route, or reaching the bundle delivery deadline before its delivery.
+
+These collision problems can be better managed, or even avoided, if capacity consumption is modeled differently. In the same example, if the use of C3\text{C}_{3} at that precise moment had been known in advance, an alternative route might have been a more effective solution for delivering bundle ii.
+
+TABLE I: Initial Contact Plan.
+
+Contact
+Sender
+Receiver
+Start time
+End Time
+
+C1
+A
+B
+t1,1t_{1,1}
+t2,1t_{2,1}
+
+C2
+B
+C
+t1,2t_{1,2}
+t2,2t_{2,2}
+
+C3
+C
+D
+t1,3t_{1,3}
+t2,3t_{2,3}
+
+C4
+D
+E
+t1,4t_{1,4}
+t2,4t_{2,4}
+
+Fig. 2: Linear vs real volume consumption.
+
+III-B Buffer management
+
+Node buffer management is crucial in DTNs because bundles may require extended storage before transmission. Buffer capacity constraints further complicate this challenge.
+
+Traditional buffer management strategies react to problems after they occur. When a buffer is full, the system must immediately decide to reroute or drop bundles, as seen in reactive custody transfer [6]. An alternative approach proposed in [56] involves refusing custody to preserve node buffer space. However, these strategies only utilize information from neighboring nodes.
+
+An alternative approach consists in implementing global buffer occupancy management during initial route planning. Unlike contact-level volume and capacity management, buffer occupation requires node-level management. Multiple bundles using different contacts can affect the same node’s buffer capacity. Consequently, this characteristic demands careful consideration when working with contact-graph network representations.
+
+III-C Mathematical problem formulation
+
+We first formalize the constraints to be respected and then state the optimization problem.
+Given a path P=(C1,…,Ck)P=(\text{C}_{1},\ldots,\text{C}_{k}), with a transmission start time τi\tau_{i} on contacts Ci\text{C}_{i}, a given bundle size S>0S>0, and release time t0t_{0} (and source ss, destination dd):
+
+III-C1 Contact-capacity feasibility
+
+PP is contact-capacity feasible if it does not use any portion of a contact that is already allocated to another bundle (i.e., each contact used has a sufficient unallocated portion for the bundle).
+
+III-C2 Buffer feasibility 
+
+Given PP, the bundle is stored at node viv_{i} during the time interval
+
+Ivi=[τi+S/Ri+δi,τi+1](i=1,…,k−1).\displaystyle\begin{split}&I_{v_{i}}=[\,\tau_{i}+S/R_{i}+\delta_{i},\ \tau_{i+1}\,]\ \ (i=1,\ldots,k-1).\end{split}
+
+(2)
+
+Buffer feasibility requires (assuming no storage issue at the source node ss and at the destination node dd)
+
+S≤B¯vi(t)⇔S≤inft∈IviB¯vi(t),∀t∈Ivi​(i=1,…,k−1).\displaystyle\begin{split}&S\leq\bar{B}_{v_{i}}(t)\quad\Leftrightarrow\quad S\leq\inf_{t\in I_{v_{i}}}\bar{B}_{v_{i}}(t),\\
+&\forall t\in I_{v_{i}}\ (i=1,\ldots,k-1).\end{split}
+
+(3)
+
+III-C3 Feasible route set
+
+A feasible route is a path PP in the connectivity graph (Vc0,Ec0)(V_{c}^{0},E_{c}^{0}) that is (i) schedulable, (ii) contact-capacity feasible, and (iii) buffer feasible. We denote the set of feasible routes by 𝒫f​(S,t0)\mathcal{P}_{f}(S,t_{0}):
+
+𝒫f(S,t0)={P=(C1,…,Ck):P path in (Vc0,Ec0)and,P schedulable, contact-capacity feasible, and buffer feasible}.\displaystyle\begin{split}&\mathcal{P}_{f}(S,t_{0})=\Big\{\ P=(\text{C}_{1},\ldots,\text{C}_{k}):\ P\text{ path in }(V_{c}^{0},E_{c}^{0})and,\\
+&P\text{ schedulable, contact-capacity feasible,}\text{ and buffer feasible}\ \Big\}.\end{split}
+
+(4)
+
+We denote the arrival time at destination as
+
+A⁡(P)=τk+S/Rk+δk=fik.\displaystyle A(P)=\tau_{k}+S/R_{k}+\delta_{k}=f_{i_{k}}.
+
+(5)
+
+With nonnegative traversal times (S/Ri+δi≥0S/R_{i}+\delta_{i}\geq 0) and waiting allowed (τim+1≥fim\tau_{i_{m+1}}\geq f_{i_{m}}), the time-dependent graph is FIFO: on every (feasible) edge, a later departure cannot yield an earlier arrival at the receiver. We introduce this property so that the time-dependent shortest-path (TDSP) framework of [57] applies when establishing optimality (Section IV-C).
+
+III-C4 Problem to solve: Feasible Earliest-Arrival Path with Capacity and Buffer constraints (FEAP-CB)
+
+For a given bundle, the optimization problem is to find P∗P^{*} minimizing the arrival time among feasible routes 𝒫f​(S,t0)\mathcal{P}_{f}(S,t_{0}):
+
+P∗=arg​min⁡{A⁡(P):P∈𝒫f​(S,t0)}.\displaystyle P^{*}=\operatorname*{arg\,min}\{\,A(P)\ :\ P\in\mathcal{P}_{f}(S,t_{0})\,\}.
+
+(6)
+
+IV Proposed global capacity and buffer management solution
+
+Our solution builds upon bundle-dependent SR-CGR [53] (see Section II-E2). We address buffer and capacity constraints during the initial route-search phase. This proactive approach contrasts with existing reactive solutions that address issues after they occur.
+
+Our approach guarantees that all discovered routes satisfy buffer and capacity constraints.
+The modifications also preserve all viable solutions, ensuring the discovery of an optimal solution in the set of valid routes (see Section IV-C for the proof).
+
+The system then encodes the optimal route, which respects all buffer and capacity limits, into the bundle for network forwarding, following the standard source-routing CGR approach.
+
+IV-A Model-parameter modifications
+
+Our solution consists of two key elements:
+
+• 
+
+We modify the CP through contact splitting for use in the route-search algorithm (i.e., Dijkstra search). The CP modifications fall into two categories:
+
+– 
+
+Definitive modifications shared across the network.
+
+– 
+
+Temporary and bundle-specific modifications applied locally during the route search.
+
+• 
+
+Second, we restrict feasible edges between contacts through specific rules. The route-search algorithm enforces these rules during local route computation for each bundle.
+
+IV-A1 Contact splitting to modify the CP
+
+We assume that the CP is shared by all entities performing a route search (e.g., source nodes).
+
+We introduce the contact splitting operation. Consider contact Cj\text{C}_{j} with data rate RjR_{j} between nodes MM and NN, active from t1,jt_{1,j} to t2,jt_{2,j}. Contact splitting divides this contact into two new contacts Cj,1\text{C}_{j,1} and Cj,2\text{C}_{j,2} between MM and NN: one from t1,jt_{1,j} to te1t_{e_{1}} and another from te2t_{e_{2}} to t2,jt_{2,j}, where t1,j≤te1≤te2≤t2,jt_{1,j}\leq t_{e_{1}}\leq t_{e_{2}}\leq t_{2,j} (see Figure 3). Both split contacts maintain the original data rate RjR_{j}.
+
+When te2−te1>0t_{e_{2}}-t_{e_{1}}>0, the operation erases part of the original contact. Additionally, if either time span equals zero, contact splitting results in contact shortening.
+
+As a result, contact splitting (for capacity and for buffer) turns Vc0V_{c}^{0} into the vertex set VcV_{c} of split contacts.
+
+Fig. 3: Contact splitting.
+
+IV-A2 Edge pruning
+
+We define edge pruning as the act of removing from the connectivity-only graph (Vc,Ec0)(V_{c},E_{c}^{0}) the edges that would violate buffer constraints. The remaining edge set is Ec⊆Ec0E_{c}\subseteq E_{c}^{0}.
+Edge pruning applies to any pair of contacts, whether original or split. For example, forbidding a given contact succession (e.g., the edge between C1\text{C}_{1} and C2\text{C}_{2}) prevents their sequential use in any route.
+
+Edge pruning occurs during the route search, specifically within the CRP. The implementation adds a new criterion to the contact exploration process (lines 8−128-12 in Algorithm 1). When a contact fails this criterion, the algorithm:
+
+• 
+
+Skips it during exploration.
+
+• 
+
+Prevents it from becoming a successor to the currently selected contact Cs\text{C}_{s}.
+
+In essence, edge pruning enforces route constraints by preventing invalid contact sequences during the search process.
+
+IV-B Capacity and buffer managements
+
+We explain how contact splitting (for capacity and for buffer) and edge pruning (for buffer) are used to address the capacity and buffer constraints discussed in Section III.
+
+The main idea is that a new contact graph (Vc,Ec)(V_{c},E_{c}) is built by contact splitting and edge pruning. It will be shown (Lemma 3, Section IV-C) that the set of feasible routes 𝒫f​(S,t0)\mathcal{P}_{f}(S,t_{0}) coincides with the set of schedulable paths in (Vc,Ec)(V_{c},E_{c}). Running CGR on (Vc,Ec)(V_{c},E_{c}) then provides the optimal path P∗P^{*}.
+
+IV-B1 Capacity management
+
+In terms of the contact graph, capacity-feasibility enforcement uses contact splitting to update the vertex set: from the current set of contact segments Vc0V_{c}^{0} to a new set VcV_{c} in which the portions already consumed by routed bundles are removed.
+
+This approach requires knowledge of each bundle’s size SS. The algorithm begins by searching a route for bundle ii.
+Similarly to the linear-volume approach, the algorithm excludes contacts with insufficient volume for the bundle.
+Once the shortest path is selected for this bundle, the CP is modified as follows:
+We remove the part of the contact consumed by the bundle from the CP before performing the route search for subsequent bundles. In the contact-graph view, this contact splitting updates Vc0V_{c}^{0} to VcV_{c} (only contact segments with sufficient remaining capacity remain in VcV_{c}). 
+The length of the contact to be erased is tTx,​iCjt_{\text{Tx,}i}^{\text{C}_{j}}, starting from the contact start time t1,jt_{1,j} or the arrival time of the bundle at the contact’s sender node, whichever occurs later.
+The transmission time tTx,​iCjt_{\text{Tx,}i}^{\text{C}_{j}} for bundle ii over contact Cj\text{C}_{j} is:
+
+tTx,​iCj=SiRj.t_{\text{Tx,}i}^{\text{C}_{j}}=\frac{S_{i}}{R_{j}}.
+
+(7)
+
+This contact splitting creates two new contacts (or one in case of shortening, see Section IV-A1) that replace the original one in the CP. We apply this operation to all contacts in the selected route. All subsequent route searches use this modified CP (i.e., the updated vertex set VcV_{c}). These modifications are permanent and must propagate to all nodes performing route searches.
+
+Example. In Figure 2, after the route search and the route selection for the initial bundle aa (striped rectangle), the CP becomes as represented in Table II. The new CP is then used for the route search of subsequent bundles. In this case, the part of contact C3\text{C}_{3} between tit_{i}
+and ti+tTx,aC3t_{i}+t_{\text{Tx,a}}^{\text{C}_{3}} is not an option for future bundle and no collision will therefore occur.
+
+TABLE II: Modified Contact Plan after allocating route for bundle aa.
+
+Contact
+Sender
+Receiver
+Start time
+End Time
+
+C1,1
+A
+B
+t1,1t_{1,1}
+tat_{a}
+
+C1,2
+A
+B
+ta+tTx,​aC1t_{a}+t_{\text{Tx,}a}^{\text{C}_{1}}
+t2,1t_{2,1}
+
+C2,1
+B
+C
+t1,2+tTx,​aC2t_{1,2}+t_{\text{Tx,}a}^{\text{C}_{2}}
+t2,2t_{2,2}
+
+C3,1
+C
+D
+t1,3t_{1,3}
+tit_{i}
+
+C3,2
+C
+D
+ti+tTx,​aC3t_{i}+t_{\text{Tx,}a}^{\text{C}_{3}}
+t2,3t_{2,3}
+
+C4
+D
+E
+t1,4t_{1,4}
+t2,4t_{2,4}
+
+Complexity. The CGR complexity is directly related to the size of the CP. Contact splitting has two possible outcomes: either shortening (replacing with one contact) or splitting (replacing with two contacts). Each splitting operation increases the CP size by at most one: In a full split, one original contact becomes two new contacts. Shortening preserves the CP size by modifying the original contact’s duration. The CP size decreases by one when a shortened contact’s volume falls below the minimum bundle size.
+For bundle ii, the number of split contacts equals the number of hops in its route Nhops,iN_{\text{hops},i}. In a time window ww with Nb,wN_{b,w} routed bundles, the maximum number of added contacts to the CP is therefore:
+
+ΔCP,w+=∑i=1Nb,wNhops,i.\Delta_{\text{CP},w}^{+}=\sum_{i=1}^{N_{b,w}}{N_{\text{hops},i}}.
+
+(8)
+
+Our implementation removes contacts (split or original) from the CP upon expiration. Let Nexp,wN_{\text{exp},w} represent the number of expired contacts in time window ww. The resulting reduction in CP size is simply ΔCP,w−=Nexp,w\Delta_{\text{CP},w}^{-}=N_{\text{exp},w}.
+
+Finally, the net change in the CP size during window ww is:
+
+ΔCP,w=ΔCP,w+−ΔCP,w−.\Delta_{\text{CP},w}=\Delta_{\text{CP},w}^{+}-\Delta_{\text{CP},w}^{-}.
+
+(9)
+
+Section VII shows the algorithm’s impact on the CP size, and thus on the CGR complexity, through practical examples.
+
+IV-B2 Buffer management
+
+We assume that each node has a maximum buffer capacity BmaxB_{\text{max}}, with overflow occurring beyond this limit.
+Our buffer management solution applies temporary and bundle-specific CP modifications. Edge pruning follows the same temporary and bundle-specific pattern. These modifications remain local to the computing node and apply only during individual route searches.
+
+Forecast buffer tables.
+We introduce forecast buffer tables as a key component of our solution.
+Once a route is selected, the buffer tables are updated accordingly and shared to all entities performing a route search. These tables record, for each node nn and time tt, the residual buffer capacity B¯n​(t)\bar{B}_{n}(t), or equivalently the booked load Qn​(t)Q_{n}(t). Similarly to the CP, all route-computing entities share these tables. They guide temporary modifications to both the CP and allowed feasible edges.
+In other words, once a route is validated, one checks when the bundle will reach a certain node and how long will it stay in its buffer
+according to the validated route.
+
+Since the buffer tables are updated as soon as a route is validated, all routing nodes know in advance the status of the buffers as function of time, even before the bundles travel through the network.
+
+Algorithm to respect the buffer constraints. The proposed algorithm enforces buffer-limit constraints through the following approach:
+Using bundle size and forecast buffer tables, the algorithm verifies buffer availability at each node throughout the route. The algorithm excludes routes that would cause buffer overflow at any node. First, it modifies the CP temporarily through contact splitting (so Vc0V_{c}^{0} becomes VcV_{c}). Next, it prunes specific feasible edges during the route search (removing from Ec0E_{c}^{0} the edges that would cause overflow). This algorithm can be formulated with the four following main steps, see also Algorithm 2 for a summary. Then, the route search runs on (Vc,Ec)(V_{c},E_{c}).
+
+Algorithm 2 Buffer-constraint enforcement (summary)
+
+ 1:
+
+ Input: bundle bb (size SS), forecast buffer tables, CP (Vc0,Ec0)(V_{c}^{0},E_{c}^{0})
+
+ 2:
+
+ Output: feasible graph (Vc,Ec)(V_{c},E_{c}) for route search
+
+ 3:
+
+ Step 1: Virtually add bundle size SS to all node buffer tables and detect potential overflows (nodes 𝒵b\mathcal{Z}_{\text{b}}, overflow sets 𝒪Zk\mathcal{O}_{Z_{k}}, times t1,olt_{1,o_{l}}, t2,olt_{2,o_{l}}).
+
+ 4:
+
+ Step 2: Temporarily modify CP: remove (via contact splitting) contact portions that would forward bb to any Zk∈𝒵bZ_{k}\in\mathcal{Z}_{\text{b}} during an overflow interval and obtain vertex set VcV_{c}.
+
+ 5:
+
+ Step 3: Identify problematic contact successions (first contact delivers bundle to node before overflow, successor contact starts after overflow begins).
+
+ 6:
+
+ Step 4: Prune from Ec0E_{c}^{0} the edges corresponding to those successions. Route search runs on (Vc,Ec)(V_{c},E_{c}) (enforced in CRP, Algorithm 1, lines 8–12).
+
+Step 1: To begin with, the size of the bundle is virtually added to all node buffer tables at all times.
+Potential overflows are detected and determined by their location (which nodes) and time (start and end times).
+The set of nodes ZkZ_{k} with potential overflows for bundle b is denoted by 𝒵b\mathcal{Z}_{\text{b}}.
+Each Zk∈𝒵bZ_{k}\in\mathcal{Z}_{\text{b}} has a number of nof≥1n_{\text{of}}\geq 1 potential overflows forming a set of overflows denoted by 𝒪Zk\mathcal{O}_{Z_{k}}. The start and end times of each overflow are denoted by t1,olt_{1,o_{l}} and t2,olt_{2,o_{l}}, ol∈𝒪Zko_{l}\in\mathcal{O}_{Z_{k}}, respectively. 
+
+Example. Figure 4 presents an example where a bundle b arrives at a source node and needs to be routed. The figure depicts one node Z1∈𝒵bZ_{1}\in\mathcal{Z}_{\text{b}} having two potential overflows o1​ and ​o2∈𝒪Z1o_{1}\text{ and }o_{2}\in\mathcal{O}_{Z_{1}}. These potential overflows are identified by virtually adding the size of bundle b (vertically striped rectangles) to the buffer level of node Z1Z_{1} (dotted rectangles). The buffer level of node Z1Z_{1}, before virtually adding the size of bundle b, is determined by validated routes of previous bundles (dotted rectangles). The corresponding forecast buffer table for node Z1Z_{1} is shown in Figure 5.
+
+Fig. 4: Potential overflows at node Z1Z_{1}.
+
+Fig. 5: Forecast buffer table of node Z1Z_{1} before routing bundle b.
+
+Fig. 6: Contacts which might result in overflow o1o_{1} at node Z1Z_{1}.
+
+Step 2: Then, the original CP is temporarily modified accordingly (before starting the route search). One should remove all parts of the contacts from the CP that might forward bundle b to any node Zk∈𝒵bZ_{k}\in\mathcal{Z}_{\text{b}} between overflows start and end times using contact splitting. These problematic contacts are contacts that start before the end of an overflow and end after its start.
+
+Example. Some problematic contacts for the potential overflow o1o_{1} described in the previous example are shown in Figure 6. These contacts have node Z1Z_{1} as receiver (regardless of their sender node XX), start before t2,o1t_{2,o_{1}}, and end after t1,o1t_{1,o_{1}}. They are problematic because their duration intersects the period of overflow o1o_{1}. The problematic portions of these contacts are horizontally striped in Figure 6. They may forward bundle b to Z1Z_{1} during the potential overflow o1o_{1} duration. The parts of these contacts that intersect the overflow duration are to be temporarily removed using contact splitting. The same applies to all potential overflows at all nodes.
+
+Step 3: Removing the problematic contact’s potential overflow parts is not sufficient. One should also address problematic contact successions. These problematic contact successions occur between contacts having an end time before the beginning of the potential overflow oio_{i} and a succeeding contact in a route having a start time after the beginning of overflow oio_{i}. Such succession of contacts is problematic because it results in having the bundle in the buffer of the node during the potential overflow. This step therefore consists in identifying the problematic contact successions as described via the following example.
+
+Example. After step 2, there is no contact having Z1Z_{1} as receiver that spans the duration of o1o_{1} in Figure 6. Nevertheless, there are contacts having Z1Z_{1} as receiver and ending before t1,o1t_{1,o_{1}}. Using one of these contacts (e.g., Ci\text{C}_{i}), a bundle arrives to Z1Z_{1} before the potential overflow o1o_{1}. However, this bundle must leave Z1Z_{1} before the beginning of overflow o1o_{1} to avoid the potential problem.
+The bundle leaves node Z1Z_{1} through a contact succeeding the previous one (Ci\text{C}_{i}) in a route. The succeeding contact (e.g., Cj\text{C}_{j}) has Z1Z_{1} as sender, regardless of the receiver.
+As a result, the succeeding contact Cj\text{C}_{j} should start before the potential overflow o1o_{1} to avoid it. Otherwise, the succession of Ci\text{C}_{i} and Cj\text{C}_{j} in a route causes the overflow and is therefore problematic.
+
+Step 4: Finally, the last step is to remove from Ec0E_{c}^{0} the edges between contacts that yield problematic contact successions, so that the route search runs on the feasible graph (Vc,Ec)(V_{c},E_{c}).
+In other words, feasible edges for which the succeeding contact starts too late are pruned. This edge pruning is performed during the route search, in the CRP: lines 8−128-12 in Algorithm 1. Note that additional inputs were required for the CRP to make our edge pruning possible: line 22 in Algorithm 1. In addition to its original inputs, the CRP takes the bundle bb and the overflows start timesT1,sT_{1,s} at the receiver of the selected contact Cs\text{C}_{s}, respectively. 
+
+Example. In the example of Figure 6, during the route search, if a contact Cs\text{C}_{s} forwards the bundle to node Z1Z_{1} before o1o_{1}, the edge between Cs\text{C}_{s} and a contact Ci\text{C}_{i} from Z1Z_{1} to a third node is only accepted if Ci\text{C}_{i} starts before t1,o1t_{1,o_{1}}. The same applies to all overflows at all nodes.
+More precisely, let us consider, in a CRP iteration, that Cs\text{C}_{s} is the selected contact and Ci\text{C}_{i} is another contact in the CP.
+Also, let us consider that the receiver of Cs\text{C}_{s} is node Z1Z_{1}, having one potential overflow o1o_{1}. To consider Ci\text{C}_{i} as explored or a candidate successor for Cs\text{C}_{s}, it must pass all the checks in the original CRP (lines 5−75-7 in Algorithm 1). In addition to these checks, we add the following condition: If fsf_{s}, the bundle arrival time to the receiver of Cs\text{C}_{s}, is before t1,o1t_{1,o_{1}} (fs<t1,o1f_{s}<t_{1,o_{1}}), then the start time of Ci\text{C}_{i} must also be before t1,o1t_{1,o_{1}} (t1,i<t1,o1t_{1,i}<t_{1,o_{1}}). Otherwise, Ci\text{C}_{i} is ignored in the CRP and it is not explored. If this condition is not met, Ci\text{C}_{i} cannot be a candidate successor for Cs\text{C}_{s}. In a more general scenario, where multiple potential overflow periods exist at a node buffer, a bundle arriving at the node via contact Cs\text{C}_{s} between two overflow periods should depart from the node using contact Ci\text{C}_{i} before the next overflow period begins (lines 8−128-12 in Algorithm 1).
+
+As described by the above steps, only invalid routes are removed and no feasible solution is omitted. Optimality of the route returned by CGR is formalized in Section IV-C.
+
+Complexity.
+As already mentioned, the CGR complexity directly depends on the CP size.
+Buffer management temporarily increases the CP size when routing bundle bb, based on the bundle’s size and current buffer occupancy. The size increase depends on two factors: the number of overflowed nodes |𝒵b||\mathcal{Z}_{\text{b}}| and the contacts intercepting overflows at these nodes. Each node ZkZ_{k} can experience multiple overflows, denoted as |𝒪Zk||\mathcal{O}_{Z_{k}}|. When a contact intersects an overflow period, it splits into at most two new contacts, increasing the CP size by one. This increase remains temporary and applies only during bundle bb’s routing phase. After routing completes, the system reverts to the permanent CP.
+At most, the number of temporarily added contacts to the CP for routing bundle bb with buffer constraints is:
+
+ΔCP,b+=∑k=1|𝒵b|∑l=1|𝒪Zk|Ncl,k,\Delta_{\text{CP},b}^{+}=\sum_{k=1}^{|\mathcal{Z}_{\text{b}}|}\sum_{l=1}^{|\mathcal{O}_{Z_{k}}|}{N_{\text{c}_{l,k}}},
+
+(10)
+
+where Ncl,kN_{\text{c}_{l,k}} represents the number of contacts having node Zk∈𝒵bZ_{k}\in\mathcal{Z}_{\text{b}} as destination and intercepting overflow ol∈𝒪Zko_{l}\in\mathcal{O}_{Z_{k}}. Section VII shows the practical impact of this management solution on the CP size.
+
+IV-C Optimality of the proposed approach
+
+Lemma 1 (capacity enforcement).
+The capacity enforcement (contact splitting for capacity) modifies the contact graph so that a route is excluded (i.e., is no longer a path in the graph, because it would use a contact portion removed by splitting) iff it is capacity-infeasible (i.e., does not respect the contact-capacity constraint defining 𝒫f\mathcal{P}_{f}): (i) every route excluded in this way would violate that constraint, and (ii) every route that would violate it is excluded.
+
+Proof.
+(i) If a route is excluded by the capacity enforcement, it would use at least one contact portion that was removed by contact splitting for capacity (already allocated to prior bundles). By construction, any such route would exceed available contact capacity. So every route excluded in this way is capacity-infeasible (does not respect the contact-capacity constraint defining 𝒫f\mathcal{P}_{f}).
+(ii) If a route would violate the contact-capacity constraint, then it would use a portion of some contact that is already allocated to another bundle. That contact portion is removed by contact splitting for capacity. Thus every capacity-infeasible route is excluded (no longer a path in the graph). □\square
+
+Lemma 2 (buffer enforcement, Algorithm 2).
+The buffer enforcement builds the feasible graph (Vc,Ec)(V_{c},E_{c}): contact splitting for buffer updates the vertex set VcV_{c}, and edge pruning yields Ec⊆Ec0E_{c}\subseteq E_{c}^{0}. A route is excluded (i.e., is not a path in (Vc,Ec)(V_{c},E_{c})) iff it is buffer-infeasible (i.e., does not respect the node-buffer constraint defining 𝒫f\mathcal{P}_{f}): (i) every route excluded in this way (it uses a contact portion removed by buffer splitting or an edge pruned for buffer) would violate that constraint, and (ii) every route that would violate it is excluded.
+
+Proof.
+(i) The buffer procedure builds (Vc,Ec)(V_{c},E_{c}) via contact splitting (Step 2) and edge pruning (Step 4). A route is excluded (not a path in (Vc,Ec)(V_{c},E_{c})) only if it would use a contact portion forwarding bb to some Zk∈𝒵bZ_{k}\in\mathcal{Z}_{\text{b}} during an overflow interval, or an edge corresponding to a problematic succession. By construction, any such route would exceed B¯\bar{B} at some node and time. So every route excluded in this way is buffer-infeasible (does not respect the node-buffer constraint defining 𝒫f\mathcal{P}_{f}).
+(ii) If a route would violate the node-buffer constraint at some node ZZ, then Z∈𝒵bZ\in\mathcal{Z}_{\text{b}} and the route either forwards bb to ZZ during an overflow interval (hence that contact portion is removed in Step 2) or uses a problematic succession at ZZ (hence the corresponding edge is pruned in Step 4). Thus every buffer-infeasible route is excluded (not a path in (Vc,Ec)(V_{c},E_{c})). □\square
+
+Lemma 3 (bijection).
+A route is a feasible route (i.e., P∈𝒫f​(S,t0)P\in\mathcal{P}_{f}(S,t_{0}) as defined in Section III-C)
+iff it is a schedulable vertex path in (Vc,Ec)(V_{c},E_{c}).
+
+Proof.
+(⇒\Rightarrow) A feasible route is, by definition, in 𝒫f​(S,t0)\mathcal{P}_{f}(S,t_{0}), hence capacity-feasible and buffer-feasible. By Lemmas 1 and 2, a route is excluded (no longer a path in the graph / not a path in (Vc,Ec)(V_{c},E_{c})) iff it violates the contact-capacity or node-buffer constraint defining 𝒫f\mathcal{P}_{f}. So a feasible route is not excluded and uses only contact portions and successions that remain in (Vc,Ec)(V_{c},E_{c}). Its vertices therefore lie in VcV_{c} and its edges in EcE_{c}, and with its per-contact start times it is schedulable. Thus the route induces a schedulable vertex path in (Vc,Ec)(V_{c},E_{c}).
+(⇐\Leftarrow) A schedulable vertex path in (Vc,Ec)(V_{c},E_{c}) uses only vertices in VcV_{c} and edges in EcE_{c}, so it was not excluded by the capacity or buffer enforcement. By Lemmas 1 and 2, it is therefore capacity-feasible and buffer-feasible. With schedulability it lies in 𝒫f​(S,t0)\mathcal{P}_{f}(S,t_{0}), i.e., it is a feasible route. □\square
+
+In the framework of [57], the following holds.
+
+Lemma 4 (FIFO time-dependent shortest path).
+On a FIFO, nonnegative time-dependent graph with waiting allowed,
+time-dependent Dijkstra returns a path of minimum arrival time
+for a fixed departure time.
+
+Theorem (optimality).
+Let P∗P^{*} be the vertex path returned by time-dependent Dijkstra on (Vc,Ec)(V_{c},E_{c}).
+Then A⁡(P∗)=min⁡{A⁡(P):P∈𝒫f​(S,t0)}A(P^{*})=\min\{\,A(P):P\in\mathcal{P}_{f}(S,t_{0})\,\}.
+
+Proof.
+By Lemma 4, P∗P^{*} minimizes arrival time among all vertex paths in (Vc,Ec)(V_{c},E_{c}).
+By Lemma 3, those vertex paths are exactly the feasible routes (elements of 𝒫f​(S,t0)\mathcal{P}_{f}(S,t_{0})). Hence P∗P^{*} is optimal. □\square
+
+IV-D Booking resources for forwarding safety margin
+
+In the proposed solution, only source nodes monitor buffer and contact capacity status. This centralized monitoring solution enables source nodes to prevent overflows and overbooking. However, unpredictable disruptions (such as antenna pointing errors or node power outages [58]) may force intermediate nodes to perform routing during the forwarding phase. Intermediate nodes lack access to current buffer and capacity status, risking overflows or overbooking with their routing decisions. To address this risk, we reserve portions of contact and buffer resources, keeping them unused by source nodes. These reserved portions, called safety margins, allow intermediate nodes to reroute bundles safely without causing overflows or overbooking.
+
+The network’s disruption level determines the required resource allocation. This allocation requires careful tuning to optimize resource usage. The safety margin must balance two requirements: sufficient size to prevent bundle loss during intermediate node rerouting, while remaining minimal to preserve network efficiency.
+
+These safety margins can be implemented as follows.
+First, regarding the contact-capacity management, two CPs are created.
+Contact splitting is performed for the slots that should be kept as margin.
+The safety margin is therefore removed from the original CP.
+The obtained CP is provided to and used by the source nodes.
+The safety-margin part (contacts removed from the original CP) is forwarded to intermediate nodes that may perform routing in unpredictable situations.
+In terms of buffer management, source nodes utilize a fraction of the buffer capacity, leaving the rest available for intermediate nodes. This solution therefore enhances robustness to potential unexpected events, despite the poor knowledge of the current network status by intermediate nodes.
+
+IV-E Information sharing in the network
+
+The modified network information after contact splitting (except the bundle-specific CP modifications) and the modified forecast buffer tables (after allocating a route for a bundle) are to be shared with all source nodes performing a route search. This is similar to the sharing of the up-to-date CP with the source nodes in standard SR-CGR.
+The safety margin resources are shared with all nodes in the network at a low frequency.
+
+V Benchmark: source-routing CGR
+
+To our knowledge, no existing benchmark was available under the centralized, perfect-CP assumptions we consider. We therefore describe our source-routing CGR benchmark in this section.
+
+As mentioned in the first part of the document, network issues are handled after the route search in standard SR-CGR.
+While re-transmission mechanisms do exist for long round-trip times communication, such as Licklider Transmission Protocol (LTP) [59], the re-transmission approach in case of failure in standard SR-CGR is not well described in the literature.
+As there are many manners to address these issues, we describe in details the assumptions made for the considered SR-CGR benchmark. The proposed algorithm is compared to this benchmark in Section VII, where the simulation results are presented.
+
+To begin with, both in the benchmark and in our algorithm, when a bundle is being transmitted over a contact, it is assumed that the entire link is occupied for the time required to transmit the bundle. In other words, the whole link capacity is used (i.e., Time Division Multiplexing (TDM) approach).
+The initial CP is constructed at the source and is broadcasted to all nodes in the network.
+
+Then, the source node performs a route search using Yen’s algorithm with Dijkstra searches. A list of the kk (Yen’s constant) shortest routes is generated. This list is kept until a change occurs in the CP, such as the end of a contact. In this case, the route list is discarded and a new list is generated, as in route-list pruning [50]. A list of candidate routes is constructed as explained in Section II-D3. When no candidate route is found in this list, the bundle is delayed and the route search is performed again after one time step.
+
+Regarding the capacity and buffer managements performed before the route search: When a route is found, the volumes occupied by the bundle in the selected route are deducted from the available volume of corresponding contacts in the CP (i.e., linear volume approach as described in Section III-A).
+No buffer information is available or considered at the source.
+
+Finally, the route is encoded in the bundle and the bundle is sent in the network.
+A bundle with an encapsulated route at a transmitting node (source or intermediate node) is subject to checks to verify whether this route can be used or not.
+The contact capacity and buffer managements during the forwarding phase in this benchmark are detailed hereafter.
+
+V-1 Contact-capacity management after the route search
+
+First, we verify the time at which the corresponding contact must be used for the bundle transmission. In the case of collision with another bundle, the transmission of the bundle having the highest ID is delayed (similar behavior to that of determining the ETO). The ID increases with the bundle generation time at the source. Two cases can occur:
+
+• 
+
+If delaying the bundle does not cause any problem, the times of future hop uses are simply updated in the encapsulated route according to the delay caused by other bundles using the same contact. This update accounts for the delay caused by other bundles using the same contact.
+
+• 
+
+If delaying the bundle causes its transmission at a time later than the corresponding contact’s end time, a new route is computed from the node where the problem happened, avoiding this problematic contact.
+The time of the new route-search call is the problem-detection time.
+
+We provide further details regarding the second case:
+To reroute the bundle, the up-to-date CP at the problem detection time is loaded instantly from the source node. Note that this is an advantageous assumption for the benchmark. Moreover, since the remaining part of the old route is no longer used, the volumes of future contacts in the old route are updated locally in the CP at this node (i.e., incrementing the available volume of the unused contacts by the size of the bundle). CP updates performed on intermediate nodes are not reported to the source. The newly computed route, if any, is encapsulated within the bundle for further forwarding.
+
+If none of the kk shortest routes is valid, the bundle is sent instantly to the source and rerouting from the source is performed after one time step.
+
+V-2 Buffer management after the route search
+
+During forwarding phase, we assume that a node only has access to the state of its buffer and that of its neighbors (nodes in contact).
+When a bundle is to be transmitted, the current node verifies if there is enough room in the buffer of the receiving node. If this is the case, the next node’s buffer occupancy is increased to book space for the bundle and the bundle is transmitted.
+
+A waiting time is evaluated to determine how long the bundle will remain in the buffer of the next node.
+This time is equal to the transmission time from the current node to the next node ttx,1t_{\text{tx,1}}, as well as the wait time until the start of the next contact (if this wait exists) twaitt_{\text{wait}} and the transmission time from the next node to a more distant node in the route ttx,2t_{\text{tx,2}}. During ttx,1+twaitt_{\text{tx,1}}+t_{\text{wait}}, the total bundle size is assumed to occupy the buffer of the next node.
+During ttx,2t_{\text{tx,2}}, the space occupied by the bundle is linearly reduced as time passes (i.e., as the bundle leaves the buffer) according to the data rate of the contact used for this transmission.
+
+If there is no room for the bundle in the buffer of the next node, the bundle is rerouted from the current node via a route that avoids this problematic neighbor as well as previously visited nodes to avoid loops. Note that a node whose buffer is fully occupied is considered problematic and must therefore be avoided.
+To do this, the problematic contact that was to be used in the route is removed from the CP for the rerouting of this bundle from this node only. Note that the bundle can pass through the problematic node later in the route, if the buffer has been emptied for example.
+
+If no valid route is found among the kk shortest routes, the bundle is instantly sent back to the source and rerouted after one time step.
+
+An alternative solution, which we are not considering, would be to continue trying to transmit via the fully booked node at each time step until a valid route is found or a place becomes available in the buffer of the problematic node, whichever comes first.
+Note that this solution requires a lot of computing resources as the route search is repeated at each time step until a suitable solution is found.
+
+VI Simulation environment and setup
+
+VI-A Environment
+
+In the simulations, we consider NsatN_{\text{sat}} satellites orbiting in Np=4N_{\text{p}}=4 orbital planes distributed according to a Walker-delta constellation [60] with zero phasing. The orbital planes are evenly distributed in the range [0​°​ 360​°][0\degree\ 360\degree]. Hence, there is an angle Δ​Ω=360​°Np\Delta\Omega=\frac{360\degree}{N_{\text{p}}} between the Right Ascension of the Ascending Node (RAAN) of two satellites in adjacent planes. Furthermore, on each plane, the true anomalies of NsatNp\frac{N_{\text{sat}}}{N_{\text{p}}} satellites are evenly separated by 360Nsat/Np​°\frac{360}{N_{\text{sat}}/N_{\text{p}}}\degree . We consider circular orbits (eccentricity=0\text{eccentricity}=0) with an inclination of 52​°52\degree and a radius of (6371+780)×103(6371+780)\times 10^{3} m, where 6371×1036371\times 10^{3} m is the Earth radius constant.
+
+We consider two GSs (GS 1 and GS 2). Bundles are generated by GS 1, which is the source. The bundles are to be transmitted from this source to GS 2, the destination. The satellites are the intermediate nodes of the network.
+
+The CP is constructed for a 24-hour scenario starting from 8:55 pm on August 19, 2020. We assume that all the contacts have the same rate RjR_{j}.
+
+A snapshot of the GSs and one Walker constellation with Nsat=16N_{\text{sat}}=16 at 11:18:08 pm on August 19, 2020 is illustrated in Figure 7. It was generated using MATLAB Satellite Communications Toolbox [61].
+Using cislunar constellations to evaluate the algorithm will be considered in future work (see also the conclusion).
+
+Fig. 7: Snapshot of the satellite communication scenario with Nsat=16N_{\text{sat}}=16 at 11:18:08 pm on August 19, 2020. This corresponds to constellation 3 in Table III.
+
+In the considered constellations, each orbital plane has NSatNp\frac{N_{\text{Sat}}}{N_{\text{p}}} satellites. We define the plane hops as the number of planes a communication between two satellites can cross (Table III). Depending on the communication parameters and the satellite dynamics, a satellite located in an orbital plane can communicate with satellites located in the same plane (zero plane hop, same RAAN), in adjacent planes (one plane hop, one Δ​Ω\Delta\Omega difference between RAANs of the satellites) or in more distant planes (more than one plane hops, meaning that there is no plane restriction in our case as the number of planes is limited).
+
+The characteristics of the used constellations, also depending on the communication parameters provided in the following subsection, are given in Table III.
+
+VI-B Communication parameters
+
+Each satellite is mounted with transmit and a receive Gaussian antennas having a dish diameter of 0.50.5 and an aperture efficiency of 0.650.65. The transmission frequency and power are 30×10930\times 10^{9} Hz and 1515 dB, respectively. The receiver’s gain to noise ratio and energy to noise sensitivity are equal to 33 dB/Kelvin and 44 dB, respectively. The source GS is equipped with a transmit antenna whose properties are similar to those of satellites, except that the transmission power is considered to be 3030 dB. The destination GS is equipped with a receive antenna whose properties are similar to those of the satellites, with the exception of its sensitivity of 11 dB. A free space channel model is considered. The considered minimum required elevation angles of the GSs for communication is 0​°0\degree.
+
+Two satellites can communicate with each other if they are in line-of-sight and if the power received by the receiving satellite from the transmitting satellite is greater than the sensitivity of the receiving satellite. For a satellite to communicate with a GS, the elevation angle of the former relative to the latter must be greater than the minimum elevation angle of the latter, in addition to being in line-of-sight and within the communication range. If these conditions are met, there is link closure between two nodes. A contact extends from the beginning to the end of a link closure between two nodes. 
+
+Example. In Figure 7, constellation 33 is represented. The figure illustrates, in green, link closures between pairs of nodes: sat13-sat7, sat11-sat1, and sat14-GS 2, for example. These link closures happen at the time of the snapshot. The link between sat14 and GS 2 is at its limit: One time sample (of one second) later, this link no longer exists as these two nodes cease to respect the elevation angle constraint. The link closure is thus interrupted even though they remain in line-of-sight and in their communication range. In addition, sat4 and sat8 may be within communication range, but their communication is blocked by the Earth, preventing them from being in line-of-sight.
+
+TABLE III: Constellation characteristics.
+
+Constellation
+NpN_{\text{p}}
+NsatN_{\text{sat}}
+Initial number of
+Mean contact
+Plane
+
+number
+contacts in CP
+duration (s)
+hops
+
+1
+44
+44
+284284
+518.91518.91
+1(a)1^{\text{(a)}}
+
+2
+44
+88
+802802
+701.91701.91
+2(b)2^{\text{(b)}}
+
+3
+44
+1616
+34783478
+834.75834.75
+22
+
+(a){}^{\text{(a)}} 1: A satellite can only communicate with satellites in same or
+
+       adjacent orbital planes to its own plane (up to one plane hop).
+
+(b){}^{\text{(b)}} 2: A satellite can also communicate with satellites in orbital planes
+
+       adjacent to those adjacent to its own plane (up to two plane hops).
+
+VI-C Other simulation parameters and assumptions
+
+At each time step, one bundle of 100100 Bytes is generated at the source. The bundles are generated over a period of 20002000 seconds, starting from the beginning of the scenario time, with equal inter-arrival times.
+In total NbN_{\text{b}} bundles are generated and forwarded.
+This means that one bundle is generated each 2000Nb\frac{2000}{N_{\text{b}}} seconds (the bundle inter-arrival time decreases as NbN_{\text{b}}, the total number of bundles generated at source, increases).
+
+Yen’s constant kk is chosen equal to 1010.
+Finally, we assume that there is no external disruption in the network. That is, the provided CP is valid and no rerouting is needed on intermediate nodes due to external factors. Given these assumptions, there is therefore no need to consider any safety margin for contact capacity and buffer space (Section IV-D).
+
+VI-D Simulation tools
+
+We use MATLAB Satellite Communications Toolbox [61] to simulate the presented satellite communication scenario. We can then calculate the link closures between each pair of nodes as a function of time to obtain the CP used in the benchmark and in our solution, also implemented in MATLAB.
+
+An alternative algorithmic implementation would be to use Interplanetary Overlay Network (ION) [62] [63]. However, we have not chosen it because our main focus is on CGR.
+
+VII Simulation results
+
+We evaluate the performance using two main metrics. The first metric is the average time a bundle spends in the network. This is computed as the difference between the destination-arrival time and the bundle-generation time at the source. It includes buffer waiting time, transmission time, and potential rerouting delays. The other metric is the number of rerouting events. For SR-CGR, it includes rerouting at the source when no route is found among the kk shortest ones as well as when a bundle is instantly sent back to this source. It also includes, both for SR-CGR and the proposed solution, rerouting at an intermediate node if a buffer or a capacity check fails.
+
+In our idealistic simulation setting, the delivery ratio is one: all bundles eventually reach the destination as the simulation runs until all bundles are delivered (possibly after reroutes, as described in Section V for the benchmark).
+The impact of buffer size on performance (and thus on buffer utilization) is illustrated in the Figure 12 where buffer size is varied.
+
+We evaluate the impact of contact-capacity management and buffer management separately. Of course, the two management techniques can be used together to obtain greater gain.
+
+VII-A Impact of contact-capacity management
+
+In this section, we only evaluate the performance of the proposed contact-capacity management.
+Therefore, we do not consider the constraints associated with buffer limits, i.e., the maximum node buffer capacity Bmax=∞B_{\text{max}}=~\infty for all nodes.
+
+Figure 8 shows the average time spent in the network for Nsat=16N_{\text{sat}}=16 (constellation 33) as function of the number of bundles generated at source NbN_{\text{b}}. Three values of contact data rate RjR_{j} are considered: 200200, 400400, and 800800 bps for all contacts. As expected, one can see that the time spent in the network increases with the number of bundles and with decreasing data rate. With low load (e.g., Nb<400N_{\text{b}}<400 for 400400 bps), the proposed algorithm and the SR-CGR have similar performance. As NbN_{\text{b}} increases, the gap between the curves increases, with less time spent in the network when using our proposed method. This is due to the increased number of rerouting events during forwarding time when using SR-CGR. This number of rerouting events is shown in Figure 9 for the same NsatN_{\text{sat}} (constellation 33) and RjR_{j} values as function of NbN_{\text{b}}. With low load, there are only few overbooking events happening on the contacts. In this case, traditional SR-CGR has satisfactory performance. When the number of bundles increases, the overbooking phenomenon increases, making rerouting more likely. In case of such overbooking events, intermediate nodes try to overcome this issue by rerouting the bundle from their location toward the destination. Such new routes are longer than the ones avoiding overbooking, computed using the proposed algorithm. Moreover, if no route is found from the node, the bundle has to be rerouted from the source (see the assumptions on the benchmark) also causing additional delay.
+The proposed algorithm is more efficient because it computes the shortest route directly from the source node while avoiding overbooking.
+Indeed, as expected, our proposed solution required no rerouting due to contact capacity check failures during the simulation.
+
+Fig. 8: Average time spent in the network (Nsat=16N_{\text{sat}}=16).
+
+Moreover, although in some cases the time spent in the network with SR-CGR is similar to the proposed solution, the intermediate node complexity is significantly higher with the benchmark due to multiple checks and rerouting events.
+
+Fig. 9: Number of reroute calls for CGR (Nsat=16N_{\text{sat}}=16).
+
+Then, Figure 10 illustrates the time spent in the network with 44, 88, and 1616 satellites (Constellations 11, 22, and 33, respectively). The contact data rate is 400400 bps.
+With four satellites (one satellite per orbital plane), the number of nodes is limited and they are more distant compared to constellations with higher numbers of satellites. Thus, the number of communication opportunities is limited, which constrains the routing degrees of freedom. In this case, the proposed algorithm shows a small improvement compared to the benchmark as seen in Figure 10(a). When the number of satellites increases to 88 or 1616, our algorithm shows greater improvements compared to the benchmark, particularly with high load (Nb>1000N_{\text{b}}>1000 in figures 10(b) and 10(c)).
+
+(a) Nsat=4N_{\text{sat}}=4.
+
+(b) Nsat=8N_{\text{sat}}=8.
+
+(c) Nsat=16N_{\text{sat}}=16.
+
+Fig. 10: Average time spent in the network (Rj=400R_{j}=400 bps).
+
+Figure 11 illustrates the evolution of the CP size over time, to assess the complexity induced by the proposed algorithm.
+The Y-axis shows the number of bundles in the CP normalized by its initial size, which is of 34783478 contacts for Constellation 33 (see Table III).
+The baseline curve, without capacity management, depicts the evolution of the CP size over time as contacts expire and are removed from the CP. Newly appearing contacts are not counted in this scenario. The other curves represent the evolution of the CP size with our capacity management solution.
+In this case, splitting contacts can either increase the CP size or leave it unchanged if contacts are shortened.
+Expired contacts are still removed from the CP.
+We observe that our capacity management has a negligible impact on the CP size and route search complexity under low load conditions. For instance, with Nb=200N_{\text{b}}=200, the maximum difference between the baseline and our split CP size is 1%1\% and 0.3%0.3\% for Rj=200R_{j}=200 and 800800 bps, respectively. Under high load conditions, the difference becomes more significant.
+For example, with Nb=2000N_{\text{b}}=2000, the increased frequency of bundle generation and routing forces the use of late contacts, as early contacts become fully booked. Consequently, the CP size remains elevated until both split and original contacts expire.
+The highest difference with Nb=2000N_{\text{b}}=2000, observed for Rj=200R_{j}=200 at t=1920t=1920, is approximately 10%10\% compared to the baseline.
+
+Fig. 11: Impact of capacity management on the CP size, Nsat=16N_{\text{sat}}=16.
+
+VII-B Impact of buffer management
+
+In this section, we evaluate the performance of the proposed buffer management solution.
+No contact capacity restriction is implemented, i.e., Rj=∞,∀jR_{j}=\infty,\;\forall j.
+
+The average time spent by a bundle in the network as a function of the buffer size per node, expressed by the number of bundles a buffer can store, is given in Figure 12. We consider Nsat=16N_{\text{sat}}=16 (constellation 33). The buffer storage size is identical for all intermediate nodes. The source node has an infinite buffer size. The results are shown for Nb=1000N_{\text{b}}=1000 (Figure 12(a)) and Nb=2000N_{\text{b}}=2000 (Figure 12(b)) bundles generated over 20002000 seconds. As expected, when the storage capacity of the buffers increases, the time spent in the network is reduced. The gain is significant with the proposed solution, especially when the buffer sizes are limited.
+To reach a performance comparable to infinite buffer capacity for Nb=1000N_{\text{b}}=1000, our solution requires buffers that can store 100100 bundles, to be compared with 200200 bundles to achieve this performance with the benchmark.
+The performance gap becomes even more pronounced with Nb=2000N_{\text{b}}=2000: our solution achieves infinite-buffer performance with only 100100 bundles of buffer space, while the benchmark requires more than 300300 bundles to reach the same performance level.
+Even with low buffer capacity, our buffer management performs comparably to an infinite buffer capacity case, unlike the benchmark. For example, with a buffer size of 5050 bundles, our buffer management results in a 17%17\% increase compared to an infinite buffer capacity, whereas the benchmark shows a 2000%2000\% increase for Nb=2000N_{\text{b}}=2000.
+
+(a) Nb=1000N_{\text{b}}=1000.
+
+(b) Nb=2000N_{\text{b}}=2000.
+
+Fig. 12: Average time spent in the network as function of the buffer size (Nsat=16N_{\text{sat}}=16).
+
+Similarly to the capacity case, these differences are due to the number of rerouting events on intermediate nodes as shown in Figure 13, also for Nsat=16N_{\text{sat}}=16 (constellation 33), when using SR-CGR.
+As expected, no rerouting had to be performed with the proposed solution.
+
+Fig. 13: Number of reroute calls for CGR (Nsat=16N_{\text{sat}}=16).
+
+Figure 14 illustrates the performance impact of constellations with different sizes (11, 22, and 33) under buffer constraints, using Nb=400N_{\text{b}}=400. In networks with fewer nodes, each node experiences higher utilization. With Nsat=4N_{\text{sat}}=4, the limited number of communication opportunities results in similar performance between both solutions, as the additional delay from limited storage capacity affects both approaches equally.
+Increasing the number of satellites to 88 highlights the effectiveness of our solution, which results in less time spent in the network than the benchmark.
+Additionally, when the constellation is expanded to 1616 satellites, our proposed solution achieves very low delay, even with low buffer capacity per node.
+
+Fig. 14: Average time spent in the network as function of buffer size for Nb=400N_{\text{b}}=400.
+
+In Figure 15, we represent the evolution of the CP size, normalized by its initial size (34783478, see Table III), as function of time. The size of the CP is reported each second. Without splitting for buffer management, the size of the CP decreases with time as we only consider that the expired contacts are removed from the CP as time advances. When considering buffer management, the splits are temporarily performed at bundle generation/routing time. With Nb=2000N_{\text{b}}=2000, one bundle is generated each second. When the buffer size is 5050 bundles, the temporal splitting impacts the CP size at almost all the time samples (also equal to the bundle generation time in this case). The impact of buffer management in this case is negligible, where the maximum is an increase of 0.43%0.43\% in the CP size at 19921992 seconds. When the buffer size increases to 500500 bundles for the same NbN_{\text{b}}, the CP size is not impacted most of the times due to high buffer capacity. It is nevertheless impacted between 11401140 and 17201720 seconds, where the maximum temporal increase is also negligible (0.11%0.11\%). We observe similar performance with Nb=200N_{\text{b}}=200 and a buffer size of 5050 bundles. Here, one bundle is generated and routed every 1010 seconds, causing a temporary increase in the CP size, if it occurs, only during packet generation and routing. Outside of these times, the CP size remains equal to its original size, without splitting.
+
+Fig. 15: Impact of buffer management on the CP size.
+
+VIII Future work: traffic-level extension and information sharing
+
+A natural extension is to move from per-bundle routing to traffic-level optimization with priorities. We maintain two priority-specific contact plans (CPs): High Priority (HP), non-preemptible, and Low Priority (LP), preemptible. Scheduling HP traffic consults the HP CP and writes the reservation into both CPs. Any overlapping LP reservations are de-scheduled, their volumes returned to the LP CP, adjacent segments with tend=tstartt_{\mathrm{end}}=t_{\mathrm{start}} are merged, and affected LP bundles are re-routed. Scheduling LP traffic consults and updates only the LP CP. Its reservations may later be invalidated by HP bookings.
+Regarding information sharing in the network: the idea is then to keep the HP CP globally consistent, allow the LP CP to be useful yet preemptible, and bound control overhead while preserving the feasibility guarantees of the underlying CGR/SABR search. Other future directions (e.g., cislunar evaluation, distributed solutions, and the limitations listed above) are outlined in the conclusion (Section IX).
+
+IX Conclusion
+
+In this work, we proposed enhanced contact capacity and buffer management to improve the state-of-the-art CGR routing algorithm.
+We proposed managing these resources by taking actions before or during the route search.
+Our solution is a global solution: It considers and tracks the evolution of the contact capacity and buffer occupation in all contacts and nodes of the network.
+The resulting route is optimal and respects contact capacity and node buffer constraints.
+
+To manage contact capacity, we introduced contact splitting: it turns the initial contact set Vc0V_{c}^{0} into the set VcV_{c} of split contacts and enables tracking of contact portions previously consumed by routed bundles. For the buffer management, we proposed two techniques: temporary bundle-specific contact splitting (again modifying VcV_{c}) and edge pruning (removing from Ec0E_{c}^{0} the edges that would cause overflow). These techniques help avoid any portion or succession of contacts that might result in buffer overflows as the route search runs on the feasible contact graph (Vc,Ec)(V_{c},E_{c}). These temporary modifications depend on the forecast buffer tables that track the future states of the node buffer occupancy levels as a function of time.
+
+We compared the performance of the proposed solution with the benchmark SR-CGR.
+Our solution offers considerable gains in terms of time spent in the network and intermediate node complexity, measured as the number of rerouting calls.
+It is worth mentioning that the increase in CP size due to our splitting actions, and thus the route search complexity, is relatively small.
+
+Limitations. Although the proposed solution offers improvements over the state-of-the-art while meeting capacity and buffer constraints, our solution remains centralized.
+Our evaluation assumes perfect contact-plan knowledge and no random disruptions. The impact of imperfect or delayed information is not assessed. We do not evaluate the algorithm under high error rates, random contact disruptions, or bursty traffic. The effectiveness under stochastic contact or buffer variations is left for future work. Quantitative evaluation of computational overhead for large-scale networks (e.g. many more satellites or longer time horizons) is also left for future work. We do not evaluate the overhead of global information exchange (e.g. forecast buffer tables, CP updates) or its feasibility in bandwidth-constrained deployments. Architectures such as Time-Sensitive Networking (TSN) may offer useful references for such analysis in future work. Validation on platforms such as the ONE Simulator or ION could be considered in future work to enhance reproducibility.
+The examination of an efficient distributed solution is therefore an interesting research direction for improvement of this work.
+
+Future work. One could assess proposed cislunar constellations, from a communication perspective, using the presented routing technology.
+We believe that the proposed routing algorithm may help with the design of the communication and storage systems to be embedded in the satellites of such lunar constellations.
+
+One could also investigate traffic-level solutions rather than a per-bundle solution (see Section VIII for a concrete extension with priority-based CPs and information sharing).
+In the state-of-the-art, like in this work, the route is chosen based on optimal criteria at the bundle level, not for the entire traffic to be transmitted.
+Therefore, this per-bundle strategy is unlikely to be optimal for the overall communication performance.
+Evaluating network throughput (e.g., delivery throughput) could be considered in the scope of this future work.
+Finally, as mentioned in the previous “limitations” subsection, investigating distributed solutions rather than a centralized one is also of interest. As noted in the limitations, future work may also include the directions listed there (ONE/ION validation, disruptions or imperfect CP, information-exchange overhead).
+
+Appendix A Summary of Symbols
+
+Table IV summarizes the mathematical notation.
+
+TABLE IV: Mathematical notation.
+
+Symbol
+
+Meaning
+
+𝒩\mathcal{N}
+
+Set of nodes
+
+Vc0V_{c}^{0} (or CP), VcV_{c}
+
+Vc0V_{c}^{0} = set of contacts in the contact plan (before splitting), VcV_{c} = set of split contacts (VV is for vertices in the contact graph)
+
+𝒫f​(S,t0)\mathcal{P}_{f}(S,t_{0})
+
+Set of feasible routes for bundle of size SS and release time t0t_{0} (paths in (Vc0,Ec0)(V_{c}^{0},E_{c}^{0}) that are schedulable, contact-capacity feasible, and buffer feasible)
+
+Ec0E_{c}^{0}, EcE_{c}
+
+Set of edges: Ec0E_{c}^{0} = connectivity-only ((i→j)(i\to j) with vi=ujv_{i}=u_{j}), EcE_{c} = set of feasible edges (after pruning; Ec⊆Ec0E_{c}\subseteq E_{c}^{0})
+
+Ci\text{C}_{i}
+
+Contact Ci=(ui,vi,t1,i,t2,i,Ri,δi)\text{C}_{i}=(u_{i},v_{i},t_{1,i},t_{2,i},R_{i},\delta_{i})
+
+Cs\text{C}_{s}, Cend\text{C}_{\text{end}}
+
+(CRP) Selected contact at current iteration; final contact of best route found (receiver = destination)
+
+t1,it_{1,i}, t2,it_{2,i}
+
+Start and end time of contact Ci\text{C}_{i}
+
+te1t_{e_{1}}, te2t_{e_{2}}
+
+Contact splitting: boundaries of the removed segment (t1,j≤te1≤te2≤t2,jt_{1,j}\leq t_{e_{1}}\leq t_{e_{2}}\leq t_{2,j}; interval (te1,te2)(t_{e_{1}},t_{e_{2}}) is erased)
+
+RiR_{i}, δi\delta_{i}
+
+Data rate and one-way propagation delay of contact Ci\text{C}_{i} (bps)
+
+uiu_{i}, viv_{i}
+
+Sender and receiver nodes of contact Ci\text{C}_{i}
+
+ss, dd
+
+Source and destination nodes of a bundle
+
+t0t_{0}
+
+Bundle release time at source
+
+SiS_{i}
+
+Bundle size (bits); SiS_{i} = size of bundle ii
+
+bb
+
+Bundle being routed (buffer management, Algorithm 2)
+
+PP, PfP_{f}
+
+Route (path) and feasible route; P=(C1,…,Ck)P=(\text{C}_{1},\ldots,\text{C}_{k}). Subscript imi_{m} = contact index along path (vertex mm)
+
+P∗P^{*}
+
+Optimal route (minimum arrival time)
+
+tTx,​iCjt_{\text{Tx,}i}^{\text{C}_{j}}
+
+Transmission time of bundle ii on contact Cj\text{C}_{j}
+
+τi\tau_{i}
+
+Transmission start time on contact Ci\text{C}_{i}
+
+fif_{i}
+
+Arrival (finish) time at the receiver viv_{i} of contact Ci\text{C}_{i}; fi=τi+S/Ri+δif_{i}=\tau_{i}+S/R_{i}+\delta_{i}. Subscript ss for selected contact Cs\text{C}_{s} (CRP)
+
+A⁡(P)A(P)
+
+(Estimated) Arrival time at destination for route PP with a given contact graph
+
+WiW_{i}
+
+Feasible start-time window for contact Ci\text{C}_{i}: Wi=[t1,i,t2,i−S/Ri]W_{i}=[t_{1,i},t_{2,i}-S/R_{i}]
+
+Symbol
+
+Meaning
+
+nn
+
+Node (generic index; e.g. in Bn​(t)B_{n}(t), B¯n​(t)\bar{B}_{n}(t))
+
+InI_{n}
+
+Time intervals the bundle is stored in the buffer at node nn
+
+Bn​(t)B_{n}(t), BmaxB_{\text{max}}
+
+Buffer capacity at node nn, time tt; in this paper Bn​(t)=BmaxB_{n}(t)=B_{\text{max}} (constant). BmaxB_{\text{max}} = maximum buffer capacity (bits).
+
+Qn​(t)Q_{n}(t)
+
+Booked buffer load at node nn, time tt (due to previously scheduled bundles)
+
+B¯n​(t)\bar{B}_{n}(t)
+
+Residual buffer capacity at node nn, time tt: B¯n​(t)=max⁡{0,Bn​(t)−Qn​(t)}\bar{B}_{n}(t)=\max\{0,B_{n}(t)-Q_{n}(t)\}
+
+𝒵b\mathcal{Z}_{\text{b}}
+
+Set of nodes with potential buffer overflow for bundle bb
+
+ZkZ_{k}
+
+Node with potential overflow (Zk∈𝒵bZ_{k}\in\mathcal{Z}_{\text{b}})
+
+𝒪Zk\mathcal{O}_{Z_{k}}
+
+Set of potential overflows at node ZkZ_{k}
+
+t1,olt_{1,o_{l}}, t2,olt_{2,o_{l}}
+
+Start and end time of overflow olo_{l}
+
+T1,sT_{1,s}, T2,sT_{2,s}
+
+(CRP) Sets of overflow start and end times at the receiver of Cs\text{C}_{s} (used in buffer-aware route search)
+
+(Vc0,Ec0)(V_{c}^{0},E_{c}^{0}), (Vc,Ec0)(V_{c},E_{c}^{0})
+
+Connectivity-only contact graph (before and after splitting)
+
+(Vc,Ec)(V_{c},E_{c})
+
+Feasible contact graph (route search runs on this graph)
+
+NsatN_{\text{sat}}
+
+Number of satellites in the constellation
+
+NpN_{\text{p}}
+
+Number of orbital planes
+
+NbN_{\text{b}}
+
+Number of bundles (traffic load)
+
+Δ​Ω\Delta\Omega
+
+Angular separation between adjacent orbital planes
+
+kk
+
+Number of contacts in a path P=(C1,…,Ck)P=(\text{C}_{1},\ldots,\text{C}_{k}); or number of shortest routes in Yen’s algorithm (implementation)
+
+FEAP-CB
+
+Feasible Earliest-Arrival Path with Capacity and Buffer constraints
+
+References
+
+[1]
+P. Wang, J. Zhang, X. Zhang, Z. Yan, B. G. Evans, and W. Wang (2020)
+
+Convergence of Satellite and Terrestrial Networks: A Comprehensive Survey.
+
+IEEE Access 8 (), pp. 5550–5588.
+
+External Links: Document
+
+Cited by: §I.
+
+[2]
+P. A. Baldwin, G. W. Heckler, A. Petro, J. Schier, J. Berner, W. Evans, and Erica. Weir (2021)
+
+Space Communications in Support of the Artemis Program.
+
+In 16th International Conference on Space Operations,
+
+Vol. , pp. 1–6.
+
+Cited by: §I,
+§I.
+
+[3]
+F. Alagoz, O. Korcak, and A. Jamalipour (2007)
+
+Exploring the routing strategies in next-generation satellite networks.
+
+IEEE Wireless Communications 14 (3), pp. 79–88.
+
+Cited by: §I.
+
+[4]
+B. Jianjun, L. Xicheng, L. Zexin, and P. Wei (2005)
+
+Compact explicit multi-path routing for LEO satellite networks.
+
+In HPSR. 2005 Workshop on High Performance Switching and Routing, 2005.,
+
+Vol. , pp. 386–390.
+
+External Links: Document
+
+Cited by: §I.
+
+[5]
+M. J. Khabbaz, C. M. Assi, and W. F. Fawaz (2012)
+
+Disruption-Tolerant Networking: A Comprehensive Survey on Recent Developments and Persisting Challenges.
+
+IEEE Communications Surveys & Tutorials 14 (2), pp. 607–640.
+
+External Links: Document
+
+Cited by: §I.
+
+[6]
+ (2015)
+
+CCSDS bundle protocol specification.
+
+BLUE BOOK recommended standard
+
+ CCSDS.
+
+Cited by: §I,
+§III-B.
+
+[7]
+ ()
+
+High-Rate Delay Tolerant Networking (HDTN) — Glenn Research Center — NASA.
+
+Note: https://www1.grc.nasa.gov/space/scan/acs/tech-studies/dtn/[Accessed 17-01-2025]
+
+Cited by: §I.
+
+[8]
+ (2022)
+
+KPLO Danuri Launch Press Ki.
+
+Note: https://www.shadowcam.asu.edu/KPLO_english_press_kit.pdf[Accessed 17-01-2025]
+
+Cited by: §I.
+
+[9]
+T. Spyropoulos, K. Psounis, and C. S. Raghavendra (2005)
+
+Spray and wait: an efficient routing scheme for intermittently connected mobile networks.
+
+In Proceedings of the 2005 ACM SIGCOMM Workshop on Delay-Tolerant Networking,
+
+WDTN ’05, New York, NY, USA, pp. 252–259.
+
+External Links: ISBN 1595930264,
+Document
+
+Cited by: §I,
+§I.
+
+[10]
+A. Vahdat and D. Becker (2000)
+
+Epidemic Routing for Partially-Connected Ad Hoc Networks.
+
+Technical Report, pp. .
+
+Cited by: §I,
+§I.
+
+[11]
+S. Hasan, M. Sani, S. Iranmanesh, A. Al-Bayatti, S. Khan, and R. Raad (2023)
+
+Enhanced Message Replication Technique for DTN Routing Protocols.
+
+Sensors 23, pp. 922.
+
+External Links: Document
+
+Cited by: §I,
+§I.
+
+[12]
+J. Burgess, B. Gallagher, D. Jensen, and B. N. Levine (2006)
+
+MaxProp: Routing for Vehicle-Based Disruption-Tolerant Networks.
+
+In Proceedings IEEE INFOCOM 2006. 25TH IEEE International Conference on Computer Communications,
+
+Vol. , pp. 1–11.
+
+External Links: Document
+
+Cited by: §I.
+
+[13]
+J. A. Fraire, O. De Jonckère, and S. C. Burleigh (2021)
+
+Routing in the Space Internet: A contact graph routing tutorial.
+
+Journal of Network and Computer Applications 174, pp. .
+
+External Links: ISSN 1084-8045,
+Document
+
+Cited by: §I,
+§I,
+§II-B,
+§II-D2,
+§II-D,
+§II-E2,
+§III-A.
+
+[14]
+F. De Rango, S. Amelio, and P. Fazio (2013)
+
+Enhancements of Epidemic Routing in Delay Tolerant Networks from an energy perspective.
+
+In 2013 9th International Wireless Communications and Mobile Computing Conference (IWCMC),
+
+Vol. , pp. 731–735.
+
+External Links: Document
+
+Cited by: §I.
+
+[15]
+S. Pathak, N. Gondaliya, and N. Raja (2017)
+
+A survey on PROPHET based routing protocol in delay tolerant network.
+
+In 2017 International Conference on Emerging Trends & Innovation in ICT (ICEI),
+
+Vol. , pp. 110–115.
+
+External Links: Document
+
+Cited by: §I.
+
+[16]
+S. Maenaka, K. Miyasaka, H. Matsuzawa, T. Hamasaki, T. Ando, and D. Toyama (2022)
+
+A Study on Communication Architecture for Moon Exploration by Mitsubishi Electric.
+
+In 66th Space Sciences and Technology Conference JSASS-2022-4634,
+
+Note: (In Japanese)
+
+Cited by: §I.
+
+[17]
+M. Zemba, K. Vaden, R. Reinhart, C. Gramling, and G. Heckler (2023)
+
+NASA’s Lunar Communications and Navigation Architecture.
+
+Technical report
+
+ NASA.
+
+Cited by: §I.
+
+[18]
+W. S. Tai and M. Lanucara (2023)
+
+The evolution of future mars communications architecture.
+
+In SpaceOps 2023 Conference,
+
+Note: Executive summary of the IOAG MBC report; Paper ID 299
+
+External Links: Link
+
+Cited by: §I.
+
+[19]
+Interagency Operations Advisory Group (IOAG) (2025)
+
+Mars & beyond communications architecture report.
+
+Technical report
+
+ IOAG Mars & Beyond Communications Architecture Working Group (MBC-AWG).
+
+Note: Version of record as of April 2025
+
+External Links: Link
+
+Cited by: §I.
+
+[20]
+O. de Jonckère, J. A. A. Fraire, and S. Burleigh (2024)
+
+Distributed volume management in space dtns: scoping schedule-aware bundle routing.
+
+In Space-Terrestrial Internetworking Workshop (STINT) at IEEE SMC-IT/SCC,
+
+Mountain View, CA, USA.
+
+Note: HAL Id: hal-04603605. Introduces the contact segmentation concept for SABR volume management.
+
+External Links: Link
+
+Cited by: §I,
+§II-C1,
+§II-C1,
+§II-C1.
+
+[21]
+J. Segui, E. Jennings, and S. Burleigh (2011)
+
+Enhancing Contact Graph Routing for Delay Tolerant Space Networking.
+
+In 2011 IEEE Global Telecommunications Conference - GLOBECOM 2011,
+
+Vol. , pp. 1–6.
+
+External Links: Document
+
+Cited by: §II-B.
+
+[22]
+N. Bezirgiannidis, F. Tsapeli, S. Diamantopoulos, and V. Tsaoussidis (2013)
+
+Towards flexibility and accuracy in space DTN communications.
+
+In Proceedings of the 8th ACM MobiCom Workshop on Challenged Networks,
+
+CHANTS ’13, New York, NY, USA, pp. 43–48.
+
+External Links: ISBN 9781450323635,
+Document
+
+Cited by: §II-B,
+§II-D3.
+
+[23]
+N. Bezirgiannidis, C. Caini, D.D. Padalino Montenero, M. Ruggieri, and V. Tsaoussidis (2014)
+
+Contact Graph Routing enhancements for delay tolerant space communications.
+
+In 2014 7th Advanced Satellite Multimedia Systems Conference and the 13th Signal Processing for Space Communications Workshop (ASMS/SPSC),
+
+Vol. , pp. 17–23.
+
+External Links: Document
+
+Cited by: §II-B.
+
+[24]
+J. A. Fraire, P. G. Madoery, A. Charif, and J. M. Finochietto (2018)
+
+On route table computation strategies in Delay-Tolerant Satellite Networks.
+
+Ad Hoc Networks 80, pp. 31–40.
+
+External Links: ISSN 1570-8705,
+Document,
+Link
+
+Cited by: §II-B.
+
+[25]
+O. De Jonckère, J. A. Fraire, and S. Burleigh (2023)
+
+On the Tractability of Yen’s Algorithm and Contact Graph Modeling in Contact Graph Routing.
+
+In 2023 IEEE International Conference on Wireless for Space and Extreme Environments (WiSEE),
+
+Vol. , pp. 80–86.
+
+External Links: Document
+
+Cited by: §II-B.
+
+[26]
+M. Marchese and F. Patrone (2020)
+
+E-CGR: Energy-Aware Contact Graph Routing Over Nanosatellite Networks.
+
+IEEE Transactions on Green Communications and Networking 4 (3), pp. 890–902.
+
+External Links: Document
+
+Cited by: §II-C.
+
+[27]
+J. A. Fraire, P. Madoery, and J. M. Finochietto (2014)
+
+Leveraging routing performance and congestion avoidance in predictable delay tolerant networks.
+
+In 2014 IEEE International Conference on Wireless for Space and Extreme Environments (WiSEE),
+
+Vol. , pp. 1–7.
+
+External Links: Document
+
+Cited by: §II-C.
+
+[28]
+M. Marchese and F. Patrone (2017)
+
+A Source Routing Algorithm Based on CGR for DTN-Nanosatellite Networks.
+
+In GLOBECOM 2017 - 2017 IEEE Global Communications Conference,
+
+Vol. , pp. 1–6.
+
+External Links: Document
+
+Cited by: §II-C.
+
+[29]
+P. G. Madoery, G. K. Kurt, H. Yanikomeroglu, P. Hu, K. Ahmed, S. Martel, and G. Lamontagne (2023)
+
+Routing Heterogeneous Traffic in Delay-Tolerant Satellite Networks.
+
+IEEE Journal of Radio Frequency Identification 7 (), pp. 390–401.
+
+External Links: Document
+
+Cited by: §II-C.
+
+[30]
+H. Liang, X. Xu, Y. Li, and Y. Yao (2020)
+
+An Optimized Contact Graph Routing Algorithm in Deep Space Communication.
+
+In 2020 IEEE 6th International Conference on Computer and Communications (ICCC),
+
+Vol. , pp. 147–151.
+
+External Links: Document
+
+Cited by: §II-C.
+
+[31]
+O. de Jonckère, L. Ma, and J. A. Fraire (2025)
+
+A-sabr: the adaptive library for schedule-aware bundle routing.
+
+In Space-Terrestrial Internetworking Workshop (STINT) at IEEE International Conference on Wireless for Space and Extreme Environments (WiSEE),
+
+Halifax, NS, Canada.
+
+Note: HAL Id: hal-05301072. Also listed on IEEE Xplore (Doc. ID 11229852).
+
+External Links: Link
+
+Cited by: §II-C1.
+
+[32]
+W. Jiang, H. Han, Y. Zhang, J. Wang, M. He, W. Gu, J. Mu, and X. Cheng (2024)
+
+Graph neural networks for routing optimization: challenges and opportunities.
+
+Sustainability 16 (21), pp. 9239.
+
+External Links: Document,
+Link
+
+Cited by: §II-C2.
+
+[33]
+Y. Zheng, Y. Lu, and Z. Wei (2024)
+
+A survey of dynamic graph neural networks.
+
+arXiv preprint arXiv:2404.18211.
+
+External Links: Document,
+Link
+
+Cited by: §II-C2.
+
+[34]
+F. Lozano-Cuadra B. Soret et al. (2025)
+
+Continual deep reinforcement learning for decentralized satellite routing.
+
+In IEEE (Xplore Document 10969776),
+
+External Links: Link
+
+Cited by: §II-C2.
+
+[35]
+M. Olmedo, J. A. Fraire, R. Cherini, F. Patrone, and M. Marchese (2023)
+
+Routing in scalable delay-tolerant space networks with graph neural networks.
+
+In Proceedings of EWSN 2023,
+
+Note: HAL: hal-04711328
+
+External Links: Link
+
+Cited by: §II-C2.
+
+[36]
+C. Han, W. Xiong, and R. Yu (2024)
+
+Deep reinforcement learning-based multipath routing for leo megaconstellation networks.
+
+Electronics 13 (15), pp. 3054.
+
+External Links: Document,
+Link
+
+Cited by: §II-C2.
+
+[37]
+Y. Shi, W. Wang, X. Zhu, and H. Zhu (2024)
+
+Low earth orbit satellite network routing algorithm based on graph neural networks and deep q-network.
+
+Applied Sciences 14 (9), pp. 3840.
+
+External Links: Document,
+Link
+
+Cited by: §II-C2.
+
+[38]
+F. Lozano-Cuadra, B. Soret, I. Leyva-Mayorga, and P. Popovski (2024)
+
+Continual deep reinforcement learning for decentralized satellite routing.
+
+arXiv preprint arXiv:2405.12308.
+
+External Links: Document,
+Link
+
+Cited by: §II-C2.
+
+[39]
+Various (2025)
+
+Dynamic leo satellite routing approach based on deep graph attention.
+
+In IEEE (Xplore Document 11153769),
+
+External Links: Link
+
+Cited by: §II-C2.
+
+[40]
+S. Jain and M. Chawla (2014)
+
+Survey of buffer management policies for delay tolerant networks.
+
+The Journal of Engineering 2014 (3), pp. 1–10.
+
+External Links: Document,
+Link
+
+Cited by: §II-C3,
+§II-C3.
+
+[41]
+S. Singh and A. Verma (2023)
+
+Buffer management techniques in delay tolerant networks: a comprehensive survey.
+
+Recent Advances in Computer Science and Communications 16 (8), pp. e170823219888.
+
+External Links: Document,
+Link
+
+Cited by: §II-C3,
+§II-C3.
+
+[42]
+A. Lindgren, A. Doria, E. B. Davies, and S. Grasic (2012)
+
+Probabilistic routing protocol for intermittently connected networks (prophet).
+
+RFC
+
+Technical Report 6693, IRTF.
+
+External Links: Link,
+Document
+
+Cited by: §II-C3.
+
+[43]
+J. Burgess, B. Gallagher, D. Jensen, and B. N. Levine (2006)
+
+MaxProp: routing for vehicle-based disruption-tolerant networks.
+
+In IEEE INFOCOM,
+
+pp. 1–11.
+
+External Links: Document,
+Link
+
+Cited by: §II-C3.
+
+[44]
+A. Balasubramanian, B. N. Levine, and A. Venkataramani (2007)
+
+DTN routing as a resource allocation problem.
+
+In ACM SIGCOMM,
+
+pp. 373–384.
+
+External Links: Document,
+Link
+
+Cited by: §II-C3.
+
+[45]
+S. Grasic, E. Davies, A. Lindgren, and A. Doria (2011)
+
+The evolution of a dtn routing protocol – prophetv2.
+
+In CHANTS ’11,
+
+pp. 27–34.
+
+External Links: Link
+
+Cited by: §II-C3.
+
+[46]
+C. Oham and M. Radenkovic (2015)
+
+Congestion aware spray and wait protocol: a congestion control mechanism for the vehicular dtn.
+
+International Journal of Computer Science & Information Technology 7 (6), pp. 83–96.
+
+External Links: Link
+
+Cited by: §II-C3.
+
+[47]
+L. Zhang, C. Yu, and H. Jin (2012)
+
+Dynamic spray and wait routing protocol for delay tolerant networks.
+
+In International Conference on Network and Parallel Computing (NPC),
+
+pp. 69–76.
+
+External Links: Document,
+Link
+
+Cited by: §II-C3.
+
+[48]
+Y. Li, S. Chen, and D. Wei (2015)
+
+A buffer management strategy on spray and wait routing protocol in dtns.
+
+In IEEE,
+
+External Links: Document,
+Link
+
+Cited by: §II-C3.
+
+[49]
+G. Sandulescu and S. Nadjm-Tehrani (2008)
+
+Opportunistic dtn routing with window-aware adaptive replication (orwar).
+
+In ACM AINTEC,
+
+pp. 73–82.
+
+External Links: Document,
+Link
+
+Cited by: §II-C3.
+
+[50]
+ (2019)
+
+SCHEDULE-aware bundle routing.
+
+BLUE BOOK recommended standard
+
+ CCSDS.
+
+Cited by: §II-C3,
+§II-D,
+§V.
+
+[51]
+E. W. Dijkstra (1959)
+
+A note on two problems in connexion with graphs.
+
+Numerische Mathematik 1, pp. 269–271.
+
+Cited by: §II-D2.
+
+[52]
+J. Y. Yen (1971)
+
+Finding the K Shortest Loopless Paths in a Network.
+
+Management Science 17, pp. 712–716.
+
+Cited by: §II-D2.
+
+[53]
+E. Birrane, S. Burleigh, and N. Kasch (2012)
+
+Analysis of the contact graph routing algorithm: Bounding interplanetary paths.
+
+Acta Astronautica 75, pp. 108–119.
+
+External Links: ISSN 0094-5765,
+Document
+
+Cited by: §II-E,
+§IV.
+
+[54]
+E. Birrane (2013)
+
+Contact graph routing extension block.
+
+internet RFC
+
+ IRTF-DTNRG.
+
+Cited by: §II-E.
+
+[55]
+C. Caini, G.M. De Cola, F. Marchetti, and L. Mazzuca (2020)
+
+Moderate Source Routing for DTN Space Networks.
+
+In 2020 10th Advanced Satellite Multimedia Systems Conference and the 16th Signal Processing for Space Communications Workshop (ASMS/SPSC),
+
+Vol. , pp. 1–7.
+
+External Links: Document
+
+Cited by: §II-E1.
+
+[56]
+S. C. Burleigh, E. H. Jennings, and J. Schoolcraft (2006)
+
+Autonomous Congestion Control in Delay-Tolerant Networks.
+
+Cited by: §III-B.
+
+[57]
+B. C. Dean (2004)
+
+Shortest paths in fifo time-dependent networks: theory and algorithms.
+
+Technical report
+
+ MIT.
+
+External Links: Link
+
+Cited by: §III-C3,
+§IV-C.
+
+[58]
+P. G. Madoery, F. D. Raverta, J. A. Fraire, and J. M. Finochietto (2018)
+
+Routing in Space Delay Tolerant Networks under Uncertain Contact Plans.
+
+In 2018 IEEE International Conference on Communications (ICC),
+
+Vol. , pp. 1–6.
+
+External Links: Document
+
+Cited by: §IV-D.
+
+[59]
+ (2015)
+
+Licklider Transmission protocol (LTP) for CCSDS.
+
+BLUE BOOK recommended standard
+
+ CCSDS.
+
+Cited by: §V.
+
+[60]
+J. G. Walker (1984)
+
+Satellite Constellations.
+
+Journal of the British Interplanetary Society 37, pp. 559–571.
+
+Cited by: §VI-A.
+
+[61]
+MATLAB Satellite Communications Toolbox Version 23.2 (R2023b)
+
+Natick, Massachusetts, USA.
+
+Cited by: §VI-A,
+§VI-D.
+
+[62]
+S. Burleigh (2007)
+
+Interplanetary Overlay Network: An Implementation of the DTN Bundle Protocol.
+
+In 2007 4th IEEE Consumer Communications and Networking Conference,
+
+Vol. , pp. 222–226.
+
+External Links: Document
+
+Cited by: §VI-D.
+
+[63]
+Interplanetary Overlay Network (ION) software home page
+
+Note: https://sourceforge.net/projects/ion-dtn/
+
+Cited by: §VI-D.
+
+ Experimental support, please
+ view the build logs
+ for errors. Generated by
+
+ L
+ A
+ T
+ E
+
+ xml
+
+ .
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+ support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+ methods listed below:
+
+Click the "Report Issue" (
+
+ ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+ may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+ should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+ all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+ We gratefully acknowledge support from
+ our major funders,
+ member institutions, ,
+ and all contributors.
+
+ About
+ ·
+ Help
+ ·
+ Contact
+ ·
+ Subscribe
+ ·
+ Copyright
+ ·
+ Privacy
+ ·
+ Accessibility
+ ·
+ Operational Status (opens in new tab)
+
+Major funding support from
+

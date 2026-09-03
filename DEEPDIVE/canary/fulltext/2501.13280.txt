@@ -1,0 +1,885 @@
+
+
+Time-Dependent Network Topology Optimization for LEO Satellite Constellations
+
+ // Restore the saved color scheme preference, or
+ // enact the browser preference if "automatic", 
+ // without expecting DOM load to have completed.
+ //
+ // Also restore any saved readingmode and ToC display preferences.
+ function initializeReadingPreferences() {
+ let saved_theme = localStorage.getItem("ar5iv_theme") || "automatic";
+ if (saved_theme === "automatic") {
+ if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+ saved_theme = "dark";
+ }
+ }
+ if (saved_theme == "dark") {
+ document.documentElement.setAttribute("data-theme", "dark");
+ } else {
+ document.documentElement.setAttribute("data-theme", "light");
+ }
+
+ const tocDisplay = localStorage.getItem('arxiv_html_paper_toc_display');
+ if (tocDisplay) {
+ document.documentElement.setAttribute("data-toc-display", tocDisplay);
+ }
+ const readingMode = localStorage.getItem('arxiv_html_paper_reading_mode');
+ if (readingMode) {
+ document.documentElement.setAttribute("data-reading-mode", readingMode);
+ }
+ // Pre-apply spinout-banner dismissal here, before the banner paints, so it
+ // never flashes in only to be hidden later by the deferred arxiv-header.js.
+ // Key matches arxiv-header.js: "arxiv-banner-dismissed:" + data-banner-name.
+ if (localStorage.getItem('arxiv-banner-dismissed:spinout-nonprofit')) {
+ document.documentElement.setAttribute("data-banner-dismissed", "");
+ }
+ }
+ // Run as soon as JS starts, to minimize repainting
+ initializeReadingPreferences();
+
+ /* Banner pre-dismissal (set above before paint -> no flash-then-hide) and
+ reading-mode chrome hiding. */
+ html[data-banner-dismissed] .ds-announcement { display: none; }
+ html[data-reading-mode="enabled"] .ds-announcement,
+ html[data-reading-mode="enabled"] .ds-site-footer { display: none; }
+ /* Keep the announcement text dark on the Open-Blue band in both colour themes
+ (otherwise it inherits the paper's warm-wash text in dark mode and washes out). */
+ .ds-announcement-text { color: var(--arxiv-ink, #1c1a17); }
+
+ Report GitHub Issue
+ ×
+
+ Title:
+
+ Content selection saved. Describe the issue below:
+
+ Description:
+
+ Submit without GitHub
+ Submit in GitHub
+
+ arXiv is now an independent nonprofit!
+ Learn more
+ ×
+
+ Back to arXiv
+
+ Why HTML?
+
+ Report Issue
+
+ Back to Abstract
+
+ Download PDF
+
+Abstract
+
+I Introduction
+
+II Space Network Model
+
+II-A Network Scenario
+
+II-B Network Model for GS-to-LEO Satellites
+
+II-C Network Model for Inter-Satellite Links
+
+II-D Optimization Problem Formulation
+
+III DTEG-Based Optimal Topology Design (DoTD) Algorithm
+
+III-A DTEG Construction
+
+III-B Algorithm Description
+
+IV Experimental Results
+
+IV-A Experimental Setup
+
+IV-B Baseline Methods
+
+IV-C Experimental Results
+
+V Conclusion and Future work
+
+References
+
+ License: CC BY-NC-ND 4.0
+
+arXiv:2501.13280v1 [cs.NI] 23 Jan 2025
+
+## Time-Dependent Network Topology Optimization for LEO Satellite Constellations
+
+Dara Ron
+
+Affiliation: NC State University, Raleigh, USA
+
+dron@ncsu.edu
+
+Faisal Ahmed Yusufzai
+
+Affiliation: George Mason University, Fairfax, USA
+
+fyusufza@gmu.edu
+
+Sebastian Kwakye
+
+Affiliation: George Mason University, Fairfax, USA
+
+skwakye@gmu.edu
+
+Satyaki Roy
+
+Affiliation: The University of Alabama in Huntsville, USA
+
+sr0215@uah.edu
+
+Nishanth Sastry
+
+Affiliation: University Of Surrey, Guildford, UK
+
+n.sastry@surrey.ac.uk
+
+Vijay K. Shah
+
+Affiliation: NC State University, Raleigh, USA
+
+vijay.shah@ncsu.edu
+
+Abstract
+ 
+Today’s Low Earth Orbit (LEO) satellite networks, exemplified by SpaceX’s Starlink, play a crucial role in delivering global internet access to millions of users. However, managing the dynamic and expansive nature of these networks poses significant challenges in designing optimal satellite topologies over time. In this paper, we introduce the Dynamic Time-Expanded Graph (DTEG)-based Optimal Topology Design (DoTD) algorithm to tackle these challenges effectively. We first formulate a novel space network topology optimization problem encompassing a multi-objective function – maximize network capacity, minimize latency, and mitigate link churn – under key inter-satellite link constraints. Our proposed approach addresses this optimization problem by transforming the objective functions and constraints into a time-dependent scoring function. This empowers each LEO satellite to assess potential connections based on their dynamic performance scores, ensuring robust network performance over time without scalability issues. Additionally, we provide proof of the score function’s boundary to prove that it will not approach infinity, thus allowing each satellite to consistently evaluate others over time. For evaluation purposes, we utilize a realistic Mininet-based LEO satellite emulation tool that leverages Starlink’s Two-Line Element (TLE) data. Comparative evaluation against two baseline methods – Greedy and + Grid, demonstrates the superior performance of our algorithm in optimizing network efficiency and resilience.
+
+Index Terms: Starlink, LEO satellite, Dynamic Time-Expanded Graph, + Grid, OSPF, SpaceNet, and ISLs.
+
+## I Introduction
+
+The terrestrial 5G network has proven successful in achieving ultra-low latency of 1 ms and very high internet speeds, with peak data rates of up to 20 Gbps (downlink) and 10 Gbps (uplink), and user experience data rates of 100 Mbps (downlink) and 50 Mbps (uplink) [2]. Despite these advancements, challenges remain for 5G terrestrial networks. The high deployment cost causes fewer installations of 5G base stations (BSs) in rural areas. Additionally, installing 5G terrestrial networks can be impossible or difficult in harsh environments, such as wilderness areas, oceanic regions, and isolated mountains [3]. This demonstrates that the 5G terrestrial network is not yet capable of providing high data rates and low-latency access for users anywhere and anytime.
+
+Non-terrestrial networks (NTN) have emerged as a promising solution to the limitations of terrestrial 5G networks. NTN refers to space network technology, which deploys satellites in low-Earth orbit (LEO) (approximately 160 km to 2,000 km above the Earth’s surface) to provide network access for users in the air, on the sea, and on the ground around the globe [3, 4]. LEO satellites not only offer ubiquitous coverage but also feature low launch costs and simplicity of deployment [5], thus it becomes increasingly attractive to world-class companies launching their LEO satellite constellation projects such as Starlink, OneWeb, Amazon Kuiper, Telesat, Lightspeed, and Hongyan [6, 7, 8]. The leading space network service provider, Starlink, has already launched over 6,078 satellites in LEO, of which 6,006 are operational as of May 2024, with a total of 3 million subscribers. Starlink plans to deploy up to 42,000 satellites to construct a LEO Mega-constellation, as reported by Space.com [9]. OneWeb, the second leading LEO provider, has successfully launched 633 LEO satellites as of Feb 2024, as reported by Spacenews.com [10]. Meanwhile, other companies have launched few or no operational LEO satellites yet, but they have plans to deploy them in the near future. Despite the success of space networks achieved by Starlink, it has also introduced numerous research challenges that require attention [11]. Each satellite can connect to any other within its range and visibility, prompting recent research to focus on topology designs for LEO satellites that optimizes end-to-end network capacity and reduced latency [12, 13, 14, 15, 17, 16].
+
+Fig. 1: SpaceX’s Starlink LEO satellite constellation
+
+Inter-Satellite Links (ISLs) are poised to revolutionize space communication by enhancing data transmission speed and reliability [18]. The topology designs are based on the ISLs, which are established directly between satellites in orbit, thus allowing them to communicate with each other without relaying signals through GSs. ISLs play a crucial role in modern satellite networks, particularly in constellations and systems designed for global coverage with low latency [19, 20]. They are currently being used in SpaceX’s Starlink satellite network, which comprises thousands of broadband Internet satellites [21]. The + Grid topology is considered the default design for ISLs in Low Earth Orbit (LEO) satellite networks. In this topology, each satellite is connected to four nearby neighbors: two in the same orbital plane and two in adjacent orbital planes [22]. This Grid-like structure is relatively easy to design and implement; however, it suffers from significant drawbacks, such as shorter ISL ranges that increase ISL hop counts and end-to-end latency, a lack of consideration for the source and destination nodes when designing the topology, and insufficient flexibility to achieve optimal routing, all of which can affect the overall efficiency of the network. The × Grid has been designed to provide efficiency improvement over the + Grid. Similar to the + Grid, this approach connects satellites in the same and adjacent orbital planes [16]. The key difference is that the + Grid connection is based on a star topology, whereas the × Grid is based on a rectangular topology. This design minimizes connection overlaps and reduces ISL hop counts by an average factor of two. However, similar to traditional grid topologies, it applies a consistent connection pattern, which limits flexibility in dynamic scenarios. [17] proposed a topology design based on motifs to improve performance over the neighbor-grid topology. This approach utilizes frequently repeated patterns of connections, where each satellite is connected to its neighbors in the same manner, effectively reducing expensive link changes over time. With this design, performance metrics such as latency and capacity are improved by a factor of two compared to the neighbor grid. However, this approach still relies on the neighbor-based connection strategy, which lacks the flexibility to meet an optimal routing.
+
+The topology-based neighbor strategies may work perfectly with an ideal satellite constellation to achieve optimal routing paths. For instance, LEO satellites should be deployed in orbital planes with the same or nearly the same altitude, and the inclination and Right Ascension of Ascending Node (RAAN) of the orbits should be equally spaced. This configuration optimizes the distance between parallel orbits and ensures that the distance between satellites within the same orbit is equally spaced, thus achieving optimal routing paths. However, achieving this ideal LEO satellite constellation is challenging. Based on real-time Two-Line Element (TLE) statistical data for LEO satellite experiment, the constellation is not ideal [23]. Not all orbital planes are parallel; some orbits intersect with others, resulting in satellites moving in non-parallel directions. The inclinations and RAANs of all orbits are not equally spaced, causing some orbits to be very close to each other, which increases hop counts for grid-based topologies. Additionally, the number of satellites in an orbit and their spacing are not evenly divided, and the perigees of orbits are not the same or nearly the same. These factors indicate that the topology design based on neighbor connections in the same and adjacent orbital planes may not always yield the optimal solution for real satellite constellations. Instead of selecting connections solely between neighbors, the authors in [22] conducted an in-depth investigation of LEO satellite topology. They analyzed key parameters that impact network performance, such as the number of orbits, the number of satellites per orbit, and inclination. This approach allows for connections between satellites with the most representative metrics, including maximum round-trip time, geodesic slowdown, and a low number of path changes. The ISL-based dynamic routing algorithm selects the optimal path that maximizes the utility function [24]. This algorithm improves key performance metrics (KPMs) such as packet drop rate, end-to-end delay, and throughput. Additionally, [25] leveraged deep reinforcement learning (DRL) to interact with satellite networks and select the optimal topology, which minimizes latency across all links. This approach achieves performance improvements in terms of latency, outperforming topology-based neighbor strategies like Motifs and + Grid by up to 8.48% and 42.86%, respectively.
+
+Research Challenge and Motivation (RCM): The challenge remains for neighbor-grid designs due to the imperfect LEO satellite constellations discussed above. The goal of grid-based topologies is to maximize satellite network performance. The research question should be why we select the nearest neighbors rather than focusing on selecting links based on their specific performance metrics. Selecting optimal paths according to their performance metrics can address concerns regarding the ideal constellation, which requires equal spacing between orbital planes, equally spaced LEO satellites within the same orbit, and similar or nearly identical perigees of orbits. This motivation drives the studies in [22, 24, 25] to develop various methods to select the topology that can directly maximize the KPMs of entire links, such as latency, link churn, packet loss rate, throughput, and utility function. However, a drawback of these previous studies is the lack of consideration for time-dependent performance, which is affected by the dynamic movement of satellites over time. These studies focus solely on selecting satellites based on their performance at each time step. Given the fast movement of LEO satellites, which can reach speeds of up to 7.66 km/s, the satellite selected at a previous time step may move far away from others or may select the next satellite that does not align with the optimal routing path from source to destination. Therefore, a novel research topic revolves around proposing an optimal topology design strategy that consistently selects satellites with high performance all the time.
+
+In this study, we propose (i) a Dynamic Time-Expanded Graph (DTEG)-based Optimal Topology Design (DoTD) algorithm to optimize the time-variant satellite topology
+that maximizes network capacity and simultaneously, minimizes latency and link churn, even with the dynamic changes in space networks due to the fast movement of LEO satellites. Expanding on the previously developed xeoverse simulator [26], we released SpaceNet simulator as well as the source code and datasets to the community for further research [1]. The contributions of our study are outlined as follows.
+
+∙ We analyze the visibility of LEO satellite by considering the elevation angle (EA) and key orbital parameters, including the argument of perigee, true anomaly, right ascension of the ascending node (RAAN), and inclination. Based on this analysis, we formulate a new space network topology optimization problem, where the multi-objective functions are network capacity, latency, and link churn. The optimization is subject to constraints, such as the visibility of LEO satellites, communication distance, ISL duplex, and the limited number of links that each satellite can select to create the network.
+
+∙ We propose a novel DoTD algorithm to address the space network optimization problem. Using DoTD, the optimization problem is transformed into a time-dependent scoring function. This function is derived by normalizing the multiple objective functions to a common scale ranging from 0 to 1 . This approach enables each LEO satellite to evaluate and choose other satellites for establishing the connections based on their achievable scores.
+
+∙ We provide proofs demonstrating that: (1) the design of the score function remains finite, thus ensuring its validity for evaluation over time without limitations, (2) the proposed DoTD algorithm consistently achieves optimal performance, and (3) the time complexity of the DoTD algorithm is approximate to 𝒪⁡(M2) .
+
+∙ Finally, we augment our proposed DoTD algorithm with a Open Shortest Path First (OSPF) routing algorithm to further optimize the routing path for communication between GS sources and destinations.
+
+Experiment: We experimentally evaluate by enhancing xeoverse  [26] with the proposed DoTD algorithm along with two other baseline methods, Greedy and + Grid. Results show that the DoTD achieves an average capacity increase of 28.09%, a hop count decrement of 10.91%, and a latency reduction of 39.71% compared to the Greedy method. Surprisingly, it enhances capacity by up to 70.47%, reduces hop count by 81.82%, and decreases latency by up to 96.61% compared to the + Grid method. Additionally, DoTD significantly minimizes the link churn compared to those of greedy and + Grid, significantly improving service continuity and stability.
+
+## II Space Network Model
+
+## II-A Network Scenario
+
+This study employs Starlink LEO Constellation [23] as the exemplary LEO satellite constellation network, as illustrated in Fig. 1. Multiple satellites are deployed in space at low Earth orbital altitude and move along the orbital planes. Each orbital plane is defined by key six parameters: (1) inclination, (2) RAAN, (3) argument of the perigee, (4) eccentricity, (5) semi-major axis, and (6) true anomaly. Detailed information regarding the key orbital parameters can be found in [27].
+
+Let M and N , where M≥N , denote the number of LEO satellites and orbital planes, respectively. We deploy multiple GSs on Earth, from which two located in different U.S. states or countries are selected to evaluate the satellite network topologies derived from from DoTD (and baselines) topology design algorithms. Let K be the number of GSs. These GSs can communicate with LEO satellites within their visible region. With thousands of LEO satellites launched by SpaceX’s Starlink, multiple satellites should be visible to each GS. In this scenario, the source GS selects the satellite with the shortest path to forward its packets to the next satellite and continues this process until the packets reach the GS destination. Due to the fast movement of LEO satellites relative to Earth’s gravity, the selected satellite may move out of the visible region. Consequently, the GSs must promptly switch their connections to other satellites. The space networks should consist of two types of communication links: GS-to-LEO satellite and ISLs.
+
+## II-B Network Model for GS-to-LEO Satellites
+
+Communication between the GS and the LEO satellite can only be established within the visible region of satellite. This visible region is determined by the minimum and maximum EA, denoted as θmin and θmax , respectively. According to [28], the mathematical relationship between the minimum and maximum EA is expressed as follows:
+
+θmax=arccos⁡(Re​cos⁡(θmin)/Hn,t)−θmin, 
+
+(1)
+
+where Re represents the Earth’s radius (Re=6378 km), and Hn,t is the altitude from the Geocenter to the n -th orbit at time step t , ∀n={1,…,N} . Given this visibility constraint, we introduce the indicator function 𝕀k,t to represent the possible communication between the k -th GS and all LEO satellites. It is defined as 𝕀k,t={𝟏{θk,m,t∈[θmin,θmax]}|m=1,…,M} , where θk,m,t represents the EA between the k -th GS and the n -th LEO satellite. The indicator function 𝟏{θk,m,t∈[θmin,θmax]} equals to 1 when the k -th GS is within the visible region (θk,m,t∈[θmin,θmax]) , and 0 otherwise. From [29], the distance between the k -th GS and m -th LEO satellite can be calculated as
+
+dk,m,t=−Resinθk,m,t 
+
++(Resinθk,m,t)2+(Hm,t−Re)2+2Re(Hm,t−Re), 
+
+(2)
+
+where θk,m,t∈[θmin,θmax] . The channel between the GS and the LEO satellite relies on line-of-sight (LoS) propagation without multipath fading effects [30]. However, signal power may be degraded by weather conditions, i.e., rainy or sunny. Considering both free space path loss and rain attenuation, the channel model for GS-to-LEO satellite communication can be expressed as
+
+G⁡(dk,m,t)=(c/f12​G4​π​dk,m,t)2​L​o​sW,t​GG​S​GL​E​O, 
+
+(3)
+
+where c is the speed of light and f12​G is the carrier frequency in the 12 GHz band. L​o​sW,t denotes the attenuation caused by weather conditions at time t , while GG​S and GL​E​O represent the antenna gains of the GS and LEO satellites, respectively. The degradation of the received signal strength (RSS) is due to propagation loss and interference. Telecommunication companies and spectrum regulation authorities are now interested in unlocking the 12 GHz band (12.2−12.7 GHz) for both terrestrial 5G and non-terrestrial services [31]. Sharing the 12 GHz band could lead to interference due to the coexistence of GS-to-LEO satellite and terrestrial 5G communication. However, our study focuses on the LEO satellite network topology problem and deploys the GSs solely to evaluate the LEO satellite routing path. Therefore, we assume that the GS is located in an area where its communication with the LEO satellite does not face interference issues. The network capacity with interference-free is formulated as
+
+Ck,m,t=ℬ12​G​log2⁡(1+PT​x​G​(dk,m,t)/σ2), 
+
+(4)
+
+where PT​x and G⁡(dk,m,t) denote the transmit power and channel gain within the distance dk,m,t , respectively. We assume that the transmit power is fixed; thus, it does not vary with time t . Additionally, ℬ12​G represents the frequency bandwidth in the 12 GHz band, and σ2 is the noise power. Another key performance metric for link selection is the propagation delay, given by τk,m,t=c/dk,m,t . The optimal link between the k -th GS within the visible region and one of the LEO satellites is based on these performance metrics. This is expressed as:
+
+L​i​n​k​(k,m∗,t)=argminm∈{1,…,M}​({Q⁡(k,m,t)|Q⁡(k,m,t)>0}), 
+
+(5)
+
+where Q(k,m,t)=𝟏{θk,m,t∈[θmin,θmax]}(τk,m,t+1/Ck,m,t) . Eq.5 indicates the selection of the lowest Q⁡(k,m,t) given Q⁡(k,m,t)>0 .
+
+## II-C Network Model for Inter-Satellite Links
+
+Unlike the visibility region for GS-to-LEO satellites, two LEO satellites can see each other when their line of sight is not blocked by the atmospheric layer. Therefore, the inter-satellite visibility is determined by the altitude of a triangle, denoted by Γi,j,t . In this triangle, the base and the perpendicular sides represent the distances from the Geocenter of Earth to the i -th and j -th LEO satellites, respectively, while the hypotenuse measures the distance between the two LEO satellites [32]. Using the triangle formula, the altitude of a triangle Γi,j,t can be easily calculated as the functions of Hi,t , Hj,t , and Di,j,t , where Di,j,t is the distance between the i -th and the j -th LEO satellites. The i -th and j -th are considered to be visible to each other if their relative altitude Γi,j,t adheres to the following constraint:
+
+Γi,j,t>ΓA​t​m​o​s​p, 
+
+(6)
+
+where ΓA​t​m​o​s​p=Re+γA​t​m​o​s​p . The atmospheric layer height is 50 km (γA​t​m​o​s​p=50​k​m) . The distance between two LEO satellites Di,j can be calculated using Cartesian coordinates in three dimensions, as described in [6] (see [33] for a more detailed calculation).
+When airborne above Earth’s atmosphere layer, the communication channel between LEO satellites is modeled as free-space path loss without fading and weather attenuation. The channel power degrades depending on the distance, and it is given by:
+
+GL​E​O​(Di,j,t)= 
+
+(c/f12​G​4​π​Di,j,t)2​L​o​sP​o​l​L​o​sM​i​s​GR​X​_​L​E​O​GT​X​_​L​E​O, 
+
+(7)
+
+where L​o​sP​o​l and L​o​sM​i​s are the polarization and misalignment antenna losses, respectively. With an interference-free scenario, the mathematical expression for the space network capacity can be written as:
+
+Si,j,t=ℬ12​G​log2⁡(1+S​N​Ri,j,t), 
+
+(8)
+
+where S​N​Ri,j,t=PT​x​GL​E​O​(Di,j,t)/σ2 represents the signal-to-noise ratio. The network latency between the two LEO satellites is
+
+Li,j,t=cDi,j,t. 
+
+(9)
+
+## II-D Optimization Problem Formulation
+
+The purpose of this study is to create an efficient space network topology that maximizes network capacity while minimizing latency and link churn. Here, link churn refers to the path changes in satellite networks. Therefore, reducing link churn can minimize communication disruptions, resulting in more stable and continuous service. Given U number of optical link ports at each LEO satellite, usually 4 in today’s LEO satellite constellation [34]), each LEO satellite can connect with any U LEO satellites other satellites within its visibility and propagation coverage area. The space network topology design enables each LEO satellite to select and connect to only the best U LEO satellites from all available options, which optimizes the objective function in a dynamic environment. To achieve this, we formulate an optimization problem where the objective function aims to maximize network capacity while minimizing latency and link churn. This optimization is subject to the following constraints: (C1) the number of link connections allowed for each satellite, (C2) ISL duplex, (C3) inter-satellite visibility, and (C4) propagation distance. Furthermore, the control variable represents the link connection between the satellites. Let ϕi,j,t be a binary variable that denotes the connection status between the i -th and j -th LEO satellites at time t . ϕi,j,t is equal to 1 if the i -th LEO satellite is connected to the j -th satellite, and 0 otherwise. Ψt={ϕi,j,t|i=1,…,M,j={1,…,M}} denotes a set of link connections among the LEO satellites at time t . The optimization problem is formulated as
+
+P1:maxΨt(∑i=1M∑j=1∖{i}Mϕi,j,t(Si,j,t+1Li,j,t+ϕi,j,t−1)) 
+
+ s.t. C1: ∑j=1Mϕi,j,t≤U,∀i∈{1,…,M} 
+
+ C2: ϕi,j,t=ϕj,i,t,∀i,j∈{1,…,M}, 
+
+ C3: Γi,j,t>ΓA​t​m​o​s​p,∀i,j∈{1,…,M}, 
+
+ C4: Di,j,t<DM​a​x,∀i,j∈{1,…,M}, 
+
+(10)
+
+where DM​a​x represents the maximum distance at which two LEO satellites can communicate with each other. The objective function in (10) will be zero when the i -th satellite is not connected to the j -th satellite (ϕi,j,t=0 ), and greater than zero otherwise. Additionally, if the i -th satellite is connected to the j -th satellite at two consecutive time steps t−1 and t , an inverse objective function of the link churn will be equal to 1 (ϕi,j,t​ϕi,j,t−1=1 ), and 0 otherwise. Therefore, maximizing the objective function in (10) is equivalent to maximizing network capacity while minimizing latency and link churn.
+
+## III DTEG-Based Optimal Topology Design (DoTD) Algorithm
+
+To solve the optimization problem, we first construct a Dynamic Time-expanded (DTEG) graph that comprehensively captures the communication opportunities for a given satellite at current time t at future time slots, say, (t+τ) up to T , where τ is the time period length, and T is the expanded time horizon (say, 10 minutes). The fixed trajectories of LEO satellites – including constant velocity of satellite, orbital period, and altitudes together with Earth’s steady rotation – facilitate accurate predictions of their future achievable performances even in the dynamic movement of space network environment (see in Fig.2). Next, we introduce a novel DTEG-based Topology Design (DoTD) algorithm that maximizes the objective function of problem P1 (over an expanded time horizon T ). The proposed DoTD algorithm is a dynamic programming based algorithm and runs in polynomial time.
+
+## III-A DTEG Construction
+
+Consider a total time duration T to be divided into discrete and equal time slots (of interval length τ ), such as, {0,1,…,T} . At a given time slot t , let Gt={V,Et} be an undirected graph that represents the snapshot of space network, where V is the set of nodes, and Et⊆(V×V) is the set of communication links between node-pairs at time slot t . For most scenarios and ease of presentation, we assume V is constant over time, where the set of potential links may change due to the varying satellite node positions, and varying channel conditions. This series of graph snapshots {G|t=1​…​T} is used for the construction of DTEG graph 𝒢=(𝒱,ℰ) . Primarily, the DTEG graph 𝒢 is a layered graph, where each layer corresponds to a discrete time interval of length t .
+
+Node Structure: Given the series of graph snapshots {Gt|t=1​…​T} , the DTEG graph has a total of (T^+1) layers of nodes, where T^=T/τ . Thus, the node set 𝒱 is: 𝒱={vi,t|i∈{0,…,|V|},and t∈[0,T^]} . As a result, the total number of nodes is |V|×(T^+1) .
+
+Link Structure: DTEG graph 𝒢 will include spatial links only. A spatial link represents a communication possibility from a satellite node vi to another node vj at time t . Formally, a spatial link is a tuple (vi,t,vj,t+1CLOSE ), where i≠j , and the link conditions are met.
+
+Link Score Cost: We define the cost Ai,j,t of a link e∈ℰ as its score value. The score value is a weighted sum of normalized values for capacity, latency and link churns, and is discussed in detail in the next subsection. The detail calculation of the score value function is provided in Eq.13.
+
+Fig. 2: DTEG graph representation.
+
+## III-B Algorithm Description
+
+Leveraging the DTEG graph (representing dynamic space network constellation), we propose a space network topology design called the DoTD algorithm that is based on dynamic programming principle [35]. The proposed DoTD algorithm tackles the optimization problem in (10) by transforming it into a score-based optimization problem. The concept of a score is widely understood as an indicator used to evaluate student outcomes. Top students are ranked based on the assessment of their time-dependent scores obtained from exams, assignments, and homework. With this key idea, the proposed DoTD algorithm enables each LEO satellite to evaluate others based on their scores and select the top U satellites with the highest scores to establish link connections. The objective function in problem P1 is transformed into the score-based objective function as follows. Due to the differing scales of network capacity (Si,j,t ), latency (Li,j,t ), and link churn (ϕi,j,t ), the algorithm may focus on the metric with the highest scale during selection. This issue can be addressed by normalizing the KPMs to a common range from 0 to 1 . Let S¯i,j,t , L¯i,j,t , and ϕ¯i,j,t be the normalized values for capacity, latency, and link churn, respectively. They can be calculated as follows:
+
+S¯i,j,t=Si,j,tSMax,t;L¯i,j,t=Li,j,tLMax,t;ϕ¯i,j,t=ϕi,j,tU, 
+
+(11)
+
+where SMax,t and LMax,t are the maximum values of link capacity and latency at time t , respectively. The update rule for maximum value is given by
+
+gMax,t=max{gMax,t−1, 
+
+maxi∈ℳ,j∈ℳ(1{Γi,j,t>ΓA​t​m​o​s​p}1{Di,j,t<DM​a​x}gi,j,t)}, 
+
+(12)
+
+where gMax,t∈{SMax,t,LMax,t} , and ℳ is the set of satellites. This time-dependent maximization allows the calculation of the maximum values for capacity and latency, ensuring they are always greater than the values at any given time. Normalizing using these maximum values maintains the scale of achievable capacity and latency over different time steps. The link cost, which normalizes the objective function in P1, can be written as:
+
+Ai,j,t=w1​S¯i,j,t+w2​(1−L¯i,j,t)+(1−w1−w2)​ϕ¯i,j,t−1, 
+
+(13)
+
+where w∈{w1,w2,1−w1−w2} are the weights of the objective function. The constraints on the weights are: w1∈[0,1],w2∈[0,1] , and w1+w2≤1 . With this design, maximizing the simplified function Ai,j,t is equivalent to maximizing the objective function in P1. The score value function is given by:
+
+αi,j,t=1{Γi,j,t>ΓA​t​m​o​s​p}1{Di,j,t<DM​a​x}(Ai,j,t+Πj,t−1), 
+
+(14)
+
+where Πj,t−1 is the historical score function of the j -th node at time t−1 , and it is set to zero at initial time (Πj,t=0=0) . The optimal link can be obtained as follows:
+
+ϕi,j,t∗=argminl∈ℳ​({αi,l,t|(∑k=1Mϕi,k,t∗<U∩∑k=1Mϕj,k,t∗<U)}). 
+
+(15)
+
+The design of the score function in (14) ensures that the i -th satellite can select any j -th satellite within the inter-satellite visibility and communication range, thus satisfying constraints C3 and C4. The optimal link selection in (15) allows the i -th satellite to choose the j -th satellite with the highest score given that its total link connections are less than U and the connections of the j -th satellite are also less than U , thus adhering to constraints C1 and C2. The binary variable representing the j -th satellite connected to the i -th satellite is given by ϕj,i,t∗=ϕi,j,t∗ . Therefore, the optimization problem P1 was solved. The update rule for the score function is:
+
+Πi,t=1U​∑j=1∖{i}Mϕi,j,t∗​(Ai,j,t+Πj,t−1). 
+
+(16)
+
+Lemma III.1.
+
+The time-dependent maximum value gMax,t defined in Eq. 12 is the achievable maximum capacity, latency, and link churn, denoted by g , up to time t .
+
+Proof.
+
+Assume that the initial value gMax,t=0 is given at time t=0 , which represents the maximum value of g . At time t−1 , gMax,t−1 correctly represents the maximum value of g for all i,j∈ℳ up to time t−1 . Suppose there exists another value of g′ , such that g′>gMax,t . To demonstrate that gM​a​x,t is the maximum value up to time t , we prove that the assumption g′>gMax,t is not true. Under this assumption, there are two possible cases to consider for gMax,t . 
+
+∙ Case 1: Assume that gMax,t=gMax,t−1 . By the inductive hypothesis, gMax,t−1 is the maximum value of g up to time t−1 . Additionally, if gMax,t=gMax,t−1 , then gMax,t must be at least as large as any gi,j,k for 0≤k≤t−1 . This implies gMax,t−1≥g′ , which contradicts our assumption that g′>gMax,t . 
+
+∙ Case 2: From Eq.12, gMax,t is the maximum value of gi,j,t at time t under the constraints Γi,j,t>ΓA​t​m​o​s​p and Di,j,t<DM​a​x . If there exists some g′ such that g′>gMax,t , then g′ should have been included in the set of values for gi,j,t , which also contradicts the definition of gMax,t . From both cases, the assumption that g′>gMax,t is contradiction. Therefore, the value gMax,t is indeed the maximum of gMax,t−1 and maxi∈ℳ,j∈ℳ(𝟏{Γi,j,t>ΓA​t​m​o​s​p}𝟏{Di,j,t<DM​a​x}gi,j,t) .
+∎
+
+Lemma III.2.
+
+The update rule of the score function in (Eq. 16) remains finite even as the observation time approaches infinity: Πi,t<∞,T→∞ .
+
+This ensures that the proposed DoTD algorithm can continuously evaluate the scores of satellites and select connections at all time steps.
+
+Proof.
+
+The score of the LEO satellite is equal to zero at the initial time step (Πi,t=0=0 ). Thus, the scores from time t=1 to t=T are given by:
+
+Πi,1=1U​∑j=1∖{i}Mϕi,j,1∗​Ai,j,1 
+
+Πi,2= 
+
+1U​∑j=1∖{i}Mϕi,j,1∗​Ai,j,1+1U2​∑j=1∖{i}M∑k=1∖{j}Mϕi,j,1∗​ϕj,k,2∗​Aj,k,2 
+
+Πi,T= 
+
+1U​∑j=1∖{i}Mϕi,j,1∗​Ai,j,1+1U2​∑j=1∖{i}M∑k=1∖{j}Mϕi,j,1∗​ϕj,k,2∗​Aj,k,2 
+
++⋯+1UT​∑j=1∖{i}M…∑k=1∖{l}M⏟T​(ϕi,j,1∗​…​ϕl,k,T∗⏟T​Aj,k,T) 
+
+(17)
+
+From (13), L¯i,j,t>0 and ϕ¯i,j,t−1<1 ⇒ Ai,j,t<1 , ∀t . Then, from (17), if T→∞ ⇒ UT→∞ ; thus, Πi,T<∞ .
+∎
+
+Algorithm 1 DoTD Algorithm
+
+ 1:
+
+ Input:
+
+ 2:
+
+ TLE_Data_File in [23]: File containing TLE data
+
+ 3:
+
+ Set_Start_Time: Start time for the experiment 
+
+ 4:
+
+ Set_End_Time: End time for the experiment
+
+ 5:
+
+ ———————Algorithm————————————
+
+ 6:
+
+ Initialization: Set maximum capacity Si,j,t , latency Li,j,t , and score value function Πi,j,t=0 to zero
+
+ 7:
+
+ for t=1​ to ​T do
+
+ 8:
+
+  Read TLE_Data to generate LEO satellite constellation [36]
+
+ 9:
+
+  Update time and generate locations of LEO satellites [36]
+
+ 10:
+
+  Compute the visible altitude Γi,j,t using Eq.6
+
+ 11:
+
+  Generate the distances between LEO satellites Di,j,t [36]
+
+ 12:
+
+  Determine the network capacity Si,j,t and latency Li,j,t using
+
+ 13:
+
+  Eq.8 and Eq.9, respectively.
+
+ 14:
+
+  Update the maximum capacity SM​a​x,t and latency LM​a​x,t 
+
+ 15:
+
+  using Eq.12
+
+ 16:
+
+  Normalize the capacity, latency, and link churn using Eq.11
+
+ 17:
+
+  Obtain the normalized objective function Ai,j,t using Eq.13
+
+ 18:
+
+  Compute the score-based normalized objective function αi,j,t 
+
+ 19:
+
+  using Eq.14
+
+ 20:
+
+  for each satellite ​i=1​ to ​M do
+
+ 21:
+
+   for j=1​ to ​M do
+
+ 22:
+
+    if ∑k=1Mϕi,k,t∗<U​ and ​∑k=1Mϕj,k,t∗<U then
+
+ 23:
+
+      Select the optimal link: ϕi,j,t∗=argminl∈ℳ​(αi,l,t) 
+
+ 24:
+
+      Update ISL duplex: ϕj,i,t∗=ϕi,j,t∗ 
+
+ 25:
+
+    end if
+
+ 26:
+
+   end for
+
+ 27:
+
+  end for
+
+ 28:
+
+  Update the score function:
+
+ 29:
+
+     Πi,t=1U​∑j=1∖{i}Mϕi,j,t∗​(Ai,j,t+Πj,t−1) 
+
+ 30:
+
+ end for
+
+ 31:
+
+ ———————————————————————-
+
+ 32:
+
+ Output: Optimal link ϕi,j,t∗ to create the best topology
+
+The proposed DoTD algorithm is summarized in Algorithm 1. This algorithm allows each LEO satellite to select the best U satellite for connection to create an optimal dynamic time-expanded graph network topology.
+
+Time complexity: The proposed DoTD algorithm pre-computes the achievable performance metrics—such as capacity, latency, and link churn—for all communication links between the satellite-pairs over T timestamps, in order to evaluate the score value function given in Eq.16. In this context, the time complexity of the proposed algorithm equals to 𝒪⁡(T^​M2) , where T^=T/τ . Here, T represents the total time horizon and τ is time period length. T can range from a few minutes (e.g., 10 minutes) up to the maximum duration required for one complete Earth rotation (approximately 90​–​100 minutes). For our DoTD algorithmic purposes, we consider T to be on the order of few (10 ’s of) minutes. This is because satellite positions are accurately predictable over shorter time frames, and there is no practical need to forecast satellite positions several minutes in advance. Additionally, τ is expected to be on the order of seconds (e.g., 1 second) or a few hundred milliseconds. Given this, T^ can be treated as a constant and thus ignored. Consequently, the time complexity of the proposed algorithm simplifies to 𝒪⁡(M2) .
+
+Open Shortest Path First (OSPF) Routing Algorithm:
+We apply the Open Shortest Path First (OSPF)-based method to the optimal network topology obtained by our proposed DoTD algorithm. The OSPF-based DoTD routing path is introduced to an optimal routing path from a GS source to its destination. The network model for the GS-to-LEO satellite in sub-section II-B provides a solution that allows the GS to connect with the visible satellite (see Eq. 5). The proposed OSPF-based DoTD routing algorithm optimizes the routing path from the selected satellite to the satellite connected to the destination GS. Our approach works by exchanging information about the IP addresses and achievable scores within optimal network topology created by DoTD in Algorithm 1. This information enables the source satellite to find its destination and compute the aggregated scores, allowing it to select a routing path that maximizes capacity and minimizes latency.
+The proposed Algorithm 1 updates the network topology at intervals of T , where T can be several minutes or more (e.g., 10 minutes). This update interval is restricted by constraints related to configuration complexity, service continuity, and stability, which prevent updates at sub-second intervals. To manage this, the DoTD algorithm divides the total time T into multiple time slots with a granularity of τ (e.g., τ=1​s ), which corresponds to the communication time between two LEO satellites. At any time t , the algorithm pre-computes network performance for each time slot τ from the current time t to the future time t+T , and aggregates the score value functions of all satellites. This approach enables each satellite to select U satellites for establishing the connections that optimize performance at each timestamp from t to t+T . When a source node requests communication with a destination, the OSPF algorithm is applied to optimize the routing path within the topology established by Algorithm 1. The OSPF algorithm leverages the network topology derived from the DoTD to determine the optimal routing whenever a communication request is made.
+
+TABLE I: Network Parameters
+
+Parameter Settings
+
+Values
+
+Speed of light c 
+
+3×108 m/s
+
+Speed of LEO satellite
+
+7.66 km/s
+
+Atmospheric layer height γA​t​m​o​s​p 
+
+50 Km
+
+Earth’s radius Re 
+
+6378 Km
+
+Carrier frequency f12​G 
+
+12.2 GHz [37]
+
+Total bandwidth ℬ12​G 
+
+100 MHz [37]
+
+Polarization loss L​o​sP​o​l 
+
+4.5 dB
+
+Misalignment loss L​o​sM​i​s 
+
+0.5 dB
+
+GS antenna gain GG​S 
+
+33.2 dBi
+
+LEO satellite antenna gain GL​E​O 
+
+40 dBi
+
+Maximum communication range DM​a​x 
+
+7000 Km [38]
+
+Number of link selections U 
+
+4 [34]
+
+Number of LEO satellites
+
+907
+
+Weights of objective functions w1=w2 
+
+0.4
+
+## IV Experimental Results
+
+## IV-A Experimental Setup
+
+Fig. 3: SpaceX’s Starlink LEO satellites constellation
+
+TABLE II: GS deployments on Earth using GCS
+
+Scenarios
+
+Sources
+
+Latitudes
+
+Longitudes
+
+Destinations
+
+Latitudes
+
+Longitudes
+
+S1
+
+Sydney
+
+−33.865143 
+
+151.209900 
+
+Darwin
+
+−12.46 
+
+130.84 
+
+S2
+
+Miami
+
+25.761681 
+
+−80.191788 
+
+Calgary
+
+51.049999 
+
+−114.066666 
+
+S3
+
+New York
+
+40.730610 
+
+−73.935242 
+
+Miami
+
+25.761681 
+
+−80.191788 
+
+S4
+
+New York
+
+40.730610 
+
+−73.935242 
+
+San Francisco
+
+37.773972 
+
+−122.431297 
+
+S5
+
+Phnom Penh
+
+11.562108 
+
+104.888535 
+
+Kathmandu
+
+27.700769 
+
+85.300140 
+
+CelesTrak in [23] has received permission from SpaceX to provide live updates of TLE datasets, which are used to generate the real LEO satellite constellation emulator. These general perturbation (GP) datasets are derived from radar and optical observations conducted by the US Space Surveillance Network (SSN). Additionally, CelesTrak provides test cases that demonstrate the high accuracy of its localization predictions. For this experiment, our team collected TLE datasets on June 10, 2024, at 8:23:00 UTC and analyzed them using Aerospace and Satellite Communications Toolboxes in [36] to create a real-time LEO satellite network emulator that perfectly synchronizes to the real-world LEO satellites, as illustrated in Fig.3. The accuracy of location estimations for LEO satellites, obtained using CelesTrak, and Aerospace and Satellite Communications Toolboxes, is facilitated by the constant speed of the satellites, the fixed altitude of their orbital planes, and Earth’s steady rotation. GSs are deployed in different states or countries based on a geographic coordinate system (GCS), which measures positions on Earth using latitude and longitude. Our proposed DoTD approach in Algorithm 1 generates the network topology that allows each satellite to connect with four other satellites. This limited number of link connections follows a form of the + Grid structure where each satellite is linked to its 4 neighbors. The capacity and latency of each link are then calculated using the network parameters given in TABLE I. All this information is fed into xeoverse  [26] to generate routing paths from the source to the destination using OSPF.
+
+Fig. 4: Network maps created by DTEG, Greedy, and + Grid: Packets traveling from New York to San Francisco.
+
+## IV-B Baseline Methods
+
+We evaluate two baseline methods—Greedy and + Grid—and compare them with our proposed algorithm.
+
+∙ Greedy: The greedy method is the first order of the proposed DoTD algorithm, which establishes 4 links within its inter-satellite visibility and communication range based on the score value function in Eq.13. Unlike DoTD, this method captures the score value of each link at the current timestamp and selects the 4 links with the highest scores compared to other available links to create the space network topology.
+
+∙ + Grid: This method focuses on
+selecting links based on a grid pattern: two LEO satellites are chosen from inter-orbital links, and two are chosen from intra-orbital link. The orbital parameters of the satellites—such as argument of perigee, true anomaly, RAAN, and inclination—determine whether they belong to the same orbital link or not. Each satellite compares its RAAN and inclination with those of others to identify satellites moving in consecutive orbits, and then establishes connections accordingly.
+
+## IV-C Experimental Results
+
+(a) 
+
+(b) 
+
+(c) 
+
+Fig. 5: (a) Hop counts from the GS source to the destination, (b) Latency evaluation, (c) Average achievable capacity of each link, under five different scenarios in TABLE II.
+
+Experiment 1: The GS source is deployed in New York, while the destination is located in San Francisco, as illustrated in Fig.4. A network map is created to clearly show the optimal routing paths of the proposed DoTD algorithm (red line) and other two baseline methods: greedy (black line) and + Grid (yellow line). This map also illustrates the ISL connections between consecutive LEO satellites, including their IDs, from the GS source to the destination. On June 10, 2024, at 8:23:00, the Starlink-2658 satellite, which is airborne above New York, establishes a connection with the GS source in that state to relay packets to the destination in San Francisco, which is connected to the LEO satellite Starlink-1814. The results demonstrate that the proposed DoTD algorithm outperforms the baseline methods by requiring only 5 LEO satellites to forward packets to the GS destination across different states. In comparison, the greedy method needs 6 hops, while the + Grid method requires up to 22 hops. This confirms our earlier discussion (see RCM in Section I) about the challenges faced by the + Grid method due to the imperfect LEO satellite constellation. Faced with this issue together with the satellites’ mobility, the + Grid method selects 4 satellites from intra-orbital and consecutive inter-orbital links, which do not align with the optimal routing path. At any time, the satellites in other orbits can be closer to each other than those in the same or consecutive adjunction orbits, which degrades the performance of the + Grid method. The updated versions of + Grid, namely × Grid and Motif, also emphasize connections to neighboring satellites. Like + Grid, these two algorithms experience performance degradation due to imperfections in the satellite constellation (see the real satellite emulator in Fig.3). The satellites and orbital planes are not evenly spaced. Given these limitations, we ensure that our proposed DoTD algorithm also outperform these two baseline methods. Therefore, we do not present performance evaluations for × Grid and Motif in comparison to our proposed algorithm. In comparison to Greedy, DoTD’s ability to pre-estimate the future performance of links based on satellite mobility patterns enables it to determine which satellites should be connected at specific future times to continuously maximize performance. This capability allows DoTD to achieve better performance compared to the greedy method, which only considers the performance of links at the current time for selection.
+
+Experiment 2: The multiple GS sources and their destinations are deployed across various states and countries on Earth using the GCS, as detailed in TABLE II. The network maps are generated using DoTD, greedy, and + Grid with five different GS source-destination pairs to measure performance metrics, including hop counts (Fig.5(a)), latencies (Fig.5(b)), and network capacities (Fig.5(c)). These results demonstrate that the proposed algorithm consistently achieves the optimal routing path across all GS deployments on Earth. Applying the DoTD algorithm to optimize the space network topology can reduce the average hop count rate by 10.91% compared to the greedy method and by up to 81.82% compared to the + Grid method, as illustrated in Fig.5(a). In most cases, reducing the hop count often shortens the path from the GS source to the destination, thereby decreasing the total latency required to send a data packet through the space network topology to its destination. In this experiment, the proposed algorithm achieves a very low latency of only 4.2 ms, while the greedy method requires 9.9 ms and the + Grid method incurs a much higher latency of up to 203.6 ms for transmitting packets from the same GS source (Sydney) to the destination (Darwin), as shown in Fig.5(b). Additionally, in the evaluation across these five different scenarios (S1-S5), the DoTD algorithm significantly improves network capacity. It achieves an average increase of 28.09% over the greedy method and up to 70.47% over the + Grid method, as illustrated in Fig.5(c).
+
+Fig. 6: Counts the number of ISL selections that are the same.
+
+Experiment 3: This experiment evaluates the link churn achieved by the proposed method and compared it to other two baselines. We monitor the changes in ISL connections over a period of 3h and 20 min, from 08:23 on June 10, 2024, to 11:03 on the same day, as shown in Fig.6. We count the ISL connections of all LEO satellites that connect to the same satellites at two consecutive time steps, which allows for the update of the space network topology. The results reveal that the proposed method maintains the same ISL connections more effectively than the greedy and + Grid methods. This improvement is achieved by incorporating link churn into the objective function of optimization problem P1. Thus, DoTD takes link churn into account when selecting satellites that minimize changes in ISL connections. Reducing these changes lowers network re-configuration costs and enhances network stability and service continuity.
+
+## V Conclusion and Future work
+
+In this paper, we propose an optimal DoTD algorithm to address the network topology challenges encountered by the neighbor-grid method due to imperfections in LEO satellite constellations. Our approach focuses on selecting ISL connections that consistently achieve optimal performance metrics—such as network capacity, latency, and link churn—over time. To this end, we formulated a score value function by normalizing multiple objective functions to a common range from 0 to 1 . We then introduce the DoTD algorithm, which pre-estimates the achievable score value function for each satellite at future timestamps and selects the optimal satellites for establishing connections based on these predictions. By evaluating and selecting links using this score value function, the proposed approach ensures that the network topology remains optimized for maximum performance at all times. Our experiments with the Starlink LEO satellite constellation highlight the superiority of the proposed DoTD algorithm over baseline schemes. The algorithm outperforms the benchmarks across all metrics of interest and in every scenario evaluated.
+
+Future work: This study applies OSPF routing over the created network topologies. One line of future work is exploring other emerging hierarchical routing algorithms [40], or to optimize OSPF weights [39]. Another line of work is to optimizing end-to-end routes whilst incorporating elements such as ground station locations [41] and middleboxes such as CDNs [42].
+
+## Acknowledgments
+
+This work is partially supported by the National Science Foundation (NSF) under Award #2235140 and the NGIAtlantic.eu project within the EU Horizon 2020 programme under Grant No. 871582.
+
+## References
+
+[1]
+ D. Ron and F. Mehri, “SpaceNet,” [Online]. Available: https://github.com/FarzadMehri/SpaceNet
+
+[2]
+ M. Vaezi et al., “Cellular, Wide-Area, and Non-Terrestrial IoT: A Survey on 5G Advances and the Road Toward 6G,” IEEE Communications Surveys & Tutorials, vol. 24, no. 2, pp. 1117-1174.
+
+[3]
+ J. Liu, Y. Shi, Z. M. Fadlullah and N. Kato, “Space-Air-Ground Integrated Network: A Survey,” IEEE Communications Surveys & Tutorials, vol. 20, no. 4, pp. 2714-2741, Fourthquarter 2018.
+
+[4]
+ Raman, A., Varvello, M., Chang, H., Sastry, N. and Zaki, Y. Dissecting the performance of satellite network operators. Proceedings Of The ACM On Networking. Vol. 1, Issue CoNEXT3, 1-25 (2023)
+
+[5]
+ G. Fairhurst, L. Caviglione and B. Collini-Nocker, “FIRST: Future Internet — a role for satellite technology,” 2008 IEEE International Workshop on Satellite and Space Communications, Toulouse, France, 2008, pp. 160-164.
+
+[6]
+ X. Zhou, Y. Weng, B. Mao, J. Liu, and N. Kato, “Intelligent Multi-Objective Routing for Future Ultra-Dense LEO Satellite Networks,” IEEE Wireless Communications, doi: 10.1109/MWC.010.2300353,
+
+[7]
+ M. Y. Abdelsadek et al., “Future Space Networks: Toward the Next Giant Leap for Humankind,” IEEE Transactions on Communications, vol. 71, no. 2, pp. 949-1007, Feb. 2023.
+
+[8]
+ H. Al-Hraishawi, H. Chougrani, S. Kisseleff, E. Lagunas and S. Chatzinotas, “A Survey on Nongeostationary Satellite Systems: The Communication Perspective,” IEEE Communications Surveys & Tutorials, vol. 25, no. 1, pp. 101-132, Firstquarter 2023.
+
+[9]
+ T.Pultarova et al., “SpaceX’s Starlink megaconstellation grows with launch of 60 new satellites,” Space.com. [Online]. Available: https://www.space.com/spacex-starlink-satellites.html
+
+[10]
+ J. Rainbow, “Eutelsat scales back OneWeb Gen 2 upgrade plan. [Online]. Available: https://spacenews.com/eutelsat-scales-back-oneweb-gen-2-upgrade-plan/
+
+[11]
+Kassem, M., Raman, A., Perino, D. and Sastry, N. A browser-side view of starlink connectivity. Proceedings Of The 22nd ACM Internet Measurement Conference (IMC). pp. 151-158 (2022)
+
+[12]
+ X. Feng, Y. Sun and M. Peng, “Distributed Satellite-Terrestrial Cooperative Routing Strategy Based on Minimum Hop-Count Analysis in Mega LEO Satellite Constellation,” IEEE Transactions on Mobile Computing, doi: 10.1109/TMC.2024.3380891.
+
+[13]
+ Z. Han, C. Xu, G. Zhao, S. Wang, K. Cheng and S. Yu, “Time-Varying Topology Model for Dynamic Routing in LEO Satellite Constellation Networks,” IEEE Transactions on Vehicular Technology, vol. 72, no. 3, pp. 3440-3454, March 2023, doi: 10.1109/TVT.2022.3217952.
+
+[14]
+ R. Wang, M. A. Kishk and M. -S. Alouini, “Ultra Reliable Low Latency Routing in LEO Satellite Constellations: A Stochastic Geometry Approach,” IEEE Journal on Selected Areas in Communications, vol. 42, no. 5, pp. 1231-1245, May 2024, doi: 10.1109/JSAC.2024.3365884.
+
+[15]
+ P. Zhao, J. Liu, R. Zhang and T. Huang, “Self-Healing Motif-Based Distributed Routing Algorithm for Mega-Constellation,” 2022 5th International Conference on Hot Information-Centric Networking (HotICN), Guangzhou, China, 2022, pp. 90-98.
+
+[16]
+ J. Mclaughlin, J. Choi, and R. Durairajan, “× Grid: A Location-oriented Topology Design for LEO Satellites”, In Proceedings of the 1st ACM Workshop on LEO Networking and Communication (LEO-NET ’23), New York, NY, USA, pp. 37–42.
+
+[17]
+ D. Bhattacherjee and A. Singla, “Network topology design at 27,000 km/hour,” In Proceedings of the 15th International Conference on Emerging Networking Experiments And Technologies (CoNEXT ’19), New York, NY, USA, 341–354.
+
+[18]
+ D. Werner, “Intersatellite optical links will shake up the ground segment — but how soon and how fast is anyone’s guess,” SpaceNews, Mar. 17, 2021. [Online]. Available: https://spacenews.com/intersatellite-optical-links-will-shake-up-the-ground-segment-but-how-soon-and-how-fast-is-anyones-guess/
+
+[19]
+ I. P. Vieira, T. C. Pita and D. A. A. Mello, “Modulation and Signal Processing for LEO-LEO Optical Inter-Satellite Links,” IEEE Access, vol. 11, pp. 63598-63611, 2023, doi: 10.1109/ACCESS.2023.3287501.
+
+[20]
+ G. Wang, F. Yang, J. Song and Z. Han, “Free Space Optical Communication for Inter-Satellite Link: Architecture, Potentials and Trends,” IEEE Communications Magazine, vol. 62, no. 3, pp. 110-116, March 2024, doi: 10.1109/MCOM.002.2300024.
+
+[21]
+ T. Brashears, “SpaceX reveals Starlink laser capacity,” Advanced Television, Feb. 2, 2024. [Online]. Available: https://advanced-television.com/2024/02/02/spacex-reveals-starlink-laser-capacity/.
+
+[22]
+ J. Hu, L. Cai, C. Zhao and J. Pan, “Directed Percolation Routing for Ultra-Reliable and Low-Latency Services in Low Earth Orbit (LEO) Satellite Networks,” 2020 IEEE 92nd Vehicular Technology Conference (VTC2020-Fall), Victoria, BC, Canada, 2020, pp. 1-6.
+
+[23]
+ “Supplemental GP Element Sets,” CelesTrak, [Online]. Available: https://celestrak.org/NORAD/elements/supplemental
+
+[24]
+ Z. Han, C. Xu, G. Zhao, S. Wang, K. Cheng and S. Yu, “Time-Varying Topology Model for Dynamic Routing in LEO Satellite Constellation Networks,” IEEE Transactions on Vehicular Technology, vol. 72, no. 3, pp. 3440-3454, March 2023.
+
+[25]
+ Y. Zheng et al., “A topology design method for satellite networks based on deep reinforcement learning”, Proc. SPIE 12715, Eighth International Conference on Electronic Technology and Information Science (ICETIS 2023), 127151A (20 June 2023); https://doi.org/10.1117/12.2682444
+
+[26]
+Kassem, M. and Sastry, N. xeoverse: A Real-time Simulation Platform for Large LEO Satellite Mega-Constellations. IFIP Networking. (2024)
+
+[27]
+ S. Cakaj et al., “Communications duration with low earth orbiting satellites,” Proceedings of the 4th IASTED International Conference on Antennas, Radar and Wave Propagation, 2007.
+
+[28]
+ X. Zhong et al., “Link Topology and Multi-Objective Mission Flow Optimization for Remote Sensing Satellites With Inter-Layer Links and Satellite-Ground Links,” IEEE Transactions on Vehicular Technology, doi: 10.1109/TVT.2024.3414665.
+
+[29]
+ Study on New Radio (NR) to Support Non Terrestrial Networks (Release 15), document TR 38.811 (V0.3.0), 3GPP, Dec. 2017.
+
+[30]
+ Z. Jia, M. Sheng, J. Li, D. Zhou and Z. Han, “Joint HAP Access and LEO Satellite Backhaul in 6G: Matching Game-Based Approaches,” IEEE Journal on Selected Areas in Communications, vol. 39, no. 4, pp. 1147-1159, April 2021.
+
+[31]
+ Z. Hassan et al., “Spectrum Sharing of the 12 GHz Band with Two-Way Terrestrial 5G Mobile Services: Motivations, Challenges, and Research Road Map,” IEEE Communications Magazine, vol. 61, no. 7, pp. 53-59, July 2023.
+
+[32]
+ Z. TANG et al., “ISL Reassignment Based Snapshot Routing Optimization for Polar-Orbit LEO Satellite Networks,” IEICE TRANSACTIONS on Communications, vol. E98-B, no. 9, pp.1896-1905, 2015.
+
+[33]
+ O. Montenbruck and E. Gill, Satellite Orbits: Models, Methods and Applications. Berlin, Germany: Springer, 2012.
+
+[34]
+ Lloyd Wood. 2001. Internetworking with satellite constellations. Ph.D. Dissertation. University of Surrey.
+
+[35]
+ Y. Liu, E. K. P. Chong, A. Pezeshki and Z. Zhang, “A General Framework for Bounding Approximate Dynamic Programming Schemes,” IEEE Control Systems Letters, vol. 5, no. 2, pp. 463-468, April 2021.
+
+[36]
+ “Model, Visualize, and Analyze Satellite Scenario,” Matlab, [Online]. Available: https://kr.mathworks.com/help/aerotbx/ug/model-visualize-and-analyze-satellite-scenario.html
+
+[37]
+ T. -S. R. Niloy, Z. Hassan, N. Stephenson and V. K. Shah, “Interference Analysis of Coexisting 5G Networks and NGSO FSS Receivers in the 12-GHz Band,” IEEE Wireless Communications Letters, vol. 12, no. 9, pp. 1528-1532, Sept. 2023.
+
+[38]
+ A. U. Chaudhry and H. Yanikomeroglu, “Laser Intersatellite Links in a Starlink Constellation: A Classification and Analysis,” IEEE Vehicular Technology Magazine, vol. 16, no. 2, pp. 48-56, June 2021.
+
+[39]
+ Fortz, B. and Thorup, M. Internet traffic engineering by optimizing OSPF weights. Proceedings IEEE INFOCOM 2000.. pp. 519-528 vol.2 (2000)
+
+[40]
+ Li, Y., et al. Stable Hierarchical Routing for Operational LEO Networks. Proceedings Of The 30th Annual International Conference On Mobile Computing And Networking. pp. 296-311 (2024)
+
+[41]
+Abubakar, A., Kassem, M. and Sastry, N. Choosing the Right Spot: How Well Are LEO Satellite Gateways Placed? Starlink Case-Study. Proceedings Of The 2nd International Workshop On LEO Networking And Communication. pp. 49-54 (2024)
+
+[42]
+Bose, R., Fadaei, S., Mohan, N., Kassem, M., Sastry, N. and Ott, J. It’s a bird? It’s a plane? It’s CDN!: Investigating Content Delivery Networks in the LEO Satellite Networks Era. Proceedings Of The 23rd ACM Workshop On Hot Topics In Networks. pp. 1-9 (2024)
+
+ Experimental support, please
+ view the build logs
+ for errors. Generated by
+
+ L
+ A
+ T
+ E
+ 
+ xml
+ 
+ .
+
+## Instructions for reporting errors
+
+ We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+ support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+ methods listed below:
+
+Click the "Report Issue" (
+ 
+ ) button, located in the page header.
+
+ Tip: You can select the relevant text first, to include it in your report.
+
+ Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+ may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+ should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+ all.
+
+ Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+ We gratefully acknowledge support from
+ our major funders,
+ member institutions, ,
+ and all contributors.
+
+ About
+ ·
+ Help
+ ·
+ Contact
+ ·
+ Subscribe
+ ·
+ Copyright
+ ·
+ Privacy
+ ·
+ Accessibility
+ ·
+ Operational Status (opens in new tab)
+
+ Major funding support from
+

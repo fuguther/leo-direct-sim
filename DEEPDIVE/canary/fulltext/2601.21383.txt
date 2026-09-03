@@ -1,0 +1,883 @@
+
+
+KubeSpace: A Low-Latency and Stable Control Plane for LEO Satellite Container Orchestration
+
+Report GitHub Issue
+×
+
+Title:
+
+Content selection saved. Describe the issue below:
+
+Description:
+
+Submit without GitHub
+Submit in GitHub
+
+arXiv is now an independent nonprofit!
+Learn more
+×
+
+Back to arXiv
+
+Why HTML?
+
+Report Issue
+
+Back to Abstract
+
+Download PDF
+
+Abstract
+
+I Introduction
+
+II Background and Motivation
+
+II-A Container Orchestration Platforms
+
+II-B Container Orchestration in LEO Satellite Constellations
+
+III Design Overview
+
+IV Design of KubeSpace
+
+IV-A Multi Control Node Architecture and Handover Mechanism
+
+IV-B Control Node Placement Algorithm
+
+IV-C Control Node Assignment Algorithm
+
+V Performance Evaluation
+
+V-A Experimental Setup
+
+V-B Experimental Results
+
+VI Related Work
+
+VII Discussion and Limitation
+
+VIII Conclusion
+
+References
+
+License: arXiv.org perpetual non-exclusive license
+
+arXiv:2601.21383v1 [cs.NI] 29 Jan 2026
+
+KubeSpace: A Low-Latency and Stable Control Plane for LEO Satellite Container Orchestration
+
+Thanks: This work was supported by the National Key R&D Program of China under Grant No. 2023YFE0116600. The corresponding author is Wenjun Zhu.
+
+Zhiyuan Zhao, Jiasheng Wu, Shaojie Su, Wenjun Zhu, Yue Gao
+
+Affiliation: Institue of Space Internet, Fudan University, China
+
+College of Computer Science and Artificial Intelligence, Fudan University, China
+
+Abstract
+
+Low earth orbit (LEO) satellites play a pivotal role in global connectivity—delivering high‑speed Internet, cellular coverage, and massive IoT support. With ever‑growing onboard computing and storage resources, LEO satellites herald a new cloud paradigm: space cloud computing. While container orchestration platforms (e.g., Kubernetes) excel in terrestrial data centers, they are ill‑suited to LEO satellite networks, featuring geographic dispersion and
+frequent handovers. Those features bring high latency and intermittent management, leading to control plane failure in container orchestration.
+To address this, we propose KubeSpace, a low-latency and stable control plane specifically designed for container orchestration on LEO satellites. KubeSpace combines two key innovations: a distributed ground‑control‑node architecture that binds each satellite to its nearest controller for uninterrupted
+management, and an orbit‑aware placement with dynamic assignment strategy that further minimizes communication latency and handover frequency.
+Extensive experiments based on real satellite traces demonstrate that compared to existing solutions, KubeSpace reduces the average management latency of satellite nodes by 59% without any management interruption time.
+
+Index Terms: LEO Satellites, Low-Latency Control Plane, Seamless Handover, Space Cloud Computing, Kubernetes
+
+I Introduction
+
+In recent years, low earth orbit (LEO) satellite constellations—such as Starlink[1], Kuiper[2], and OneWeb[3]—have developed rapidly [4, 5, 6, 7]. These constellations consist of thousands of satellites equipped with high-speed inter-satellite links (ISLs)[8] and ground-satellite links (GSLs)[9], enabling network services such as high-speed Internet, cellular coverage, and large-scale IoT to be delivered globally[10, 11, 12]. Meanwhile, with increasing onboard computing and storage capabilities[13, 14, 15, 16], LEO satellite constellations are emerging as a computing service platform operating in space[17, 18, 19]. A variety of applications tailored for LEO satellites, such as onboard AI inference models[20, 21, 22] and lightweight 5G core networks[23, 24, 25], are emerging. These applications are increasingly deployed and managed using container orchestration platforms such as Kubernetes[26, 27, 28], improving deployment flexibility and the efficiency of onboard resource management.
+
+However, the control plane of traditional container orchestration platforms struggles to efficiently manage satellite resources and onboard containers. As illustrated in Fig. 1(a), if a single ground station or data center serves as the sole control node, communication between certain satellites and the control node may require dozens of inter-satellite hops. This results in latencies of several hundred milliseconds, severely limiting the control plane’s ability to respond promptly to on-orbit container events.
+
+(a) Single control node: high management latency.
+
+(b) Multi control node: management interruption during handovers.
+
+Fig. 1: Ground control node deployment for LEO satellite container orchestration: methods and challenges.
+
+A straightforward optimization strategy is to designate multiple ground stations as control nodes, allowing satellites to connect to the geographically closest control node. However, as shown in Fig. 1(b), traditional multi-controller architectures do not support seamless handover of worker nodes between different control nodes. When a satellite performs a handover between control nodes, it must first leave its current cluster before joining a new one. During this process, the control plane loses visibility of the satellite, and onboard application containers are disrupted. Moreover, due to the large number and high mobility of LEO satellites, such handover events occur frequently and have become the norm. Consequently, the control plane is forced to frequently handle disruptions in satellite node management, thereby making it difficult to maintain stable control over onboard resources and containers.
+
+This paper focuses on container orchestration platforms for LEO satellites using multiple control nodes, aiming to build a control plane with both low latency and high stability. We propose KubeSpace, which optimizes the multi control node architecture to enable seamless control node handovers for satellites, avoiding management interruptions during control transitions. Furthermore, we design a placement and dynamic allocation strategy that efficiently selects a small subset of ground stations as control nodes and leverages predictable satellite trajectories to assign each satellite an optimal controller, reducing both communication latency and handover frequency.
+
+We implemented a KubeSpace prototype based on Kubernetes v1.31.10 and conducted extensive experiments using real LEO satellite constellation data. The experimental results show that KubeSpace achieves a 59% reduction in satellite management latency, an 84% decrease in control node handover time, and completely eliminates management interruptions during satellite handovers, compared to traditional container orchestration platforms.
+
+Contributions of this paper can be summarized as follows:
+
+•
+
+We are the first to reveal the challenges faced by container orchestration platforms in the context of LEO satellite deployments, where the control plane struggles to balance low latency and high stability in managing satellite nodes.
+
+•
+
+We propose KubeSpace, which provides a low-latency and stable control plane for container orchestration platforms by leveraging an optimized multi control node architecture and enhanced mechanisms for control node placement and allocation.
+
+•
+
+We implemented a prototype of KubeSpace and conducted extensive experiments, which demonstrate that it significantly reduces the latency of satellite node management and completely eliminates management interruption time during control node handovers.
+
+The rest of this paper is organized as follows. Section II presents the background and motivation. Section III provides an overview of KubeSpace. Section IV details the design of its three key components. Section V describes the experimental setup and results. Section VI reviews related work. Section VII discusses limitations and future work. Finally, Section VIII presents the conclusion.
+
+II Background and Motivation
+
+Fig. 2: Architecture of Kubernetes.
+
+II-A Container Orchestration Platforms
+
+Container orchestration platforms originated in data centers, where Internet giants such as Google, Facebook, and Amazon used such platforms to manage tens of thousands of servers and the millions of containerized applications running on them. Today’s mainstream cluster management framework, Kubernetes[29], was inspired by Google’s Borg platform[30]. It provides a set of control plane components and node agents to enable unified management of compute, storage, and other resources within a server cluster, and offers services such as declarative deployment and resource scheduling for containerized applications.
+
+As shown in Fig. 2, Kubernetes divides servers into two roles: control-plane nodes and worker nodes. To deploy a containerized application, the user submits a resource manifest (e.g., a YAML file) to the API Server, which stores the request data in the Etcd database. The Scheduler then selects an appropriate node based on resource constraints and scheduling policies and completes the binding process. The Controller Manager ensures that the actual state of the system converges to the desired state defined in the manifest. On each worker node, the Kubelet retrieves the Pod information assigned to it from the API Server, uses the container runtime to start the containers, and periodically reports the status of the node and its containers back to the control plane.
+
+To ensure high availability of the control plane, data centers typically deploy multiple control nodes that collectively form a unified control plane. This architecture relies on the Etcd database to maintain data consistency. However, prior studies have shown that due to Etcd’s dependence on low-latency communication, this approach is not suitable for high-latency wide-area network environments[31, 32, 33, 34, 35]. An alternative multi-controller architecture, which is the focus of this paper, divides large-scale server infrastructures into multiple clusters, each managed by an independent control node. In terrestrial network environments, mature multi-cluster solutions such as Karmada[36] have been developed, enabling unified monitoring and container deployment across clusters managed by different control nodes.
+
+II-B Container Orchestration in LEO Satellite Constellations
+
+(a) Workflow of control node handover.
+
+(b) Time overhead.
+
+Fig. 3: Handover process in traditional platform.
+
+LEO satellite constellations, as a large-scale and fast-moving space-based computing infrastructure, pose significant challenges for traditional ground-based container orchestration platforms employing multiple control nodes. Although this architectural choice can help reduce management latency to some extent, existing solutions generally lack mechanisms to support the handover of worker nodes across different control nodes.
+
+As shown in Fig. 3(a), when a satellite needs to handover to a new control node, it must first leave the current cluster and then rejoin a new one[37, 38]. First, the administrator marks the satellite as unschedulable under the current control node and evicts all Pods running on it, before removing the satellite from the cluster. The satellite then clears its local cluster configuration, performs mutual authentication with the new control node, and completes the node registration process to be brought back under the control plane’s management. If any Pods are still required to run on the satellite, their scheduling metadata must be synchronized to the new control node, and the scheduling process must be re-executed.
+
+As shown in Fig. 3(b), assume the worker node is running only a lightweight nginx container. Even when the handover occurs within a wired local area network with a round-trip latency of less than 1 millisecond, the nginx service still requires approximately 9.7 seconds to become available again. Of this time, about 5.7 seconds are spent on stopping the container, cleaning up the environment, and completing the reconnection and re-registration with the new control node. During the transition—from disconnecting from the old control node to connecting to the new one—the node remains invisible to the control plane for approximately 4.5 seconds.
+
+TABLE I: Simulated daily control node handover overhead.
+
+Constellation
+
+Name
+
+Total
+
+Handovers
+
+Avg. Duration
+
+per Handover (s)
+
+Total Node
+
+Invisibility (h)
+
+Total Pod
+
+Unavailability (h)
+
+Starlink
+
+44287
+
+8.35
+
+84.99
+
+156.00
+
+Kuiper
+
+35782
+
+8.35
+
+68.67
+
+126.04
+
+Oneweb
+
+15966
+
+8.36
+
+30.68
+
+56.29
+
+Based on the constellation configurations of Starlink[39], Kuiper[40], and OneWeb[41], along with an inter-satellite link scheme in which each satellite connects to four neighboring satellites[26, 23], we built a simulated constellation system. In the simulation, we deployed two ground control nodes at the equator, at longitudes 0° and 180°. The tc tool was used to simulate communication latency between satellites and ground nodes. Using this setup, we evaluated the handover overhead under a traditional multi control node architecture. As shown in Table I, using Starlink as an example, a total of 44,287 handovers occurred in one day, with each satellite experiencing an average of 28 handovers. Each handover took approximately 8.35 seconds. The total node unavailability time across all satellites over one day was 84.99 hours, and the cumulative Pod service interruption time reached 156 hours.
+
+In conclusion, implementing container orchestration with multiple control nodes in LEO satellites is not a straightforward task. A new multi control node architecture is urgently needed to ensure that satellites connect to nearby control nodes and maintain uninterrupted management. In addition, it remains a critical challenge to determine the appropriate number and placement of ground stations for deploying control nodes, and to dynamically assign the optimal control node during satellite movement, in order to minimize communication latency and fully realize the benefits of a multi control node setup.
+
+III Design Overview
+
+This paper presents KubeSpace, a control plane designed to meet both demands for low latency and high stability in container orchestration frameworks for LEO satellite constellations. It achieves this through two key innovations.
+
+On the one hand, KubeSpace provides an optimized multi control node architecture with seamless control node handover for satellites. Specifically, on the control plane side, we introduce a mechanism to identify and assign satellite control ownership, and design a process for synchronizing satellite management data and transferring control authority based on Kubernetes-native Custom Resource Definitions (CRDs) and the watch mechanism. On the satellite side, we incorporate certificate preloading and hot handover of control channels. These mechanisms work in concert to effectively prevent service and management interruptions that typically occur during control node handovers in traditional platforms.
+
+On the other hand, to further reduce communication latency between satellites and control nodes, we propose a control node placement and dynamic assignment approach. First, KubeSpace introduces a two-step selection algorithm to efficiently choose a subset of control nodes from a large number of ground stations, with the objective of minimizing the maximum satellite-to-ground communication latency across all topologies during the entire constellation operation period. The algorithm first exploits the regularity of satellite-to-ground topologies to reduce the number of topologies considered during selection via clustering. Then, a K-center algorithm optimized with local search is applied to generate a practical placement scheme within a short time. Second, the assignment of control nodes is delegated to the satellites, allowing them to independently predict control node handover times based on their TLE data[42]. Additionally, to avoid unnecessary handovers triggered by minor fluctuations in satellite-to-control-node distances, we introduce a distance threshold in the control node selection process.
+
+Fig. 4: Multi control node architecture of KubeSpace.
+
+IV Design of KubeSpace
+
+In this section, we provide a detailed introduction to KubeSpace. We first present its multi control node architecture and the design that enables seamless control node handover for satellites. Then, we introduce two mechanisms designed to further reduce management latency and handover frequency: the Control Node Placement Algorithm (CNPA) and the Control Node Assignment Algorithm (CNAA).
+
+IV-A Multi Control Node Architecture and Handover Mechanism
+
+As shown in Fig. 4, the multi control node architecture proposed by KubeSpace involves multiple ground stations, each independently deploying a full set of Kubernetes control plane components and managing its own isolated cluster. The Kubelet agents deployed onboard the satellites function similarly to those in conventional Kubernetes clusters: they periodically report status to the currently connected ground control node and receive task assignments from it.
+
+Based on this foundation, we propose a state-based scheme for identifying and transitioning the control relationship between satellites and control plane nodes, which consists of the following three design aspects.
+
+State-based node control binding and filtering. To clearly define each control node’s authority over satellite nodes, KubeSpace introduces a new field in the node status called ControlPlaneBindingState. This field specifies the control relationship between a satellite node and a control node, and can take one of four possible states:
+
+•
+
+Bound: The node is fully managed by this control node.
+
+•
+
+Binding: Control is in the process of being transferred to this control node.
+
+•
+
+Releasing: Control is being offboarded from this control node.
+
+•
+
+Released: The node has been fully released from this control node’s management.
+
+By default, the Kubernetes controller manager and scheduler consider all registered nodes when performing health checks and scheduling decisions. To prevent interference among control nodes, we introduce a filtering step after retrieving the node list, excluding nodes whose ControlPlaneBindingState is not Bound. This prevents the controller manager from treating remote nodes as unhealthy and avoids scheduling pods to nodes outside its authority.
+
+Consistency Guarantees for Control Handover. In a standard Kubernetes cluster, a worker node must retrieve the cluster’s root certificate from the API server upon first joining, in order to verify the legitimacy of the control plane’s server certificate. It then uses a bootstrap token to request the issuance of its own certificate from the control plane, thereby establishing a secure communication channel.
+
+We extend this process in two ways. On the one hand, all control nodes share a common key pair for issuing certificates to satellite nodes. This design allows a satellite node, once authenticated by any control node, to connect to any other control node without repeating the authentication process. On the other hand, once all ground control nodes are deployed and their certificates are generated, we preload the root certificate along with the server certificates of all control nodes onto the satellite. This eliminates the need for remote certificate retrieval during cluster join or control handover, thereby reducing connection latency.
+
+To prevent the new control node from mistakenly recognizing a satellite node as a newly joined node during control handover—potentially causing configuration resets or container restarts—we extend the API server interface, which allows control nodes to synchronize the configuration data of satellite nodes, including the states of associated pods. Additionally, we assign a unique Pod CIDR to each satellite in advance based on its index, ensuring that multiple satellites can join the cluster concurrently without IP range conflicts. Once the satellite completes identity authentication, its initial state is synchronized across all control nodes.
+
+Seamless Node Control Handover Process. To enable seamless handover between control nodes, we introduce a new custom resource type named HandoverRequest, along with a controller called HRController deployed on each control node. The entire handover process is orchestrated using Kubernetes’ native watch mechanism to ensure timely coordination.
+
+On each satellite, we deploy a dedicated daemon called KubeSpace, which maintains mappings between control nodes and their respective certificate sets and cluster configuration files. When appropriate, KubeSpace initiates a control handover by creating a HandoverRequest resource on its current control node. This triggers the HRController on that node, which then begins the handover process.
+
+The functionality of the kubelet is logically divided into two parts: one manages container runtime operations, while the other uses the official Kubernetes Go client library to report status and establish a watch channel for receiving control updates from the API server. The latter is critical for enabling control node handover. To support runtime flexibility, we encapsulate the kubelet’s clientset as a hot-swappable pointer. Upon handover, the kubelet initializes a new clientset and replaces the active pointer, allowing it to transition to the new control node without interrupting its control communication channel.
+
+Fig. 5: State transition diagram for control node handover.
+
+Fig.5 illustrates the sequence of state transitions in both the HandoverRequest resource and the satellite node’s ControlPlaneBindingState during the handover process. Each state change triggers a corresponding operational step. Once all steps are completed, the ControlPlaneBindingState is updated on both the source and target control nodes, marking the successful transfer of control authority. A complete view of the process is shown in Fig.6, and the detailed procedure is described below.
+
+Steps 1–4. The KubeSpace daemon on the satellite submits a HandoverRequest resource to the current control node’s API server to initiate the handover process. Once the resource is successfully created, the daemon establishes a watch channel to monitor its status. At the same time, the API server pushes the creation event to the HRController, which continuously watches for resources of this type.
+
+Steps 5–8. Upon receiving the creation event of the HandoverRequest, the HRController updates the request’s status to Processing and sets the corresponding node’s ControlPlaneBindingState to Releasing. In this state, the node becomes ineligible for new Pod scheduling but continues to report its status to the control node. The HRController then transfers the node and associated Pod configuration data to the target control node’s API server via a synchronous channel. Once the target API server successfully persists the data to etcd, it returns an acknowledgment to the source control node. Finally, the controller manager updates the status of the HandoverRequest to Finished.
+
+Steps 9–14. The KubeSpace daemon on the satellite detects through the watch channel that the status of the HandoverRequest has changed to Finished. It then instructs the kubelet to load the target control node’s configuration and to initialize a new set of clientsets. The kubelet immediately uses the new clientset to establish a control channel with the target control node and report its current status. Once the target control plane successfully receives this information, it sets the node’s ControlPlaneBindingState to Bound, indicating that control of the node has been formally taken over. After completing the state update, the kubelet switches its internal clientset pointer to the new one and sends a confirmation to the KubeSpace daemon. It then continues to perform state synchronization and task monitoring with the new control node.
+
+Steps 15–17. The KubeSpace daemon then uses its clientset to update the node’s ControlPlaneBindingState on the source control node to Released. Once this update is successfully committed by the source control node’s API server, KubeSpace switches to the new clientset to communicate with the target control node, thereby marking the formal completion of the handover process.
+
+Throughout the entire control node handover process, the satellite remains visible to the control plane at all times. This is achieved without requiring container migration or Pod eviction. As a result, the services running on the satellite can continue uninterrupted, ensuring availability.
+
+Fig. 6: KubeSpace handover procedure.
+
+IV-B Control Node Placement Algorithm
+
+To systematically analyze the control node placement strategy, we model the problem as an optimization task. Due to the high mobility of LEO satellites, communication latency in satellite-to-satellite and satellite-to-ground links varies dynamically over time. As a result, a sequence of time-varying satellite-ground network topologies emerges over the course of an orbital period.
+
+Accordingly, we aim to select KK ground stations from a set of candidates to serve as control nodes, such that the maximum communication latency between any satellite and its nearest control node across all time instances is minimized. Since propagation delay dominates satellite-ground communication latency, we approximate it using spatial distances between adjacent nodes as edge weights in the network graph to model communication performance.
+
+Let τ\tau denote the number of considered time instances, and let the set of sampled time points be T={t1,t2,…,tτ}T=\{t_{1},t_{2},\dots,t_{\tau}\}. For each time instance t∈Tt\in T, the satellite-ground network topology can be represented as an undirected connected graph Gt=(V,Et)G_{t}=(V,E_{t}), where the node set is defined as V=Vs∪VgV=V_{s}\cup V_{g}. Here, Vs={Sat1,Sat2,…,SatN}V_{s}=\{\text{Sat}_{1},\text{Sat}_{2},\dots,\text{Sat}_{N}\} denotes the set of satellite nodes, and Vg={GS1,GS2,…,GSM}V_{g}=\{\text{GS}_{1},\text{GS}_{2},\dots,\text{GS}_{M}\} denotes the set of ground station nodes. Each edge ei,jt∈Ete_{i,j}^{t}\in E_{t} indicates a direct link between nodes ii and jj at time tt, with the edge weight corresponding to the spatial distance between them. Based on this, we denote di,jtd_{i,j}^{t} as the weighted shortest path length between nodes ii and jj in graph GtG_{t}, computed with respect to edge weights.
+
+Suppose we aim to select a set of KK control nodes from the MM available ground stations. Let DD denote the maximum shortest-path distance between any satellite and its nearest control node across all time instances. The definition of DD is shown in (1).
+
+D=maxt∈T⁡maxs∈Vs​ming∈S​ds,gtD=\max_{t\in T}\max_{s\in V_{s}}\min_{g\in S}d_{s,g}^{t}
+
+(1)
+
+where S⊆VgS\subseteq V_{g} is the selected set of KK control nodes. The problem can thus be formulated as a 0–1 integer program that minimizes DD.
+
+min⁡D\displaystyle\quad\quad\quad\quad\quad\quad\min D
+
+(2)
+
+s.t.
+∑j∈Vgdi,jt⋅xi,jt≤D\displaystyle\quad\quad\quad{\textstyle\sum_{j\in V_{g}}}d^{t}_{i,j}\cdot x^{t}_{i,j}\leq D
+
+(3)
+
+∑j∈Vgxi,j=1\displaystyle\quad\quad\quad{\textstyle\sum_{j\in V_{g}}}x_{i,j}=1
+
+(4)
+
+∑j∈Vgyj=K\displaystyle\quad\quad\quad{\textstyle\sum_{j\in V_{g}}}y_{j}=K
+
+(5)
+
+xi,jt≤yj,xi,jt∈{0,1},yj∈{0,1}\displaystyle x_{i,j}^{t}\leq y_{j},\quad x_{i,j}^{t}\in\left\{0,1\right\},\quad y_{j}\in\left\{0,1\right\}
+
+(6)
+
+The model introduces two binary decision variables: xi,jtx_{i,j}^{t} and yjy_{j}. Here, xi,jt=1x_{i,j}^{t}=1 indicates that at time tt, satellite ii selects ground station jj as its control node, and yj=1y_{j}=1 indicates that ground station jj is selected as a control node. Constraint (3) defines DD as the maximum shortest-path distance between satellites and their corresponding control nodes across all time steps, representing the worst-case communication performance under the current control node placement. Constraint (4) requires that each satellite be connected to exactly one control node at any given time. Constraint (5) limits the total number of selected control nodes to KK.
+
+This problem is essentially an NP-hard 0–1 integer program, and the size of its solution space presents a significant computational challenge. With MM candidate ground stations—typically in the hundreds—the number of possible selections of KK control nodes is combinatorial, given by C⁡(M,K)=(MK)C(M,K)=\binom{M}{K}. For instance, selecting 10 control nodes from 200 candidates yields (20010)=200!10!⋅190!≈2.24×1018\binom{200}{10}=\frac{200!}{10!\cdot 190!}\approx 2.24\times 10^{18} possible combinations, rendering exhaustive search computationally infeasible. Moreover, capturing the dynamic nature of the satellite–ground topology requires modeling thousands of time steps, during which shortest-path computations between hundreds of ground stations and thousands of satellites must be performed, further compounding the computational complexity.
+
+To obtain a near-optimal solution within a reasonable computational time, we propose a two-stage Control Node Placement Algorithm (CPNA). First, considering that modern LEO satellite constellations typically exhibit strong structural symmetry and clear orbital periodicity, we introduce an intuitive approach: by clustering satellite–ground network topologies across multiple time instances, we select a small set of representative topologies to serve as proxies for evaluating control node placement. This significantly reduces the computational overhead. Then, based on a greedy strategy, we apply the kk-center algorithm to select a set of ground stations, followed by a local search procedure to further refine the solution quality. The overall process is summarized in Algorithm 1.
+
+Algorithm 1 Control Node Placement Algorithm (CNPA)
+
+1:
+
+𝒢\mathcal{G}: topology snapshots; kk: number of control nodes; CC: number of clusters
+
+2:
+
+SS: selected ground stations
+
+3:
+
+Step 1: Topology Clustering
+
+4:
+
+R←R\leftarrow SelectRepresentatives(𝒢,C)(\mathcal{G},C)
+
+5:
+
+Step 2: Ground Station Selection
+
+6:
+
+Initialize S←∅S\leftarrow\emptyset
+
+7:
+
+for i=1i=1 to kk do
+
+8:
+
+g∗←arg⁡ming∉S​Evaluate​(S∪{g},𝒢)g^{*}\leftarrow\arg\min_{g\notin S}\textsc{Evaluate}(S\cup\{g\},\mathcal{G})
+
+9:
+
+S←S∪{g∗}S\leftarrow S\cup\{g^{*}\}
+
+10:
+
+S←S\leftarrow LocalSearch(S,R)(S,R)
+
+11:
+
+return SS
+
+The algorithm consists of three core components, described as follows:
+
+SelectRepresentatives(𝒢,C)(\mathcal{G},C):
+This function performs clustering on the input set of topology snapshots 𝒢\mathcal{G}. Each topology is first flattened into a feature vector and standardized. Then, kk-means clustering is applied to partition the topologies into CC clusters, aiming to minimize the total intra-cluster variance. From each cluster, the topology closest to the cluster centroid is selected as the representative. The output is a set RR of CC representative topologies that capture the structural characteristics of 𝒢\mathcal{G}.
+
+Evaluate(S,𝒢)(S,\mathcal{G}):
+Given a candidate set of ground stations SS, the function evaluates the worst-case latency over the entire topology set 𝒢\mathcal{G}. The evaluation metric is defined as maxt∈T′⁡maxs∈Vs​ming∈S​ds,gt\max_{t\in T^{\prime}}\max_{s\in V_{s}}\min_{g\in S}d_{s,g}^{t}, which represents the maximum shortest-path distance from any satellite to its nearest ground station in SS across all selected time instances. A smaller value implies lower worst-case latency, and thus indicates a more effective control node deployment.
+
+LocalSearch(S,𝒢)(S,\mathcal{G}):
+This function iteratively refines the initial candidate set SS via local replacements. In each iteration, it attempts to replace one selected ground station in SS with an unselected one. If the replacement leads to a lower evaluation score over 𝒢\mathcal{G}, the update is accepted. The process continues until no further improvement is possible or a predefined number of iterations is reached.
+
+IV-C Control Node Assignment Algorithm
+
+Algorithm 2 Control Node Assignment Algorithm (CNAA)
+
+1:
+
+TLE data; GG: ground control nodes; TT: time window (e.g., 12 hours); Δs\Delta_{s}: sampling interval (e.g., 60s); Δp\Delta_{p}: decision interval (e.g., 1s); δ\delta: handover threshold ratio
+
+2:
+
+HH: predicted handover events (time, target node)
+
+3:
+
+Step 1: Orbit Prediction and Distance Sampling
+
+4:
+
+for each t∈[0,T]t\in[0,T] with step Δs\Delta_{s} do
+
+5:
+
+Predict satellite position ptp_{t} using TLE
+
+6:
+
+for each g∈Gg\in G do
+
+7:
+
+Compute dt,g←Distance​(pt,g)d_{t,g}\leftarrow\textsc{Distance}(p_{t},g)
+
+8:
+
+For each g∈Gg\in G, construct interpolation function fg​(t)f_{g}(t) over [0,T][0,T] from {dt,g}\{d_{t,g}\}
+
+9:
+
+Step 2: Fine-grained Control Node Assignment
+
+10:
+
+Initialize H←∅H\leftarrow\emptyset, gcurr←arg⁡ming​fg​(0)g_{\text{curr}}\leftarrow\arg\min_{g}f_{g}(0)
+
+11:
+
+for each t∈[0,T]t\in[0,T] with step Δp\Delta_{p} do
+
+12:
+
+gmin←arg⁡ming​fg​(t)g_{\text{min}}\leftarrow\arg\min_{g}f_{g}(t)
+
+13:
+
+if gmin≠gcurrg_{\text{min}}\neq g_{\text{curr}} and fgmin​(t)fgcurr​(t)<δ\frac{f_{g_{\text{min}}}(t)}{f_{g_{\text{curr}}}(t)}<\delta then
+
+14:
+
+H←H∪{(t,gmin)}H\leftarrow H\cup\{(t,g_{\text{min}})\}
+
+15:
+
+gcurr←gming_{\text{curr}}\leftarrow g_{\text{min}}
+
+16:
+
+return HH
+
+After the deployment of ground control nodes is completed, it is necessary to dynamically assign the optimal control node to continuously moving LEO satellites. To this end, this paper designs a Control Node Assignment Algorithm (CNAA) that can be deployed on satellites. The complete procedure is presented in Algorithm 2.
+
+This algorithm first introduces an efficient method for estimating the distance between a satellite and ground control nodes over a future time window (e.g., 12 hours). Specifically, it uses the satellite’s TLE orbital data to predict its positions at fixed intervals (e.g., every 60 seconds), and calculates the corresponding distances to all ground control nodes. Based on these sampled values, interpolation functions are constructed to enable efficient and fine-grained satellite-to-ground distance estimation.
+
+Building on this, the algorithm further identifies potential handover events—i.e., the times at which the satellite should handover to a different control node, along with the corresponding target nodes—within the same time window. Handover decisions are primarily based on the estimated spatial distance, with preference given to the closest node at any given time. To prevent excessive handovers caused by minor fluctuations in distance, a threshold mechanism is applied: a handover is triggered only when the candidate node’s distance is shorter than that of the current node by a predefined ratio.
+
+Using spatial distance as the basis for control node selection is straightforward and aligns with the principle of proximity-based management in multi-node systems. Moreover, due to the predictable nature of this assignment mechanism, it can be implemented at the ground station to proactively identify upcoming handover events—such as the satellite involved, the handover time, and the target control node. This enables data pre-synchronization and helps further reduce latency during the handover process.
+
+V Performance Evaluation
+
+In this section, we evaluate whether KubeSpace demonstrates low latency and high stability in managing onboard resources and containers. Additionally, we test the placement and assignment algorithms of control nodes under various satellite constellation scenarios to verify their effectiveness in reducing communication latency and handover frequency between satellites and control nodes.
+
+V-A Experimental Setup
+
+Constellation and Ground Station Information. We simulate three representative LEO satellite constellations based on publicly available data: Starlink (1,584 satellites)[39], Kuiper (1,296 satellites)[40], and OneWeb (636 satellites)[41]. Each satellite is capable of establishing inter-satellite links with its two adjacent satellites in the same orbit, as well as with the two nearest satellites in neighboring orbits[26, 23]. The ground station locations are derived from Starlink’s published deployment data[43], further supplemented by the 200 most populous cities worldwide [44] to increase the flexibility and optionality of deployment strategies.
+
+KubeSpace Prototype. We built the KubeSpace prototype system using Kubernetes v1.31.10[29] and Go 1.24.3, and set up a simulation platform based on constellation and ground station information for testing purposes. Specifically, we used the Skyfield[45] library’s SGP4 orbital model to parse TLE data for various constellations and compute their real-time positions. Satellite and ground control nodes were simulated using KVM virtual machines, which were bound to the simulated ground station and satellite position data. Communication delays were introduced using the tc tool[46]. The simulation covered the full-day operation of all satellites across three types of constellations. All experiments were conducted on a commercial server (Dell PowerEdge R760) configured with a 3.4 GHz CPU (128 logical cores) and 377 GiB of memory.
+
+(a)
+
+(b)
+
+(c)
+
+Fig. 7: Satellite status update latency under different container orchestration platforms.
+
+Container Orchestration Platforms. We evaluated the platform built on the KubeSpace control plane against other leading container orchestration solutions.
+
+•
+
+Krios[26]: A container orchestration framework for LEO satellites based on a single control node Kubernetes architecture, demonstrating excellent performance in ensuring continuity of user-level container services.
+
+•
+
+Karmada[36]: A container orchestration platform for managing multiple clusters in ground-based environments. To enable the satellite to restore previously running containers after a control node handover, we manually synchronized satellite data during the transition.
+
+•
+
+Multi-KubeEdge: KubeEdge is a container orchestration platform that has been applied in satellite environments[28], offering fault tolerance for disconnected worker nodes. We deployed multiple KubeEdge clusters and manually synchronized satellite data between control nodes during control node handovers, thereby restoring normal operation of onboard containers.
+
+Control Node Placement Algorithm. We compare the control node placement algorithm proposed in KubeSpace with the following two approaches to evaluate its effectiveness.
+
+•
+
+Exhaustive Optimal: We traverse all possible combinations of the K ground stations and select the one that minimizes the maximum satellite-to-control-node latency across all time steps.
+
+•
+
+Random Selection: We randomly select K ground stations from all candidates as control nodes, serving as a baseline for the multi control node placement scheme.
+
+In addition, we select a city near the equator as the baseline for the single control node placement.
+
+Control Node Assignment Algorithm. We compare the control node assignment algorithm proposed by KubeSpace with a baseline that selects the control node solely based on the shortest distance, and analyze the differences between the two in terms of communication latency and handover frequency.
+
+Fig. 8: Pod recovery time under different container orchestration platforms..
+
+V-B Experimental Results
+
+We first compared the container orchestration platform based on the KubeSpace control plane with three other container orchestration platforms. For Karmada and Multi-KubeEdge, which also adopt a multi control node architecture, we simulated the same 10 ground station locations for deploying control nodes. For Krios, which uses a single control node, we placed its ground station in a city near the equator to minimize the maximum communication latency with satellites. In terms of satellite node management, we conducted comparisons from two aspects: node status reporting and in-orbit node event response. Additionally, for the multi control node solutions, we evaluated the performance overhead introduced by control node handovers.
+
+Satellite Status Reporting Latency. Timely status reporting is a key factor in ensuring the stable operation of container orchestration platforms. Worker nodes report the status of nodes and containers to the control plane either periodically or when triggered by specific events. We measured the reporting latency and calculated the average status reporting latency for each satellite over a single operational cycle, and further plotted the corresponding cumulative distribution function.
+
+As shown in Fig. 7, the node status reporting latency in KubeSpace is significantly lower than that in Krios. Taking Starlink as an example, the average value of this metric across all satellites in KubeSpace is 240ms, compared to 591ms in Krios—a reduction of approximately 59%. For Karmada and Multi-KubeEdge, some of the selected reporting timestamps fall within the control node handover period, requiring satellites to wait for the handover to complete before completing the status report. This results in higher reporting latency compared to KubeSpace. In terms of the maximum average status reporting latency, KubeSpace achieves reductions of 41% and 34% compared to Karmada and Multi-KubeEdge, respectively.
+
+Response Time to Node Pressure. An essential capability of container orchestration platforms is the prompt migration of containers when a node experiences resource pressure, thereby preventing service disruption. We evaluated the response time of various platforms under such scenarios. Specifically, we preloaded the YOLOv5 [27] container image onto all satellite nodes and initially launched the container on one of them. At a randomly chosen time, we triggered a resource pressure event on the active satellite, thereby initiating the container migration to a neighboring satellite. We define the response time as the duration between the triggering of the event and the resumption of the container on the neighboring satellite.
+
+As shown in Fig. 8, KubeSpace achieves the shortest average container recovery time, reducing it by approximately 12% compared to Krios. For Karmada and Multi-KubeEdge, since the time point at which we triggered node resource contention partially overlapped with the control plane handover window, they had to wait for the handover process to complete before proceeding with container scheduling. This resulted in a higher standard deviation of recovery time compared to KubeSpace. Moreover, considering that container startup itself takes around 4 seconds, the advantage of a multi control node architecture is less pronounced in this experiment than in the status reporting experiment.
+
+(a)
+
+(b)
+
+(c)
+
+(d)
+
+Fig. 9: Overhead of control node handovers (per satellite).
+
+Handover Time Overhead. We conducted a comparative analysis of the handover latency across three multi control node container orchestration platforms. As shown in Fig.9(a) and Fig.9(b), KubeSpace outperforms the other two solutions significantly in terms of both single handover latency and the cumulative handover latency per satellite over a 24-hour period. Compared to Karmada and Multi-KubeEdge, KubeSpace reduces handover latency by approximately 84% and 79%, respectively. Multi-KubeEdge achieves slightly lower latency than Karmada, owing to its support for local offline caching of Pod configurations, which eliminates the need for Pod eviction during cluster exit and remote fetching of previously running Pods upon rejoining the cluster.
+
+Satellite Invisibility Duration. Fig. 9(c) compares the duration of satellite node invisibility caused by control plane handovers. With KubeSpace, the Kubelet continuously reports node status to at least one control node during the handover, allowing kubectl get node to consistently retrieve node information. As a result, the node invisibility duration is effectively reduced to zero. In contrast, both Karmada and Multi-KubeEdge experience a temporary disconnection and reconnection process during control plane handovers, leading to an average daily invisibility duration of 543 and 502 seconds per satellite, respectively.
+
+Pod Unavailability Duration. We deployed a static content service based on nginx on the satellites and continuously tested its accessibility via GET requests[26]. As shown in Fig. 9(d), since KubeSpace does not restart containers during the handover process, the container service remains continuously available. In contrast, under the Karmada and Multi-KubeEdge schemes, the average cumulative daily service downtime per satellite reaches 1076 seconds and 512 seconds, respectively.
+
+Satellite-to-Control-Node Communication Latency. As shown in Fig. 10, with K=5K=5 and 20 topology clusters, we compare the CNPA strategy provided by KubeSpace with three other methods in terms of the average and maximum communication latency between all satellites and the control node over the course of a day. Taking the Starlink constellation as an example, the strategy generated by CNPA results in an average daily maximum communication latency of 60.05 ms, which is within 1 ms of the optimal value obtained via exhaustive search. In comparison, this value is reduced by 22% and 50% compared to the random scheme and the single-node scheme, respectively. The average communication latency is 32.05 ms, also within 1 ms of the optimal value.
+
+Fig. 10: Comparison of control node placement methods.
+
+As kk increases, CNPA still yields high-quality solutions within reasonable time despite the rising cost of exhaustive search, effectively reducing average communication latency. Next, we evaluate the assignment algorithms under varying numbers of control nodes (2 to 20), based on CNPA’s placement schemes.
+
+(a)
+
+(b)
+
+Fig. 11: Average latency and handover frequency under different control node assignment methods.
+
+Relationship Between Handover Frequency and Latency of CNNA. Fig. 11 plots evaluation of the proposed Control Node Assignment Algorithm in KubeSpace under varying numbers of ground stations. For the Starlink constellation, CNAA achieves a 19% reduction in control‑node handover frequency while incurring only an additional 2 ms in average communication latency. These results demonstrate that CNAA attains a superior trade‑off between communication latency and handover overhead compared with the shortest‑distance‑only baseline.
+
+VI Related Work
+
+In recent years, researchers have explored computing paradigms like container orchestration in LEO satellites[19, 27, 28, 26, 47, 48, 49, 50]. For example, [27, 28] deployed AI applications using KubeEdge [51] on satellites, validating the orchestration feasibility in space. [26] proposed a scheduling mechanism for LEO, and [47] designed a stateless edge platform to improve onboard service availability. While these studies optimize for LEO characteristics, they often overlook the challenge of achieving both low latency and high stability in the control plane. This work addresses that gap with a proposed solution.
+
+With the growing adoption of the space cloud computing paradigm, researchers have increasingly focused on improving onboard computing resource utilization through effective task scheduling strategies[52, 20, 53, 54, 55]. [52] proposed a solar-illumination-aware scheduling algorithm to reduce energy consumption and extend satellite lifespan, while [20] introduced a task offloading mechanism to enhance performance and meet timeliness requirements. Although these studies made notable progress in scheduling strategies, they generally overlook the practical challenges of deploying and maintaining the control plane in space. To address this, KubeSpace builds a low-latency, high-stability control plane that supports real-world deployment of such strategies onboard satellites.
+
+Software-Defined Satellite Networks (SDRN) aim to enhance flexibility and programmability by decoupling control and data planes[56, 57, 58], but existing work largely remains theoretical with limited focus on practical deployment. In contrast, KubeSpace provides a deployable and stable control plane for efficient onboard computing resource management.
+
+VII Discussion and Limitation
+
+Although this paper presents a container orchestration control plane for LEO satellites that balances low latency and stability, building an efficient, resilient space cloud platform still poses many challenges requiring further investigation. For example, in terrestrial orchestration systems, replica management is key to service availability. Prior work (e.g., [26]) has explored improving availability via service migration, but how to efficiently leverage replicas for redundancy in orbit remains open. Moreover, pulling and distributing container images can become a deployment bottleneck due to limited satellite-ground bandwidth. Optimizing image transmission through caching, delta synchronization, and related techniques is another important area for future research.
+
+VIII Conclusion
+
+Existing container orchestration platforms face challenges in meeting both low latency and high stability requirements when applied to LEO satellite constellations characterized by wide spatial distribution and frequent handovers. To address this, we propose KubeSpace. This approach leverages an optimized multi control node architecture and an efficient control node deployment and allocation mechanism, reducing the latency of onboard container management by 59% compared to traditional solutions and effectively eliminating node management interruptions present in previous approaches. As a potential future direction, we are looking forward to extending our method to improve the performance of various applications such as large language models [59, 60, 61] and distributed learning system [62, 63, 64, 65, 66, 67, 68].
+
+References
+
+[1]
+
+“Starlink,” https://www.starlink.com/.
+
+[2]
+
+“Project Kuiper – Amazon’s low Earth orbit satellite broadband network.” https://www.aboutamazon.com/what-we-do/devices-services/project-kuiper.
+
+[3]
+
+“OneWeb,” https://oneweb.net/.
+
+[4]
+
+H. Yuan, Z. Chen, Z. Lin, J. Peng, Z. Fang, Y. Zhong, Z. Song, and Y. Gao, “SatSense: Multi-Satellite Collaborative Framework for Spectrum Sensing,” IEEE Trans. Cogn. Commun. Netw., 2025.
+
+[5]
+
+J. Peng, J. Duan, Z. Lin, H. Yuan, Y. Gao, and Z. Chen, “SigChord: Sniffing Wide Non-Sparse Multiband Signals for Terrestrial and Non-Terrestrial Wireless Networks,” arXiv preprint arXiv:2504.06587, 2025.
+
+[6]
+
+Z. Zhao, Z. Chen, Z. Lin, W. Zhu, K. Qiu, C. You, and Y. Gao, “LEO Satellite Networks Assisted Geo-Distributed Data Processing,” IEEE Wireless Commun. Lett., 2024.
+
+[7]
+
+H. Yuan, Z. Chen, Z. Lin, J. Peng, Z. Fang, Y. Zhong, Z. Song, X. Wang, and Y. Gao, “Graph Learning for Multi-Satellite Based Spectrum Sensing,” in Proc. IEEE Int. Conf. Commun. Technol. (ICCT), 2023, pp. 1112–1116.
+
+[8]
+
+“IR Lasers Link 9,000 Starlink Satellites and Move 42 Million GB per Day,” https://www.lightnowblog.com/2024/02/ir-lasers-link-9000-starlink-satellites-and-move-42-million-gb-per-day.
+
+[9]
+
+Starlink Ground Station: Backbone of Satellite Internet. https://starlinkinstallationpros.com/starlink-ground-station-backbone-of-satellite-internet/.
+
+[10]
+
+T. Darwish, G. K. Kurt, H. Yanikomeroglu, G. Lamontagne, and M. Bellemare, “Location Management in Internet Protocol-Based Future LEO Satellite Networks: A Review,” IEEE Open Journal of the Communications Society, 2022.
+
+[11]
+
+Z. Xiao, J. Yang, T. Mao, C. Xu, R. Zhang, Z. Han, and X.-G. Xia, “LEO Satellite Access Network (LEO-SAN) Toward 6G: Challenges and Approaches,” IEEE Wireless Communications, 2022.
+
+[12]
+
+D. Zhou, M. Sheng, J. Li, and Z. Han, “Aerospace Integrated Networks Innovation for Empowering 6G: A Survey and Future Challenges,” IEEE Communications Surveys & Tutorials, 2023.
+
+[13]
+
+L. Buckley, A. Dunne, G. Furano, and M. Tali, “Radiation Test and In Orbit Performance of MPSoC AI Accelerator,” in 2022 IEEE Aerospace Conference (AERO), 2022.
+
+[14]
+
+Z. Sun, X. Guan, Z. Lin, Z. Fang, X. Cai, Z. Chen, F. Liu, H. Cui, J. Xiong, W. Ni et al., “Intra-dp: A high performance collaborative inference system for mobile edge computing,” arXiv preprint arXiv:2507.05829, 2025.
+
+[15]
+
+G. Giuffrida, L. Fanucci, G. Meoni, M. Batič, L. Buckley, A. Dunne, C. Van Dijk, M. Esposito, J. Hefele, N. Vercruyssen et al., “The Φ\Phi-Sat-1 Mission: The First On-Board Deep Neural Network Demonstrator for Satellite Earth Observation,” IEEE Transactions on Geoscience and Remote Sensing, 2021.
+
+[16]
+
+E. Rapuano, G. Meoni, T. Pacini, G. Dinelli, G. Furano, G. Giuffrida, and L. Fanucci, “An FPGA-Based Hardware Accelerator for CNNs Inference on Board Satellites: Benchmarking With Myriad 2-Based Solution for the CloudScout Case Study,” Remote Sensing, 2021.
+
+[17]
+
+D. Bhattacherjee, S. Kassing, M. Licciardello, and A. Singla, “In-Orbit Computing: An Outlandish Thought Experiment?” in Proceedings of the 19th ACM Workshop on Hot Topics in Networks, 2020.
+
+[18]
+
+N. Bleier, M. H. Mubarik, G. R. Swenson, and R. Kumar, “Space Microdatacenters,” in Proceedings of the 56th Annual IEEE/ACM International Symposium on Microarchitecture, 2023.
+
+[19]
+
+S. Wang and Q. Li, “Satellite Computing: Vision and Challenges,” IEEE Internet of Things Journal, 2023.
+
+[20]
+
+B. Denby, K. Chintalapudi, R. Chandra, B. Lucia, and S. Noghabi, “Kodan: Addressing the Computational Bottleneck in Space,” in Proceedings of the 28th ACM International Conference on Architectural Support for Programming Languages and Operating Systems, Volume 3, 2023.
+
+[21]
+
+B. Zhang, Y. Wu, B. Zhao, J. Chanussot, D. Hong, J. Yao, and L. Gao, “Progress and Challenges in Intelligent Remote Sensing Satellite Systems,” IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 2022.
+
+[22]
+
+A. Russo and G. Lax, “Using Artificial Intelligence for Space Challenges: A survey,” Applied Sciences, 2022.
+
+[23]
+
+S. Su, J. Wu, Z. Ying, Z. Zhao, X. Jia, W. Zhu, and Y. Gao, “SkyOctopus: Enabling Low-Latency Mobile Satellite Network through Multiple Anchors,” in Proceedings of 2025 IEEE Conference on Computer Communications (INFOCOM), 2025.
+
+[24]
+
+L. Liu, Y. Li, H. Li, J. Yang, W. Liu, J. Lan, Y. Wang, J. Li, J. Wu, Q. Wu, J. Liu, and Z. Lai, “Democratizing Direct-to-Cell Low Earth Orbit Satellite Networks,” in 21st USENIX Symposium on Networked Systems Design and Implementation (NSDI 24), 2024.
+
+[25]
+
+Y. Li, H. Li, W. Liu, L. Liu, Y. Chen, J. Wu, Q. Wu, J. Liu, and Z. Lai, “A Case for Stateless Mobile Core Network Functions in Space,” in Proceedings of the ACM SIGCOMM 2022 Conference, 2022.
+
+[26]
+
+V. Bhosale, A. Gavrilovska, and K. Bhardwaj, “Krios: Scheduling Abstractions and Mechanisms for Enabling a LEO Compute Cloud,” in Proceedings of the 2024 ACM Symposium on Cloud Computing, 2024.
+
+[27]
+
+W. Shangguang, Z. Qiyang, X. Ruolin, Q. Fei, and X. Mengwei, “The First Verification Test of Space-Ground Collaborative Intelligence via Cloud-Native Satellites,” China Communications, 2024.
+
+[28]
+
+C. Wang, Y. Zhang, Q. Li, A. Zhou, and S. Wang, “Satellite Computing: A Case Study of Cloud-Native Satellites,” in 2023 IEEE International Conference on Edge Computing and Communications (EDGE), 2023.
+
+[29]
+
+“Kubernetes v1.31.10 Release,” https://github.com/kubernetes/kubernetes/releases/tag/v1.31.10.
+
+[30]
+
+A. Verma, L. Pedrosa, M. Korupolu, D. Oppenheimer, E. Tune, and J. Wilkes, “Large-Scale Cluster Management at Google With Borg,” in Proceedings of the Tenth European Conference on Computer Systems, 2015.
+
+[31]
+
+“Hardware Configuration - etcd v3.3,” https://etcd.io/docs/v3.3/op-guide/hardware/.
+
+[32]
+
+A. Jeffery, H. Howard, and R. Mortier, “Rearchitecting Kubernetes for the Edge,” in Proceedings of the 4th International Workshop on Edge Systems, Analytics and Networking, 2021.
+
+[33]
+
+——, “Mutating Etcd Towards Edge Suitability,” arXiv preprint arXiv:2311.09929, 2023.
+
+[34]
+
+“Evaluating etcd’s Performance in Multi-Cloud,” https://www.berops.com/blog/evaluating-etcds-performance-in-multi-cloud.
+
+[35]
+
+“Kubernetes Cluster Performance Tuning: etcd Speed,” https://slickfinch.com/kubernetes-cluster-performance-tuning-etcd-speed/.
+
+[36]
+
+“Karmada: Kubernetes multi-cluster management,” https://karmada.io/.
+
+[37]
+
+“Safely drain a node - Kubernetes,” https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/.
+
+[38]
+
+“kubeadm join - Kubernetes,” https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-join/.
+
+[39]
+
+“Application for Fixed Satellite Service by Space Exploration Holdings, LLC.” [Online]. Available: https://fcc.report/IBFS/SAT-MOD-20200417-00037
+
+[40]
+
+“Application for Fixed Satellite Service by Kuiper Systems, LLC.” [Online]. Available: https://fcc.report/IBFS/SAT-LOA-20190704-00057
+
+[41]
+
+“Eutelsat OneWeb.” [Online]. Available: https://oneweb.net/our-network
+
+[42]
+
+“Two-line Element Set — Wikipedia,” https://en.wikipedia.org/wiki/Two-line_element_set/.
+
+[43]
+
+“Starlink Ground Station Locations (2025).” [Online]. Available: https://starlinkinsider.com/starlink-gateway-locations/
+
+[44]
+
+“Demographia World: Urban Areas.” [Online]. Available: https://www.demographia.com/
+
+[45]
+
+“Skyfield - Documentation,” https://rhodesmill.org/skyfield/.
+
+[46]
+
+“tc(8) – Linux Traffic Control Manual Page,” https://man7.org/linux/man-pages/man8/tc.8.html.
+
+[47]
+
+T. Pfandzelter and D. Bermbach, “Komet: A Serverless Platform for Low-Earth Orbit Edge Services,” in Proceedings of the 2024 ACM Symposium on Cloud Computing, 2024.
+
+[48]
+
+T. Pusztai, C. Marcelino, and S. Nastic, “Hyperdrive: Scheduling Serverless Functions in the Edge-Cloud-Space 3D Continuum,” in 2024 IEEE/ACM Symposium on Edge Computing (SEC), 2024.
+
+[49]
+
+L. Yan, S. Cao, Y. Gong, H. Han, J. Wei, Y. Zhao, and S. Yang, “SatEC: A 5G Satellite Edge Computing Framework Based on Microservice Architecture,” Sensors, 2019.
+
+[50]
+
+T. Pfandzelter, J. Hasenburg, and D. Bermbach, “Towards a Computing Platform for the LEO Edge,” in Proceedings of the 4th International Workshop on Edge Systems, Analytics and Networking, 2021.
+
+[51]
+
+“KubeEdge – A Kubernetes Native Edge Computing Framework,” https://kubeedge.io/.
+
+[52]
+
+W. Liu, Z. Lai, Q. Wu, H. Li, Q. Zhang, Z. Li, Y. Li, and J. Liu, “In-Orbit Processing or Not? Sunlight-Aware Task Scheduling for Energy-Efficient Space Edge Computing Networks,” in IEEE INFOCOM 2024-IEEE Conference on Computer Communications, 2024.
+
+[53]
+
+M. Tong, X. Wang, S. Li, and L. Peng, “Joint Offloading Decision and Resource Allocation in Mobile Edge Computing-Enabled Satellite-Terrestrial Network,” Symmetry, 2022.
+
+[54]
+
+Z. Ji, S. Wu, and C. Jiang, “Cooperative Multi-Agent Deep Reinforcement Learning for Computation Offloading in Digital Twin Satellite Edge Networks,” IEEE Journal on Selected Areas in Communications, 2023.
+
+[55]
+
+Q. Wang, X. Chen, and Q. Qi, “Energy-Efficient Design of Satellite-Terrestrial Computing in 6G Wireless Networks,” IEEE Transactions on Communications, 2023.
+
+[56]
+
+W. Jiang, “Software Defined Satellite Networks: A Survey,” Digital Communications and Networks, 2023.
+
+[57]
+
+J. Bao, B. Zhao, W. Yu, Z. Feng, C. Wu, and Z. Gong, “OpenSAN: A Software-Defined Satellite Network Architecture,” ACM SIGCOMM Computer Communication Review, 2014.
+
+[58]
+
+P. Zhang, C. Wang, N. Kumar, and L. Liu, “Space-Air-Ground Integrated Multi-Domain Network Resource Orchestration Based on Virtual Network Architecture: A DRL Method,” IEEE Transactions on Intelligent Transportation Systems, 2021.
+
+[59]
+
+Z. Fang, Z. Lin, Z. Chen, X. Chen, Y. Gao, and Y. Fang, “Automated Federated Pipeline for Parameter-Efficient Fine-Tuning of Large Language Models,” IEEE Trans. Mobile Comput., 2025.
+
+[60]
+
+Z. Lin, G. Qu, Q. Chen, X. Chen, Z. Chen, and K. Huang, “Pushing Large Language Models to the 6G Edge: Vision, Challenges, and Opportunities,” IEEE Communication Magazine, 2025.
+
+[61]
+
+G. Qu, Q. Chen, W. Wei, Z. Lin, X. Chen, and K. Huang, “Mobile edge intelligence for large language models: A contemporary survey,” IEEE Communications Surveys & Tutorials, 2025.
+
+[62]
+
+Z. Lin, G. Qu, W. Wei, X. Chen, and K. K. Leung, “Adaptsfl: Adaptive Split Federated Learning in Resource-Constrained Edge Networks,” IEEE Trans. Netw., 2025.
+
+[63]
+
+Y. Zhang, H. Chen, Z. Lin, Z. Chen, and J. Zhao, “LCFed: An Efficient Clustered Federated Learning Framework for Heterogeneous Data,” arXiv preprint arXiv:2501.01850, 2025.
+
+[64]
+
+W. Wei, Z. Lin, T. Li, X. Li, and X. Chen, “Pipelining split learning in multi-hop edge networks,” arXiv preprint arXiv:2505.04368, 2025.
+
+[65]
+
+M. Hu, J. Zhang, X. Wang, S. Liu, and Z. Lin, “Accelerating Federated Learning with Model Segmentation for Edge Networks,” IEEE Trans. Green Commun. Netw., 2024.
+
+[66]
+
+Z. Lin, G. Zhu, Y. Deng, X. Chen, Y. Gao, K. Huang, and Y. Fang, “Efficient Parallel Split Learning over Resource-Constrained Wireless Edge Networks,” IEEE Trans. Mobile Comput., vol. 23, no. 10, pp. 9224–9239, 2024.
+
+[67]
+
+Y. Zhang, H. Chen, Z. Lin, Z. Chen, and J. Zhao, “Fedac: An adaptive clustered federated learning framework for heterogeneous data,” arXiv preprint arXiv:2403.16460, 2024.
+
+[68]
+
+J. Zhan, H. Shen, Z. Lin, and T. He, “Prism: Privacy-aware routing for adaptive cloud-edge llm inference via semantic sketch collaboration,” arXiv preprint arXiv:2511.22788, 2025.
+
+Experimental support, please
+view the build logs
+for errors. Generated by
+
+L
+A
+T
+E
+
+xml
+
+.
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+methods listed below:
+
+Click the "Report Issue" (
+
+) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+We gratefully acknowledge support from
+our major funders,
+member institutions, ,
+and all contributors.
+
+About
+·
+Help
+·
+Contact
+·
+Subscribe
+·
+Copyright
+·
+Privacy
+·
+Accessibility
+·
+Operational Status (opens in new tab)
+
+Major funding support from
+
