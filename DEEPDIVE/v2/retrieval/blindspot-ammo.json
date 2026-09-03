@@ -1,0 +1,2297 @@
+{
+ "_meta": {
+  "total": 205,
+  "generated": "2026-09-03",
+  "queries": "12 arXiv + 8 Crossref + 4 OpenAlex + 2 S2 citation-sets"
+ },
+ "papers": [
+  {
+   "id": "arxiv:2607.04405",
+   "title": "Deadline-Bound Finite-Object Delivery over Intermittent LEO Satellite Contact Plans under Residual-Service Accounting",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "Low-Earth-orbit (LEO) relay networks deliver finite objects -- sensing tiles, telemetry blocks, model updates, and checkpoints -- over intermittent inter-satellite and space-to-ground contact plans. Partial delivery is insufficient when the complete object misses its deadline. When an object is split across candidate paths, a path-private evaluation can count the same contact service more than once and silently under-count completion. We develop a residual-service-aware delivery layer that consu",
+   "sources": [
+    "arxiv_q01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2605.03382",
+   "title": "CRT: Collision-Tolerant Residence Time for Deterministic Transmission in LEO Satellite Networks",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "Low-Earth Orbit (LEO) satellite networks are a key enabler for the 6G Non-Terrestrial Network (NTN) architecture. However, supporting time-sensitive services in LEO networks is challenging due to highly dynamic topologies and the difficulty of maintaining precise global time synchronization. Existing Time-Sensitive Networking (TSN) mechanisms largely rely on static topologies and strict synchronization, which makes them ill-suited to dynamic LEO environments. To address this issue, we propose CR",
+   "sources": [
+    "arxiv_q04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2601.08439",
+   "title": "Statistical Characterization and Prediction of E2E Latency over LEO Satellite Networks",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "Low Earth Orbit (LEO) satellite networks are emerging as an essential communication infrastructure, with standardized 5G-based non-terrestrial networks and their integration with terrestrial systems envisioned as a key feature of 6G. However, current LEO systems still exhibit significant latency variations, limiting their suitability for latency-sensitive services. We present a detailed statistical analysis of end-to-end latency based on 500Hz experimental bidirectional one-way measurements and ",
+   "sources": [
+    "arxiv_q04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2606.31950",
+   "title": "LEO Satellite Network Orchestration with Heterogeneous Graph Neural Networks",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "Low Earth Orbit (LEO) satellite constellations are becoming essential for expanding global Internet access, especially in remote and under-served areas. However, their highly dynamic nature, arising from network mobility, introduces complex coordination challenges between the dynamic satellites and the ground nodes (gateways and terrestrial devices). This is underscored by limited satellite visibility windows and spatially imbalanced user traffic demands. Local association (cell-satellite-gatewa",
+   "sources": [
+    "arxiv_q05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2608.14335",
+   "title": "Multi-Agent Reinforcement Learning for Joint Handover Management and Power Allocation in Multi-Orbit Satellite Networks",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "Future sixth-generation non-terrestrial networks are expected to combine low Earth orbit (LEO), medium Earth orbit (MEO), and geostationary Earth orbit (GEO) satellites, whose complementary layers must be coordinated through joint user association, power allocation, and handover management under fast LEO dynamics. This paper studies this problem by formulating it as a mixed-integer nonlinear program and decomposing it into a multi-agent reinforcement learning (MARL) policy that selects the assoc",
+   "sources": [
+    "arxiv_q06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2601.21383",
+   "title": "KubeSpace: A Low-Latency and Stable Control Plane for LEO Satellite Container Orchestration",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "Low Earth orbit (LEO) satellites play a pivotal role in global connectivity-delivering high-speed Internet, cellular coverage, and massive IoT support. With ever-growing onboard computing and storage resources, LEO satellites herald a new cloud paradigm: space cloud computing. While container or chestration platforms (e.g., Kubernetes) excel in terrestrial data centers, they are ill-suited to LEO satellite networks, featuring geographic dispersion and frequent handovers. Those features bring hig",
+   "sources": [
+    "arxiv_q06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2601.16393",
+   "title": "GNSS-based Lunar Orbit and Clock Estimation With Stochastic Cloning UD Filter",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "This paper presents a terrestrial GNSS-based orbit and clock estimation framework for lunar navigation satellites. To enable high-precision estimation under the low-observability conditions encountered at lunar distances, we develop a stochastic-cloning UD-factorized filter and delayed-state smoother that provide enhanced numerical stability when processing precise time-differenced carrier phase (TDCP) measurements. A comprehensive dynamics and measurement model is formulated, explicitly account",
+   "sources": [
+    "arxiv_q07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2604.22685",
+   "title": "CosmicDancePro -- Measuring LEO satellite's orbital decay and network connectivity implications during solar storms",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "The May 2024 solar superstorm highlighted the vulnerability of rapidly expanding low Earth orbit (LEO) satellite networks to severe space weather events. To systematically evaluate LEO network resilience, we introduce an open-source tool, CosmicDancePro. It enables a comprehensive analysis of the effects of solar storms in the LEO satellite network. It integrates real-world multimodal datasets, including space weather measurements from several satellites, upper-atmospheric density conditions fro",
+   "sources": [
+    "arxiv_q09"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2606.29324",
+   "title": "Deciphering Region-Level Signatures from Latency Measurements in LEO Satellite Internet",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "Low-Earth orbit (LEO) satellite Internet has become an indispensable infrastructure that provide growing coverage for global users. Despite extensive measurement efforts, the principles underlying region-level performance characteristics remain insufficiently understood, limiting the ability to identify region-specific latency signatures under dynamic network conditions. In this paper, we formulate the problem of region-level latency characterization using Starlink round-trip time (RTT) measurem",
+   "sources": [
+    "arxiv_q09"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2607.24790",
+   "title": "A GAN-Based Framework for Robust Data Synthesis in Satellite Internet Observations",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "Low-Earth orbit (LEO) satellite Internet has become an important infrastructure for enabling ubiquitous connectivity to align with the International Telecommunications Union vision for 6G telecommunications networks. However, current LEO satellite Internet observations often suffer from missing data, which complicates data augmentation task and limits the expansion of representative datasets. Given the complex characteristics of these datasets, generative AI (GenAI) presents a promising approach",
+   "sources": [
+    "arxiv_q09"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2605.27755",
+   "title": "A Vertical Look at UAV Connectivity in the Wild: Cellular vs. Starlink, 3D Characterization, and Performance Prediction",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "In this paper, we present an open-source measurement platform designed to characterize the performance of commercial cellular (Verizon, a major US provider) and LEO satellite (Starlink) networks through real-world flight tests in rural environments. We implement a comprehensive multi-layer measurement approach spanning physical layer signal metrics, multi-cell network topology, and end-to-end (E2E) application performance. Through an extensive flight campaign with more than $10$ flight tests, $4",
+   "sources": [
+    "arxiv_q09"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2607.29285",
+   "title": "TRACT: Temporally Routed Action Chunks with Chronological Phase Authority for Contact-Rich Manipulation",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "Action chunking shortens the effective decision horizon of robot imitation learning by predicting multiple future actions, while conventional phase conditioning describes the current control instant. When a predicted horizon crosses a procedural boundary, assigning the current phase to the entire chunk creates a structural temporal mismatch. We present TRACT, which factorizes phase-structured action chunking into an accepted current phase and a single CURRENT-to-NEXT boundary inside the future h",
+   "sources": [
+    "arxiv_q10"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2603.10198",
+   "title": "Octopus-inspired Distributed Control for Soft Robotic Arms: A Graph Neural Network-Based Attention Policy with Environmental Interaction",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "This paper proposes SoftGM, an octopus-inspired distributed control architecture for segmented soft robotic arms that learn to reach targets in contact-rich environments using online obstacle discovery without assuming full obstacle geometry at the start of each episode. SoftGM formulates each arm section as a cooperative agent and represents the arm-environment interaction as a graph. SoftGM uses a two-stage graph attention message passing scheme following a Centralised Training Decentralised E",
+   "sources": [
+    "arxiv_q10"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2605.12536",
+   "title": "Information as Maximum-Caliber Deviation: A bridge between Integrated Information Theory and the Free Energy Principle",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "The Free Energy Principle (FEP) is a leading framework for mathematically modeling self-organization and learning, while Integrated Information Theory (IIT) is a computational ontology of consciousness oriented around irreducible cause and effect. While conceptual unifications have been proposed and appear to be supported by empirical findings, the absence of a rigorous mathematical mapping places upper bounds on their precision and testability. This work proposes that information can be defined",
+   "sources": [
+    "arxiv_q11"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2608.03143",
+   "title": "From Routes to Steps: Separating Semantic Progress from Local Execution in Vision-and-Language Navigation",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "Vision-and-Language Navigation (VLN) requires an agent to follow a route-level instruction by executing its constituent steps from egocentric visual observations. Existing VLM-based navigators typically supervise both capabilities through next-action prediction alone, making progress-tracking errors difficult to distinguish from execution errors. When an agent deviates from the route, a corrective action label may recover the next movement but does not indicate whether the agent selected the wro",
+   "sources": [
+    "arxiv_q11"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2607.11632",
+   "title": "Reproducing human biases in route choice using large language models: Toward scalable behavioral modeling",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "Human choice behavior, including route choice, exhibits systematic behavioral biases that deviate from the assumptions of full rationality. Cumulative prospect theory (CPT) has been widely recognized as an effective framework for characterizing such behavioral patterns. However, its large-scale application, particularly in simulation and agent-based modeling, critically depends on specifying individual-level CPT parameters, which remain a major bottleneck. Conventional approaches typically rely ",
+   "sources": [
+    "arxiv_q11"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2607.15541",
+   "title": "StarCodex: Dynamic Coding Harness for Starlink Measurement Analysis and Experiment Automation",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "Starlink and other low Earth orbit (LEO) satellite broadband systems are producing increasingly diverse measurement data across regions, time periods, and access conditions. These measurements are valuable for throughput prediction, adaptive bitrate (ABR) evaluation, and network experimentation, but converting continuously arriving data into reusable experimental evidence still relies heavily on manually developed analysis code and expert-guided data inspection and failure-case organization. Thi",
+   "sources": [
+    "arxiv_q12"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2605.27717",
+   "title": "Characterizing the Configuration of Starlink Queuing",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "In all networking systems, queuing is important to ensure appropriate resource utilization in the presence of bursty traffic and varying traffic demands. The Starlink access network is additionally also dynamic in terms of the capacity it can provide, and thus queuing plays an even greater role to ensure appropriate communication performance for the end-users while maintaining high resource utilization. However, for Starlink most system design details, along with the setup of the internal queuin",
+   "sources": [
+    "arxiv_q12"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2605.20394",
+   "title": "Starlink Beacons for Passive LEO-Aided 9D Navigation",
+   "year": "2026",
+   "venue": "arXiv",
+   "abstract": "Global Navigation Satellite Systems (GNSS) underpin positioning, navigation, and timing (PNT), yet their low-power signals are easily blocked or disrupted, leaving gaps in PNT availability in contested environments (e.g. maritime settings) where interference, spoofing, or denial can occur. A key practical need is an independent, ubiquitous aiding signal that can be tracked passively and fused with inertial sensing to sustain full navigation-state estimation without dedicated or cooperative infra",
+   "sources": [
+    "arxiv_q12"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/cnml68938.2026.11453065",
+   "title": "A Double Q-Network Routing in Earth-Moon Satellite Delay Tolerant Network",
+   "year": 2026,
+   "venue": "2026 International Conference on Communication Networks and Machine Learning (CNML)",
+   "abstract": "",
+   "sources": [
+    "cr_c03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.2139/ssrn.6848759",
+   "title": "Joint Channel and Residual-Doppler Estimation for OTFS in LEO Satellite Networks with Bounded Ephemeris Error",
+   "year": 2026,
+   "venue": "Crossref",
+   "abstract": "Ephemeris-aided Doppler pre-compensation is the standard mechanism by which 3GPP non-terrestrial networks (NTN) operate Orthogonal Time Fre- quency Space (OTFS) and other waveforms over Low Earth Orbit (LEO) satellite links. In practice, residual Doppler error remains after pre-compensation due to imperfect orbital propagation, position uncertainty, and clock drift; this residual is bounded but unknown. Existing OTFS channel estimators either assume the residual to be zero or absorb it into a Ga",
+   "sources": [
+    "cr_c06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1016/j.phycom.2026.103280",
+   "title": "Joint channel and residual-Doppler estimation for OTFS in LEO satellite networks with bounded ephemeris error",
+   "year": 2026,
+   "venue": "Physical Communication",
+   "abstract": "",
+   "sources": [
+    "cr_c06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/ecie69549.2026.11565797",
+   "title": "Congestion Control Based on Multi-Agent Deep Deterministic Policy Gradient",
+   "year": 2026,
+   "venue": "2026 6th International Conference on Electronics, Circuits and Information Engineering (ECIE)",
+   "abstract": "In complex communication scenarios, network capabilities are inherently constrained and reliability is frequently compromised, rendering existing infrastructures inadequate for diverse communication requirements. Consequently, constructing stable and dependable networks to ensure reliable transmission of mission-critical traffic has become imperative. Existing centralized traffic control mechanisms suffer from single-point vulnerabilities and prohibitive overhead, whereas purely distributed appr",
+   "sources": [
+    "cite-ARXIV:2209.08565"
+   ],
+   "relation": "citation-expand"
+  },
+  {
+   "id": "doi:10.1007/s10586-026-05959-4",
+   "title": "Deep reinforcement learning-based resource orchestration algorithm for SDN-enabled satellite computing networks",
+   "year": 2026,
+   "venue": "Cluster Computing",
+   "abstract": "",
+   "sources": [
+    "cite-ARXIV:2209.08565"
+   ],
+   "relation": "citation-expand"
+  },
+  {
+   "id": "doi:10.1109/access.2026.3700836",
+   "title": "Idle Nodes Detection and Reactivation-Aware-Buffer Management in Delay-Tolerant Network Using IEMATA and SPKO",
+   "year": 2026,
+   "venue": "IEEE Access",
+   "abstract": "In Delay Tolerant Networks (DTNs), buffer management is crucial for optimized message delivery by focusing on message storage and prioritization. However, existing studies do not determine the state of a node, leading to buffer space wastage. Therefore, this paper presents a buffer management framework based on Idle Node Detection and Reactivation in DTN. Initially, nodes are initialized in DTN, followed by assessment of Time To Live (TTL) and message expiry detection. Non-expired and new messag",
+   "sources": [
+    "cite-ARXIV:2410.15546"
+   ],
+   "relation": "citation-expand"
+  },
+  {
+   "id": "arxiv:2511.16063",
+   "title": "Modeling Pointing, Acquisition, and Tracking Delays in Free-Space Optical Satellite Networks",
+   "year": "2025",
+   "venue": "arXiv",
+   "abstract": "Free-space optical inter-satellite links (OISLs) enable high-capacity space communications but require precise Pointing, Acquisition, and Tracking (PAT) between links. Current scheduling approaches often overlook or oversimplify PAT delays, leading to inefficient contact planning and overestimated network capacities. We present a validated model for quantifying retargeting delays, defined as the delay-inducing portion of PAT before data transmission begins, encompassing coarse pointing, fine poi",
+   "sources": [
+    "arxiv_q01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2507.09926",
+   "title": "Intelligent Task Management via Dynamic Multi-region Division in LEO Satellite Networks",
+   "year": "2025",
+   "venue": "arXiv",
+   "abstract": "As a key complement to terrestrial networks and a fundamental component of future 6G systems, Low Earth Orbit (LEO) satellite networks are expected to provide high-quality communication services when integrated with ground-based infrastructure, thereby attracting significant research interest. However, the limited satellite onboard resources and the uneven distribution of computational workloads often result in congestion along inter-satellite links (ISLs) that degrades task processing efficienc",
+   "sources": [
+    "arxiv_q04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2501.13280",
+   "title": "Time-Dependent Network Topology Optimization for LEO Satellite Constellations",
+   "year": "2025",
+   "venue": "arXiv",
+   "abstract": "Today's Low Earth Orbit (LEO) satellite networks, exemplified by SpaceX's Starlink, play a crucial role in delivering global internet access to millions of users. However, managing the dynamic and expansive nature of these networks poses significant challenges in designing optimal satellite topologies over time. In this paper, we introduce the \\underline{D}ynamic Time-Expanded Graph (DTEG)-based \\underline{O}ptimal \\underline{T}opology \\underline{D}esign (DoTD) algorithm to tackle these challeng",
+   "sources": [
+    "arxiv_q05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2510.09409",
+   "title": "3C Resources Joint Allocation for Time-Deterministic Remote Sensing Image Backhaul in the Space-Ground Integrated Network",
+   "year": "2025",
+   "venue": "arXiv",
+   "abstract": "Low-Earth-orbit (LEO) satellites assist observation satellites (OSs) to compress and backhaul more time-determined images (TDI) has become a new paradigm, which is used to enhance the timeout caused by the limited computing resources of OSs. However, how to capture the time-varying and dynamic characteristics of multi-dimensional resources is challenging for efficient collaborative scheduling. Motivated by this factor, we design a highly succinct multi-dimensional resource time-expanded graph (M",
+   "sources": [
+    "arxiv_q05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2508.13402",
+   "title": "Robust Live Streaming over LEO Satellite Constellations: Measurement, Analysis, and Handover-Aware Adaptation",
+   "year": "2025",
+   "venue": "arXiv",
+   "abstract": "Live streaming has experienced significant growth recently. Yet this rise in popularity contrasts with the reality that a substantial segment of the global population still lacks Internet access. The emergence of Low Earth orbit Satellite Networks (LSNs), such as SpaceX's Starlink and Amazon's Project Kuiper, presents a promising solution to fill this gap. Nevertheless, our measurement study reveals that existing live streaming platforms may not be able to deliver a smooth viewing experience on ",
+   "sources": [
+    "arxiv_q06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2505.14118",
+   "title": "EM-Based Channel Estimation for mMIMO LEO SATCOM Under Imperfect Doppler Compensation",
+   "year": "2025",
+   "venue": "arXiv",
+   "abstract": "Massive multiple-input multiple-output low-Earth-orbit communication channels are highly time-varying due to severe Doppler shifts and propagation delays. While satellite-mobility-induced Doppler shifts can be compensated using known ephemeris data, those caused by user mobility require accurate user positioning information; the absence of such information contributes to amplified channel aging in conventional channel estimators. To address this challenge, we propose a data-aided channel estimat",
+   "sources": [
+    "arxiv_q07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2510.11242",
+   "title": "Analyzing Data Quality and Decay in Mega-Constellations: A Physics-Informed Machine Learning Approach",
+   "year": "2025",
+   "venue": "arXiv",
+   "abstract": "In the era of mega-constellations, the need for accurate and publicly available information has become fundamental for satellite operators to guarantee the safety of spacecrafts and the Low Earth Orbit (LEO) space environment. This study critically evaluates the accuracy and reliability of publicly available ephemeris data for a LEO mega-constellation - Starlink. The goal of this work is twofold: (i) compare and analyze the quality of the data against high-precision numerical propagation. (ii) L",
+   "sources": [
+    "arxiv_q07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2504.13594",
+   "title": "Joint Optimization of Controller Placement and Switch Assignment in SDN-based LEO Satellite Networks",
+   "year": "2025",
+   "venue": "arXiv",
+   "abstract": "Software-defined networking (SDN) based low earth orbit (LEO) satellite networks leverage the SDN's benefits of the separation of data plane and control plane, control plane programmability, and centralized control to alleviate the problem of inefficient resource management under traditional network architectures. The most fundamental issue in SDN-based LEO satellite networks is how to place controllers and assign switches. Their outcome directly affects the performance of the network. However, ",
+   "sources": [
+    "arxiv_q08"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2504.01192",
+   "title": "Preference-Centric Route Recommendation: Equilibrium, Learning, and Provable Efficiency",
+   "year": "2025",
+   "venue": "arXiv",
+   "abstract": "Traditional approaches to modeling and predicting traffic behavior often rely on Wardrop Equilibrium (WE), assuming non-atomic traffic demand and neglecting correlations in individual decisions. However, the growing role of real-time human feedback and adaptive recommendation systems calls for more expressive equilibrium concepts that better capture user preferences and the stochastic nature of routing behavior. In this paper, we introduce a preference-centric route recommendation framework grou",
+   "sources": [
+    "arxiv_q11"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2507.15307",
+   "title": "Joint Optimisation of Electric Vehicle Routing and Scheduling: A Deep Learning-Driven Approach for Dynamic Fleet Sizes",
+   "year": "2025",
+   "venue": "arXiv",
+   "abstract": "Electric Vehicles (EVs) are becoming increasingly prevalent nowadays, with studies highlighting their potential as mobile energy storage systems to provide grid support. Realising this potential requires effective charging coordination, which are often formulated as mixed-integer programming (MIP) problems. However, MIP problems are NP-hard and often intractable when applied to time-sensitive tasks. To address this limitation, we propose a deep learning assisted approach for optimising a day-ahe",
+   "sources": [
+    "arxiv_q11"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2504.04086",
+   "title": "Towards An Efficient and Effective En Route Travel Time Estimation Framework",
+   "year": "2025",
+   "venue": "arXiv",
+   "abstract": "En route travel time estimation (ER-TTE) focuses on predicting the travel time of the remaining route. Existing ER-TTE methods always make re-estimation which significantly hinders real-time performance, especially when faced with the computational demands of simultaneous user requests. This results in delays and reduced responsiveness in ER-TTE services. We propose a general efficient framework U-ERTTE combining an Uncertainty-Guided Decision mechanism (UGD) and Fine-Tuning with Meta-Learning (",
+   "sources": [
+    "arxiv_q11"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2506.15624",
+   "title": "The Effect of State Representation on LLM Agent Behavior in Dynamic Routing Games",
+   "year": "2025",
+   "venue": "arXiv",
+   "abstract": "Large Language Models (LLMs) have shown promise as decision-makers in dynamic settings, but their stateless nature necessitates creating a natural language representation of history. We present a unifying framework for systematically constructing natural language \"state\" representations for prompting LLM agents in repeated multi-agent games. Previous work on games with LLM agents has taken an ad hoc approach to encoding game history, which not only obscures the impact of state representation on ",
+   "sources": [
+    "arxiv_q11"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2502.15552",
+   "title": "Starlink in Northern Europe: A New Look at Stationary and In-motion Performance",
+   "year": "2025",
+   "venue": "arXiv",
+   "abstract": "Starlink has introduced the Flat High Performance (FHP) terminal, specifically designed to support the vehicles and the vessels in motion as well as the high-demand stationary users. The research on FHP terminal throughput analysis remains limited, only a few existing studies evaluate FHP, focusing on the limited parameters and scenarios. This paper evaluates the FHP terminal's performance in Finland, Northern Europe. We examine round-trip time (RTT), uplink, and downlink throughput for both sta",
+   "sources": [
+    "arxiv_q12"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.17487/rfc9717",
+   "title": "A Routing Architecture for Satellite Networks",
+   "year": 2025,
+   "venue": "Crossref",
+   "abstract": "",
+   "sources": [
+    "cr_c01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.3390/a18050293",
+   "title": "A Simulation of Contact Graph Routing for Mars–Earth Data Communication",
+   "year": 2025,
+   "venue": "Algorithms",
+   "abstract": "In this study, we develop a simulation of Contact Graph Routing (CGR) for data communication between Mars, Earth, and relay satellites. Due to the changing of the satellites’ distances to Mars and Earth, respectively, there are specific contact windows between NASA’s Mars rovers and orbiting relay satellites, and specific contact windows between these relay satellites and NASA’s global system of antennas on Earth. The barrier in communication develops delays caused by link propagation, so it nee",
+   "sources": [
+    "cr_c02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/iwcmc65282.2025.11059452",
+   "title": "A Novel Handover Management Scheme for LEO Satellite Internet",
+   "year": 2025,
+   "venue": "2025 International Wireless Communications and Mobile Computing (IWCMC)",
+   "abstract": "",
+   "sources": [
+    "cr_c04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/eict68394.2025.11355604",
+   "title": "Velocity Aware Predictive Geometry Based Handover Management in LEO Satellite NTNs",
+   "year": 2025,
+   "venue": "2025 7th International Conference on Electrical Information and Communication Technology (EICT)",
+   "abstract": "",
+   "sources": [
+    "cr_c04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/taes.2025.3526111",
+   "title": "Ephemeris and Timing Error Disambiguation Enabling Precise LEO PNT",
+   "year": 2025,
+   "venue": "IEEE Transactions on Aerospace and Electronic Systems",
+   "abstract": "",
+   "sources": [
+    "cr_c06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.5194/egusphere-egu25-3491",
+   "title": "Characteristics of Probability Distribution and Fitting Accuracy for LEO Satellite Ephemeris",
+   "year": 2025,
+   "venue": "Crossref",
+   "abstract": "Low Earth Orbit (LEO) satellites have nowadays shown great potential to enhance the existing GNSSs for better Positioning, Navigation, and Timing (PNT) services. Despite the requirements for high-accuracy real-time orbits, the distribution of various LEO satellite ephemeris is of concern, yet rarely studied for efficient broadcasting of the LEO satellite ephemeris. This is especially important for setting proper thresholds when broadcasting the LEO satellite ephemeris. In this study, the probabi",
+   "sources": [
+    "cr_c06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/plans61210.2025.11028190",
+   "title": "LEO Ephemeris Error Modeling Enabling Long Baseline Correction for Improved PNT",
+   "year": 2025,
+   "venue": "2025 IEEE/ION Position, Location and Navigation Symposium (PLANS)",
+   "abstract": "",
+   "sources": [
+    "cr_c06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/plans61210.2025.11028338",
+   "title": "Warm Start Navigation with Non-Cooperative LEO Satellites via Online Ephemeris Error Estimation",
+   "year": 2025,
+   "venue": "2025 IEEE/ION Position, Location and Navigation Symposium (PLANS)",
+   "abstract": "",
+   "sources": [
+    "cr_c06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/iwqos65803.2025.11143359",
+   "title": "Beneath the Heavens: A Thorough Measurement Study of the Starlink Terrestrial Network",
+   "year": 2025,
+   "venue": "2025 IEEE/ACM 33rd International Symposium on Quality of Service (IWQoS)",
+   "abstract": "",
+   "sources": [
+    "cr_c07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.59704/dbeee167d32187b0",
+   "title": "Starlink, the Cloud, and Corporate Dependency",
+   "year": 2025,
+   "venue": "Crossref",
+   "abstract": "The Trump Administration has repeatedly pushed for the adoption or licensing of Elon Musk’s satellite company Starlink in trade negotiations. But as Musk’s strategic use of his satellite service reveals, corporate control over critical infrastructure inevitably translates into political power. Power that companies may wield in alignment with, or in opposition to, state interests. The solution, however, may not lie in stronger state oversight alone, but in democratizing corporations themselves.",
+   "sources": [
+    "cr_c07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/isncc66965.2025.11250490",
+   "title": "Probabilistic Link Weighting via Feature Fusion for Routing in LEO Satellite Networks",
+   "year": 2025,
+   "venue": "International Symposium on Networks, Computers and Communications",
+   "abstract": "This paper proposes a probabilistic framework to infer link availability in Low Earth Orbit (LEO) satellite networks from weak but complementary features such as SNR, capacity, and duration, by first mapping these features with adaptive sigmoid functions, and then integrating them using a Product of Experts (PoE) model. A negative log transformation enables lightweight shortest-path routing with additive weights. Theoretical analysis shows temporal stability, while simulations demonstrate consis",
+   "sources": [
+    "cite-ARXIV:2209.08565"
+   ],
+   "relation": "citation-expand"
+  },
+  {
+   "id": "doi:10.3390/network5030032",
+   "title": "A Comprehensive Review of Satellite Orbital Placement and Coverage Optimization for Low Earth Orbit Satellite Networks: Challenges and Solutions",
+   "year": 2025,
+   "venue": "Network",
+   "abstract": "Nowadays, internet connectivity suffers from instability and slowness due to optical fiber cable attacks across the seas and oceans. The optimal solution to this problem is using the Low Earth Orbit (LEO) satellite network, which can resolve the problem of internet connectivity and reachability, and it has the power to bring real-time, reliable, low-latency, high-bandwidth, cost-effective internet access to many urban and rural areas in any region of the Earth. However, satellite orbital placeme",
+   "sources": [
+    "cite-ARXIV:2209.08565"
+   ],
+   "relation": "citation-expand"
+  },
+  {
+   "id": "arxiv:2410.15546",
+   "title": "Improved Contact Graph Routing in Delay Tolerant Networks with Capacity and Buffer Constraints",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "Satellite communications present challenging characteristics. Continuous end-to-end connectivity may not be available due to the large distances between satellites. Moreover, resources such as link capacity and buffer memory may be limited. Routing in satellite networks is therefore both complex and crucial to avoid packet losses and long delays. The Delay Tolerant Network (DTN) paradigm has emerged as an efficient solution for managing these challenging networks. Contact Graph Routing (CGR), a ",
+   "sources": [
+    "arxiv_q03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2406.01953",
+   "title": "On-Demand Routing in LEO Mega-Constellations with Dynamic Laser Inter-Satellite Links",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "Low Earth orbit (LEO) satellite mega constellations are beginning to include laser inter-satellite links (LISLs) to extend the Internet to the most remote locations on Earth. Since the process of establishing these links incurs a setup delay on the order of seconds, a static network topology is generally established well in advance, which is then used for the routing calculations. However, this involves keeping links active even when they are not being used to forward traffic, leading to poor en",
+   "sources": [
+    "arxiv_q03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2412.07964",
+   "title": "Geometry helps in routing scalability",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "Delay Tolerant Networking (DTN) aims to address a myriad of significant networking challenges that appear in time-varying settings, such as mobile and satellite networks, wherein changes in network topology are frequent and often subject to environmental constraints. Within this paradigm, routing problems are often solved by extending classical graph-theoretic path finding algorithms, such as the Bellman-Ford or Floyd-Warshall algorithms, to the time-varying setting; such extensions are simple t",
+   "sources": [
+    "arxiv_q03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2406.00723",
+   "title": "Throughput and Link Utilization Improvement in Satellite Networks: A Learning-Enabled Approach",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "Satellite networks provide communication services to global users with an uneven geographical distribution. In densely populated regions, Inter-satellite links (ISLs) often experience congestion, blocking traffic from other links and leading to low link utilization and throughput. In such cases, delay-tolerant traffic can be withheld by moving satellites and carried to navigate congested areas, thereby mitigating link congestion in densely populated regions. Through rational store-and-forward de",
+   "sources": [
+    "arxiv_q03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2412.12587",
+   "title": "Distributed satellite information networks: Architecture, enabling technologies, and trends",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "Driven by the vision of ubiquitous connectivity and wireless intelligence, the evolution of ultra-dense constellation-based satellite-integrated Internet is underway, now taking preliminary shape. Nevertheless, the entrenched institutional silos and limited, nonrenewable heterogeneous network resources leave current satellite systems struggling to accommodate the escalating demands of next-generation intelligent applications. In this context, the distributed satellite information networks (DSIN)",
+   "sources": [
+    "arxiv_q04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2401.06579",
+   "title": "Enhancing Throughput for TTEthernet via Co-optimizing Routing and Scheduling: An Online Time-Varying Graph-based Method",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "Time-Triggered Ethernet (TTEthernet) has been widely applied in many scenarios such as industrial internet, automotive electronics, and aerospace, where offline routing and scheduling for TTEthernet has been largely investigated. However, predetermined routes and schedules cannot meet the demands in some agile scenarios, such as smart factories, autonomous driving, and satellite network switching, where the transmission requests join in and leave the network frequently. Thus, we study the online",
+   "sources": [
+    "arxiv_q05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2406.03159",
+   "title": "Hurry: Dynamic Collaborative Framework For Low-orbit Mega-Constellation Data Downloading",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "Low-orbit mega-constellation network, which utilize thousands of satellites to provide a variety of network services and collect a wide range of space information, is a rapidly growing field. Each satellite collects TB-level data daily, including delay-sensitive data used for crucial tasks, such as military surveillance, natural disaster monitoring, and weather forecasting. According to NASA's statement, these data need to be downloaded to the ground for processing within 3 to 5 hours. To reduce",
+   "sources": [
+    "arxiv_q05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2402.00091",
+   "title": "Nash Soft Actor-Critic LEO Satellite Handover Management Algorithm for Flying Vehicles",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "Compared with the terrestrial networks (TN), which can only support limited coverage areas, low-earth orbit (LEO) satellites can provide seamless global coverage and high survivability in case of emergencies. Nevertheless, the swift movement of the LEO satellites poses a challenge: frequent handovers are inevitable, compromising the quality of service (QoS) of users and leading to discontinuous connectivity. Moreover, considering LEO satellite connectivity for different flying vehicles (FVs) whe",
+   "sources": [
+    "arxiv_q06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2404.08967",
+   "title": "Beam Management in Low Earth Orbit Satellite Communication With Handover Frequency Control and Satellite-Terrestrial Spectrum Sharing",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "To achieve ubiquitous wireless connectivity, low earth orbit (LEO) satellite networks have drawn much attention. However, effective beam management is challenging due to time-varying cell load, high dynamic network topology, and complex interference situations. In this paper, under inter-satellite handover frequency and satellite-terrestrial/inter-beam interference constraints, we formulate a practical beam management problem, aiming to maximize the long-term service satisfaction of cells. Parti",
+   "sources": [
+    "arxiv_q06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2407.06623",
+   "title": "SKYCASTLE: Taming LEO Mobility to Facilitate Seamless and Low-latency Satellite Internet Services",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "Emerging integrated space and terrestrial networks (ISTN) built upon low earth orbit (LEO) satellite constellations aim at providing planet-wide Internet services, not only for residential users, but also for mobile users (e.g., in airplane and cruise scenarios). Efficiently managing global mobility and keeping connections active for mobile users is critical for ISTN operators. However, our quantitative analysis identifies that existing mobility management (MM) schemes suffer from frequent conne",
+   "sources": [
+    "arxiv_q06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2402.04830",
+   "title": "Closing the Gap Between SGP4 and High-Precision Propagation via Differentiable Programming",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "The Simplified General Perturbations 4 (SGP4) orbital propagation method is widely used for predicting the positions and velocities of Earth-orbiting objects rapidly and reliably. Despite continuous refinement, SGP models still lack the precision of numerical propagators, which offer significantly smaller errors. This study presents dSGP4, a novel differentiable version of SGP4 implemented using PyTorch. By making SGP4 differentiable, dSGP4 facilitates various space-related applications, includi",
+   "sources": [
+    "arxiv_q07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2407.11026",
+   "title": "Precise and Efficient Orbit Prediction in LEO with Machine Learning using Exogenous Variables",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "The increasing volume of space objects in Earth's orbit presents a significant challenge for Space Situational Awareness (SSA). And in particular, accurate orbit prediction is crucial to anticipate the position and velocity of space objects, for collision avoidance and space debris mitigation. When performing Orbit Prediction (OP), it is necessary to consider the impact of non-conservative forces, such as atmospheric drag and gravitational perturbations, that contribute to uncertainty around the",
+   "sources": [
+    "arxiv_q07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2402.16448",
+   "title": "WetLinks: a Large-Scale Longitudinal Starlink Dataset with Contiguous Weather Data",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "Low Orbit Satellite (LEO) networks such as Starlink promise Internet access everywhere around the world. In this paper, we present WetLinks - a large and publicly available trace-based dataset of Starlink measurements. The measurements were concurrently collected from two European vantage points over a span of six months. Consisting of approximately 140,000 measurements, the dataset comprises all relevant network parameters such as the upload and download throughputs, the RTT, packet loss, and t",
+   "sources": [
+    "arxiv_q09",
+    "arxiv_q12"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2412.18243",
+   "title": "A Large-Scale IPv6-Based Measurement of the Starlink Network",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "Low Earth Orbit (LEO) satellite networks have attracted considerable attention for their ability to deliver global, low-latency broadband Internet services. In this paper, we present a large-scale measurement study of the Starlink network, the largest LEO satellite constellation to date. We first propose an efficient method for discovering active Starlink user routers, identifying approximately 5.98 million IPv6 addresses across 208 regions in 165 countries. Compared to general-purpose IPv6 targ",
+   "sources": [
+    "arxiv_q09",
+    "arxiv_q12"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2410.10242",
+   "title": "TraX Engine: Advanced Processing of Radiation Data Acquired by Timepix Detectors in Space, Medical, Educational and Imaging Applications",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "The TraX Engine is an advanced data processing tool developed by ADVACAM in collaboration with the European Space Agency (ESA), specifically designed for analyzing data from Timepix detectors equipped with various sensor materials (Si, CdTe, GaAs, SiC). TraX Engine can process large datasets across various scientific and medical applications, including space radiation monitoring, particle therapy, and imaging. In space applications, the TraX Engine has been used to process data from satellites l",
+   "sources": [
+    "arxiv_q09"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2403.13497",
+   "title": "Starlink on the Road: A First Look at Mobile Starlink Performance in Central Europe",
+   "year": "2024",
+   "venue": "arXiv",
+   "abstract": "Low Earth Orbit Satellite Networks such as Starlink promise to provide world-wide Internet access. While traditionally designed for stationary use, a new dish, released in April 2023 in Europe, provides mobile Internet access including in-motion usage, e.g., while mounted on a car. In this paper, we design and build a mobile measurement setup. Our goal is to fully autonomously conduct continuous Starlink measurements while the car is in motion. We share our practical experiences, including chall",
+   "sources": [
+    "arxiv_q12"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/aero58975.2024.10521114",
+   "title": "Contact Plan Optimization and Distributed State Estimation for Delay Tolerant Satellite Networks",
+   "year": 2024,
+   "venue": "2024 IEEE Aerospace Conference",
+   "abstract": "",
+   "sources": [
+    "cr_c01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/aero58975.2024.10521364",
+   "title": "Ephemeris Error Correction for Tracking Non-Cooperative LEO Satellites with Pseudorange Measurements",
+   "year": 2024,
+   "venue": "2024 IEEE Aerospace Conference",
+   "abstract": "",
+   "sources": [
+    "cr_c06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/aero58975.2024.10521347",
+   "title": "Analysis of Satellite Ephemeris Error in Differential and Non-differential Navigation with LEO Satellites",
+   "year": 2024,
+   "venue": "2024 IEEE Aerospace Conference",
+   "abstract": "",
+   "sources": [
+    "cr_c06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.2139/ssrn.4865133",
+   "title": "Lobefit: Leo Satellite Broadcast Ephemeris Fitting Open-Source Software Based on Automatic Differentiation Technique",
+   "year": 2024,
+   "venue": "Crossref",
+   "abstract": "",
+   "sources": [
+    "cr_c06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.23919/tma62044.2024.10559110",
+   "title": "Starlink on the Road: A First Look at Mobile Starlink Performance in Central Europe",
+   "year": 2024,
+   "venue": "2024 8th Network Traffic Measurement and Analysis Conference (TMA)",
+   "abstract": "",
+   "sources": [
+    "cr_c07",
+    "oa_o04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.5220/0012619900003705",
+   "title": "How Is Starlink Manoeuvring? An Analysis of Patterns in the Manoeuvres of Starlink Satellites",
+   "year": 2024,
+   "venue": "Proceedings of the 9th International Conference on Internet of Things, Big Data and Security",
+   "abstract": "",
+   "sources": [
+    "cr_c07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.22480/revunifa.2022.35.500",
+   "title": "Programa Starlink na Guerra Russo-Ucraniana",
+   "year": 2024,
+   "venue": "Revista da UNIFA",
+   "abstract": "The strategic use of SpaceX’s Starlink satellite constellation in the Ukrainian War provided comparative gains to Ukrainian troops that hampered Russian troops’ actions and drew China’s attention, who stated that the system is a potential threat to their national sovereignty. Thus, the objective of this text is to analyze the impacts of the Starlink Program in the conflicts of the RussoUkrainian War of 2022.",
+   "sources": [
+    "cr_c07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1145/3646547.3689666",
+   "title": "Poster: Twinkle, Twinkle, Streaming Star: Illuminating CDN Performance over Starlink",
+   "year": 2024,
+   "venue": "Proceedings of the 2024 ACM on Internet Measurement Conference",
+   "abstract": "",
+   "sources": [
+    "cr_c07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.23919/ifipnetworking62109.2024.10619797",
+   "title": "An East-Westbound Control Architecture for Multi-Segment Deterministic Networking",
+   "year": 2024,
+   "venue": "2024 IFIP Networking Conference (IFIP Networking)",
+   "abstract": "",
+   "sources": [
+    "cr_c08"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1145/3589334.3645328",
+   "title": "A Multifaceted Look at Starlink Performance",
+   "year": 2024,
+   "venue": "OpenAlex",
+   "abstract": "The Starlink network from SpaceX stands out as the only commercial LEO network with over 2M+ customers and more than 4000 operational satellites. In this paper, we conduct a first-of-its-kind extensive multi-faceted analysis of Starlink performance leveraging several measurement sources. First, based on 19.2M crowdsourced M-Lab speed tests from 34 countries since 2021, we analyze Starlink global performance relative to terrestrial cellular networks. Second, we examine Starlink's ability to suppo",
+   "sources": [
+    "oa_o04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.23919/tma62044.2024.10558998",
+   "title": "WetLinks: A Large-Scale Longitudinal Starlink Dataset with Contiguous Weather Data",
+   "year": 2024,
+   "venue": "OpenAlex",
+   "abstract": "Low Orbit Satellite (LEO) networks such as Starlink promise Internet access everywhere around the world. In this paper, we present WetLinks - a large and publicly available trace-based dataset of Starlink measurements. The measurements were concurrently collected from two European vantage points over a span of six months. Consisting of approximately 140,000 measurements, the dataset comprises all relevant network parameters such as the upload and download throughputs, the RTT, packet loss, and t",
+   "sources": [
+    "oa_o04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2409.09846",
+   "title": "A Global Perspective on the Past, Present, and Future of Video Streaming over Starlink",
+   "year": 2024,
+   "venue": "Proceedings of the ACM on Measurement and Analysis of Computing Systems",
+   "abstract": "This study presents the first global analysis of on-demand video streaming over Low Earth Orbit (LEO) satellite networks, using data from over one million households across 85 countries. We highlight Starlink's role as a major LEO provider, enhancing connectivity in underserved regions. Our findings reveal that while overall video quality on Starlink matches that of traditional networks, the inherent variability in LEO conditions---such as throughput fluctuations and packet loss---leads to an in",
+   "sources": [
+    "cite-ARXIV:2209.08565"
+   ],
+   "relation": "citation-expand"
+  },
+  {
+   "id": "arxiv:2304.13501",
+   "title": "Routing Heterogeneous Traffic in Delay-Tolerant Satellite Networks",
+   "year": "2023",
+   "venue": "arXiv",
+   "abstract": "Delay-tolerant networking (DTN) offers a novel architecture that can be used to enhance store-carry-forward routing in satellite networks. Since these networks can take advantage of scheduled contact plans, distributed algorithms like the Contact Graph Routing (CGR) can be utilized to optimize data delivery performance. However, despite the numerous improvements made to CGR, there is a lack of proposals to prioritize traffic with distinct quality of service (QoS) requirements. This study present",
+   "sources": [
+    "arxiv_q01",
+    "arxiv_q03",
+    "arxiv_q10"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2312.11127",
+   "title": "User-centric Flexible Resource Management Framework for LEO Satellites with Fully Regenerative Payload",
+   "year": "2023",
+   "venue": "arXiv",
+   "abstract": "The regenerative capabilities of next-generation satellite systems offer a novel approach to design low earth orbit (LEO) satellite communication systems, enabling full flexibility in bandwidth and spot beam management, power control, and onboard data processing. These advancements allow the implementation of intelligent spatial multiplexing techniques, addressing the ever-increasing demand for future broadband data traffic. Existing satellite resource management solutions, however, do not fully",
+   "sources": [
+    "arxiv_q06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2312.07936",
+   "title": "Coordinated Intra- and Inter-system Interference Management in Integrated Satellite Terrestrial Networks",
+   "year": "2023",
+   "venue": "arXiv",
+   "abstract": "Leveraging the advantage of satellite and terrestrial networks, the integrated satellite terrestrial networks (ISTNs) can help to achieve seamless global access and eliminate the digital divide. However, the dense deployment and frequent handover of satellites aggravate intra- and inter-system interference, resulting in a decrease in downlink sum rate. To address this issue, we propose a coordinated intra- and inter-system interference management algorithm for ISTN. This algorithm coordinates mu",
+   "sources": [
+    "arxiv_q06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2312.13069",
+   "title": "A Combined Ground-based and JWST Atmospheric Retrieval Analysis: Both IGRINS and NIRSpec Agree The Atmosphere of WASP-77A b is Metal-Poor",
+   "year": "2023",
+   "venue": "arXiv",
+   "abstract": "Ground-based, high-resolution and space-based, low-resolution spectroscopy are the two main avenues through which transiting exoplanet atmospheres are studied. Both methods provide unique strengths and shortcomings, and combining the two can be a powerful probe into an exoplanet's atmosphere. Within a joint atmospheric retrieval framework, we combined JWST NIRSpec/G395H secondary eclipse spectra and Gemini South/IGRINS pre- and post-eclipse thermal eclipse observations of the hot Jupiter WASP-77",
+   "sources": [
+    "arxiv_q07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2301.03802",
+   "title": "Predicting Drivers' Route Trajectories in Last-Mile Delivery Using A Pair-wise Attention-based Pointer Neural Network",
+   "year": "2023",
+   "venue": "arXiv",
+   "abstract": "In last-mile delivery, drivers frequently deviate from planned delivery routes because of their tacit knowledge of the road and curbside infrastructure, customer availability, and other characteristics of the respective service areas. Hence, the actual stop sequences chosen by an experienced human driver may be potentially preferable to the theoretical shortest-distance routing under real-life operational conditions. Thus, being able to predict the actual stop sequence that a human driver would ",
+   "sources": [
+    "arxiv_q11"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2307.16246",
+   "title": "DRL4Route: A Deep Reinforcement Learning Framework for Pick-up and Delivery Route Prediction",
+   "year": "2023",
+   "venue": "arXiv",
+   "abstract": "Pick-up and Delivery Route Prediction (PDRP), which aims to estimate the future service route of a worker given his current task pool, has received rising attention in recent years. Deep neural networks based on supervised learning have emerged as the dominant model for the task because of their powerful ability to capture workers' behavior patterns from massive historical data. Though promising, they fail to introduce the non-differentiable test criteria into the training process, leading to a ",
+   "sources": [
+    "arxiv_q11"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2310.07557",
+   "title": "Quality of Service-Constrained Online Routing in High Throughput Satellites",
+   "year": "2023",
+   "venue": "arXiv",
+   "abstract": "High throughput satellites (HTSs) outpace traditional satellites due to their multi-beam transmission. The rise of low Earth orbit mega constellations amplifies HTS data rate demands to terabits/second with acceptable latency. This surge in data rate necessitates multiple modems, often exceeding single device capabilities. Consequently, satellites employ several processors, forming a complex packet-switch network. This can lead to potential internal congestion and challenges in adhering to stric",
+   "sources": [
+    "arxiv_q11"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2310.09242",
+   "title": "A Multifaceted Look at Starlink Performance",
+   "year": "2023",
+   "venue": "arXiv",
+   "abstract": "In recent years, Low-Earth Orbit (LEO) mega-constellations have emerged as a promising network technology and have ushered in a new era for democratizing Internet access. The Starlink network from SpaceX stands out as the only consumer-facing LEO network with over 2M+ customers and more than 4000 operational satellites. In this paper, we conduct the first-of-its-kind extensive multi-faceted analysis of Starlink network performance leveraging several measurement sources. First, based on 19.2M cro",
+   "sources": [
+    "arxiv_q12"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2304.09535",
+   "title": "LEO-PNT With Starlink: Development of a Burst Detection Algorithm Based on Signal Measurements",
+   "year": "2023",
+   "venue": "arXiv",
+   "abstract": "Due to the strong dependency of our societies onGlobal Navigation Satellite Systems and their vulnerability to outages, there is an urgent need for additional navigation systems. A possible approach for such an additional system uses the communication signals of the emerging LEO satellite mega-constellations as signals of opportunity. The Doppler shift of those signals is leveraged to calculate positioning, navigation and timing information. Therefore the signals have to be detected and the freq",
+   "sources": [
+    "arxiv_q12"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/iccc57788.2023.10233407",
+   "title": "Contact-aware Multiple-Layer CHORD for routing in Large-scale Satellite Networks",
+   "year": 2023,
+   "venue": "2023 IEEE/CIC International Conference on Communications in China (ICCC)",
+   "abstract": "",
+   "sources": [
+    "cr_c01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/wisee58383.2023.10289594",
+   "title": "On the Tractability of Yen’s Algorithm and Contact Graph Modeling in Contact Graph Routing",
+   "year": 2023,
+   "venue": "2023 IEEE International Conference on Wireless for Space and Extreme Environments (WiSEE)",
+   "abstract": "",
+   "sources": [
+    "cr_c02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/icccn58024.2023.10230117",
+   "title": "Multigraph-Based Routing in Delay Tolerant Networks: An Alternative to Contact Graph Routing",
+   "year": 2023,
+   "venue": "2023 32nd International Conference on Computer Communications and Networks (ICCCN)",
+   "abstract": "",
+   "sources": [
+    "cr_c02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/jrfid.2023.3269887",
+   "title": "Routing Heterogeneous Traffic in Delay-Tolerant Satellite Networks",
+   "year": 2023,
+   "venue": "IEEE Journal of Radio Frequency Identification",
+   "abstract": "Delay-tolerant networking (DTN) offers a novel architecture that can be used to enhance store-carry-forward routing in satellite networks. Since these networks can take advantage of scheduled contact plans, distributed algorithms like the Contact Graph Routing (CGR) can be utilized to optimize data delivery performance. However, despite the numerous improvements made to CGR, there is a lack of proposals to prioritize traffic with distinct quality of service (QoS) requirements. This study present",
+   "sources": [
+    "oa_o03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/infocom53939.2023.10228912",
+   "title": "Network Characteristics of LEO Satellite Constellations: A Starlink-Based Measurement from End Users",
+   "year": 2023,
+   "venue": "OpenAlex",
+   "abstract": "",
+   "sources": [
+    "oa_o04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/taes.2023.3268610",
+   "title": "Signal Structure of the Starlink Ku-Band Downlink",
+   "year": 2023,
+   "venue": "IEEE Transactions on Aerospace and Electronic Systems",
+   "abstract": "We develop a technique for blind signal identification of the Starlink downlink signal in the 10.7 to 12.7 GHz band and present a detailed picture of the signal's structure. Importantly, the signal characterization offered herein includes the exact values of synchronization sequences embedded in the signal that can be exploited to produce pseudorange measurements. Such an understanding of the signal is essential to emerging efforts that seek to dual-purpose Starlink signals for positioning, navi",
+   "sources": [
+    "oa_o04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/plans53410.2023.10140066",
+   "title": "Navigation with Multi-Constellation LEO Satellite Signals of Opportunity: Starlink, OneWeb, Orbcomm, and Iridium",
+   "year": 2023,
+   "venue": "OpenAlex",
+   "abstract": "This paper summarizes current state-of-the-art navigation results with multi-constellation low Earth orbit (LEO) satellite signals of opportunity. Experimental results with four LEO satellite constellations are presented: Starlink, OneWeb, Orbcomm, and Iridium. Two receiver designs are presented: (R1) a cognitive opportunistic navigation approach, which utilizes minimal, publicly available prior knowledge about the LEO satellite signal structure and (R2) a blind approach, which assumes no prior ",
+   "sources": [
+    "oa_o04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/jiot.2023.3303346",
+   "title": "Satellite Computing: Vision and Challenges",
+   "year": 2023,
+   "venue": "IEEE Internet of Things Journal",
+   "abstract": "The space industry experiences a rise in low-Earth-orbit satellite mega-constellations to achieve universal connectivity. At the same time, cloud firms (such as Google, Microsoft, and AWS) also have ambitions for computing in space to offer public cloud services in orbit. Satellite computing, as a new emerging concept, is promising to enable new paradigms in on-orbit autonomy, remote sensing, edge computing, and other areas by empowering satellites with computing resources. However, LEO mega-con",
+   "sources": [
+    "cite-ARXIV:2209.08565"
+   ],
+   "relation": "citation-expand"
+  },
+  {
+   "id": "doi:10.3390/electronics12234762",
+   "title": "A Routing Strategy Based Genetic Algorithm Assisted by Ground Access Optimization for LEO Satellite Constellations",
+   "year": 2023,
+   "venue": "Electronics",
+   "abstract": "Large-scale low Earth orbit satellite networks (LSNs) have been attracting increasing attention in recent years. These systems offer advantages such as low latency, high bandwidth communication, and all terrain coverage. However, the main challenges faced by LSNs is the calculation and maintenance of routing strategies. This is primarily due to the large scale and dynamic network topology of LSN constellations. As the number of satellites in constellations continues to rise, the feasibility of t",
+   "sources": [
+    "cite-ARXIV:2209.08565"
+   ],
+   "relation": "citation-expand"
+  },
+  {
+   "id": "arxiv:2209.06324",
+   "title": "Routing heterogeneous traffic in delay tolerant satellite networks",
+   "year": "2022",
+   "venue": "arXiv",
+   "abstract": "Delay Tolerant Networking (DTN) has been proposed as a new architecture to provide efficient store-carry-and-forward data transport in satellite networks. Since these networks relay on scheduled contact plans, the Contact Graph Routing (CGR) algorithm can be used to optimize routing and data delivery performance. However, in spite of the various improvements that have been made to CGR, there have been no significant proposals to prioritize traffic with different quality of service requirements. ",
+   "sources": [
+    "arxiv_q01",
+    "arxiv_q03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2209.13227",
+   "title": "A Modeling of TSRCG and Resource Optimization for Multi-task Delivery Guarantee Algorithm Based on CGR Strategy in LEO Satellite Network",
+   "year": "2022",
+   "venue": "arXiv",
+   "abstract": "With the reduction of satellite costs and the enhancement of processing capabilities, low earth orbit (LEO) satellite constellations can independently build inter-satellite networks without relying on traditional ground stations restricted by geographical distribution and can establish inter-satellite links (ISLs) and complete computing and routing on-board. The characteristics of frequent on-off ISLs, the highly dynamic network topology of satellite networks make it face the challenges of routi",
+   "sources": [
+    "arxiv_q01",
+    "arxiv_q02",
+    "arxiv_q03",
+    "arxiv_q04",
+    "arxiv_q10"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2209.08565",
+   "title": "Distributed Probabilistic Congestion Control in LEO Satellite Networks",
+   "year": "2022",
+   "venue": "arXiv",
+   "abstract": "In a dense Low Earth Orbit (LEO) satellite constellation, using a centralized algorithm for minimum-delay routing would incur significant signaling and computational overhead. In this work, we exploit the deterministic topology of the constellation to calculate the minimum-delay path between any two nodes in a satellite network. We propose a distributed probabilistic congestion control scheme to minimize end-to-end delay, which is built on top of the existing Datagram Routing Algorithm (DRA). Th",
+   "sources": [
+    "arxiv_q04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2211.07872",
+   "title": "A Graph-Based Customizable Handover Framework for LEO Satellite Networks",
+   "year": "2022",
+   "venue": "arXiv",
+   "abstract": "Future satellite networks are expected to have thousands of low Earth orbit (LEO) satellites orbiting Earth at very high speeds. User equipment (UE) communicating directly with LEO satellites will experience frequent handovers. Managing the handover process is complicated due to the high frequency of handovers and the availability of multiple LEO satellites as handover targets. In addition, as the status of the communication link between a UE and an LEO satellite varies in accordance with the vi",
+   "sources": [
+    "arxiv_q06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2211.00832",
+   "title": "Distributed Massive MIMO for LEO Satellite Networks",
+   "year": "2022",
+   "venue": "arXiv",
+   "abstract": "The ultra-dense deployment of interconnected satellites will characterize future low Earth orbit (LEO) mega-constellations. Exploiting this towards a more efficient satellite network (SatNet), this paper proposes a novel LEO SatNet architecture based on distributed massive multiple-input multiple-output (DM-MIMO) technology allowing ground user terminals to be connected to a cluster of satellites. To this end, we investigate various aspects of DM-MIMO-based satellite network design, the benefits",
+   "sources": [
+    "arxiv_q06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2212.13697",
+   "title": "Network Characteristics of LEO Satellite Constellations: A Starlink-Based Measurement from End Users",
+   "year": "2022",
+   "venue": "arXiv",
+   "abstract": "Low Earth orbit Satellite Networks (LSNs) have been advocated as a key infrastructure for truly global coverage in the forthcoming 6G. This paper presents our initial measurement results and observations on the end-to-end network characteristics of Starlink, arguably the largest LSN constellation to date. Our findings confirm that LSNs are a promising solution towards ubiquitous Internet coverage over the Earth; yet, we also find that the users of Starlink experience much more dynamics in throug",
+   "sources": [
+    "arxiv_q12"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2210.11578",
+   "title": "Signal Structure of the Starlink Ku-Band Downlink",
+   "year": "2022",
+   "venue": "arXiv",
+   "abstract": "We develop a technique for blind signal identification of the Starlink downlink signal in the 10.7 to 12.7 GHz band and present a detailed picture of the signal's structure. Importantly, the signal characterization offered herein includes the exact values of synchronization sequences embedded in the signal that can be exploited to produce pseudorange measurements. Such an understanding of the signal is essential to emerging efforts that seek to dual-purpose Starlink signals for positioning, navi",
+   "sources": [
+    "arxiv_q12"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.23919/softcom55329.2022.9911385",
+   "title": "Performance Assessments for SDN Control Plane into Distinct Network Topologies",
+   "year": 2022,
+   "venue": "2022 International Conference on Software, Telecommunications and Computer Networks (SoftCOM)",
+   "abstract": "",
+   "sources": [
+    "cr_c05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/mnet.012.2100167",
+   "title": "Mobile Control Plane Design for Quantum Satellite Backbones",
+   "year": 2022,
+   "venue": "IEEE Network",
+   "abstract": "",
+   "sources": [
+    "cr_c05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1145/3517745.3561416",
+   "title": "A first look at starlink performance",
+   "year": 2022,
+   "venue": "OpenAlex",
+   "abstract": "With new Low Earth Orbit satellite constellations such as Starlink, satellite-based Internet access is becoming an alternative to traditional fixed and wireless technologies with comparable throughputs and latencies. In this paper, we investigate the user-perceived performance of Starlink. Our measurements show that latency remains low and does not vary significantly under idle or lightly loaded links. Compared to another commercial Internet access using a geostationary satellite, Starlink achie",
+   "sources": [
+    "oa_o04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1145/3517745.3561457",
+   "title": "A browser-side view of starlink connectivity",
+   "year": 2022,
+   "venue": "OpenAlex",
+   "abstract": "LEO satellite \"mega-constellations\" such as SpaceX's Starlink, Amazon's Kuiper, OneWeb are launching thousands of satellites annually, promising high-bandwidth low-latency connectivity. To quantify the achievable performance of such providers, we carry out a measurement study of the spatial and temporal characteristics as well as the geographic variability of the connectivity provided by Starlink, the current leader in this space. We do this by building and deploying a browser extension that pro",
+   "sources": [
+    "oa_o04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.23919/irs54158.2022.9905046",
+   "title": "The STARLINK-based passive radar: preliminary study and first illuminator signal measurements",
+   "year": 2022,
+   "venue": "OpenAlex",
+   "abstract": "In this paper, a preliminary study for the design of passive radar exploiting novel space illuminators of opportunity is presented. Wide-band satellite systems such as the Starlink constellation have arisen as promising illumination sources for passive coherent location due to their almost ubiquitous presence and transmission characteristics. In this work, the potentials of Starlink transmitters as illuminators of opportunity are described, presenting an overview of the Starlink constellation, s",
+   "sources": [
+    "oa_o04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2106.07778",
+   "title": "fybrrLink: Efficient QoS-aware Routing in SDN enabled Next-Gen Satellite Networks",
+   "year": "2021",
+   "venue": "arXiv",
+   "abstract": "Providing high-speed Internet service using satellite network has attracted researchers from both academia and industry mainly due to the characteristics of Low Earth Orbit (LEO) satellite networks such as global coverage, scalability, and lower transmission delay. With the recent advancements in the Software-Defined Network (SDN), implementation of SDN in Non-Terrestrial Networks (NTN) can help to achieve the set goals for 5G and beyond networks. Since satellite networks have a distinct archite",
+   "sources": [
+    "arxiv_q04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2112.08791",
+   "title": "Beamspace MIMO for Satellite Swarms",
+   "year": "2021",
+   "venue": "arXiv",
+   "abstract": "Systems of small distributed satellites in low Earth orbit (LEO) transmitting cooperatively to a multiple antenna ground station (GS) are investigated. These satellite swarms have the benefit of much higher spatial separation in the transmit antennas than traditional big satellites with antenna arrays, promising a massive increase in spectral efficiency. However, this would require instantaneous perfect channel state information (CSI) and strong cooperation between satellites. In practice, orbit",
+   "sources": [
+    "arxiv_q04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2105.06272",
+   "title": "Outage Constrained Robust Secure Beamforming in Cognitive Satellite-Aerial Networks",
+   "year": "2021",
+   "venue": "arXiv",
+   "abstract": "This paper proposes a robust beamforming scheme to enhance the physical layer security (PLS) of multicast transmission in a cognitive satellite and aerial network (CSAN) operating in the millimeter wave frequency band. Based on imperfect channel state information (CSI) of both eavesdroppers (Eves) and primary users (PUs), we maximize the minimum achievable secrecy rate (ASR) of the secondary users (SUs) in the aerial network under the constraints of the interference to the PUs in the satellite n",
+   "sources": [
+    "arxiv_q04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2111.05259",
+   "title": "Reinforcement Learning for Security-Aware Computation Offloading in Satellite Networks",
+   "year": "2021",
+   "venue": "arXiv",
+   "abstract": "The rise of NewSpace provides a platform for small and medium businesses to commercially launch and operate satellites in space. In contrast to traditional satellites, NewSpace provides the opportunity for delivering computing platforms in space. However, computational resources within space are usually expensive and satellites may not be able to compute all computational tasks locally. Computation Offloading (CO), a popular practice in Edge/Fog computing, could prove effective in saving energy ",
+   "sources": [
+    "arxiv_q04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2101.08336",
+   "title": "Location Management in IP-based Future LEO Satellite Networks: A Review",
+   "year": "2021",
+   "venue": "arXiv",
+   "abstract": "Future integrated terrestrial, aerial, and space networks will involve thousands of Low Earth Orbit (LEO) satellites forming a network of mega-constellations, which will play a significant role in providing communication and Internet services everywhere, at any time, and for everything. Due to its very large scale and highly dynamic nature, future LEO satellite networks (SatNets) management is a very complicated and crucial process, especially the mobility management aspect and its two component",
+   "sources": [
+    "arxiv_q06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2106.09837",
+   "title": "Future Ultra-Dense LEO Satellite Networks: A Cell-Free Massive MIMO Approach",
+   "year": "2021",
+   "venue": "arXiv",
+   "abstract": "Low Earth orbit (LEO) satellite networks (SatNets) are envisioned to play a crucial role in providing global and ubiquitous connectivity efficiently. Accordingly, in the coming years, thousands of LEO satellites will be launched to create ultradense LEO mega-constellations, and the Third Generation Partnership Project (3GPP) is working on evolving fifth-generation (5G) systems to support such non-terrestrial networks (NTN). However, many challenges are associated with the deployment of LEOs from",
+   "sources": [
+    "arxiv_q06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.21203/rs.3.rs-760203/v1",
+   "title": "Factual Demonstration of Blockchain Routing in Delay Tolerant Network",
+   "year": 2021,
+   "venue": "Crossref",
+   "abstract": "Abstract Frequent disconnection, high end-to-end latency, dynamic topology, sparse node density, lack of pre-existing infrastructure, and opportunistic message transmission on wireless link, makes routing difficult in Opportunistic network (Oppnet). In present scenario, Oppnet allows the people to interact with contrasting ways like with diverse mobility, groups, and etc. During transmission of messages in such network security and trust performs major role. Delay Tolerant Network (DTN) are much",
+   "sources": [
+    "cr_c03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.17487/rfc9055",
+   "title": "Deterministic Networking (DetNet) Security Considerations",
+   "year": 2021,
+   "venue": "Crossref",
+   "abstract": "",
+   "sources": [
+    "cr_c08"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1007/978-3-030-67514-1_39",
+   "title": "Improvement of Contact Graph Routing Algorithm in LEO Satellite DTN Network",
+   "year": 2021,
+   "venue": "Lecture notes of the Institute for Computer Sciences, Social Informatics and Telecommunications Engineering",
+   "abstract": "",
+   "sources": [
+    "oa_o01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1051/0004-6361/202039364",
+   "title": "Optical-to-NIR magnitude measurements of the Starlink LEO Darksat satellite and effectiveness of the darkening treatment",
+   "year": 2021,
+   "venue": "Astronomy and Astrophysics",
+   "abstract": "Aims. We aim to measure the Sloan r′, Sloan i′, J, and Ks magnitudes of Starlink’s STARLINK-1130 (Darksat) and STARLINK-1113 low Earth orbit (LEO) communication satellites and determine the effectiveness of the Darksat darkening treatment from the optical to the near-infrared (NIR). Methods. Four observations of Starlink’s LEO communication satellites, Darksat and STARLINK-1113, were conducted on two nights with two telescopes. The Chakana 0.6 m telescope at the Ckoirama observatory (Chile) obse",
+   "sources": [
+    "oa_o04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2010.09940",
+   "title": "Autonomous Scheduling of Agile Spacecraft Constellations with Delay Tolerant Networking for Reactive Imaging",
+   "year": "2020",
+   "venue": "arXiv",
+   "abstract": "Small spacecraft now have precise attitude control systems available commercially, allowing them to slew in 3 degrees of freedom, and capture images within short notice. When combined with appropriate software, this agility can significantly increase response rate, revisit time and coverage. In prior work, we have demonstrated an algorithmic framework that combines orbital mechanics, attitude control and scheduling optimization to plan the time-varying, full-body orientation of agile, small spac",
+   "sources": [
+    "arxiv_q03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2004.13378",
+   "title": "Downlink Coverage and Rate Analysis of Low Earth Orbit Satellite Constellations Using Stochastic Geometry",
+   "year": "2020",
+   "venue": "arXiv",
+   "abstract": "As low Earth orbit (LEO) satellite communication systems are gaining increasing popularity, new theoretical methodologies are required to investigate such networks' performance at large. This is because deterministic and location-based models that have previously been applied to analyze satellite systems are typically restricted to support simulations only. In this paper, we derive analytical expressions for the downlink coverage probability and average data rate of generic LEO networks, regardl",
+   "sources": [
+    "arxiv_q04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2010.12708",
+   "title": "Stellar occultations enable milliarcsecond astrometry for Trans-Neptunian objects and Centaurs",
+   "year": "2020",
+   "venue": "arXiv",
+   "abstract": "Trans-Neptunian objects (TNOs) and Centaurs are remnants of our planetary system formation, and their physical properties have invaluable information for evolutionary theories. Stellar occultation is a ground-based method for studying these small bodies and has presented exciting results. These observations can provide precise profiles of the involved body, allowing an accurate determination of its size and shape. The goal is to show that even single-chord detections of TNOs allow us to measure ",
+   "sources": [
+    "arxiv_q07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2010.05470",
+   "title": "PAST-AI: Physical-layer Authentication of Satellite Transmitters via Deep Learning",
+   "year": "2020",
+   "venue": "arXiv",
+   "abstract": "Physical-layer security is regaining traction in the research community, due to the performance boost introduced by deep learning classification algorithms. This is particularly true for sender authentication in wireless communications via radio fingerprinting. However, previous research efforts mainly focused on terrestrial wireless devices while, to the best of our knowledge, none of the previous work took into consideration satellite transmitters. The satellite scenario is generally challengi",
+   "sources": [
+    "arxiv_q09"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:2003.07251",
+   "title": "First observations and magnitude measurement of Starlink's Darksat",
+   "year": "2020",
+   "venue": "arXiv",
+   "abstract": "Measure the Sloan g' magnitudes of the Starlink's STARLINK-1130 (Darksat) and 1113 LEO communication satellites and determine the effectiveness of the Darksat darkening treatment at 475.4\\,nm. Two observations of the Starlink's Darksat LEO communication satellite were conducted on 2020/02/08 and 2020/03/06 using a Sloan r' and g' filter respectively. While a second satellite, STARLINK-1113 was observed on 2020/03/06 using a Sloan g' filter. The initial observation on 2020/02/08 was a test observ",
+   "sources": [
+    "arxiv_q12"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/icicn51133.2020.9205062",
+   "title": "Research on Routing Control with Delay Constraint Based on Contact Plan for Integrated Satellite Terrestrial Network",
+   "year": 2020,
+   "venue": "2020 IEEE 8th International Conference on Information, Communication and Networks (ICICN)",
+   "abstract": "",
+   "sources": [
+    "cr_c01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1007/978-3-319-78262-1_307",
+   "title": "Delay-Tolerant Network Routing",
+   "year": 2020,
+   "venue": "Encyclopedia of Wireless Networks",
+   "abstract": "",
+   "sources": [
+    "cr_c03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/noms47738.2020.9110474",
+   "title": "Optimizing the Flexibility of SDN Control Plane",
+   "year": 2020,
+   "venue": "NOMS 2020 - 2020 IEEE/IFIP Network Operations and Management Symposium",
+   "abstract": "",
+   "sources": [
+    "cr_c05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/netsoft48620.2020.9165424",
+   "title": "Orchestrating SDN Control Plane towards Enhanced IoT Security",
+   "year": 2020,
+   "venue": "2020 6th IEEE Conference on Network Softwarization (NetSoft)",
+   "abstract": "",
+   "sources": [
+    "cr_c05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.3847/2515-5172/ab8234",
+   "title": "Measurement Of The Brightness Of The Starlink Spacecraft Named “DARKSAT”",
+   "year": 2020,
+   "venue": "Research Notes of the AAS",
+   "abstract": "",
+   "sources": [
+    "cr_c07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/comst.2020.3028247",
+   "title": "Satellite Communications in the New Space Era: A Survey and Future Challenges",
+   "year": 2020,
+   "venue": "IEEE Communications Surveys & Tutorials",
+   "abstract": "Satellite communications (SatComs) have recently entered a period of renewed interest motivated by technological advances and nurtured through private investment and ventures. The present survey aims at capturing the state of the art in SatComs, while highlighting the most promising open research topics. Firstly, the main innovation drivers are motivated, such as new constellation types, on-board processing capabilities, non-terrestrial networks and space-based data collection/processing. Second",
+   "sources": [
+    "oa_o01",
+    "oa_o02",
+    "oa_o03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1016/j.jnca.2020.102884",
+   "title": "Routing in the Space Internet: A contact graph routing tutorial",
+   "year": 2020,
+   "venue": "Journal of Network and Computer Applications",
+   "abstract": "",
+   "sources": [
+    "oa_o01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/tgcn.2020.2978296",
+   "title": "E-CGR: Energy-Aware Contact Graph Routing Over Nanosatellite Networks",
+   "year": 2020,
+   "venue": "IEEE Transactions on Green Communications and Networking",
+   "abstract": "Satellite constellations are envisioned as meaningful transport networks to forward data throughout the world, both as a solution for areas where there are no other telecommunication infrastructures or as a backup solution to support the terrestrial network. Low Earth Orbit (LEO) satellites are the most appealing for this purpose due to the achievable performance keeping low design and deployment costs. Mega-constellation made of thousands of small LEO satellites are planned to be employed to co",
+   "sources": [
+    "oa_o01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:1902.09195",
+   "title": "Propagation and Estimation of the Dynamical Behaviour of Gravitationally Interacting Rigid Bodies",
+   "year": "2019",
+   "venue": "arXiv",
+   "abstract": "Next-generation planetary tracking methods, such as interplanetary laser ranging (ILR) and same-beam interferometry (SBI) promise an orders-of-magnitude increase in the accuracy of measurements of solar system dynamics. This requires a reconsideration of modelling strategies for the translational and rotational dynamics of natural bodies, to ensure that model errors are well below the measurement uncertainties. The influence of the gravitational interaction of the full mass distributions of cele",
+   "sources": [
+    "arxiv_q07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:1907.00073",
+   "title": "Latent geometry and dynamics of proximity networks",
+   "year": "2019",
+   "venue": "arXiv",
+   "abstract": "Proximity networks are time-varying graphs representing the closeness among humans moving in a physical space. Their properties have been extensively studied in the past decade as they critically affect the behavior of spreading phenomena and the performance of routing algorithms. Yet, the mechanisms responsible for their observed characteristics remain elusive. Here, we show that many of the observed properties of proximity networks emerge naturally and simultaneously in a simple latent space n",
+   "sources": [
+    "arxiv_q10"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:1901.03840",
+   "title": "Uncertainty in marine weather routing",
+   "year": "2019",
+   "venue": "arXiv",
+   "abstract": "Weather routing methods are essential for planning routes for commercial shipping and recreational craft. This paper provides a methodology for quantifying the significance of numerical error and performance model uncertainty on the predictions returned from a weather routing algorithm. The numerical error of the routing algorithm is estimated by solving the optimum path over different discretizations of the environment. The uncertainty associated with the performance model is linearly varied in",
+   "sources": [
+    "arxiv_q11"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/globecom38437.2019.9014158",
+   "title": "Leveraging Probabilistic Contacts in Contact Graph Routing",
+   "year": 2019,
+   "venue": "2019 IEEE Global Communications Conference (GLOBECOM)",
+   "abstract": "",
+   "sources": [
+    "cr_c02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1007/978-3-319-32903-1_307-1",
+   "title": "Delay-Tolerant Network Routing",
+   "year": 2019,
+   "venue": "Encyclopedia of Wireless Networks",
+   "abstract": "",
+   "sources": [
+    "cr_c03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.32913/rd-ict.833",
+   "title": "SSG - A solution to prevent saturation attack on the data plane and control plane in SDN/Openflow network",
+   "year": 2019,
+   "venue": "Research and Development on Information and Communication Technology",
+   "abstract": "",
+   "sources": [
+    "cr_c05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.23919/irs.2019.8768105",
+   "title": "Passive radar using Starlink transmissions: A theoretical study",
+   "year": 2019,
+   "venue": "2019 20th International Radar Symposium (IRS)",
+   "abstract": "",
+   "sources": [
+    "cr_c07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.29007/21r5",
+   "title": "Passive radar using Starlink transmissions: A theoretical study",
+   "year": 2019,
+   "venue": "EasyChair Preprints",
+   "abstract": "SpaceX plans to build two NGSO constellations, named Starlink, to provide high speed internet to end-users. The system will have global coverage 24/7 by means of launching 4425 satellites on circular low orbits. &nbsp;In this paper, the possibility of using these satellite emissions as an illuminating source for bistatic real and synthetic aperture radars, assuming a receiver on or near the earth surface, is investigated. The practicality of these systems are discussed for possible applications.",
+   "sources": [
+    "cr_c07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.17487/rfc8578",
+   "title": "Deterministic Networking Use Cases",
+   "year": 2019,
+   "venue": "Crossref",
+   "abstract": "",
+   "sources": [
+    "cr_c08"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.17487/rfc8557",
+   "title": "Deterministic Networking Problem Statement",
+   "year": 2019,
+   "venue": "Crossref",
+   "abstract": "",
+   "sources": [
+    "cr_c08"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.17487/rfc8655",
+   "title": "Deterministic Networking Architecture",
+   "year": 2019,
+   "venue": "Crossref",
+   "abstract": "",
+   "sources": [
+    "cr_c08"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1016/j.actaastro.2019.03.040",
+   "title": "A technical comparison of three low earth orbit satellite constellation systems to provide global broadband",
+   "year": 2019,
+   "venue": "Acta Astronautica",
+   "abstract": "",
+   "sources": [
+    "oa_o01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/access.2019.2941217",
+   "title": "A Satellite Handover Strategy Based on the Potential Game in LEO Satellite Networks",
+   "year": 2019,
+   "venue": "IEEE Access",
+   "abstract": "In a low earth orbit (LEO) satellite network, handover management across satellite spot beams needs to be addressed to decrease handover times while using network resources efficiently since the speed of LEO satellites is much higher than that of mobile nodes. In this paper, we propose a novel satellite handover strategy based on the potential game for mobile terminals in a LEO satellite communication network. To continue communication with the counterpart, the user has to switch among the cover",
+   "sources": [
+    "oa_o02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:1808.08315",
+   "title": "A Deterministic Self-Organizing Map Approach and its Application on Satellite Data based Cloud Type Classification",
+   "year": "2018",
+   "venue": "arXiv",
+   "abstract": "A self-organizing map (SOM) is a type of competitive artificial neural network, which projects the high-dimensional input space of the training samples into a low-dimensional space with the topology relations preserved. This makes SOMs supportive of organizing and visualizing complex data sets and have been pervasively used among numerous disciplines with different applications. Notwithstanding its wide applications, the self-organizing map is perplexed by its inherent randomness, which produces",
+   "sources": [
+    "arxiv_q04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:1812.01470",
+   "title": "Nonlinear transport coefficients from large deviation functions",
+   "year": "2018",
+   "venue": "arXiv",
+   "abstract": "Nonlinear response occurs naturally when a strong perturbation takes a system far from equilibrium. Despite of its omnipresence in nanoscale systems, it is difficult to predict in a general and efficient way. Here we introduce a way to compute arbitrarily high order transport coefficients of stochastic systems, using the framework of large deviation theory. Leveraging time reversibility in the microscopic dynamics, we relate nonlinear response to equilibrium multi-time correlation functions amon",
+   "sources": [
+    "arxiv_q11"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/icct.2018.8600163",
+   "title": "An Improved Contact Graph Routing Algorithm Based on Delay Constraints",
+   "year": 2018,
+   "venue": "2018 IEEE 18th International Conference on Communication Technology (ICCT)",
+   "abstract": "",
+   "sources": [
+    "cr_c02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/nfv-sdn.2018.8725802",
+   "title": "VIBHAJAN: A Lightweight and Scalable Control Plane Management for Multi-Controller SDN",
+   "year": 2018,
+   "venue": "2018 IEEE Conference on Network Function Virtualization and Software Defined Networks (NFV-SDN)",
+   "abstract": "",
+   "sources": [
+    "cr_c05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1364/ofc.2018.w4a.2",
+   "title": "Extension of SDN Networks to the Satellite Domain; Integration of an SDN Enabled WAN Network, with Terrestrial and Submarine Elements, with Command and Control of Multiple Satellite Constellations",
+   "year": 2018,
+   "venue": "Optical Fiber Communication Conference",
+   "abstract": "",
+   "sources": [
+    "cr_c05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1016/j.adhoc.2018.07.002",
+   "title": "On route table computation strategies in Delay-Tolerant Satellite Networks",
+   "year": 2018,
+   "venue": "Ad Hoc Networks",
+   "abstract": "",
+   "sources": [
+    "oa_o03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/cits.2017.8035308",
+   "title": "Genetically Inspired Contact Plan Design in Small Satellite Networks",
+   "year": 2017,
+   "venue": "2017 International Conference on Computer, Information and Telecommunication Systems (CITS)",
+   "abstract": "",
+   "sources": [
+    "cr_c01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1007/978-981-10-4403-8_12",
+   "title": "Contact Graph Routing with Network Coding for LEO Satellite DTN Communications",
+   "year": 2017,
+   "venue": "Communications in Computer and Information Science",
+   "abstract": "",
+   "sources": [
+    "cr_c02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1002/9781119114864.ch14",
+   "title": "Reliability and Fault‐Tolerant and Delay‐Tolerant Routing",
+   "year": 2017,
+   "venue": "Network Routing",
+   "abstract": "",
+   "sources": [
+    "cr_c03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/ecticon.2017.8096238",
+   "title": "Control-plane OpenFlow segment routing SDN for network control messages reduction",
+   "year": 2017,
+   "venue": "2017 14th International Conference on Electrical Engineering/Electronics, Computer, Telecommunications and Information Technology (ECTI-CON)",
+   "abstract": "",
+   "sources": [
+    "cr_c05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1155/2017/2830542",
+   "title": "Assessing Contact Graph Routing Performance and Reliability in Distributed Satellite Constellations",
+   "year": 2017,
+   "venue": "Journal of Computer Networks and Communications",
+   "abstract": "Existing Internet protocols assume persistent end-to-end connectivity, which cannot be guaranteed in disruptive and high-latency space environments. To operate over these challenging networks, a store-carry-and-forward communication architecture called Delay/Disruption Tolerant Networking (DTN) has been proposed. This work provides the first examination of the performance and robustness of Contact Graph Routing (CGR) algorithm, the state-of-the-art routing scheme for space-based DTNs. To this en",
+   "sources": [
+    "oa_o01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.18535/ijecs/v4i12.14",
+   "title": "Review of Efficient Routing In Delay Tolerant Network",
+   "year": 2016,
+   "venue": "International Journal Of Engineering And Computer Science",
+   "abstract": "",
+   "sources": [
+    "cr_c03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/nof.2016.7810140",
+   "title": "Multicast BGP with SDN control plane",
+   "year": 2016,
+   "venue": "2016 7th International Conference on the Network of the Future (NOF)",
+   "abstract": "",
+   "sources": [
+    "cr_c05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1016/j.adhoc.2014.07.006",
+   "title": "Routing-aware fair contact plan design for predictable delay tolerant networks",
+   "year": 2015,
+   "venue": "Ad Hoc Networks",
+   "abstract": "",
+   "sources": [
+    "cr_c01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/nfv-sdn.2015.7387416",
+   "title": "CPMan: Adaptive control plane management for software-defined networks",
+   "year": 2015,
+   "venue": "2015 IEEE Conference on Network Function Virtualization and Software Defined Network (NFV-SDN)",
+   "abstract": "",
+   "sources": [
+    "cr_c05"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1002/sat.1159",
+   "title": "DTN routing for quasi-deterministic networks with application to LEO constellations",
+   "year": 2015,
+   "venue": "International Journal of Satellite Communications and Networking",
+   "abstract": "",
+   "sources": [
+    "cr_c08"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/jiot.2015.2487046",
+   "title": "Satellite Communications Supporting Internet of Remote Things",
+   "year": 2015,
+   "venue": "IEEE Internet of Things Journal",
+   "abstract": "This paper focuses on the use of satellite communication systems for the support of Internet of Things (IoT). We refer to the IoT paradigm as the means to collect data from sensors or RFID and to send control messages to actuators. In many application scenarios, sensors and actuators are distributed over a very wide area; in some cases, they are located in remote areas where they are not served by terrestrial access networks and, as a consequence, the use of satellite communication systems becom",
+   "sources": [
+    "oa_o01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1007/978-3-642-54353-1_3",
+   "title": "Satellite Network Routing Strategies",
+   "year": 2014,
+   "venue": "Satellite Network Robust QoS-aware Routing",
+   "abstract": "",
+   "sources": [
+    "cr_c01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1007/978-3-642-54353-1_5",
+   "title": "Satellite Network Multi QoS Objective Routing Algorithm",
+   "year": 2014,
+   "venue": "Satellite Network Robust QoS-aware Routing",
+   "abstract": "",
+   "sources": [
+    "cr_c01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/asms-spsc.2014.6934518",
+   "title": "Contact Graph Routing enhancements for delay tolerant space communications",
+   "year": 2014,
+   "venue": "OpenAlex",
+   "abstract": "In this paper we present two enhancements to Contact Graph Routing (CGR), a Delay-/ Disruption- Tolerant Networking routing algorithm developed by NASA JPL for space environments with predetermined connectivity schedules, such as Interplanetary communications and LEO satellite systems. The first enhancement, CGR-ETO, aims to improve the accuracy of predicted bundle delivery time by considering the available information on queueing delay. The second, the Overbooking Management, aims to proactivel",
+   "sources": [
+    "oa_o01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:1305.1295",
+   "title": "Tight Lower Bounds for Greedy Routing in Higher-Dimensional Small-World Grids",
+   "year": "2013",
+   "venue": "arXiv",
+   "abstract": "We consider Kleinberg's celebrated small world graph model (Kleinberg, 2000), in which a D-dimensional grid {0,...,n-1}^D is augmented with a constant number of additional unidirectional edges leaving each node. These long range edges are determined at random according to a probability distribution (the augmenting distribution), which is the same for each node. Kleinberg suggested using the inverse D-th power distribution, in which node v is the long range contact of node u with a probability pr",
+   "sources": [
+    "arxiv_q10"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/globalsip.2013.6736883",
+   "title": "Contact graph based routing in opportunistic networks",
+   "year": 2013,
+   "venue": "2013 IEEE Global Conference on Signal and Information Processing",
+   "abstract": "",
+   "sources": [
+    "cr_c02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1186/1687-1499-2013-23",
+   "title": "Delay tolerant firework routing: a geographic routing protocol for wireless delay tolerant networks",
+   "year": 2013,
+   "venue": "EURASIP Journal on Wireless Communications and Networking",
+   "abstract": "",
+   "sources": [
+    "cr_c03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:1204.3058",
+   "title": "Building Fastest Broadcast Trees in Periodically-Varying Graphs",
+   "year": "2012",
+   "venue": "arXiv",
+   "abstract": "Delay-tolerant networks (DTNs) are characterized by a possible absence of end-to-end communication routes at any instant. Still, connectivity can generally be established over time and space. The optimality of a temporal path (journey) in this context can be defined in several terms, including topological (e.g. {\\em shortest} in hops) and temporal (e.g. {\\em fastest, foremost}). The combinatorial problem of computing shortest, foremost, and fastest journeys {\\em given full knowledge} of the netw",
+   "sources": [
+    "arxiv_q10"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/icc.2012.6363686",
+   "title": "Application of Contact Graph Routing to LEO satellite DTN communications",
+   "year": 2012,
+   "venue": "2012 IEEE International Conference on Communications (ICC)",
+   "abstract": "",
+   "sources": [
+    "cr_c01",
+    "cr_c02",
+    "oa_o01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:1107.1937",
+   "title": "Scale-Free Opportunistic Networks: is it Possible?",
+   "year": "2011",
+   "venue": "arXiv",
+   "abstract": "The coupling of scale-free networks with mobile unstructured networks is certainly unusual. In mobile networks, connections active at a given instant are constrained by the geographical distribution of mobile nodes, and by the limited signal strength of the wireless technology employed to build the ad-hoc overlay. This is in contrast with the presence of hubs, typical of scale-free nets. However, opportunistic (mobile) networks possess the distinctive feature to be delay tolerant; mobile nodes i",
+   "sources": [
+    "arxiv_q10"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:1111.4570",
+   "title": "Four Degrees of Separation",
+   "year": "2011",
+   "venue": "arXiv",
+   "abstract": "Frigyes Karinthy, in his 1929 short story \"Láancszemek\" (\"Chains\") suggested that any two persons are distanced by at most six friendship links. (The exact wording of the story is slightly ambiguous: \"He bet us that, using no more than five individuals, one of whom is a personal acquaintance, he could contact the selected individual [...]\". It is not completely clear whether the selected individual is part of the five, so this could actually allude to distance five or six in the language of grap",
+   "sources": [
+    "arxiv_q10"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/glocom.2011.6134460",
+   "title": "Enhancing Contact Graph Routing for Delay Tolerant Space Networking",
+   "year": 2011,
+   "venue": "2011 IEEE Global Telecommunications Conference - GLOBECOM 2011",
+   "abstract": "",
+   "sources": [
+    "cr_c02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/jproc.2011.2158378",
+   "title": "Delay- and Disruption-Tolerant Networking (DTN): An Alternative Solution for Future Satellite Networking Applications",
+   "year": 2011,
+   "venue": "Proceedings of the IEEE",
+   "abstract": "Satellite communications are characterized by long delays, packet losses, and sometimes intermittent connectivity and link disruptions. The TCP/IP stack is ineffective against these impairments and even dedicated solutions, such as performance enhancing proxies (PEPs), can hardly tackle the most challenging environments, and create compatibility issues with current security protocols. An alternative solution arises from the delay- and disruption-tolerant networking (DTN) architecture, which spec",
+   "sources": [
+    "oa_o03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1201/b11309",
+   "title": "Delay Tolerant Networks",
+   "year": 2011,
+   "venue": "OpenAlex",
+   "abstract": "A class of Delay Tolerant Networks (DTN), which may violate one or more of the assumptions regarding the overall performance characteristics of the underlying links in order to achieve smooth operation, is rapidly growing in importance but may not be well served by the current end-to-end TCP/IP model. Delay Tolerant Networks: Protocols and Applications takes you on a systematic exploration of DTN concepts, architectures, protocols, enabling technologies, and applications. Containing a wealth of ",
+   "sources": [
+    "oa_o03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/vetecf.2011.6093140",
+   "title": "A Satellite-LTE Network with Delay-Tolerant Capabilities: Design and Performance Evaluation",
+   "year": 2011,
+   "venue": "OpenAlex",
+   "abstract": "In this paper, a delay tolerant approach for traffic management in LTE over satellite link is presented. Due to the long propagation delays and frequent disruptions, mobile satellite communications pose many challenges, especially to the transport layer when the TCP protocol is used. We design and evaluate the performance of a transport protocol solution based on the DTN architecture in the satellite-LTE system. Our proposal, named Tiny Bundle Layer, acts as an overlay on top of different versio",
+   "sources": [
+    "oa_o03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:1002.2277",
+   "title": "Improved orbit predictions using two-line elements",
+   "year": "2010",
+   "venue": "arXiv",
+   "abstract": "The density of orbital space debris constitutes an increasing environmental challenge. There are three ways to alleviate the problem: debris mitigation, debris removal and collision avoidance. This paper addresses collision avoidance, by describing a method that contributes to achieving a requisite increase in orbit prediction accuracy. Batch least-squares differential correction is applied to the publicly available two-line element (TLE) catalog of space objects. Using a high-precision numerica",
+   "sources": [
+    "arxiv_q07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:1006.4622",
+   "title": "A High-Resolution Human Contact Network for Infectious Disease Transmission",
+   "year": "2010",
+   "venue": "arXiv",
+   "abstract": "The most frequent infectious diseases in humans - and those with the highest potential for rapid pandemic spread - are usually transmitted via droplets during close proximity interactions (CPIs). Despite the importance of this transmission route, very little is known about the dynamic patterns of CPIs. Using wireless sensor network technology, we obtained high-resolution data of CPIs during a typical day at an American high school, permitting the reconstruction of the social network relevant for",
+   "sources": [
+    "arxiv_q10"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/asms-spsc.2010.5586850",
+   "title": "Endpoint Discovery and Contact Graph Routing in space and terrestrial DTNs",
+   "year": 2010,
+   "venue": "2010 5th Advanced Satellite Multimedia Systems Conference and the 11th Signal Processing for Space Communications Workshop",
+   "abstract": "",
+   "sources": [
+    "cr_c01"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/vetecs.2010.5494072",
+   "title": "A Cooperative Graph Approach for Cooperative Routing in Delay-Sensitive Systems",
+   "year": 2010,
+   "venue": "2010 IEEE 71st Vehicular Technology Conference",
+   "abstract": "",
+   "sources": [
+    "cr_c02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/iwssc.2009.5286339",
+   "title": "Security analysis for Delay/Disruption Tolerant satellite and sensor networks",
+   "year": 2009,
+   "venue": "OpenAlex",
+   "abstract": "In the last few years, Delay/Disruption Tolerant Networking has grown to a healthy research topic because of its suitability for challenged environments characterized by heterogeneity, long delay paths and unpredictable link disruptions. This paper presents a DTN security architecture that focuses on the requirements for lightweight key management; lightweight AAA-like architecture for authentication/authorisation; resilience to Denial of Service attacks and user anonymity.",
+   "sources": [
+    "oa_o03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/iswpc.2008.4556268",
+   "title": "Delay tolerant network routing: Beyond epidemic routing",
+   "year": 2008,
+   "venue": "2008 3rd International Symposium on Wireless Pervasive Computing",
+   "abstract": "",
+   "sources": [
+    "cr_c03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:",
+   "title": "Delay/Disruption-Tolerant Network Testing Using a LEO Satellite",
+   "year": 2008,
+   "venue": "OpenAlex",
+   "abstract": "“bundles ” have been proposed for deep-space communication in the “Interplanetary Internet. ” This paper describes the first DTN bundle protocol testing from space, using the United Kingdom Disaster Monitoring Constellation (UK-DMC) satellite in Low Earth Orbit (LEO). The mismatch problems between the different conditions of the private dedicated space-to-ground link and the shared, congested, ground-to-ground links are discussed. DTN, with its ability to transfer files on a hop-by-hop basis acr",
+   "sources": [
+    "oa_o03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1049/el:20073764",
+   "title": "Dynamic time-based handover management in LEO satellite systems",
+   "year": 2007,
+   "venue": "Electronics Letters",
+   "abstract": "A handover scheme tailored for LEO satellite systems is proposed and evaluated. The proposed algorithm capitalises on the deterministic topology of this type of system in order to increase channel utilisation and diminish both blocking and forced termination probabilities.",
+   "sources": [
+    "oa_o02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:astro-ph/0607664",
+   "title": "Tempo2, a new pulsar timing package. II: The timing model and precision estimates",
+   "year": "2006",
+   "venue": "arXiv",
+   "abstract": "Tempo2 is a new software package for the analysis of pulsar pulse times of arrival. In this paper we describe in detail the timing model used by tempo2, and discuss limitations on the attainable precision. In addition to the intrinsic slow-down behaviour of the pulsar, tempo2 accounts for the effects of a binary orbital motion, the secular motion of the pulsar or binary system, interstellar, Solar system and ionospheric dispersion, observatory motion (including Earth rotation, precession, nutati",
+   "sources": [
+    "arxiv_q07"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/icc.2006.254992",
+   "title": "Satellite Mobility Pattern based Handover Management Algorithm in LEO Satellites",
+   "year": 2006,
+   "venue": "2006 IEEE International Conference on Communications",
+   "abstract": "",
+   "sources": [
+    "cr_c04",
+    "oa_o02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/glocom.2006.524",
+   "title": "SAT04-4: A New Algorithm for Handover Management in LEO Satellite Networks",
+   "year": 2006,
+   "venue": "IEEE Globecom 2006",
+   "abstract": "",
+   "sources": [
+    "cr_c04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/jcn.2006.6182793",
+   "title": "Satellite mobility pattern scheme for centrical and seamless handover management in LEO satellite networks",
+   "year": 2006,
+   "venue": "Journal of Communications and Networks",
+   "abstract": "",
+   "sources": [
+    "cr_c04",
+    "oa_o02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1007/s11235-006-9000-6",
+   "title": "QoS handover management for multimedia LEO satellite networks",
+   "year": 2006,
+   "venue": "Telecommunication Systems",
+   "abstract": "",
+   "sources": [
+    "cr_c04",
+    "oa_o02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1049/ip-com:20045003",
+   "title": "Design issues and QoS handover management for broadband LEO satellite systems",
+   "year": 2005,
+   "venue": "IEE Proceedings - Communications",
+   "abstract": "",
+   "sources": [
+    "cr_c04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1002/047087029x.ch2",
+   "title": "Satellite Orbits and Networking Concepts",
+   "year": 2005,
+   "venue": "Satellite Networking",
+   "abstract": "",
+   "sources": [
+    "cr_c08"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/taes.2005.1541433",
+   "title": "Analytic study of doppler-based handover management in LEO satellite systems",
+   "year": 2005,
+   "venue": "IEEE Transactions on Aerospace and Electronic Systems",
+   "abstract": "The problem of dynamic handover management in low Earth orbit (LEO) satellite systems is addressed. Particularly, an analytical study of a newly proposed method for handover management, called dynamic Doppler-based handover prioritization scheme (DDBHP), is presented. DDBHP utilizes Doppler shift monitoring of each communicating user terminal onboard the satellite and geometric characteristics to accurately predict the handover load. As a result, handover requests are more effectively managed, r",
+   "sources": [
+    "oa_o02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1145/1015467.1015484",
+   "title": "Routing in a delay tolerant network",
+   "year": 2004,
+   "venue": "OpenAlex",
+   "abstract": "We formulate the delay-tolerant networking routing problem, where messages are to be moved end-to-end across a connectivity graph that is time-varying but whose dynamics may be known in advance. The problem has the added constraints of finite buffers at each node and the general property that no contemporaneous end-to-end path may ever exist. This situation limits the applicability of traditional routing approaches that tend to treat outages as failures and seek to find an existing end-to-end pa",
+   "sources": [
+    "oa_o01",
+    "oa_o03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/jsac.2003.819977",
+   "title": "Supporting IP/LEO Satellite Networks by Handover-Independent IP Mobility Management",
+   "year": 2004,
+   "venue": "IEEE Journal on Selected Areas in Communications",
+   "abstract": "Low earth orbit (LEO) satellite networks are capable of providing wireless connectivity to any part of the world while guaranteeing short propagation delays. There is a huge need for developing Internet protocol (IP) friendly networking technologies that aim to integrate emerging LEO satellite networks with the already existing terrestrial IP networks. LEO satellite networks are well characterized by frequent handover occurrences. These handovers largely affect mobility management in LEO satelli",
+   "sources": [
+    "oa_o02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1023/a:1022569901936",
+   "title": "QoS Handover Management in LEO/MEO Satellite Systems",
+   "year": 2003,
+   "venue": "Wireless Personal Communications",
+   "abstract": "",
+   "sources": [
+    "cr_c04",
+    "oa_o02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1145/863955.863960",
+   "title": "A delay-tolerant network architecture for challenged internets",
+   "year": 2003,
+   "venue": "OpenAlex",
+   "abstract": "The highly successful architecture and protocols of today's Internet may operate poorly in environments characterized by very long delay paths and frequent network partitions. These problems are exacerbated by end nodes with limited power or memory resources. Often deployed in mobile and extreme environments lacking continuous connectivity, many such networks have their own specialized protocols, and do not utilize IP. To achieve interoperability between them, we propose a network architecture a",
+   "sources": [
+    "oa_o03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "arxiv:astro-ph/9906197",
+   "title": "The Present and Future Mass of the Milky Way Halo",
+   "year": "1999",
+   "venue": "arXiv",
+   "abstract": "A simple model for the Milky Way halo is presented. It has a flat rotation curve in the inner regions, but the density falls off sharply beyond an outer edge. This truncated, flat rotation curve (TF) model possesses a rich family of simple distribution functions which vary in velocity anisotropy. The model is used to estimate the total mass of the Milky Way halo using the latest data on the motions of satellite galaxies and globular clusters at Galactocentric radii greater than 20 kpc. This comp",
+   "sources": [
+    "arxiv_q09"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1007/978-1-4471-0809-2_5",
+   "title": "Interbeam Handover in LEO Satellite Systems",
+   "year": 1999,
+   "venue": "Mobile and Personal Satellite Communications 3",
+   "abstract": "",
+   "sources": [
+    "cr_c04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1023/a:1019167303222",
+   "title": "Handover management in Low Earth Orbit (LEO) satellite networks",
+   "year": 1999,
+   "venue": "Mobile Networks and Applications",
+   "abstract": "",
+   "sources": [
+    "oa_o02"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1086/105843",
+   "title": "NOTE: Systematic error in the Berliner jahrbuch ephemeris of Pluto",
+   "year": 1945,
+   "venue": "The Astronomical Journal",
+   "abstract": "",
+   "sources": [
+    "cr_c06"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.31979/etd.nu5s-47qm",
+   "title": "Security and Routing in a Disconnected Delay Tolerant Network",
+   "year": null,
+   "venue": "Crossref",
+   "abstract": "",
+   "sources": [
+    "cr_c03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.70675/59b7890bzd37cz43dcz9e54z681c2d27416d",
+   "title": "Routing and inter-session network coding in delay tolerant mobile social networks",
+   "year": null,
+   "venue": "Crossref",
+   "abstract": "Routage et codage réseau inter-session dans les réseaux sociaux mobiles tolérant le délai Nous considérons les Réseaux Sociaux Mobiles Tolérant le Délai (DTMSN), constitués de nœuds sans-fil avec une connectivité intermittente, et groupés en communautés sociales. Cette thèse traite de l’analyse et de la conception de stratégies de transfert de l’information dans les DTMSN. Elle est principalement dédiée à l’étude de codage réseau inter-session (ISNC) dans ce but. Le codage réseau est une général",
+   "sources": [
+    "cr_c03"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.1109/vetec.1999.778523",
+   "title": "Traffic adaptive handover management in ATM-based LEO satellite networks",
+   "year": null,
+   "venue": "1999 IEEE 49th Vehicular Technology Conference (Cat. No.99CH36363)",
+   "abstract": "",
+   "sources": [
+    "cr_c04"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.4271/as6802",
+   "title": "Time-Triggered Ethernet",
+   "year": null,
+   "venue": "Crossref",
+   "abstract": "<div class=\"section abstract\"> <div class=\"htmlview paragraph\">The Time-Triggered Ethernet (SAE AS6802) standard defines a fault-tolerant synchronization strategy for building and maintaining synchronized time in a distributed system of end systems and switches (we use the term end system for “data terminal equipment” (DTE) as specified in IEEE 802.3), which can be used to support communication among these components for traffic, which may have different levels of time criticality. In particular",
+   "sources": [
+    "cr_c08"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.70675/d0268545zf3f8z4f4cz88d2z0721f7b32c47",
+   "title": "Deterministic Networking for the Industrial IoT",
+   "year": null,
+   "venue": "Crossref",
+   "abstract": "Réseaux déterministes pour l'internet des objets industriel L’Internet des Objets (IoT) a évolué d’un toaster connecté en 1990 vers des réseaux de centaines de petit appareils utilisés dans des applications industrielle. Ces « Objects » sont habituellement de petit appareils électroniques capable de mesurer une valeur physique (température, humidité, etc.) et/ou d’agir sur le monde physique (pump, valve, etc.). De part leur faible coût et leur facilité de déploiement, ces réseaux sans fil alimen",
+   "sources": [
+    "cr_c08"
+   ],
+   "relation": "vocab-blindspot"
+  },
+  {
+   "id": "doi:10.4271/as6802a",
+   "title": "Time-Triggered Ethernet",
+   "year": null,
+   "venue": "Crossref",
+   "abstract": "<p>This SAE Aerospace Standard (AS) defines a fault-tolerant synchronization strategy for building and maintaining synchronized time in a distributed system of end systems and switches (we use the term “end system” for data terminal equipment (DTE), as specified in IEEE 802.3), which can be used to support communication among these components for traffic, which may have different levels of time criticality. In particular, the standard defines algorithms for clock synchronization, clique detectio",
+   "sources": [
+    "cr_c08"
+   ],
+   "relation": "vocab-blindspot"
+  }
+ ],
+ "_failures": {
+  "transient_crossref_429": [
+   "cr_c02",
+   "cr_c03",
+   "cr_c05 — first attempt HTTP 429, retry with 5s spacing succeeded"
+  ],
+  "openalex_400_first_attempt": "select=host_venue rejected as invalid field; removed and retried OK (oa_o01-o04)",
+  "s2_b_low_yield": "ARXIV:2410.15546/citations returned only 1 citing paper (limit=40)",
+  "arxiv_low_yield": {
+   "q02": 1,
+   "q08": 1
+  },
+  "final_errors": {}
+ }
+}
