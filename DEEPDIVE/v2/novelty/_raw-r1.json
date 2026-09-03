@@ -1,0 +1,2241 @@
+{
+ "card-02-f2": {
+  "queries": [
+   {
+    "q": "satellite network latency periodicity spectral analysis",
+    "arxiv": [
+     {
+      "id": "7Xh0XS7449XLTncBaw",
+      "title": "Call to Protect the Dark and Quiet Sky from Harmful Interference by Satellite Constellations"
+     },
+     {
+      "id": "2412.08244v2",
+      "title": "Temporal Risk on Satellites"
+     },
+     {
+      "id": "2608.20575v1",
+      "title": "Spectral asymptotics for Robin problems with a discontinuous coefficient"
+     },
+     {
+      "id": "1009.0997v3",
+      "title": "Invariant subspaces of elliptic systems II: spectral theory"
+     },
+     {
+      "id": "2103.14334v4",
+      "title": "The spectral function of a first order elliptic system"
+     },
+     {
+      "id": "1208.6015v1",
+      "title": "Midterm Status Report of the ILC Technology Network Activities"
+     },
+     {
+      "id": "2603.01172v1",
+      "title": "Measuring Weather Effects and Link Quality Dynamics in LEO Satellite Networks"
+     },
+     {
+      "id": "2603.14008v1",
+      "title": "Uniqueness Analysis of Controllability Scores and Their Application to Brain Networks"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.1109/apcc55198.2022.9943654",
+      "title": "Analysis of Low-Latency Virtual Network Resource Reservation for LEO Satellite Network"
+     },
+     {
+      "id": "10.1109/csie.2009.545",
+      "title": "Study of Topological Dynamics and Periodicity of LEO Satellite Networks Based on Spectral Analysis"
+     },
+     {
+      "id": "10.26434/chemrxiv.15001341/v3",
+      "title": "Atomic Periodicity as Spectral Structure"
+     },
+     {
+      "id": "10.26434/chemrxiv.15001341/v1",
+      "title": "Atomic Periodicity as Spectral Structure"
+     },
+     {
+      "id": "10.26434/chemrxiv.15001341/v2",
+      "title": "Atomic Periodicity as Spectral Structure"
+     },
+     {
+      "id": "10.1002/sat.1570",
+      "title": "Performance Analysis of Twins4Space: Latency and Data Rates in a SpaceWire Network"
+     },
+     {
+      "id": "10.1109/iceis.2006.1703220",
+      "title": "Staging of Diabetic Retinopathy using TVEP Phase Spectral Periodicity Analysis"
+     },
+     {
+      "id": "10.1109/iccsnt47585.2019.8962412",
+      "title": "Shared Bottleneck Detection for Multipath Transmission in High Latency Satellite Network"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1109/jproc.2014.2299397",
+      "title": "Millimeter-Wave Cellular Wireless Networks: Potentials and Challenges"
+     },
+     {
+      "id": "10.1016/j.rse.2011.08.026",
+      "title": "The next Landsat satellite: The Landsat Data Continuity Mission"
+     },
+     {
+      "id": "https://openalex.org/W2963250023",
+      "title": "Ultrareliable and low-latency wireless communication:tail, risk, and scale"
+     },
+     {
+      "id": "10.1109/jiot.2015.2487046",
+      "title": "Satellite Communications Supporting Internet of Remote Things"
+     },
+     {
+      "id": "10.17487/rfc1305",
+      "title": "Network Time Protocol (Version 3) Specification, Implementation and Analysis"
+     },
+     {
+      "id": "10.1038/s42254-021-00314-5",
+      "title": "Physics-informed machine learning"
+     },
+     {
+      "id": "10.1109/comst.2021.3078433",
+      "title": "A Survey on Technologies, Standards and Open Challenges in Satellite IoT"
+     },
+     {
+      "id": "10.1109/access.2017.2685687",
+      "title": "Business Case and Technology Analysis for 5G Low Latency Applications"
+     }
+    ]
+   },
+   {
+    "q": "Starlink latency periodic component diurnal",
+    "arxiv": [
+     {
+      "id": "yt00DiRCuk",
+      "title": "Starlink in Northern Europe: A New Look at Stationary and In-motion Performance"
+     },
+     {
+      "id": "2502.15552v2",
+      "title": "Performance Evaluation of Satellite-Based Data Offloading on Starlink Constellations"
+     },
+     {
+      "id": "2501.14878v2",
+      "title": "Tiered-Latency DRAM (TL-DRAM)"
+     },
+     {
+      "id": "1601.06903v1",
+      "title": "GLIDS: A Global Latency Information Dissemination System"
+     },
+     {
+      "id": "2405.04319v1",
+      "title": "Understanding and Exploiting Design-Induced Latency Variation in Modern DRAM Chips"
+     },
+     {
+      "id": "1610.09604v2",
+      "title": "A Multifaceted Look at Starlink Performance"
+     },
+     {
+      "id": "2310.09242v2",
+      "title": "Modeling and Optimization of Latency in Erasure-coded Storage Systems"
+     },
+     {
+      "id": "2005.10855v1",
+      "title": "A Large-Scale IPv6-Based Measurement of the Starlink Network"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.1088/2515-7620/ae7f00/data3",
+      "title": "Diurnal component"
+     },
+     {
+      "id": "10.36227/techrxiv.170543232.22138695/v3",
+      "title": "The Placement of Satellites in SpaceX's Starlink Mission Plays an Important Role in its Low-Latency Internet S"
+     },
+     {
+      "id": "10.21203/rs.3.rs-8268863/v1",
+      "title": "Commercial Viability Assessment of LEO Mega- Constellations: A Latency and Coverage Simulation of the Starlink"
+     },
+     {
+      "id": "10.1109/iwqos70441.2026.11661268",
+      "title": "Inferring Starlink Latency Structure from Public RIPE Atlas Measurements"
+     },
+     {
+      "id": "10.1029/te043i001p00045",
+      "title": "The long periodic variation in the diurnal range of magnetic horizontal component at Oslo Observatory"
+     },
+     {
+      "id": "10.70675/6bfbd981zab8fz4b87zb688zfcbeee4e4a2f",
+      "title": "Deterministic scheduling of periodic datagrams for low latency in 5G and beyond"
+     },
+     {
+      "id": "10.1002/9781394359462.ch15",
+      "title": "SpaceX Starlink: Revolutionizing Satellite Internet Through\n                    <scp>LEO</scp>\n               "
+     },
+     {
+      "id": "10.2139/ssrn.1519791",
+      "title": "Charlemagne's Challenge: The Periodic Latency Problem"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1145/3748749.3749090",
+      "title": "A Detailed Characterization of Starlink One-way Delay"
+     },
+     {
+      "id": "10.1145/3646547.3688438",
+      "title": "Measuring Network Latency from a Wireless ISP: Variations Within and Across Subnets"
+     },
+     {
+      "id": "10.34133/2022/9802793",
+      "title": "Research Advancements in Key Technologies for Space-Based Situational Awareness"
+     },
+     {
+      "id": "10.1007/s10712-023-09785-w",
+      "title": "Towards Millimeter-Level Accuracy in GNSS-Based Space Geodesy: A Review of Error Budget for GNSS Precise Point"
+     },
+     {
+      "id": "10.3390/s26051449",
+      "title": "A Low-Complexity Hybrid Handover Strategy for LEO NTN: Balancing Stability and Link Quality"
+     },
+     {
+      "id": "10.1049/cmu2.12863",
+      "title": "Self‐similar traffic prediction for LEO satellite networks based on LSTM"
+     },
+     {
+      "id": "10.3390/electronics14163237",
+      "title": "HiSatFL: A Hierarchical Federated Learning Framework for Satellite Networks with Cross-Domain Privacy Adaptati"
+     },
+     {
+      "id": "10.1007/s10712-025-09895-7",
+      "title": "Impact of Terrestrial Weather on the Space Weather of the Ionosphere-Thermosphere: Initial Results from a NASA"
+     }
+    ]
+   },
+   {
+    "q": "QoS periodic signature LEO constellation measurement",
+    "arxiv": [
+     {
+      "id": "eF9cP9hUD7EnD1yu2jGSD4ohZIg",
+      "title": "Call to Protect the Dark and Quiet Sky from Harmful Interference by Satellite Constellations"
+     },
+     {
+      "id": "2412.08244v2",
+      "title": "A collisional origin for the Leo ring"
+     },
+     {
+      "id": "1005.4208v2",
+      "title": "QoS-Driven Satellite Constellation Design for LEO Satellite Internet of Things"
+     },
+     {
+      "id": "2509.00345v1",
+      "title": "Critical Matter"
+     },
+     {
+      "id": "2306.03142v1",
+      "title": "Leo P: An Unquenched Very Low-Mass Galaxy"
+     },
+     {
+      "id": "1506.05495v2",
+      "title": "The network signature of constellation line figures"
+     },
+     {
+      "id": "2110.12329v4",
+      "title": "Systematic Performance Evaluation Framework for LEO Mega-Constellation Satellite Networks"
+     },
+     {
+      "id": "2401.11934v1",
+      "title": "Integration of Navigation and Remote Sensing in LEO Satellite Constellations"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.1109/vtc2025-spring65109.2025.11174813",
+      "title": "Constellation Design of Leo Satellite Internet of Things with Qos Provision"
+     },
+     {
+      "id": "10.3837/tiis.2019.03.008",
+      "title": "Constellation Multi-Objective Optimization Design Based on QoS and Network Stability in LEO Satellite Broadban"
+     },
+     {
+      "id": "10.1016/s1007-0214(11)70052-9",
+      "title": "Reverse detection based QoS routing algorithm for LEO satellite constellation networks"
+     },
+     {
+      "id": "10.1109/globecom54140.2023.10437778",
+      "title": "LEO Satellite Constellation Design for Seamless Global Coverage with QoS Guarantee"
+     },
+     {
+      "id": "10.1109/icc45855.2022.9838348",
+      "title": "QoS-Aware Uplink NOMA with Multi-Type Service Coexistence for LEO Satellite Constellation"
+     },
+     {
+      "id": "10.1109/twc.2025.3605220",
+      "title": "QoS-Driven Satellite Constellation Design for LEO Satellite Internet of Things"
+     },
+     {
+      "id": "10.1109/.2006.1629421",
+      "title": "Polar LEO Satellite Constellation Measurement by Delay Probing"
+     },
+     {
+      "id": "10.1016/j.cja.2025.103895",
+      "title": "A DRL-based handover strategy for ISL-enabled LEO mega-constellation networks under heterogeneous QoS demands"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1109/comst.2023.3296160",
+      "title": "Low Earth Orbit Satellite Security and Reliability: Issues, Solutions, and the Road Ahead"
+     },
+     {
+      "id": "10.1109/access.2021.3081601",
+      "title": "A Systematic Review on NOMA Variants for 5G and Beyond"
+     },
+     {
+      "id": "10.3390/s25030902",
+      "title": "Hierarchical Resource Management for Mega-LEO Satellite Constellation"
+     },
+     {
+      "id": "10.1109/access.2016.2551978",
+      "title": "Cellular Communications for Smart Grid Neighborhood Area Networks: A Survey"
+     },
+     {
+      "id": "10.1007/s11432-024-4408-1",
+      "title": "Distributed satellite information networks: architecture, enabling technologies, and trends"
+     },
+     {
+      "id": "10.48550/arxiv.2201.03063",
+      "title": "Low Earth Orbit Satellite Security and Reliability: Issues, Solutions, and the Road Ahead"
+     },
+     {
+      "id": "10.1109/access.2022.3165223",
+      "title": "Coexistence Management in Wireless Networks-A Survey"
+     },
+     {
+      "id": "10.32604/cmes.2022.021094",
+      "title": "6G-Enabled Internet of Things: Vision, Techniques, and Open Issues"
+     }
+    ]
+   },
+   {
+    "q": "structural bottleneck localization satellite network",
+    "arxiv": [
+     {
+      "id": "VaRNdq5QKF6wsNlyno1v8t6Neh0",
+      "title": "Call to Protect the Dark and Quiet Sky from Harmful Interference by Satellite Constellations"
+     },
+     {
+      "id": "2412.08244v2",
+      "title": "Temporal Risk on Satellites"
+     },
+     {
+      "id": "2608.20575v1",
+      "title": "Midterm Status Report of the ILC Technology Network Activities"
+     },
+     {
+      "id": "2603.01172v1",
+      "title": "Neural Extended Kalman Filters for Learning and Predicting Dynamics of Structural Systems"
+     },
+     {
+      "id": "2210.04165v2",
+      "title": "Links Assignment Scheme based on Potential Edges Importance in Dual-layer Wavelength Routing Optical Satellite Networks"
+     },
+     {
+      "id": "2304.00708v1",
+      "title": "5G satellite networks for IoT: offloading and backhauling"
+     },
+     {
+      "id": "2011.05202v1",
+      "title": "Two-Scale Optimization of Graded Lattice Structures respecting Buckling on Micro- and Macroscale"
+     },
+     {
+      "id": "2303.08710v1",
+      "title": "How Does Information Bottleneck Help Deep Learning?"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.1109/iccsnt47585.2019.8962412",
+      "title": "Shared Bottleneck Detection for Multipath Transmission in High Latency Satellite Network"
+     },
+     {
+      "id": "10.1109/icr.2001.984809",
+      "title": "Satellite image compression using a bottleneck network"
+     },
+     {
+      "id": "10.1016/j.displa.2026.103481",
+      "title": "Weather-adaptive cross-view localization network via multi-scale information bottleneck"
+     },
+     {
+      "id": "10.36227/techrxiv.175356431.14390314/v1",
+      "title": "Attention-Based Classification Network for Structural Damage Localization"
+     },
+     {
+      "id": "10.1145/3589334.3645665",
+      "title": "GAMMA: Graph Neural Network-Based Multi-Bottleneck Localization for Microservices Applications"
+     },
+     {
+      "id": "10.1109/iucc65928.2024.00020",
+      "title": "Bottleneck Link Identification and Capacity Optimization in Satellite Constellations: A Residual Network-Based"
+     },
+     {
+      "id": "10.1109/mnet.2024.3384298",
+      "title": "Toward Seamless Localization and Communication: A Satellite-UAV NTN Architecture"
+     },
+     {
+      "id": "10.14722/ndss.2025.230109",
+      "title": "Time-varying Bottleneck Links in LEO Satellite Networks: Identification, Exploits, and Countermeasures"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1109/jsac.2022.3156632",
+      "title": "Integrated Sensing and Communications: Toward Dual-Functional Wireless Networks for 6G and Beyond"
+     },
+     {
+      "id": "10.1016/j.adhoc.2019.101935",
+      "title": "Underwater optical wireless communications, networking, and localization: A survey"
+     },
+     {
+      "id": "10.1109/comst.2017.2705720",
+      "title": "On Multi-Access Edge Computing: A Survey of the Emerging 5G Network Edge Cloud Architecture and Orchestration"
+     },
+     {
+      "id": "10.1186/s13174-018-0087-2",
+      "title": "A comprehensive survey on machine learning for networking: evolution, applications and research opportunities"
+     },
+     {
+      "id": "10.1029/2017wr022437",
+      "title": "Satellite Remote Sensing for Water Resources Management: Potential for Supporting Sustainable Development in D"
+     },
+     {
+      "id": "10.3389/fpls.2020.00510",
+      "title": "Recognition and Localization Methods for Vision-Based Fruit Picking Robots: A Review"
+     },
+     {
+      "id": "10.1609/aaai.v28i1.9057",
+      "title": "Robust Visual Robot Localization Across Seasons Using Network Flows"
+     },
+     {
+      "id": "10.1016/j.cj.2021.03.015",
+      "title": "High-throughput phenotyping: Breaking through the bottleneck in future crop breeding"
+     }
+    ]
+   },
+   {
+    "q": "drop-front queue modeling network simulation",
+    "arxiv": [
+     {
+      "id": "3bozTWZnNcY0f+tKs2qiiCtqXA",
+      "title": "Simulation of Social Media-Driven Bubble Formation in Financial Markets using an Agent-Based Model with Hierarchical Influence Network"
+     },
+     {
+      "id": "2409.00742v1",
+      "title": "Simulating Customer Experience and Word Of Mouth in Retail - A Case Study"
+     },
+     {
+      "id": "1003.3784v1",
+      "title": "Game of arrivals at a two queue network with heterogeneous customer routes"
+     },
+     {
+      "id": "2310.18149v2",
+      "title": "Modeling Misinformation as a Commons Problem"
+     },
+     {
+      "id": "2607.06984v1",
+      "title": "Midterm Status Report of the ILC Technology Network Activities"
+     },
+     {
+      "id": "2603.01172v1",
+      "title": "Convergence of tandem Brownian queues"
+     },
+     {
+      "id": "1408.3641v1",
+      "title": "Towards an Assisted Simulation Planning for Co-Simulation of Cyber-Physical Energy Systems"
+     },
+     {
+      "id": "2410.16956v1",
+      "title": "Service-Oriented Simulation Framework: An Overview and Unifying Methodology"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.1201/9780367810498-7",
+      "title": "BMAP Modelling of a Correlated Queue"
+     },
+     {
+      "id": "10.1177/1548512912445228",
+      "title": "The modeling and simulation of a network controller based on router queue-size predictions"
+     },
+     {
+      "id": "10.1002/9780470515211.fmatter",
+      "title": "Front Matter"
+     },
+     {
+      "id": "10.1002/9780470403563.ch4",
+      "title": "Queue Modeling and Simulation"
+     },
+     {
+      "id": "10.1002/9781119631477.fmatter",
+      "title": "Front Matter"
+     },
+     {
+      "id": "10.7176/cti/8-04",
+      "title": "Simulation Approach to Life-Data Queue Event Modeling"
+     },
+     {
+      "id": "10.61955/hjmsjm",
+      "title": "CAPACITY DROP AT T-JUNCTIONS: MODELING AND SIMULATION OF  BASSAWA–PALLADAN JUNCTION, ZARIA"
+     },
+     {
+      "id": "10.1145/1530818.1530828",
+      "title": "Network Front-end Processors, Yet Again"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1109/jproc.2021.3060483",
+      "title": "Explaining Deep Neural Networks and Beyond: A Review of Methods and Applications"
+     },
+     {
+      "id": "10.1109/comst.2014.2330903",
+      "title": "A Survey on Software-Defined Networking"
+     },
+     {
+      "id": "https://openalex.org/W2112577636",
+      "title": "Application-specific protocol architectures for wireless networks"
+     },
+     {
+      "id": "10.1109/surv.2011.061411.00019",
+      "title": "Vehicular Networking: A Survey and Tutorial on Requirements, Architectures, Challenges, Standards and Solution"
+     },
+     {
+      "id": "10.1145/52324.52356",
+      "title": "Congestion avoidance and control"
+     },
+     {
+      "id": "https://openalex.org/W2131876345",
+      "title": "Scheduling network of queues : heavy traffic analysis of multistation network with controllable inputs"
+     },
+     {
+      "id": "10.1145/291006.291048",
+      "title": "Locality-aware request distribution in cluster-based network servers"
+     },
+     {
+      "id": "10.17863/cam.30872",
+      "title": "The illustris simulation: Public data release"
+     }
+    ]
+   },
+   {
+    "q": "unified congestion metric load balancing definition",
+    "arxiv": [
+     {
+      "id": "D9nAALvfzHEtfwvWc4k",
+      "title": "A Low Cost Two-Tier Architecture Model For High Availability Clusters Application Load Balancing"
+     },
+     {
+      "id": "1406.5761v1",
+      "title": "Reinforcement Learning-Based Adaptive Load Balancing for Dynamic Cloud Environments"
+     },
+     {
+      "id": "2409.04896v1",
+      "title": "A Comparative Study of Load Balancing Algorithms in Cloud Computing Environment"
+     },
+     {
+      "id": "1403.6918v1",
+      "title": "Approximate Congestion Games for Load Balancing in Distributed Environment"
+     },
+     {
+      "id": "1305.3354v1",
+      "title": "Roman Galactic Plane Survey Definition Committee Report"
+     },
+     {
+      "id": "2511.07494v1",
+      "title": "Load balancing under $d$-thinning"
+     },
+     {
+      "id": "1908.10278v2",
+      "title": "Doubly Exponential Solution for Randomized Load Balancing Models with Markovian Arrival Processes and PH Service Times"
+     },
+     {
+      "id": "1009.4970v2",
+      "title": "Congestion-Aware Path Selection for Load Balancing in AI Clusters"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.1109/iscas45731.2020.9180892/video",
+      "title": "Video for RavenFlow: Congestion-Aware Load Balancing in 5G Base Station Network"
+     },
+     {
+      "id": "10.31979/etd.744m-a45p",
+      "title": "Adaptive Metric-Driven Load Balancing for Specialized Clusters using NGINX"
+     },
+     {
+      "id": "10.1109/icm.2005.1590064",
+      "title": "Congestion Prediction: from Metric Definition to Routing Estimation"
+     },
+     {
+      "id": "10.37896/aj9.6/029",
+      "title": "Unified Optimal Cloud Load Balancing Approach Using Dynamic Programming Syndromes"
+     },
+     {
+      "id": "10.17485/ijst/v19i23.374",
+      "title": "AGNN-LB: Adaptive Graph Neural Network Based Load Balancing for Energy Efficient and Congestion Aware Wireless"
+     },
+     {
+      "id": "10.20944/preprints202407.1012.v1",
+      "title": "Adaptive Load Balancing Approach to Mitigate Network Congestion in VANETS"
+     },
+     {
+      "id": "10.1016/j.comnet.2020.107707",
+      "title": "Congestion free opportunistic multipath routing load balancing scheme for Internet of Things (IoT)"
+     },
+     {
+      "id": "10.23919/elinfocom.2019.8706496",
+      "title": "Cost-effective Congestion-aware Load Balancing for Datacenters"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1016/j.eij.2022.03.003",
+      "title": "Smart cities: Fusion-based intelligent traffic congestion control system for vehicular networks using machine "
+     },
+     {
+      "id": "10.1186/s40537-023-00727-2",
+      "title": "A survey on deep learning tools dealing with data scarcity: definitions, challenges, solutions, tips, and appl"
+     },
+     {
+      "id": "10.1109/access.2020.2995849",
+      "title": "A Systematic Review of Load Balancing Techniques in Software-Defined Networking"
+     },
+     {
+      "id": "10.1109/jsac.2014.2328098",
+      "title": "What Will 5G Be?"
+     },
+     {
+      "id": "10.3390/sym14122554",
+      "title": "Dynamic Load Balancing Techniques in the IoT: A Review"
+     },
+     {
+      "id": "10.1109/access.2022.3161511",
+      "title": "Machine Learning-Based Load Balancing Algorithms in Future Heterogeneous Networks: A Survey"
+     },
+     {
+      "id": "10.1371/journal.pcbi.1003427",
+      "title": "Communication Efficiency and Congestion of Signal Traffic in Large-Scale Brain Networks"
+     },
+     {
+      "id": "10.1016/j.trc.2021.103432",
+      "title": "Applications of deep learning in congestion detection, prediction and alleviation: A survey"
+     }
+    ]
+   },
+   {
+    "q": "on-demand inter-satellite link versus fixed topology applicability",
+    "arxiv": [
+     {
+      "id": "BPMqSKG1G2YQFoSFGpbqnCVlwgU",
+      "title": "Topological spaces of persistence modules and their properties"
+     },
+     {
+      "id": "1802.08117v2",
+      "title": "On Hawaiian Groups of Some Topological Spaces"
+     },
+     {
+      "id": "1111.0731v2",
+      "title": "A rational noncommutative invariant of boundary links"
+     },
+     {
+      "id": "0105028v4",
+      "title": "Inter-Satellite Link-Enhanced Transmission Scheme Towards Aviation IoT in SAGIN"
+     },
+     {
+      "id": "2405.18919v2",
+      "title": "A class of tight contact structures on Sigma_2 x I"
+     },
+     {
+      "id": "0411208v1",
+      "title": "The homotopy invariance of the string topology loop product and string bracket"
+     },
+     {
+      "id": "0509667v2",
+      "title": "On subgroups of minimal topological groups"
+     },
+     {
+      "id": "0004119v2",
+      "title": "Extended Bloch group and the Cheeger-Chern-Simons class"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.1007/978-981-96-2633-5_2",
+      "title": "Inter-Satellite Link System Architecture"
+     },
+     {
+      "id": "10.1007/978-981-96-2633-5_6",
+      "title": "Inter-Satellite Link Test Evaluation Theory"
+     },
+     {
+      "id": "10.36227/techrxiv.23519868.v1",
+      "title": "Link Topology and Multi-Objective Mission Flow Optimization for User Satellites with Inter-Layer Links and Sat"
+     },
+     {
+      "id": "10.36227/techrxiv.23519868",
+      "title": "Link Topology and Multi-Objective Mission Flow Optimization for User Satellites with Inter-Layer Links and Sat"
+     },
+     {
+      "id": "10.21236/ada387200",
+      "title": "Satellite Local Area Network Inter-Satellite Link"
+     },
+     {
+      "id": "10.1002/9781119910749.ch9",
+      "title": "Inter‐Satellite Link Laser Modulation Mode"
+     },
+     {
+      "id": "10.1002/9781119910749.ch6",
+      "title": "Composition of Laser Inter‐Satellite Link"
+     },
+     {
+      "id": "10.1002/9781119910749.ch8",
+      "title": "Inter‐Satellite Laser Link Tracking Error"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1109/comst.2022.3197695",
+      "title": "A Survey on Nongeostationary Satellite Systems: The Communication Perspective"
+     },
+     {
+      "id": "10.1109/comst.2021.3078433",
+      "title": "A Survey on Technologies, Standards and Open Challenges in Satellite IoT"
+     },
+     {
+      "id": "10.1109/taes.2024.3415571",
+      "title": "On-Demand Routing in LEO Mega-Constellations With Dynamic Laser Inter-Satellite Links"
+     },
+     {
+      "id": "10.1109/jsac.2024.3365873",
+      "title": "Shortest Path in LEO Satellite Constellation Networks: An Explicit Analytic Approach"
+     },
+     {
+      "id": "10.1109/taes.2022.3185970",
+      "title": "Sparse Satellite Constellation Design for Global and Regional Direct-to-Satellite IoT Services"
+     },
+     {
+      "id": "10.1109/access.2023.3287501",
+      "title": "Modulation and Signal Processing for LEO-LEO Optical Inter-Satellite Links"
+     },
+     {
+      "id": "10.3390/drones6010009",
+      "title": "Topology-Based Routing Protocols and Mobility Models for Flying Ad Hoc Networks: A Contemporary Review and Fut"
+     },
+     {
+      "id": "10.1109/comst.2024.3393612",
+      "title": "RIS-Empowered Satellite-Aerial-Terrestrial Networks With PD-NOMA"
+     }
+    ]
+   },
+   {
+    "q": "supply demand mismatch mega constellation temporal",
+    "arxiv": [
+     {
+      "id": "X6xSpy9I8VqHmqrb1LGZYQyVTuY",
+      "title": "Call to Protect the Dark and Quiet Sky from Harmful Interference by Satellite Constellations"
+     },
+     {
+      "id": "2412.08244v2",
+      "title": "Exploitation of material consolidation trade-offs in multi-tier complex supply networks"
+     },
+     {
+      "id": "2210.11479v3",
+      "title": "First Microlensing Events From The MEGA Survey Of M31"
+     },
+     {
+      "id": "0307072v3",
+      "title": "Estimated Demand for Mega-Constellation Internet Service"
+     },
+     {
+      "id": "2608.08851v1",
+      "title": "The alignment of public research supply and industry demand for effective technology transfer: the case of Italy"
+     },
+     {
+      "id": "1812.09128v1",
+      "title": "On-Demand Routing in LEO Mega-Constellations with Dynamic Laser Inter-Satellite Links"
+     },
+     {
+      "id": "2406.01953v1",
+      "title": "Distributed On-Demand Routing for LEO Mega-Constellations: A Starlink Case Study"
+     },
+     {
+      "id": "2208.02128v2",
+      "title": "The network signature of constellation line figures"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.2139/ssrn.7366912",
+      "title": "Hierarchical irrigation water allocation for reservoir-fed farms in arid regions under temporal water supply–c"
+     },
+     {
+      "id": "10.1007/s10668-025-06086-7",
+      "title": "Exploring cultivated land trade-off/synergy of production and ecological supply–demand mismatch for coordinate"
+     },
+     {
+      "id": "10.2139/ssrn.3458673",
+      "title": "Matching Supply and Demand with Mismatch-Sensitive Players"
+     },
+     {
+      "id": "10.2139/ssrn.4905054",
+      "title": "Spatial and Temporal Characteristics and Driving Mechanisms of Recreational Ecosystem Services Supply-Demand M"
+     },
+     {
+      "id": "10.64628/aaj.ut4wm3trx",
+      "title": "South Africa’s economic growth affected by mismatch of electricity supply and demand"
+     },
+     {
+      "id": "10.1101/075804",
+      "title": "Role of tolerance to resource demand – supply mismatch in a model of annual plants"
+     },
+     {
+      "id": "10.46320/2077-7639-2022-1-110-40-50",
+      "title": "Digitalization of russian art sales data: the problem of supply-demand mismatch"
+     },
+     {
+      "id": "10.2139/ssrn.3832363",
+      "title": "Optimal Compensation Under Inventory Delegation and Supply/Demand Mismatch"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1109/access.2020.3010896",
+      "title": "6G and Beyond: The Future of Wireless Communications Systems"
+     },
+     {
+      "id": "10.1109/comst.2022.3199901",
+      "title": "Evolution of Non-Terrestrial Networks From 5G to 6G: A Survey"
+     },
+     {
+      "id": "10.1007/s40641-018-0103-4",
+      "title": "Drought, Heat, and the Carbon Cycle: a Review"
+     },
+     {
+      "id": "10.1029/2017wr022437",
+      "title": "Satellite Remote Sensing for Water Resources Management: Potential for Supporting Sustainable Development in D"
+     },
+     {
+      "id": "10.1016/j.actaastro.2024.07.022",
+      "title": "Architecting CubeSat constellations for messaging service, Part I"
+     },
+     {
+      "id": "10.3390/quat1010003",
+      "title": "Elephant and Mammoth Hunting during the Paleolithic: A Review of the Relevant Archaeological, Ethnographic and"
+     },
+     {
+      "id": "10.1038/s41598-024-52138-9",
+      "title": "Mapping the diversity of land uses following deforestation across Africa"
+     },
+     {
+      "id": "https://openalex.org/W226653053",
+      "title": "Balanced Transport and Sustainable Urbanism: Enhancing Mobility and Accessibility through Institutional, Deman"
+     }
+    ]
+   }
+  ],
+  "anchors": [
+   {
+    "anchor": "ARXIV:2310.09242",
+    "n": 20,
+    "top": [
+     "Navigating maritime emergencies with large models: A lifecycle-oriented review",
+     "AI Infrastructure in Space: How Far Can We Go?",
+     "The More We Measure, The Less We See: On the Replicability and Repeatability of Mobile Sta",
+     "HERMES: Repurposing User-Driven Speed Tests to Monitor the Internet",
+     "Planet-Scale IoT Connectivity via LEO Satellites",
+     "A Cross-US View of Starlink's PoP and Satellite Assignment Strategy to Mobile Users"
+    ]
+   },
+   {
+    "anchor": "ARXIV:2601.08439",
+    "n": 6,
+    "top": [
+     "Media-over-Multipath-QUIC for Realtime Video Applications",
+     "HRRC on the Farm: Quantile Forecasting for Highly-Reliable Remote Control via LEO Networks",
+     "NeuroFlexMLP: A Low Complexity MLP Architecture for Long-Term Time Series Forecasting",
+     "Deciphering Region-Level Signatures from Latency Measurements in LEO Satellite Internet",
+     "A GAN-Based Framework for Robust Data Synthesis in Satellite Internet Observations",
+     "Latency-Aware Resource Allocation over Heterogeneous Networks: A Lorentz-Invariant Market "
+    ]
+   },
+   {
+    "anchor": "ARXIV:2605.27717",
+    "n": 1,
+    "top": [
+     "Dissecting the StarLink: Characterizing Queuing and Flow Dynamics in the Starlink Network"
+    ]
+   },
+   {
+    "anchor": "DOI:10.1109/iwqos65803.2025.11143359",
+    "n": 3,
+    "top": [
+     "Inferring Starlink Latency Structure from Public RIPE Atlas Measurements",
+     "Characterizing the Configuration of Starlink Queuing",
+     "Edge-Side Fingerprints of Service Tiering and Quota Throttling in Starlink"
+    ]
+   },
+   {
+    "anchor": "DOI:10.1109/tcomm.2023.3347775",
+    "n": 20,
+    "top": [
+     "A study on deep reinforcement learning algorithms for inter-satellite communication link s",
+     "Dynamic Topology Control Strategy for LEO Mega-Constellation Networks",
+     "A multi-agent deep reinforcement learning driven adaptive construction and search algorith",
+     "Heuristics Multiphysical Channel Switching and Dual-Hamming Distance-Based RWA in Satellit",
+     "Inter-satellite link technologies and applications in Low Earth Orbit satellite networks",
+     "Large Language Model (LLM)-enabled Reinforcement Learning for Wireless Network Optimizatio"
+    ]
+   }
+  ]
+ },
+ "card-03-f3": {
+  "queries": [
+   {
+    "q": "snapshot approximation error time-varying network routing",
+    "arxiv": [
+     {
+      "id": "Pj2SS0UD2N5+5Pkh2qeUX2n9CTk",
+      "title": "Designing controllers with predefined convergence-time bound using bounded time-varying gains"
+     },
+     {
+      "id": "2311.02473v1",
+      "title": "A Percolation based M2M Networking Architecture for Data Transmission and Routing"
+     },
+     {
+      "id": "1403.8123v2",
+      "title": "Jointly Optimal Routing and Caching for Arbitrary Network Topologies"
+     },
+     {
+      "id": "1708.05999v1",
+      "title": "Augmented Tree-based Routing Protocol for Scalable Ad Hoc Networks"
+     },
+     {
+      "id": "0711.3099v1",
+      "title": "A general-purpose deep learning approach to model time-varying audio effects"
+     },
+     {
+      "id": "1905.06148v2",
+      "title": "Midterm Status Report of the ILC Technology Network Activities"
+     },
+     {
+      "id": "2603.01172v1",
+      "title": "Estimating Trotter Approximation Errors to Optimize Hamiltonian Partitioning for Lower Eigenvalue Errors"
+     },
+     {
+      "id": "2312.13282v3",
+      "title": "Realistic Approach towards Quantitative Analysis and Simulation of EEHC-Based Routing for Wireless Sensor Networks"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.21203/rs.3.rs-2180843/v1",
+      "title": "Fixed-time adaptive neural network synchronization control for teleoperation system with position error constr"
+     },
+     {
+      "id": "10.1109/wcica.2004.1343684",
+      "title": "A new method for snapshot and time-varying distribution network reconfiguration"
+     },
+     {
+      "id": "10.2139/ssrn.4403281",
+      "title": "Spatio-Temporal Coherent Snapshot Compressed Imaging with Time-Varying Composite Phase Masks"
+     },
+     {
+      "id": "10.3724/sp.j.1146.2012.00935",
+      "title": "Opportunistic Routing Algorithm Based on Topological Time-varying and Residual-energy Balance in Wireless Sens"
+     },
+     {
+      "id": "10.1109/isit.2018.8437833",
+      "title": "Network Error Correction Coding for Time-Varying Adversarial Errors in a Unicast Network"
+     },
+     {
+      "id": "10.1016/j.comnet.2004.07.012",
+      "title": "Routing demands with time-varying bandwidth profiles on a MPLS network"
+     },
+     {
+      "id": "10.1016/s1389-1286(04)00203-8",
+      "title": "Routing demands with time-varying bandwidth profiles on a MPLS network"
+     },
+     {
+      "id": "10.23919/chicc.2018.8483554",
+      "title": "Distributed Stochastic Approximation Algorithm for Time-Varying Regression Function Over Network"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1371/journal.pone.0018961",
+      "title": "Finding Statistically Significant Communities in Networks"
+     },
+     {
+      "id": "10.1086/421508",
+      "title": "Network Dynamics and Field Evolution: The Growth of Interorganizational Collaboration in the Life Sciences"
+     },
+     {
+      "id": "10.1145/863955.863958",
+      "title": "A routing underlay for overlay networks"
+     },
+     {
+      "id": "10.1523/jneurosci.17-15-05900.1997",
+      "title": "Path Integration and Cognitive Mapping in a Continuous Attractor Neural Network Model"
+     },
+     {
+      "id": "10.3389/fnins.2013.00178",
+      "title": "Real-time classification and sensor fusion with a spiking deep belief network"
+     },
+     {
+      "id": "10.1145/347057.347412",
+      "title": "On network-aware clustering of Web clients"
+     },
+     {
+      "id": "10.1002/2013wr014710",
+      "title": "Real‐time global flood estimation using satellite‐based precipitation and a coupled land surface and routing m"
+     },
+     {
+      "id": "10.1145/316188.316229",
+      "title": "On power-law relationships of the Internet topology"
+     }
+    ]
+   },
+   {
+    "q": "discretization error direction dynamic network simulation",
+    "arxiv": [
+     {
+      "id": "NGFp74S3Ig+gpmlVQp7eZSmFrdA",
+      "title": "Midterm Status Report of the ILC Technology Network Activities"
+     },
+     {
+      "id": "2603.01172v1",
+      "title": "A Matroidal Framework for Network-Error Correcting Codes"
+     },
+     {
+      "id": "1201.6459v3",
+      "title": "Static and Dynamic Anomalies in a Repulsive Spherical Ramp Liquid: Theory and Simulation"
+     },
+     {
+      "id": "0411274v1",
+      "title": "Manifold Regularized Dynamic Network Pruning"
+     },
+     {
+      "id": "2103.05861v1",
+      "title": "Investigating Output Accuracy for a Discrete Event Simulation Model and an Agent Based Simulation Model"
+     },
+     {
+      "id": "1003.4141v1",
+      "title": "Discretization errors in molecular dynamics simulations with deterministic and stochastic thermostats"
+     },
+     {
+      "id": "1412.7067v1",
+      "title": "Simulating Customer Experience and Word Of Mouth in Retail - A Case Study"
+     },
+     {
+      "id": "1003.3784v1",
+      "title": "Dynamic spectral co-clustering of directed networks to unveil latent community paths in VAR-type models"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.2139/ssrn.5388713",
+      "title": "Multiscale Simulation Monte Carlo Method: Linking Spatiotemporal Discretization Error Analysis to Algorithmic "
+     },
+     {
+      "id": "10.21203/rs.3.rs-333144/v1",
+      "title": "Wigner Ensemble Monte Carlo Simulation Without Discretization Error of a GaAs Resonant Tunneling Diode"
+     },
+     {
+      "id": "10.23967/admos.2023.048",
+      "title": "Error estimation (due to discretization and/or modeling)"
+     },
+     {
+      "id": "10.1109/wsc.2016.7822095",
+      "title": "Discretization error of reflected fractional Brownian motion"
+     },
+     {
+      "id": "10.3402/tellusa.v49i1.12210",
+      "title": "Discretization error and signal/error correlation in atmospheric data\n                        assimilation: (I"
+     },
+     {
+      "id": "10.1109/wsc60868.2023.10408088",
+      "title": "Choosing the Right Entity Size to Minimize Discretization Error in Discrete Event Simulation Models"
+     },
+     {
+      "id": "10.3402/tellusa.v49i1.12211",
+      "title": "Discretization error and signal/error correlation in atmospheric data\n                        assimilation: (I"
+     },
+     {
+      "id": "10.33915/etd.6382",
+      "title": "Prediction of discretization error using the error transport equation"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1088/0953-8984/21/39/395502",
+      "title": "QUANTUM ESPRESSO: a modular and open-source software project for quantum simulations of materials"
+     },
+     {
+      "id": "10.1002/jcc.21287",
+      "title": "CHARMM: The biomolecular simulation program"
+     },
+     {
+      "id": "10.1016/j.cpc.2021.108171",
+      "title": "LAMMPS - a flexible simulation tool for particle-based materials modeling at the atomic, meso, and continuum s"
+     },
+     {
+      "id": "10.1109/5.726791",
+      "title": "Gradient-based learning applied to document recognition"
+     },
+     {
+      "id": "10.1371/journal.pone.0068910",
+      "title": "BrainNet Viewer: A Network Visualization Tool for Human Brain Connectomics"
+     },
+     {
+      "id": "10.1109/tac.2003.812781",
+      "title": "Coordination of groups of mobile autonomous agents using nearest neighbor rules"
+     },
+     {
+      "id": "10.1021/jp036508g",
+      "title": "Coarse Grained Model for Semiquantitative Lipid Simulations"
+     },
+     {
+      "id": "10.1207/s15516709cog2202_1",
+      "title": "Conceptual Integration Networks"
+     }
+    ]
+   },
+   {
+    "q": "time granularity effect satellite routing performance",
+    "arxiv": [
+     {
+      "id": "EGPjf+rz5blTB8B0AWalaluaqJs",
+      "title": "Joint Satellite Gateway Placement and Routing for Integrated Satellite-Terrestrial Networks"
+     },
+     {
+      "id": "2002.03071v2",
+      "title": "Call to Protect the Dark and Quiet Sky from Harmful Interference by Satellite Constellations"
+     },
+     {
+      "id": "2412.08244v2",
+      "title": "Space-time distributions"
+     },
+     {
+      "id": "9810059v1",
+      "title": "A Performance Comparison of Stability, Load-Balancing and Power-Aware Routing Protocols for Mobile Ad Hoc Networks"
+     },
+     {
+      "id": "1007.0409v1",
+      "title": "Temporal Risk on Satellites"
+     },
+     {
+      "id": "2608.20575v1",
+      "title": "Performance of Genetic Algorithms in the Context of Software Model Refactoring"
+     },
+     {
+      "id": "2308.13875v1",
+      "title": "Measuring Dataset Granularity"
+     },
+     {
+      "id": "1912.10154v1",
+      "title": "Links Assignment Scheme based on Potential Edges Importance in Dual-layer Wavelength Routing Optical Satellite Networks"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.2139/ssrn.5414145",
+      "title": "Temporal Granularity and Charging Strategies in Time-Dependent Electric Vehicle Routing"
+     },
+     {
+      "id": "10.1007/springerreference_65941",
+      "title": "Time Granularity"
+     },
+     {
+      "id": "10.1016/j.cor.2025.107298",
+      "title": "The stochastic and dynamic inventory routing problem with fine time granularity: A reinforcement learning appr"
+     },
+     {
+      "id": "10.23919/fruct.2016.7892206",
+      "title": "Performance analysis of OpenFlow forwarders based on routing granularity in OpenFlow 1.0 and 1.3"
+     },
+     {
+      "id": "10.1007/978-3-642-54353-1_3",
+      "title": "Satellite Network Routing Strategies"
+     },
+     {
+      "id": "10.1109/hpsr.2005.1503260",
+      "title": "Compact explicit multi-path routing for LEO satellite networks"
+     },
+     {
+      "id": "10.1007/978-3-642-54353-1_5",
+      "title": "Satellite Network Multi QoS Objective Routing Algorithm"
+     },
+     {
+      "id": "10.4304/jsw.9.2.474-481",
+      "title": "ETER: Encounter Time Estimating Routing for Satellite IP Networks"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1145/78952.78953",
+      "title": "Multicast routing in datagram internetworks and extended LANs"
+     },
+     {
+      "id": "10.1016/j.envsoft.2012.09.011",
+      "title": "Characterising performance of environmental models"
+     },
+     {
+      "id": "10.1109/comst.2021.3078433",
+      "title": "A Survey on Technologies, Standards and Open Challenges in Satellite IoT"
+     },
+     {
+      "id": "10.17487/rfc1305",
+      "title": "Network Time Protocol (Version 3) Specification, Implementation and Analysis"
+     },
+     {
+      "id": "10.4108/icst.simutools2009.5674",
+      "title": "The ONE simulator for DTN protocol evaluation"
+     },
+     {
+      "id": "10.1088/1748-0221/8/10/p10016",
+      "title": "Performance of the ALICE VZERO system"
+     },
+     {
+      "id": "10.1088/0022-3727/33/17/201",
+      "title": "Controlling the properties of high energy density permanent magnetic materials by different processing routes"
+     },
+     {
+      "id": "10.1016/j.ijpe.2020.107899",
+      "title": "Green vehicle routing problem: A state-of-the-art review"
+     }
+    ]
+   },
+   {
+    "q": "continuous-time reference snapshot comparison LEO",
+    "arxiv": [
+     {
+      "id": "ahF4+loxUGQsqgBxSZjRYG8ClWU",
+      "title": "A collisional origin for the Leo ring"
+     },
+     {
+      "id": "1005.4208v2",
+      "title": "Critical Matter"
+     },
+     {
+      "id": "2306.03142v1",
+      "title": "Leo P: An Unquenched Very Low-Mass Galaxy"
+     },
+     {
+      "id": "1506.05495v2",
+      "title": "LEO: Generative Latent Image Animator for Human Video Synthesis"
+     },
+     {
+      "id": "2305.03989v3",
+      "title": "Two-Timescale Stochastic Approximation for Bilevel Optimisation Problems in Continuous-Time Models"
+     },
+     {
+      "id": "2206.06995v2",
+      "title": "Link Reassignment based Snapshot Partition for Polar-orbit LEO Satellite Networks"
+     },
+     {
+      "id": "1411.0372v2",
+      "title": "Experimental Demonstration of Snapshot Differential Positioning with LEO Satellites"
+     },
+     {
+      "id": "2603.15908v1",
+      "title": "GAP-net for Snapshot Compressive Imaging"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.4324/9781032717425-4",
+      "title": "Comparison of continuous-time and discrete-time exponential transition rate models"
+     },
+     {
+      "id": "10.4324/9781032717425-5",
+      "title": "Comparison of continuous-time and discrete-time transition rate models with duration dependence"
+     },
+     {
+      "id": "10.59161/cctf2012rec6e",
+      "title": "A  contribution  from  the  Consultative  Committee  on  Time  and  Frequency   (CCTF) on achieving a continuo"
+     },
+     {
+      "id": "10.1002/9781118445112.stat03754",
+      "title": "Continuous‐Time Asset Allocation"
+     },
+     {
+      "id": "10.1002/9781118445112.stat04382",
+      "title": "Non‐life Reserves‐Continuous‐time Micro Models"
+     },
+     {
+      "id": "10.4324/9781032717425",
+      "title": "Comparison Between Continuous-Time and Discrete-Time"
+     },
+     {
+      "id": "10.3724/sp.j.1001.2011.04048",
+      "title": "Snapshot Method for Continuous Data Protection Systems"
+     },
+     {
+      "id": "10.1002/0471459100.ch5",
+      "title": "Continuous‐Time Model Reference Adaptive Control"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1093/nar/gkv007",
+      "title": "limma powers differential expression analyses for RNA-sequencing and microarray studies"
+     },
+     {
+      "id": "10.1016/j.cpc.2021.108171",
+      "title": "LAMMPS - a flexible simulation tool for particle-based materials modeling at the atomic, meso, and continuum s"
+     },
+     {
+      "id": "10.1002/2014jb011547",
+      "title": "Improved methods for observing Earth's time variable mass distribution with GRACE using spherical cap mascons"
+     },
+     {
+      "id": "10.1016/j.biotechadv.2015.08.001",
+      "title": "Discovery and resupply of pharmacologically active plant-derived natural products: A review"
+     },
+     {
+      "id": "10.1109/jiot.2023.3243207",
+      "title": "A Survey on IoT Positioning Leveraging LPWAN, GNSS, and LEO-PNT"
+     },
+     {
+      "id": "10.1109/jsac.2024.3365873",
+      "title": "Shortest Path in LEO Satellite Constellation Networks: An Explicit Analytic Approach"
+     },
+     {
+      "id": "10.1117/1.jbo.19.1.010901",
+      "title": "Medical hyperspectral imaging: a review"
+     },
+     {
+      "id": "10.1371/journal.pone.0088081",
+      "title": "A Metapopulation Approach to African Lion (Panthera leo) Conservation"
+     }
+    ]
+   },
+   {
+    "q": "temporal graph sampling bias path metrics",
+    "arxiv": [
+     {
+      "id": "+L9ddlFn3AvCzp9Ny8LKD0aQYfs",
+      "title": "How UMass-FSD Inadvertently Leverages Temporal Bias"
+     },
+     {
+      "id": "2208.01347v1",
+      "title": "A Simple But Powerful Graph Encoder for Temporal Knowledge Graph Completion"
+     },
+     {
+      "id": "2112.07791v2",
+      "title": "Towards Unbiased BFS Sampling"
+     },
+     {
+      "id": "1102.4599v1",
+      "title": "Exploring Time Granularity on Temporal Graphs for Dynamic Link Prediction in Real-world Networks"
+     },
+     {
+      "id": "2311.12255v2",
+      "title": "Graph Metrics for Temporal Networks"
+     },
+     {
+      "id": "1306.0493v1",
+      "title": "Perception-Aware Bias Detection for Query Suggestions"
+     },
+     {
+      "id": "2601.03730v1",
+      "title": "A map of approaches to temporal networks"
+     },
+     {
+      "id": "2103.13615v1",
+      "title": "Comparison between illumination model and hydrodynamic simulation for a Direct Drive laser irradiated target"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.2139/ssrn.6864500",
+      "title": "Temporal Attack Graph Based Security Metrics"
+     },
+     {
+      "id": "10.70675/68ad0f79ze18bz4661zbc5ez51f6a0c9f3df",
+      "title": "Temporal Connectivity and Path Computation for Stream Graph"
+     },
+     {
+      "id": "10.5220/0013678000004670",
+      "title": "Integrating Graph Search, Sampling, and Neural Networks for Optimized Vehicle Path Planning"
+     },
+     {
+      "id": "10.1101/2023.02.14.528448",
+      "title": "Sampling bias and the robustness of ecological metrics for plant–damage-type association networks: Comment"
+     },
+     {
+      "id": "10.1111/2041-210x.70079/v1/review1",
+      "title": "Review for \"Model-based ordination for phenological studies: From controlling sampling bias to inferring tempo"
+     },
+     {
+      "id": "10.1111/2041-210x.70079/v1/review2",
+      "title": "Review for \"Model-based ordination for phenological studies: From controlling sampling bias to inferring tempo"
+     },
+     {
+      "id": "10.32942/x25h0b",
+      "title": "Model-based ordination for phenological studies: from controlling sampling bias to inferring temporal associat"
+     },
+     {
+      "id": "10.2139/ssrn.5704091",
+      "title": "Causal Spatio-Temporal Graph Forecasting  Against Confounding Bias"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1109/tnnls.2021.3070843",
+      "title": "A Survey on Knowledge Graphs: Representation, Acquisition, and Applications"
+     },
+     {
+      "id": "10.1145/3447772",
+      "title": "Knowledge Graphs"
+     },
+     {
+      "id": "10.1523/jneurosci.2874-10.2010",
+      "title": "Aberrant Frontal and Temporal Complex Network Structure in Schizophrenia: A Graph Theoretical Analysis"
+     },
+     {
+      "id": "10.48550/arxiv.1812.08434",
+      "title": "Graph Neural Networks: A Review of Methods and Applications"
+     },
+     {
+      "id": "10.1038/nbt.3935",
+      "title": "Shotgun metagenomics, from sampling to analysis"
+     },
+     {
+      "id": "10.1109/cvpr.2017.11",
+      "title": "Dynamic Edge-Conditioned Filters in Convolutional Neural Networks on Graphs"
+     },
+     {
+      "id": "10.1186/1753-4631-1-3",
+      "title": "Graph theoretical analysis of complex networks in the brain"
+     },
+     {
+      "id": "10.4230/tgdk.1.1.7",
+      "title": "Embedding Entities and Relations for Learning and Inference in Knowledge Bases"
+     }
+    ]
+   },
+   {
+    "q": "snapshot interval convergence routing protocol satellite",
+    "arxiv": [
+     {
+      "id": "LnIqI7jdLdF+N4MCP8",
+      "title": "Conjectures on Convergence and Scalar Curvature"
+     },
+     {
+      "id": "2103.10093v1",
+      "title": "Node Disjoint Multipath Routing Considering Link and Node Stability protocol: A characteristic Evaluation"
+     },
+     {
+      "id": "1002.1162v1",
+      "title": "Joint Satellite Gateway Placement and Routing for Integrated Satellite-Terrestrial Networks"
+     },
+     {
+      "id": "2002.03071v2",
+      "title": "Call to Protect the Dark and Quiet Sky from Harmful Interference by Satellite Constellations"
+     },
+     {
+      "id": "2412.08244v2",
+      "title": "Modality-Native Routing in Agent-to-Agent Networks: A Multimodal A2A Protocol Extension"
+     },
+     {
+      "id": "2604.12213v1",
+      "title": "Temporal Risk on Satellites"
+     },
+     {
+      "id": "2608.20575v1",
+      "title": "A Performance Comparison of Stability, Load-Balancing and Power-Aware Routing Protocols for Mobile Ad Hoc Networks"
+     },
+     {
+      "id": "1007.0409v1",
+      "title": "Analyzing Zone Routing Protocol in MANET Applying Authentic Parameter"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.1109/ictc62082.2024.10827214",
+      "title": "Modeling of Optimized Link State Routing for Inter-Satellite Link Protocol of Satellite Constellation"
+     },
+     {
+      "id": "10.1109/milcom.2005.1606129",
+      "title": "Analyzing routing protocol convergence in routed satellite networks"
+     },
+     {
+      "id": "10.3724/sp.j.1087.2011.00781",
+      "title": "Trust-based authentication routing protocol for satellite network"
+     },
+     {
+      "id": "10.1109/icc.2000.853079",
+      "title": "Routing and re-routing in a LEO/MEO two-tier mobile satellite communications system with inter-satellite links"
+     },
+     {
+      "id": "10.1109/ictc66702.2025.11388042",
+      "title": "Feeder Link Constraints-Aware Inter-Satellite Routing for LEO Satellite Networks"
+     },
+     {
+      "id": "10.1007/978-1-4842-1410-7_19",
+      "title": "An Enterprise Network — Convergence of Data"
+     },
+     {
+      "id": "10.1109/cse.2014.93",
+      "title": "A Novel Routing Algorithm Based on Virtual Topology Snapshot in LEO Satellite Networks"
+     },
+     {
+      "id": "10.4156/jcit.vol4.issue1.mamoun",
+      "title": "A Secure DSR Routing Protocol for MANET"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.3390/s22124552",
+      "title": "Dynamic Routings in Satellite Networks: An Overview"
+     },
+     {
+      "id": "10.5772/13942",
+      "title": "A Survey on Routing Protocols for Wireless Sensor Networks"
+     },
+     {
+      "id": "10.1016/j.aej.2020.09.019",
+      "title": "5G mobile communication convergence protocol architecture and key technologies in satellite internet of things"
+     },
+     {
+      "id": "10.1109/tmc.2024.3380891",
+      "title": "Distributed Satellite-Terrestrial Cooperative Routing Strategy Based on Minimum Hop-Count Analysis in Mega LEO"
+     },
+     {
+      "id": "10.1109/access.2023.3330886",
+      "title": "From Satellite to UAV-Based Remote Sensing: A Review on Precision Agriculture"
+     },
+     {
+      "id": "10.1109/mnet.132.2200504",
+      "title": "Federated Learning in Satellite Constellations"
+     },
+     {
+      "id": "10.1109/comst.2019.2949178",
+      "title": "A Survey on Coping With Intentional Interference in Satellite Navigation for Manned and Unmanned Aircraft"
+     },
+     {
+      "id": "10.1109/tcomm.2023.3296584",
+      "title": "Satellite Edge Computing for Real-Time and Very-High Resolution Earth Observation"
+     }
+    ]
+   }
+  ],
+  "anchors": [
+   {
+    "anchor": "DOI:10.1109/mswim67937.2025.11308874",
+    "n": 0,
+    "top": []
+   },
+   {
+    "anchor": "ARXIV:2607.04405",
+    "n": 0,
+    "top": []
+   },
+   {
+    "anchor": "ARXIV:2605.04448",
+    "n": 0,
+    "top": []
+   },
+   {
+    "anchor": "ARXIV:2601.21383",
+    "n": 1,
+    "top": [
+     "Ground-Side Mission Plan Compilation with Policy-as-Code Guardrails for Cloud-Native Satel"
+    ]
+   },
+   {
+    "anchor": "ARXIV:2410.15546",
+    "n": 1,
+    "top": [
+     "Idle Nodes Detection and Reactivation-Aware-Buffer Management in Delay-Tolerant Network Us"
+    ]
+   }
+  ]
+ },
+ "card-04-n1": {
+  "queries": [
+   {
+    "q": "reinforcement learning evaluation measurement-driven network",
+    "arxiv": [
+     {
+      "id": "hc32K1yX4t0VW4cy98pZR9fdXyw",
+      "title": "The Open Ant: A Robot Platform for Reinforcement Learning Research"
+     },
+     {
+      "id": "2607.18488v1",
+      "title": "Value Bonuses using Ensemble Errors for Exploration in Reinforcement Learning"
+     },
+     {
+      "id": "2602.12375v1",
+      "title": "Causal-Paced Deep Reinforcement Learning"
+     },
+     {
+      "id": "2507.02910v1",
+      "title": "Exploring Hierarchy-Aware Inverse Reinforcement Learning"
+     },
+     {
+      "id": "1807.05037v1",
+      "title": "Towards Formalizing Reinforcement Learning Theory: A Robbins-Siegmund Approach"
+     },
+     {
+      "id": "2511.03618v2",
+      "title": "Robust Reinforcement Learning on Graphs for Logistics optimization"
+     },
+     {
+      "id": "2205.12888v1",
+      "title": "A Tutorial on Meta-Reinforcement Learning"
+     },
+     {
+      "id": "2301.08028v4",
+      "title": "Stabilizing Extreme Q-learning by Maclaurin Expansion"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.2139/ssrn.4706109",
+      "title": "A Lightweight Siamese Network-Driven Unsupervised Reinforcement Learning"
+     },
+     {
+      "id": "10.2139/ssrn.5798349",
+      "title": "Expert-driven Jumpstart Reinforcement Learning for Managing Network Congestion Control"
+     },
+     {
+      "id": "10.2139/ssrn.5274748",
+      "title": "Expert-Driven Jumpstart Reinforcement Learning for Managing Network Congestion Control"
+     },
+     {
+      "id": "10.59628/jast.v4i8.3250",
+      "title": "AI-Driven Energy-Efficient Network Slicing for UAV-Assisted 6G IoT Communications Using Deep Reinforcement Lea"
+     },
+     {
+      "id": "10.1016/j.measurement.2026.122633",
+      "title": "Reinforcement learning-driven modal feature selection for output-only structural anomaly detection in vibratio"
+     },
+     {
+      "id": "10.22541/au.170666974.47075939/v1",
+      "title": "Reliability-Driven Distribution Power Network Dynamic Reconfiguration in Presence of Distributed Generation by"
+     },
+     {
+      "id": "10.1007/s10791-026-10255-1",
+      "title": "Reinforcement learning and neural network-driven student psychological crisis intervention strategy"
+     },
+     {
+      "id": "10.1016/j.measurement.2021.110377",
+      "title": "Finding the optimal multilayer network structure through reinforcement learning in fault diagnosis"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1613/jair.301",
+      "title": "Reinforcement Learning: A Survey"
+     },
+     {
+      "id": "10.4230/oasics.dx.2024.16",
+      "title": "Diagnosing Non-Intermittent Anomalies in Reinforcement Learning Policy Executions (Short Paper)"
+     },
+     {
+      "id": "10.1016/j.media.2017.07.005",
+      "title": "A survey on deep learning in medical image analysis"
+     },
+     {
+      "id": "10.1561/2200000071",
+      "title": "An Introduction to Deep Reinforcement Learning"
+     },
+     {
+      "id": "10.1007/s42979-021-00592-x",
+      "title": "Machine Learning: Algorithms, Real-World Applications and Research Directions"
+     },
+     {
+      "id": "10.1186/s13321-017-0235-x",
+      "title": "Molecular de-novo design through deep reinforcement learning"
+     },
+     {
+      "id": "10.1561/2200000083",
+      "title": "Advances and Open Problems in Federated Learning"
+     },
+     {
+      "id": "10.1038/s41586-018-0337-2",
+      "title": "Machine learning for molecular and materials science"
+     }
+    ]
+   },
+   {
+    "q": "reinforcement learning routing real-world trace evaluation",
+    "arxiv": [
+     {
+      "id": "4joUoA8K01ljxu+UUXxoQOPaFb4",
+      "title": "One-Shot Reinforcement Learning for Robot Navigation with Interactive Replay"
+     },
+     {
+      "id": "1711.10137v2",
+      "title": "The Open Ant: A Robot Platform for Reinforcement Learning Research"
+     },
+     {
+      "id": "2607.18488v1",
+      "title": "Value Bonuses using Ensemble Errors for Exploration in Reinforcement Learning"
+     },
+     {
+      "id": "2602.12375v1",
+      "title": "Offline Reinforcement Learning from Human Feedback in Real-World Sequence-to-Sequence Tasks"
+     },
+     {
+      "id": "2011.02511v3",
+      "title": "Learning to Route Electric Trucks Under Operational Uncertainty"
+     },
+     {
+      "id": "2604.26566v1",
+      "title": "Human-Robot Collaboration via Deep Reinforcement Learning of Real-World Interactions"
+     },
+     {
+      "id": "1912.01715v1",
+      "title": "Reinforcement Learning Agent Training with Goals for Real World Tasks"
+     },
+     {
+      "id": "2107.10390v1",
+      "title": "Causal-Paced Deep Reinforcement Learning"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.31979/etd.jham-bb2s",
+      "title": "Detecting the Onion Routing Traffic in Real-Time by using Reinforcement Learning"
+     },
+     {
+      "id": "10.31224/2755",
+      "title": "World of Reinforcement Learning"
+     },
+     {
+      "id": "10.70675/9b95e35dz33b4z4469za741z53e529492b27",
+      "title": "Reinforcement Learning on real-world systems : leveraging industrial contexts"
+     },
+     {
+      "id": "10.1002/9781394272587.ch1",
+      "title": "Deep Reinforcement Learning Applications in Real‐World Scenarios"
+     },
+     {
+      "id": "10.14264/cf1a3b1",
+      "title": "Training robust deep reinforcement learning policies in the real world"
+     },
+     {
+      "id": "10.21275/sr24314130644",
+      "title": "Reinforcement Learning for Real - World Applications - A Comprehensive Review"
+     },
+     {
+      "id": "10.2174/9789815322316125010005",
+      "title": "Reinforcement Learning in Practice: Real-World Applications across Industries"
+     },
+     {
+      "id": "10.3030/101045454",
+      "title": ""
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1613/jair.301",
+      "title": "Reinforcement Learning: A Survey"
+     },
+     {
+      "id": "10.1146/annurev-fluid-010719-060214",
+      "title": "Machine Learning for Fluid Mechanics"
+     },
+     {
+      "id": "10.1109/access.2019.2895334",
+      "title": "Deep Learning Approach for Intelligent Intrusion Detection System"
+     },
+     {
+      "id": "10.4324/9781315211985-5",
+      "title": "Learning, Remembering, and Understanding"
+     },
+     {
+      "id": "10.1007/s10994-010-5232-5",
+      "title": "Empirical evaluation methods for multiobjective reinforcement learning algorithms"
+     },
+     {
+      "id": "10.15215/aupress/9781897425084.01",
+      "title": "The Theory and Practice of Online Learning"
+     },
+     {
+      "id": "10.48550/arxiv.2004.07219",
+      "title": "D4RL: Datasets for Deep Data-Driven Reinforcement Learning"
+     },
+     {
+      "id": "10.1109/tvt.2018.2887282",
+      "title": "Hierarchical Routing for Vehicular Ad Hoc Networks via Reinforcement Learning"
+     }
+    ]
+   },
+   {
+    "q": "simulation-to-real gap reinforcement learning network routing",
+    "arxiv": [
+     {
+      "id": "XWZRS7seV2Qj1VdFzeyXDouVo2E",
+      "title": "The Open Ant: A Robot Platform for Reinforcement Learning Research"
+     },
+     {
+      "id": "2607.18488v1",
+      "title": "Value Bonuses using Ensemble Errors for Exploration in Reinforcement Learning"
+     },
+     {
+      "id": "2602.12375v1",
+      "title": "Learning to Route Electric Trucks Under Operational Uncertainty"
+     },
+     {
+      "id": "2604.26566v1",
+      "title": "Causal-Paced Deep Reinforcement Learning"
+     },
+     {
+      "id": "2507.02910v1",
+      "title": "Exploring Hierarchy-Aware Inverse Reinforcement Learning"
+     },
+     {
+      "id": "1807.05037v1",
+      "title": "Towards Formalizing Reinforcement Learning Theory: A Robbins-Siegmund Approach"
+     },
+     {
+      "id": "2511.03618v2",
+      "title": "Robust Reinforcement Learning on Graphs for Logistics optimization"
+     },
+     {
+      "id": "2205.12888v1",
+      "title": "A Tutorial on Meta-Reinforcement Learning"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.31979/etd.h7jx-ca2n",
+      "title": "Explainable Reinforcement Learning for Network Routing Optimization"
+     },
+     {
+      "id": "10.2139/ssrn.5273023",
+      "title": "An Energy-Efficient Deep Reinforcement Learning-Based Routing Architecture for Scalable Network-on-Chip System"
+     },
+     {
+      "id": "10.31979/etd.jham-bb2s",
+      "title": "Detecting the Onion Routing Traffic in Real-Time by using Reinforcement Learning"
+     },
+     {
+      "id": "10.61951/sciencepaperonline.202401.0007",
+      "title": "Traffic Engineering in Segment Routing Network Based on Deep Reinforcement Learning"
+     },
+     {
+      "id": "10.2139/ssrn.4414648",
+      "title": "Multi-Agent Reinforcement Learning for Network Routing in Integrated Access Backhaul Networks"
+     },
+     {
+      "id": "10.1002/itl2.548/v1/review2",
+      "title": "Review for \"EEERP‐RL: Enhanced energy‐efficient routing protocol based on reinforcement learning for wireless "
+     },
+     {
+      "id": "10.1016/j.eswa.2024.124310",
+      "title": "Bridging the simulation-to-real gap of depth images for deep reinforcement learning"
+     },
+     {
+      "id": "10.1002/itl2.548/v2/review1",
+      "title": "Review for \"EEERP‐RL: Enhanced energy‐efficient routing protocol based on reinforcement learning for wireless "
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1613/jair.301",
+      "title": "Reinforcement Learning: A Survey"
+     },
+     {
+      "id": "10.1186/s40537-021-00444-8",
+      "title": "Review of deep learning: concepts, CNN architectures, challenges, applications, future directions"
+     },
+     {
+      "id": "10.1146/annurev-fluid-010719-060214",
+      "title": "Machine Learning for Fluid Mechanics"
+     },
+     {
+      "id": "10.1016/j.inffus.2021.05.008",
+      "title": "A review of uncertainty quantification in deep learning: Techniques, applications and challenges"
+     },
+     {
+      "id": "10.1002/ett.4150",
+      "title": "Network intrusion detection system: A systematic study of machine learning and deep learning approaches"
+     },
+     {
+      "id": "10.1016/j.neunet.2022.03.037",
+      "title": "Deep learning, reinforcement learning, and world models"
+     },
+     {
+      "id": "10.1186/s13174-018-0087-2",
+      "title": "A comprehensive survey on machine learning for networking: evolution, applications and research opportunities"
+     },
+     {
+      "id": "10.1609/aaai.v32i1.11339",
+      "title": "Cellular Network Traffic Scheduling With Deep Reinforcement Learning"
+     }
+    ]
+   },
+   {
+    "q": "benchmark RL routing satellite realistic environment",
+    "arxiv": [
+     {
+      "id": "uHP6MBOubyLccckdOp+pxPA63m8",
+      "title": "Realistic Approach towards Quantitative Analysis and Simulation of EEHC-Based Routing for Wireless Sensor Networks"
+     },
+     {
+      "id": "1002.1151v1",
+      "title": "Joint Satellite Gateway Placement and Routing for Integrated Satellite-Terrestrial Networks"
+     },
+     {
+      "id": "2002.03071v2",
+      "title": "Call to Protect the Dark and Quiet Sky from Harmful Interference by Satellite Constellations"
+     },
+     {
+      "id": "2412.08244v2",
+      "title": "Temporal Risk on Satellites"
+     },
+     {
+      "id": "2608.20575v1",
+      "title": "URB -- Urban Routing Benchmark for RL-equipped Connected Autonomous Vehicles"
+     },
+     {
+      "id": "2505.17734v2",
+      "title": "Indoor environment data time-series reconstruction using autoencoder neural networks"
+     },
+     {
+      "id": "2009.08155v2",
+      "title": "Hybrid Table-Assisted and RL-Based Dynamic Routing for NGSO Satellite Networks"
+     },
+     {
+      "id": "2509.14909v1",
+      "title": "REAP: A Large-Scale Realistic Adversarial Patch Benchmark"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.32388/6k4anl",
+      "title": "Review of: \"MedAgentBench: A Realistic Virtual EHR Environment to Benchmark Medical LLM Agents\""
+     },
+     {
+      "id": "10.32388/wvkiwe",
+      "title": "Review of: \"MedAgentBench: A Realistic Virtual EHR Environment to Benchmark Medical LLM Agents\""
+     },
+     {
+      "id": "10.32388/ymc3lg",
+      "title": "Review of: \"MedAgentBench: A Realistic Virtual EHR Environment to Benchmark Medical LLM Agents\""
+     },
+     {
+      "id": "10.32388/fnye02",
+      "title": "Review of: \"MedAgentBench: A Realistic Virtual EHR Environment to Benchmark Medical LLM Agents\""
+     },
+     {
+      "id": "10.52202/085713-3983",
+      "title": "SVRPBench: A Realistic Benchmark for Stochastic Vehicle Routing Problem"
+     },
+     {
+      "id": "10.1109/netsoft70012.2026.11603525",
+      "title": "Hybrid Table-Assisted and RL-Based Dynamic Routing for NGSO Satellite Networks"
+     },
+     {
+      "id": "10.3390/app11114790",
+      "title": "A Proposal and Analysis of New Realistic Sets of Benchmark Instances for Vehicle Routing Problems with Asymmet"
+     },
+     {
+      "id": "10.52202/085713-2787",
+      "title": "URB - Urban Routing Benchmark for RL-equipped Connected Autonomous Vehicles"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1109/comst.2020.3028247",
+      "title": "Satellite Communications in the New Space Era: A Survey and Future Challenges"
+     },
+     {
+      "id": "10.3390/su16219239",
+      "title": "Graph Neural Networks for Routing Optimization: Challenges and Opportunities"
+     },
+     {
+      "id": "10.1080/13658816.2023.2279975",
+      "title": "A reinforcement learning-based routing algorithm for large street networks"
+     },
+     {
+      "id": "10.1109/icmlcn59089.2024.10624807",
+      "title": "Q-learning for distributed routing in LEO satellite constellations"
+     },
+     {
+      "id": "10.5194/gmd-4-1051-2011",
+      "title": "Development and evaluation of an Earth-System model – HadGEM2"
+     },
+     {
+      "id": "10.1109/comst.2025.3534617",
+      "title": "Artificial Intelligence for Satellite Communication: A Survey"
+     },
+     {
+      "id": "10.1109/access.2020.3038605",
+      "title": "A Gentle Introduction to Reinforcement Learning and its Application in Different Fields"
+     },
+     {
+      "id": "10.1109/access.2023.3244067",
+      "title": "Optimized Routing of UAVs Using Bio-Inspired Algorithm in FANET: A Systematic Review"
+     }
+    ]
+   },
+   {
+    "q": "measurement-informed emulation satellite network RL",
+    "arxiv": [
+     {
+      "id": "jGE",
+      "title": "Call to Protect the Dark and Quiet Sky from Harmful Interference by Satellite Constellations"
+     },
+     {
+      "id": "2412.08244v2",
+      "title": "Temporal Risk on Satellites"
+     },
+     {
+      "id": "2608.20575v1",
+      "title": "Midterm Status Report of the ILC Technology Network Activities"
+     },
+     {
+      "id": "2603.01172v1",
+      "title": "Links Assignment Scheme based on Potential Edges Importance in Dual-layer Wavelength Routing Optical Satellite Networks"
+     },
+     {
+      "id": "2304.00708v1",
+      "title": "Trace-driven Path Emulation of Satellite Networks using Hypatia"
+     },
+     {
+      "id": "2510.27027v1",
+      "title": "5G satellite networks for IoT: offloading and backhauling"
+     },
+     {
+      "id": "2011.05202v1",
+      "title": "OpenSN: An Open Source Library for Emulating LEO Satellite Networks"
+     },
+     {
+      "id": "2507.03248v1",
+      "title": "An eBPF-Based Trace-Driven Emulation Method for Satellite Networks"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.1109/tgrs.2025.3526220/v2/review1",
+      "title": "Review for \"Enhancing Weather Radar Reflectivity Emulation From Geostationary Satellite Data Using Dynamic Res"
+     },
+     {
+      "id": "10.1109/tgrs.2025.3526220/v1/review2",
+      "title": "Review for \"Enhancing Weather Radar Reflectivity Emulation From Geostationary Satellite Data Using Dynamic Res"
+     },
+     {
+      "id": "10.1109/tgrs.2025.3526220/v1/review1",
+      "title": "Review for \"Enhancing Weather Radar Reflectivity Emulation From Geostationary Satellite Data Using Dynamic Res"
+     },
+     {
+      "id": "10.1109/tgrs.2025.3526220/v2/decision1",
+      "title": "Decision letter for \"Enhancing Weather Radar Reflectivity Emulation From Geostationary Satellite Data Using Dy"
+     },
+     {
+      "id": "10.1109/tgrs.2025.3526220/v1/decision1",
+      "title": "Decision letter for \"Enhancing Weather Radar Reflectivity Emulation From Geostationary Satellite Data Using Dy"
+     },
+     {
+      "id": "10.64898/2026.01.29.702506",
+      "title": "NetPolicy-RL: Network-Informed Offline Reinforcement Learning for Pharmacogenomic Drug Prioritization"
+     },
+     {
+      "id": "10.1007/978-1-4020-9119-3_10",
+      "title": "Implementing a Neural Network Emulation of a Satellite Retrieval Algorithm"
+     },
+     {
+      "id": "10.1016/j.measurement.2026.122319",
+      "title": "Physics-informed machine learning modeling and inferencer-in-the-loop based real-time digital-twin emulation f"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1109/comst.2020.3028247",
+      "title": "Satellite Communications in the New Space Era: A Survey and Future Challenges"
+     },
+     {
+      "id": "10.48550/arxiv.2002.08811",
+      "title": "Satellite Communications in the New Space Era: A Survey and Future Challenges"
+     },
+     {
+      "id": "10.1109/access.2020.2989870",
+      "title": "Comprehensive Survey of Machine Learning Approaches in Cognitive Radio-Based Vehicular Ad Hoc Networks"
+     },
+     {
+      "id": "10.1109/ojvt.2024.3422253",
+      "title": "Deep Learning in the Fast Lane: A Survey on Advanced Intrusion Detection Systems for Intelligent Vehicle Netwo"
+     },
+     {
+      "id": "10.1145/3485128",
+      "title": "Tackling Climate Change with Machine Learning"
+     },
+     {
+      "id": "10.1109/access.2024.3444313",
+      "title": "A Comprehensive Survey on Resource Management in 6G Network Based on Internet of Things"
+     },
+     {
+      "id": "10.1109/sc41405.2020.00012",
+      "title": "Recurrent Neural Network Architecture Search for Geophysical Emulation"
+     },
+     {
+      "id": "10.1109/ojcoms.2025.3599866",
+      "title": "Network Digital Twin for 6G and Beyond: An End-to-End View Across Multi-Domain Network Ecosystems"
+     }
+    ]
+   },
+   {
+    "q": "ecological validity reinforcement learning evaluation networking",
+    "arxiv": [
+     {
+      "id": "ejIaKH6VljexHxeCREPjg04QlPo",
+      "title": "The Open Ant: A Robot Platform for Reinforcement Learning Research"
+     },
+     {
+      "id": "2607.18488v1",
+      "title": "Value Bonuses using Ensemble Errors for Exploration in Reinforcement Learning"
+     },
+     {
+      "id": "2602.12375v1",
+      "title": "Causal-Paced Deep Reinforcement Learning"
+     },
+     {
+      "id": "2507.02910v1",
+      "title": "Exploring Hierarchy-Aware Inverse Reinforcement Learning"
+     },
+     {
+      "id": "1807.05037v1",
+      "title": "Statistical Predictive Models in Ecology: Comparison of Performances and Assessment of Applicability"
+     },
+     {
+      "id": "0510031v1",
+      "title": "Towards Formalizing Reinforcement Learning Theory: A Robbins-Siegmund Approach"
+     },
+     {
+      "id": "2511.03618v2",
+      "title": "A Tutorial on Meta-Reinforcement Learning"
+     },
+     {
+      "id": "2301.08028v4",
+      "title": "Stabilizing Extreme Q-learning by Maclaurin Expansion"
+     }
+    ],
+    "crossref": [
+     {
+      "id": "10.1007/s42452-026-09186-9",
+      "title": "Deep reinforcement learning framework using EFSS-double DQN for ecological landscape aesthetic evaluation"
+     },
+     {
+      "id": "10.1002/9781119873747.ch1",
+      "title": "Deep Reinforcement Learning and Its Applications"
+     },
+     {
+      "id": "10.1002/9781119873747.ch3",
+      "title": "Deep Reinforcement Learning Models and Techniques"
+     },
+     {
+      "id": "10.1002/9781119873747.ch2",
+      "title": "Markov Decision Process and Reinforcement Learning"
+     },
+     {
+      "id": "10.1201/9781498710411-41",
+      "title": "Performance Measurement and Ecological Validity"
+     },
+     {
+      "id": "10.4135/9781506326139.n219",
+      "title": "Ecological Validity"
+     },
+     {
+      "id": "10.2139/ssrn.7145518",
+      "title": "The Foundational Validity Framework (FVF): Evaluating Markov Decision Process Formulations for Healthcare Rein"
+     },
+     {
+      "id": "10.1016/j.ecocom.2025.101146",
+      "title": "Evolutionary dispersal of ecological species via Multi-Agent Deep Reinforcement Learning"
+     }
+    ],
+    "openalex": [
+     {
+      "id": "10.1371/journal.pone.0006421",
+      "title": "Reinforcement Learning or Active Inference?"
+     },
+     {
+      "id": "10.1016/j.eehl.2022.06.001",
+      "title": "A review of the application of machine learning in water quality evaluation"
+     },
+     {
+      "id": "10.1016/j.physrep.2020.05.004",
+      "title": "Networks beyond pairwise interactions: Structure and dynamics"
+     },
+     {
+      "id": "10.1016/j.compedu.2015.11.008",
+      "title": "The effects of integrating mobile devices with teaching and learning on students' learning performance: A meta"
+     },
+     {
+      "id": "10.3758/s13423-015-0999-9",
+      "title": "Optimizing performance through intrinsic motivation and attention for learning: The OPTIMAL theory of motor le"
+     },
+     {
+      "id": "10.1007/s11023-020-09517-8",
+      "title": "The Ethics of AI Ethics: An Evaluation of Guidelines"
+     },
+     {
+      "id": "10.1007/s10462-022-10246-w",
+      "title": "Human-in-the-loop machine learning: a state of the art"
+     },
+     {
+      "id": "10.1145/3485128",
+      "title": "Tackling Climate Change with Machine Learning"
+     }
+    ]
+   }
+  ],
+  "anchors": [
+   {
+    "anchor": "ARXIV:2310.09242",
+    "n": 20,
+    "top": [
+     "Navigating maritime emergencies with large models: A lifecycle-oriented review",
+     "AI Infrastructure in Space: How Far Can We Go?",
+     "The More We Measure, The Less We See: On the Replicability and Repeatability of Mobile Sta",
+     "HERMES: Repurposing User-Driven Speed Tests to Monitor the Internet",
+     "Planet-Scale IoT Connectivity via LEO Satellites",
+     "A Cross-US View of Starlink's PoP and Satellite Assignment Strategy to Mobile Users"
+    ]
+   },
+   {
+    "anchor": "ARXIV:2605.27717",
+    "n": 1,
+    "top": [
+     "Dissecting the StarLink: Characterizing Queuing and Flow Dynamics in the Starlink Network"
+    ]
+   },
+   {
+    "anchor": "DOI:10.1109/iwqos65803.2025.11143359",
+    "n": 3,
+    "top": [
+     "Inferring Starlink Latency Structure from Public RIPE Atlas Measurements",
+     "Characterizing the Configuration of Starlink Queuing",
+     "Edge-Side Fingerprints of Service Tiering and Quota Throttling in Starlink"
+    ]
+   },
+   {
+    "anchor": "ARXIV:2601.13662",
+    "n": 1,
+    "top": [
+     "Toward Scalable SDN for LEO Mega-Constellations: A Graph Learning Approach"
+    ]
+   },
+   {
+    "anchor": "ARXIV:2604.12382",
+    "n": 0,
+    "top": []
+   }
+  ]
+ }
+}
