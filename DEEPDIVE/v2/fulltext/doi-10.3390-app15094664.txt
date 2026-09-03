@@ -1,0 +1,1877 @@
+Article
+
+A Centralized–Distributed Joint Routing Algorithm for LEO
+Satellite Constellations Based on Multi-Agent
+Reinforcement Learning
+Licheng Xia 1,2 , Baojun Lin 2, *, Shuai Zhao 2 and Yanchun Zhao 2
+1
+
+2
+
+*
+
+School of Information Science and Technology, ShanghaiTech University, Shanghai 201210, China;
+xialch2022@shanghaitech.edu.cn
+Innovation Academy for Microsatellites of CAS, Shanghai 201304, China; zhaos@microsate.com (S.Z.);
+zhaoyanchun@microsate.com (Y.Z.)
+Correspondence: linbaojun@aoe.ac.cn
+
+Abstract: Designing routing algorithms for Low Earth Orbit (LEO) satellite networks poses
+a significant challenge due to their high dynamics, frequent link failures, and unevenly
+distributed traffic. Existing studies predominantly focus on shortest-path solutions, which
+compute minimum-delay paths using global topology information but often neglect the
+impact of traffic load on routing performance and struggle to adapt to rapid link-state
+variations. In this regard, we propose a Multi-Agent Reinforcement Learning-Based Joint
+Routing (MARL-JR) algorithm, which integrates centralized and distributed routing algorithms. MARL-JR combines the accuracy of centralized methods with the responsiveness
+of distributed approaches in handling dynamic disruptions. In MARL-JR, ground stations
+initialize Q-tables and upload them to satellites, reducing onboard computational overhead
+while enhancing routing performance. Compared to traditional centralized algorithms,
+MARL-JR achieves faster link-state awareness and adaptation; compared to distributed
+algorithms, it delivers superior initial performance due to optimized pre-training. Experimental results demonstrate that MARL-JR outperforms both Q-Routing (QR) and DR-BM
+algorithms in average delay, packet loss rate, and load-balancing efficiency.
+Academic Editor: Amalia Miliou
+
+Keywords: satellite network; low earth orbit; reinforcement learning; distributed routing
+
+Received: 19 March 2025
+Revised: 18 April 2025
+Accepted: 21 April 2025
+Published: 23 April 2025
+Citation: Xia, L.; Lin, B.; Zhao, S.;
+Zhao, Y. A Centralized–Distributed
+Joint Routing Algorithm for LEO
+Satellite Constellations Based on
+Multi-Agent Reinforcement Learning.
+Appl. Sci. 2025, 15, 4664.
+https://doi.org/10.3390/
+app15094664
+Copyright: © 2025 by the authors.
+Licensee MDPI, Basel, Switzerland.
+This article is an open access article
+distributed under the terms and
+conditions of the Creative Commons
+Attribution (CC BY) license
+(https://creativecommons.org/
+licenses/by/4.0/).
+
+Appl. Sci. 2025, 15, 4664
+
+1. Introduction
+In recent years, LEO satellite constellations such as Starlink (USA), Iridium (USA),
+OneWeb (UK), and Qianfan have experienced significant advancements. LEO satellites,
+being closer to the Earth, provide enhanced signal reliability and reduced latency [1].
+Satellite communication can address the communication demands of remote areas and
+maritime users, while also complementing terrestrial networks to enhance services for
+urban users.
+LEO satellites are typically deployed at orbital altitudes ranging from 500 to 2000 km.
+They are widely employed in communication, remote sensing, and navigation enhancement
+due to their extensive coverage, low propagation latency, high-resolution observational
+data, and short revisit cycles. MEO satellites primarily serve global navigation systems,
+such as the GPS, Galileo, and BeiDou. GEO satellites, synchronized with the Earth’s
+rotation, offer stable data transmission capabilities and are commonly used in television
+broadcasting, meteorological observation, and military applications. Satellites at different
+orbital altitudes exhibit distinct characteristics and ground-to-space transmission delays.
+
+https://doi.org/10.3390/app15094664
+
+Appl. Sci. 2025, 15, 4664
+
+2 of 17
+
+Table 1 summarizes the orbital types, advantages/disadvantages, and transmission delays
+of these three satellite categories.
+Table 1. Characteristics of satellites in different orbits (LEO, MEO, GEO).
+Categories
+
+LEO
+
+MEO
+
+GEO
+
+Advantage
+low launch costs, low
+communication latency, and
+high-resolution
+observation capabilities
+fixed propagation delay and
+wider coverage area compared
+to LEO
+high operational stability and
+extensive coverage capability
+
+Shortcoming
+
+Delay
+
+short coverage duration and
+large satellite constellation size
+
+10~100 ms
+
+antenna design complexities
+and high-latitude
+coverage limitations
+long transmission distances
+with significant latency,
+coupled with high launch costs
+
+50~150 ms
+
+250~500 ms
+
+Due to significant advantages, like less signal propagation delay, path loss, and costeffective deployment [2], LEO satellites can enable comprehensive global wireless communication. Therefore, LEO satellite communication has emerged as a critical area of focus in
+modern communication research. However, unlike terrestrial networks and Geostationary
+Earth Orbit (GEO) satellite networks, LEO satellite constellations face challenges such
+as dynamic network topologies because of rapid satellite movement [3], heterogeneous
+communication demands across diverse coverage regions, instability in inter-satellite links,
+and constrained onboard computational resources. Consequently, traditional ground-based
+routing algorithms are not directly applicable to LEO satellite networks. To address these
+challenges, novel routing algorithms must be developed to enhance network throughput,
+optimize load distribution, and ensure low-latency data delivery.
+Satellite routing algorithms, as a core and critical technology in satellite networks,
+have been extensively studied in the literature. However, addressing the challenge of
+rapidly time-varying satellite topology remains a primary issue that requires immediate
+resolution. To tackle this problem, researchers have proposed innovative approaches, such
+as virtual topology and virtual node strategy. Among these, Werner [4] introduced the
+Dynamic Virtual Topology Routing (DV-DVTR) algorithm. As illustrated in Figure 1, the
+virtual topology strategy method partitions the constellation’s operational timeline into
+fixed-duration epochs. Within each time slot, topological changes in the satellite network
+are masked, resulting in a fixed network topology throughout the slot duration. This
+enables topology-dependent routing computation that significantly reduces algorithmic
+complexity. In addition to time interval-based partitioning, the snapshot approach [5]
+is another representative virtual topology scheme. Whenever an inter-satellite link is
+Appl. Sci. 2025, 15, x FOR PEER REVIEW
+3 of is
+18
+temporarily disconnected or reconnected, a new snapshot distinct from the previous one
+generated, and the satellite topology within each snapshot remains unchanged.
+
+Figure
+Figure1.1. DV-DVTR
+DV-DVTRschematic
+schematicdiagram.
+diagram.
+
+The concept of virtual nodes was first proposed by Mauger and Rosenberg [6], as
+shown in Figure 2. This strategy uses the concept of the logical positions of satellites to
+form a globally covered network, where each logical node is associated with the closest
+satellite in terms of physical proximity. In recent research, Lu [7] proposed the Temporal
+
+Appl. Sci. 2025, 15, 4664
+
+3 of 17
+
+Figure 1. DV-DVTR schematic diagram.
+
+The
+The concept
+concept of
+of virtual
+virtual nodes
+nodes was
+was first
+first proposed
+proposed by
+by Mauger
+Mauger and
+and Rosenberg
+Rosenberg [6],
+[6], as
+as
+shown
+in
+Figure
+2.
+This
+strategy
+uses
+the
+concept
+of
+the
+logical
+positions
+of
+satellites
+to
+shown in Figure 2. This strategy uses the concept of the logical positions of satellites to
+form
+form aa globally
+globally covered
+covered network,
+network, where
+where each
+each logical
+logical node
+node isis associated
+associated with
+with the
+the closest
+closest
+satellite
+in
+terms
+of
+physical
+proximity.
+In
+recent
+research,
+Lu
+[7]
+proposed
+the
+Temporal
+satellite in terms of physical proximity. In recent research, Lu [7] proposed the Temporal
+Netgrid
+node
+strategy,
+replacing
+thethe
+concept
+of virtual
+NetgridModel
+Model(TNM)
+(TNM)totooptimize
+optimizethe
+thevirtual
+virtual
+node
+strategy,
+replacing
+concept
+of virnodes
+with
+virtual
+grids,
+where
+each
+grid
+is
+serviced
+by
+its
+corresponding
+satellite.
+Thus,
+tual nodes with virtual grids, where each grid is serviced by its corresponding satellite.
+satellite
+positions
+can be can
+represented
+by gridby
+coordinates.
+Thus, satellite
+positions
+be represented
+grid coordinates.
+
+Figure2.
+2. Virtual
+Virtualnode
+nodestrategy.
+strategy.
+Figure
+
+Some
+Some scholars
+scholars have
+have proposed
+proposed distributed
+distributed satellite routing algorithms based on reinforcement
+forcement learning,
+learning, which
+which hold
+hold significant
+significant value.
+value. Wang
+Wang [8]
+[8] used
+used Q-routing
+Q-routing to
+to determine
+determine
+data
+data packet
+packet forwarding
+forwarding routes
+routes in
+in LEO
+LEO satellite
+satellite networks.
+networks. Xu [9] employed deep reinforcement
+ment learning,
+learning, replacing
+replacingQ-tables
+Q-tableswith
+withneural
+neuralnetworks
+networksto
+tostore
+storeQ-values.
+Q-values. These
+These methods
+methods
+require
+for training,
+training,leading
+leadingtotohigh
+highloads.
+loads.Huang
+Huang
+[10]
+proposed
+a
+require global
+global information for
+[10]
+proposed
+a rereinforcement
+learning-baseddynamic
+dynamicdistributed
+distributedrouting
+routing scheme,
+scheme, treating each
+inforcement learning-based
+each satellite
+satellite
+node
+agentfor
+fortraining
+trainingand
+androuting.
+routing.
+However,
+method
+relatively
+node as an agent
+However,
+thisthis
+method
+hadhad
+relatively
+slowslow
+conconvergence.
+Wang
+[11] proposed
+a routing
+strategy
+forsatellite
+LEO satellite
+networks
+based
+vergence. Wang
+[11] proposed
+a routing
+strategy
+for LEO
+networks
+based on
+state
+on
+state information
+load conditions
+within
+hops
+of the Zuo
+satellite.
+Zuoproposed
+[12] also
+information
+and loadand
+conditions
+within two
+hopstwo
+of the
+satellite.
+[12] also
+proposed
+a reinforcement
+learning considering
+method, considering
+factors
+such as signal-to-noise
+satellite signal-toa reinforcement
+learning method,
+factors such
+as satellite
+ranoise
+ratio, transmission
+andtodelay,
+to adesign
+a reward
+foroptimal
+global optimal
+tio, transmission
+rate, andrate,
+delay,
+design
+reward
+functionfunction
+for global
+routing.
+routing.
+Shi [13] proposed
+an adaptive
+algorithm
+based
+on multipath
+transmission
+Shi [13] proposed
+an adaptive
+routing routing
+algorithm
+based on
+multipath
+transmission
+and Qand
+Q-Learning.
+This algorithm
+an improved
+breadth-first
+algorithm
+to
+Learning.
+This algorithm
+utilizedutilized
+an improved
+breadth-first
+search search
+algorithm
+to obtain
+obtain
+multiple
+shortest
+and incorporated
+Q-Learning
+to optimize
+selection
+in
+multiple
+shortest
+paths paths
+and incorporated
+Q-Learning
+to optimize
+pathpath
+selection
+in dydynamic
+network
+environments.
+Simulation
+experiments
+demonstrated
+that
+the
+proposed
+namic network environments. Simulation experiments demonstrated
+proposed
+algorithm
+algorithm effectively
+eﬀectively enhanced
+enhanced the
+the throughput
+throughput of
+of inter-satellite
+inter-satellite networks, reduced transmission
+mission latency
+latency and
+and packet
+packet loss
+loss rate,
+rate, and
+and adaptively
+adaptively selected
+selected optimal
+optimal paths
+paths even
+even in
+in the
+the
+absence
+absence of
+of global
+global topology
+topology information.
+information. Although
+Although significant
+significant progress
+progress has
+has been
+been made
+made in
+in
+the
+research
+on
+routing
+algorithms
+for
+inter-satellite
+networks,
+several
+challenges
+remain
+in
+the research on routing algorithms for inter-satellite networks, several challenges remain
+practical applications. For instance, as the number of satellites increases and the network
+scale expands, further optimization of routing decisions in highly dynamic environments,
+reduction in computational complexity, and effective handling of bursty traffic and link
+failures are still critical issues that require in-depth investigation.
+In this paper, we propose the Multi-Agent Reinforcement Learning-Based Joint Routing (MARL-JR) algorithm, which integrates centralized ground-station training to optimize
+initial routing performance for satellite networks with distributed in-orbit training to enable
+real-time link-state awareness and rapid routing decisions. The main contributions of this
+study are summarized as follows:
+
+Appl. Sci. 2025, 15, 4664
+
+4 of 17
+
+•
+•
+•
+
+We propose a joint reinforcement learning method named MARL-JR; it has lower
+end-to-end latency and more balanced network load.
+We propose Q-table Initialization, which allows the routing algorithm to have a better
+performance during the initial deployment phase of the satellite network.
+We conducted comparative analyses of various algorithms under different link failure
+rates. Experimental results demonstrate the superior robustness of the MARL-JR
+algorithm when handling emergent network conditions.
+
+The remainder of this paper is organized as follows: In Section 2, we describe the
+system model and Multi-Agent Reinforcement Learning algorithm. In Section 3, we provide
+details on our MARL-JR method. We discuss the experimental results in Section 4. Finally,
+Section 5 concludes our work.
+
+2. System Model
+2.1. LEO Satellite Networks
+Currently, most LEO satellites adopt the Walker constellation configuration [14], which
+is primarily categorized into inclined-orbit constellations (Walker-Delta) and polar-orbit
+constellations (Walker-Star) [15].
+(1)
+
+Inclined-orbit constellations
+
+Inclined-orbit constellations feature orbital inclinations ranging from 0◦ to 90◦ , providing uniform satellite coverage with an equal number of satellites in each orbital plane
+and identical orbital periods for all satellites. The main advantage of inclined-orbit constellations lies in their relatively small satellite population, resulting in lower deployment
+costs. However, the dynamic nature of inclined-orbit satellites makes inter-satellite link
+(ISL) connections difficult to predict, posing significant challenges in establishing and
+maintaining reliable ISLs.
+Appl. Sci. 2025, 15, x FOR PEER REVIEW
+
+(2)
+
+Polar-orbit constellations
+
+5 of 18
+
+Polar-orbit constellations, with inclinations approaching 90◦ , can cover both the Arctic
+and
+Antarctic
+regions, represents
+enabling global
+communication
+coverage
+Iridium
+constellation
+a global
+satellite network
+that including
+integrates high-latitude
+both inclined
+areas.
+These
+constellations
+offer
+advantages
+such
+as
+lower
+signal
+transmission
+latency
+and polar orbits [20]. As a result, commercial LEO satellite constellations commonly
+emand
+data
+transfer rates.
+As illustrated
+in Figure
+in a polar
+polar-orbit
+ployhigher
+a hybrid
+configuration
+of inclined
+and polar
+orbits,3,with
+orbitsconfiguration,
+being the preeach
+satellite
+can establish
+ISLsextensive
+with fourcoverage
+neighboring
+satellitesThis
+(twostudy
+in theadopts
+same orbital
+dominant
+choice
+due to their
+capabilities.
+a polar
+plane
+and
+two
+in
+adjacent
+planes)
+[16],
+except
+for
+satellites
+in
+the
+first
+and
+last orbital
+orbit model as the basis for routing algorithm research, providing a representative
+frameplanes,
+which
+can
+only
+connect
+with
+three
+neighbors
+due
+to
+the
+orbital
+seam
+[17].
+Satellites
+work for analyzing and optimizing satellite network performance.
+maintain
+cross-plane
+ISLs by precisely
+adjusting
+position and
+orientation
+of their
+Thestable
+polar-orbit
+constellation
+consists of
+multiplethe
+uniformly
+distributed
+satellite
+orinter-plane
+laser
+terminals
+[2].
+bits with an inclination angle close to 90°, as illustrated in Figure 3.
+
+Figure
+Figure3.3.Polar-orbit
+Polar-orbitconstellation
+constellationconfiguration.
+configuration.
+
+Owing to the continuous variation in satellite positions, the connectivity among satellites is highly dynamic. Links connecting adjacent satellites within the same orbital plane
+are referred to as intra-orbit links, whereas links between the adjacent satellites in the ad-
+
+Appl. Sci. 2025, 15, 4664
+
+5 of 17
+
+The development of satellite networks has drawn increasing attention in recent years.
+SpaceX is currently deploying a large-scale constellation comprising thousands of LEO satellites, which includes both inclined- and polar-orbit satellites [18]. Similarly, OneWeb [19]
+aims to construct a constellation predominantly composed of inclined- and polar-orbit
+satellites, operating at an altitude of 1200 km. Furthermore, the next-generation Iridium
+constellation represents a global satellite network that integrates both inclined and polar
+orbits [20]. As a result, commercial LEO satellite constellations commonly employ a hybrid
+configuration of inclined and polar orbits, with polar orbits being the predominant choice
+due to their extensive coverage capabilities. This study adopts a polar orbit model as the
+basis for routing algorithm research, providing a representative framework for analyzing
+and optimizing satellite network performance.
+The polar-orbit constellation consists of multiple uniformly distributed satellite orbits
+with an inclination angle close to 90◦ , as illustrated in Figure 3.
+Owing to the continuous variation in satellite positions, the connectivity among
+satellites is highly dynamic. Links connecting adjacent satellites within the same orbital
+plane are referred to as intra-orbit links, whereas links between the adjacent satellites in
+the adjacent orbital planes are termed inter-orbit links [21]. In the Iridium system, each
+satellite is capable of establishing the following four connections: two intra-orbit links
+(forward and backward) within the same orbital plane and two inter-orbit links (left and
+right) with satellites in the adjacent orbital planes. This configuration ensures robust
+and flexible communication within the constellation, enabling efficient data routing and
+network resilience.
+2.2. Multi-Agent Reinforcement Learning Algorithm
+Multi-Agent Reinforcement Learning (MARL) represents a significant subfield of reinforcement learning, characterized by the involvement of multiple agents that interact with a
+shared environment. These agents may exhibit either cooperative or competitive behaviors,
+implying that the reward obtained by each agent is influenced not only by its individual
+actions but also by the actions of other agents in the system. This interdependence among
+agents introduces additional complexity to the learning process, as agents must adapt their
+strategies based on the dynamic behaviors of their counterparts. Consequently, MARL is
+widely applied in scenarios requiring distributed decision-making, such as autonomous
+systems, multi-robot coordination, and complex network optimization.
+In LEO satellite networks, each satellite acts as an agent, capable of independent
+learning and forwarding state information. Each agent maintains a Q-table, which records
+the Q-values for forwarding data packets to neighboring nodes. Table 2 shows the Q-table
+for node i, where i represents the node number, Desi represents the target node of the data
+packet, and Qi ((i, Des1 ), N1 ) represents the Q-value for forwarding to neighbor node N1 .
+The agent looks up the Q-table based on the destination node of the data packet, selects
+the node with the highest Q-value, and forwards the packet. Therefore, the update of the
+Q-value should be influenced by the current Q-value, the Q-value after forwarding, and
+the reward for the forwarding action. The Q-table update is shown in Equation (1).
+
+
+′
+
+Qi (s, a) = (1 − α) Qi (s, a) + α r + γ max Q j s , a
+a ′ ∈ Ac
+
+′
+
+
+
+
+(1)
+
+where s represents the packet current state, s′ represents the packet state after forwarding,
+a is the action to be executed, α is the learning rate determining the degree of impact of
+action a, r is the reward for executing action a in state s, γ is the discount factor, i represent
+current node index, j represent the index of node which node i forwards packet to, Ac is
+
+Appl. Sci. 2025, 15, 4664
+
+6 of 17
+
+the action space in state s′ , and γ max Q j (s′ , a′ ) predicts the maximum cumulative future
+a′ ∈ Ac
+
+rewards from the next state.
+Table 2. The Q table of node i.
+
+Neighbor
+
+Node i State
+
+N1
+
+N2
+
+N3
+
+...
+
+(i, Des1 )
+
+Qi ((i, Des1 ), N1 ) Qi ((i, Des1 ), N2 ) Qi ((i, Des1 ), N3 )
+
+...
+
+(i, Des2 )
+
+Qi ((i, Des2 ), N1 ) Qi ((i, Des2 ), N2 ) Qi ((i, Des2 ), N3 )
+
+...
+
+(i, Des3 )
+
+Qi ((i, Des3 ), N1 ) Qi ((i, Des3 ), N2 ) Qi ((i, Des3 ), N3 )
+
+...
+
+...
+
+...
+
+...
+
+...
+
+...
+
+3. Algorithm Description
+This section elaborates on the design of the multi-agent reinforcement learning (MARL)
+framework, including the formulation of the state space, reward function, and action space
+within the reinforcement learning paradigm. Subsequently, it introduces the neighborhood
+discovery mechanism, a critical component of the reinforcement learning process that
+enables agents to dynamically adapt to their local environments.
+3.1. Model Setup
+This paper adopts an Iridium-like LEO satellite network model, with graphical
+G = (V, E) representation methodologies. In a graph, V is the set of satellite nodes and E
+
+is the set of ISL. The number of nodes in graph G is denoted as Numv = Num x , Numy ,
+where Num x represents the number of orbital planes and Numy represents the number of
+satellites deployed in each orbital plane. The index i of satellite node Ni can be calculated
+according to Equation (2).
+i = Numy Xi + Yi
+(2)
+where Xi ∈ {0, . . . , Num x − 1} denotes the orbital index of the satellite node Ni , and
+
+Yi ∈ 0, . . . , Numy − 1 represents the sequence number of the satellite node Ni within its
+orbit plane. The relevant parameters are defined in Table 3.
+Table 3. Parameters and their definitions.
+
+Parameters
+
+Definition
+
+G
+V
+E
+Numv
+Ni
+Dij
+S
+Ac
+Q
+qmax
+gj
+Nbi
+
+Satellite network graph
+Set of satellite nodes
+Set of inter-satellite links
+Number of satellites
+Individual satellite nodes
+Delay between nodes Ni and Nj
+Set of satellite states
+Set of forwarding actions
+Q-value
+Maximum satellite load
+Load condition of node j
+Set of neighbor nodes for Ni
+
+When a data packet arrives at satellite node Ni , the node Ni will select the most
+appropriate action at from the action set Ac to forward the packet to node Nj on the basis
+of the current environment state set .
+
+Appl. Sci. 2025, 15, 4664
+
+7 of 17
+
+The data forwarding process between satellites can be modeled as a finite-state Markov
+chain, where the terminal state corresponds to the successful delivery of the data packet to
+the destination node. The Markov decision process (MDP) can be defined by (S, A, P, R).
+In the context of satellite network routing, S, A, and R can be defined as follows:
+
+•
+
+•
+
+•
+
+State: The global environmental state of the satellite network at time t, denoted as
+n
+o
+set ∈ S, is defined as set = Nc , Na , q1t , q2t , . . . , qtNumv , where Nc and Na represent the
+current and destination nodes of the data packet, and qit (1 ≤ i ≤ Numv ) indicates the
+queue length of i node at time t.
+
+Action: The action at ∈ Act = Q1 , Q2 , . . . , Q p corresponds to the forwarding
+decision for the data packet, where Qi denotes the Q-value associated with forwarding
+to the i node. In LEO satellite networks, each satellite can establish connections with a
+maximum of four neighboring satellites [22], thus max( p) = 4.
+Reward: The reward function is influenced by two key factors—propagation delay Dij
+and the load condition g j . A maximum load threshold qmax is defined and, according
+to Equation (4), g j is related to the number of received packets qreceive , sent packets
+qsend , and occupied space qoccupied , which represents the number of packets that the
+node has stored.
+
+The reward function is formulated in Equation (3), where w1 , w2 are the weighting
+coefficients that balance the objectives of load balancing and delay minimization. If the
+neighboring node is the destination node, the reward is set to qmax to prioritize rapid data
+delivery to the destination.
+(
+reward j =
+
+qmax
+qmax − w1 ∗ g j − w2 ∗ Dij
+
+Nj is the destination
+otherwise
+
+g j = qreceive + qsend + qoccupied
+
+(3)
+(4)
+
+3.2. Information Exchange
+The topology of the satellite network exhibits time-varying characteristics, as the
+connectivity between the satellites dynamically changes over time. Consequently, agents
+must periodically update their neighbor’s information to optimize the forwarding strategy
+upon the arrival of data packets. In practice, satellites employ “hello” packets to acquire
+and maintain neighbor information [23]. To enhance the efficiency of data exchange for
+reinforcement learning and optimize the formulation of forwarding strategies, we adopt a
+periodic broadcasting mechanism for link-state information. At regular time intervals T,
+the link-state information within the network is updated, and the agents correspondingly
+update their Q-tables based on the received information. Furthermore, if a satellite fails to
+receive the ISL state information within a predefined time interval, it is flagged as faulty,
+and all associated links are deactivated. In contrast to Q-routing algorithms that propagate
+“hello” packets solely through data packet forwarding, we employ periodic broadcasting
+to accelerate link-state awareness and neighbor discovery. Furthermore, differing from
+ground-station-based approaches that disseminate global link information to all nodes,
+“hello” packets only transmit local neighbor and link-state information from the originating
+node. It significantly reduces network overhead and decreases nodal computational loads.
+3.3. Q-Table Initialization
+Due to the constrained computational resources and energy availability on satellites,
+as well as the potential for packet loss, network congestion, and significant propagation
+delays during the initial training phase, we employ ground-based pre-training to initialize
+the Q-table. This approach reduces the computational burden of updating the Q-table
+
+Appl. Sci. 2025, 15, 4664
+
+nections with its four nearest neighbors according to the real-time orbital data. The Qtable Initialization process is conducted based on the initial topology of the satellite network, denoted as 𝐺 , and the output consists of the Q-tables distributed to each satellite
+8 of 17
+node. To mitigate the eﬀects of randomness and ensure the generalizability of the training
+outcomes, we will randomly generate the source and destination nodes of the data packets.
+In order
+to meetoperational
+the actual phase
+satellite
+scenario,
+packets
+will be genduring
+the satellite’s
+andcommunication
+ensures the reliability
+of thedata
+routing
+algorithm
+in
+the
+initial
+phase
+of
+satellite
+operation.
+The
+Q-table
+Initialization
+process
+is
+illustrated
+erated upon the arrival of the previous packet, with randomly assigned source and destiin Figure
+4.
+nation
+nodes.
+
+Figure 4.
+4. Q-table
+Q-table Initialization
+flow
+chart.
+Figure
+Initialization
+flow
+chart.
+
+Owing to the predictable orbital dynamics of satellites during the deployment phase,
+and as established in Section 2.1, each satellite node can establish connections with both
+inter-orbit neighbors (adjacent orbital planes) and intra-orbit neighbors (same orbital plane).
+For polar-orbit constellations such as Iridium, the system continuously maintains and updates visible satellite Ephemeris Data, enabling each node to form Ka-band connections
+with its four nearest neighbors according to the real-time orbital data. The Q-table Initialization process is conducted based on the initial topology of the satellite network, denoted
+as Gt0 , and the output consists of the Q-tables distributed to each satellite node. To mitigate
+the effects of randomness and ensure the generalizability of the training outcomes, we will
+randomly generate the source and destination nodes of the data packets. In order to meet
+the actual satellite communication scenario, data packets will be generated upon the arrival
+of the previous packet, with randomly assigned source and destination nodes.
+Figure 4 illustrates the Q-table Initialization process. First, input the initialization of
+network environment and algorithm parameters. Second, each satellite node monitors its
+transmission queue qsend . The queue determines the packet forwarding priority when it is
+not empty, while the node prioritizes transmitting the highest-priority packet first, thereby
+satisfying differentiated forwarding requirements for data of varying levels of importance.
+Third, the next-hop node m is selected according to the ε − greedy strategy. If the receiving
+queue qreceive of node m is not full, the packet is forwarded to m, and the current node
+receives both the Q-table and reward value from node m and update state and Q-table
+
+Appl. Sci. 2025, 15, 4664
+
+9 of 17
+
+according to Equation (1). However, if the receiving queue is full or if node/link failure
+occurs (resulting in network congestion), the packet enters a waiting state until the next
+transmission opportunity. Finally, iterate through the above steps.
+To prevent convergence to local optima and enhance routing precision, we employ the
+ε − greedy strategy. To enhance the convergence speed of the algorithm, a ε decay factor µ
+is introduced. As the iterations progress, the probability of randomly selecting the next hop
+is reduced. As shown in Equation (5), the selection of the next hop will be impacted by µt ε.
+With probability µt ε, the next hop will not be an optimal selection. To expedite convergence,
+a decay factor µ, which progressively decreases ε over time, thereby significantly enhances
+the convergence rate. This adaptive approach ensures a balance between exploration and
+exploitation, ultimately improving the efficiency of the routing algorithm.
+(
+at =
+
+probability : µt ε
+probability : 1 − µt ε
+
+random action
+max( Qt+1 )
+
+(5)
+
+Furthermore, owing to the predictable nature of satellite networks, the Q-table Initialization scheme conducted via ground stations can be periodically reapplied. This approach
+mitigates potential inaccuracies in the online-trained Q-table that are caused by significant
+changes in the satellite network topology, thereby enhancing routing performance.
+The centralized approach of periodically acquiring global satellite network information
+and reinitializing the Q-tables can effectively reduce the computational burden of online
+training on satellite nodes, while simultaneously improving routing accuracy.
+3.4. Operational Phase
+Due to the dynamic nature of satellites, the topology and connectivity of the satellite
+network undergo continuous changes. To effectively address the dynamic characteristics of
+satellite links, a temporal network model is adopted during the operational phase of the
+satellites. This approach effectively handles the dynamic nature of the satellite network
+while reducing the computational burden on the satellites, enabling efficient data routing.
+The operational phase strategy is formulated as a problem of maximizing the Qvalue. The reinforcement learning Q-value expression is Equation (6), which represents a
+simplified formulation of the final Q-value and combines the immediate reward with the
+cumulative rewards of all the subsequent actions following action a. Here, Ri+1 denotes
+the reward for the next action, while Rn indicates the terminal reward value upon reaching
+the destination node. Consequently, Q(s, a) is determined by the reward conditions of
+traversed nodes rather than all nodes in the network, where n specifies the index of the
+final destination node, γ is the discount factor, and α is the learning rate. A higher Q-value
+indicates a more optimal forwarding path selection, and a higher total Q-value corresponds
+to the globally optimal path. Therefore, during the actual operation of the satellite network,
+it is necessary to select the action with the highest Q-value at each forwarding step. As
+shown in Equation (7), Qsum represents the total Q-value, which serves as a critical metric
+for evaluating path optimality, ∑in represents the sum of Q, through which the packet is
+forwarded; and Qi (si , ai ) represents the Q-value of state si and action ai .
+Qi (s, a) = (1 − α) Ri + αγ( Ri+1 + Ri+2 + · · · + Rn )
+
+(6)
+
+n
+
+Qsum = ∑ Qi (si , ai )
+
+(7)
+
+i
+
+In traditional Q-routing algorithms, agents can only obtain the Q-tables and link-state
+information of neighboring nodes when forwarding data packets to them, subsequently updating their own Q-tables. This approach is passive and limited, leading to the incomplete
+
+Appl. Sci. 2025, 15, 4664
+
+10 of 17
+
+acquisition of network state information. When no data packets are forwarded between
+nodes, the timely detection of link-state changes becomes impossible. Additionally, this
+method suffers from low learning efficiency, as only a single entry in the Q-table can be
+updated at a time. To address these issues, this study proposes a periodic broadcasting
+mechanism. Upon receiving a data packet, a node actively broadcasts its Q-table and
+link-state information, enabling receiving nodes to promptly update their own Q-tables
+and improving learning efficiency. When a satellite’s neighbor nodes change, the affected
+node updates both its Q-table and link-state information, subsequently propagating these
+updates to new neighbors to maintain network-wide information consistency. The smaller
+the broadcasting period T, the more frequently agents can perceive network state changes.
+This improved mechanism ensures the rapid perception of network states while effectively
+controlling communication overhead through period adjustment, thereby enhancing the
+reliability of routing optimization in LEO satellite networks. The operational phase process
+is illustrated in Figure 5. A shorter broadcast interval enhances the agent’s ability to detect
+Appl. Sci. 2025, 15, x FOR PEER REVIEW
+network state changes more rapidly, thereby facilitating the implementation of globally11 of 18
+optimal routing strategies.
+
+Figure5.5.Operational
+Operational phase
+Figure
+phaseflow
+flowchart.
+chart.
+
+In online training, the routing process initiates by loading the ground-pre-trained
+
+4.routing
+Simulation
+Analysis
+policy model and ingesting user-specified data packets. At periodic intervals t,
+4.1.
+Setup both the satellite link states and Q-tables. When packet forwarding is
+theScenario
+system updates
+required,
+following
+(1) The next-hop
+is selected based
+on Q-table
+values.
+This the
+paper
+adoptswill
+anoccur:
+Iridium-like
+satellitenode
+constellation
+[24] with
+an orbital
+altitude
+(2) The receiving queue qreceive status of the target node is verified if available, the packet is
+of 780 km, an inclination of 86.4°, and seven orbits with seven satellites each. The constelforwarded with subsequent Q-table updates using reward feedback; if congested, the packet
+lation parameters are shown in Table 4.
+enters a buffered waiting state. Online training will be continuously implementated, which
+enables rapid link-state awareness and consequent Q-table updates, thereby enhancing the
+Table 4. Constellation scene parameter setting.
+routing algorithm’s robustness against topological dynamics.
+
+Parameters
+Total satellites
+Number of orbits
+Number of satellites per orbital plane
+Orbital altitude
+
+Value
+49
+7
+7
+780 km
+
+Appl. Sci. 2025, 15, 4664
+
+11 of 17
+
+4. Simulation Analysis
+4.1. Scenario Setup
+This paper adopts an Iridium-like satellite constellation [24] with an orbital altitude of
+780 km, an inclination of 86.4◦ , and seven orbits with seven satellites each. The constellation
+parameters are shown in Table 4.
+Table 4. Constellation scene parameter setting.
+
+Parameters
+
+Value
+
+Total satellites
+Number of orbits
+Number of satellites per orbital plane
+Orbital altitude
+Orbital inclination
+
+49
+7
+7
+780 km
+86.4◦
+
+4.2. Parameter Settings
+For the reward function, the load weight is set to five, and the delay weight is set to
+one to effectively reduce satellite congestion. To avoid local optima, the ε − greedy strategy
+is used during pre-training with an initial ε of 0.8. To accelerate convergence, a decay
+factor of 0.998 is introduced, reducing ε after each iteration. To ensure network stability,
+the learning rate is set to 0.7 during Q-table Initialization and 0.3 during operational phase.
+The specific parameters are shown in Table 5.
+Table 5. Simulation parameter setting.
+
+Parameters
+
+Value
+
+Maximum queue length qmax
+Load weight ω1
+Delay weight ω2
+Discount factor γ
+Greedy factor ε
+ε decay factor µ
+Number of episodes
+Number of steps peer episode
+Learning rate for Q-table Initialization
+Learning rate for operational phase
+
+200
+5
+1
+0.9
+0.8
+0.998
+40
+300
+0.7
+0.3
+
+4.3. Resource Utilization
+To manage large-scale data communication under the constraints of limited satellite
+resources, the time complexity, space complexity, and network overhead of the algorithm
+are critical factors. Regarding time complexity, the proposed algorithm employs a Qtable to determine optimal forwarding strategies. The Q-table is updated based on the
+node’s local link information and the link states of neighboring nodes, which are used
+to compute rewards and refine the Q-table. In contrast, centralized routing algorithms
+necessitate global link-state information and employ double-loop traversal to identify the
+
+shortest path, leading to a time complexity of O N 2 . This highlights the efficiency of
+the proposed approach in reducing computational overhead while maintaining robust
+routing performance.
+In terms of space complexity, the centralized routing algorithm needs to store node
+and edge information in the network graph, with O( NE + N ) space complexity. NE is the
+number of edges and N is the number of nodes. In the proposed algorithm, each satellite
+needs to store its local link information. Consequently, the proposed algorithm exhibits
+
+Appl. Sci. 2025, 15, 4664
+
+12 of 17
+
+superior performance in terms of both time and space complexity when compared to centralized routing algorithms. MARL-JR significantly reduces the computational and storage
+overhead, making it more suitable for large-scale satellite networks with limited resources.
+In centralized routing approaches, each satellite node is required to acquire global
+network state information, which is propagated to all nodes concurrently with data packet
+transmission. This process results in significant network overhead and increased computational load on satellites. In contrast, this study employs the periodic broadcasting of
+link-state information, where each satellite disseminates only its local state information to
+neighboring nodes and updates its Q-table utilizing the state information received from
+neighbors. This decentralized strategy significantly reduces the computational load on
+satellites and enhances the scalability and efficiency of the satellite network.
+4.4. Simulation Results Analysis
+4.4.1. Comparison Algorithms
+This study conducts a comparative analysis of the proposed algorithm against the
+Data Rate Benchmark (DR-BM) algorithm [25,26] and the Q-routing algorithm [27]. The
+DR-BM algorithm, a conventional routing approach widely applied in diverse network
+scenarios, serves as a representative benchmark for performance evaluation. The DR-BM
+algorithm prioritizes data rate in routing decisions, making it highly relevant to satellite
+network routing challenges. Utilizing DR-BM as a benchmark enables a comprehensive
+evaluation of the proposed algorithm’s performance in leveraging link data rates, thereby
+demonstrating the efficacy and robustness of the proposed algorithm.
+The Q-routing algorithm represents a seminal application of reinforcement learning
+in satellite routing. As one of the pioneering algorithms that introduced reinforcement
+learning to routing problems, Q-routing has established a substantial research foundation
+and exerted significant influence in both the academic and industrial domains. Therefore,
+a comparison with Q-routing enables a comprehensive evaluation of the proposed algorithm’s performance in addressing LEO satellite routing challenges, while also providing
+valuable insights for future research directions. This comparative analysis highlights the
+advancements and innovations of the proposed algorithm over traditional reinforcement
+learning-based routing approaches.
+4.4.2. Comparison Results Analysis
+This paper employs an Iridium-like satellite constellation architecture for comparative
+simulation experiments. Leveraging the relatively stable inter-satellite link configuration
+characteristic of Iridium systems, we primarily simulate link failures and node malfunctions through stochastic edge deletion and restoration in the graph representation. The
+simulation constrains the maximum number of simultaneous link failures during any single
+routing process to five, enabling a systematic analysis of routing algorithm performance
+under inter-satellite link disruption scenarios.
+Figure 6 illustrates the average delay performance of the MARL-JR, DR-BM, and
+Q-routing algorithms under varying traffic load conditions. The total latency is defined as
+the cumulative time required for all data packets to traverse from the source node to the
+destination node. By dividing the total latency by the number of transmitted data packets,
+the average latency can be obtained. As shown by the curves in the figure, under low traffic
+loads, DR-BM can rapidly acquire global information and select paths with shorter delays
+due to the small number of data packets. However, as the load of the network increases, the
+instability of both DR-BM and Q-routing becomes evident. The DR-BM algorithm, which
+relies on obtaining global information, suffers from inefficient packet forwarding decisions
+and increased queuing delays, leading to a rise in the overall average delay. Similarly, the
+
+Appl. Sci. 2025, 15, 4664
+
+delays due to the small number of data packets. However, as the load of the network
+increases, the instability of both DR-BM and Q-routing becomes evident. The DR-BM algorithm, which relies on obtaining global information, suﬀers from ineﬃcient packet for13 of 17
+warding decisions and increased queuing delays, leading to a rise in the overall average
+delay. Similarly, the Q-routing algorithm demonstrates limitations in handling highly dyQ-routing
+algorithm
+demonstrates
+in handlingsuboptimal
+highly dynamic
+networks under
+namic
+networks
+under
+high traﬃclimitations
+loads, resulting
+performance.
+high traffic loads, resulting in suboptimal performance.
+
+Figure 6. Comparison of the average delay time.
+Figure
+6. Comparison of the average delay time.
+
+Figure 7 illustrates the packet loss rates under varying traffic load conditions. In the
+Figure
+illustrates
+the packet
+under
+traﬃc
+loaddelays
+conditions.
+case
+of the 7DR-BM
+algorithm,
+underloss
+highrates
+traffic
+loads,varying
+increased
+queuing
+during In the
+case
+of the
+DR-BMcan
+algorithm,
+under high
+loads,link
+increased
+queuing
+delays
+packet
+forwarding
+lead to situations
+wheretraﬃc
+the intended
+is no longer
+available
+at theduring
+packet
+forwarding
+lead toinsituations
+the intended
+link is
+no longer
+available
+at
+time of
+forwarding,can
+resulting
+packet loss.where
+In contrast,
+the MARL-JR
+algorithm
+adopts
+a
+Appl. Sci. 2025, 15, x FOR PEER REVIEW
+14 of 18
+thedistributed
+time of approach,
+forwarding,
+resulting
+in
+packet
+loss.
+In
+contrast,
+the
+MARL-JR
+algorithm
+leveraging information from neighboring nodes to make forwarding
+decisions
+more efficiently.
+This enables
+MARL-JR
+to maintain
+a significantly
+lower
+packet
+adopts
+a distributed
+approach,
+leveraging
+information
+from
+neighboring
+nodes
+to make
+loss rate, demonstrating
+superior
+robustness
+compared
+to the Q-routing
+algorithm.
+forwarding
+decisions more
+eﬃciently.
+Thisasenables
+MARL-JR
+to maintain
+a significantly
+
+lower packet loss rate, demonstrating superior robustness as compared to the Q-routing
+algorithm.
+
+Figure7.7.Comparison
+Comparison of
+Figure
+ofloss
+lossrate.
+rate.
+
+Figure 8 demonstrates the load balancing performance of different algorithms under
+Figure 8 demonstrates the load balancing performance of diﬀerent algorithms under
+a traffic load of 3000 packets in the network. In this study, the load balancing condition
+a is
+traﬃc
+load ofby
+3000
+In this
+study,
+thewhere
+load balancing
+condition is
+represented
+the packets
+variancein
+of the
+the network.
+packet counts
+across
+nodes,
+a lower variance
+represented
+by the
+variance
+of the
+packet
+across
+nodes,
+where
+a lower variance
+indicates a more
+balanced
+network
+load,
+whilecounts
+a higher
+variance
+suggests
+an imbalanced
+
+indicates a more balanced network load, while a higher variance suggests an imbalanced
+load, potentially leading to congestion. As illustrated in Figure 8, when the network contains 3000 data packets, MARL-JR achieves a more balanced load distribution across satellite nodes, thereby reducing the likelihood of congestion.
+
+Appl. Sci. 2025, 15, 4664
+
+Figure 8 demonstrates the load balancing performance of diﬀerent algorithms under
+a traﬃc load of 3000 packets in the network. In this study, the load balancing condition is
+represented by the variance of the packet counts across nodes, where a lower variance
+14 of 17
+indicates a more balanced network load, while a higher variance suggests an imbalanced
+load, potentially leading to congestion. As illustrated in Figure 8, when the network conload,
+potentially
+leading
+to congestion.
+illustrated
+Figure
+8, when across
+the network
+tains
+3000
+data packets,
+MARL-JR
+achieves aAs
+more
+balancedinload
+distribution
+satcontains
+3000
+data
+packets,
+MARL-JR
+achieves
+a
+more
+balanced
+load
+distribution
+across
+ellite nodes, thereby reducing the likelihood of congestion.
+satellite nodes, thereby reducing the likelihood of congestion.
+
+Figure
+8. Load
+comparison
+diagram.
+Figure
+8. Load
+comparison
+diagram.
+
+Figure
+9 presents
+a comparison
+of the
+packet
+delivery
+rates
+between
+MARL-JR
+Figure
+9 presents
+a comparison
+of the
+packet
+delivery
+rates
+between
+MARL-JR
+andand
+distributed
+Q-routing
+algorithm
+under
+condition
+of 3000
+packets
+circulating
+in the
+thethe
+distributed
+Q-routing
+algorithm
+under
+thethe
+condition
+of 3000
+packets
+circulating
+in the
+network.
+The
+initial
+phase
+corresponds
+to
+the
+commencement
+of
+online
+training.
+DR-BM
+network. The initial phase corresponds to the commencement of online training. DR-BM
+utilizes
+a centralized
+routing
+approach
+where
+complete
+routing
+tables
+computed
+utilizes
+a centralized
+routing
+approach
+where
+complete
+routing
+tables
+areare
+computed
+at at
+ground
+stations
+and
+uploaded
+to
+satellites,
+which
+allows
+satellite
+nodes
+to
+execute
+forAppl. Sci. 2025, 15, x FOR PEER REVIEW
+15
+of
+ground stations and uploaded to satellites, which allows satellite nodes to execute for-18
+warding
+strategies
+without
+undergoingtraining-based
+training-basedconvergence.
+convergence.Therefore,
+Therefore,the
+theroutrouting
+warding
+strategies
+without
+undergoing
+performance
+of
+DR-BM
+during
+the
+initial
+satellite
+deployment
+phase
+need
+not
+be
+considing performance of DR-BM during the initial satellite deployment phase need not be conered. By
+leveraging
+pre-training,
+the from
+MARL-JR
+algorithm
+equipsequips
+satellites
+satellites
+with
+eﬀectiveground-based
+packet
+forwarding
+strategies
+the initial
+deployment
+phase,
+sidered.
+By
+leveraging
+ground-based
+pre-training,
+the MARL-JR
+algorithm
+with
+effective
+packet
+forwarding
+strategies
+from
+the
+initial
+deployment
+phase,
+enabling
+enabling the rapid convergence of the routing algorithm. In contrast, the Q-routing algo-the
+rapid
+convergence
+of thelink-state
+routing algorithm.
+In through
+contrast,data
+the Q-routing
+algorithm relies
+rithm
+relies
+on obtaining
+information
+packet forwarding,
+whichon
+obtaining
+link-state
+information
+datainpacket
+forwarding,
+which
+limits its ability to
+limits
+its ability
+to promptly
+adaptthrough
+to changes
+link states
+compared
+to MARL-JR.
+promptly adapt to changes in link states compared to MARL-JR.
+
+Figure
+9. Packet
+arrival
+rate
+comparison
+diagram.
+Figure
+9. Packet
+arrival
+rate
+comparison
+diagram.
+
+Figure 10 illustrates the variation in packet arrival rates among the three algorithms
+under diﬀerent numbers of link failures while maintaining a constant network load of
+3000 data packets. As evidenced by the figure, all three algorithms exhibit declining performance trends as the number of link failures increases. The DR-BM algorithm, employing a centralized routing approach, demonstrates more rapid performance degradation
+
+Appl. Sci. 2025, 15, 4664
+
+15 of 17
+
+Figure 10 illustrates the variation in packet arrival rates among the three algorithms
+under different numbers of link failures while maintaining a constant network load of
+3000 data packets. As evidenced by the figure, all three algorithms exhibit declining performance trends as the number of link failures increases. The DR-BM algorithm, employing
+a centralized routing approach, demonstrates more rapid performance degradation with
+increasing link failures due to its inherent inability to promptly respond to sudden link
+disruptions. In contrast, both the conventional Q-Routing algorithm and our proposed
+MARL-JR algorithm, leveraging distributed architectures, enable satellites to adapt routing
+strategies based on local information, thereby maintaining better routing performance
+during link failures. Notably, MARL-JR outperforms Q-Routing through the following two
+key innovations: (1) incorporation of a residual load factor for congestion-aware routing,
+Appl. Sci. 2025, 15, x FOR PEER REVIEWand (2) periodic link-state broadcasting for timely topology updates. These enhancements
+16 of 18
+enable MARL-JR to achieve superior robustness, as manifested by more stable packet
+arrival rates under increasing link failure conditions.
+
+Figure
+Packet
+Delivery
+Rate
+(PDR)
+under
+varying
+failure
+counts.
+Figure
+10. 10.
+Packet
+Delivery
+Rate
+(PDR)
+under
+varying
+linklink
+failure
+counts.
+
+5. Conclusions
+5. Conclusions
+In this study, we propose a Multi-Agent Reinforcement Learning-Based Joint
+In this study, we propose a Multi-Agent Reinforcement Learning-Based Joint CenCentralized–Distributed Routing (MARL-JR) algorithm for Low Earth Orbit (LEO) satellite
+tralized–Distributed Routing (MARL-JR) algorithm for Low Earth Orbit (LEO) satellite
+constellations. To address the highly dynamic network states and link instability inherent in
+constellations. To address the highly dynamic network states and link instability inherent
+satellite networks, we employ a distributed algorithmic framework with periodic link-state
+in satellite networks, we employ a distributed algorithmic framework with periodic linkbroadcasting. This framework enables the rapid detection of topological changes and
+state broadcasting. This framework enables the rapid detection of topological changes and
+timely adjustments to routing strategies, significantly enhancing algorithmic robustness.
+timely adjustments to routing strategies, significantly enhancing algorithmic robustness.
+To mitigate computational overload on satellite nodes and improve initial performance,
+To mitigate computational overload on satellite nodes and improve initial performance,
+centralized pre-training is utilized to initialize Q-tables, thereby reducing computational
+centralized pre-training is utilized to initialize Q-tables, thereby reducing computational
+demands and enhancing early-stage performance. Additionally, to tackle uneven traffic
+demands and enhancing early-stage performance. Additionally, to tackle uneven traﬃc
+distribution in LEO networks, a residual load factor is introduced to prevent congestion and
+distribution in LEO networks, a residual load factor is introduced to prevent congestion
+packet loss due to overloaded nodes. The simulation results demonstrate that, compared to
+and packet loss due to overloaded nodes. The simulation results demonstrate that, comconventional centralized (DR-BM) and distributed (QR) algorithms, MARL-JR achieves
+pared to conventional centralized (DR-BM) and distributed (QR) algorithms, MARL-JR
+superior performance in terms of lower average latency, reduced packet loss rate, and a
+achieves superior performance in terms of lower average latency, reduced packet loss rate,
+more balanced load distribution.
+and a more balanced load distribution.
+Furthermore, MARL-JR exhibits exceptional resilience in handling link failures. FuFurthermore, MARL-JR exhibits exceptional resilience in handling link failures. Future research will focus on extending the reinforcement learning framework to diverse
+ture research will focus on extending the reinforcement learning framework to diverse
+satellite network scenarios and complex link connectivity conditions to further enhance its
+satellite network scenarios and complex link connectivity conditions to further enhance
+applicability and performance.
+its applicability and performance.
+Author Contributions: Conceptualization, L.X.; Data Curation, L.X.; Formal Analysis, L.X.; Funding Acquisition, S.Z.; Investigation, L.X.; Methodology, L.X.; Project Administration, S.Z.; Resources,
+S.Z.; Supervision, B.L.; Validation, L.X., B.L., S.Z. and Y.Z.; Visualization, L.X.; Writing—Original
+
+Appl. Sci. 2025, 15, 4664
+
+16 of 17
+
+Author Contributions: Conceptualization, L.X.; Data Curation, L.X.; Formal Analysis, L.X.; Funding
+Acquisition, S.Z.; Investigation, L.X.; Methodology, L.X.; Project Administration, S.Z.; Resources, S.Z.;
+Supervision, B.L.; Validation, L.X., B.L., S.Z. and Y.Z.; Visualization, L.X.; Writing—Original Draft,
+L.X.; Writing—Review and Editing, Y.Z. All authors have read and agreed to the published version of
+the manuscript.
+Funding: This research received no external funding.
+Institutional Review Board Statement: Not applicable.
+Informed Consent Statement: Not applicable.
+Data Availability Statement: The relevant data in this paper can be obtained upon request (xialch2022@shanghaitech.edu.cn).
+Conflicts of Interest: The authors declare no conflicts of interest.
+
+References
+1.
+
+2.
+3.
+
+4.
+5.
+
+6.
+7.
+8.
+9.
+10.
+11.
+12.
+
+13.
+14.
+15.
+16.
+17.
+18.
+
+Tsai, K.-C.; Fan, L.; Wang, L.-C.; Lent, R.; Han, Z. Multi-Commodity Flow Routing for Large-Scale LEO Satellite Networks Using
+Deep Reinforcement Learning. In Proceedings of the 2022 IEEE Wireless Communications and Networking Conference (WCNC),
+Austin, TX, USA, 10–13 April 2022; pp. 626–631. [CrossRef]
+Su, Y.; Liu, Y.; Zhou, Y.; Yuan, J.; Cao, H.; Shi, J. Broadband LEO Satellite Communications: Architectures and Key Technologies.
+IEEE Wirel. Commun. 2019, 26, 55–61. [CrossRef]
+Lei, Y.H.; Cao, L.F.; Han, M.D. A Handover Strategy Based on User Dynamic Preference for LEO Satellite. In Proceedings of the
+2021 7th International Conference on Computer and Communications (ICCC), Chengdu, China, 10–13 December 2021; IEEE:
+New York, NY, USA, 2021; pp. 1925–1929.
+Werner, M. A dynamic routing concept for ATM-based satellite personal communication networks. IEEE J. Sel. Areas Commun.
+1997, 15, 1636–1648. [CrossRef]
+Gounder, V.V.; Prakash, R.; Abu-Amara, H. Routing in LEO-based satellite networks. In Proceedings of the 1999 IEEE Emerging
+Technologies Symposium Wireless Communications and Systems, Richardson, TX, USA, 12–13 April 1999; IEEE: New York, NY,
+USA, 1999; pp. 22.1–22.6.
+Mauger, R.; Rosenberg, C. QoS guarantees for multimedia services on a TDMA-based satellite network. IEEE Commun. Mag.
+1997, 35, 56–65. [CrossRef]
+Li, J.; Lu, H.; Xue, K.; Zhang, Y. Temporal Netgrid Model-Based Dynamic Routing in Large-Scale Small Satellite Networks. IEEE
+Trans. Veh. Technol. 2019, 68, 6009–6021. [CrossRef]
+Wang, X.; Dai, Z.; Xu, Z. LEO Satellite Network Routing Algorithm Based on Reinforcement Learning. In Proceedings of the 2021
+IEEE 4th International Conference on Electronics Technology (ICET), Chengdu, China, 7–10 May 2021; pp. 1105–1109.
+Xu, L.; Huang, Y.-C.; Xue, Y.; Hu, X. Deep Reinforcement Learning-Based Routing and Spectrum Assignment of EONs by
+Exploiting GCN and RNN for Feature Extraction. J. Light. Technol. 2022, 40, 4945–4955. [CrossRef]
+Huang, Y.; Wu, S.; Kang, Z.; Mu, Z.; Huang, H.; Wu, X.; Tang, A.J.; Cheng, X. Reinforcement learning based dynamic distributed
+routing scheme for mega LEO satellite networks. Chin. J. Aeronaut. 2023, 36, 284–291. [CrossRef]
+Wang, C.; Wang, H.; Wang, W. A two-hops state-aware routing strategy based on deep reinforcement learning for LEO satellite
+networks. Electronics 2019, 8, 920. [CrossRef]
+Zuo, P.; Wang, C.; Yao, Z.; Hou, S.; Jiang, H. An intelligent routing algorithm for LEO satellites based on deep reinforcement
+learning. In Proceedings of the 2021 IEEE 94th Vehicular Technology Conference (VTC2021-Fall), Norman, OK, USA, 27–30
+September 2021; IEEE Press: New York, NY, USA, 2021; pp. 1–5.
+Shi, Y.; Yuan, Z.; Zhu, X.; Zhu, H. An Adaptive Routing Algorithm for Inter-Satellite Networks Based on the Combination of
+Multipath Transmission and Q-Learning. Processes 2023, 11, 167. [CrossRef]
+Ma, F.; Zhang, X.; Li, X.; Cheng, J.; Guo, F.; Hu, J.; Pan, L. Hybrid constellation design using a genetic algorithm for a leo-based
+navigation augmentation system. GPS Solut. 2020, 24, 62. [CrossRef]
+Qu, Z.; Zhang, G.; Cao, H.; Xie, J. Leo satellite constellation for internet of things. IEEE Access 2017, 5, 18391–18401. [CrossRef]
+Amanor, D.N.; Edmonson, W.W.; Afghah, F. Intersatellite communication system based on visible light. IEEE Trans. Aerosp.
+Electron. Syst. 2018, 54, 2888–2899. [CrossRef]
+Handley, M. Using ground relays for low-latency wide-area routing in megaconstellations. In Proceedings of the 18th ACM
+Workshop on Hot Topics in Networks, Princeton, NJ, USA, 13–15 November 2019; pp. 125–132.
+Mcdowell, J.C. The Low Earth Orbit Satellite Population and Impacts of the SpaceX Starlink Constellation. Astrophys. J. Lett. 2020,
+892, L36. [CrossRef]
+
+Appl. Sci. 2025, 15, 4664
+
+19.
+20.
+
+21.
+22.
+
+23.
+24.
+25.
+26.
+
+27.
+
+17 of 17
+
+Henri, Y. The OneWeb Satellite System. In Handbook of Small Satellites; Pelton, J.N., Madry, S., Eds.; Springer: Cham,
+Switzerland, 2020. [CrossRef]
+Hu, Z.; Wen, F.; Yong, J.; Fan, F.; Wu, B.; Qiu, K. Delay performance comparison across seven Low-Earth-Orbit (LEO) satellite
+constellations. In Proceedings of the Ninth Symposium on Novel Photoelectronic Detection Technology and Applications, Hefei,
+China, 2–4 November 2022; SPIE: Bellingham, WA, USA, 2023; Volume 12617, pp. 515–524.
+Chang, H.S.; Kim, B.W.; Lee, C.G.; Choi, Y.; Min, S.L.; Yang, H.S.; Kim, C.S. Topological design and routing for low-Earth orbit
+satellite networks. In Proceedings of the GLOBECOM’95, Singapore, 14–16 November 1995; Volume 1, pp. 529–535.
+Lowe, R.; Wu, Y.; Tamar, A.; Harb, J.; Abbeel, P.; Mordatch, I. Multi-agent actor-critic for mixed cooperative-competitive
+environments. In Proceedings of the 31st International Conference on Neural Information Processing Systems, Long Beach, CA,
+USA, 4–9 December 2017; pp. 6379–6390.
+Jung, W.-S.; Yim, J.; Ko, Y.-B. QGeo: Q-Learning-Based Geographic Ad Hoc Routing Protocol for Unmanned Robotic Networks.
+IEEE Commun. Lett. 2017, 21, 2258–2261. [CrossRef]
+Tang, F.; Zhang, H.; Yang, L.T. Multipath Cooperative Routing with Efficient Acknowledgement for LEO Satellite Networks. IEEE
+Trans. Mob. Comput. 2019, 18, 179–192. [CrossRef]
+Dijkstra, E.W. A note on two problems in connexion with graphs. Numer. Math. 1959, 1, 269–271. [CrossRef]
+Soret, B.; Leyva-Mayorga, I.; Lozano-Cuadra, F.; Thorsager, M.D. Q-learning for distributed routing in LEO satellite constellations.
+In Proceedings of the 2024 IEEE International Conference on Machine Learning for Communication and Networking (ICMLCN),
+Stockholm, Sweden, 5–8 May 2024; pp. 208–213.
+Boyan, J.A.; Littman, M. Packet Routing in Dynamically Changing Networks: A Reinforcement Learning Approach. In Advances
+in Neural Information Processing Systems, Proceedings of the 7th International Conference on Neural Information Processing Systems,
+Denver, CO, USA, 29 November–2 December 1993; Morgan Kaufmann Publishers Inc.: San Francisco, CA, USA, 1993; Volume 6.
+
+Disclaimer/Publisher’s Note: The statements, opinions and data contained in all publications are solely those of the individual
+author(s) and contributor(s) and not of MDPI and/or the editor(s). MDPI and/or the editor(s) disclaim responsibility for any injury to
+people or property resulting from any ideas, methods, instructions or products referred to in the content.
+
+

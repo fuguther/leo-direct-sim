@@ -1,0 +1,1852 @@
+Report GitHub Issue
+
+ ×
+
+ Title:
+
+ Content selection saved. Describe the issue below:
+
+ Description:
+
+ Submit without GitHub
+ Submit in GitHub
+
+ arXiv is now an independent nonprofit!
+ Learn more
+ ×
+
+ Back to arXiv
+
+ Why HTML?
+
+ Report Issue
+
+ Back to Abstract
+
+ Download PDF
+
+Abstract
+
+I Introduction
+
+I-A Related Work
+
+I-A1 Handover Management in LEO Constellations
+
+I-A2 Multi-Orbit Integration
+
+I-A3 MARL for Resource Management in Networks
+
+I-B Contributions
+
+II System Model and Problem Formulation
+
+II-A Network Topology
+
+II-B Rate Analysis
+
+II-C Handover Modelling
+
+II-D Problem Formulation
+
+III Proposed Framework
+
+Association via MARL
+
+Power allocation
+
+IV Numerical Case Study
+
+IV-A Experimental Setup
+
+Baselines
+
+Metrics
+
+IV-B Results and Discussion
+
+V Conclusion
+
+References
+
+ License: arXiv.org perpetual non-exclusive license
+
+arXiv:2608.14335v1 [eess.SP] 14 Aug 2026
+
+Multi-Agent Reinforcement Learning for Joint Handover Management and Power Allocation
+in Multi-Orbit Satellite Networks 
+
+Yassine Afif
+
+Email: balakrishnan@telecom-paris.fr
+
+Ashutosh Balakrishnan
+
+Affiliation: Department of Computer Science and Networks, IMT-Télécom Paris, Palaiseau, FranceEmails: {yassine.afif, mohammed.al-mekhlafi, antoine.lesage-landry, gunes.kurt}@polymtl.ca
+
+Email: martins@telecom-paris.fr
+
+Philippe Martins
+
+Affiliation: Department of Computer Science and Networks, IMT-Télécom Paris, Palaiseau, FranceEmails: {yassine.afif, mohammed.al-mekhlafi, antoine.lesage-landry, gunes.kurt}@polymtl.ca
+
+Mohammed Almekhlafi*
+
+Antoine Lesage-Landry
+
+Gunes Karabulut Kurt**Department of Electrical Engineering, Polytechnique Montréal & Poly-Grames Research Centre, QC, Canada
+
+Affiliation: Mila & GERAD, Montréal, QC, Canada
+
+Abstract
+
+Future sixth-generation non-terrestrial networks are expected to combine low Earth orbit (LEO), medium Earth orbit (MEO), and geostationary Earth orbit (GEO) satellites, whose complementary layers must be coordinated through joint user association, power allocation, and handover management under fast LEO dynamics. This paper studies this problem by formulating it as a mixed-integer nonlinear program and decomposing it into a multi-agent reinforcement learning (MARL) policy that selects the associations and a convex power-allocation subproblem solved exactly at each time slot that defines the reward of the MARL part. The association policy is trained with multi-agent proximal policy optimization (MAPPO) and the targeted multi-agent communication (TarMAC) mechanism, and is made aware of the orbital layer through a state that encodes layer-dependent handover penalties. Evaluated on a realistic multi-constellation scenario built from real two-line element data over Nairobi, Kenya, the proposed policy reaches $92\%$ of the throughput of a greedy signal-to-noise ratio (SNR) maximizing scheme while triggering more than four times fewer handovers, and improves throughput by roughly $14\%$ over a conservative stay heuristic. Compared to an LEO-only learned policy of identical architecture, it attains slightly higher throughput with fewer handovers by offloading a fraction of the users to the MEO and GEO layers, an emergent multi-orbit behavior that drives its favorable throughput and handover trade-off.
+
+Keywords—Low Earth orbit, medium Earth orbit, geostationary satellites, handover management, non-terrestrial networks, multi-constellation, multi-agent reinforcement
+learning.
+
+I Introduction
+
+The vision of sixth-generation (6G) wireless systems pushes connectivity beyond terrestrial infrastructure toward ubiquitous, three-dimensional coverage for remote, oceanic, and aerial regions where ground deployment is economically or physically infeasible. Non-terrestrial networks (NTNs) have consequently evolved from a complementary technology into a core component of future wireless networks [1, 2, 3]. Among the various NTN platforms, satellite constellation-based networks have emerged as a key enabler of global connectivity, motivated by recent advances in satellite manufacturing, launch capabilities, and network integration [1].
+
+Satellite systems are usually classified based on their orbital altitude into three main categories: low Earth orbit (LEO), medium Earth orbit (MEO), and geostationary Earth orbit (GEO). LEO satellites operate below $2{,}000$ km, providing low propagation delays and high data rates but at the cost of limited coverage and rapid relative motion [2]. MEO satellites are placed at intermediate altitudes between $2{,}000$ km and $35{,}786$ km, balancing between latency and coverage. GEO satellites, located at an altitude of approximately $35{,}786$ km, enable persistent wide-area coverage but at the expense of higher propagation delays [3]. These orbital regimes exhibit distinct characteristics in terms of coverage, latency, visibility duration, and resource availability, making them naturally complementary components of future NTN architectures [4].
+
+Motivated by these diverse characteristics, recent research increasingly considers them as a unified multi-layer satellite infrastructure. The different orbital regimes involve complementary trade-offs that can be jointly exploited to improve network performance. Large LEO constellations such as Starlink and Kuiper can provide the primary source of high-capacity connectivity, while MEO and GEO satellites can support traffic demand through dynamic traffic offloading mechanisms [5]. Such cooperation allows higher orbital layers to compensate for temporary LEO congestion, coverage gaps, or service disruptions caused by the rapid movement of LEO satellites.
+
+Accordingly, this integration of heterogeneous satellite layers offers significant opportunities to improve coverage, capacity, and service continuity in future NTNs. Realizing these benefits requires efficient resource management mechanisms capable of coordinating network operations across multiple layers with distinct characteristics and constraints. Factors such as satellite mobility, heterogeneous coverage footprints, limited onboard resources, and dynamic traffic demands introduce complex interactions that must be jointly considered. Consequently, advanced optimization and resource allocation strategies are becoming essential for fully leveraging the potential of integrated multi-layer satellite networks [2]. In particular, power allocation and handover management have emerged as tightly coupled optimization problems whose impact becomes increasingly significant as the scale and heterogeneity of satellite constellations continue to grow.
+
+I-A Related Work
+
+Resource-efficient connectivity through LEO mega-constellations raises three coupled challenges: handling frequent handovers, exploiting multiple orbital layers, and coordinating distributed resource-allocation decisions at scale. We review these three areas in turn before positioning our contributions.
+
+I-A1 Handover Management in LEO Constellations
+
+The high mobility of LEO satellites forces frequent handovers and expensive signaling overheads. Heuristic and game-theoretic methods address this through load balancing [6] or comparative analysis across LEO, MEO, and highly elliptical orbit constellations [7]. Optimization-based methods formulate the handover problem as a network flow [8] or as a mixed-integer problem, coupling association and power allocation with a handover penalty [9]. Solving each slot independently, however, neglects the sequential nature of the problem, which reinforcement-learning (RL) approaches are better suited to capture. Our earlier single-layer study [10] follows this direction, casting joint beam association and power allocation in LEO networks as a multi-agent RL (MARL) problem with explicit and learned attention-based inter-agent communication. The study in [11] proposes a handover protocol that skips the measurement report phase to reduce access delay and collisions. The authors of [12] adopt the advantage actor-critic algorithm to scale to very large-scale constellations. The framework proposed in [13] distributes the decision across agents via MARL, foreshadowing the methods discussed below.
+
+I-A2 Multi-Orbit Integration
+
+While the works above treat the LEO layer in isolation, additional flexibility arises once several orbits are considered jointly within NTNs. Reference [14] surveys the evolution of NTNs from fifth-generation to 6G, and the study in [15] positions LEO satellite access as a radio-access building block. Exploiting multi-orbit complementarity (LEO+MEO+GEO), the approach in [16] proposes RL-based capacity management in a multi-layer network, while the authors in [17] design a multi-orbit soft-handover strategy based on rate-splitting multiple access. These works show that resource allocation should be considered jointly across orbits rather than within an isolated layer.
+
+I-A3 MARL for Resource Management in Networks
+
+The multi-orbit network perspective calls for a decentralized coordination among many agents, the setting that MARL addresses. RL is commonly extended to the MARL setting via the centralized-training, decentralized-execution paradigm [18], e.g., multi-agent deep deterministic policy gradient [19] and multi-agent proximal policy optimization (MAPPO) [20]. This extension however remains agnostic to the interaction structure between agents. Conversely, MARL can also endow agents with communication and structural awareness. For example, differentiable inter-agent learning [21] and CommNet [22] learn what to communicate, and targeted multi-agent communication (TarMAC) [23] learns message content and recipients jointly. When the inter-agent interaction structure is represented as a graph, with each agent as a node and its neighbours as edges, graph convolutional reinforcement learning (DGN) [24] applies graph convolutions over each agent’s dynamically changing neighbourhood to extract cooperative behaviour. These principles have been transposed to satellite networks: [25] controls a flexible payload with deep MARL; [26] allocates beam pattern and bandwidth with multiple agents; and [27] combines a multi-agent actor-critic with attention for satellite-terrestrial resource allocation, bridging generic MARL advances and the constraints of satellite constellations.
+
+Prior work typically addresses these aspects in isolation: optimization-based methods cover handover and power allocation but use neither learning nor multiple agents, learned handover schemes rarely span multiple orbits or use inter-agent communication, and MARL-based resource-allocation methods rarely integrate handover in a multi-orbit setting. To the best of our knowledge, no prior work has jointly considered handover-aware, multi-orbit resources and power allocation using a communication-enabled MARL framework.
+
+I-B Contributions
+
+The contributions of this paper are as follows.
+
+• 
+
+We formulate the joint satellite association, power allocation, and
+handover management problem for multi-layer (LEO/MEO/GEO)
+constellations as a hierarchical decomposition problem: first, a combinatorial association
+decision solved by a MARL policy, followed by a convex power-allocation
+problem solved in closed loop. The
+handover penalties are present in both the convex objective and
+the learning reward.
+
+• 
+
+We build an evaluation pipeline on a realistic multi-constellation
+scenario, built from real data for a ground deployment in
+Nairobi, Kenya, that goes beyond standard throughput and handover metrics and
+explicitly measures how the learned policy distributes user
+associations across the LEO, MEO, and GEO layers, revealing an
+emergent offloading behaviour.
+
+The remainder of the paper is organized as follows. Section II introduces the system model and the joint optimization problem. Section III describes the proposed layer-aware MARL approach. Section IV details the experimental setup, introduces the baselines and discusses the results. Finally, Section V concludes the paper.
+
+II System Model and Problem Formulation
+
+This section describes the multi-layer satellite network considered in this work and formulates the joint association, power-allocation, and handover problem.
+
+II-A Network Topology
+
+We consider a multi-layer satellite network serving a set $\mathcal{U}=\{1,\dots,U\}$ of $U\in\mathbb{N}$ single-antenna ground users, as shown in Fig. 1. The constellation comprises a set $\mathcal{S}=\{1,\dots,S\}$ of $S\in\mathbb{N}$ satellites, partitioned into three orbital layers $\ell\in\mathcal{L}=\{\text{LEO},\text{MEO},\text{GEO}\}$ . The superscript $\ell$ on a parameter means it depends on the orbital layer of the satellite or of the user’s serving satellite. Each satellite is equipped with $B\in\mathbb{N}$ beams indexed by $\mathcal{B}=\{1,\dots,B\}$ . The time horizon is divided into discrete slots $t\in\mathcal{T}=\{1,\dots,T\}$ , where $T\in\mathbb{N}$ . To model satellite-user association, we define a binary association variable $I_{u,s,b}^{(t)}\in\{0,1\}$ as
+
+ $I_{u,s,b}^{(t)}=\begin{cases}1,&\text{if }u\text{ is linked to }(s,b)\text{ at }t,\\
+0,&\text{otherwise}.\end{cases}$ 
+
+(1)
+
+At each discrete time slot $t$ , the geometry (elevation angle, slant range) between every user-satellite pair is computed from orbital propagation. This yields a time-varying visibility indicator $V_{u,s}^{(t)}\in\{0,1\}$ , defined as
+
+ $V_{u,s}^{(t)}=\begin{cases}1,&\text{if }\theta_{u,s}^{(t)}\geq\theta_{\text{vis}},\\
+0,&\text{otherwise},\end{cases}$ 
+
+(2)
+
+where $\theta_{u,s}^{(t)}$ denotes the elevation angle of pair $(s,u)$ at time $t$ , and $\theta_{\text{vis}}$ is a layer-dependent visibility threshold.
+
+Fig. 1: Multi-layer satellite network: $U$ ground users are served by
+satellites from the LEO, MEO, and GEO layers.
+
+II-B Rate Analysis
+
+The channel model, considered in this work, captures both large-scale propagation effects and small-scale fading [28, 29, 30, 31]. The small-scale fading is modeled as Rician fading with a sufficiently large Rician factor $K$ , representing the dominant line-of-sight (LOS) component characteristic of the quasi-optical propagation conditions encountered in satellite communications [29, 30, 31], and a weaker non-LOS (NLOS) multipath term representing the scattering effects. The large-scale propagation effects include free-space path loss, atmospheric attenuation, ionospheric and tropospheric scintillation, and rain attenuation. Let $|h_{u,s,b}^{(t)}|^{2}$ and $P_{u,s,b}^{(t)}$ represent the channel gain and the transmit power on link $(u,s,b)$ for all $u\in\mathcal{U}$ , $s\in\mathcal{S}$ and $b\in\mathcal{B}_{s}$ at time slot $t$ . Then, the received signal-to-noise ratio (SNR) is
+
+ $\gamma_{u,s,b}^{(t)}=\frac{G_{\text{tx}}^{(\ell)}\,|h_{u,s,b}^{(t)}|^{2}\,P_{u,s,b}^{(t)}}{N_{0}\,W\,L_{\text{total,lin}}^{(u,s,t)}},$ 
+
+(3)
+
+where $N_{0}$ , $W$ , and $L_{\text{total,lin}}^{(u,s,t)}$ are the noise spectral density, bandwidth, and the total path loss, respectively. $G_{\text{tx}}^{(\ell)}$ denote the antenna gain of layer $\ell\in\{\text{LEO},\text{MEO},\text{GEO}\}$ , which is such that :
+
+ $G_{\text{tx}}^{\text{LEO}}
+
+(4)
+
+where transmit antenna gains are assumed to increase with orbital altitude in order to compensate for the greater propagation losses experienced by higher-layer satellites. Accordingly, the achievable Shannon rate of link $(u,s,b)$ in layer $\ell$ at time slot $t$ , for all $u\in\mathcal{U}$ , $s\in\mathcal{S}$ , and $b\in\mathcal{B}_{s}$ , is given by
+
+ $R_{u,s,b}^{(t)}=W\,\log_{2}\!\left(1+\gamma_{u,s,b}^{(t)}\right).$ 
+
+(5)
+
+Accordingly, the achievable rate of user $u$ aggregates the contributions of its associated links only, and can be written as
+
+ $R_{u}^{(t)}=\sum_{s\in\mathcal{S}}\sum_{b\in\mathcal{B}}R_{u,s,b}^{(t)}.$ 
+
+(6)
+
+II-C Handover Modelling
+
+In a multi-layer constellation, the LEO layer in particular exhibits a high orbital velocity, causing its visible-satellite set to change rapidly and forcing frequent reassociations, whereas MEO and GEO satellites remain visible over longer periods. A handover occurs when a user $u\in\mathcal{U}$ switches its serving beam between two consecutive slots. We define the handover indicator at slot $t\in\{2,\dots,T\}$ as
+
+ $H_{u}^{(t)}=1-\sum_{s\in\mathcal{S}}\sum_{b\in\mathcal{B}}I_{u,s,b}^{(t)}\,I_{u,s,b}^{(t-1)},$ 
+
+(7)
+
+so that $H_{u}^{(t)}=0$ when the user stays on the same beam and $H_{u}^{(t)}=1$ otherwise. To distinguish handover types, let $\delta_{u}^{(t)}=|\ell_{u}^{(t)}-\ell_{u}^{(t-1)}|$ be the corresponding layer gap. The handover penalty is then
+
+ $\beta_{u}^{(t)}=H_{u}^{(t)}\begin{cases}\alpha_{1},&\text{if }\delta_{u}^{(t)}=0\quad\text{(intra-layer)}\\
+\alpha_{2},&\text{if }\delta_{u}^{(t)}=1\quad\text{(adjacent-layer)}\\
+\alpha_{3},&\text{if }\delta_{u}^{(t)}=2\quad\text{(LEO }\text{to }\text{GEO)},\end{cases}$ 
+
+(8)
+
+with $0\leq\alpha_{1}
+II-D Problem Formulation
+
+At each time slot $t$ , the association variables $\mathbf{I}=\{I_{u,s,b}^{(t)}\}$ and power allocation variables $\mathbf{P}=\{P_{u,s,b}^{(t)}\}$ are jointly optimized to maximize the
+network throughput while accounting for handover penalties through the layer-dependent factor $\beta_{u}^{(t)}$ defined in (8). The optimization problem is formulated as
+
+max_P,I ∑_t∈T∑_u∈U R_u^(t)(1-β_u^(t))
+
+(9a)
+
+  s.t.
+ $\displaystyle R_{u}^{(t)}$ 
+ $\displaystyle\geq$ 
+R_th,
+∀u,t,
+
+(9b)
+
+ $\displaystyle P_{u,s,b}^{(t)}$ 
+ $\displaystyle\leq$ 
+I_u,s,b^(t) P_max^(ℓ),
+∀u,s,b,t,
+
+(9c)
+
+ $\displaystyle\sum_{u\in\mathcal{U}}\sum_{b\in\mathcal{B}}P_{u,s,b}^{(t)}$ 
+ $\displaystyle\leq$ 
+P_max^(ℓ),
+∀s,t,
+
+(9d)
+
+ $\displaystyle\qquad\sum_{u\in\mathcal{U}}I_{u,s,b}^{(t)}$ 
+ $\displaystyle\leq$ 
+C,
+∀s,b,t,
+
+(9e)
+
+ $\displaystyle\qquad\sum_{s\in\mathcal{S}}\sum_{b\in\mathcal{B}}I_{u,s,b}^{(t)}$ 
+ $\displaystyle\leq$ 
+1,
+∀u,t,
+
+(9f)
+
+ $\displaystyle I_{u,s,b}^{(t)}$ 
+ $\displaystyle\leq$ 
+V_u,s^(t),
+∀u,s,b,t,
+
+(9g)
+
+ $\displaystyle P_{u,s,b}^{(t)}$ 
+ $\displaystyle\geq$ 
+0,   I_u,s,b^(t) ∈{0,1},
+∀u,s,b,t,
+
+(9h)
+
+  (2), (3), (5), (6), (8).
+
+where (9b) enforces that each user’s rate satisfies the minimum rate requirement $R_{\text{th}}$ . Constraint (9c) guarantees that power is allocated only to active links. Constraint (9d) enforces the per-satellite power budget. Constraint (9e) limits the number of users served by each beam to $C$ , while (9f) restricts each user to being served by at most one beam. Constraint (9g) allows association only over visible links. Finally, constraint (9h) defines the binary association and non-negative power domains. Problem (9) is a mixed-integer nonlinear program (MINLP). The non-concavity stems primarily from constraint (9c), which couples the binary association variables $I_{u,s,b}^{(t)}$ with the continuous powers $P_{u,s,b}^{(t)}$ through a bilinear product, so that the feasible set is non-convex and the joint optimization cannot be solved directly by standard convex methods. To make the problem tractable, we split it into more manageable subproblems, as detailed in the next subsection.
+
+III Proposed Framework
+
+As discussed in Section II-D, the bilinear coupling between the discrete association and the continuous power allocation makes a direct joint solution of (9) intractable. We therefore decompose (9) into two sequential subproblems solved in closed loop: a learning-based policy that first selects the association, and a convex program that computes the optimal power for a given association, whose resulting rates feed back into the policy. Unlike the single-layer formulation in [10], where association reduced to selecting a single visible satellite, the multi-layer setting introduces layer-dependent handover penalties $\beta_{u}^{(t)}$ and a much larger candidate space, motivating this decomposition.
+
+Association via MARL
+
+The association decisions ${I}_{u,s,b}^{(t)}$ are delegated to a MARL policy with one agent per user and shared weights, trained with MAPPO and the TarMAC mechanism [23]. Each agent observes a layer-aware state and chooses to stay on its current beam or switch to one of its top- $k$ candidates, thereby handling the non-convex combinatorial part and the handover dynamics driving $\beta_{u}^{(t)}$ . Each agent builds an observation of dimension ${d_{\text{obs}}}=3k+4$ : (i) min/max normalized SNRs of its top- $k$ links in $[-1,1]$ ; (ii) a one-hot stay vector marking the serving beam; (iii) $1/(\Delta t_{\text{ho}}+1)$ , the inverse of the elapsed time since the last handover; (iv) the episode fraction spent on the current beam; (v) the achieved rate against the quality-of-service target, $\operatorname{clip}\!\big((R_{u}^{(t)}-R_{\text{th}})/R_{\text{th}},-1,1\big)$ ; and (vi) a layer encoding ( $\text{LEO}=0,\text{MEO}=0.5,\text{GEO}=1$ ) for the $k$ candidates and the serving satellite, the key addition over the single-layer case. For communication, each agent  $u\in\mathcal{U}$ encodes a hidden state $z_{u}$ along with a key $\kappa_{u}$ , a query $q_{u}$ , and a message $m_{u}$ . Scaled dot-product attention over the messages of its $n$ nearest geographic neighbours (fixed from user coordinates) produces a context $c_{u}$ , which is concatenated with $z_{u}$ to output the action, viz., stay or switch among the $k$ candidates, and the critic value.
+
+(a) Mean rate per user.
+
+(b) Number of handovers per time slot.
+
+(c) Associations across satellite’s layers.
+
+Fig. 2: Performance comparison of the proposed layer-aware policy against the baselines, averaged over $40$ episodes.
+
+TABLE I: Simulation and training parameters.
+
+Parameter
+Value
+
+Users $U$ 
+30
+
+Beams $B$ / beam capacity $C$ 
+3 / 3
+
+Episode length $T\times\Delta t$ 
+100 $\times$ $30\text{\,}\mathrm{s}$ 
+
+Visibility threshold $\theta_{\text{vis}}$ 
+ $10\text{\,}\mathrm{\SIUnitSymbolDegree}$ 
+
+Carrier frequency $f_{\text{c}}$ / bandwidth $W$ 
+ $20\text{\,}\mathrm{GHz}$ / $1\text{\,}\mathrm{MHz}$ 
+
+Noise spectral density $N_{0}$ / Rician factor $K$ 
+ $5\text{\times}{10}^{-21}\text{\,}\mathrm{W}\text{\,}{\mathrm{Hz}}^{-1}$ / $10\text{\,}\mathrm{dB}$ 
+
+Top- $k$ candidates / neighbors $n$ 
+8 / 2
+
+LEO pool (init / per ckpt / # ckpts)
+20 / 10 / 40
+
+GEO / MEO pool size
+5 / 10
+
+Tx gain $G_{\text{tx}}^{\text{LEO/MEO/GEO}}$ 
+32 / 40 / 50 dBi
+
+Power budget $P_{\max}^{\text{LEO/MEO/GEO}}$ 
+1k / 15k / 30k W
+
+Minimum rate $R_{\text{th}}$ 
+1 Mbps
+
+Handover penalty $\alpha_{1}/\alpha_{2}/\alpha_{3}$ 
+0.6 / 0.8 / 0.9
+
+Training / evaluation episodes
+200 / 40
+
+Power allocation
+
+Once $\mathbf{I}$ is fixed by the MARL algorithm, the resulting problem becomes concave in ${P}_{u,s,b}^{(t)}$ , because constraints (9b) to (9d) and (9h) are linear and each $R_{u}^{(t)}$ is concave through the $\log(1+\gamma_{u,s,b}^{(t)})$ mapping of (5). This subproblem is solved exactly at each time slot with CVXPY [32] and MOSEK [33], yielding the optimal power allocation $\mathbf{P}^{\star}$ . The resulting rates then define the per-user reward
+
+ $r_{u}^{(t)}=R_{u}^{(t)}\,(1-\beta_{u}^{(t)}),$ 
+
+(10)
+
+which is the throughput achieved by user $u$ at slot $t$ from (6), discounted by the handover penalty $\beta_{u}^{(t)}$ of (8), so that the policy is rewarded for the throughput its association decisions enable while being penalized for costly handovers. This closes the loop: the reward, evaluated only after the optimal power allocation, drives the policy update, while the achieved rate relative to the target $R_{\text{th}}$ is encoded in the next-slot state. The policy thus learns associations that yield high throughput once power is optimally allocated.
+
+IV Numerical Case Study
+
+We now assess the proposed framework on a realistic multi-constellation scenario, describing the simulation setup and baselines before presenting the results.
+
+IV-A Experimental Setup
+
+We build a multi-constellation scenario from real two-line element (TLE) catalogs [34] for the LEO, MEO, and GEO layers, with $U=30$ users uniformly deployed within 100 km of Nairobi, Kenya. MEO and GEO pools are fixed sets of satellites selected by average elevation, while the LEO pool is built with a checkpoint based anticipation scheme: starting from $20$ initially visible LEO satellites, $10$ additional satellites are added at each $40$ look-ahead checkpoints over the episode horizon, so the policy is exposed to realistic LEO handover opportunities rather than a static snapshot. Each episode spans $T=100$ decision slots of $\Delta t=$30\text{\,}\mathrm{s}$$ and represents a $50\text{\,}\mathrm{min}$ period. Table I summarizes the main simulation and training parameters. The handover-penalty coefficients $\alpha_{1},\alpha_{2}$ and $\alpha_{3}$ in (8) grow with the size of the orbital-layer transition: an intra-layer switch ( $\alpha_{1}$ ) is penalized the least, an adjacent-layer switch ( $\alpha_{2}$ ) more, and a two-level LEO to GEO switch ( $\alpha_{3}$ ) the most.
+
+Baselines
+
+We compare our approach against three baselines. Two are standard heuristics: stay, which keeps the current serving satellite as long as it remains visible, and greedy, which always switches to the instantaneously highest SNR visible satellite regardless of handover cost. The third is TarMAC-LEO, a learned single-layer policy carried over from our earlier single-layer work [10], trained with the same architecture and layer-aware features but restricted, throughout training and evaluation, to candidates from the LEO layer only. To ensure a fair comparison, the LEO satellite pool available to this baseline is enlarged with respect to the multi-layer setting: starting from the same $20$ initially visible satellites, $15$ LEO satellites are added at each $40$ look-ahead checkpoints (versus $10$ per checkpoint for the multi-layer policy), so that TarMAC-LEO is not disadvantaged by a sparser candidate set and the comparison isolates the benefit of multi-layer access rather than LEO satellites availability. Comparing the full multi-layer TarMAC against this single-layer variant directly highlights the advantage of giving the policy access to, and awareness of, all three orbital layers simultaneously.
+
+Metrics
+
+We report four main metrics: the mean per-episode reward (shown as a training curve), the aggregate throughput per time slot and per user, the number of handovers per time slot and per user, and, central to our analysis, the fraction of user associations served by each orbital layer (LEO, MEO, GEO), which quantifies how much each policy relies on the higher layers. We average over the $40$ evaluation episodes with frozen policies (no further learning).
+
+Fig. 3: Mean reward per episode during training for the proposed policy and the LEO-only baseline. The shaded area denotes the standard deviation across episodes.
+
+IV-B Results and Discussion
+
+Fig. 2 compares all policies over $40$ frozen-policy evaluation episodes. The throughput/handover trade-off orders the policies clearly: greedy reaches the highest per-user rate ( $8.2$  Mbps per time slot) but triggers $28.5$ handovers per time slot, an order of magnitude more than any learned policy. Our approach sits in the favourable region (Fig. 2b), keeping about $92\%$ of greedy’s rate ( $7.55$  Mbps per time slot) while cutting handovers more than four-fold ( $6.2$  handovers per time slot), and exceeds the conservative stay heuristic ( $6.6$  Mbps per time slot with $3.3$ handovers) by about $14\%$ in rate. Against the LEO-only TarMAC-LEO baseline ( $7.48$  Mbps per time slot with $6.7$ handovers), it attains slightly higher rate with fewer handovers. The layer utilization of Fig. 2c reveals why: unlike TarMAC-LEO, locked to $100\%$ LEO, the proposed policy keeps $95\%$ of its associations on LEO and offloads the remaining $5\%$ onto the higher layers ( $1\%$ on MEO and $4\%$ on GEO), relieving LEO congestion and outperforming every baseline on the combined rate and handover trade-off.
+
+V Conclusion
+
+This work addressed the joint satellite association, power allocation, and handover management problem in multi-layer low Earth orbit (LEO), medium Earth orbit (MEO), and geostationary Earth orbit (GEO) constellations. The problem is formulated as a mixed-integer nonlinear program. Because the resulting problem is non-convex, we decomposed it into a layer-aware multi-agent reinforcement learning (MARL) association policy and a convex power-allocation subproblem. In a realistic scenario derived from real two-line element data over Nairobi, Kenya, the proposed solution achieved about $92\%$ of the throughput achieved by a greedy policy while reducing more than four-fold handovers, and exceeded a conservative stay heuristic by about $14\%$ in throughput. Compared to an equivalent LEO-only MARL policy, it delivered slightly higher throughput with fewer handovers by offloading part of the traffic onto the MEO and GEO layers, confirming the benefit of exploiting all three orbital layers. Future work will scale the framework to larger user populations in a multi-input multi-output (MIMO) system and incorporate inter-satellite link constraints.
+
+References
+
+[1]
+X. Zhu and C. Jiang (2022)
+
+Integrated satellite-terrestrial networks toward 6G: architectures, applications, and challenges.
+
+IEEE Internet of Things Journal 9 (1), pp. 437–461.
+
+External Links: Document
+
+Cited by: §I.
+
+[2]
+J. Liu, Y. Shi, Z. Md. Fadlullah, and N. Kato (2018)
+
+Space-air-ground integrated network: a survey.
+
+IEEE Communications Surveys & Tutorials 20 (4), pp. 2714–2741.
+
+External Links: Document
+
+Cited by: §I,
+§I,
+§I.
+
+[3]
+M. Almekhlafi, A. Lesage-Landry, and G. Karabulut Kurt (2025)
+
+Access inequality in LEO satellite networks: a case study of high-latitude coverage in Northern Québec.
+
+IEEE Open Journal of Vehicular Technology 6 (), pp. 1613–1630.
+
+External Links: Document
+
+Cited by: §I,
+§I.
+
+[4]
+G. Maral, M. Bousquet, and Z. Sun (2020)
+
+Satellite communications systems: systems, techniques and technology.
+
+6 edition, John Wiley & Sons.
+
+External Links: ISBN 9781119382089
+
+Cited by: §I.
+
+[5]
+H. Akhlaghpasand and V. Shah-Mansouri (2023)
+
+Traffic offloading probability for integrated LEO satellite-terrestrial networks.
+
+IEEE Communications Letters 27 (9), pp. 2413–2416.
+
+External Links: Document
+
+Cited by: §I.
+
+[6]
+Y. Wu, G. Hu, F. Jin, and J. Zu (2019)
+
+A satellite handover strategy based on the potential game in LEO satellite networks.
+
+IEEE Access 7, pp. 133641–133652.
+
+Cited by: §I-A1.
+
+[7]
+A. M. Voicu, A. Bhattacharya, and M. Petrova (2024)
+
+Handover strategies for emerging LEO, MEO, and HEO satellite networks.
+
+IEEE Access 12, pp. 31523–31537.
+
+Cited by: §I-A1.
+
+[8]
+S. Zhang, A. Liu, C. Han, X. Ding, and X. Liang (2021)
+
+A network-flows-based satellite handover strategy for LEO satellite networks.
+
+IEEE Wireless Communications Letters 10 (12), pp. 2669–2673.
+
+Cited by: §I-A1.
+
+[9]
+Y. Afif, M. Almekhlafi, A. Lesage-Landry, and G. Karabulut Kurt (2025)
+
+Joint satellite power consumption and handover optimization for LEO constellations.
+
+In IEEE International Conference on Wireless for
+Space and Extreme Environments (WiSEE),
+
+Halifax, NS, Canada, pp. .
+
+External Links: Document
+
+Cited by: §I-A1.
+
+[10]
+Y. Afif, M. Almekhlafi, A. Lesage-Landry, and G. Karabulut Kurt (2026)
+
+Multi-agent reinforcement learning for handover management and power allocation in LEO satellite networks.
+
+Note: Under revision, IEEE Journal of Radio Frequency Identification, Special Section: Selected Papers from the 2025 IEEE International Conference on Wireless for Space and Extreme Environments
+
+Cited by: §I-A1,
+§III,
+§IV-A.
+
+[11]
+J. Lee, C. Park, S. Park, and A. F. Molisch (2024)
+
+Handover protocol learning for LEO satellite networks: access delay and collision minimization.
+
+IEEE Transactions on Wireless Communications 23 (7), pp. 7624–7637.
+
+External Links: Document
+
+Cited by: §I-A1.
+
+[12]
+C. Tong, C. Chen, L. Cong, T. Mu, Q. Pei, and S. Wan (2025)
+
+LEO satellite handover using advantage actor-critic algorithm in giant constellation network.
+
+IEEE Transactions on Aerospace and Electronic Systems 61 (5), pp. 11888–11903.
+
+External Links: Document
+
+Cited by: §I-A1.
+
+[13]
+S. He, T. Wang, and S. Wang (2020)
+
+Load-aware satellite handover strategy based on multi-agent reinforcement learning.
+
+In GLOBECOM 2020 - 2020 IEEE Global Communications Conference,
+
+pp. 1–6.
+
+External Links: Document
+
+Cited by: §I-A1.
+
+[14]
+M. M. Azari, S. Solanki, S. Chatzinotas, O. Kodheli, H. Sallouha, A. Colpaert, J. F. Mendoza Montoya, S. Pollin, A. Haqiqatnejad, A. Mostaani, E. Lagunas, and B. Ottersten (2022)
+
+Evolution of non-terrestrial networks from 5G to 6G: a survey.
+
+IEEE Communications Surveys & Tutorials 24 (4), pp. 2633–2672.
+
+Cited by: §I-A2.
+
+[15]
+X. Lin, S. Cioni, G. Charbit, N. Chuberre, S. Hellsten, and J. Boutillon (2021)
+
+On the path to 6G: embracing the next wave of low earth orbit satellite access.
+
+IEEE Communications Magazine 59 (12), pp. 36–42.
+
+Cited by: §I-A2.
+
+[16]
+C. Jiang and X. Zhu (2020)
+
+Reinforcement learning based capacity management in multi-layer satellite networks.
+
+IEEE Transactions on Wireless Communications 19 (7), pp. 4685–4699.
+
+Cited by: §I-A2.
+
+[17]
+S. Han et al. (2025)
+
+Multi-orbit multibeam satellite soft handover strategy based on rate-splitting multiple access.
+
+IEEE Transactions on Wireless Communications 24 (8), pp. 6813–6823.
+
+Cited by: §I-A2.
+
+[18]
+L. Kraemer and B. Banerjee (2016)
+
+Multi-agent reinforcement learning as a rehearsal for decentralized planning.
+
+Neurocomputing 190, pp. 82–94.
+
+Cited by: §I-A3.
+
+[19]
+R. Lowe, Y. Wu, A. Tamar, J. Harb, P. Abbeel, and I. Mordatch (2017)
+
+Multi-agent actor-critic for mixed cooperative-competitive environments.
+
+In NeurIPS,
+
+pp. 6379–6390.
+
+Cited by: §I-A3.
+
+[20]
+C. Yu, A. Velu, E. Vinitsky, J. Gao, Y. Wang, A. Bayen, and Y. Wu (2022)
+
+The Surprising Effectiveness of PPO in Cooperative Multi-Agent Games.
+
+In NeurIPS,
+
+Vol. 35, pp. 24611–24624.
+
+Cited by: §I-A3.
+
+[21]
+J. N. Foerster, Y. M. Assael, N. de Freitas, and S. Whiteson (2016)
+
+Learning to communicate with deep multi-agent reinforcement learning.
+
+In NeurIPS,
+
+pp. 2137–2145.
+
+Cited by: §I-A3.
+
+[22]
+S. Sukhbaatar, A. Szlam, and R. Fergus (2016)
+
+Learning multiagent communication with backpropagation.
+
+In NeurIPS,
+
+Vol. 29, pp. 2244–2252.
+
+Cited by: §I-A3.
+
+[23]
+A. Das, T. Gervet, J. Romoff, D. Batra, D. Parikh, M. Rabbat, and J. Pineau (2019)
+
+TarMAC: targeted multi-agent communication.
+
+In Proceedings of the 36th International Conference on Machine Learning (ICML),
+
+Proceedings of Machine Learning Research, Vol. 97, pp. 1538–1546.
+
+Cited by: §I-A3,
+§III.
+
+[24]
+J. Jiang, C. Dun, T. Huang, and Z. Lu (2020)
+
+Graph convolutional reinforcement learning.
+
+In International Conference on Learning Representations (ICLR),
+
+Cited by: §I-A3.
+
+[25]
+X. Hu, X. Liao, Z. Liu, S. Liu, X. Ding, M. Helaoui, W. Wang, and F. M. Ghannouchi (2020)
+
+Multi-agent deep reinforcement learning-based flexible satellite payload for mobile terminals.
+
+IEEE Transactions on Vehicular Technology 69 (9), pp. 9849–9865.
+
+Cited by: §I-A3.
+
+[26]
+Z. Lin, Z. Ni, L. Kuang, C. Jiang, and Z. Huang (2022)
+
+Dynamic beam pattern and bandwidth allocation based on multi-agent deep reinforcement learning for beam hopping satellite systems.
+
+IEEE Transactions on Vehicular Technology 71 (4), pp. 3917–3930.
+
+Cited by: §I-A3.
+
+[27]
+Y. He, Y. Wang, F. R. Yu, Q. Lin, J. Li, and V. C. M. Leung (2022)
+
+Efficient resource allocation for multi-beam satellite-terrestrial vehicular networks: a multi-agent actor-critic method with attention mechanism.
+
+IEEE Transactions on Intelligent Transportation Systems 23 (3), pp. 2727–2738.
+
+Cited by: §I-A3.
+
+[28]
+A. Goldsmith (2005)
+
+Wireless Communications.
+
+ Cambridge University Press, Cambridge, UK.
+
+External Links: ISBN 9780521837163,
+Document
+
+Cited by: §II-B.
+
+[29]
+ (2023)
+
+Propagation Data and Prediction Methods Required for the Design of Earth–Space Telecommunication Systems.
+
+ITU-R Recommendation
+
+Technical Report P.618-14, International Telecommunication Union (ITU).
+
+External Links: Link
+
+Cited by: §II-B.
+
+[30]
+ (2020)
+
+3GPP TR 38.811 v15.4.0: Study on New Radio (NR) to support non-terrestrial networks.
+
+Technical report
+
+ 3GPP.
+
+Note: Technical Report
+
+External Links: Link
+
+Cited by: §II-B.
+
+[31]
+I. del Portillo (2017)
+
+ITU-Rpy: A Python Implementation of the ITU-R P. Recommendations to Compute Atmospheric Attenuation in Slant and Horizontal paths..
+
+ GitHub.
+
+Note: https://github.com/inigodelportillo/ITU-Rpy/
+
+Cited by: §II-B.
+
+[32]
+S. Diamond and S. Boyd (2016)
+
+CVXPY: A Python-Embedded Modeling Language for Convex Optimization.
+
+Journal of Machine Learning Research 17 (83), pp. 1–5.
+
+Cited by: §III.
+
+[33]
+MOSEK ApS (2019)
+
+The MOSEK optimization toolbox for MATLAB manual. Version 9.0..
+
+External Links: Link
+
+Cited by: §III.
+
+[34]
+T. S. Kelso (2024)
+
+CelesTrak: STARLINK Satellite TLE Data.
+
+Note: https://celestrak.org/NORAD/elements/
+
+Cited by: §IV-A.
+
+ Experimental support, please
+ view the build logs
+ for errors. Generated by
+
+ L
+ A
+ T
+ E
+
+ xml
+
+ .
+
+ Instructions for reporting errors
+
+ We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+ support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+ methods listed below:
+
+ Click the "Report Issue" (
+
+ ) button, located in the page header.
+
+ Tip: You can select the relevant text first, to include it in your report.
+
+ Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+ may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+ should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+ all.
+
+ Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+ We gratefully acknowledge support from
+ our major funders,
+ member institutions, ,
+ and all contributors.
+
+ About
+ ·
+ Help
+ ·
+ Contact
+ ·
+ Subscribe
+ ·
+ Copyright
+ ·
+ Privacy
+ ·
+ Accessibility
+ ·
+ Operational Status (opens in new tab)
+
+ Major funding support from
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  vt,avt)=−(wT⋅T~v,ms​u​m​(t)CLOSE+ws⋅Var~(𝐒o(t))+wd⋅ξvt), 
+
+(21)
+
+where $w_{T}$ , $w_{s}$ , and $w_{d}$ represent the weights of optimization objectives, $\widetilde{T}_{v,m}^{sum}(t)$ represents the latency $T_{v,m}^{sum}(t)$ after Z-score normalization in the time dimension, and $\widetilde{\mathrm{Var}}(\mathbf{S}^{o}(t))$ represents the workload variance after Z-score normalization in the time dimension.
+
+• 
+
+Reward Shaping: Reward shaping is an effective method to incorporate human knowledge into DRL agents [40]. To speed up the model training and convergence, we use the reward shaping method to guide DRL agents in identifying optimal VT migration routes. Specifically, the nonlinearity of variance makes it difficult for agents to improve the variance reward. Therefore, we replace the variance term $\widetilde{\mathrm{Var}}(\mathbf{S}^{o}(t))$ in Eq. (21) with $\widetilde{S}_{m}(t)$ , and Eq. (21) can be reformulated as
+
+ $\displaystyle\begin{split}r_{v}^{t}(\mathbf{o}_{v}^{t},a_{v}^{t})=-(w_{T}\cdot\widetilde{T}_{v,m}^{sum}(t)&+w_{s}\cdot\widetilde{S}_{m}(t)\\
+&+w_{d}\cdot\xi_{v}^{t}),\end{split}$ 
+
+(22)
+
+where $\widetilde{S}_{m}(t)$ denotes the workload of edge server $m$ after Z-score normalization.
+
+Fig. 4: The structure of the dynamic mask module.
+
+• 
+
+Dynamic Mask Module:
+When VTs of vehicle $v$ migrated to edge server $m$ based on action $a_{v,m}^{t}$ lead to $S_{m}^{\prime}(t)>L_{m}^{max}$ or $D_{v,m}(t)>D_{m}^{max}$ in time slot $t$ , the action $a_{v,m}^{t}$ are infeasible. We define the infeasible action set as $\mathcal{M}_{v,t}^{infeasible}$ . To prevent DRL agents from choosing an infeasible action, we utilize the dynamic mask module to set the probability of infeasible actions to $0$ [28, 41], which accelerates agents to identify optimal migration routes. We define the mask list $\mathbf{K}_{v}^{t}=[K_{v,1}^{t},\ldots,K_{v,m}^{t},\ldots,K_{v,M}^{t}]$ , where $K_{v,m}^{t}$ is given by
+
+ $K_{v,m}^{t}=\begin{cases}0,&m\in\mathcal{M}_{v,t}^{infeasible},\\
+1,&\text{otherwise}.\end{cases}$ 
+
+(23)
+
+Thus, the sampled action $a_{v}^{t}$ for vehicle $v$ is rewritten as
+
+ $a_{v}^{t}=\underset{m}{\mathrm{argmax}}(\mathbf{P}_{v}^{t}\mathbf{K}_{v}^{t}).$ 
+
+(24)
+
+Figure 4 shows the complete calculation process of the dynamic mask module. After mapping the output of the LSTM-based Transformer prediction model to workload data, the dynamic mask module will add the task data stored in the cache to obtain the actual workload of edge server $m$ in time slot $t$ . This is because the unfinished task in the last time slot $t-1$ will be stored in the cache. Finally, the dynamic mask module will determine if the edge server is about to be overloaded based on the size of the VT migration task. In addition, to ensure that VTs are not migrated to edge servers too far away, the dynamic mask module performs the same mask operation on edge servers beyond the maximum service range $D_{m}^{max}$ .
+
+Algorithm 2 DM-MAPPO for VT Migration Routing
+
+Initialize actor network parameters $\theta_{v}$ , $\theta_{v}^{old}$ , and critic network parameters $w_{v}$ ;
+
+ 1
+ Initialize environment $Env$ and replay buffer $Buf$ ;
+
+ 2
+ for $\text{Episode}=1,2,\ldots,End$ do
+
+ 3
+ Input historical trajectories to the LSTM-based Transformer model.
+
+ 4
+ Store predicted workloads into $Buf$ .
+
+ 5
+ for $v=1,2,\ldots,V$ do
+
+ 6
+ for $t=0,1,\ldots,t_{v}^{end}$ do
+
+ 7
+ Get the observation $\mathbf{\widetilde{o}}_{v}^{t}$ from $Env$ .
+
+ 8
+ Add the predicted workload into $\mathbf{\widetilde{o}}_{v}^{t}$ to get the observation $\mathbf{o}_{v}^{t}$ .
+
+ 9
+ Each agent gets the action from $\pi_{\theta^{old}}$ according to $\mathbf{o}_{v}^{t}$ .
+
+ 10
+ Mask the infeasible action.
+
+ 11
+ Get the reward $r_{v}^{t}$ and the next observation $\mathbf{\widetilde{o}}_{v}^{t+1}$ from $Env$ .
+
+ 12
+ Store $\{\mathbf{o}_{v}^{t},\mathbf{o}_{v}^{t+1},a_{v}^{t},r_{v}^{t}\}$ into $Buf$ .
+
+ 13
+ end for
+
+ 14
+ Get the reward list $\left\{r_{v}^{t}\right\}_{t=0}^{t_{v}^{end}}$ and the next observation list $\left\{\mathbf{o}_{v}^{t+1}\right\}_{t=0}^{t_{v}^{end}}$ from $Buf$ .
+
+ 15
+ Calculate the next value list $\left\{Q_{w_{v}}(\mathbf{o}_{v}^{t+1},a_{v}^{t+1})\right\}_{t=0}^{t_{v}^{end}}$ as ${target}$ .
+
+ 16
+ Calculate the value list $\left\{Q_{w_{v}}(\mathbf{o}_{v}^{t},a_{v}^{t})\right\}_{t=0}^{t_{v}^{end}}$ as ${value}$ .
+
+ 17
+ Calculate the critic network loss as $J_{v}(w)=\mathrm{MSE}({target},{value})$ using Eq. (26).
+
+ 18
+ Update $w_{v}$ using $J_{v}(w)$ according to Eq. (27).
+
+ 19
+ Calculate ${\delta}\leftarrow{target}-{value}$ .
+
+ 20
+ Calculate $A_{v}^{\theta}\leftarrow\sum_{t=0}^{t_{v}^{end}}{\delta[t]\cdot\gamma^{t-1}}$ .
+
+ 21
+ Get $\pi_{\theta^{old}}$ from the actor network.
+
+ 22
+ for ${epoch}=1,2,\ldots,end$ do
+
+ 23
+ Get $\pi_{\theta}$ from the actor network.
+
+ 24
+ Calculate ${ratio}$ according to Eq. (28).
+
+ 25
+ Calculate $J_{v}^{clip}$ according to Eq. (31).
+
+ 26
+ Calculate the actor network loss $J_{v}(\theta_{v}^{old})$ according to Eq. (32).
+
+ 27
+ Update $\theta_{v}^{old}\leftarrow\theta_{v}$ .
+
+ 28
+ Update $\theta_{v}$ using $J_{v}(\theta_{v})$ according to Eq. (33).
+
+ 29
+ end for
+
+ 30
+ end for
+
+ 31
+ end for
+
+ 32
+ $\bf{return}$ the optimal migration decision sequence $\left[a_{v}^{0},a_{v}^{1},\ldots,a_{v}^{t},\ldots,a_{v}^{t}\right]_{v=1}^{V}$ .
+
+VI-B Algorithm Design
+
+PPO is an on-policy algorithm based on the classic Actor-Critic (AC) framework, which significantly reduces the sampling time required for environment interaction by repeatedly training on batch-collected data [42]. Furthermore, by constraining the difference between the new policy and the old policy, the PPO algorithm ensures stable policy updates, thereby enhancing learning efficiency and accelerating convergence [43]. In the AC framework, $Q_{w_{v}}(\mathbf{o}_{v}^{t},a_{v}^{t})$ is used to estimate the reward expectation in the future after the action $a_{v}^{t}$ is executed based on
+observation $\mathbf{o}_{v}^{t}$ , and $Q_{w_{v}}(\mathbf{o}_{v}^{t},a_{v}^{t})$ is
+
+ $\displaystyle\begin{split}\ Q_{w_{v}}(\mathbf{o}_{v}^{t},a_{v}^{t})&=\gamma Q_{w_{v}}(\mathbf{o}_{v}^{t+1},a_{v}^{t+1})+r_{v}^{t}(\mathbf{o}_{v}^{t},a_{v}^{t})\\
+&\approx\sum_{t^{\prime}=t}^{t_{v}^{end}}{\gamma^{t^{\prime}-t}r_{v}^{t^{\prime}}}(\mathbf{o}_{v}^{t},a_{v}^{t}),\end{split}$ 
+
+(25)
+
+where $\gamma$ represents the discount factor.
+
+The AC framework leverages the critic network to fit the reward distribution to judge the action quality generated by the actor network. Thus, the loss function of the critic network is denoted as
+
+ $\displaystyle\begin{split}&\ J_{v}(w)=\\
+&\frac{1}{t_{v}^{end}}\sum_{t=0}^{t_{v}^{end}}{\left[-Q_{w_{v}}\left(\mathbf{o}_{v}^{t},a_{v}^{t}\right)+\sum_{t^{\prime}=t}^{t_{v}^{end}}{\gamma^{t^{\prime}-t}r_{v}^{t^{\prime}}\left(\mathbf{o}_{v}^{t^{\prime}},a_{v}^{t^{\prime}}\right)}\right]^{2}},\end{split}$ 
+
+(26)
+
+and the parameters of the critic network $w_{v}$ are updated as
+
+ $w_{v}=w_{v}+\alpha_{w}\nabla_{w}J_{v}(w).$ 
+
+(27)
+
+where $\alpha_{w}$ and $\nabla_{w}J_{v}(w)$ represent the learning rate and gradient of the critic network, respectively.
+
+PPO algorithms limit the update rate to ensure that the deviation is within a limited range and define the proportion of the change in the action probability distribution as
+
+ ${ratio}=\frac{\pi_{\theta}(a_{v}^{t}|\mathbf{o}_{v}^{t})}{\pi_{\theta^{old}}(a_{v}^{t}|\mathbf{o}_{v}^{t})}.$ 
+
+(28)
+
+To eliminate the influence of positive and negative rewards on the probability of action exploration, the advantage function on the output of the critic network can be calculated as
+
+ $A_{v}^{\theta}\left(\mathbf{o}_{v}^{t},a_{v}^{t}\right)=Q_{w_{v}}\left(\mathbf{o}_{v}^{t},a_{v}^{t}\right)-b_{w_{v}}\left(\mathbf{o}_{v}^{t}\right),$ 
+
+(29)
+
+where the baseline $b_{w_{v}}\left(\mathbf{o}_{v}^{t}\right)$ is the expected reward for all actions taken at the observation $\mathbf{o}_{v}^{t}$ , which is calculated as
+
+ $b_{w_{v}}\left(\mathbf{o}_{v}^{t}\right)={\mathbb{E}_{a_{v}^{t}\in\mathcal{A}_{v}^{t}}\left[Q_{w_{v}}\left(\mathbf{o}_{v}^{t},a_{v}^{t}\right)|\mathbf{o}_{v}^{t}\right]},$ 
+
+(30)
+
+where $\mathcal{A}_{v}^{t}$ represents the set of all actions of vehicle $v$ in time slot $t$ , and $\mathbb{E}_{a_{v}^{t}\in\mathcal{A}_{v}^{t}}[\cdot]$ denotes the expected value.
+
+In addition, the updated range is limited to $(1-\epsilon,1+\epsilon)$ , which is calculated as
+
+ $J_{v}^{clip}=\mathrm{clip}({ratio},1-\epsilon,1+\epsilon)\cdot A_{v}^{\theta}\left(\mathbf{o}_{v}^{t},a_{v}^{t}\right).$ 
+
+(31)
+
+Therefore, the loss function of the actor network can be denoted as [42]
+
+ $J_{v}(\theta_{v})=\mathbb{E}_{t}\left\{{\min\left[{ratio}\cdot A_{v}^{\theta}\left(\mathbf{o}_{v}^{t},a_{v}^{t}\right),J_{v}^{clip}\right]}\right\},$ 
+
+(32)
+
+and the parameters of the actor network $\theta_{v}$ are updated as
+
+ $\theta_{v}=\theta_{v}+\alpha_{\theta}\nabla_{\theta}J_{v}(\theta_{v}),$ 
+
+(33)
+
+where $\alpha_{\theta}$ represents the learning rate of the actor network.
+
+Algorithm 2 illustrates the pseudocode of the DM-MAPPO algorithm, whose computational complexity is $\mathcal{O}\left(End\times V\times t_{v}^{end}\times(M+end)\right)$ , where $End$ represents the number of complete interactions of all agents with the environment, and $end$ represents the training epochs of each actor network.
+
+VII Simulation Results
+
+VII-A Parameter Settings
+
+We first present the parameter settings for the experiments in the VT migration routing scenario. The scenario is sampled every $30\>\rm{s}$ . Since all UAVs are designed to reach the next RSU for replenishment with the least energy consumption and in the shortest time, the trajectories of all UAVs are fixed, and the UAVs are set to patrol among RSUs at a speed of $3.7\>\rm{m/s}$ [44]. For the network model, the mean of additive Gaussian white noise $\sigma$ is set to $0$ , with a variance of $10$ [9]. The vehicle trajectories are obtained from the dataset33
+ 3
+
+ Vehicle trajectory dataset: https://www.microsoft.com/en-us/research/publication/t-drive-trajectory-data-sample/, and the traffic flow data are sourced from the dataset44
+ 4
+
+ California traffic flow dataset: https://pems.dot.ca.gov/. The main parameters used in the experiments are summarized in Table I [45, 9, 46, 47].
+
+TABLE I: Key Parameter Setting in the Paper. 
+
+Hyperparameters
+
+Setting
+
+The number of vehicles $(C)$ 
+
+ $5$ 
+
+The number of UAVs $(U)$ 
+
+ $10$ 
+
+The number of RSUs ( $N$ )
+
+ $68\sim 84$ 
+
+Migration task size ( $S_{v}^{mig}$ )
+
+ $60\>\rm{MB}$ 
+
+CPU operating frequency of UAVs and RSUs ( $C_{m}$ )
+
+ $32\times 10^{9}\>\rm{Hz}$ 
+
+CPU operating frequency of the satellite ( $C_{s}$ )
+
+ $80\times 10^{9}\>\rm{Hz}$ 
+
+Maximum cache capacity of the edge server ( $L_{m}^{max}$ )
+
+ $300\>\rm{MB}$ 
+
+Vehicle transmitting power ( $p_{v}$ )
+
+ $1000\>\rm{W}$ 
+
+Uplink bandwidth ( $B_{m}^{up}$ )
+
+ $300\>\rm{MHz}$ 
+
+Downlink bandwidth ( $B_{m}^{down}$ )
+
+ $300\>\rm{MHz}$ 
+
+Maximum service distance of RSU ( $D_{m}^{max},m\in\mathcal{N}_{v}^{t}$ )
+
+ $1200\>\rm{m}$ 
+
+Maximum service distance of UAV ( $D_{m}^{max},m\in\mathcal{U}_{v}^{t}$ )
+
+ $1500\>\rm{m}$ 
+
+UAV cruising altitude ( $h_{u}$ )
+
+ $50\>\rm{m}$ 
+
+The number of CPU cycles required per unit data ( $e_{v}$ )
+
+ $1000\>\rm{cycles/bit}$ 
+
+The weight for the latency objective ( $w_{T}$ )
+
+ $2$ 
+
+The weight for the workload variance objective ( $w_{s}$ )
+
+ $1$ 
+
+The weight for the packet loss rate objective ( $w_{d}$ )
+
+ $1$ 
+
+To demonstrate the effectiveness of the proposed LSTM-based Transformer model, we compare it against four baseline models: LSTM, GRU, CNN-GRU, and CNN-LSTM. In both CNN-GRU and CNN-LSTM, the input data is initially processed using a one-dimensional convolution with a kernel size of $\mathrm{1}$ , followed by prediction using GRU or LSTM, respectively [48, 49]. For the LSTM-based Transformer model, considering the factors of training time and prediction accuracy, we set the window of historical data input as $T=6$ to predict the traffic flow data in the next time slot $t+1$ . In particular, for the LSTM prediction layer, the hidden unit in the LSTM module is set to $d_{h}=32$ . For the Transformer prediction layer, the number of attention heads is set to $H=4$ , and the dimension of query, key, and value vectors is set to $d_{k}=64$ .
+
+To demonstrate the effectiveness of the proposed DM-MAPPO algorithm, we compare it with several baseline algorithms, including Multi-Agent Soft Actor-Critic (MASAC), Greedy, and Random algorithms[50]. The Greedy algorithm selects the edge server geographically closest to the vehicle for VT migration. To enhance exploration and avoid infeasible actions, a $\mathrm{10\%}$ probability is introduced for randomly selecting a server. The Random algorithm performs VT migration by randomly selecting the next edge server without any optimization or learned strategy. To maintain environmental stability during the training of the DRL algorithm, the LSTM-based Transformer model should be trained before the DRL algorithm. This ensures that the workload of each edge server observed by the DRL algorithm remains consistent.
+
+All experiments presented in this paper are conducted on a hardware platform equipped with an Intel Core i5 CPU and an MX450 GPU.
+
+VII-B Performance of LSTM-based Transformer Model on Workload Prediction
+
+In Fig. 5, we show the predicted RSU workload curve generated by five different prediction algorithms. Among them, the proposed LSTM-based Transformer model yields a prediction curve that most closely aligns with the actual RSU workload. Figure 5 also shows the error rate of each prediction model in the high-frequency part of the traffic flow data, where the LSTM-based Transformer prediction error is always the smallest, outperforming the other models. As shown in Table II, the proposed model achieves the lowest Root Mean Square Error (RMSE) and Mean Absolute Error (MAE), indicating the smallest deviation between the predicted and actual values. Specifically, the proposed LSTM-based Transformer model achieves a prediction error rate of $\mathrm{6.814\%}$ , highlighting its superior prediction performance. Moreover, the determination $R^{2}$ of the model approaches $1$ , demonstrating strong explanatory power and the ability to capture most of the variance in the workload data. The LSTM-based Transformer model outperforms all baselines across all four evaluation metrics. This is because the LSTM module possesses the powerful capability of processing time-series data. By first leveraging LSTM to capture temporal dependencies and reduce high-frequency noise, followed by the self-attention mechanism of Transformer for fine-grained prediction refinement, the model delivers highly accurate results, and its efficient training time of only $4$ minutes on the hardware platform demonstrates its strong potential for real-world applications.
+
+Fig. 5: The workload of edge servers predicted by different prediction algorithms over time.
+
+TABLE II: The Performance of Various Prediction Algorithms.
+
+Metrics
+Ours
+CNN-GRU
+LSTM
+GRU
+CNN-LSTM
+
+RMSE
+0.671
+0.812
+0.877
+0.916
+0.917
+
+MAE
+20.417
+27.802
+25.330
+29.466
+29.461
+
+Error Rate
+6.814%
+9.451%
+8.741%
+9.843%
+9.796%
+
+ ${R}^{\textbf{2}}$ 
+0.925
+0.865
+0.884
+0.851
+0.855
+
+VII-C Performance of DM-MAPPO on VT Migration Routing
+
+VII-C1 Performance of LSTM-based Transformer models for VT migration route planning
+
+Fig. 6: Performance comparison of test reward curves for various DRL algorithms under the dynamic mask module.
+
+Fig. 7: Performance comparison of different DRL algorithms in multiple evaluation metrics, including test rewards, latency, packet loss rates, and variances of workloads.
+
+As shown in Fig. 6 (a), we comprehensively evaluate the performance of the proposed DM-MAPPO algorithm with and without the LSTM-based Transformer prediction model. For ease of expression, we call them MAPPO with prediction and MAPPO w.o. prediction, respectively. The test reward achieved by MAPPO with prediction is $\mathrm{35.99\%}$ higher than that of MAPPO w.o. prediction. Similarly, the test reward achieved by MASAC with prediction is $\mathrm{17.08\%}$ higher than that of MASAC w.o. prediction. The above results indicate that the integration of the LSTM-based Transformer model significantly reduces the likelihood of infeasible actions taken by the DM-MAPPO algorithm. In Fig. 6 (b), the total latency $T_{v,m}^{sum}(t)$ achieved by MAPPO with prediction is $\mathrm{70.4729\>\rm{s}}$ , which corresponds to an average transmission latency of $8.42\>\rm{ms}$ per vehicle per data transmission. This is lower than the $\mathrm{12.40\>\rm{ms}}$ latency obtained using MAPPO w.o. prediction. Furthermore, Fig. 6 (c) shows that MAPPO with prediction achieves the lowest packet loss rate of $\mathrm{4.494\%}$ , ensuring a high-quality immersive experience. In terms of workload balancing, Fig. 6 (d) shows that MAPPO with prediction reduces the workload variance of the edge server cluster to $24.38$ , and MAPPO w.o. prediction to $24.53$ , which proves that the LSTM-based Transformer model can balance the workload. This shows that our proposed MAPPO with prediction effectively reduces transmission delay and packet loss while improving workload distribution, enhancing the overall immersive experience for users.
+
+Fig. 8: The ablation of different framework elements.
+
+VII-C2 Performance of DM-MAPPO on various VT migration tasks
+
+As shown in Fig. 7, the test reward of each algorithm decreases as the migration data increases. This is due to the inevitable increase in computation and communication times caused by larger migration data packets. For migration data rates of $\mathrm{40\>\rm{MB/s}}$ , $\mathrm{60\>\rm{MB/s}}$ , $\mathrm{80\>\rm{MB/s}}$ , $\mathrm{100\>\rm{MB/s}}$ , and $\mathrm{120\>\rm{MB/s}}$ , our proposed DM-MAPPO algorithm consistently achieves the lowest latency and packet loss rate, as shown in Fig. 7 (b) and Fig. 7 (c). Specifically, when the migration data rate is at or below $\mathrm{100\>\rm{MB/s}}$ , the packet loss rate of DM-MAPPO remains below $\mathrm{10\%}$ , indicating that the proposed DM-MAPPO algorithm ensures stable and reliable data transmission during VT migration. Furthermore, to assess the impact of varying computational requirements, we conduct experiments with tasks that generate different volumes of data. In Fig. 7 (d), the workload variance decreases with the increase of generated data. This is because each vehicle can cause a greater impact on the edge server network. Thus, when serving vehicles, the workload of edge servers with low workloads will be increased, and the workload variance will be reduced. For generated data rates of $\mathrm{1.0\>\rm{MB/s}}$ , $\mathrm{1.5\>\rm{MB/s}}$ , $\mathrm{2.0\>\rm{MB/s}}$ , $\mathrm{2.5\>\rm{MB/s}}$ , and $\mathrm{3.0\>\rm{MB/s}}$ , our proposed DM-MAPPO can achieve the lowest latency and packet loss rate, which demonstrates that DM-MAPPO can reasonably migrate VTs under different computational task requirements to minimize both total latency and packet loss.
+
+VII-C3 Ablation study on framework elements
+
+We conduct an ablation study by independently removing UAVs and the satellite from the proposed framework to evaluate their respective contributions to VT migration. As shown in Fig. 8, in the city area without UAVs, the test reward of the four algorithms decreases by an average of $\mathrm{6.90\%}$ , while the average latency and packet loss rate increase by $\mathrm{37.88\%}$ and $\mathrm{29.78\%}$ , respectively. The reason is that when RSUs are overloaded, VTs can be migrated to UAVs, avoiding a complete interruption of vehicular services, which indicates that UAVs can alleviate the uneven distribution of RSUs and the problem of insufficient computing resources during peak hours in the city area. In addition, in the city area, DM-MAPPO can further reduce the latency and packet loss rate of VT migration with satellites, while the performance of all baseline algorithms declines with satellite due to the high cost of satellite communication, resulting in high latency and packet loss rates. Compared with the city area, the performance of each algorithm decreases in the rural area environment. Fortunately, in rural areas with satellites, the latency and packet loss rates of VT migration are lower than in rural areas without satellites, suggesting that satellites can compensate for the lack of RSU support for communication services in remote areas.
+
+VII-C4 Ablation study on the effectiveness of the dynamic mask module
+
+Fig. 9: Comparison of performance gains brought by the dynamic mask module.
+
+Fig. 10: Algorithm performance comparison in scenarios with varying numbers of UAVs.
+
+Fig. 11: Cooperative behavior exhibited by multiple PPO agents when planning multiple VT migration routes in the same area.
+
+To assess the performance improvement brought by the dynamic mask module for each algorithm, we conduct an ablation study by removing this module from four algorithms, allowing VTs to be migrated to any edge server without constraints. As shown in Fig. 9, algorithms with the masking module significantly outperform those without the masking module in terms of latency and packet loss rates, with an average latency reduction of $\mathrm{72.05\%}$ and an average packet loss rate reduction of $\mathrm{44.60\%}$ . Particularly, the dynamic mask module brings a $\mathrm{73.41\%}$ performance improvement to MAPPO, enabling it to surpass MASAC. Moreover, the dynamic mask module can reduce workload variance, balancing the workload of RSUs in the region.
+
+Fig. 12: Single VT migration process in real scenarios.
+
+VII-C5 Comparison of algorithm robustness under different numbers of edge servers
+
+In practical scenarios, the total number of edge servers in an area is not fixed. This is mainly because UAVs may exit the region before vehicles reach their destinations, leading to dynamic variability in the number of available UAVs. Fortunately, with the introduction of a masking mechanism, the output of the action network can be expanded based on the currently known number of edge servers, with unused output entries being set to zero. The mask remains active until new UAVs enter the area. This approach provides a flexible interface for connecting intermittently arriving or departing UAVs to the DRL network, ensuring consistent integration under dynamic conditions.
+
+The experimental setup is configured as follows: $5$ vehicles depart at time slot $0$ , while the remaining $2$ vehicles depart at different time slots, simulating dynamically entering vehicles. Among the edge servers, $5$ UAVs appear from the edge of the scenario at various times and begin providing VT services. In addition, $6$ UAVs move toward different edges of the area at different times and exit the region.
+As shown in Fig. 10, DM-MAPPO still maintains the best performance under these experimental conditions, achieving the lowest latency and packet loss rate. This demonstrates that DM-MAPPO possesses strong robustness, enabling it to effectively adapt to highly dynamic environments, and thus making it well-suited for real-world applications.
+
+VII-C6 Visual analysis of multi-agent cooperative behavior
+
+To demonstrate the cooperation among agents in DM-MAPPO during the VT migration process, we develop a visualization platform to display the migration of each VT intuitively. Typically, the number of vehicles exceeds that of RSUs. However, the edge servers providing services to these five vehicles are also capable of serving other vehicles. For a simple and clear presentation, we have exclusively displayed the behavioral trajectories of these $5$ vehicles controlled by the DM-MAPPO algorithm. As shown in Fig.11, in time slot $t$ , both vehicle $1$ and vehicle $3$ are traveling from north to south within the same region. As they approach the coverage boundary of RSU $7$ , they need to migrate their VTs to edge servers with better channel quality, thus ensuring the immersion of VT services. For the vehicle $1$ , RSU $8$ , and the satellite are identified as feasible edge server targets for VT migration. Given the higher communication cost associated with satellite links, vehicle $1$ opts to migrate its VTs to RSU $8$ . Since the agents in DM-MAPPO share information such as workload information, vehicle $3$ migrating its VTs to RSU $8$ will overload RSU $8$ , which may cause packet loss and affect the VT services of other vehicles. Therefore, for vehicle $3$ , migrating its VTs to the satellite can maximize the overall benefit for all vehicles, which shows that our proposed DM-MAPPO can solve cooperative tasks well.
+
+VII-C7 Visual analysis of the VT migration process
+
+In Fig. 12, we present the complete VT migration trajectory of vehicle $4$ within the target region. At moment $1$ , there are no RSUs or UAVs in the standby state. Therefore, the optimal option for vehicle $4$ is to migrate its VTs to the satellite. At moment $2$ , vehicle $4$ enters the service range of RSU $1$ and RSU $2$ . To avoid the high costs of satellite services, the vehicle $4$ migrates its VTs from the satellite to the RSU $1$ . At moment $3$ , RSU $2$ is overloaded, and vehicle $4$ is out of the service range of RSU $1$ but enters the service range of UAV $1$ . Since the communication costs for UAVs are significantly lower than those for the satellite, the optimal option for vehicle $4$ is to migrate its VTs to UAV $1$ . At moment $4$ , vehicle $4$ is out of the service range of UAV $1$ and migrates its VTs to RSU $5$ . This is because RSU $5$ is the closest RSU to the destination, and vehicle $4$ does not need to migrate VTs again, which can minimize total latency. This indicates that the actions taken by our proposed DM-MAPPO are highly interpretable, the migration process is clear, and the planned VT migration path is reasonable and reliable.
+
+VIII Conclusion
+
+In this paper, we have addressed the challenges of optimizing multi-objective VT migration routing in 6G-enabled IoV networks. Specifically, we have proposed a workload prediction-based VT migration framework that leverages a heterogeneous edge server architecture comprising RSUs, UAVs, and the satellite. This architecture is particularly effective in mitigating the problem of low resource utilization in sparsely distributed regions. To enable accurate long-term workload prediction, we have proposed the LSTM-based Transformer model that integrates the LSTM module into the Transformer model. Furthermore, we have proposed the DM-MAPPO algorithm based on the dynamic mask module to facilitate efficient VT migration route planning in complex environments. The DM-MAPPO algorithm can greatly reduce the probability of infeasible actions and comprehensively optimize key performance metrics such as latency, packet loss rate, and regional workload balance. Simulation results have demonstrated that the LSTM-based Transformer model can reduce the error rate to $\mathrm{6.814\%}$ , achieving accurate traffic flow prediction, and the performance of the DM-MAPPO algorithm has been improved by $\mathrm{73.41\%}$ compared with MAPPO. The proposed framework operates under the idealistic assumptions of fully trustworthy edge servers and simplified channel models. However, these assumptions may lead to risks such as the exposure of VT migration data and vehicle trajectories, potentially hindering the framework’s practical application. Therefore, for future work, we will explore the channel model with line-of-sight and non-line-of-sight natures and incorporate privacy-preserving mechanisms into our framework[51, 52].
+
+References
+
+[1]
+X. Zhou, M. Bilal, R. Dou, J. J. P. C. Rodrigues, Q. Zhao, J. Dai, and X. Xu (2024)
+
+Edge Computation Offloading With Content Caching in 6G-Enabled IoV.
+
+IEEE Transactions on Intelligent Transportation Systems 25 (3), pp. 2733–2747.
+
+External Links: Document
+
+Cited by: §I-A,
+§II-A.
+
+[2]
+X. Yang, G. Li, J. Wu, K. Zhou, J. Li, and W. Yang (2025)
+
+Backdoor-Empowered Regulable Privilege Authorization for Edge-Level Graph Learning in 6G Vehicular Networks.
+
+IEEE Transactions on Consumer Electronics 71 (2), pp. 6307–6318.
+
+External Links: Document
+
+Cited by: §I-A.
+
+[3]
+W. Saad, M. Bennis, and M. Chen (2020)
+
+A Vision of 6G Wireless Systems: Applications, Trends, Technologies, and Open Research Problems.
+
+IEEE Network 34 (3), pp. 134–142.
+
+External Links: Document
+
+Cited by: §I-A.
+
+[4]
+H. Guo, J. Li, J. Liu, N. Tian, and N. Kato (2022)
+
+A Survey on Space-Air-Ground-Sea Integrated Network Security in 6G.
+
+IEEE Communications Surveys & Tutorials 24 (1), pp. 53–87.
+
+External Links: Document
+
+Cited by: §I-A.
+
+[5]
+Y. Wang, Z. Su, N. Zhang, R. Xing, D. Liu, T. H. Luan, and X. Shen (2023)
+
+A Survey on Metaverse: Fundamentals, Security, and Privacy.
+
+IEEE Communications Surveys & Tutorials 25 (1), pp. 319–352.
+
+External Links: Document
+
+Cited by: §I-A.
+
+[6]
+M. Xu, W. C. Ng, W. Y. B. Lim, J. Kang, Z. Xiong, D. Niyato, Q. Yang, X. Shen, and C. Miao (2023)
+
+A Full Dive Into Realizing the Edge-Enabled Metaverse: Visions, Enabling Technologies, and Challenges.
+
+IEEE Communications Surveys & Tutorials 25 (1), pp. 656–700.
+
+External Links: Document
+
+Cited by: §I-A.
+
+[7]
+Y. Kang, J. Wen, J. Kang, T. Zhang, H. Du, D. Niyato, R. Yu, and S. Xie (2024)
+
+Hybrid-Generative Diffusion Models for Attack-Oriented Twin Migration in Vehicular Metaverses.
+
+arXiv preprint arXiv:2407.11036.
+
+Cited by: §I-A.
+
+[8]
+Y. Dai and Y. Zhang (2022)
+
+Adaptive Digital Twin for Vehicular Edge Computing and Networks.
+
+Journal of Communications and Information Networks 7 (1), pp. 48–59.
+
+External Links: Document
+
+Cited by: §I-A.
+
+[9]
+J. Chen, J. Kang, M. Xu, Z. Xiong, D. Niyato, C. Chen, A. Jamalipour, and S. Xie (2024)
+
+Multiagent Deep Reinforcement Learning for Dynamic Avatar Migration in AIoT-Enabled Vehicular Metaverses With Trajectory Prediction.
+
+IEEE Internet of Things Journal 11 (1), pp. 70–83.
+
+External Links: Document
+
+Cited by: §I-A,
+§II-A,
+§III-A,
+§III-C,
+§VII-A.
+
+[10]
+J. Wen, J. Nie, Y. Zhong, C. Yi, X. Li, J. Jin, Y. Zhang, and D. Niyato (2024)
+
+Diffusion-Model-Based Incentive Mechanism With Prospect Theory for Edge AIGC Services in 6G IoT.
+
+IEEE Internet of Things Journal 11 (21), pp. 34187–34201.
+
+External Links: Document
+
+Cited by: 3rd item.
+
+[11]
+M. M. Azari, S. Solanki, S. Chatzinotas, O. Kodheli, H. Sallouha, A. Colpaert, J. F. Mendoza Montoya, S. Pollin, A. Haqiqatnejad, A. Mostaani, E. Lagunas, and B. Ottersten (2022)
+
+Evolution of Non-Terrestrial Networks From 5G to 6G: A Survey.
+
+IEEE Communications Surveys & Tutorials 24 (4), pp. 2633–2672.
+
+External Links: Document
+
+Cited by: §I-B.
+
+[12]
+L. Chen, B. Hu, Z. Guan, L. Zhao, and X. Shen (2022)
+
+Multiagent Meta-Reinforcement Learning for Adaptive Multipath Routing Optimization.
+
+IEEE Transactions on Neural Networks and Learning Systems 33 (10), pp. 5374–5386.
+
+External Links: Document
+
+Cited by: §I-B.
+
+[13]
+W. Song, S. Rajak, S. Dang, R. Liu, J. Li, and S. Chinnadurai (2023)
+
+Deep Learning Enabled IRS for 6G Intelligent Transportation Systems: A Comprehensive Study.
+
+IEEE Transactions on Intelligent Transportation Systems 24 (11), pp. 12973–12990.
+
+External Links: Document
+
+Cited by: §II-A.
+
+[14]
+J. Guo, M. Bilal, Y. Qiu, C. Qian, X. Xu, and K. Raymond Choo (2024)
+
+Survey on Digital Twins for Internet of Vehicles: Fundamentals, Challenges, and Opportunities.
+
+Digital Communications and Networks 10 (2), pp. 237–247.
+
+External Links: ISSN 2352-8648,
+Document
+
+Cited by: §II-A.
+
+[15]
+X. Xu, Q. Jiang, P. Zhang, X. Cao, M. R. Khosravi, L. T. Alex, L. Qi, and W. Dou (2022)
+
+Game Theory for Distributed IoV Task Offloading With Fuzzy Neural Network in Edge Computing.
+
+IEEE Transactions on Fuzzy Systems 30 (11), pp. 4593–4604.
+
+External Links: Document
+
+Cited by: §II-A.
+
+[16]
+T. Z. H. Ernest and A. S. Madhukumar (2024)
+
+Computation Offloading in MEC-Enabled IoV Networks: Average Energy Efficiency Analysis and Learning-Based Maximization.
+
+IEEE Transactions on Mobile Computing 23 (5), pp. 6074–6087.
+
+External Links: Document
+
+Cited by: §II-A.
+
+[17]
+M. H. Adnan, Z. A. Zukarnain, and O. A. Amodu (2024)
+
+Fundamental Design Aspects of UAV-enabled MEC Systems: A Review on Models, Challenges, and Future Opportunities.
+
+Computer Science Review 51, pp. 100615.
+
+External Links: ISSN 1574-0137,
+Document
+
+Cited by: §II-A.
+
+[18]
+X. Yuan, W. Zhang, J. Yang, M. Xu, D. Niyato, Q. Deng, and C. Li (2024)
+
+Efficient IoV Resource Management Through Enhanced Clustering, Matching, and Offloading in DT-Enabled Edge Computing.
+
+IEEE Internet of Things Journal 11 (18), pp. 30172–30186.
+
+External Links: Document
+
+Cited by: §II-A.
+
+[19]
+T. Liu, L. Tang, W. Wang, X. He, Q. Chen, X. Zeng, and H. Jiang (2022)
+
+Resource Allocation in DT-assisted Internet of Vehicles via Edge Intelligent Cooperation.
+
+IEEE Internet of Things Journal 9 (18), pp. 17608–17626.
+
+External Links: Document
+
+Cited by: §II-A.
+
+[20]
+Z. Chen, M. Ma, T. Li, H. Wang, and C. Li (2023)
+
+Long Sequence Time-series Forecasting with Deep Learning: A Survey.
+
+Information Fusion 97, pp. 101819.
+
+Cited by: §II-B.
+
+[21]
+G. ALMahadin, Y. Aoudni, M. Shabaz, A. V. Agrawal, G. Yasmin, E. S. Alomari, H. M. R. Al-Khafaji, D. Dansana, and R. R. Maaliw (2024)
+
+VANET Network Traffic Anomaly Detection Using GRU-Based Deep Learning Model.
+
+IEEE Transactions on Consumer Electronics 70 (1), pp. 4548–4555.
+
+External Links: Document
+
+Cited by: §II-B.
+
+[22]
+J. Sun, X. Zhang, and J. Wang (2023)
+
+Lightweight Bidirectional Long Short-term Memory Based on Automated Model Pruning with Application to Bearing Remaining Useful Life Prediction.
+
+Engineering Applications of Artificial Intelligence 118, pp. 105662.
+
+External Links: ISSN 0952-1976,
+Document
+
+Cited by: §II-B.
+
+[23]
+F. Li, J. Feng, H. Yan, G. Jin, F. Yang, F. Sun, D. Jin, and Y. Li (2023)
+
+Dynamic Graph Convolutional Recurrent Network for Traffic Prediction: Benchmark and Solution.
+
+ACM Trans. Knowl. Discov. Data 17 (1).
+
+External Links: ISSN 1556-4681,
+Document
+
+Cited by: §II-B.
+
+[24]
+H. Zhou, J. Li, S. Zhang, S. Zhang, M. Yan, and H. Xiong (2023)
+
+Expanding the Prediction Capacity in Long Sequence Time-series Forecasting.
+
+Artificial Intelligence 318, pp. 103886.
+
+External Links: ISSN 0004-3702,
+Document
+
+Cited by: §II-B.
+
+[25]
+S. Liu, H. Yu, C. Liao, J. Li, W. Lin, A. X. Liu, and S. Dustdar (2022)
+
+Pyraformer: Low-Complexity Pyramidal Attention for Long-Range Time Series Modeling and Forecasting.
+
+In The Tenth International Conference on Learning Representations (ICLR 2022),
+
+Cited by: §II-B.
+
+[26]
+H. Zhou, S. Zhang, J. Peng, S. Zhang, J. Li, H. Xiong, and W. Zhang (2021)
+
+Informer: Beyond Efficient Transformer for Long Sequence Time-Series Forecasting.
+
+Proceedings of the AAAI Conference on Artificial Intelligence 35 (12), pp. 11106–11115.
+
+External Links: Document
+
+Cited by: §II-B.
+
+[27]
+B. Mao, X. Zhou, J. Liu, and N. Kato (2024)
+
+On a Cooperative Deep Reinforcement Learning-Based Multi-Objective Routing Strategy for Diversified 6G Metaverse Services.
+
+IEEE Transactions on Vehicular Technology 73 (9), pp. 14092–14096.
+
+External Links: Document
+
+Cited by: §II-C.
+
+[28]
+H. Kang, X. Chang, J. Mišić, V. B. Mišić, J. Fan, and Y. Liu (2023)
+
+Cooperative UAV Resource Allocation and Task Offloading in Hierarchical Aerial Computing Systems: A MAPPO-Based Approach.
+
+IEEE Internet of Things Journal 10 (12), pp. 10497–10509.
+
+External Links: Document
+
+Cited by: §II-C,
+5th item.
+
+[29]
+X. Ning, M. Zeng, M. Hua, and Z. Fei (2024)
+
+Multiple Reconfigurable Intelligent Surfaces Aided Vehicular Edge Computing Networks: A MAPPO-Based Approach.
+
+IEEE Transactions on Vehicular Technology 73 (11), pp. 17496–17509.
+
+External Links: Document
+
+Cited by: §II-C.
+
+[30]
+D. Zhong, Y. Yang, and Q. Zhao (2024)
+
+No Prior Mask: Eliminate Redundant Action for Deep Reinforcement Learning.
+
+In Proceedings of the AAAI Conference on Artificial Intelligence,
+
+Vol. 38, pp. 17078–17086.
+
+Cited by: §II-C.
+
+[31]
+J. Wen, J. Kang, Z. Xiong, Y. Zhang, H. Du, Y. Jiao, and D. Niyato (2023)
+
+Task Freshness-Aware Incentive Mechanism for Vehicle Twin Migration in Vehicular Metaverses.
+
+In 2023 IEEE International Conference on Metaverse Computing, Networking and Applications (MetaCom),
+
+Vol. , pp. 481–487.
+
+External Links: Document
+
+Cited by: §III-A.
+
+[32]
+C. E. Shannon (1948)
+
+A Mathematical Theory of Communication.
+
+The Bell System Technical Journal 27 (3), pp. 379–423.
+
+External Links: Document
+
+Cited by: §III-A.
+
+[33]
+S. Jeong, O. Simeone, and J. Kang (2018)
+
+Mobile Edge Computing via a UAV-Mounted Cloudlet: Optimization of Bit Allocation and Path Planning.
+
+IEEE Transactions on Vehicular Technology 67 (3), pp. 2049–2063.
+
+External Links: Document
+
+Cited by: §III-B.
+
+[34]
+P. Ren, X. Qiao, Y. Huang, L. Liu, C. Pu, S. Dustdar, and J. Chen (2022)
+
+Edge AR X5: An Edge-Assisted Multi-User Collaborative Framework for Mobile Web Augmented Reality in 5G and Beyond.
+
+IEEE Transactions on Cloud Computing 10 (4), pp. 2521–2537.
+
+External Links: Document
+
+Cited by: §III-B.
+
+[35]
+H. Yadav and A. Thakkar (2024)
+
+NOA-LSTM: An Efficient LSTM Cell Architecture for Time Series Forecasting.
+
+Expert Systems with Applications 238, pp. 122333.
+
+External Links: ISSN 0957-4174,
+Document
+
+Cited by: §V.
+
+[36]
+A. Khan, M. M. Fouda, D. Do, A. Almaleh, and A. U. Rahman (2023)
+
+Short-Term Traffic Prediction Using Deep Learning Long Short-Term Memory: Taxonomy, Applications, Challenges, and Future Trends.
+
+IEEE Access 11 (), pp. 94371–94391.
+
+External Links: Document
+
+Cited by: §V.
+
+[37]
+A. Vaswani (2017)
+
+Attention is all you need.
+
+Advances in Neural Information Processing Systems.
+
+Cited by: §V,
+§V.
+
+[38]
+B. Gülmez (2023)
+
+Stock Price Prediction with Optimized Deep LSTM Network with Artificial Rabbits Optimization Algorithm.
+
+Expert Systems with Applications 227, pp. 120346.
+
+External Links: ISSN 0957-4174,
+Document
+
+Cited by: §V.
+
+[39]
+S. A. Cook (2023)
+
+The Complexity of Theorem-Proving Procedures.
+
+In Logic, automata, and computational complexity: The works of Stephen A. Cook,
+
+pp. 143–152.
+
+Cited by: §V.
+
+[40]
+Y. Hu, W. Wang, H. Jia, Y. Wang, Y. Chen, J. Hao, F. Wu, and C. Fan (2020)
+
+Learning to Utilize Shaping Rewards: A New Approach of Reward Shaping.
+
+In Advances in Neural Information Processing Systems, H. Larochelle, M. Ranzato, R. Hadsell, M.F. Balcan, and H. Lin (Eds.),
+
+Vol. 33, pp. 15931–15941.
+
+Cited by: 4th item.
+
+[41]
+J. Wen, J. Kang, D. Niyato, Y. Zhang, and S. Mao (2025)
+
+Sustainable Diffusion-Based Incentive Mechanism for Generative AI-Driven Digital Twins in Industrial Cyber-Physical Systems.
+
+IEEE Transactions on Industrial Cyber-Physical Systems 3 (), pp. 139–149.
+
+External Links: Document
+
+Cited by: 5th item.
+
+[42]
+J. Schulman, F. Wolski, P. Dhariwal, A. Radford, and O. Klimov (2017)
+
+Proximal Policy Optimization Algorithms.
+
+CoRR abs/1707.06347.
+
+External Links: 1707.06347
+
+Cited by: §VI-B,
+§VI-B.
+
+[43]
+J. Kang, Y. Zhong, M. Xu, J. Nie, J. Wen, H. Du, D. Ye, X. Huang, D. Niyato, and S. Xie (2024)
+
+Tiny multiagent DRL for twins migration in UAV metaverses: a multileader multifollower stackelberg game approach.
+
+IEEE Internet of Things Journal 11 (12), pp. 21021–21036.
+
+External Links: Document
+
+Cited by: §VI-B.
+
+[44]
+C. Zhan, Y. Zeng, and R. Zhang (2018)
+
+Energy-Efficient Data Collection in UAV Enabled Wireless Sensor Network.
+
+IEEE Wireless Communications Letters 7 (3), pp. 328–331.
+
+External Links: Document
+
+Cited by: §VII-A.
+
+[45]
+E. Dinc, M. Vondra, and C. Cavdar (2021)
+
+Total Cost of Ownership Optimization for Direct Air-to-Ground Communication Networks.
+
+IEEE Transactions on Vehicular Technology 70 (10), pp. 10157–10172.
+
+External Links: Document
+
+Cited by: §VII-A.
+
+[46]
+A. Masaracchia, Y. Li, K. K. Nguyen, C. Yin, S. R. Khosravirad, D. B. D. Costa, and T. Q. Duong (2021)
+
+UAV-Enabled Ultra-Reliable Low-Latency Communications for 6G: A Comprehensive Survey.
+
+IEEE Access 9 (), pp. 137338–137352.
+
+External Links: Document
+
+Cited by: §VII-A.
+
+[47]
+J. Wang, D. Feng, S. Zhang, J. Tang, and T. Q. S. Quek (2019)
+
+Computation Offloading for Mobile Edge Computing Enabled Vehicular Networks.
+
+IEEE Access 7 (), pp. 62624–62632.
+
+External Links: Document
+
+Cited by: §VII-A.
+
+[48]
+P. T. Yamak, L. Yujian, and P. K. Gadosey (2020)
+
+A Comparison Between ARIMA, LSTM, and GRU for Time Series Forecasting.
+
+In Proceedings of the 2019 2nd International Conference on Algorithms, Computing and Artificial Intelligence,
+
+ACAI ’19, New York, NY, USA, pp. 49–55.
+
+External Links: ISBN 9781450372619,
+Document
+
+Cited by: §VII-A.
+
+[49]
+H. Song and H. Choi (2023)
+
+Forecasting Stock Market Indices Using the Recurrent Neural Network Based Hybrid Models: CNN-LSTM, GRU-CNN, and Ensemble Models.
+
+Applied Sciences 13 (7).
+
+External Links: ISSN 2076-3417,
+Document
+
+Cited by: §VII-A.
+
+[50]
+R. Xu, G. Li, J. Wu, J. Li, Y. Zhao, Y. Liu, and M. Chen (2025)
+
+Toward Covert and Reliable Communication for Anti-Eavesdropping Transmission in V2X Networks.
+
+IEEE Transactions on Wireless Communications 24 (8), pp. 6429–6442.
+
+External Links: Document
+
+Cited by: §VII-A.
+
+[51]
+Z. Zhang, M. Fang, M. Chen, G. Li, X. Lin, and Y. Liu (2024)
+
+Securing Distributed Network Digital Twin Systems Against Model Poisoning Attacks.
+
+IEEE Internet of Things Journal 11 (21), pp. 34312–34324.
+
+External Links: Document
+
+Cited by: §VIII.
+
+[52]
+I. Atzeni, J. Arnau, and M. Kountouris (2018)
+
+Downlink Cellular Network Analysis With LOS/NLOS Propagation and Elevated Base Stations.
+
+IEEE Transactions on Wireless Communications 17 (1), pp. 142–156.
+
+External Links: Document
+
+Cited by: §VIII.
+
+Peng Yin was born in 1989. He received his B.S. and M.S. degrees from Beijing Institute of Technology in 2013 and 2017, respectively. Currently, he is working as an associate research fellow in the Defence Industry Secrecy Examination and Certification Center. His research interests include Electromagnetic cyberspace security, Integrated sensing and communication technology, and Signal detection and recognition technology.
+
+Wentao Liang received the B.S. degree from Guangdong University of Technology, Guangzhou, China, in 2025. He is currently pursuing an M.S. degree in the State Key Laboratory of Industrial Control Technology, College of Control Science and Engineering, Zhejiang University, Hangzhou, China. His research interests include multi-agent deep reinforcement learning, time series forecasting, and the computer vision.
+
+Jinbo Wen received the B.Eng. degree from Guangdong University of Technology, China, in 2023. He is currently pursuing an M.S. degree with the College of Computer Science and Technology, Nanjing University of Aeronautics and Astronautics, China. His research interests include generative AI, blockchain, and the metaverse.
+
+Jiawen Kang (Senior Member, IEEE) received the Ph.D. degree from the Guangdong University of Technology, China, in 2018. He was a postdoc at Nanyang Technological University, Singapore, from 2018 to 2021. He is currently a professor at Guangdong University of Technology, China. His research interests mainly focus on blockchain, security, and privacy protection in wireless communications and networking.
+
+Junlong Chen received the B.S. degree from Guangdong University of Technology, Guangzhou, China, in 2025. He is currently working toward the Ph.D. degree in Intelligent Transportation Thrust, The Hong Kong University of Science and Technology (Guangzhou), Guangzhou, China. His research interests mainly focus on Synesthesia of Machines, digital-twin, deep reinforcement learning, and AIGC in wireless communications and networking.
+
+Dusit Niyato (Fellow, IEEE) is a professor in the School of Computer Science and Engineering at Nanyang Technological University, Singapore. He received a B.Eng. from King Mongkut’s Institute of Technology Ladkrabang (KMITL), Thailand, in 1999 and a Ph.D. in Electrical and Computer Engineering from the University of Manitoba, Canada, in 2008. His research interests are in the areas of generative AI, edge intelligence, decentralized machine learning, and incentive mechanism design.
+
+ Experimental support, please
+ view the build logs
+ for errors. Generated by
+
+ L
+ A
+ T
+ E
+
+ xml
+
+ .
+
+ Instructions for reporting errors
+
+ We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+ support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+ methods listed below:
+
+ Click the "Report Issue" (
+
+ ) button, located in the page header.
+
+ Tip: You can select the relevant text first, to include it in your report.
+
+ Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+ may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+ should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+ all.
+
+ Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+ We gratefully acknowledge support from
+ our major funders,
+ member institutions, ,
+ and all contributors.
+
+ About
+ ·
+ Help
+ ·
+ Contact
+ ·
+ Subscribe
+ ·
+ Copyright
+ ·
+ Privacy
+ ·
+ Accessibility
+ ·
+ Operational Status (opens in new tab)
+
+ Major funding support from

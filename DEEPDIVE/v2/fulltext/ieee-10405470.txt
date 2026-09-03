@@ -1,0 +1,597 @@
+2023 5th International Conference on Artificial Intelligence and Computer Applications (ICAICA)
+
+Deep Reinforcement Learning for Congestion
+Control and Routing Optimization in LEO Satellite
+Networks
+2023 5th International Conference on Artificial Intelligence and Computer Applications (ICAICA) | 979-8-3503-2331-3/23/$31.00 ©2023 IEEE | DOI: 10.1109/ICAICA58456.2023.10405470
+
+Jiacheng Zhu
+
+Beijing University of Posts and
+Telecommunications
+Beijing, China
+zhujiacheng@bupt.edu.cn
+
+Xuebin Sun*
+
+Beijing University of Posts and
+Telecommunications
+Beijing, China
+sunxuebin@bupt.edu.cn
+
+Beijing University of Posts and
+Telecommunications
+Beijing, China
+djchen@bupt.edu.cn
+
+performance bottlenecks occur at intermediate nodes[7].
+However, given the high dynamism and complexity of LEO
+satellite constellation networks, route recalculations result in
+a significant computational burden with limited efficiency
+gains. While optimizing algorithms can be used to reduce the
+computational load, this often overlooks the predictability and
+structured nature of satellite orbits, despite their dynamic
+characteristics.
+
+Abstract—This paper provides a exploration of the
+application of low earth orbit satellite networks (LSN) in the
+context of sixth-generation(6G) mobile communication
+technology. The primary focus of this research is to address
+issues related to congestion control and routing within satellite
+networks. We introduces ECSAC-DRO, a novel algorithm that
+leverages deep reinforcement learning (DRL) to optimize
+routing and congestion control. Experimental results
+demonstrate that the ECSAC-DRO algorithm, taking into
+consideration the high-dimensional characteristics of LSN and
+incorporating elements from the DRL-based Soft Actor-Critic
+(SAC) algorithm, excels in providing flexible control over LSN
+congestion levels and bandwidth utilization. It outperforms
+traditional methods like Dijkstra, making it a promising and
+forward-looking solution that lends support to the future
+development of 6G communication technology.
+
+Another route for resolution involves adopting a
+broadcasting method to seek optimal paths [8], but this
+method leads to substantial resource and energy wastage.
+Furthermore, the extensive routing calculations associated
+with LEO constellations make convergence challenging. In
+response to these challenges, researchers have explored
+strategies such as employing the nearest neighbor propagation
+clustering algorithm to solve the problem of uneven
+distribution of ground users, fluctuating reliability of nodes
+and links, and frequent switching of controller groups [9].
+They have also explored heuristic algorithms tailored to
+specific regions, aiming to mitigate congestion issues [10].
+However, these methods heavily rely on manual configuration
+and exhibit limited robustness, hindering their widespread
+adoption.
+
+Keywords—Congestion control, LEO satellite networks
+routing, deep reinforcement learning
+
+I. INTRODUCTION
+The advent of 5G has advanced the Internet of Things, but
+challenges persist, prompting anticipation for 6G [1]. 5G's
+network communication is limited by hardware, and its global
+deployment demands substantial resources. 6G strives for
+global coverage with a satellite network focus, making
+communication technology and integration its central research
+concerns [2].
+
+In recent years, the field of machine learning has
+experienced a rapid evolution, with DRL emerging as a
+convergence of deep learning's robust cognitive capabilities
+and reinforcement learning's decision-making prowess. DRL
+empowers intelligent agents to explore their surroundings
+within predefined contexts, quantifying the consequences of
+their actions and assessing their navigational outcomes. This
+process culminates in the formulation of strategies for optimal
+decision-making in complex environments. Consequently,
+DRL has found broad-ranging applications across domains
+like natural language processing, computer vision, and
+autonomous driving[11]-[13]. Likewise, DRL holds the
+potential to make significant contributions in the realm of
+LEO route optimization.[14] turned to a DQN-based
+algorithm to tackle the load balancing issues within LEO
+routing networks. However, a drawback of this approach is the
+discrete action space, which limits its capacity to faithfully
+represent real-world challenges.What’s more, [15] ventured
+into the realm of using a DDPG-based algorithm to combat
+the issue of excessive energy consumption in LSN.
+Employing a continuous action space, this innovative
+approach offers a fresh perspective on alleviating routing
+congestion within LSN. Nevertheless, DDPG's performance
+in high-dimensional state spaces left much room for
+
+The existing satellite orbits primarily comprise Low Earth
+Orbit (LEO), Medium Earth Orbit (MEO), and
+Geosynchronous Transfer Orbit (GTO). As technology
+continues to advance, the success rate of satellite launches is
+continuously improving, costs are decreasing, and LEO orbit
+resources are more abundant [3]. However, to fully realize
+their potential, LEO orbits require a large number of satellites
+to form satellite constellations. In recent years, the
+development of large-scale constellation networks has been
+rapid. As these networks continue to evolve, the issues they
+face are gradually turning into pain points. Specifically, due to
+geographical, political, and other factors, congestion near the
+traffic entry and exit points of constellation routing networks
+has become a serious concern. This congestion is increasingly
+becoming a bottleneck for the overall network and may have
+disastrous consequences for the entire network
+infrastructure[4]-[6].
+Traditional approaches, such as employing distributed
+routing concepts, involve recalculating routes when
+
+979-8-3503-2331-3/23/$31.00 ©2023 IEEE
+
+Dianjun Chen
+
+739
+
+Dalian, China, November 28-30, 2023
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:55:00 UTC from IEEE Xplore. Restrictions apply.
+
+improvement.
+
+𝑣𝑣 ,𝑣𝑣
+
+In this context, the relatively underutilized SAC algorithm,
+designed for high-dimensional state spaces, emerges as a
+promising alternative. Hence, to address the joint optimization
+challenge of traffic control and routing in vast, dynamic, and
+predictable satellite networks, our plan is to harness the SAC
+algorithm within the framework of DRL. This strategy aims to
+enhance the cognitive capabilities of satellite networks
+concerning routing and traffic distribution, ultimately paving
+the way for the identification of optimal decision-making.
+
+,𝑣𝑣
+
+𝑣𝑣
+
+𝑣𝑣 ,𝑣𝑣
+
+𝑝𝑝1,1
+𝑝𝑝2,1
+
+⋯
+⋯
+⋱
+⋯
+
+𝑝𝑝1,𝑛𝑛
+𝑝𝑝2,𝑛𝑛
+⋮ � (4)
+𝑝𝑝𝑛𝑛,𝑛𝑛
+
+The expression for the average bandwidth utilization of a
+satellite, assuming that an ISL requires a bandwidth of k to
+transmit a single data packet, can be represented as follows:
+n
+
+η=�
+i=0
+
+kp
+, ∀p ≠ 0(5)
+B
+
+At time t, we define the instantaneous congestion function
+of the network, which is used to measure the degree of
+congestion in the network at that particular moment.
+
+When numbering the orbits from 1 to n, with i (1 < i < n)
+denoting a specific orbit, satellites on the i-th orbit can
+establish connections with up to two adjacent satellites on the
+same orbit, and up to two adjacent orbits, namely, the (i-1)-th
+and (i+1)-th orbits. However, it's essential to note that due to
+the presence of a seam or boundary at the equator, satellites
+on the 1st orbit are unable to establish connections with
+satellites on the n-th orbit. As a result, the spatial distribution
+of satellites within a single time slot can be conveniently
+expressed by organizing V in matrix form.
+
+n
+
+n
+
+Ft (p) = � � 𝛿𝛿 𝑝𝑝𝑖𝑖,𝑗𝑗 , 𝛿𝛿 > 1(6)
+i=0 j=0
+
+Here, δ stands for the route convergence control factor.So,
+the routing optimization problem under study can be
+represented as a non-linear programming problem :
+
+⋯ 𝑣𝑣1,𝑗𝑗
+⋯ 𝑣𝑣2,𝑗𝑗
+⋱
+⋮ � (1)
+⋯ 𝑣𝑣𝑖𝑖,𝑗𝑗
+
+Q = min Ft (p) (7)
+P
+
+s. t. η > ζ
+
+The objective of this problem is to maximize the reduction
+of network congestion at the given average satellite bandwidth
+utilization ζ while maintaining.
+
+where vi,j represents the presence or existence of satellites
+in the j-th region of the i-th orbit. 𝑣𝑣𝑖𝑖,𝑗𝑗 = 0 means there is no
+satellite in j-th region of the i-th orbit. 𝑣𝑣𝑖𝑖,𝑗𝑗 = 1 means there is
+satellite in j-th region of the i-th orbit.
+
+III. EVENT-DRIVEN CONGESTION-AWARE SAC-ENHANCED
+DIJKSTRA ROUTING OPTIMIZATION (ECSAC-DRO)
+
+The interconnections among satellites, denoted by the
+matrix L, can also be depicted as an n-by-n matrix.
+𝑙𝑙1,1 𝑙𝑙1,2 𝑙𝑙1,3
+⎡
+𝑙𝑙
+𝑙𝑙
+𝑙𝑙
+L = ⎢ 2,1 2,2 2,3
+⋮ ⋮ ⋮
+⎢
+⎣𝑙𝑙𝑛𝑛,1 𝑙𝑙𝑛𝑛,2 𝑙𝑙𝑛𝑛,3
+
+𝑣𝑣 ,𝑣𝑣
+
+𝑝𝑝1,2 𝑝𝑝1,3
+𝑝𝑝
+2,2 𝑝𝑝2,3
+𝑣𝑣 ,𝑣𝑣
+P = � 𝑃𝑃𝑖𝑖 𝑠𝑠 𝑑𝑑 = �
+⋮ ⋮ ⋮
+i=0
+𝑝𝑝𝑛𝑛,1 𝑝𝑝𝑛𝑛,2 𝑝𝑝𝑛𝑛,3
+p
+
+A. LSN Model
+The satellite constellation is designed for seamless global
+coverage through the use of a polar orbit configuration. In this
+arrangement, satellites are evenly distributed within a 180degree range along the equator. Within a single time slot,
+satellites in the polar orbit constellation have the ability to
+establish both intra-orbit and inter-orbit connections, which
+are represented as a graph G = (V, L). In this context, V =
+{ v1 , v2 , ⋯ , vn } signifies the set of satellites, while L
+represents the collection of interconnections between these
+satellites.
+
+𝑣𝑣1,2 𝑣𝑣1,3
+𝑣𝑣2,2 𝑣𝑣2,3
+V=�
+⋮ ⋮ ⋮
+𝑣𝑣𝑖𝑖,1 𝑣𝑣𝑖𝑖,2 𝑣𝑣𝑖𝑖,3
+
+𝑣𝑣 ,𝑣𝑣
+
+At a specific time t, when there is a total of p data packets
+to be transmitted from source nodes to destination nodes, each
+data packet has the autonomy to choose a path from the
+available connections in L for its transmission. Consequently,
+when simultaneously transmitting p data packets, the
+distribution of data packets within the network can be
+summarized as follows:
+
+II. SYSTEM MODEL
+
+𝑣𝑣1,1
+𝑣𝑣2,1
+
+𝑣𝑣 ,𝑣𝑣
+
+𝑃𝑃𝑖𝑖 𝑠𝑠 𝑑𝑑 = �𝑝𝑝𝑖𝑖 𝑠𝑠 `𝑛𝑛 , 𝑝𝑝𝑖𝑖 𝑠𝑠 `𝑛𝑛−1 , 𝑝𝑝𝑖𝑖 𝑠𝑠 `𝑛𝑛−2 ⋯ , 𝑝𝑝𝑖𝑖 𝑚𝑚−1 `𝑑𝑑 , 𝑝𝑝𝑖𝑖 𝑚𝑚 `𝑑𝑑 �(3)
+
+When it comes to route selection in a pre-defined satellite
+constellation plan, the algorithm can make route choices for
+each event based on the current network conditions. These
+choices aim to fulfill congestion requirements and minimize
+resource wastage, including energy and bandwidth. The
+definitions for the state, action, and reward functions of the
+agent when handling events from the source node to the
+destination node are outlined below.
+
+⋯ 𝑙𝑙1,𝑛𝑛
+⋯ 𝑙𝑙2,𝑛𝑛 ⎤
+⎥ (2)
+⋱
+⋮ ⎥
+⋯ 𝑙𝑙𝑛𝑛,𝑛𝑛 ⎦
+
+Within this matrix, each element signifies the direct
+connectivity between the m-th and n-th satellites. 𝑙𝑙𝑚𝑚𝑚𝑚 = 0
+means the m-th satellite is not connected to the n-th satellite.
+𝑙𝑙𝑚𝑚𝑚𝑚 = 1 means the m-th satellite is connected to the n-th
+satellite.
+
+A. DRL Model
+1) State Space
+The initial state space comprises an n by n matrix,
+represented as S. As each data packet selects its transmission
+route from the source node to the destination node, the
+corresponding element in the matrix S increments by 1.
+Consequently, when all p data packets have designated their
+transmission routes at a specific moment, the matrix S
+effectively portrays the present state of routing path selections
+
+B. Problem Formulation
+When data packet i needs to travel from the source satellite
+to the destination satellite, the transmission path can be
+denoted as path:
+
+740
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:55:00 UTC from IEEE Xplore. Restrictions apply.
+
+within the satellite network, illustrating the distribution of
+traffic.
+𝑠𝑠1,2 𝑠𝑠1,3
+𝑠𝑠2,2 𝑠𝑠2,3
+S=�
+⋮ ⋮ ⋮
+𝑠𝑠𝑛𝑛,1 𝑠𝑠𝑛𝑛,2 𝑠𝑠𝑛𝑛,3
+𝑠𝑠1,1
+𝑠𝑠2,1
+
+⋯
+⋯
+⋱
+⋯
+
+𝑠𝑠1,𝑛𝑛
+𝑠𝑠2,𝑛𝑛
+⋮ � �8�
+𝑠𝑠𝑛𝑛,𝑛𝑛
+
+⋯
+⋯
+⋱
+⋯
+
+𝑎𝑎1,𝑛𝑛
+𝑎𝑎2,𝑛𝑛
+⋮ � �9�
+𝑎𝑎𝑛𝑛,𝑛𝑛
+
+Furthermore, SAC introduces action entropy to strike a
+balance between exploration and exploitation, preventing
+premature policy convergence to local optima.
+The specific process of the algorithm is shown in
+Algorithm 1.
+Algorithm 1 ECSAC-DRO
+Input: LSN matrix.
+Output: The routing policy for the transmission events.
+Initialize Critic network 𝑄𝑄φ1 ,𝑄𝑄φ2 ,Actor network 𝜋𝜋θ and
+pool D.random parameters φ1 , φ2 , θ , target net work
+φ1 ,φtarg,1 ← φ1 ,φ2 , φtarg,2 ← φ2 ,θ′ ← θ
+for episode < M do:
+Obtaining the L and 𝑆𝑆0 through the S.
+for i = 1 to I do:
+𝑣𝑣 ,𝑣𝑣
+action Ai 𝑠𝑠 𝑑𝑑 ~𝜋𝜋θ (s) + ε，ε~N(0, σ)
+s’, reward, done = step(action)
+s’, reward,(s, a, r, s′, done) store in D
+randomly draw N samples from D in batches
+(s, a, r, s′, done)
+update Critic network 𝑄𝑄φ1 ,𝑄𝑄φ2
+update Actor network 𝜋𝜋θ
+update target network φ1 ,φ2
+end for
+end for
+
+2) Action Space
+The action space determines the traffic distribution of the
+next data packet to be transmitted, as provided by the agent.
+𝑎𝑎1,1
+
+𝑎𝑎1,2
+
+𝑎𝑎1,3
+
+𝑎𝑎2,1 𝑎𝑎2,2 𝑎𝑎2,3
+𝑣𝑣 ,𝑣𝑣
+Ai 𝑠𝑠 𝑑𝑑 = �
+⋮ ⋮ ⋮
+𝑎𝑎𝑛𝑛,1
+
+𝑎𝑎𝑛𝑛,2
+
+𝑎𝑎𝑛𝑛,3
+
+Here, 'i' represents the i-th event, and 'a' denotes the data
+packet distribution to be carried by satellites from the x-th to
+the y-th satellites.
+3) Reward
+Upon the successful transmission of all data packets and
+the completion of the task, the reward for this exploration is
+calculated using the following formula:
+𝑅𝑅 = � 𝛿𝛿 𝑠𝑠𝑖𝑖 − � 𝛿𝛿 𝑠𝑠𝑗𝑗 + 𝜀𝜀(10)
+𝑖𝑖
+
+IV. PERFORMANCE EVALUATION
+
+𝑗𝑗
+
+A. Experimental Environment Configuration
+We have developed a Python-based computational
+environment for satellite constellation network routing.
+Additionally, we have constructed a DRL algorithm model
+using Python and conducted an extensive series of simulation
+evaluations for the ECSAC-DRO algorithm. The experiments
+were performed on a network with a satellite position matrix
+randomly generated, consisting of 20 satellites. We
+established random connection relationships and transmitted
+50 data packets. Prior to exploration, each generated network
+underwent an assessment to determine its validity, ensuring
+that bad cases had minimal impact on the experiments.The
+primary goal of the DRL exploration in this study is to select
+routing paths for data packet transmission based on congestion
+levels and average bandwidth utilization. The aim is to
+optimize network congestion and average bandwidth
+utilization, striving to reach an ideal level.
+
+, ∀𝑖𝑖 ∈ ℒ′, ∀𝑗𝑗 ∈ ℒ, 𝑖𝑖, 𝑗𝑗 ≠ {𝑛𝑛𝑠𝑠 , 𝑛𝑛𝑑𝑑 }
+
+ℒ′ represents the collection of paths obtained through the
+Dijkstra shortest path algorithm, while ℒ comprises the set of
+routing paths chosen for the current scenario. In this context,
+si signifies the state value at the 'i' location within the state
+matrix, ε serves as the offset control factor that determines the
+threshold between rewards and penalties. The values near the
+destination in the state matrix, reflecting higher congestion
+due to a significant number of data packets being transmitted,
+result in a smaller R value, which may even be negative,
+thereby leading to penalties.
+B. Algorithm Flow
+When the routing management system notifies the agent
+that routing event i is commencing, originating from the
+source node vs and concluding at the destination node vd , the
+agent makes decisions based on the current network state,
+which reflects the existing traffic distribution within the
+network. This process leads to the determination of the routing
+distribution for this specific transmission, referred to as action
+v ,v
+Ai s d . Subsequently, the routing management system
+calculates the reward for this event's transmission. This
+calculation takes into account the effect on the state S as
+provided by the agent and employs the Dijkstra algorithm. The
+agent then receives this reward, updates its neural network,
+and adjusts S to the new state St+1 , which has been modified
+v ,v
+by Ai s d .
+
+B. Analysis of Experimental Results
+
+In our routing management system, we utilize the SAC
+algorithm from DRL. SAC combines deep neural networks
+and policy gradient methods to facilitate learning and
+optimization. It excels in handling not only continuous state
+and action spaces but also offers improved convergence
+properties compared to conventional Q-learning methods.
+
+Fig. 1. Learning curve of average reward in the proposed ECSAC-DRO with
+different arithmetics.
+
+As shown in Fig. 1, we compared the ECSAC-DRO
+algorithm with DRL algorithms using DDPG and TD3 in
+terms of convergence speed and average reward when
+
+741
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:55:00 UTC from IEEE Xplore. Restrictions apply.
+
+performing tasks. Our analysis reveals that DDPG exhibits the
+slowest convergence speed, with its learning curve being more
+susceptible to fluctuations. The achievable average reward
+value is also relatively lower. This is because, while DDPG
+performs well in continuous state spaces, it requires more
+samples for learning in larger state spaces and can become
+trapped in local optima. In contrast, TD3 demonstrates greater
+stability with relatively minor fluctuations during the early
+exploration stage and a faster convergence speed. This can be
+attributed to various improvements that help reduce
+overestimation errors during training. The ECSAC-DRO
+algorithm places a higher emphasis on exploration. Although
+it converges slower compared to TD3 and exhibits more
+pronounced fluctuations during the early training phase, it
+
+ultimately yields slightly higher final rewards than TD3.
+When comparing the ECSAC-DRO algorithm with
+random routing and the Dijkstra algorithm in terms of average
+latency, actual bandwidth utilization, and overall network
+congestion, our analysis, as shown in Fig 2, indicates that the
+Dijkstra algorithm achieves the lowest average latency but
+incurs the highest congestion when used. The random routing
+algorithm results in the longest average latency and lower
+actual bandwidth utilization. On the other hand, the ECSACDRO algorithm, while exhibiting slightly longer latency
+compared to Dijkstra, significantly outperforms random
+routing in terms of latency and actual bandwidth utilization.
+
+Fig. 2. LSN states with different algorithms
+IEEE access 5 (2017): 18391-18401.
+X. Feng, M. Yang and Q. Guo, "A novel distributed routing algorithm
+based on data-driven in GEO/LEO hybrid satellite network," 2015
+International Conference on Wireless Communications & Signal
+Processing (WCSP), Nanjing, China, 2015, pp. 1-5, doi:
+10.1109/WCSP.2015.7341124.
+[8] F. He, Q. Liu, T. Lv, C. Liu, H. Huang and X. Jia, "Delay-bounded and
+minimal transmission broadcast in LEO satellite networks," 2016 IEEE
+International Conference on Communications (ICC), Kuala Lumpur,
+Malaysia, 2016, pp. 1-7, doi: 10.1109/ICC.2016.7510734.
+[9] Yan Zuoren, Debin Wei, and Weiwei Qiao. "Multi-controller
+deployment strategy for LEO satellite based on affinity propagation
+algorithm." 5th International Conference on Information Science,
+Electrical, and Automation Engineering (ISEAE 2023). Vol. 12748.
+SPIE, 2023.
+[10] Deng, Xia, et al. "An ant colony optimization-based routing algorithm
+for load balancing in leo satellite networks." Wireless Communications
+and Mobile Computing 2022 (2022).
+[11] Uc-Cetina, Victor, et al. "Survey on reinforcement learning for
+language processing." Artificial Intelligence Review 56.2 (2023):
+1543-1575.
+[12] Le, Ngan, et al. "Deep reinforcement learning in computer vision: a
+comprehensive survey." Artificial Intelligence Review (2022): 1-87.
+[13] Kiran, B. Ravi, et al. "Deep reinforcement learning for autonomous
+driving: A survey." IEEE Transactions on Intelligent Transportation
+Systems 23.6 (2021): 4909-4926.
+[14] Dong, Feihu, et al. "DRL-Based Load-Balancing Routing Scheme for
+6G Space–Air–Ground Integrated Networks." Remote Sensing 15.11
+(2023): 2801.
+[15] Hsu Yi-Huai, Jiun-Ian Lee, and Feng-Ming Xu. "A Deep
+Reinforcement Learning based Routing Scheme for LEO Satellite
+Networks in 6G." 2023 IEEE Wireless Communications and
+Networking Conference (WCNC). IEEE, 2023
+
+V. CONCLUSION
+
+[7]
+
+In summary, the experimental results underscore the
+significant boost in network performance that ECSAC-DRO
+algorithm brings to LSN. It offers fine-tuned control over
+congestion levels and bandwidth utilization. When compared
+to traditional algorithms, particularly random routing, these
+algorithms prove to be highly competitive. These findings
+provide robust support for LSN performance optimization and
+routing decision-making.
+REFERENCES
+[1]
+
+[2]
+
+[3]
+
+[4]
+
+[5]
+[6]
+
+W. Saad, M. Bennis and M. Chen, "A Vision of 6G Wireless Systems:
+Applications, Trends, Technologies, and Open Research Problems," in
+IEEE Network, vol. 34, no. 3, pp. 134-142, May/June 2020, doi:
+10.1109/MNET.001.1900287.
+X. Zhu and C. Jiang, "Integrated Satellite-Terrestrial Networks Toward
+6G: Architectures, Applications, and Challenges," in IEEE Internet of
+Things Journal, vol. 9, no. 1, pp. 437-461, 1 Jan.1, 2022, doi:
+10.1109/JIOT.2021.3126825.
+B. Al Homssi et al., "Next Generation Mega Satellite Networks for
+Access Equality: Opportunities, Challenges, and Performance," in
+IEEE Communications Magazine, vol. 60, no. 4, pp. 18-24, April 2022,
+doi: 10.1109/MCOM.001.2100802.
+M. Toyoshima, "Technological trends and future prospects of satellite
+communications for mega-constellations with small satellites",
+Advances in Communications Satellite Systems. Proceedings of the
+37th International Communications Satellite Systems Conference
+(ICSSC-2019), pp. 1-8, 2019.
+Mohorčič, Mihael, et al. "Performance evaluation of adaptive routing
+algorithms in packet ‐ switched intersatellite link networks."
+International Journal of Satellite Communications 20.2 (2002): 97-120
+Qu, Zhicheng, et al. "LEO satellite constellation for Internet of Things."
+
+742
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:55:00 UTC from IEEE Xplore. Restrictions apply.
+
+

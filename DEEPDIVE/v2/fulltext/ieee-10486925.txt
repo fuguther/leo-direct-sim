@@ -1,0 +1,1782 @@
+IEEE JOURNAL ON SELECTED AREAS IN COMMUNICATIONS, VOL. 42, NO. 5, MAY 2024
+
+1279
+
+Spatial–Temporal Resource Optimization for
+Uneven-Traffic LEO Satellite Systems: Beam
+Pattern Selection and User Scheduling
+Lei Lei , Member, IEEE, Anyue Wang, Student Member, IEEE, Eva Lagunas , Senior Member, IEEE,
+Xin Hu , Senior Member, IEEE, Zhengquan Zhang , Member, IEEE, Zhiqiang Wei , Member, IEEE,
+and Symeon Chatzinotas , Fellow, IEEE
+
+Abstract— With the commercial deployment of low earth
+orbit (LEO) satellites, the future integrated 6G-satellite system
+represents an excellent solution for ubiquitous connectivity and
+high-throughput data service to massive users. Due to the
+heterogeneity of users’ traffic profiles, uneven traffic distribution among beams or users often occurs in LEO satellite
+systems. Conventional satellite payloads with fixed beam radiation patterns may result in large gaps between requested and
+allocated capacity. The advances of flexible satellite payloads
+with dynamic beamforming capabilities enable spot beams to
+adjust their coverage and adaptively schedule users, thus offering
+spatial-temporal domain flexibility. Motivated by this, as an
+early attempt, we investigate how adaptive beam patterns with
+flexible user scheduling schemes can help alleviate mismatches of
+requested-transmitted data in uneven-traffic and full-frequency
+reuse LEO systems. We formulate an optimization problem to
+Manuscript received 18 August 2023; revised 15 November 2023;
+accepted 16 December 2023. Date of publication 1 April 2024; date of
+current version 9 May 2024. This work was supported in part by the Open
+Research Fund of National Mobile Communications Research Laboratory
+of Southeast University under Grant 2023D02, in part by the National
+Key Laboratory Foundation under Grant 2023-JCJQ-LB-007, in part by the
+Qin Chuangyuan Innovation and Talent Project under Grant QCYRCXM2023-049, in part by the National Natural Science Foundation of China
+(NSFC) Project under Grant 61871334 and Grant U2268201, in part by
+Luxembourg National Research Fund (FNR) MegaLEO Project under Grant
+C20/IS/14767486, in part by the Natural Science Foundation of Sichuan
+Province under Grant 2023NSFSC0455, in part by the Major Key Project
+of Peng Cheng Laboratory under Grant PCL2023AS1-2, and in part
+by the Key Research and Development Program of Shaanxi under
+Grant 2024GX-YBXM-065. An earlier version of this paper was presented in part at the IEEE Globecom, December 2022. [DOI]: 10.1109/
+GLOBECOM48099.2022.10000986. (Corresponding author: Zhiqiang Wei.)
+Lei Lei is with the School of Information and Communications Engineering,
+Xi’an Jiaotong University, Xi’an 710049, China, and also with the National
+Mobile Communications Research Laboratory, Southeast University, Nanjing
+210096, China (e-mail: lei.lei@xjtu.edu.cn).
+Anyue Wang, Eva Lagunas, and Symeon Chatzinotas are with the Interdisciplinary Center for Security, Reliability and Trust, University of Luxembourg,
+1855 Esch-sur-Alzette, Luxembourg (e-mail: moonwong.way@gmail.com;
+eva.lagunas@uni.lu; symeon.chatzinotas@uni.lu).
+Xin Hu is with the School of Electronic Engineering, Beijing University of Posts and Telecommunications, Beijing 100876, China (e-mail:
+huxin2016@bupt.edu.cn).
+Zhengquan Zhang is with the School of Information Science and Technology, Southwest Jiaotong University, Chengdu 610032, China.
+Zhiqiang Wei is with the School of Mathematics and Statistics, Xi’an
+Jiaotong University, Xi’an 710049, China, also with the Peng Cheng Laboratory, Shenzhen, Guangdong 518055, China, and also with the Pazhou
+Laboratory (Huangpu), Guangzhou, Guangdong 510555, China (e-mail:
+zhiqiang.wei@xjtu.edu.cn).
+Color versions of one or more figures in this article are available at
+https://doi.org/10.1109/JSAC.2024.3383445.
+Digital Object Identifier 10.1109/JSAC.2024.3383445
+
+jointly determine beam patterns, power allocation, user-LEO
+association, and user-slot scheduling. The problem is identified as
+mixed-integer nonconvex programming. We propose an efficient
+iterative algorithm to solve the problem by first determining
+beam patterns and user associations at the frame scale, followed
+by optimizing power allocation and user scheduling at the timeslot scale. The four-decision components are iteratively updated to
+improve the overall performance. Numerical results demonstrate
+the benefits brought by adaptive beam patterns and their
+effectiveness in reducing the mismatch effect in uneven-traffic
+LEO systems.
+Index Terms— Low earth orbit (LEO) satellite, uneven traffic,
+adaptive beam radiation patterns, resource optimization.
+
+I. I NTRODUCTION
+OW earth orbit (LEO) satellite systems are envisioned
+as one of the promising solutions to the upcoming
+beyond 5G (B5G) and 6G era for the potentials of offering
+high-throughput transmission and extending communications
+to remote or unserved areas [1]. Compared to geostationary
+earth orbit (GEO) and medium earth orbit (MEO) satellites,
+LEO satellites operate at lower altitudes with low latency
+and transmission attenuation [2]. To address exponentially
+growing traffic demand and support ubiquitous connectivity
+in the future, the industry is motivated to develop projects on
+building advanced architectures with hundreds or thousands of
+LEO satellites in space [3].
+The dense deployment of LEO satellites may introduce
+more interference. users, especially those located in the areas
+overlapped by neighboring satellites’ beam coverages, may
+receive considerable co-channel interference, which could
+result in severe performance degradation [4], [5]. Another typical concern is raised by the heterogeneity of traffic distribution
+that often varies temporally and geographically. To improve
+the utilization of scarce spectrum, resource allocation in LEO
+satellite systems shall be adapted to the dynamic variations
+of on-ground traffic demand [6]. The coordination of multiple
+LEO satellites to provide high-quality services to ground users
+is crucial and challenging, which calls for the introduction of
+more flexibility in radio resource allocation.
+In conventional satellite systems, beam radiation patterns
+are decided before launch and the projected beam shapes (or
+footprints) are fixed during service [7]. As the deployment of
+LEO satellites becomes dense, the fixed footprint plan cannot
+
+L
+
+0733-8716 © 2024 IEEE. Personal use is permitted, but republication/redistribution requires IEEE permission.
+See https://www.ieee.org/publications/rights/index.html for more information.
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:58:15 UTC from IEEE Xplore. Restrictions apply.
+
+1280
+
+IEEE JOURNAL ON SELECTED AREAS IN COMMUNICATIONS, VOL. 42, NO. 5, MAY 2024
+
+Fig. 1. Illustrative examples of adjusting beam patterns for better coverage
+and efficient transmission. Reducing coverage areas from (a) to (b) to avoid
+overlap and mitigate co-channel interference; Enlarging coverage areas from
+(c) to (d) to connect more users.
+
+adapt to dynamic variations and uneven traffic distribution,
+which limits the performance. With the advances of flexible payloads with onboard digital processing, beam shapes
+can be dynamically altered by changing beam patterns via
+beamforming networks (BFN) instead of mechanically moving
+antennas [7], [8], [9]. By adjusting the selection of different
+beam patterns, data transmission in satellite systems can be
+more adaptive to non-uniform traffic distribution and with
+mitigated co-channel interference [10], [12], [14]. Besides, the
+capability of integrating to terrestrial systems or non-terrestrial
+networks (NTN) can be improved by adapting footprints to
+reduce co-channel interference to terrestrial systems [16] or to
+satisfy configuration requirements in various systems [17]. The
+authors in [18] developed a multi-objective deep reinforcement
+learning approach for dynamic beam hopping to reduce the gap
+of offered-allocated capacity. Illustrative instances of adaptive
+beam patterns are shown in Fig. 1. When a user is located
+in the area covered by two adjacent satellite beams (full
+frequency reuse), e.g., in Fig. 1(a), it may suffer from large
+inter-satellite interference. To reduce the interference, both
+satellites could select beam patterns with smaller coverage
+to avoid overlap, as depicted in Fig. 1(b). Another typical
+example is to change patterns with wider radiated beams to
+cover more users that are beyond but near the beam edge,
+as presented in the process from Fig. 1(c) to Fig. 1(d).
+A. Related Works
+Considering extra flexibility in spatial domain and advantages of traffic adaptation and interference mitigation, the
+design of adaptive beam pattern schemes has received growing
+attention. In [16], the authors studied adaptive beam control
+schemes in LEO satellite systems to maximize the signalto-noise ratio and minimize the interference to incumbent
+terrestrial systems. The authors in [10] jointly optimized
+
+beam size and transmit power to improve the adaptation to
+varying traffic. Particularly, the coupling between beamwidth
+and power was discussed. In [11], the authors designed flexible schemes to tackle several issues for satellite systems,
+including beam localization, beamwidth adjustment, use-beam
+scheduling, and beam coloring. Besides beam size, more
+factors affecting beam shapes, e.g., beam center and rotation
+angle, were taken into account, and novel footprint planning
+strategies were designed to match offered capacity to irregular
+traffic distribution in [12]. Further, the authors in [13] provide
+a more comprehensive view on beam radiation pattern design,
+considering factors like beamwidth, beam center, required
+effective isotropic radiated power, side lobe levels, and nulling
+direction. In the above works, regular beam shapes (e.g.,
+circular or elliptical) were employed. However, the expressions of transmit antenna gain w.r.t. configuration parameters
+(including beamwidth, beam center, rotation angle, etc.) are
+generally sophisticated [12]. Directly defining the optimal
+beam pattern is difficult and cumbersome, even when we
+consider regular beam shapes. These approaches may also be
+inapplicable to more general scenarios where irregular beam
+shapes are adopted [7]. Regarding irregular shaped beams,
+the authors in [15], provided a generic radiation model and
+designed a dynamic beamforming optimization framework to
+adjust offered capacity to match irregular traffic demands.
+Unlike the above works that directly optimize beam radiation patterns, multiple candidate beam patterns can be
+pre-designed and the corresponding parameter settings can
+be stored in advance for various potential scenarios [19].
+During service, suitable beam patterns can be selected from
+the candidate set depending on traffic distribution and interference levels. Unlike directly optimizing beam patterns, the
+optimization of beam pattern selection can be applied to any
+type of footprint. Additionally, the update of candidate beam
+patterns can be processed ahead of transmission rather than
+real-time adjustment, which is more extendable to practical
+implementation. In [14], the authors optimized beam pattern
+selection to minimize the capacity-demand gap, normalized
+coverage error, and cost per Gbps in orbits and discussed the
+implementation of adaptive beam patterns in practical satellite
+payloads.
+B. Motivations and Contributions
+The abovementioned works focused on optimizing beam
+patterns from the beam level, i.e., satisfying irregular traffic
+distribution across different areas rather than capacity-demand
+matching for specific users. The mutual influence between
+adaptive beam patterns and resource allocation (e.g., power
+allocation and user association/scheduling) has not been fully
+discussed. For instance, when the beam pattern plan is aggressive with large footprints, more users can be covered by
+the footprint. However, the co-channel interference, especially
+for users in the overlapped areas, becomes larger, leading to
+difficulties in resource allocation. On the contrary, the effect
+of interference is eased to some extent when narrow beams
+are employed, and thus a more flexible scheduling plan can
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:58:15 UTC from IEEE Xplore. Restrictions apply.
+
+LEI et al.: SPATIAL–TEMPORAL RESOURCE OPTIMIZATION FOR UNEVEN-TRAFFIC LEO SATELLITE SYSTEMS
+
+be applied. Not all the users are covered by their associated
+beams and thus low data rate may happen to those edge users.
+In this case, the performance of resource allocation would be
+limited by inappropriate beam pattern selection.
+As an early-attempt study in [20], we evaluate the performance gain of adopting adaptive beam pattern in LEO satellite
+systems under pre-decided user scheduling. For extension,
+we are motivated to provide more comprehensive insights
+on joint resource optimization of beam pattern selection and
+resource allocation and aim to analyze their mutual influence, which distinguish this work from other state-of-the-art
+works [10], [12], [14], [15]. The main contributions are
+summarized as follows:
+• To investigate the coupling between beam pattern selection and resource allocation in LEO satellite systems,
+we formulate a joint optimization problem of beam
+pattern selection, power allocation, user-LEO association,
+and user-slot scheduling. The objective is to minimize the
+capacity-demand gap such that the delivered data can be
+matched to users’ uneven traffic demands.
+• We provide insights on determining beam patterns and
+user association via thoroughly analyzing a special case.
+That is, satellites tend to serve high-demand users and
+select narrow beams, more concentrated on associated
+users and radiating less interference to other users.
+• We propose an efficient scheme to jointly optimize power
+allocation and user scheduling on a timeslot-by-timeslot
+basis.
+• We design a swap-based approach to update pattern
+selection and user association such that the performance
+can be iteratively improved.
+• Numerical results demonstrate the advantages of adaptive
+beam patterns over conventional single-pattern schemes.
+The results validate the performance of the proposed
+scheme in terms of complexity, capacity-demand matching, power consumption, and user association over
+benchmarks.
+The remainders of the paper are organized as follows:
+Section II elaborates the considered LEO satellite systems with
+the functionality of adaptive beam patterns. In Section III,
+we formulate a joint optimization problem of power allocation, beam pattern selection, and user association/scheduling.
+In Section IV, we analyze the optimization of beam pattern
+selection and user association. An efficient approach of jointly
+optimizing power allocation and user scheduling is provided
+in Section V. In this section, we also present a swap-based
+approach to further improve the performance. Numerical
+results are presented and analyzed in Section VI. Section VII
+concludes the paper.
+II. S YSTEM M ODEL
+Consider downlink data transmission in a LEO satellite
+system, as depicted in Fig. 2. S LEO satellites fly over the
+area of interest, where each satellite beam’s coverage may
+be partially overlapping with neighboring beams. Denote S
+as the set of the satellites and K as the set of the users.
+
+1281
+
+Fig. 2. An illustrative scenario of the considered LEO satellite system where
+adaptive beam patterns are adopted.
+
+We assume that each LEO satellite generates one beam [5],
+[16], [17]. In the system, all the LEO satellites fully reuse
+the same frequency band. The communication procedure is
+described as follows: First, messages containing users’ status,
+e.g., channel conditions, traffic demand, users’ positions, etc.,
+are fed back to the gateway via return links. Based on the
+information, the resource manager co-located with the gateway executes the resource optimization algorithm to generate
+optimized decisions, including beam pattern selection, user
+association/scheduling, and power allocation. Note that beam
+configurations can be communicated through the TT&C link
+in practice which can be separate from the feeder link. Next,
+the gateway informs the decisions to satellites and delivers
+data from the core networks to satellites. At last, satellites
+generate beams according to the selected patterns and transmit
+data to targeted users. Remark that the latency among different
+transmission links is assumed to be identical.
+Denote Ns as the set of the candidate beam patterns of
+satellite s. Each pattern corresponds to one specific beam
+shape. With optimized decisions informed by the gateway, one
+beam pattern is selected from Ns . The information of resource
+allocation is carried before the data frame is transmitted.
+In practical satellite systems, the communication distances
+between satellites and ground terminals are large and the
+latency may not be ignored. We consider that beam patterns
+and user association change on a frame-by-frame basis and
+resource allocation is targeted for one frame. Denote T as
+the set of the T timeslots in one frame. The beam pattern is
+generated by the BFN on the satellite payload, as depicted
+in Fig. 3. By BFN controlling phase shifters and variable
+power dividers to alter phases and amplitudes, respectively,
+each feed element generates one elementary beam and the
+shaped beam is constructed by these elementary beams [7].
+The resulted beam shape is defined as the coverage within the
+φ-dB contour [7].
+The relationship between the transmit antenna gain of a
+beam pattern and the corresponding configuration parameters
+is sophisticated and might not be captured by explicit expressions, especially for patterns with irregular beam shapes [7],
+[12], [14]. For illustration, we plot the 3dB curve to produce
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:58:15 UTC from IEEE Xplore. Restrictions apply.
+
+1282
+
+IEEE JOURNAL ON SELECTED AREAS IN COMMUNICATIONS, VOL. 42, NO. 5, MAY 2024
+
+with beam pattern n is expressed as,
+Rx
+total
+|hskn |2 = GTx
+skn Gk /Lsk ,
+
+(6)
+
+where GRx
+k is the receive antenna gain of user k. The channel
+gain from satellite s to user k is derived as,
+X
+ysn |hskn |2 .
+|hsk |2 =
+
+(7)
+
+n∈Ns
+
+Fig. 3.
+
+The shaped beam antenna with BFN.
+
+ellipse beams to illustrate the beam pattern model. The transmit antenna gain of satellite s with beam pattern n regarding
+user k is expressed by,
+2
+
+J3 (usnk )
+J1 (usnk )
+Tx
+,
+(1)
++
+36
+GTx
+=
+G
+snk
+sn,max
+2usnk
+u3snk
+where J1 (·) and J3 (·) are Bessel functions of the first kind of
+order one and three, respectively. GTx
+sn,max is the peak transmit
+antenna gain of satellite s with pattern n. The notation usnk
+is expressed as,
+usnk = 2.07123
+
+sin θsk
+,
+sin θsn,3dB
+
+(2)
+
+(3)
+
+sc
+ra
+where Lga
+sk , Lsk , and Lsk are gaseous, scintillation, and rain
+attenuation exceeded for ρ% of an average year, respectively.
+Here, the operator [·] converts values into dB. Lba
+sk is the basic
+path loss, which is derived as,
+sf
+[Lba
+sk ] = [Lsk ] + [Lsk ],
+
+(4)
+
+where Lsf
+sk denotes shadow fading following log-normal distribution. Lsk denotes the free-space path loss, which is
+expressed by [20],
+Lsk = 32.45 + 20 log10 (f freq ) + 20 log10 (dsk ),
+
+s′ ∈S\{s} n∈Ns′
+
+where Pst is the transmit power of satellite s at timeslot t and
+σ 2 is the noise power. The available rate of user k if scheduled
+by satellite s at timeslot t is,
+Rskt = B log(1 + γskt ),
+
+(9)
+
+where B is bandwidth. The offered capacity (in bps) of user
+k is,
+XX
+Rk =
+xskt Rskt ,
+(10)
+t∈T s∈S
+
+where θsk denotes the off-axis angle between the s-th satellite’s beam center and the k-th user. θsn,3dB denotes the 3-dB
+angular beamwidth of pattern n radiated by satellite s. The
+beam pattern model in (1) is widely adopted, e.g., a simplified
+Bessel function was adopted in 3GPP TR 38.811 [21].
+For other types of beam shapes, the expression could be
+more complicated, e.g., the transmit antenna gain for elliptical
+beams depends on beam center position, beamwidth (including
+the major and minor axes), and tilt angle [7], [12]. Remark
+that we only focus on beam pattern selection, where the candidate patterns are determined before transmission and can be
+updated easily when necessary. Thus the approaches discussed
+in this paper can be applied to any types of footprints.
+The channel loss from satellite s to user k is written as [21],
+ga
+ba
+sc
+ra
+[Ltotal
+sk ] = [Lsk ] + [Lsk ] + [Lsk ] + [Lsk ],
+
+Here, ysn ∈ {0, 1} indicates beam pattern selection, where
+ysn = 1 if satellite s selects the n-th pattern and ysn =
+0 otherwise.
+If user k associated to satellite s is scheduled at timeslot t, the corresponding signal-to-interference-plus-noise ratio
+(SINR) is expressed as,
+P
+ysn |hskn |2 Pst
+n∈Ns
+P
+P
+,
+(8)
+γskt =
+ys′ n |hs′ kn |2 Ps′ t + σ 2
+
+(5)
+
+where dsk is the distance from satellite s to user k, and f freq
+is the frequency. The channel gain from satellite s to user k
+
+where xskt ∈ {0, 1} indicates whether the user is scheduled
+to timeslot t by satellite s (xskt = 1 if scheduled and
+0 otherwise).
+III. P ROBLEM F ORMULATION
+We formulate a resource allocation problem to jointly
+optimize power allocation, beam-pattern selection, and user
+association and scheduling. The optimization variables are
+listed as follows,
+Pst ≥ 0, transmit power of satellite s at timeslot t;
+(
+1, if satellite s serves user k at timeslot t,
+xskt =
+0, otherwise;
+(
+1, if satellite s selects the n-th beam pattern,
+ysn =
+0, otherwise;
+(
+1, if user k is associated to satellite s,
+zsk =
+0, otherwise.
+The objective is to minimize
+P the sum of capacity-demand gap,
+which is measured by
+k∈K |Rk − Dk |. This dissimilarity
+metric has been widely adopted in satellite systems, which
+can describe the mismatch effects between offered capacity
+and requested traffic. Note that the case Rk = Dk reflects a
+perfect capacity-demand match and the gap increases if Rk is
+distant from Dk (either larger or smaller). The optimization
+problem is formulated as,
+X
+P0 :
+min
+|Rk − Dk |
+(11a)
+Pst ,xskt ,ysn ,zsk
+
+k∈K
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:58:15 UTC from IEEE Xplore. Restrictions apply.
+
+LEI et al.: SPATIAL–TEMPORAL RESOURCE OPTIMIZATION FOR UNEVEN-TRAFFIC LEO SATELLITE SYSTEMS
+
+s.t. Pst ≤ P̄s , ∀s ∈ S, ∀t ∈ T ,
+X
+zsk ≤ 1, ∀k ∈ K,
+
+1283
+
+(11b)
+(11c)
+
+s∈S
+
+X
+
+es,
+zsk ≤ K
+
+∀s ∈ S,
+
+(11d)
+
+xskt = 1,
+
+∀s ∈ S, ∀t ∈ T ,
+
+(11e)
+
+k∈K
+
+X
+k∈K
+
+xskt ≤ zsk , ∀s ∈ S, ∀k ∈ K, ∀t ∈ T , (11f)
+X
+ysn = 1, ∀s ∈ S,
+(11g)
+n∈Ns
+
+Rk ≥ Rkmin
+
+X
+
+zsk ,
+
+∀k ∈ K.
+
+(11h)
+
+s∈S
+
+In (11b), the transmit power of satellites is no larger than the
+power budget. In (11c), each user can be associated to at most
+e s users can be
+one satellite. For the s-th satellite, at most K
+associated in (11d). In (11e), each satellite schedules only one
+user to each timeslot. The connection between xskt and zsk is
+expressed in (11f). If user k is not associated to satellite s, i.e.,
+zsk = 0, xskt is restricted to zero; otherwise, xskt ∈ {0, 1}.
+Constraints (11g) restrict that each satellite can only select
+one pattern. In (11h), the offered capacity of user k should
+be at least larger than Rkmin if the user is associated to any
+satellite. Usually, the requested traffic demand is larger than
+the minimum-rate requirement, i.e., Dk > Rkmin .
+We can observe that P0 falls into the category
+of mixed-integer nonconvex programming considering the
+non-convexity of the objective function and constraints (11h)
+(resulted by the non-convex expression of Rskt in (8) and (9))
+and the presence of binary variables xskt , ysn , and zsk . It is
+a non-trivial task to directly solve P0 . To tackle the problem,
+we decompose the original problem into two subproblems:
+1) joint optimization of beam pattern selection and user
+association; 2) joint optimization of power allocation and user
+scheduling.
+IV. J OINT O PTIMIZATION OF B EAM PATTERN S ELECTION
+AND U SER A SSOCIATION
+In this section, we study beam pattern selection and user
+association. The joint problem of beam pattern selection and
+user association is expressed as,
+X
+P1 : min
+|Rk − Dk |
+(12a)
+ysn ,zsk
+
+k∈K
+
+s.t. (11c), (11d), (11f), (11g), (11h).
+
+(12b)
+
+Since the binary variables ysn appear in both numerator
+and denominator of the SINR expression as shown in (8),
+P1 is non-convex integer programming, which is difficult to
+solve. We first study the characteristics of P1 by discussing
+strategies in some special cases. Based on the analysis,
+we design an approach to determine beam patterns and
+user association.
+A. Discussion of Special Cases
+Consider a scenario in Fig. 4 in which multiple LEO
+satellites aim to serve an area with heterogeneous traffic
+
+Fig. 4. Illustration of the special-case scenario, where multiple LEO satellites
+are flying (from the left to the right) over the targeted area with heterogeneous
+traffic distribution. High-demand and low-demand users are colored in red and
+blue, respectively. Depending on different traffic distributions within the beam
+coverage, satellites adjust their selections of beam patterns and associated
+users.
+
+distribution. In the first case, satellites move to the positions
+where high-demand users are located near the beam center,
+as depicted in Fig. 4(a). Since high-demand users’ performance is more significant to the capacity-demand matching
+of the whole system compared to low-demand users, satellites
+tend to select beam patterns with smaller but more concentrated shapes, e.g., in Fig. 4(b). In this way, more capacity
+is offered to high-demand users and meanwhile co-channel
+interference towards other beams is mitigated, such that the
+capacity-demand mismatch can be largely reduced.
+As satellites move to the right, however, the distances
+between satellites and users change. High-demand users stand
+beyond the beam coverage much worse channel conditions,
+resulting in deteriorated performance even if more resources
+are assigned to them. In this case, satellites are prone to expand
+their beam coverage to serve more low-demand users but with
+better channel conditions to reduce mismatch effects, as shown
+in Fig. 4(c).
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:58:15 UTC from IEEE Xplore. Restrictions apply.
+
+1284
+
+IEEE JOURNAL ON SELECTED AREAS IN COMMUNICATIONS, VOL. 42, NO. 5, MAY 2024
+
+From the above special cases, we observe that the decision
+of beam pattern selection and user association is influenced
+by users’ demand and channel conditions. Based on the above
+cases, we discuss how to optimize beam pattern selection and
+user association in the following remark.
+Remark 1: The optimization of beam pattern selection and
+user association is discussed from the following two aspects:
+• User association: Given determined beam patterns, the
+decisions of association is made by considering both
+users’ demand and channel conditions. On the one hand,
+users with higher demand are more likely to be served
+since they have more influence on the overall capacitydemand gap. On the other hand, satellites tend to choose
+users experiencing better channel conditions, i.e., larger
+gain from the associated satellite but smaller intersatellite interference.
+• Beam pattern selection: With the decision of user association, each satellite selects a beam pattern generating
+large channel gains to the associated users but small
+co-channel interference to users served by neighboring
+satellites.
+□
+In short, Remark 1 conveys that satellites tend to select
+patterns with smaller but concentrated beams to cover the
+associated users as well as generate smaller inter-satellite interference and select users for association with higher demand
+and better channel conditions.
+B. Algorithmic Design
+Based on Remark 1, we design an approach to determine
+user association and beam pattern selection. Given beam
+pattern selection, we calculate the following ratios,
+
+
+
+µsk = Dk log 
+
+|h |2
+
+P sk
+,
+|hs′ k |2
+
+∀k ∈ K, ∀s ∈ S,
+
+s′ ∈S\{s}
+
+(13)
+which take into consideration both channel conditions and
+traffic demands. By sorting these ratios, each satellite selects
+e largest-µsk users for association and update Ks (the set of
+K
+users associated to satellite s). After deciding user association,
+each satellite computes the following ratios,
+X
+|h |2
+P skn
+νsn =
+, ∀n ∈ Ns , ∀s ∈ S, (14)
+|hsk′ n |2
+k∈Ks
+
+Algorithm 1 Optimization of Beam Pattern Selection and User
+Association
+Input: |hskn |2 , Dk . Initialized ysn , zsk .
+1: repeat
+2:
+Calculate µsk in (13), ∀k ∈ K, ∀s ∈ S.
+3:
+Sort µsk for each satellite.
+e largest-µsk users for associa4:
+Each satellite selects K
+tion.
+5:
+Update zsk and Ks .
+6:
+Computes νsn in (14), ∀n ∈ Ns , ∀s ∈ S.
+7:
+Each satellite selects the pattern with the largest νsn .
+8:
+Update ysn .
+9: until ysn and zsk converge or reaching I1 iterations
+Output: Optimized ysn , zsk .
+
+value of νsn are O(K log(K)) and O(N ), respectively [22].
+Thus the overall complexity is derived as O(I1 S(K log(K) +
+N )).
+V. J OINT O PTIMIZATION OF P OWER A LLOCATION AND
+U SER S CHEDULING
+In this section, we jointly optimize power allocation and
+user scheduling given decided beam pattern selection and user
+association, which is expressed as,
+X
+P2 : min
+|Rk − Dk |
+(15a)
+Pst ,xskt
+
+A. Problem Transformation
+Solving P2 is complicated. Considering the applicability of
+the solution to practical implementation, we break the coupling
+across timeslots in P2 and decompose the problem into T
+subproblems, each of which corresponds to a timeslot. The
+subproblem at timeslot t is written as,
+P2 (t) : min
+
+Pst ,xskt
+
+X X
+
+xskt Rskt + R̄kt − Dk
+
+k∈K s∈S
+
+#+
+
+"
++ρ
+
+k∈Ks′ ,s′ ̸=s
+
+for each beam pattern and selects the pattern with the largest
+νsn , i.e., largest gain from satellite s but smallest interference
+to users associated to s′ ̸= s.
+The whole procedure is summarized in Alg. 1, where user
+association is decided in line 2 to line 5 and beam pattern
+selection is proceeded in line 6 to line 8. The algorithm
+terminates if the iteration number exceeds I1 or the solution
+stays unchanged.
+The complexity of Alg. 1 falls in the sorting process in line 3
+and the arg-max process in line 7. The complexity of sorting
+K users based on µsk and choosing the pattern with the largest
+
+k∈K
+
+s.t. (11b), (11e), (11h).
+(15b)
+P
+Note that only scheduled users with
+s∈S zsk = 1 are
+considered and hence contraints (11f) are omitted in P2 . The
+problem is still in the format of mixed-integer nonconvex
+programming.
+
+X
+
+Rkmin −
+
+k∈K
+
+X
+
+xskt Rskt − R̄kt
+
+(16a)
+
+s∈S
+
+s.t. Pst ≤ P̄s , ∀s ∈ S,
+X
+xskt = 1, ∀s ∈ S.
+
+(16b)
+(16c)
+
+k∈K
+
+Here, we define R̄kt as the rate already allocated to the user
+before the t-th timeslot, which is expressed as,
+R̄kt =
+
+t−1 X
+X
+
+xskτ Rskτ ,
+
+(17)
+
+τ =0 s∈S
+
+where Rsk0 = 0, ∀s ∈ S, ∀k ∈ K. We move constraints (11h)
+to the objective as a penalty with the factor ρ > 0. The operator
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:58:15 UTC from IEEE Xplore. Restrictions apply.
+
+LEI et al.: SPATIAL–TEMPORAL RESOURCE OPTIMIZATION FOR UNEVEN-TRAFFIC LEO SATELLITE SYSTEMS
+
+[·]+ is equivalent to max{·, 0}. The objective is penalized if
+constraints (11h) are violated.
+We convert P2 (t) into the following problem where the
+absolute operation in the objective is removed,
+!
+X
+X
+′
+P2 (t) : min
+Dk −
+xskt Rskt − R̄kt
+Pst ,xskt
+
+#+
+
+"
++ρ
+
+We derive an iterative approach to solve P2′′ (t). Given xskt
+and Pst , we update γs and ηs by,
+|hsks |2 Pst
+,
+2
+2
+′
+′
+s′ ∈S\{s} |hs ks | Ps t + σ
+p
+B (1 + γs )|hsks |2 Pst
+,
+ηs = P
+2
+2
+′
+′
+s′ ∈S |hs ks | Ps t + σ
+
+γs = P
+
+s∈S
+
+k∈K
+
+X
+
+Rkmin −
+
+X
+
+xskt Rskt − R̄kt
+
+(18a)
+
+s∈S
+
+k∈K
+
+s.t. (16b), (16c),
+X
+xskt Rskt + R̄kt ≤ Dk ,
+
+∀k ∈ K.
+
+(18b)
+
+s∈S
+
+The equivalence between P2 (t) and P2′ (t) is built based on
+the following proposition, which conveys that if the resource
+is sufficient, the optimal allocated rates of the scheduled users
+are no larger than their demands.
+Proposition
+1: At the optimum of P2 (t), the allocated rates
+P
+meet
+Proof:
+s∈S xskt Rskt + R̄kt ≤ Dk , ∀k ∈ K.
+Please kindly refer to Appendix A.
+□
+
+(22)
+
+s∈S
+
+i+
+Xh
+esk t − R̄k t .
+Rkmin
+−
+R
+s
+s
+s
+
+(23)
+
+s∈S
+
+B. Algorithmic Design
+To solve P2′ (t) with combinatorial and nonconvex properties, one of the widely-adopted ideas is to convert the problem
+into a series of convex subproblems, where the solution can
+be obtained by iteratively solving these subproblems. Conventional approaches, e.g., successive convex approximation
+(SCA) method and Dinkelbach’s transform method, can be
+applied. However, since a convex problem needs to be solved
+at each iteration, these approaches may end up with large
+computational complexity in practice. We design an iterative
+approach based on quadratic transform method [23] with lower
+complexity. One benefit of quadratic transform method is that
+the log-fractional rate functions can be converted into convex
+quadratic expressions and the series of convex subproblems
+can be optimized by deriving closed-formed update rules such
+that the overall complexity can be largely reduced.
+We introduce auxiliary variables γs ≥ 0 and ηs ≥ 0 and
+transform the rate functions in (9) as the following,
+p
+eskt = B log(1 + γs ) − Bγs + 2ηs B(1 + γs )|hsk |2 Pst
+R
+X
+− ηs2
+|hs′ k |2 Ps′ t − ηs2 σ 2 . (19)
+s′ ∈S
+
+eskt into P ′ (t), the problem is then transBy substituting R
+2
+formed into the following,
+!
+X
+X
+′′
+e
+P2 (t) :
+min
+Dk −
+xskt Rskt − R̄kt
+k∈K
+
+s∈S
+
+#+
+
+"
++ρ
+
+(21)
+
+where ks denotes the index of the user scheduled by satellite
+s.
+With fixed xskt , γs , and ηs , the residual power allocation
+is convex without (18b), since the nonconvex rate functions
+have been converted to convex quadratic expressions. Thus,
+while the update iterates, we temporally ignore (18b). Power
+allocation will be adjusted to meet (18b) after the iterations.
+Note that only the S scheduled user
+P with xeskt = 1e are
+considered at this phase and thus
+s∈S xskt Rskt = Rsks t
+in this case. The corresponding Lagrangian dual function is
+derived as,
+X
+esk t − R̄k t )
+L(Pst ) =
+(Dks − R
+s
+s
++ρ
+
+Pst ,xskt ,γs ,ηs
+
+1285
+
+X
+k∈K
+
+Rkmin −
+
+X
+
+The KKT conditions are,
+s
+B(1 + γs )|hsks |2
+∂L
+= (1 + ψs )ηs
+∂Pst
+Pst
+X
+2
+−
+(1 + ψs′ )ηs′ |hsks′ |2 = 0,
+
+(24)
+
+where
+(
+ψs =
+
+ek t + R̄k t < Rmin ;
+ρ, if R
+ks
+s
+s
+ek t + R̄k t ≥ Rkmin .
+0, if R
+s
+s
+s
+
+(25)
+
+Then the optimal power allocation is derived by,
+)
+(
+(1 + ψs )2 (ηs )2 B(1 + γs )|hsks |2
+∗
+Pst = min
+2 , P̄s . (26)
+P
+2
+′ )η ′ |hsk ′ |2
+(1
++
+ψ
+′
+s
+s
+s ∈S
+s
+The total number of potential combinations for deciding all ψs
+is 2S . To maintain the computational complexity at an acceptable level, a heuristic decision strategy is applied. We first let
+ekt . Then set
+ψs = 1 for all satellites and calculate Pst and R
+ψs = ρ to increase the power value (let Pst = P̄st when Ps
+ek t + R̄k t < Rmin .
+surpasses the budget) if R
+s
+s
+ks
+eskt
+As the power allocation is decided, we can calculate R
+for each user. The residual user scheduling problem is a linear
+integer programming, which can be further divided into each
+satellite as,
+
+X 
+eskt − R̄kt
+P3′′ (t, s) : min
+Dk − xskt R
+xskt
+
+eskt − R̄kt
+xskt R
+
+k∈Ks
+
++ρ
+
+s∈S
+
+X h
+
+eskt − R̄kt
+Rkmin − xskt R
+
+i+
+
+(27a)
+
+k∈Ks
+
+(20a)
+s.t. (16b), (16c), (18b).
+
+∀s ∈ S,
+
+s′ ∈S
+
+(20b)
+
+s.t.
+
+X
+
+xskt = 1,
+
+(27b)
+
+k∈K
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:58:15 UTC from IEEE Xplore. Restrictions apply.
+
+1286
+
+IEEE JOURNAL ON SELECTED AREAS IN COMMUNICATIONS, VOL. 42, NO. 5, MAY 2024
+
+Algorithm 2 Joint Optimization of Power Allocation and User
+Scheduling
+Input: ysn , zsk , ρ, Dk , Ks , and channel gains; Initialized Pst
+and xskt .
+1: for t = 1, . . . , T do
+2:
+Initialize γs and ηs , ∀s ∈ S.
+3:
+repeat
+4:
+Update γs and ηs in (21) and (22), respectively.
+5:
+Compute Pst in (26) by letting ψs = 1, ∀s ∈ S.
+6:
+Adjust Pst in (26) with ψs = ρ for satellites with
+ekt + R̄kt < Rmin .
+R
+k
+7:
+Update xskt based on the rule in (28).
+8:
+until Convergence or reaching I2 iterations
+9:
+if there exist users with Rkt + R̄kt > Dk then
+10:
+Set Rks t + R̄ks t = Dks for these users and adjust
+Pst by solving equations in (29).
+11:
+end if
+12:
+Update Ks and calculate R̄kt .
+13: end for
+Output: Optimized Pst and xskt .
+
+Algorithm 3 Joint Optimization of Adaptive Beam Patterns
+and Resource Allocation
+Input: Dk and channel gains; Initialized F ∗ = inf as the
+∗
+∗
+∗
+best objective value, x∗skt , ysn
+, zsk
+, and Pst
+as the best
+solution.
+1: Determine beam pattern selection and user association by
+∗
+∗
+Alg. 1 and update ysn
+and zsk
+.
+2: repeat
+sk
+3:
+Randomly select swaps Φsn
+sn′ and Ψsk′ , where ysn and
+zsk are the solution after this swap.
+4:
+Optimize power allocation and user scheduling by Alg.
+2 based on ysn and zsk . Obtain xskt , Pst , and the
+corresponding objective value F.
+5:
+if F < F ∗ then
+6:
+Operate the swaps.
+∗
+∗
+∗
+7:
+Update x∗skt = xskt , ysn
+= ysn , zsk
+= zsk , Pst
+=
+∗
+Pst , and F = F.
+8:
+end if
+9: until Reaching I3 iterations
+∗
+∗
+∗
+.
+, and Pst
+, zsk
+Output: x∗skt , ysn
+
+where Ks is the set containing the users associated to satellite s
+but excluding users already satisfied with demands. With (27b)
+that each satellite can only schedule one user to each timeslot,
+we can derive the following rule to select the optimal user for
+the s-th satellite,
+h
+i+
+eskt − R̄kt + ρ Rkmin − R
+eskt − R̄kt .
+ks∗ = arg min Dk − R
+
+C. The Algorithm Framework
+
+k∈Ks
+
+(28)
+Then we set xsks∗ t = 1 accordingly.
+After iterations, we need to adjust the power allocation to
+meet constraints (18b). Let S̄ be the set of the satellites whose
+scheduled users’ rates are larger than their demands, i.e.,
+Rks t + R̄ks t > Dks . We set Rks t = Dks − R̄ks t , ∀s ∈ S̄, and
+convert the corresponding rate expressions into the following,
+ R
+P
+2
+2
+′
+′
+ks t
+s′ ∈S\{s} |hs ks | Ps t + σ
+B
+Pst = 2
+−1
+, ∀s ∈ S,
+|hsks |2
+(29)
+which can be viewed as the equations of Pst . By solving the
+equations, the power allocation for those users can be adjusted
+to Rks t + R̄ks t = Dks . After that, we need to remove users
+with satisfied demands from Ks .
+The whole procedure of jointly optimizing power allocation
+and user scheduling is summarized in Alg. 2. The algorithm
+is operated timeslot by timeslot. In each timeslot, iterations
+are performed to update γs , ηs , Pst , and xskt from line 4
+to line 7, and terminate when convergence occurs or the
+maximum number of iterations I2 is reached. Within each
+iteration, the update of xskt (computing the values in (28)
+and selecting the user with the minimum for each satellite)
+e In line 10, power
+dominates the complexity with O(S K).
+allocation is adjusted to meet Rk ≤ Dk , where the complexity
+of solving the equations in (29) is O(S 3 ) [24] in the worst
+e + S 3 )).
+case. Thus, the complexity of Alg. 2 is O(T (I2 S K
+
+To solve P0 , Alg. 1 is performed first to decide
+beam patterns and user association at the frame level
+and then Alg. 2 is executed to jointly optimize power
+allocation and user scheduling at the timeslot level.
+To futher improve the performance, we design a swap-based
+algorithm to update the selection of beam patterns
+and users to iteratively decrease the capacity-demand
+gap.
+Beam pattern selection and user association can be
+defined as two many-to-one matching problems. A swap of
+satellite-pattern matching is defined as Φsn
+sn′ , denoting that
+satellite s changes pattern selection from n to n′ . In other
+words, the integer solution changes from {ysn = 1, ysn′ = 0}
+to {ysn = 0, ysn′ = 1}. Similarly, we define a swap of
+satellite-user matching as Ψsk
+sk′ , which means the satellite
+changes the scheduling from user k to user k ′ . Accordingly,
+the integer solution of {zsk = 1, zsk′ = 0} is changed to
+sk
+{zsk = 0, zsk′ = 1}. The swaps Φsn
+sn′ and Ψsk′ are operated
+if:
+′
+′
+• F > F , where F and F are the objective values before
+and after the swaps, respectively.
+The detailed procedure of the overall scheme is summarized
+in Alg. 3. In line 1, beam pattern selection and user association
+are initialized by Alg. 1. From line 2 to line 9, the update
+operation is executed for I3 iterations. Within each iteration,
+we first randomly select swaps in line 3 and calculate the
+objective value based on the satellite-pattern and satellite-user
+matchings after the swaps by optimizing power allocation
+and user scheduling via Alg. 2 in line 4. In line 5 to
+line 8, we operate the swaps and update the best solution and
+objective value if the capacity-demand gap decreases after the
+swaps. The complexity of each iteration mainly comes from
+executing Alg. 1. Thus the overall complexity of Alg. 3 is
+e + S 3 )).
+O(I3 T (I2 S K
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:58:15 UTC from IEEE Xplore. Restrictions apply.
+
+LEI et al.: SPATIAL–TEMPORAL RESOURCE OPTIMIZATION FOR UNEVEN-TRAFFIC LEO SATELLITE SYSTEMS
+
+1287
+
+TABLE I
+S IMULATION PARAMETERS
+
+Fig. 6. Gap performance of the proposed schemes (with different I3 ) and
+the SCA-based approach versus the number of users K (average demand is
+set to be 200 Mbps).
+
+Fig. 5. Average computational time consumed by the proposed approaches
+(with different I3 ) and the SCA-based approach.
+
+For practical implementation, the algorithm can be divided
+into two parts. With less flexibility compared to power allocation and user scheduling, the optimization of user association
+and beam pattern selection can be solved ahead of service
+with predicted channel models and demands for a long-term
+goal of diminishing capacity-demand gap. During each frame,
+dynamic issues may happen. In this case, user scheduling and
+power allocation can be optimized in a short-term way to adapt
+to short-term changes.
+VI. N UMERICAL R ESULTS
+In simulation, we consider a square area with 200×200 km2 ,
+where the generation of users follows two-dimension normal
+distributions [25]. The main parameters are summarized in
+Table I, unless otherwise stated. The generation of beam
+radiation patterns follows the rule in [7] and [10] where
+GTx
+sn,max depends on the beamwidth. We consider beam patterns which generate circular beams with 3-dB beamwidths
+{1◦ , 1.5◦ , 2◦ , 2.5◦ , 3◦ } [7]. Beams with 1◦ beamwidth have
+the largest directivity to the beam center whereas those with
+3◦ beamwidth generate the widest service range. The results
+are averaged over 500 instances.
+We first evaluate the performance of the proposed approach
+in the aspects of consumed computational time in Fig. 5. For
+comparison, a benchmark based on the conventional convex-
+
+ification (SCA) method is set, where the power optimization
+problem is addressed by solving a series of approximated
+convex subproblems and the integer solution is obtained by
+Alg. 3 with I3 = 50. We can observe that the proposed
+approach can maintain the computational time at the level
+of milliseconds when K ≤ 15. This is because resources
+are enough to satisfy users’ demand when the number of
+users is small such that the algorithm can perform an early
+stop. As the problem size increases with the number of users
+(K ≥ 20), the consumed computational time of the proposed
+approach remains a relatively smooth variation compared to
+the SCA-based approach. When I3 = 1, the computational
+time stays below 1 second since no update of integer solutions
+is executed. The SCA-based approach requires more computational time with a drastic rise. As described in Alg. 2,
+we jointly optimize power allocation and user scheduling by
+a series of closed-form expressions rather than solving convex
+subproblems, which saves up computational efforts compared
+to the conventional SCA-based scheme.
+In Fig. 6, we present the capacity-demand gap performance
+of the proposed and SCA-based schemes. As abovementioned,
+users’ capacity matches to their requested demand when K ≤
+15. After that, the capacity-demand gap grows with K linearly.
+With swap-based update of beam pattern selection and user
+association, the proposed scheme with I3 = 20 can alleviate
+the mismatch by 39.81% over that with I3 = 1. As the number
+of iterations I3 increases, the proposed scheme reduces the
+capacity-demand gap through searching more possible integer
+solutions but tends to converge. From I3 = 20 to 50, the proposed approach decreases the gap by 12.40%. The reduction is
+6.95% when I3 rises from 50 to 100. Compared to the SCAbased approach, the proposed approach only sacrifices 4.11%
+performance but largely reduces the computational efforts as
+presented in Fig. 5, which demonstrates a better complexityperformance tradeoff.
+Then we compare the proposed scheme with some state-ofthe-art strategies in Fig. 7. We set the following strategies as
+benchmarks:
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:58:15 UTC from IEEE Xplore. Restrictions apply.
+
+1288
+
+IEEE JOURNAL ON SELECTED AREAS IN COMMUNICATIONS, VOL. 42, NO. 5, MAY 2024
+
+Fig. 7.
+Gap performance of the proposed scheme and state-of-the-art
+strategies, where K = 20.
+
+Fig. 8. Gap performance of the schemes with different beam pattern settings,
+where K = 20.
+
+e users for association
+Random: Each satellite selects K
+randomly and then chooses the beam pattern with the
+largest νsn . At each timeslot, users are scheduled following the Round-Robin basis [26].
+• Best-channel: users are associated to satellites with the
+best channel gains and beam patterns with the largest νsn
+are selected. During the scheduling period, each satellite
+serves best-channel users first until Rk ≥ Dk [4], [27].
+• Largest-demand: Each satellite chooses users with the
+largest demand and then select the largest-νsn patterns.
+Timeslots are scheduled to users with largest demand
+first.
+
+•
+
+Note that power allocation is optimized following Alg. 2 in
+the above benchmarks. Among benchmarks, the Best-channel
+scheme outperforms the other two but yields larger
+capacity-demand mismatch over the proposed schemes. This
+is because the proposed schemes consider both users’ channel conditions and demand when deciding user association
+and perform joint optimization of power allocation and user
+scheduling. Compared to the Best-channel scheme, the proposed schemes reduce the capacity-demand gap by 27.67%
+and 44.92% when I3 = 1 and I3 = 50, respectively.
+Next, we evaluate the capacity-demand gap performance of
+the approaches with different beam pattern settings (5 patterns,
+3 patterns, and 1 pattern) in Fig. 8. In the 3-pattern scheme,
+each satellite can generate beams with 3-dB beamwidths
+{1◦ , 2◦ , 3◦ }. As for schemes with single pattern, Alg. 1
+is employed to decide user association and then Alg. 2 is
+adopted to perform power and user scheduling. The resulted
+capacity-demand gap increases with the growth of the average requested demand. Among single-pattern schemes, the
+one with 2.5◦ beamwidth outperforms the others. Functioned
+with multiple beam patterns, 3-pattern and 5-pattern schemes
+improve the capability of meeting users’ demand, with 31.46%
+and 46.68% reduction of capacity-demand gap over the
+single-pattern scheme with 2.5◦ beamwidth, respectively.
+In Fig. 9, we evaluate the average power consumption
+per satellite of different schemes. Generally, the power consumption rises with the number of users K but tends to be
+
+Fig. 9. Power consumption of the schemes with different beam pattern
+settings, where the average demand is 200 Mbps.
+
+Fig. 10. Average number of associated users (with Rk ≥ Rkmin ) achieved by
+the schemes with different beam pattern settings, where the average demand
+is 200 Mbps.
+
+steady when K is large. Particularly, the single-pattern scheme
+with 1◦ beamwidth results in the least power consumption in
+spite of the worst performance in reducing capacity-demand
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:58:15 UTC from IEEE Xplore. Restrictions apply.
+
+LEI et al.: SPATIAL–TEMPORAL RESOURCE OPTIMIZATION FOR UNEVEN-TRAFFIC LEO SATELLITE SYSTEMS
+
+1289
+
+pattern selection and user-LEO association, and then jointly
+optimize user-slot scheduling and power allocation. We have
+revealed facts for guiding algorithm design. That is, to mitigate the mismatch effect, users with better channel and high
+demand are prone to be served by narrow beams with low
+radiated interference to other users. Furthermore, we have
+proposed a swap-based update strategy to iteratively reduce the
+capacity-demand gap. Numerical results have demonstrated a
+good tradeoff of the designed scheme between performance
+and complexity and the advanced capability of matching
+capacity to demand when extra flexibility in spatial domain
+is introduced.
+A PPENDIX
+Fig. 11. Gap performance of LEO satellite systems with the coexistence of
+satellite payloads with both conventional single pattern and multiple patterns.
+Note that beamwidth is set to 2◦ in the single-pattern scheme. Here, the
+average demand is 200 Mbps and K = 20.
+
+gap. With more flexibility introduced in spatial domain,
+the 5-pattern scheme can guarantee good capacity-demand
+matching with power consumption smaller than the other
+four single-pattern schemes. Moreover, the capability of user
+association of different schemes is presented in Fig. 10. Compared to the single-pattern scheme with 2◦ beamwidth, which
+performs the best with the most associated users, the 5-pattern
+and 3-pattern schemes sacrify 8.04% and 10.13% performance, respectively. The designed multiple-pattern scheme can
+achieve a good balance between capacity-demand matching
+and power consumption/user association over conventional
+single-pattern schemes.
+In practical systems, LEO satellites equipped with advanced
+payloads (adopting the multiple-pattern scheme) would coexist
+with those equipped with conventional payloads (using the
+single-pattern scheme). We evaluate the performance of scenarios with different types of satellite payloads in Fig. 11. The
+more satellites are equipped with multiple beam patterns, the
+more spatial-domain flexibility is offered and thus the more
+reduction in capacity-demand gap is obtained. By introducing
+adaptive beam patterns, the capacity-demand gap is largely
+reduced by 91.59% and 76.19% when N = 5 and N = 3,
+respectively.
+
+A. Proof of Proposition 1
+We prove the proposition
+by contradiction. Assume that
+P
+there exist users with
+s∈S xskt Rskt + R̄kt > Dk at the
+−
+optimum of P2 (t). Denote St+ and SP
+t as the sets of satellites
+offering P
+their scheduled users with s∈S xskt Rskt + R̄kt >
+∗
+Dk and s∈S xskt Rskt + R̄kt ≤ Dk , respectively. Let Pst
+be
+the optimal power allocation and ϱ control the power of users
+scheduled by satellites in St+ . Note that, at the optimum, ϱ is
+set to 1. For users scheduled by satellites in St+ , the optimal
+SINR expression is derived as,
+γskt =
+
+P
+s′ ∈St+ \{s}
+
+∗
+|hsk |2 ϱPst
+P
+,
+|hs′ k |2 ϱPs∗′ t +
+|hs′ k |2 Ps∗′ t + σ 2
+s′ ∈St−
+
+(30)
+Similarly, the optimal SINR of users scheduled by satellites
+in St− is expressed as,
+γskt =
+
+P
+s′ ∈St+
+
+∗
+|hsk |2 Pst
+P
+
+|hs′ k |2 ϱPs∗′ t +
+
+s′ ∈St− \{s}
+
+|hs′ k |2 Ps∗′ t + σ 2
+
+,
+
+(31)
+
+VII. C ONCLUSION
+
+∗
+, we view the objective as the function of
+With the optimal Pst
+ϱ and derive the derivative of the objective regarding ϱ in (32),
+as shown at the bottom of the page. Note that
+X
+
+ ρ, if Rkmin >
+xskt Rskt + R̄kt ;
+ρ̄ =
+(33)
+s∈S
+
+0, otherwise.
+
+In this paper, we have investigated joint resource optimization and discussed synergies of spatial-temporal domain
+flexibilities when adopting adaptive beam patterns with flexible user scheduling in LEO satellite systems. We have
+designed an algorithmic framework to first determine beam
+
+We can observe that the derivative of the objective with respect
+to ϱ is larger than 0. This result conveys that the objective
+value could be smaller if we lower transmit power of satellites
+in St+ by reducing ϱ, which is contrary the assumption of
+optimality. Hence the proposition.
+
+!
+ρ̄skt )γskt
+xskt (1+
+ϱ(1+γskt )
+
+X X
+P
+s∈St− k∈K
+
+s′ ∈St+
+
+|hs′ k |2 ϱPs∗′ t +
+
+P
+s′ ∈St+
+
+γskt
+xskt ϱ(1+γ
+skt )
+
+|hs′ k |2 Ps∗′ t
+
+P
+s′ ∈St− \{s}
+
+|hs′ k |2 Ps∗′ t + σ 2
+
++
+
+X X
+P
+s∈St+ k∈K
+
+s′ ∈St+
+
+P
+s′ ∈St− \{s}
+
+|hs′ k |2 ϱPs∗′ t +
+
+|hs′ k |2 Ps∗′ t + σ 2
+
+P
+s′ ∈St− \{s}
+
+|hs′ k |2 Ps∗′ t + σ 2
+
+(32)
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:58:15 UTC from IEEE Xplore. Restrictions apply.
+
+1290
+
+IEEE JOURNAL ON SELECTED AREAS IN COMMUNICATIONS, VOL. 42, NO. 5, MAY 2024
+
+R EFERENCES
+[1] F. Rinaldi et al., “Non-terrestrial networks in 5G & beyond: A survey,”
+IEEE Access, vol. 8, pp. 165178–165200, 2020.
+[2] O. Kodheli et al., “Satellite communications in the new space era:
+A survey and future challenges,” IEEE Commun. Surveys Tuts., vol. 23,
+no. 1, pp. 70–109, 1st Quart., 2021.
+[3] V. L. Foreman, A. Siddiqi, and O. De Weck, “Large satellite constellation
+orbital debris impacts: Case studies of OneWeb and SpaceX proposals,”
+in Proc. AIAA SPACE Astronaut. Forum Expo., Sep. 2017, p. 5200.
+[4] M. Y. Abdelsadek, H. Yanikomeroglu, and G. K. Kurt, “Future ultradense LEO satellite networks: A cell-free massive MIMO approach,” in
+Proc. IEEE Int. Conf. Commun. Workshops (ICC Workshops), Jun. 2021,
+pp. 1–6.
+[5] B. Di, H. Zhang, L. Song, Y. Li, and G. Y. Li, “Ultra-dense LEO:
+Integrating terrestrial-satellite networks into 5G and beyond for data
+offloading,” IEEE Trans. Wireless Commun., vol. 18, no. 1, pp. 47–62,
+Jan. 2019.
+[6] H. Al-Hraishawi, H. Chougrani, S. Kisseleff, E. Lagunas, and
+S. Chatzinotas, “A survey on nongeostationary satellite systems: The
+communication perspective,” IEEE Commun. Surveys Tuts., vol. 25,
+no. 1, pp. 101–132, 1st Quart., 2023.
+[7] G. Maral, M. Bousquet, and Z. Sun, Satellite Communications Systems:
+Systems, Techniques and Technology. Hoboken, NJ, USA: Wiley, 2020.
+[8] K. Y. Zhong, Y. J. Cheng, H. N. Yang, and B. Zheng, “LEO satellite
+multibeam coverage area division and beamforming method,” IEEE
+Antennas Wireless Propag. Lett., vol. 20, pp. 2115–2119, 2021.
+[9] Y. Su, Y. Liu, Y. Zhou, J. Yuan, H. Cao, and J. Shi, “Broadband LEO
+satellite communications: Architectures and key technologies,” IEEE
+Wireless Commun., vol. 26, no. 2, pp. 55–61, Apr. 2019.
+[10] M. Takahashi, Y. Kawamoto, N. Kato, A. Miura, and M. Toyoshima,
+“Adaptive power resource allocation with multi-beam directivity control
+in high-throughput satellite communication systems,” IEEE Wireless
+Commun. Lett., vol. 8, no. 4, pp. 1248–1251, Aug. 2019.
+[11] G. Angus, R. Li, and V. Mak-Hau, “FlexBeamOpt: Hybrid solution
+methodologies for high-throughput GEO satellite beam laydown and
+resource allocation,” Int. J. Satell. Commun. Netw., vol. 41, no. 6,
+pp. 515–538, 2023.
+[12] P. J. Honnaiah, N. Maturo, S. Chatzinotas, S. Kisseleff, and J. Krause,
+“Demand-based adaptive multi-beam pattern and footprint planning for
+high throughput GEO satellite systems,” IEEE Open J. Commun. Soc.,
+vol. 2, pp. 1526–1540, 2021.
+[13] J. A. Vásquez-Peralvo et al., “Flexible beamforming for direct radiating arrays in satellite communications,” IEEE Access, vol. 11,
+pp. 79684–79696, 2023.
+[14] F. G. Ortiz-Gomez, M. A. Salas-Natera, R. Martínez, and S. LanderosAyala, “Optimization in VHTS satellite system design with irregular
+beam coverage for non-uniform traffic distribution,” Remote Sens.,
+vol. 13, no. 13, p. 2642, Jul. 2021.
+[15] H. Chaker, H. Chougrani, W. A. Martins, S. Chatzinotas, and J. Grotz,
+“Matching traffic demand in GEO multibeam satellites: The joint use of
+dynamic beamforming and precoding under practical constraints,” IEEE
+Trans. Broadcast., vol. 68, no. 4, pp. 819–833, Dec. 2022.
+[16] S. Tani, K. Motoyoshi, H. Sano, A. Okamura, H. Nishiyama, and
+N. Kato, “An adaptive beam control technique for Q band satellite
+to maximize diversity gain and mitigate interference to terrestrial networks,” IEEE Trans. Emerg. Topics Comput., vol. 7, no. 1, pp. 115–122,
+Jan. 2019.
+[17] A. Guidotti, “Beam size design for new radio satellite communications
+systems,” IEEE Trans. Veh. Technol., vol. 68, no. 11, pp. 11379–11383,
+Nov. 2019.
+[18] X. Hu, Y. Zhang, X. Liao, Z. Liu, W. Wang, and F. M. Ghannouchi,
+“Dynamic beam hopping method based on multi-objective deep reinforcement learning for next generation satellite broadband systems,”
+IEEE Trans. Broadcast., vol. 66, no. 3, pp. 630–646, Sep. 2020.
+[19] F. G. Ortíz-Gómez, R. M. Rodríguez-Osorio, M. Salas-Natera, and
+S. Landeros-Ayala, “Adaptive resources allocation for flexible payload
+enabling VHTS systems: Methodology and architecture,” in Proc. 36th
+Int. Commun. Satell. Syst. Conf. (ICSSC), Oct. 2018, pp. 1–8.
+[20] A. Wang, L. Lei, X. Hu, E. Lagunas, A. I. Pérez-Neira, and
+S. Chatzinotas, “Adaptive beam pattern selection and resource allocation for NOMA-based LEO satellite systems,” in Proc. IEEE Global
+Commun. Conf. (GLOBECOM), Dec. 2022, pp. 674–679.
+[21] 3GPP, Technical Specification Group Radio Access Network: Study on
+New Radio (NR) to Support Non-Terrestrial Networks (Release 15),
+V15.4.0, document TR 38.811, 3GPP, 2020.
+
+[22] T. H. Cormen, C. E. Leiserson, R. L. Rivest, and C. Stein, Introduction
+to Algorithms. Cambridge, MA, USA: MIT Press, 2022.
+[23] K. Shen and W. Yu, “Fractional programming for communication
+systems—Part I: Power control and beamforming,” IEEE Trans. Signal
+Process., vol. 66, no. 10, pp. 2616–2630, May 2018.
+[24] G. H. Golub and C. F. Van Loan, Matrix Computations. Philadelphia,
+PA, USA: JHU Press, 2013.
+[25] S. Xia, Q. Jiang, C. Zou, and G. Li, “Beam coverage comparison of LEO
+satellite systems based on user diversification,” IEEE Access, vol. 7,
+pp. 181656–181667, 2019.
+[26] L. You, K.-X. Li, J. Wang, X. Gao, X.-G. Xia, and B. Ottersten, “Massive
+MIMO transmission for LEO satellite communications,” IEEE J. Sel.
+Areas Commun., vol. 38, no. 8, pp. 1851–1865, Aug. 2020.
+[27] T. Zhou, Z. Liu, J. Zhao, C. Li, and L. Yang, “Joint user association
+and power control for load balancing in downlink heterogeneous cellular
+networks,” IEEE Trans. Veh. Technol., vol. 67, no. 3, pp. 2582–2593,
+Mar. 2018.
+
+Lei Lei (Member, IEEE) received the B.Eng. and
+M.Eng. degrees from Northwestern Polytechnic University, Xi’an, China, and the Ph.D. degree from the
+Department of Science and Technology, Linköping
+University, Sweden, in 2016. He was a Research
+Assistant with the Institute for Infocomm Research
+(I2R), A*STAR, Singapore, in 2013. He was with
+the Interdisciplinary Centre for Security, Reliability and Trust (SnT), University of Luxembourg,
+as a Research Associate and a Research Scientist,
+from 2016 to 2021. He is currently an Associate
+Professor with the School of Information and Communications Engineering,
+Xi’an Jiaotong University. He coauthored the IEEE ComSoc Best Readings in Satellite Mega Constellations and Non-Orthogonal Multiple Access.
+His current research interests include resource allocation and optimization
+in terrestrial-satellite networks, energy-efficient communications, and deep
+learning in wireless communications. He received the IEEE Sweden Vehicular
+Technology-Communications-Information Theory (VT-COM-IT) Joint Chapter Best Student Journal Paper Award in 2014. He was a co-recipient of the
+IEEE SigTelCom 2019 Best Paper Award.
+
+Anyue Wang (Student Member, IEEE) received
+the bachelor’s and master’s degrees in communication engineering from Beijing University of Posts
+and Telecommunications (BUPT), Beijing, China, in
+2015 and 2018, respectively, and the Ph.D. degree
+from the Interdisciplinary Center for Security, Reliability and Trust (SnT), University of Luxembourg,
+Luxembourg, in 2022. From 2022 to 2023, he continued as a Research Associate with SnT, University
+of Luxembourg. His research interests include
+optimization and machine learning for resource management in wireless communication systems.
+
+Eva Lagunas (Senior Member, IEEE) received
+the M.Sc. and Ph.D. degrees in telecommunications engineering from the Polytechnic University
+of Catalonia (UPC), Barcelona, Spain, in 2010 and
+2014, respectively. She was a Research Assistant
+with the Department of Signal Theory and Communications, UPC, from 2009 to 2013. During
+the Summer of 2009, she was a Guest Research
+Assistant with the Department of Information Engineering, Pisa, Italy. From November 2011 to May
+2012, she held a Visiting Research appointment
+with the Center for Advanced Communications (CAC), Villanova University,
+Villanova, PA, USA. In 2014, she joined the Interdisciplinary Centre for
+Security, Reliability and Trust (SnT), University of Luxembourg, where she
+currently holds a research scientist position. Her research interests include
+radio resource management and general wireless networks optimization.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:58:15 UTC from IEEE Xplore. Restrictions apply.
+
+LEI et al.: SPATIAL–TEMPORAL RESOURCE OPTIMIZATION FOR UNEVEN-TRAFFIC LEO SATELLITE SYSTEMS
+
+Xin Hu (Senior Member, IEEE) received the B.Sc.
+degree in electrical information engineering from
+Huazhong University of Science and Technology,
+Wuhan, China, and the Ph.D. degree in electrical information engineering from the Institute of
+Electrics, Chinese Academy of Sciences, Beijing,
+China, in 2012. In 2016, he joined Beijing University
+of Posts and Telecommunications, where he is currently an Associate Professor. From 2019 to 2020,
+he was a Visiting Scholar with the iRadio Laboratory, University of Calgary, Calgary, AB, Canada.
+His current research interests include artificial intelligence empowering
+wireless communication, digital predistortion and the application of signal
+processing techniques to RF and microwave problems, and dynamic radio
+resource management.
+
+Zhengquan Zhang (Member, IEEE) received the
+M.Sc. degree in communication and information system and the Ph.D. degree in information
+and communication engineering from Southwest
+Jiaotong University, Chengdu, China, in 2008 and
+2019, respectively. From 2016 to 2017, he was a
+Guest Ph.D. Student with the KTH Royal Institute of Technology, Sweden. Since 2019, he has
+been an Associate Professor with the Department
+of Communication Engineering, Southwest Jiaotong
+University. His research interests include B5G and
+6G mobile communications, space-air-ground-sea integrated networks, high
+mobility wireless communications, and intelligent transportation and communication networks. He was a recipient of the IEEE VTS 2023 Best Magazine
+Paper Award.
+
+1291
+
+Zhiqiang Wei (Member, IEEE) received the B.E.
+degree in information engineering from Northwestern Polytechnical University (NPU), Xi’an,
+China, in 2012, and the Ph.D. degree in electrical engineering and telecommunications from
+the University of New South Wales (UNSW),
+Sydney, Australia, in 2019. From 2019 to 2020,
+he was a Post-Doctoral Research Fellow with
+UNSW. From 2021 to 2022, he was a Humboldt
+Post-Doctoral Research Fellow with the Institute for
+Digital Communications, Friedrich-Alexander University Erlangen-Nuremberg (FAU), Erlangen, Germany. He is currently a
+Professor with the School of Mathematics and Statistics, Xi’an Jiaotong
+University, Xi’an. He coauthored the IEEE ComSoc Best Readings on OTFS
+and Delay Doppler Signal Processing. His current research interests include
+delay-Doppler communications, resource allocation optimization, and statistic
+and array signal processing. He received the Best Paper Award at the IEEE
+ICC 2018 and the IEEE WCNC 2023. He was the Organizer/Chair of several
+workshops and tutorials on related topics of orthogonal time frequency space
+(OTFS) in IEEE flagship conferences, including IEEE ICC, IEEE WCNC,
+IEEE VTC, and IEEE ICCC. He is the Founding Co-Chair (publications) of
+the IEEE ComSoc Special Interest Group on OTFS (OTFS-SIG).
+
+Symeon Chatzinotas (Fellow, IEEE) is currently
+a Full Professor and the Head of the SIGCOM
+Research Group, SnT, University of Luxembourg.
+He has been a Visiting Professor with the University
+of Parma, Italy, and was involved in numerous
+RD projects for NCSR Demokritos and CERTH
+Hellas and CCSR, University of Surrey. He has
+(co)authored more than 700 technical papers in refereed international journals, conferences, and scientific
+books. He is coordinating the research activities on
+communications and networking across a group of
+80 researchers, acting as a PI for more than 40 projects and main representative
+for 3GPP, ETSI, DVB. He was a co-recipient of the 2014 IEEE Distinguished
+Contributions to Satellite Communications Award and the Best Paper Award
+at WCNC, 5GWF, EURASIP JWCN, CROWNCOM, and ICSSC. He is also
+serving on the Editorial Board for IEEE T RANSACTIONS ON C OMMUNI CATIONS , IEEE O PEN J OURNAL OF V EHICULAR T ECHNOLOGY , and the
+International Journal of Satellite Communications and Networking.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:58:15 UTC from IEEE Xplore. Restrictions apply.
+
+

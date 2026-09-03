@@ -1,0 +1,1561 @@
+IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS—PART B: CYBERNETICS, VOL. 37, NO. 3, JUNE 2007
+
+515
+
+Reinforcement Learning for Resource Allocation
+in LEO Satellite Networks
+Wipawee Usaha, Member, IEEE, and Javier A. Barria, Member, IEEE
+
+Abstract—In this paper, we develop and assess online decisionmaking algorithms for call admission and routing for low Earth
+orbit (LEO) satellite networks. It has been shown in a recent
+paper that, in a LEO satellite system, a semi-Markov decision
+process formulation of the call admission and routing problem
+can achieve better performance in terms of an average revenue
+function than existing routing methods. However, the conventional dynamic programming (DP) numerical solution becomes
+prohibited as the problem size increases. In this paper, two solution methods based on reinforcement learning (RL) are proposed
+in order to circumvent the computational burden of DP. The
+first method is based on an actor–critic method with temporaldifference (TD) learning. The second method is based on a
+critic-only method, called optimistic TD learning. The algorithms
+enhance performance in terms of requirements in storage, computational complexity and computational time, and in terms of
+an overall long-term average revenue function that penalizes
+blocked calls. Numerical studies are carried out, and the results
+obtained show that the RL framework can achieve up to 56%
+higher average revenue over existing routing methods used in
+LEO satellite networks with reasonable storage and computational requirements.
+Index Terms—Call admission control (CAC), low Earth orbit
+(LEO) satellite network, reinforcement learning (RL), routing,
+temporal-difference (TD) learning.
+
+I. I NTRODUCTION
+
+D
+
+YNAMIC resource allocation in low Earth orbit (LEO)
+satellite systems has been the focus of intensive investigation in recent years. Much research interest has centered
+on satellite-fixed cells where the traffic served by each satellite changes with time as the satellite footprint moves across
+regions. The advent of intersatellite links (ISLs)—an optical or
+radio link established between satellites—enables calls to be
+routed along satellites in the space segment to provide robust
+and efficient communication. ISL connectivity changes over
+time in terms of continuous-time variations of link distance and
+discrete-time link activation and deactivation as satellites move
+along their orbits. Therefore, when ISLs are included in LEO,
+satellite routing decisions, not only changing traffic patterns
+Manuscript received January 10, 2006; revised May 23, 2006. This work
+was supported by the Royal Thai Government and was carried out during the
+author’s stay at Imperial College London. This paper was recommended by
+Associate Editor S.-F. Su.
+W. Usaha is with the School of Telecommunication Engineering, Suranaree
+University of Technology, Nakorn Ratchasima 30000, Thailand (e-mail:
+wipawee@sut.ac.th).
+J. A. Barria is with the Department of Electrical and Electronic Engineering, Imperial College London, SW7 2BT London, U.K. (e-mail: j.barria@
+imperial.ac.uk).
+Color versions of one or more of the figures in this paper are available online
+at http://ieeexplore.ieee.org.
+Digital Object Identifier 10.1109/TSMCB.2006.886173
+
+between satellites but also the time-varying ISL topology must
+be considered.
+Therefore, most of the existing connection-oriented routing
+algorithms in LEO satellite networks select the shortest (least
+cost) and the most stable path (defined as a path whose links
+have high probability of link availability). The suggested link
+costs are of several forms, e.g., a constant (minimum hop)
+[17], [18], [22]; link usage or link occupancy [17]; offered
+link load [25]; average propagation delay [23]–[25]; and the
+derivative of the average delay with respect to link flow [6].
+Apart from [3] and [8] which account for the rerouted traffic
+in the near future using traffic estimation and deterministic
+topology changes, the link costs used in previous works do
+not account for changes in topology and therefore can result
+in a high number of forced terminated calls. Even though such
+benefits are considered in [8], only the single-service scenario
+was investigated. Furthermore, the proposed future (rerouted)
+traffic estimator algorithm in [8] is based on the solution of a
+continuous-time Markov chain and hence does not scale well
+when link capacity is large. Scalability of the algorithm will
+further deteriorate if multiple traffic services scenarios need to
+be considered. The problem studied in [3] supports multiple
+traffic services, but their algorithm admits all new calls as long
+as there is residual bandwidth to accommodate them.
+In this paper, we propose a selective call admission and
+routing policy which accounts for the rerouted traffic and
+selectively admits new calls—even when residual bandwidth is
+available—aiming for a more efficient use of resources. The effect of rerouted traffic caused by the changing satellite topology
+is hence here considered so that forced termination of rerouted
+calls due to insufficient resources is minimized. In [19], it
+was shown that routing strategies determined from a semiMarkov decision process (SMDP) formulation can minimize
+the dropping of both new and rerouted traffic. However, the
+computational complexity of the algorithms proposed in [19]
+makes the solution impractical for even small size networks.
+Furthermore, it is well known that solving the SMDP formulation with conventional dynamic-programming (DP) methods
+can still be too complex to solve—even with simplifications and
+suitable approximations. Recently, reinforcement learning (RL)
+methods [36] (also referred to as neuro-dynamic programming
+[30]) have been suggested to determine nearly optimal policies
+instead. RL is a method for learning to make a decision (i.e.,
+how to map environment states or situations into actions) in
+order to, for example, maximize a numerical reward signal.
+Our motivation to study further applications of RL methods
+lies on the fact that they can provide nearly optimal solutions
+to complex DP problems through experience from simulations
+
+1083-4419/$25.00 © 2007 IEEE
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:55 UTC from IEEE Xplore. Restrictions apply.
+
+516
+
+IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS—PART B: CYBERNETICS, VOL. 37, NO. 3, JUNE 2007
+
+and interaction with the environment at a low computational
+cost. In an RL-based approach, a decision-maker (agent) gets to
+know a representation of the environment’s state and decides to
+select an action. When the action is taken, a reward signal along
+with the new environment’s state are fed back to the agent. The
+sequence actions–reward is repeated continually with the aim of
+maximizing the agent’s average reward, which is defined as
+a specific function of the immediate reward sequence. The
+vast majority of RL techniques fall into one of the following
+categories.
+1) Actor-only methods operate under parameterized family
+of probabilistic policies [29], [32], [35], [40]. The parameterized components of the actor are updated so as
+to improve the gradient of some performance measure
+(with respect to the parameters). A disadvantage of these
+methods is the large variance of the gradient estimators
+(estimated directly from simulations) which results in a
+slow learning rate. Variance reduction techniques have
+hence been suggested [31], [39].
+2) Critic-only methods rely on value function approximation1 and aim at solving for an approximation to the
+Bellman equation [27], [30], [34], [37], [38]. Then, a
+greedy policy based on the approximated value function
+is applied aiming at a nearly optimal policy. Critic-only
+methods optimize a policy indirectly through learning the
+value function approximations. Unfortunately, for these
+methods the policy improvement is not always guaranteed
+(it is only guaranteed in limited settings [30]), even if
+good approximations of the value functions are obtained.
+3) Actor–critic methods combine the strong features of the
+two methods together [9], [10], [28], [33]. The critic stage
+attempts to learn value functions from simulation, and
+uses them to update the actor’s policy parameters in the
+direction of improvement of the performance gradient.
+Hence, the gradient estimate depends on the value function approximation provided by the critic, and it uses this
+approximation to improve a randomized policy according to some performance criterion. It is expected that
+policy improvement is guaranteed as long as the policy
+is gradient-based (strong feature of actor-only methods)
+and faster convergence is achievable through variance
+reduction (from learning the value functions in critic-only
+methods).
+In relation to the underlying problem of this paper, successful applications of RL methods have been reported in packet
+routing problems [1], [12], [15], and have been employed for
+bandwidth allocation in differentiated services networks [7].
+RL has also been applied to cognitive packet networks [5],
+which is an alternative packet network architecture where an
+RL algorithm stored in the packets are executed to make routing
+decisions. The problem of call admission control (CAC) and
+routing is formulated in [20] as a continuous-time averagereward finite-state DP problem. RL has also been successfully
+applied in combined CAC and routing problems [2], [11], [14].
+1 A value function is an evaluation of the expected future reward to be
+incurred expressed as a function of the current state.
+
+It is worth noting that the CAC and routing schemes developed
+so far are based mainly on critic-only RL methods which
+allow an interpretation of shadow prices (or implied costs)
+in the decision scheme whereby the value functions used for
+the computation of shadow prices are determined by means
+of RL methods instead of DP methods. For example the RL
+method in [11] uses a variant of temporal-difference (TD)
+learning with optimistic TD(0) policy iteration. However, despite many existing successful applications of optimistic policy
+iteration (OPI) methods in the literature [11], [13], [16], [26],
+the theoretical understanding of the convergence properties
+of such method is still limited. For example, a convergence
+problem is observed in [11] under some network configuration.
+Therefore, these approaches rely much on off-line training and
+trial-and-error initial parameter tuning. More recently in [41],
+RL methods have been applied to solve route discovery in
+mobile ad hoc networks (MANETs).
+Due to the undesirable convergency problems of previously
+proposed methods, we derive and implement an alternative RL
+method. The method builds on Konda’s actor–critic algorithm
+for discrete-time MDPs [9], [10] which uses a linear approximation architecture in the critic part. It should be noted that, to
+the best of our knowledge, this is the first development of this
+actor–critic algorithm toward the continuous-time domain and
+the first application of this version to an engineering problem.
+We also extend the RL method in [11] to solve resource allocation problems in LEO satellite networks and use it as a further
+benchmark. A comprehensive discussion on the key features of
+the RL method in [11] which makes it suitable for finding an
+alternative CAC and routing policy in LEO satellite networks
+can be found in [21]. The critic-only method developed here
+caters both multiple service ongoing call arrivals in addition to
+new call arrivals unlike [2], [11], and [14] where only new call
+arrivals are considered. Note that in the developed algorithms
+the additional consideration of the ongoing calls affects the
+optimal routing policy as more new calls may be rejected to
+reserve resources for future ongoing calls.
+This paper is organized as follows. In the next section, the
+problem formulation is presented. Section III presents the two
+proposed RL methods and in Section IV the suitability of RL
+methods to solve the SMDP problem presented in this paper is
+discuss and assessed. This paper concludes in Section V.
+II. P ROBLEM F ORMULATION
+Due to the orbiting nature of LEO satellites, the changing
+satellite topology can be regarded as snapshots of quasistationary satellite topologies that will be visible (available) in
+a periodical order. In this paper, we assume that all ISLs have
+equal capacity C, that new call requests arrive into the system
+according to a Poisson distribution with rate λj,N , and that their
+call holding time are exponentially distributed with parameter
+1/µj for each one of class-j calls, j ∈ J = {1, . . . , K}. As a
+result, the set of alternative routes predefined for class-j calls
+also varies as the satellite network topology changes. Note also
+that in the proposed scheme the final decision as to whether
+accept or not a call is made by the node o where the call is
+originated.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:55 UTC from IEEE Xplore. Restrictions apply.
+
+USAHA AND BARRIA: REINFORCEMENT LEARNING FOR RESOURCE ALLOCATION
+
+Fig. 1.
+
+Illustration of three possible handovers scenarios in a LEO satellite system.
+
+Given a satellite topology, say the nth topology TPn , the state
+space S of the network is given by
+
+S=
+
+517
+
+x = [yN (j, r), yHO (j, r)] , ∀j ∈ J, ∀r ∈ Wj :
+
+
+
+
+
+y(j, r)bj ≤ C, ∀s
+
+∀j∈J ∀r∈Wj ∩{s}
+
+where bj is the bandwidth requirement of class-j call, y(j, r) =
+yN (j, r) + yHO (j, r), where yN (j, r)(yHO (j, r)) is the number of new (handover) class-j connections on route r, Wj is the
+alternative routes set for class-j call, and Wj ∩ {s} is the set of
+routes which use link s.
+Let Ω denote the finite set of all possible events where
+
+Ω = ω = [ωN (1), . . . , ωN (K), ωHO (1), . . . , ωHO (K)] :
+
+
+ω ∈ {−1, 0, 1}2K .
+
+An event ω is given by the following description: 1) ωN (j) =
+1 for a new call arrival event of class-j; 2) ωN (j) = −1;
+
+ωHO (j) = 1 for an event where a new call of class-j encounters
+handover for the first time; 3) ωHO (j) = 1 for a subsequent
+handover call arrival event of class-j; and 4) ωN,HO (j) = −1
+for a new/handover call termination of class-j. Note that in
+all cases 1)–4) all other elements in ω are 0. Furthermore, we
+note that in a fixed communication network the updates are
+performed at epochs of call arrival and call departure at the links
+which are associated with event ωk . In contrast, in the LEO
+satellite system scenario considered here, state transitions that
+occur to due handovers must also be accounted for. Let m and
+n be two different satellites then, the following three additional
+cases need to be included (see also Fig. 1).
+1) A handover call arrival from an old route to a new
+route between satellite m and satellite n. In this case,
+an handover event is treated as a call departure, i.e., the
+resource along the old route is released and an update
+is performed at the links associated to call departure.
+In addition, this handover event is also treated as a
+call arrival, i.e., a decision must be made to admit and
+assign a new route to the associated call. If the call can
+be admitted, the resource along the new route must be
+reserved. Otherwise, the call is blocked and the state of
+the links in the new route remains unchanged. Updating
+is performed on all links in the old and new routes.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:55 UTC from IEEE Xplore. Restrictions apply.
+
+518
+
+IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS—PART B: CYBERNETICS, VOL. 37, NO. 3, JUNE 2007
+
+2) A handover call arrival from an old route between satellite
+m and satellite n to, for example, satellite n. In this
+case, the handover event is treated as a call departure.
+Note that the associated call never actually leaves the
+system, but all the resources in the old route are released
+and resources on the updown link of the receiving satellite
+is used up instead. Updating is performed at the links
+associated to the call departure.
+3) A handover call arrival from, for example, satellite m
+to a new route between satellite m and satellite n. For
+this case, the handover event is treated as a call arrival.
+Note that the total number of calls in the system never
+actually changes and the resources in the updown link
+are released. A decision must be made to admit and
+assign a new route to the considered call, and resource
+along the new route is reserved. Updating is performed
+on all the links associated to the new route. Otherwise,
+the handover call is blocked and the link states along
+the new route remains unchanged. Further details on the
+updating procedure to accommodate all ongoing call
+arrival scenarios can be found in [21].
+Let A(x, ω) denote the set of allowed actions when the
+current state and event is (x, ω) such that A(x, ω) ⊂ A =
+∪Aj where Aj = Wj ∪ {0}. An action a ∈ A(x, ω) such that
+2K
+j=1 ω(j) > −1, can be of two types: 1) reject a call and
+2) admits the (either new or handover) call to route r from
+the set of available routes {r1 , . . . , rnj } where ri ∈ Wj and
+nj is the number of routes for class-j of, e.g., topology TPn .
+For call termination events, no action is required since all call
+terminations must be allowed.
+Let π be a stationary policy mapping the current event and
+state of the network to an action. Under policy π, the process
+{xk , ωk } is an embedded finite state Markov chain evolving in
+continuous time. Note that in [19], it has been shown that the
+mean holding time between state transitions no longer needs to
+be Markovian. Note also that even though the chain evolves in
+continuous time, we only need to consider the system state at
+epochs where the events and decisions take place.
+Let tk be the time at which event ωk ∈ Ω occurs, and let
+xk be the state of the system during interval [tk−1 , tk ). Then,
+following an action a the system transits to the next state x and
+an immediate reward is generated
+
+ ζj,N ,
+g(xk , ωk , ak ) = ζj,HO ,
+
+0,
+
+if x ∈ S, ωk ← wN (j) = 1
+if x ∈ S, ωk ← wHO (j) = 1
+otherwise.
+
+(1)
+
+N −1
+N →∞
+
+k=0 g(xk , ωk , ak )
+
+tN
+
+h∗ (x)+v(π ∗ )τ̄ (x, a) = arg max {Eω [g(x, ω, a)+h∗ (x )]}
+a∈A(x,ω)
+
+(3)
+for the solution pair v(π ∗ ) and h∗ , where v(π ∗ ) is the optimal
+average reward, h∗ is the vector of |S| differential reward
+functions, |S| is the size of the state space, τ̄ (x, a) is the average
+transition time corresponding to state-action pair (x, a), Eω [·]
+is the expectation over the probability of events, and x is the
+next state which is a deterministic function of x, ω, and a. The
+function h∗ (x) has the following interpretation. Under policy
+π ∗ , h∗ (x) − h∗ (y) is the difference in the optimal expected
+reward over an infinitely long time when starting in the state
+x rather than state y, where x, y ∈ S.
+III. D ETERMINING R OUTING P OLICY
+A. Actor–Critic Semi-Markov Decision Algorithm (ACSMDP)
+Here, we proposed a novel algorithm. In this algorithm
+policy learning is performed at each (satellite) node and the
+resulting policy is a randomized policy, that is, given an event
+and network state, the policy maps to each state a distribution
+over the set of available actions. The embedded Markov chains
+{xk , ωk , ak } in the satellite network evolves within state space
+(S × Ω) × A and the distribution of the holding times between
+state transitions could be nonexponential [19]. Let µθ be a
+randomized policy parameterized by a vector θ ∈ RM (M is
+the number of tunable parameters) for a satellite node in a given
+topology say TPn . That is µθ is a mapping from the current
+event and state of the network to a distribution of actions.
+The objective is then to find, for each satellite node, a policy
+µθ (a|xk , ωk ) which will translate into an action ak (accept or
+reject a call) corresponding to µθ∗ such that v(µθ∗ ) ≥ v(µθ ) for
+every other µθ where v(µθ ) is given by (2).
+Let W = (x, ω) ∈ S × Ω. Provided that certain assumptions
+are satisfied to ensure existence of the gradient (see [10] and
+[21]), the parameterized policy µθ∗ can be found from improving the gradient of the average reward for SMDP ∇v(µθ )
+given by
+∇v(µθ )
+
+=
+
+That is, an immediate reward of ζj,N ∈ R+ (ζj,HO ∈ R+ ) is
+received for admitting a new (handover) call of class-j. The
+objective is to find a stationary policy π ∗ which maximizes the
+average reward such that v(π ∗ ) ≥ v(π) for every other policy π
+v(π) = lim
+
+that under any stationary policy π a state can be reached by any
+other state under π, the limit in (2) exists and is independent of
+the initial state. The optimal policy π ∗ can then be determined
+by solving Bellman’s equation for average reward SMDP
+
+(2)
+
+where ak = π(xk , ωk ) and tN is the completion time of the
+N th transition. Under the unichain assumption, which states
+
+
+
+θ
+(W, a)Qθ (W, a)
+
+∀W∈S×Ω pθ (W)
+∀a∈A(W) µθ (a|W)τ̄ (W, a)
+
+∀W∈S×Ω
+
+
+
+∀a∈A(W) pθ (W)µθ (a|W)ψ
+
+(4)
+where ∇ denotes the gradient with respect to θ and
+θ
+ψ θ (W, a) = ψ0θ (W, a), . . . , ψM
+−1 (W, a)
+
+ψjθ (W, a) =
+
+∂
+∂θ(j) µθ (a|W)
+
+µθ (a|W)
+
+,
+
+T
+
+j = 0, . . . , M − 1
+
+Qθ (W, a) = g(W, a) − v(θ)τ̄ (W, a) +
+
+
+
+pWW (a)hθ (W )
+
+∀W 
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:55 UTC from IEEE Xplore. Restrictions apply.
+
+USAHA AND BARRIA: REINFORCEMENT LEARNING FOR RESOURCE ALLOCATION
+
+τ̄ (W, a) =
+
+
+
+∞
+
+519
+
+TABLE I
+EVALUATION OF DIFFERENT STATE REPRESENTATIONS B(x, a), a > 0
+
+τ qWW (dτ, a)
+
+∀W  0
+
+qWW (τ, a) = Pr[τk+1 ≤ τ, Wk+1 = W |Wk = W, ak = a]
+where τk+1 = tk+1 − tk is the time between the transition Wk
+to Wk+1 . The derivation of ∇v(µθ ) is an extension for the
+SMDP case and can be found in Appendix C.
+The function Qθ (W, a) is the action value function of starting in state-event action tuple (W, a) and following policy
+µθ thereafter. However, since the exact model of the system
+is assumed unknown, Qθ (W, a) must then be estimated from
+simulation. Let the estimated action value function Q̃θu (W, a)
+be defined as
+Q̃θu (W, a) =
+
+K−1
+
+
+u(i)φθi (W, a)
+
+The function pθ (W, a) is the probability of selecting action
+a according to parameter vector θ ∈ RM . In this paper, the
+distribution pθ (W, a) in the form (7) is chosen as it defines
+the probability of selecting an action which has a continuous
+differentiable function of θ, and the scalar function B(x, a) is
+the state representation that reflects the current network state
+pθ (W, a) = 
+
+(5)
+
+i=0
+
+where u = [u(0), . . . , u(K − 1)]T is a parametric vector, φθ (W, a) = [φθ0 (W, a), . . . , φθK−1 (W, a)]T is the feature
+vector of state-action pair (W, a) ∈ (S × Ω) × A.
+For the multiservice network scenario such as the one considered in this paper, we use TD(λ) critic learning with 0 ≤
+λ < 1 and linear function approximation so that the critic can
+be updated at every time step. TD methods do not require a
+model of the environment and hence they can naturally be
+implemented in online applications. TD(λ) methods seamlessly
+integrate TD and Monte Carlo methods (λ = 0 represents the
+most extreme form of bootstrapping, and λ = 1 represents no
+bootstrapping (Monte Carlo methods [36]). Note also that the
+feature structure φθ (W, a) depends on θ and the TD(λ) critic
+type and should be chosen in such a way that it satisfies certain
+assumptions on stepsize and critic features (critic convergence
+analysis can be found in [10] and [21]).
+1) ACSMDP—Policy µθ (a|W) and Feature Structure: Let
+µθ be a randomized policy parameterized by θ ∈ RM for a
+satellite node in a given topology say TPn . The objective is
+then to find, for each satellite node, a policy corresponding to
+µθ∗ such that v(µθ∗ ) ≥ v(µθ ) for every other µθ where v(µθ )
+is given by (2). If the set of routes available is {r1 , . . . , rnj }
+where ri ∈ Wj , then the node o where the call was originated
+(event ωk ) admits the call to some route with some probability
+µθ (a|W) where a ∈ {r1 , . . . , rnj }, or rejects the call with
+probability µθ (0|W). If ωk corresponds to a call completion,
+the event is accepted with probability 1. If ωk corresponds to a
+call arrival, but the node is not where the call was originated,
+the event is accepted with probability 1—meaning that any
+subsequent node that is dealing with the request must accept
+any decision to ωk that node o takes. The actions just described
+correspond to the policy µθ (a|W) given by
+µθ (a|W) :
+ a = accept with
+
+
+probability p (W, a),
+
+ a = accept,
+a = accept,
+
+θ
+
+if ωk ← ωN (j) = 1
+if ωk ← ωHO (j) = 1
+if ωk ← ωN,HO (j) = −1.
+
+(6)
+
+exp (sθ (a))
+∀u∈A exp (sθ (u))
+
+sθ (a) = B(x, a) + θ(ω, a).
+
+(7)
+
+We assessed several forms of B(x, a) as shown in Table I using
+the net revenue (8) as criteria
+G(π) =
+
+
+
+ζj,N λ̄j,N (1 − B̄j,HO )
+
+(8)
+
+∀j
+
+where λ̄j,N is the average accepted rate of new class-j calls,
+ζj,N is the reward for class-j new calls, and B̄j,HO is the handover blocking probability class-j calls. The considered forms
+of B(x, a) for a > 0 include the average bandwidth occupation,
+the residual route bandwidth, the residual route bandwidth
+with indicator functions when it falls below a threshold value.
+The form (9) gave the highest net revenue over all other
+considered forms
+B(x, a)
+
+resid(r),
+= max
+
+r∈{r1 ,...,rnj } {resid(r)} ,
+
+if a = r ∈ {r1 , . . . , rnj }
+if a = 0
+
+resid(r)
+
+
+
+ 1
+
+= min C −
+xsj bj × .
+s∈r 
+ C
+
+(9)
+
+∀j∈J
+
+Note that under this form B(x, a) reflects the congestion status
+of the network associated to the call arrival event—a significant
+feature when making routing decisions. Hence, for a given
+action a = r ∈ {r1 , . . . , rnj }, B(x, a) represents the residual
+bandwidth on each route r and B(x, 0) is the maximum residual bandwidth among all available routes. Note that for all
+forms in Table I, B(x, 0), is the same as in (9).
+In addition, for each class j, there are nj + 1 available
+actions (i.e., admitting the call to one of nj routes and call
+rejection). Hence, for all K
+classes, the number of tunable actor
+parameters is M = K + ∀j∈K nj . Bearing this in mind and
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:55 UTC from IEEE Xplore. Restrictions apply.
+
+520
+
+IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS—PART B: CYBERNETICS, VOL. 37, NO. 3, JUNE 2007
+
+the fact that we have chosen to use the TD(λ) critic, the actor
+and critic feature vectors take the following forms:
+ψiθ (W, a) =
+φθi (W, a) =
+
+∂
+∂θ(i) µθ (a|W)
+
+
+
+µθ (a|W)
+ψiθ (W, a),
+φθi (W),
+
+for i = 0, . . . , M − 1
+
+,
+
+(10)
+
+for i = 0, . . . , M − 1
+for i = M
+
+(11)
+
+where
+φθi (W) = B(x, 0) =
+
+max
+
+r∈{r1 ,...,rnj }
+
+{resid(r)} .
+
+Note that with this choice of policy structure and features,
+the number of tunable actor parameters is |θ| = M and the
+number of tunable critic parameters is |u| = |θ| + 1. These
+parameters are updated as presented in the ACSMDP algorithm
+in Appendix B.
+
+where q = [q(0, s), . . . , q(5K, s)]T , ∀s ∈ L, is the parametric
+vector for, e.g., topology TPn . xN (j, s)(xHO (j, s)) is the number of new (handover) calls of class-j on routes using link s,
+and L is the set of available links in topology TPn . Note that
+similar quadratic features (14) have been used in [11]. For this
+approximation, the number of parameters required for tuning in
+topology TPn is |L|(1 + 5K).
+If a new call of class-j is accepted the number of class-j
+new calls becomes xN (j, s) + 1 on link s ∈ r. The net gain
+of admitting a class-j new/handover (N/HO) call to some
+route r is the gain obtained from admitting the call rather than
+rejecting it and is given by ζj, + h̃q (x ) − h̃q (x) where x is
+the network state after admitting the call and - = N, HO [19].
+From the quadratic form of the feature vector φ(x) in (14), the
+following net-gain result can be obtained in terms of the link
+net gains [11]:
+
+p̃sj (x, π)
+(15)
+ζj, + h̃q (x ) − h̃q (x) = ζj, −
+∀s∈r
+
+B. Optimistic Policy Iteration (OPI)
+∗
+
+The central idea of this approach is to approximate v(π ) by
+a scalar ṽ and h∗ (x) by a vector h̃q parameterized by some
+vector q ∈ RK obtained through some training process (e.g.,
+via simulation or interacting with the environment directly).
+The approximate optimal policy is then obtained from the
+greedy policy
+
+
+g(x, ω, a) + h̃q (x )
+(12)
+π(x, ω) = arg max
+a∈A(x,ω)
+
+where x is the next network state resulting from taking action
+a at (x, ω). In this method, the following linear approximation
+architecture is employed:
+h̃q (x) =
+
+K−1
+
+
+q(i)φi (x)
+
+(13)
+
+i=0
+
+where q = [q(0), . . . , q(K − 1)]T is a parametric vector and
+φ(x) = [φ0 (x), . . . , φK−1 (x)]T is the feature vector for state
+x ∈ S. Let the parametric and feature vector be defined
+such that
+
+K
+
+
+h̃q (x) =
+q(j, s)xN (j, s)
+q(0, s) +
+j=1
+
+∀s∈L
+
++
+
+K
+
+
++
+
+K
+
+
+q(j + 2K, s)(xN (j, s))2
+
+q(j + 3K, s)xN (j, s)xHO (j, s)
+
+j=1
+
++
+
+K
+
+j=1
+
+∀s∈r
+
+Note that the notion of link shadow price obtained
+here—which reflects the state-dependent cost of admitting a
+call in addition to the reward earned by admitting it—differs
+in two respects from [19]: 1) handover calls also constitute to
+the link shadow price whereby the cost of admitting handover
+calls includes the blocking of future (high reward) new calls
+and 2) the link shadow price in this paper is deduced from a
+specific choice of approximation architecture (14) whereas in
+[19], the link shadow price is derived from explicit network
+decomposition into independent link processes. Finally, the OPI
+method decomposes the network into the link level, and to
+improve the learning rate, we distributed the learning process at
+the link level as in [11]. The training procedure of this algorithm
+is given in Appendix A.
+C. Exploration Versus Exploitation
+
+j=1
+
++
+
+r∈Wj
+
+q(j + K, s)xHO (j, s)
+
+j=1
+K
+
+
+where p̃sj (x, π) is the approximated link s shadow price (or
+implied cost) and ζj, ∈ R+ is the immediate reward received
+for admitting a new/handover call (- = N, HO) of class-j.
+The greedy policy (12) can be reinterpreted in terms of link
+shadow price as follows (the greedy policy for handover calls is
+determinedin a similar manner). A class-j new call is rejected
+if ζj,N < ∀s∈r p̃sj (x, π); otherwise it is admitted to route r∗
+which gives the highest positive net gain
+
+
+
+∗
+s
+r = arg max ζj,N −
+p̃j (x, π) .
+(16)
+
+
+2
+
+q(j + 4K, s)(xHO (j, s))
+
+(14)
+
+To achieve decisions that produce high rewards, the learning
+schemes must favor or exploit good actions that have been
+found to produce high rewards in the past. However, the learning schemes must also explore alternative actions to discover
+better actions in the future. Therefore, the learning schemes
+progress by trying out a variety of actions and gradually favoring actions that appear to be best. In this paper, the ACSMDP
+algorithm inherits an on-policy behavior whereby it exploits
+the policy it has learned so far, and explores other actions
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:55 UTC from IEEE Xplore. Restrictions apply.
+
+USAHA AND BARRIA: REINFORCEMENT LEARNING FOR RESOURCE ALLOCATION
+
+521
+
+TABLE II
+MULTISERVICE PARAMETERS: CASES 1–3
+
+TABLE III
+MULTISERVICE PARAMETERS: CASES 4–6
+
+TABLE IV
+MULTISERVICE PARAMETERS: CASES 7–9
+
+Fig. 2.
+
+Schematic diagram of the test network.
+
+probabilistically under the same (randomized) policy. The OPI
+algorithm, on the other hand, can employ a .-greedy exploration
+where the best action is chosen with high probability (.), and
+other nongreedy actions are selected with small probability
+(1 − .). It is worth noting that the study of the suitable amount
+of interplay between the exploitation and exploration in RL is
+an area which warrants future investigation [36].
+IV. N UMERICAL R ESULTS
+In this section, we first compare the performance, in terms
+of average revenue (8) with the DP-based SMDP algorithm
+proposed in [19] and the MAXMIN routing method employed
+in [3] which aims at maximizing the minimum residual capacity
+in the network. These methods were selected because they also
+consider rerouted traffic of ongoing calls. We then test the
+robustness of the proposed methods in the presence of varying
+incoming traffic demand that emulates the stochastic nature of
+the traffic as the satellites sweeps across different regions on
+Earth. Finally, an assessment of the computational time and
+storage space requirement for all methods is carried out.
+A. General Settings
+We consider a 36-node LEO satellite network illustrated in
+Fig. 2. In this test network, there are five different topologies—
+topologies TP1 –TP4 have certain links turned off and TP5 has
+all links are turned on. The number of paths per topologies is
+3792, 3312, 3312, 3792, and 4332, respectively. The visibility
+
+time is 10 min, and the target probability for stable topology is
+0.9 [19]. The occurrence of changing topology is cyclic, i.e., in
+the sequence of TP1 , TP5 , TP2 , TP5 , . . . , TP4 , TP5 , TP1 . . . and
+so on. The first and the last node of each orbit are interconnected
+as illustrated by the thick dotted lines. In the following study,
+we assume that call blocking or dropping can occur only due to
+insufficient bandwidth in the ISL segment of the network.
+New call requests from the traffic sources in the service
+areas arrive into the system according to a Poisson process
+(in calls per minute). The duration of the calls in each service
+(in minutes) is governed by an exponential distribution and
+any blocked calls are assumed lost. In order to highlight the
+selective rejection ability of the proposed RL methods, nine
+cases were investigated. In cases 1–3 (Table II), we vary the
+mean call arrival rate; in cases 4–6 (Table III), we modify the
+bandwidth requirement, and in cases 7–9 (Table IV), we vary
+the reward structure (1). In all reported tests ζjN < ζjHO which
+implies that the decision gives higher priority to handover
+calls than new calls. Further tests can be found in [21]. After
+having completed the training process, the parameters obtained
+from the OPI and ACSMDP methods were evaluated in a
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:55 UTC from IEEE Xplore. Restrictions apply.
+
+522
+
+IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS—PART B: CYBERNETICS, VOL. 37, NO. 3, JUNE 2007
+
+Fig. 3. Percentage of calls routed on minimum hop paths (OPI, ACSMDP, MINMAX).
+
+Fig. 4. Service types blocking probability (C = 10 units, C = 30 units, and C = 50 units).
+
+simulation run of 2 × 106 time steps. Using this runlength,
+the measured results are within an 98% interval of confidence.
+For comparison, the MAXMIN and SMDP methods were also
+evaluated under the same runlength.
+B. Net Revenue
+Figs. 3 and 4 illustrate the routing behavior and blocking
+probabilities for the network with link capacity of C = 10 units,
+C = 30 units, and C = 50 units. For convenience, the new and
+handover of each service type are referred to as 1N, 1H, 2N,
+2H, 3N, and 3H.
+
+Fig. 3 depicts the percentage of calls routed on a minimum
+hop path. The OPI method shows that less 1N, 2N, and 3N
+calls are routed on minimum hop paths than 1H, 2H, and 3H
+meaning that more 1N, 2N, and 3N calls are routed on longer
+alternative paths. This allows more resources to accommodate
+1N, 2N, and 3N calls and permit 1H, 2H, and 3H calls to find
+alternative shortest path easier. The ACSMDP method has a
+tendency to route traffic uniformly over the set of available
+routes. Furthermore, minimum hop paths are used in the least
+proportion over other routing methods. This can be explained
+by the usage of (9) as state representation in the actor’s feature.
+Such state representation can only distinguish the network state
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:55 UTC from IEEE Xplore. Restrictions apply.
+
+USAHA AND BARRIA: REINFORCEMENT LEARNING FOR RESOURCE ALLOCATION
+
+523
+
+TABLE V
+AVERAGE NET REVENUE (8) OBTAINED FROM THE SIMULATION STUDY UNDER DIFFERENT TRAFFIC SCENARIOS
+
+in an highly aggregated manner (unlike the OPI approach which
+can discriminate individual link states). As a result, the choices
+of routes appear similar to the actor, and a uniform path selection behavior as shown in Fig. 3 is obtained. Despite the higher
+blocking probabilities, the MAXMIN tends to consistently use
+minimum hop paths for all accepted connections. Such uniform
+routing behavior (similar to the ACSMDP method) is expected
+from this method since routing decisions are made irrespective
+of the call rewards.
+Fig. 4 shows that the OPI method performs selective rejection
+on 1N calls to accommodate higher revenue calls. That is,
+the OPI method rejects more 1N calls than 2N and 3N calls
+despite 1/µ1 < 1/µ2 and b1 ≤ b3 . Furthermore, the blocking
+probabilities at 1H and 3H are very low. The ACSMDP method
+is also able to selectively reject lower reward calls in accordance
+to the randomized policy (6). Unlike the other two methods,
+MAXMIN does not consider the reward for each service type.
+Instead, it seeks to balance the traffic to the route with maximal
+minimum residual bandwidth, and as a result, calls of any type
+are accepted as long as the capacity constraint is still met. Call
+blocking occurs in this method mainly due to insufficient capacity. Hence, calls with less bandwidth requirement (1N, 1H,
+2N, 2H) experience lower call-blocking probability than calls
+with higher bandwidth requirement (3N, 3H), regardless of
+their rewards. The result is that more calls with low bandwidth
+requirement and low reward are accepted than calls with high
+bandwidth requirement and high reward.
+Table V reports the comparison of net revenue (8) of the
+OPI and ACSMDP method with the DP-based SMDP and
+MAXMIN methods in a multiple service network with C =
+10 units, C = 30 units, and C = 50 units of link capacity in
+each link. Note that for C > 20 units, the DP-based SMDP
+approach becomes too computationally exhaustive to implement (see Section IV-D). From the result reported here, it
+can be seen that ACSMDP revenue outcome on average is
+30.6%–7.1% higher that MAXMIN. We also note that as
+the system grows (from C = 10 units to C = 50 units), the
+ACSMDP method and OPI method tend to agree more in
+respect to their achievable average revenue outcome aggregates,
+and both of them outperform MAXMIN. These results suggest
+that the proposed RL methods can perform nearly as good as
+the DP-based SMDP approach and achieve up to 56.6% higher
+average revenue over existing routing algorithms. These and
+further results obtained in [21] would indicate that RL methods
+could become even more relevant as the system dimensions
+grow, and that RL-based solutions are a viable alternative
+when DP-based SMDP solutions become too computational
+expensive and/or the systems under analysis is large.
+
+Fig. 5. Robustness to different degrees of traffic variation. Performance
+relative to the MAXMIN approach.
+
+C. Robustness to Trafﬁc Variation
+So far, the parameters in the OPI and ACSMDP methods
+have been trained and evaluated under a stationary traffic
+demand environment. However, as the satellite sweeps across
+different regions on Earth, stochastic incoming traffic patterns
+are expected. In this test, we use the associated parameters
+already trained (see Section IV-A). To examine robustness
+the traffic variation is modeled by multiplying the arrival rate
+by a factor ∆ which is uniformly selected from the range
+[1 − ξV , 1 + ξV ]. The parameter ξV accounts for the traffic
+variation, and it is varied from 0 to 1 with small increments (say,
+ξV ∼ 0.2) indicating little variation where as ξV = 1 amounts
+to a total traffic variation from 0–126 calls/min.
+Fig. 5 illustrates the relative net revenue with respect to
+the MAXMIN method. The relative net revenue with respect
+to the MAXMIN method is defined by [Net_revenue_other/
+Net_revenue_MAXMIN] and is obtained for the multiple service network with C = 10 units, C = 30 units, and C =
+50 units link capacity. From the figure, it is found that the OPI,
+ACSMDP, and DP-based SMDP methods are robust against
+random traffic variations: their relative net revenue with respect
+to the MAXMIN method differs only slightly as the parameter
+ξV is increased. These results suggest that for the test here
+performed, the parameters trained off-line under a stationary
+traffic scenario, can be used over a wide terrestrial region, with
+the associated reduction in the number of parameters stored
+onboard the satellite.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:55 UTC from IEEE Xplore. Restrictions apply.
+
+524
+
+IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS—PART B: CYBERNETICS, VOL. 37, NO. 3, JUNE 2007
+
+Fig. 7. Computational time as a function of the number of nodes on the
+network. The results shown are for link capacity C = 30 units.
+Fig. 6.
+
+Computational time as a function of link capacity (Logarithmic scale).
+
+D. Computational Time and Storage Requirements
+Here, we examine the computational time of the MAXMIN,
+SMDP, ACSMDP, and OPI methods as a function of link
+capacity.2 The computational time refers to the time required to
+complete the simulation run of 2 × 106 time steps (events). The
+capacity of all the network links are identical for each case of
+link capacity. The obtained results are shown in Fig. 6 and are
+given as an average of all cases. Note that the SMDP method
+is only evaluated up to C = 20 units link capacity—beyond
+which results cannot be obtained within a reasonable amount
+of time (say, two days). From this figure, the simulation
+with online decisions show that the computational time of the
+SMDP method is over one order of magnitude greater than the
+MAXMIN, ACSMDP, and OPI methods at C = 10 units link
+capacity, and over two orders of magnitude at C = 20 units link
+capacity. The gains in computational time are due to the offline training procedures of the decision parameters and compact
+representation—enabling less computation for online decision
+making.
+The last experiment focuses on the online decision-making
+computational time and examines the computational time as
+a function of the number of nodes in the network. The link
+capacity is C = 30 units throughout the network. Five different
+sizes of networks are studied comprising of 4, 9, 16, 25,
+and 36 nodes, respectively. Each network undergoes topology changes according to Fig. 2. The resultant computational
+time is shown in Fig. 7. The OPI method shows the highest
+computational time followed by the ACSMDP and MAXMIN
+methods, respectively. In terms of the number of iterations, the
+amount of computation needed to compute one online decision
+is O(Knr nl ) for the case of the OPI method, O((nr + 1)nl )
+for the ACSMDP method and O(nr nl ) for the MAXMIN
+method, where K is the number of features of the tunable vector
+
+2 The simulation code is compiled in C and is run on Fujitsu Life Book with
+Intel Pentium M processor 1.20-GHz 512-MB RAM.
+
+q ∈ RK , nr is the maximum number of alternative routes for
+one class, and nl is the number of links in the longest route.
+In respect to the storage requirements, for the OPI method
+the storage requirement
+in one satellite node for online decision
+
+K|L|
+where
+|L| is the number of links in
+making is
+∀n
+topology TPn and K is the dimension of the link parameter
+vector q ∈ RK such that K  |Xs |, |Xs | is the size of the
+link state space. The storage requirementfor online decision
+making in the ACSMDP algorithm is
+∀n Mn parameters
+where Mn is the
+dimension of parameter vector θ ∈ RMn such
+that Mn = K + ∀j∈K nj , K is the number of classes, and nj
+is the number of routes for class-j call in topology TPn . We note
+that the ACSMDP method will generally demand less onboard
+storage for its decision parameters than the OPI method. This
+is because Mn is dependent on the number of satellite nodes,
+which is significantly fewer than the number of links in the
+network.
+
+V. F INAL R EMARKS
+In this paper, we develop and assess two RL approaches to
+solve an SMDP-based call admission and routing algorithm
+for LEO satellite networks. The focus is placed on employing
+RL approaches to learn a nearly optimal decision policy to
+circumvent the computational burden faced when computing
+an exact solution by means of conventional DP techniques
+as proposed in [19]. This leads to two distinct RL-based
+call admission and routing methods which are significantly
+less demanding in terms of computational time, computational
+and storage requirements than the DP-based SMDP approach.
+Numerical comparison between the RL-based methods and the
+MAXMIN routing method [3] are also carried out. In respect
+to the two developed RL-based algorithms, as the systems’
+capacity increases the outcome of the ACSMDP algorithm tend
+to agree more with the average revenue obtained by the OPI
+algorithm. In terms of computational time, the ACSMDP is
+faster than the OPI, and ACSMDP would generally demand less
+onboard storage than the OPI method. Finally, the OPI method
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:55 UTC from IEEE Xplore. Restrictions apply.
+
+USAHA AND BARRIA: REINFORCEMENT LEARNING FOR RESOURCE ALLOCATION
+
+may have convergence problems and hence would rely much
+on off-line training and trial-and-error initial parameter tuning.
+For the ACSMDP approach, a proof of convergence has been
+derived in [21]. All the evidence gathered so far suggests that
+RL-based methods solutions become more relevant as the system dimension grows and hence are worth further investigation
+in aspects like, for example, the state representation of actor
+feature.
+The actual implementation of the proposed algorithm requires the gathering and storing of link state information at
+each ISL in the network. This can be performed as follows:
+1) Each node sends link state information updates of its outgoing links to all other nodes in the network either periodically
+or when a significant change on its outgoing ISL is detected
+(see, e.g., [4]). 2) Each node stores the tuned parameters for
+every link and every topology in the network. If the current
+topology is TPn , each node uploads the parameters associated
+with the current topology. 3) Upon a call request of classj at a source node for a destination node, the source node
+performs the computation involved in admitting and assigning
+the call to one of the available paths using the information
+from 1) and 2). Parameter training can be performed within a
+reasonable time thus allowing training in a timely manner in
+case of any link or satellite node failures. During the training
+time, a simpler contingency routing method can be invoked
+instead. Finally, we have assumed that the link state information
+is always up-to-date and completely observable to every node
+in the network. However, in practice, link state updates are
+not always received simultaneously—e.g., there would be time
+delay before each update propagates throughout the network.
+We are currently extending the proposed RL algorithms to cope
+with large scale networks and network scenarios where the link
+states (the number of occupied resources) and link availability
+(link existence) are subject to unexpected changes.
+
+525
+
+A PPENDIX B
+ACSMDP A LGORITHM
+The ACSMDP algorithm is used to train the parametric
+vectors u ∈ RM +1 and θ ∈ RM . In this algorithm, γk , ηk are
+small stepsize parameters and Q̃θu (x, ω, a) = uT φθ (x, ω, a),
+∇u Q̃θu (x, ω, a) = φθ (x, ω, a). Note also that the parametric
+vectors u, θ are trained separately for each node and topology. The convergence results of the algorithm is provided
+in [21].
+Algorithm ACSMDP. Konda’s actor–critic algorithm for
+SMDP with TD(λ) critic. Arbitrarily initialize u0 , z0 ∈
+RM +1 , θ0 ∈ RM , x0 ∈ S, and ṽ0 .
+1) for k = 1 to T do
+2) At tk , an event ωk is generated at state xk .
+3) τk = tk − tk−1
+4) Generate ak ∈ A(x, ω) from µθk−1 .
+5) Get reward g(xk , ωk , ak ) and network changes to next
+state xk+1 .
+6) Perform updates:
+θ
+(xk ,
+a) dk = g( xk − 1 , ωk − 1 , ak−1 ) − ṽk − 1 τk + Q̃uk−1
+k−1
+θ
+
+(xk−1 , ωk−1 , ak−1 ).
+ωk , ak ) − Q̃uk−1
+k−1
+θ
+
+(xk , ωk , ak ).
+b) zk = λzk−1 + ∇u Q̃uk−1
+k−1
+c) uk = uk−1 + γk dk zk .
+d) ṽk = ṽk−1 + ηk (g(xk , ωk , ak ) − ṽk−1 τk ).
+θ
+θk−1 + βk Γ(rk−1 )Q̃uk−1
+(xk , ωk , ak )ψ θk−1
+e) θk =
+k−1
+(xk , ωk , ak ).
+7) end for k 
+
+The updates of dk , zk , uk , ṽk , and θk are performed at
+every epoch of call arrival and departure. Note that for all
+other nodes, a single decision is taken (a = accept) at which
+ψ θk−1 (xk , ωk , ak ) = [0, . . . , 0]T , and θk remains unchanged
+for these nodes. Similarly, for a call departure event, θk remains
+unchanged.
+
+A PPENDIX A
+OPI A LGORITHM
+The OPI algorithm is used to train the parametric vector
+u ∈ RK . In this algorithm, γk , ηk are small stepsize parameters
+and that ∇u h̃u (x) = φ(x) since h̃u (x) = uT φ(x). Note also
+that the parametric vector u is trained separately for each
+topology.
+Algorithm OPI. OPI based on TD(0). Arbitrarily initialize
+r0 ∈ RK , x0 ∈ S, and ṽ0 .
+1) for k = 1 to T do
+2) At tk , an event ωk is generated at state xk .
+3) τk = tk − tk−1
+4) Perform updates:
+a) dk = g( xk − 1 , ωk − 1 , ak − 1 ) − ṽk−1 τk + h̃uk−1 (xk ) −
+h̃uk−1 (xk−1 ).
+b) uk = uk−1 + γk dk ∇u h̃uk−1 (xk−1 ).
+c) ṽk = ṽk−1 + ηk (g(xk−1 , ωk−1 , ak−1 ) − ṽk−1 τk ).
+5) Select action
+a) ak = arg maxa∈A(xk ,ωk ) {g(xk , ωk , a) + h̃uk (x )}.
+6) Get reward g(xk , ωk , ak ) and network changes to next
+state xk+1 .
+7) end for k 
+
+A PPENDIX C
+G RADIENT E STIMATION FOR THE ACSMDP
+Recall that for each pair (x, a), the policy µθ (a|x) denotes
+the
+ probability that action a is taken when the state is x where
+∀a∈A(x) µθ (a|x) = 1 and A(x) is the set of allowed actions
+at state x.
+Let qxx (τ, a) denote the transition distributions of the SMDP
+qxx (τ, a) = Pr[τk ≤ τ, xk+1 = x |xk = x, ak = a].
+
+(17)
+
+Note that qxx (τ, a) is independent of θ and the dependence of
+the process {xk , ak , τk } on θ is only through the execution of
+policy µθ . Note also that the relationship between qxx (τ, a)
+and the transition probabilities pxx (a) from the discrete-time
+Markov chain follows
+
+lim qxx (τ, a) = Pr[xk+1 = x |xk = x, ak = a] = pxx (a).
+
+τ →∞
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:55 UTC from IEEE Xplore. Restrictions apply.
+
+526
+
+IEEE TRANSACTIONS ON SYSTEMS, MAN, AND CYBERNETICS—PART B: CYBERNETICS, VOL. 37, NO. 3, JUNE 2007
+
+Let τ̄ (x, a) be the average transition time corresponding to
+state-action pair (x, a). Assume that
+
+
+τ̄ (x, a) =
+
+∞
+
+τ qxx (dτ, a) < ∞
+
+(18)
+
+∀x ∈X 0
+
+Let hθ (x) : X → R be a differential reward function
+defined as
+
+µθ (a|x)Qθ (x, a)
+(19)
+hθ (x) =
+∀a∈A(x)
+
+
+
+θ
+
+Q (x, a) =g(x, a)−v(θ)τ̄ (x, a)+
+
+pxx (a)hθ (x ). (20)
+
+∀x ∈X
+
+By differentiating (19) with respect to θ(j) for 0 ≤ j ≤ M − 1,
+the following term is obtained:
+
+
+∂
+∂
+θ
+h (x) =
+µθ (a|x)Qθ (x, a)
+∂θ(j)
+∂θ(j)
+∀a∈A(x)
+
+∂
+θ
++ µθ (a|x)
+Q (x, a) . (21)
+∂θ(j)
+After substituting (20) into the latter term on the right-hand side
+of (21) and rearranging the terms, we have
+
+∀a∈A(x)
+
+=
+
+
+
+∀a∈A(x)
+
+∂
+v(θ)τ̄ (x, a)
+∂θ(j)
+
+
+∂
+µθ (a|x)Qθ (x, a) +
+µθ (a|x)
+∂θ(j)
+∀a∈A(x)
+
+
+
+∂
+g(x, a) +
+×
+µθ (a|x)
+pxx (a)
+∂θ(j)
+
+∀x ∈X
+
+∀a∈A(x)
+
+∂
+∂
+hθ (x ) −
+hθ (x).
+×
+∂θ(j)
+∂θ(j)
+
+(22)
+
+The second term on the right-hand side of (22) becomes zero
+since g(x, a) is, by definition, independent of θ. Therefore, (22)
+is reduced to
+
+
+∂
+∂
+v(θ)τ̄ (x, a) =
+µθ (a|x)
+µθ (a|x)
+∂θ(j)
+∂θ(j)
+
+∀a∈A(x)
+
+× Qθ (x, a) +
+
+
+∀x ∈X
+
+∀a∈A(x)
+
+∂
+∂
+hθ (x ) −
+hθ (x).
+pθxx
+∂θ(j)
+∂θ(j)
+
+(23)
+
+Summing over the steady-state probabilities pθ (x) on both sides
+of (23), we then have
+
+
+∂
+v(θ)
+pθ (x)
+µθ (a|x)τ̄ (x, a)
+∂θ(j)
+∀x∈X
+
+∀a∈A(x)
+
+=
+
+
+
+
+
+∀x∈X
+
+
+
+θ
+θ
+∀a∈A(x) pθ (x)µθ (a|x)ψj (x, a)Q (x, a)
+
+
+
+∀x∈X pθ (x)
+
+
+
+∀x∈X
+
+pθ (x)
+
+∀a∈A(x) µθ (a|x)τ̄ (x, a)
+
+where
+ψjθ (x, a) =
+
+Gradient Estimation
+
+µθ (a|x)
+
+∂
+v(θ)=
+∂θ(j)
+
+(24)
+
+for all x, x and a. Let g : X × A → R be an expected immediate reward function.
+
+
+
+Thus, the gradient of the average reward for the SMDP with
+respect to θ(j) for 0 ≤ j ≤ M − 1 is given by
+
+
+∀a∈A(x)
+
+∂
+µθ (a|x)Qθ (x, a).
+∂θ(j)
+
+∂
+∂θ(j) µθ (a|x)
+
+µθ (a|x)
+
+.
+
+ACKNOWLEDGMENT
+The authors would like to thank the reviewers for their
+helpful and constructive comments.
+R EFERENCES
+[1] J. A. Boyan and M. L. Littman, “Packet routing in dynamically changing
+networks: A reinforcement learning approach,” in Advances in Neural
+Information Processing Systems 6. San Mateo, CA: Morgan Kaufmann,
+1994.
+[2] J. Carlstrom, “Reinforcement learning for admission control and routing,”
+Ph.D. dissertation, Uppsala Univ., Uppsala, Sweden, 2000.
+[3] O. Ercetin, S. Krishnamurthy, S. Dao, and L. Tassiulas, “Provision
+of guaranteed services in broadband LEO satellite networks,” Comput.
+Netw., vol. 39, no. 1, pp. 61–77, May 2002.
+[4] L. Franck and G. Maral, “Signalling for inter-satellite link routing in
+broadband non-GEO satellite systems,” Comput. Netw., vol. 39, no. 1,
+pp. 79–92, May 2002.
+[5] E. Gelenbe, R. Lent, and A. Nunez, “Self-aware networks and QoS,” Proc.
+IEEE, vol. 92, no. 9, pp. 1478–1489, Sep. 2004.
+[6] I. Gragopoulos, E. Papapetrou, and F. Pavlidou, “Performance study of
+adaptive routing algorithms for LEO satellite constellations under selfsimilar and Poisson traffic,” Space Commun., vol. 16, no. 1, pp. 15–22,
+Jan. 2000.
+[7] T. C.-K. Hui and C.-K. Tham, “Adaptive provisioning of differentiated
+services networks based on reinforcement learning,” IEEE Trans. Syst.,
+Man, Cybern. C, Appl. Rev., vol. 33, no. 4, pp. 492–501, Nov. 2003.
+[8] B. W. Kim, S. L. Min, H. S. Yang, and C. S. Kim, “Predictive call
+admission control scheme for low Earth orbit satellite networks,” IEEE
+Trans. Veh. Technol., vol. 49, no. 6, pp. 2320–2335, Nov. 2000.
+[9] V. R. Konda, “Actor-critic algorithms,” Ph.D. dissertation, MIT,
+Cambridge, MA, 2002.
+[10] V. R. Konda and J. N. Tsitsiklis, “On actor-critic algorithms,” SIAM J.
+Control Optim., vol. 42, no. 4, pp. 1143–1166, Aug. 2003.
+[11] P. Marbach, O. Mihatsch, and J. N. Tsitsiklis, “Call admission control
+and routing in integrated services networks using Neuro-dynamic programming,” IEEE J. Sel. Areas Commun., vol. 18, no. 2, pp. 197–208,
+Feb. 2000.
+[12] L. Peshkin and V. Savova, “Reinforcement learning for adaptive routing,”
+in Proc. Int. Joint Conf. Neural Netw., 2002, pp. 1825–1830.
+[13] S. Singh and D. P. Bertsekas, “Reinforcement learning for dynamic
+channel allocation in cellular telephone systems,” in Advances in Neural
+Information Processing Systems 10. Cambridge, MA: MIT Press, 1997,
+pp. 974–980.
+[14] H. Tong and T. X. Brown, “Adaptive call admission control under qualityof-service constraints: A reinforcement learning solution,” IEEE J. Sel.
+Areas Commun., vol. 18, no. 2, pp. 209–220, Feb. 2000.
+[15] N. Tao, J. Baxter, and L. Weaver, “A multi-agent, policy-gradient approach to network routing,” in Proc. 18th Int. Mach. Learn. Conf., 2001,
+pp. 553–560.
+[16] G. Tesauro, “Practical issues in temporal difference learning,” Mach.
+Learn., vol. 8, no. 3/4, pp. 257–277, May 1992.
+[17] P. Tam, J. Lui, H. W. Chan, C. Sze, and C. N. Sze, “An optimized routing
+scheme and a channel reservation strategy for a low Earth orbit satellite
+system,” in Proc. IEEE VTC, Sep. 1999, vol. 5, pp. 2870–2874.
+[18] H. Uzunalioglu, I. F. Akyilidiz, and M. Bender, “A routing algorithm
+for connection-oriented low Earth orbit (LEO) satellite networks with
+dynamic connectivity,” Wireless Netw., vol. 6, no. 3, pp. 181–190,
+May 2000.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:55 UTC from IEEE Xplore. Restrictions apply.
+
+USAHA AND BARRIA: REINFORCEMENT LEARNING FOR RESOURCE ALLOCATION
+
+[19] W. Usaha and J. Barria, “Markov decision theory framework for resource allocation in LEO satellite constellations,” Proc. Inst. Electr.
+Eng.—Commun., vol. 149, no. 5, pp. 270–276, Oct. 2002.
+[20] D. P. Bertsekas, Dynamic Programming and Optimal Control. Belmont,
+MA: Athena Scientific, 1995.
+[21] W. Usaha, “Resource allocation in networks with dynamic topology,”
+Ph.D. dissertation, Imperial College London, London, U.K., 2004.
+[22] H. Uzunalioglu, “Probabilistic routing protocol for low Earth orbit satellite networks,” in Proc. ICC, Jun. 1998, vol. 1, pp. 89–93.
+[23] M. Werner, C. Delluchi, H. Vogel, G. Maral, and J. De Ridder,
+“ATM-based routing in LEO/MEO satellite networks with intersatellite links,” IEEE J. Sel. Areas Commun., vol. 15, no. 1, pp. 69–82,
+Jan. 1997.
+[24] M. Werner, “A dynamic routing concept for ATM-based satellite personal
+communication network,” IEEE J. Sel. Areas Commun., vol. 15, no. 8,
+pp. 1636–1648, Oct. 1997.
+[25] M. Werner, C. Mayer, G. Maral, and M. Holzbock, “A neural network
+base approach to distributed adaptive routing of LEO intersatellite link
+traffic,” in Proc. IEEE VTC, May 1998, vol. 2, pp. 1498–1502.
+[26] W. Zhang and T. G. Dietterich, “High performance job-shop scheduling with a time delay TD(λ) network,” in Advances in Neural
+Information Processing Systems 8. Cambridge, MA: MIT Press, 1996,
+pp. 1024–1030.
+[27] J. Abounadi, D. P. Bertsekas, and V. S. Borkar, “Learning algorithms for
+Markov decision processes,” Lab. Inf. Decision Syst., MIT, Cambridge,
+MA, Rep. LIDS-P-2434, 1998.
+[28] A. G. Barto, R. S. Sutton, and C. W. Anderson, “Neuronlike adaptive
+elements that can solve difficult learning control problems,” IEEE Trans.
+Syst., Man, Cybern., vol. SMC-13, no. 5, pp. 834–846, Sep./Oct. 1983.
+[29] J. Baxter and P. L. Bartlett, “Infinite-horizon policy gradient estimation,”
+J. Artif. Intell. Res., vol. 15, no. 4, pp. 319–350, Jul.–Dec. 2001.
+[30] D. P. Bertsekas and J. N. Tsitsiklis, Neuro-Dynamic Programming.
+Belmont, MA: Athena Scientific, 1996.
+[31] E. Greensmith, P. L. Bartlett, and J. Baxter, “Variance reduction techniques for gradient estimates in reinforcement learning,” in Advances
+in Neural Information Processing Systems 14. Vancouver, BC, Canada:
+MIT Press, 2001.
+[32] T. Jaakkola, S. P. Singh, and M. I. Jordan, “Reinforcement learning
+algorithm for partially observable Markov decision problems,” in
+Advances in Neural Information Processing Systems 7. San Mateo, CA:
+Morgan Kaufmann, 1995, pp. 345–352.
+[33] V. R. Konda and V. S. Borkar, “Actor-critic like learning algorithms for
+Markov decision processes,” SIAM J. Control Optim., vol. 38, no. 1,
+pp. 94–123, 1999.
+[34] S. Mahadevan, “Average reward reinforcement learning: Foundations, algorithms and empirical results,” Mach. Learn., vol. 22, no. 1–3,
+pp. 159–196, 1996.
+[35] P. Marbach and J. N. Tsitsiklis, “Simulation-based optimization of
+Markov reward processes,” IEEE Trans. Autom. Control, vol. 46, no. 2,
+pp. 191–209, Feb. 2001.
+[36] R. S. Sutton and A. G. Barto, Reinforcement Learning: An Introduction.
+Cambridge, MA: MIT Press, 1998.
+[37] J. N. Tsitsiklis and B. Van Roy, “An analysis of temporal-difference learning with function approximation,” IEEE Trans. Autom. Control, vol. 42,
+no. 5, pp. 674–690, May 1997.
+[38] ——, “Average cost temporal-difference learning,” Automatica, vol. 35,
+no. 11, pp. 1799–1808, Nov. 1999.
+
+527
+
+[39] L. Weaver and N. Tao, “The optimal reward baseline for gradient based
+reinforcement learning,” in Proc. 17th Conf. Uncertain. Artif. Intell.,
+Seattle, WA, Aug. 2001, pp. 538–545.
+[40] R. J. Williams, “Simple statistical gradient-following algorithms for
+connectionist reinforcement learning,” Mach. Learn., vol. 8, no. 3/4,
+pp. 229–256, May 1992.
+[41] W. Usaha and J. Barria, “A reinforcement learning ticket-based probing
+path discovery scheme for MANETs,” Ad Hoc Netw., vol. 2, no. 3,
+pp. 319–334, 2004.
+
+Wipawee Usaha (M’04) received the B.Eng. degree from the Sirindhorn International Institute of
+Technology, Thammasat University, Pathum Thani,
+Thailand, in 1996, and the M.Sc. and Ph.D. degrees from Imperial College London, University of
+London, London, U.K., in 1998 and 2004, respectively, all in electrical engineering.
+Currently, she is with the School of Telecommunication Engineering, Suranaree University of Technology, Nakhon Ratchasima, Thailand. Her research
+interests include distributed resource allocation and
+QoS provision in MANETs, satellite, cellular systems, and network monitoring
+using reinforcement-learning techniques.
+
+Javier A. Barria (M’02) received the B.Sc. degree
+in electronic engineering from the University of
+Chile, Santiago, in 1980, and the Ph.D. and M.B.A.
+degrees from Imperial College London, London,
+U.K., in 1992 and 1998, respectively.
+From 1981 to 1993, he was a System Engineer
+and Project Manager (network operations) with the
+Chilean Telecommunications Company. Currently,
+he is a Reader in the Intelligent Systems and Networks Group, Department of Electrical and Electronic Engineering, Imperial College London. His
+research interests include communication networks monitoring strategies using
+signal and image processing techniques, distributed resource allocation in
+dynamic topology networks, and fair and efficient resource allocation in IP
+environments. He has been a joint holder of several FP5 and FP6 European
+Union project contracts all concerned with aspects of communication systems
+design and management.
+Dr. Barria was a British Telecom Research Fellow from 2001 to 2002.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:55 UTC from IEEE Xplore. Restrictions apply.
+
+

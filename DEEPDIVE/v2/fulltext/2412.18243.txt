@@ -1,0 +1,671 @@
+
+
+A Large-Scale IPv6-Based Measurement of the Starlink Network
+
+ Report GitHub Issue
+ ×
+
+ Title:
+
+Content selection saved. Describe the issue below:
+
+ Description:
+
+ Submit without GitHub
+ Submit in GitHub
+
+ arXiv is now an independent nonprofit!
+ Learn more
+ ×
+
+ Back to arXiv
+
+ Why HTML?
+
+ Report Issue
+
+ Back to Abstract
+
+ Download PDF
+
+ABSTRACT
+
+I INTRODUCTION
+
+II BACKGROUND AND RELATED WORK
+
+II-A Background
+
+II-B Related work
+
+III STARLINK NETWORK MEASUREMENT
+
+III-A Discovering Starlink user routers
+
+III-B Enumerating Starlink PoPs
+
+III-C Mapping Starlink backbone network
+
+III-D Statistics on measurement results
+
+III-D1 Distribution of Starlink users
+
+III-D2 Starlink PoPs and their served users
+
+III-D3 IPv6 address assignment strategy
+
+IV DISCUSSION
+
+IV-A Limitations
+
+IV-B Ethics
+
+V CONCLUSION
+
+References
+
+ License: CC BY 4.0
+
+arXiv:2412.18243v1 [cs.NI] 24 Dec 2024
+
+A Large-Scale IPv6-Based Measurement of the Starlink Network
+
+Bingsen Wang1
+
+Xiaohui Zhang2
+
+Shuai Wang2
+
+Li Chen2
+
+Jinwei Zhao3
+
+Jianping Pan3
+
+Dan Li24
+
+Yong Jiang1
+
+Affiliation: 1Tsinghua Shenzhen International Graduate School
+2Zhongguancun Laboratory
+3University of Victoria
+4Tsinghua University
+wbs22@mails.tsinghua.edu.cn
+
+Affiliation: 
+
+ABSTRACT
+
+Low Earth Orbit (LEO) satellite networks have attracted considerable attention for their ability to deliver global, low-latency broadband Internet services. In this paper, we present a large-scale measurement study of the Starlink network, the largest LEO satellite constellation to date. We begin by proposing an efficient method for discovering active Starlink user routers, identifying approximately [MATH] million IPv6 addresses across [MATH] countries and [MATH] regions—representing, to the best of our knowledge, the most complete list of Starlink user routers’ active IPv6 addresses. Based on the discovered user routers, we map the Starlink backbone network, which consists of [MATH] Points of Presence (PoPs) and [MATH] connections between them. Furthermore, we conduct a detailed statistical analysis of active Starlink users and PoPs. Finally, we summarize the IPv6 address assignment strategy adopted by the Starlink network. The dataset of the backbone network is publicly available at https://ki3.org.cn/#/starlink-network.
+
+I INTRODUCTION
+
+Low Earth Orbit (LEO) satellite networks have shown tremendous potential in recent years as a supplement and extension to traditional terrestrial networks. LEO satellite networks are built to deliver high-speed, low-latency Internet services globally, bringing great convenience to people’s lives. The wide coverage benefits communication in remote areas. It also shows a great advantage over terrestrial communication in latency, even in well-connected areas. The work in [1] reveals that LEO satellite networks can provide lower latency communication than any possible terrestrial optical fiber network when communicating over a distance over [MATH] km.
+
+Starlink from SpaceX stands out due to its expansive fleet of more than [MATH] satellites. Starlink has connected over [MATH] million people with high-speed Internet across over [MATH] countries, territories, and many other markets as of September 2024 [2]. However, Starlink’s internal architecture and operational details remain largely opaque, leaving the research community with a limited understanding.
+
+Currently, some knowledge about Starlink comes from related simulation [3, 4, 5], which is limited due to certain assumptions during simulation. Some studies have begun to investigate the network topology of Starlink based on practical measurement in recent years [6, 7, 8]. The work in [8] probes publicly exposed Internet services in IPv4 from outside to investigate the Starlink network latency, measuring over [MATH] users across [MATH] countries. However, it only covers a small portion of Starlink’s global users. Similarly, on the censys.io platform [9, 10], only around [MATH] active Starlink users’ IP addresses are discovered, which is much less than the reported [MATH] million Starlink users by September 2024 [2]. The work in [6, 7] investigates Starlink’s access and backbone network in IPv4. Starlink’s IPv4 network extensively employs Carrier-Grade NAT (CGNAT), which means that most Starlink user routers lack public IPv4 addresses. And it limits the capability to conduct large-scale outside-in statistical analysis of Starlink networks from the Internet. On the other hand, the work in [6] also relies on the inside-out approach to map the Starlink global backbone topology, which requires at least one probe associated with each PoP to verify the results. While RIPE Atlas is the largest network measurement platform, there are currently only around 80 active probes connected with the Starlink network, covering only 22 PoPs, making it challenging to cover a complete global backbone topology.
+
+Fig. 1: Components of the Starlink network.
+
+Fortunately, Starlink has already supported native IPv6 across all routers[11]. Therefore, we propose leveraging public IPv6 addresses as probing targets. Specifically, we utilize the IPv6 prefixes from the Starlink GeoIP database [12] as input for our active IPv6 address scanning system to identify active Starlink user routers. To the best of our knowledge, our method discovers the most comprehensive list of active Starlink user routers’ IPv6 addresses, i.e., approximately 3.2 million addresses across 102 countries and 123 regions. This method not only provides probing targets for investigating the Starlink backbone network, but also enables more accurate statistical analysis on Starlink users.
+
+Considering that only data packets with both source and destination addresses within the Starlink network are forwarded between Starlink PoPs, we adopt the inside-out approach with probes connected to Starlink networks to investigate the Starlink backbone network. We use [MATH] Starlink dishes to perform traceroutes to Starlink’s public IPv6 addresses. We determine the associated PoP of an IP address by examining its DNS PTR records, and use the traceroute path to deduce the connections between Starlink PoPs. Using this method, we identify a total of [MATH] PoPs, which represents [MATH] % of the PoPs in use [13, 14]. These PoPs form the Starlink backbone network with [MATH] connections. Compared to the backbone network revealed by Pan et al. [6], we identify [MATH] new PoPs and [MATH] more connections.
+
+The statistical results of millions of Starlink IPv6 addresses show that [MATH] % of Starlink users are located in North America, and the geolocation allocation of Chicago, IL, USA has the most Starlink user, i.e., [MATH] . By associating a user with its corresponding PoP via its DNS PTR record, we quantify the number of users served by each PoP. Interestingly, while the Starlink Miami PoP (mmmiflx1) serves only [MATH] users, significantly less than Starlink Seattle PoP (sttlwax1)’s [MATH] users, it serves [MATH] regions, more than any other PoP in North America. This highlights the disparity in user distribution. Compared to sttlwax1, which has a more concentrated user base, mmmiflx1 covers a wider range of regions.
+
+The main contributions are summarized as follows:
+
+ [MATH] 
+
+We propose an efficient method to reveal Starlink’s backbone network based on public IPv6 addresses.
+
+ [MATH] 
+
+We build a large-scale IPv6 address list for Starlink user routers, covering around [MATH] million addresses.
+
+ [MATH] 
+
+We conduct statistical analysis on Starlink users and Starlink PoPs in IPv6, investigate the relationship between Starlink PoPs and their served users, and illustrate the IPv6 assignment strategy of Starlink’s gateway and PoP.
+
+To the best of our knowledge, this is currently the largest-scale measurement on the Starlink IPv6 network to date. To support and promote future research, we have made the dataset of the Starlink backbone network publicly available at https://ki3.org.cn/#/starlink-network. Also, the dataset of the active Starlink IPv6 user routers is available at https://ki3.org.cn/#/datasetCenter with restrictions. We hope that our findings will promote the research on the LEO network.
+
+II BACKGROUND AND RELATED WORK
+
+II-A Background
+
+Starlink is a satellite Internet constellation operated by SpaceX, providing coverage to over [MATH] countries and territories. Starlink is the consumer-targeted LEO satellite network with over [MATH] million subscribers by September 2024 [2]. Most Starlink satellites are above [MATH] km in the 53° inclination orbital plane. Starlink network follows the bent-pipe architecture in most cases [15]. However, Starlink subscribers in rural areas must rely on Inter-Satellite Links (ISLs) to ensure connectivity, as there are no nearby Ground Stations (GSs) for the serving satellite.
+
+Figure 1 shows the topology of the Starlink network. Each Starlink subscriber is equipped with a dish. Once the subscriber tries to connect to the Internet, the traffic is forwarded to the dish by the user router. Then the dish forwards the traffic to satellites by phased-array antennas in Ku-band. The Starlink satellites can connect to multiple terminals simultaneously with multiple antennas subdivided into beams [16]. When the satellites receive the traffic from the dish, they relay it to the GS via a Ka-band link. The Starlink network adopts a one-hop bent-pipe routing approach given the dish and GS are both within the visible range of the same satellite. Otherwise, ISL needs to be used. The ground station relays the traffic to Starlink PoPs through terrestrial connections. Subsequently, the traffic is routed across Starlink’s backbone network, which comprises multiple backbone routers. In the final step, the traffic exits the Starlink network and reaches its destination via Internet Exchange Points (IXPs) or Internet Service Providers (ISPs).
+
+II-B Related work
+
+The research community has conducted measurements on the Starlink network in recent years. Some work [17, 18, 16] investigates the user-perceived performance, such as latency, throughput, and packet loss rate. They compare user-perceived network performance in Starlink with that of terrestrial networks or traditional satellite networks. The work in [8] probes publicly Internet-exposed services in IPv4 from the outside to measure the customer latency. It shows how Starlink’s complex network architecture impacts customer latency. The work in [6, 7] reveals the access network and backbone network of Starlink in IPv4. However, it requires at least one probe associated with each Starlink PoP to verify the mapped Starlink backbone network in [6]. In addition, if they do not have available dishes or a RIPE Atlas [19] probe associated with a certain Starlink PoP, they may need to seek help online by consulting platforms such as Reddit [20].
+
+III STARLINK NETWORK MEASUREMENT
+
+TABLE I: Starlink PoPs and their served users discovered.
+
+Continent
+
+# of PoPs
+
+PoP ID
+
+PoP Location
+
+# of Users served
+
+# of Regions served
+
+North America
+
+14
+
+sttlwax1
+
+Seattle
+
+ [MATH] 
+
+3
+
+chcoilx1
+
+Chicago
+
+ [MATH] 
+
+4
+
+dllstxx1
+
+Dallas
+
+ [MATH] 
+
+2
+
+nwyynyx1
+
+New York City
+
+ [MATH] 
+
+5
+
+atlagax1
+
+Atlanta
+
+ [MATH] 
+
+6
+
+qrtomex1
+
+Queretaro
+
+ [MATH] 
+
+5
+
+mmmiflx1
+
+Miami
+
+ [MATH] 
+
+17
+
+lsancax1
+
+Los Angeles
+
+ [MATH] 
+
+2
+
+mplsmnx1
+
+Minneapolis
+
+ [MATH] 
+
+4
+
+dnvrcox1
+
+Denver
+
+ [MATH] 
+
+1
+
+tmpeazx1
+
+Tempe
+
+ [MATH] 
+
+2
+
+ashnvax2
+
+Ashburn
+
+ [MATH] 
+
+1
+
+sltyutx1
+
+Salt Lake City
+
+ [MATH] 
+
+1
+
+snjecax1
+
+San Jose
+
+ [MATH] 
+
+1
+
+South America
+
+6
+
+splobra1
+
+Sao Paulo
+
+191,539
+
+5
+
+sntochl1
+
+Santiago
+
+ [MATH] 
+
+3
+
+bgtacol1
+
+Bogota
+
+ [MATH] 
+
+6
+
+frtabra1
+
+Fortaleza
+
+ [MATH] 
+
+1
+
+bnssarg1
+
+Buenos Aires
+
+ [MATH] 
+
+4
+
+limaper1
+
+Lima
+
+ [MATH] 
+
+5
+
+Europe
+
+4
+
+frntdeu1
+
+Frankfurt
+
+ [MATH] 
+
+36
+
+lndngbr1
+
+London
+
+ [MATH] 
+
+8
+
+mdrdesp1
+
+Madrid
+
+ [MATH] 
+
+6
+
+sfiabgr1
+
+Sofia
+
+ [MATH] 
+
+15
+
+Oceania
+
+3
+
+sydyaus1
+
+Sydney
+
+ [MATH] 
+
+5
+
+acklnzl1
+
+Auckland
+
+ [MATH] 
+
+8
+
+prthaus1
+
+Perth
+
+ [MATH] 
+
+1
+
+Asia
+
+5
+
+mnlaphl1
+
+Manila
+
+ [MATH] 
+
+2
+
+sngesgp1
+
+Singapore
+
+ [MATH] 
+
+3
+
+tkyojpn1
+
+Tokyo
+
+ [MATH] 
+
+5
+
+dohaqat1
+
+Doha
+
+ [MATH] 
+
+4
+
+jtnaidn1a
+
+Jakarta
+
+ [MATH] 
+
+1
+
+Africa
+
+1
+
+lgosnga1
+
+Lagos
+
+ [MATH] 
+
+9
+
+a 
+
+Most consumer users served by jtnaidn2 do not support IPv6 yet.
+
+First, we propose a methodology for discovering the IPv6 addresses of active user routers of Starlink and enumerating Starlink PoPs. Then, we illustrate our proposed method of mapping the Stalink backbone network. Finally, we perform statistical analysis based on measurement results, including the distribution of Starlink users, Starlink PoPs and their served users, and the IPv6 address assignment strategy.
+
+Fig. 2: Starlink backbone network discovered with one-way delay and flight distance marked.
+
+III-A Discovering Starlink user routers
+
+For normal Starlink subscribers, a CGNAT IPv4 address from the 100.64/10 subnet is assigned to the WAN side of the user router, with NAT occurring at the associated home PoP. In the case of IPv6, each user router delegates a /56 prefix to its LAN clients [21]. Although Starlink releases the geographic location of its customer addresses in the GeoIP database [12], it is impractical for us to probe every IP address due to the huge IP address space released.
+
+Fortunately, we observe a regular pattern in the IPv6 addresses of Starlink user routers: The 57th to 127th bit values are set as 0, and the 128th bit is set as 1. For example, if the Starlink users in a certain region are assigned /40 prefixes in GeoIP database[12], we only need to focus on the remaining bits 41 to 56 to identify active Starlink user routers’ IPv6 addresses. For this purpose, we generate candidates by enumerating different /56 sub-prefixes within each /40 prefix and fixing the remaining bits. For example, for Seattle, USA, the GeoIP database provides the prefix 2605:59c8::/40. We begin with 2605:59c8:0000:0000::1 (with the gray segments fixed) and then continue with 2605:59c8:0000:0100::1, up to 2605:59c8:00ff:ff00::1.
+
+This approach allows us to efficiently identify active Starlink user routers using XMap [22], enabling the discovery of active IPv6 addresses associated with a specific geographic location. Finally, we discovered [MATH] active Starlink user routers on November 25th, 2024.
+
+III-B Enumerating Starlink PoPs
+
+Starlink PoPs spread all over the world, and user traffic will be tunneled to its home PoP before entering the public Internet. To identify the PoP associated with an active user router, we perform reverse DNS lookup on every user router IPv6 address. The DNS PTR records follow a pattern of customer.*.pop.starlinkisp.net, in which * denotes the home PoP. For example, customer.chcoilx1.pop.starlinkisp.net indicates that the user router is served by Starlink Chicago PoP (chcoilx1).
+
+Based on the [MATH] million Starlink IPv6 addresses, we discover [MATH] Starlink PoPs, which is summarized in Table I. Compared to the public information from Starlink [13], only [MATH] PoPs remain undiscovered: Warsaw, Nairobi, Johannesburg, and Milan. These PoPs are newly established, with three of them not yet operational. Updating the corresponding PTR records will require additional time.
+
+III-C Mapping Starlink backbone network
+
+Starlink uses its backbone network to route user traffic between different PoPs. To investigate the Starlink backbone network, we need to determine connections between these PoPs. For this purpose, we need to probe active user routers directly from a Starlink dish, as routing through other ISPs’ networks would bypass the backbone network.
+
+Firstly, we identify the IP addresses of the backbone routers within a Starlink PoP. When probing user routers from a Starlink dish, the traffic passes through the user router’s home PoP and gateway before reaching the target user router. Therefore, we identify the third-to-last hop as the backbone router within the home PoP of the target user router. To determine the associated home PoP of the target user router, we perform a reverse DNS lookup on this third-to-last hop.
+
+However, a PoP may contain multiple backbone routers for performance reasons, meaning data packets might pass through more than one hop within the same PoP. To identify additional backbone routers, we deduce that the routers belong to the same PoP if the latency between them is small (e.g., [MATH] 5ms). Starlink uses Multiprotocol Label Switching (MPLS) to reach its customers, so MPLS routers tunnel ICMP messages forward and then back, leading to inflated RTT readings for intermediate routers. To overcome this issue, we traceroute directly to the backbone routers to obtain more stable latency measurements between backbone routers. In this way, we compile a complete list of backbone router IP addresses for each PoP.
+
+Then we deduce the connections between Starlink PoPs. The connections can be inferred by the traceroute results from the dishes to the backbone routers. Specifically, since we have already established the relationship between backbone routers and PoPs, we can deduce the connections between PoPs by examining the connections between the backbone routers.
+
+We utilize [MATH] probes from RIPE Atlas [19] and [MATH] Starlink dishes to perform traceroute measurements. The [MATH] RIPE Atlas probes are in Santiago, Chile and North Carolina, USA, respectively. The [MATH] dishes are located at: Victoria, Canada; Lincoln, USA; Brisbane, Australia; Bruhl, Germany; Kanazawa, Japan and Salt Lake City, USA. As shown in Figure 2, we map the Starlink backbone network. It is important to note that we only use Starlink dishes as probes and do not need to locate a Starlink dish in each PoP. The dataset on the Starlink backbone network is available at https://ki3.org.cn/#/starlink-network.
+
+Fig. 3: Starlink users discovered per continent.
+
+III-D Statistics on measurement results
+
+III-D1 Distribution of Starlink users
+
+Fig. 4: Top 10 regions with the most Starlink user routers discovered.
+
+As shown in Figure 3, we perform statistical analysis on active Starlink IPv6 users distributed in different continents. The number of Starlink IPv6 users in North America reaches [MATH] , accounting for [MATH] % of the total Starlink IPv6 users. Figure 4 shows the top [MATH] regions with the most Starlink user routers. We observe that regions with the most Starlink users are mainly located in North America. Except for North America, there are a large number of Starlink users distributed in Sao Paulo, Sydney, etc.
+
+III-D2 Starlink PoPs and their served users
+
+Table I shows Starlink PoPs and their served users. We observe that sttlwax1 serves the most user routers, with a total of [MATH] . Other PoPs, such as chcoilx1, Starlink Dallas PoP (dllstxx1), and Starlink New York City PoP (nwyynyx1), also serve more than [MATH] user routers. Interestingly, we find that some PoPs serve users across multiple regions by analyzing the relationship between PoPs and their served users. For example, Starlink Frankfurt PoP (frntdeu1) serves users in [MATH] regions in Europe, Asia, and Africa, and mmmiflx1 serves users in [MATH] regions in North and South America. In contrast, PoPs like Starlink Jakarta PoP (jtnaidn1), Starlink Fortaleza PoP (frtabra1), Starlink Salt Lake City PoP (sltyutx1), Starlink Ashburn PoP (ashnvax2), Starlink San Jose PoP (snjecax1), Starlink Perth PoP (prthaus1), and Starlink Denver PoP (dnvrcox1) serve users only within their respective regions.
+
+While Starlink users in most regions are served by a certain PoP, users in [MATH] regions are served by several PoPs. For instance, users in Sao Paulo are served by several PoPs, including Starlink Santiago PoP (sntochl1), Starlink Lima PoP (limaper1), Starlink Sao Paulo PoP (splobra1), Starlink Buenos Aires PoP (bnssarg1), mmmiflx1, and Starlink Bogota PoP (bgtacol1). Users served by different PoPs are assigned different network prefixes in the same region. For example, users in Sao Paulo served by splobra1 are assigned 2803:9810:4300::/40, those served by bgtacol1 are assigned 2803:9810:5380::/42, and those served by mmmiflx1 are assigned 2803:9810:a100::/40.
+
+III-D3 IPv6 address assignment strategy
+
+Based on the measurement results, we summarize the IPv6 address assignment strategy used in the Starlink network.
+
+In the access network, the user router acts as a gateway for users to access the Internet. Each user router is assigned a public IPv6 address, where bits 57 to 127 are set as 0, and the bit 128 is set as 1. Devices connected to the user router are assigned IPv6 addresses within the same /56 prefix as the user router.
+
+The IPv6 address of a Starlink gateway is structured as follows: bits 49 to 64 range from 0x0248 to 0x0253, bits 65 to 116 are set to 0, and the last 12 bits range from 0x000 to 0x157. For example, a gateway may have an IPv6 address of 2620:134:b0fe:251::34. We also observe a correspondence between IPv4 and IPv6 addresses in the Starlink gateway system. Specifically, the IPv6 address of a gateway follows the pattern 2620:134:b0fe:x::y, where x and y correspond to segments of the IPv4 address 172.16.x.y. Notably, x and y are represented in hexadecimal in the IPv6 format but in decimal in the IPv4 format. For example, if a gateway’s IPv6 address is 2620:134:b0fe:250::135, its corresponding IPv4 address is 172.16.250.135.
+
+The IPv6 address blocks assigned to Starlink PoPs are 2620:134:b0ff::/116 and 2620:134:b004::/116.
+
+IV DISCUSSION
+
+IV-A Limitations
+
+User geolocation inaccuracy issues. We use the Starlink GeoIP database [12] to determine the geographical location of each user router. However, the current granularity is too coarse, i.e., the actual geographical area potentially spans much larger territories than a single city. For example, the location of Lagos may refer to a wide region in Africa rather than to the specific city of Lagos. Starlink should improve its geographic IP granularity in major countries while balancing user privacy and accuracy.
+
+Uneven distribution of available Starlink dishes. We currently use [MATH] Starlink dishes and [MATH] RIPE Atlas probes to map Starlink’s backbone network, where most probes are located in the U.S. and Europe. Consequently, some connections in Eastern Asia and Africa may be missed. For instance, if measurement probes are only placed in the U.S., while U.S.-to-Asia and U.S.-to-Europe connections can be measured, Asia-to-Europe connections would not be captured. Expanding the distribution of accessible Starlink dishes worldwide would allow for a more comprehensive mapping of backbone network connections.
+
+Untimely update of DNS PTR records. We determine the PoP corresponding to each active user router by performing reverse DNS lookups. However, the DNS PTR records of Starlink customer IPs are not updated in a timely manner. Due to the lack of relevant PTR records, we miss the Warsaw PoP, which was built recently. Therefore, our mapped backbone network does not include Warsaw PoP and related links. If the update of the DNS PTR can be more timely, we can draw a more comprehensive backbone network.
+
+IV-B Ethics
+
+In this paper, we identify approximately 3.2 million active Starlink IPv6 user routers and map the backbone network based on the measurement results. User privacy is strictly protected throughout the entire measurement process. To minimize exposure and ensure data security, only the IP addresses of backbone routers are publicly available. Researchers or organizations interested in the active Starlink user routers IPv6 addresses can access the dataset by request, with a clearly defined statement of purpose. No other aspects of this work raise ethical concerns.
+
+V CONCLUSION
+
+In this paper, we perform the largest-scale measurement on the Starlink IPv6 network to date. We obtain a comprehensive list of Starlink active user routers’ IPv6 addresses and map the Starlink backbone network with the measurement results. In particular, our proposed methodology for mapping Starlink’s backbone network is efficient. In addition, we perform statistical analysis on Starlink users and PoPs and the IPv6 assignment strategy of Starlink’s gateway and PoP. Our work fills the gap in the Starlink IPv6 network measurement, and we hope that this work will help deepen the community’s understanding of LEO satellite networks to promote the research and accelerate its development.
+
+References
+
+[1]
+
+M. Handley, “Delay is Not an Option: Low Latency Routing in Space,” in Proceedings of the 17th ACM Workshop on Hot Topics in Networks, 2018, pp. 85–91.
+
+[2]
+
+Starlink. (2024) Starlink Official Announcement on X. [Online]. Available: https://x.com/Starlink/status/1839424733198344617
+
+[3]
+
+S. Kassing, D. Bhattacherjee, A. B. Águas, J. E. Saethre, and A. Singla, “Exploring the “Internet from space” with Hypatia,” in Proceedings of the ACM Internet Measurement conference, 2020, pp. 214–229.
+
+[4]
+
+Z. Lai, H. Li, and J. Li, “StarPerf: Characterizing Network Performance for Emerging Mega-Constellations,” in 2020 IEEE 28th International Conference on Network Protocols. IEEE, 2020, pp. 1–11.
+
+[5]
+
+Z. Lai, H. Li, Y. Deng, Q. Wu, J. Liu, Y. Li, J. Li, L. Liu, W. Liu, and J. Wu, “StarryNet: Empowering Researchers to Evaluate Futuristic Integrated Space and Terrestrial Networks,” in 20th USENIX Symposium on Networked Systems Design and Implementation, 2023, pp. 1309–1324.
+
+[6]
+
+J. Pan, J. Zhao, and L. Cai, “Measuring a Low-Earth-Orbit Satellite Network,” in 2023 IEEE 34th Annual International Symposium on Personal, Indoor and Mobile Radio Communications. IEEE, 2023, pp. 1–6.
+
+[7]
+
+——, “Measuring the Satellite Links of a LEO Network,” in IEEE International Conference on Communications, 2024, pp. 4439–4444.
+
+[8]
+
+L. Izhikevich, M. Tran, K. Izhikevich, G. Akiwate, and Z. Durumeric, “Democratizing LEO Satellite Network Measurement,” Proceedings of the ACM on Measurement and Analysis of Computing Systems, vol. 8, no. 1, pp. 1–26, 2024.
+
+[9]
+
+Censys. (2024) Censys Active IP List for ASN 14593. [Online]. Available: https://search.censys.io/search?resource=hosts&sort=ASCENDING&per_page=100&virtual_hosts=EXCLUDE&q=autonomous_system.asn%3A14593
+
+[10]
+
+——. (2024) Censys Active IP List for ASN 45700. [Online]. Available: https://search.censys.io/search?resource=hosts&sort=ASCENDING&per_page=100&virtual_hosts=EXCLUDE&q=autonomous_system.asn%3A45700
+
+[11]
+
+Starlink. (2024) What IP Address Does Starlink Provide. [Online]. Available: https://www.starlink.com/support/article/1192f3ef-2a17-31d9-261a-a59d215629f4
+
+[12]
+
+GeoIP. (2024) Starlink GeoIP Feed. [Online]. Available: http://geoip.starlinkisp.net
+
+[13]
+
+PeeringDB. (2024) PeeringDB AS 14593 Information. [Online]. Available: https://www.peeringdb.com/asn/14593
+
+[14]
+
+Google Maps. (2024) Unofficial Starlink Global Gateways & PoPs. [Online]. Available: https://www.google.com/maps/d/viewer?mid=1805q6rlePY4WZd8QMOaNe2BqAgFkYBY&ll=26.881954600485006%2C32.65665003578902&z=4
+
+[15]
+
+Y. Hauri, D. Bhattacherjee, M. Grossmann, and A. Singla, ““Internet from Space” without Inter-Satellite Links,” in Proceedings of the 19th ACM Workshop on Hot Topics in Networks, 2020, pp. 205–211.
+
+[16]
+
+N. Mohan, A. E. Ferguson, H. Cech, R. Bose, P. R. Renatin, M. K. Marina, and J. Ott, “A Multifaceted Look at Starlink Performance,” in Proceedings of the ACM on Web Conference 2024, 2024, pp. 2723–2734.
+
+[17]
+
+F. Michel, M. Trevisan, D. Giordano, and O. Bonaventure, “A First Look at Starlink Performance,” in Proceedings of the 22nd ACM Internet Measurement Conference, 2022, pp. 130–136.
+
+[18]
+
+S. Ma, Y. C. Chou, H. Zhao, L. Chen, X. Ma, and J. Liu, “Network Characteristics of LEO Satellite Constellations: A Starlink-Based Measurement from End Users,” in IEEE INFOCOM 2023-IEEE Conference on Computer Communications. IEEE, 2023, pp. 1–10.
+
+[19]
+
+RIPE NCC. (2024) RIPE Atlas. [Online]. Available: https://atlas.ripe.net/
+
+[20]
+
+Reddit Users. (2024) Starlink Community on Reddit. [Online]. Available: https://reddit.com/r/Starlink/
+
+[21]
+
+SpaceX. (2024) Starlink Enterprise Guide. [Online]. Available: https://starlink-enterprise-guide.readme.io/docs
+
+[22]
+
+X. Li, J. Hötzel, and Xiota. (2024) XMap: Fast Network Scanner. [Online]. Available: https://github.com/idealeer/xmap
+
+ Experimental support, please
+ view the build logs
+ for errors. Generated by
+
+ L
+ A
+ T
+ E
+
+ xml
+
+ .
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+ support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+ methods listed below:
+
+Click the "Report Issue" (
+
+ ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+ may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+ should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+ all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+ We gratefully acknowledge support from
+ our major funders,
+ member institutions, ,
+ and all contributors.
+
+ About
+ ·
+ Help
+ ·
+ Contact
+ ·
+ Subscribe
+ ·
+ Copyright
+ ·
+ Privacy
+ ·
+ Accessibility
+ ·
+ Operational Status (opens in new tab)
+
+Major funding support from
+

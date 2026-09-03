@@ -1,0 +1,281 @@
+Hybrid Table-Assisted and RL-Based Dynamic Routing for NGSO Satellite Networks
+if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+const readingMode = localStorage.getItem('arxiv_html_paper_reading_mode');
+if (readingMode) {
+if (localStorage.getItem('arxiv-banner-dismissed:spinout-nonprofit')) {
+SKIPJUNK();
+reading-mode chrome hiding. */
+(otherwise it inherits the paper's warm-wash text in dark mode and washes out). */
+×
+×
+Abstract
+I Introduction
+I-A Related Work
+I-B Contributions
+II System Model and Problem Formulation
+II-A Network Graph and Traffic Flows
+II-B Delay Model
+II-C Routing Optimization Problem
+II-D Complexity and Reinforcement Learning Perspective
+III Hybrid RL- and Table-Assisted Routing Framework
+III-A Approach 1: RL-Based Routing with Offline Exploration and Online Exploitation
+III-B Approach 2: Table-Assisted Routing with Selective DQL Adaptation
+III-C Computational Complexity
+IV Performance Evaluation
+IV-A Simulation Setup
+IV-B Results and Discussion
+V Conclusion and Future Work
+References
+License: CC BY 4.0
+arXiv:2509.14909v1 [eess.SP] 18 Sep 2025
+Hybrid Table-Assisted and RL-Based Dynamic Routing for NGSO Satellite Networks
+Flor Ortiz
+Eva Lagunas
+††thanks: The authors are with the Interdisciplinary Centre for Security, Reliability, and Trust (SnT), University of Luxembourg, 1855 Luxembourg City, Luxembourg.
+(email:flor.ortiz, eva.lagunas@uni.lu).††thanks: This research was funded in whole, or in part, by the Luxembourg National Research Fund (FNR), grant reference [DEFENCE22/
+17801293/GSDT].
+Abstract
+This letter investigates dynamic routing in Next-Generation Satellite Orbit (NGSO) constellations and proposes a hybrid strategy that combines precomputed routing tables with a Deep Q-Learning (DQL) fallback mechanism. While fully RL-based schemes offer adaptability to topology dynamics, they often suffer from high complexity, long convergence times, and unstable performance under heavy traffic. In contrast, the proposed framework exploits deterministic table lookups under nominal conditions and selectively activates the DQL agent only when links become unavailable or congested. Simulation results in large-scale NGSO networks show that the hybrid approach consistently achieves higher packet delivery ratio, lower end-to-end delay, shorter average hop count, and improved throughput compared to a pure RL baseline. These findings highlight the effectiveness of hybrid routing as a scalable and resilient solution for delay-sensitive satellite broadband services.
+Index Terms: Satellite networking; routing and resource management; machine learning for communications; low-latency NGSO constellations
+I Introduction
+Next-Generation Satellite Orbit (NGSO) constellations are a key enabler of global broadband, offering low-latency connectivity through dense Low Earth Orbit (LEO) deployments [1]. Unlike geostationary systems, NGSO networks exhibit rapidly time-varying topologies in which inter-satellite and feeder links change with orbital motion and ground visibility, so static routes become quickly outdated and degrade performance [2].
+Reinforcement learning (RL) has been explored to endow satellites with adaptive next-hop decisions based on local observations (e.g., link availability, queue states, delay estimates) [3]. Fully RL-driven routing, however, may suffer from long convergence, route instability during training, and non-trivial onboard complexity; under nominal conditions, lightweight table-based methods can be more efficient [4]. In current practice, NGSO routing often relies on pre-configured tables derived from packet/header inspection; Multiprotocol Label Switching (MPLS) is a representative mechanism where labels are looked up in static tables to select the next hop [5]. Table-based forwarding is simple and stable but lacks flexibility under congestion, intermittent connectivity, or sudden traffic shifts. These complementary strengths motivate a hybrid design that couples deterministic lookups with selective learning-based adaptation.
+I-A Related Work
+Conventional NGSO strategies implement shortest-path routing or MPLS-like forwarding from offline topology knowledge, forwarding packets according to static routes or preconfigured label tables [5]. While low-overhead and robust in steady conditions, they become suboptimal as visibility and load evolve.
+Learning-based methods address this limitation. A distributed Q-learning framework formulated routing as a POMDP, reducing signaling while achieving latencies comparable to shortest-path baselines; yet tabular Q-learning struggles with large state/action spaces and heavy congestion [6]. MA-DRL extensions improved adaptability by combining offline exploration with online exploitation, at the cost of pre-trained global models and higher onboard computation [7]. Continual learning mitigates catastrophic forgetting as traffic patterns evolve, but retains substantial training overhead and may converge unstably under rapidly fluctuating loads [8]. Beyond routing, MA-DRL has been used for mobility management and handovers in mega-constellations, improving service continuity but not directly optimizing end-to-end routing [9]. The QRLSN scheme integrates RL with multi-objective optimization, outperforming virtual-topology shortest paths in QoS, while incurring significant training time and reduced efficiency at light loads [4]. Broader surveys synthesize these trade-offs—dynamic topology, latency dominance, and limited onboard resources—highlighting the value of hybrid solutions that balance deterministic efficiency with adaptive decision-making [10].
+I-B Contributions
+Motivated by the limitations of fully RL-based routing approaches and the shortcomings of purely static methods, this letter introduces a nobel hybrid strategy that combines deterministic routing tables with a Deep Q-Learning (DQL) fallback mechanism. The proposed solution aims to provide both efficiency under nominal conditions and adaptability under disruptions. The main contributions are summarized as follows:
+•
+We design a dual-mode routing framework for NGSO constellations that exploits precomputed routing tables for low-complexity forwarding and activates a DQL agent only when static routes are unavailable due to congestion or link failures.
+•
+We model the routing problem as a dynamic optimization task over a time-varying graph, explicitly capturing end-to-end delay, queuing effects, and link availability constraints, which provides a principled foundation for the hybrid approach.
+•
+Unlike fully RL-based strategies that continuously require training and exploration, our method limits the use of DQL to exceptional events, thereby reducing convergence time, exploration overhead, and routing instability.
+•
+Through simulations of large-scale NGSO constellations, we benchmark the hybrid approach against a fully RL-based baseline. Results show that the proposed method achieves consistently lower end-to-end delay, higher packet delivery ratio, and reduced routing overhead, while retaining resilience under dynamic traffic and link conditions.
+II System Model and Problem Formulation
+((a)) UT/GW geographical deployment. Stars denote user terminals (UTs) and triangles denote gateways (GWs).
+((b)) LEO Walker constellation with intra–/inter–plane ISLs. Green arrows: intra–plane (east/west). Blue arrows: inter–plane (forward/backward).
+Fig. 1: NGSO system model: (a) ground segment and (b) spacecraft neighborhood.
+We consider a NGSO broadband network built on a Walker constellation with Ns satellites evenly distributed over P orbital planes. Each satellite maintains up to four inter-satellite links (ISLs): two intra–plane (east, west) and two inter–plane (forward, backward), yielding a sparse but connected mesh (Fig. 1b). The ground segment comprises gateways (GWs) and user terminals (UTs) geographically distributed worldwide (Fig. 1a). Each satellite is equipped with a feeder interface that enables a bidirectional link to a GW or UT when within visibility.
+II-A Network Graph and Traffic Flows
+Let 𝒩≜𝒮∪𝒢∪𝒰 denote the set of satellites, gateways, and user terminals, and ℒ⁡(t) the set of links available at time t . The network topology is modeled as a time-varying directed graph
+𝒢⁡(t)=(𝒩,ℒ⁡(t)),
+(1)
+with ℒ⁡(t)=ℒISL​(t)∪ℒfeeder​(t) .
+Traffic flows ℱ are generated between GWs and UTs, and are forwarded exclusively by satellites. Each flow f∈ℱ is defined by a source–destination pair (sf,df) and an associated demand λf . The feasible action set of satellite i at time t is
+𝒜i​(t)⊆{UT,GW,E,W,Fwd,Bwd}.
+(2)
+II-B Delay Model
+For each link (i,j)∈ℒ⁡(t) , the instantaneous per–packet delay is modeled as
+δi​j​(t)=di​j​(t)ceff⏟propagation+ℓRi​j​(t)⏟transmission+qi​j​(t)⏟queueing,
+(3)
+where di​j​(t) is the propagation distance, ceff the effective signal speed, ℓ the packet size, Ri​j​(t) the service rate, and qi​j​(t) the queuing delay at node i .
+The end-to-end delay for flow f along path 𝒫f​(t) is
+Df​(t)=∑(i,j)∈𝒫f​(t)δi​j​(t).
+(4)
+II-C Routing Optimization Problem
+The routing objective is to minimize the aggregate latency of all flows:
+min{𝒫f​(t)}
+∑f∈ℱDf​(t)
+(5)
+subject to the following constraints:
+(i,j)∈ℒ⁡(t),
+∀(i,j)∈𝒫f​(t),
+(6)
+∑f∈ℱλfi​j​(t)≤Ri​j​(t),
+∀(i,j)∈ℒ⁡(t),
+(7)
+(i,j)∈ℒfeeder​(t)⇒visibility​(i,j)=1,
+(8)
+∑j:(i,j)∈ℒ⁡(t)xi​jf(t)−∑j:(j,i)∈ℒ⁡(t)xj​if(t)=bif,
+(9)
+where λfi​j​(t) is the rate of flow f on link (i,j) , xi​jf​(t)∈{0,1} indicates whether flow f uses (i,j) , and bif is the flow balance (1 if i=sf , −1 if i=df , and 0 otherwise).
+II-D Complexity and Reinforcement Learning Perspective
+The optimization problem (5)–(9) is inherently time-varying and non-convex due to the stochastic traffic arrivals λf​(t) and dynamic topology ℒ⁡(t) . Exact solutions are intractable for real-time operation, motivating the adoption of reinforcement learning (RL).
+Each satellite acts as an RL agent that observes a local state sti (queue lengths, link availability, estimated delays, and destination labels) and selects an action ati∈𝒜i​(t) . The agent follows a policy π⁡(a|s) that maximizes the expected cumulative reward
+maxπ⁡𝔼⁡[∑t=0Tγt​rti],
+(10)
+with reward function
+rti=−α⋅qti−β⋅ht+γ⋅𝟙delivered,
+(11)
+where qti penalizes congestion, ht represents hop count, and 𝟙delivered rewards successful packet delivery.
+This RL formulation provides a principled basis for the hybrid table-assisted and DQL-based routing strategy developed in the next section.
+III Hybrid RL- and Table-Assisted Routing Framework
+Building upon the decision process defined in Section II, we now present two alternative routing strategies: a fully RL-based decentralized policy and the proposed hybrid table-assisted scheme. The distinction lies in how each approach leverages the state, action, and reward structure to balance exploration and exploitation.
+III-A Approach 1: RL-Based Routing with Offline Exploration and Online Exploitation
+In the baseline method, each satellite operates as an RL agent. Policies are pre-trained through offline exploration in simulated environments to cover diverse topologies and traffic patterns, and subsequently deployed for online exploitation. At runtime, the policy πRL maps each observed state sti to an action ati∈𝒜i​(t) according to
+ati∼πRL(⋅|sti).
+(12)
+Although this strategy provides adaptability, it remains sensitive to distribution shifts between training and operational conditions. As a result, convergence may still be slow, and route stability can degrade when traffic deviates significantly from the training distribution.
+III-B Approach 2: Table-Assisted Routing with Selective DQL Adaptation
+The proposed method anchors the exploitation baseline on deterministic routing tables, while retaining RL adaptation only when needed. Each satellite is initialized with a table 𝒯 , where
+π𝒯​(sf,df)=𝒯⁡(sf,df),
+(13)
+gives the next-hop under nominal conditions.
+The hybrid decision policy is then defined as
+πhyb​(s)={π𝒯​(s),if the link to π𝒯​(s)is availableπDQL​(s)=arg⁡maxa∈𝒜⁡(s)​Qθ​(s,a),otherwise.
+(14)
+where Qθ is the action–value function of the DQL agent.
+In this setting, RL is invoked only as a fallback mechanism, which drastically reduces the frequency of exploration. Moreover, any exploration occurs in a constrained subspace already initialized by a valid deterministic policy, ensuring faster convergence and stable exploitation.
+The hybrid policy can be summarized in Algorithm 1, which illustrates how table-assisted forwarding is combined with selective DQL adaptation.
+Algorithm 1 Hybrid Table-Assisted Routing with DQL Fallback
+1:
+ Initialize routing table 𝒯 (offline shortest-path computation)
+2:
+ Initialize DQL agent with parameters θ
+3:
+ for each packet with destination df arriving at satellite i do
+4:
+  j←𝒯⁡(sf,df)
+5:
+  if link (i,j) is available then
+6:
+   Forward packet to j
+7:
+  else
+8:
+   a∗←arg⁡maxa∈𝒜i​(t)​Qθ​(sti,a)
+9:
+   Forward packet according to a∗
+10:
+   Update Qθ using observed reward rti
+11:
+  end if
+12:
+ end for
+III-C Computational Complexity
+The RL-only strategy requires evaluating Qθ​(s,a) for all a∈𝒜⁡(s) at every decision step, with cost
+𝒪⁡(|𝒜|⋅d),
+(15)
+where d is the state dimension. Moreover, continuous online exploration incurs additional learning overhead.
+In contrast, the hybrid scheme performs table lookups with cost 𝒪⁡(1) in nominal conditions. Only when fallback is triggered does it incur the 𝒪⁡(|𝒜|⋅d) evaluation. Since fallback events are sparse, the average per-packet decision complexity is significantly reduced, making the method scalable to large constellations.
+IV Performance Evaluation
+Fig. 2: Packet Delivery Ratio (PDR) versus normalized input rate η (user-offered traffic). The knob η scales the per-flow Poisson arrival λf=η​λ0 with NF=100 active flows. The hybrid policy sustains higher PDR across all η .
+Fig. 3: End-to-end delay CDF at η=1 . The hybrid scheme exhibits consistently lower latency and a tighter distribution, evidencing robustness against congestion.
+Fig. 4: Average hop count versus normalized input rate η . The hybrid policy consistently uses shorter paths across η , with a widening gap at higher η .
+Fig. 5: Throughput (carried rate at sinks) versus normalized input rate η . The hybrid approach sustains higher carried rate across all η and saturates near 220 pkts/s, while the pure RL baseline plateaus around 180 –190 pkts/s and slightly degrades under saturation.
+IV-A Simulation Setup
+We use a packet-level MATLAB simulator for an NGSO Walker-Delta constellation. Table I summarizes all parameters. Each simulation runs for Tsim=600  s with a 100 s warm-up discarded; orbital dynamics are updated every 1 s. Traffic is GW↔ UT with Poisson arrivals scaled by the normalized input rate η∈[0.2,1.2] , i.e., λf=η​λ0 for each active flow. Each point averages 20 seeds (seed =42 ). We compare Pure RL (DQL) versus Hybrid Table+DQL and report PDR, end-to-end delay, average hops, and throughput.
+Fallback metric. We record the fallback activation rate pfb​(η) as the fraction of per-packet routing decisions in which the table next hop is invalid (link down or local queue ratio >0.7​B ) and the DQL fallback is invoked.
+TABLE I: Simulation parameters (network, traffic, and learning).
+Constellation
+Walker-Delta; P=8 , S=20 /plane (Ns=160 ); h=550  km, i=53∘ ; uniform RAAN/MA.
+ISLs
+Up to 4 /sat: intra-plane (E/W), inter-plane (Fwd/Bwd); active if distance <2000  km; RISL=1  Gbps.
+Feeder
+Active if elevation >10∘ ; Rfeeder=2  Gbps.
+Propagation
+Geometric distance; ceff=3×108  m/s.
+Packets/buffers
+ℓ=1200  B; FIFO per port B=200 pkts.
+Traffic
+GW↔ UT; random pairing over NGW=12 , NUT=50 clusters; Poisson with λf=η​λ0 , η∈[0.2,1.2] .
+Time/avg.
+Tsim=600  s (warm-up 100  s); orbital step 1  s; 20 runs; seed =42 .
+Table policy
+Offline Dijkstra (weights: mean per-link delay).
+Fallback trigger
+DQL if next hop down or queue ratio >0.7​B .
+RL obs./actions
+Queues, link-availability flags, per-link delays, destination label; actions {UT,GW,E,W,Fwd,Bwd} .
+Reward
+rt=−α​qt−β​ht+γ​ 1delivered .
+DQL (both)
+MLP 128–64 (ReLU); Adam 10−3 , γ=0.99 ; target upd. 1000 steps; replay 105 ; batch 64 ; ϵ:1.0→0.05 in 2×105 ; pretrain 106 steps; online exploitation.
+Hybrid runtime
+Table lookup 𝒪⁡(1) nominal; DQL 𝒪⁡(|𝒜|⋅d) on fallback; one TD update on fallback.
+IV-B Results and Discussion
+Table II summarizes the aggregate performance, while Figs. 2–5 detail the behavior as the normalized input rate η increases.
+TABLE II: Performance comparison (consistent with Figs. 2–5).
+Metric
+Pure RL
+Hybrid Table+DQL
+PDR (%) across η
+72 –97
+93 –99
+Throughput (pkts/s) across η
+170 –188
+200 –220
+Average hops across η
+5.6 –7.6
+4.1 –5.2
+Median / 95th delay at η=1 (ms)
+80 / 110
+60 / 72
+Fallback activation pfb (%)
+—
+<1 @ η≤0.4 ; 3.2 @ 0.8 ; 6.9 @ 1.0 ; 11.3 @ 1.2
+Fig. 2 shows the PDR versus the normalized input rate η . The hybrid method consistently exceeds 93% across all η , whereas the pure RL baseline degrades below 75% at the highest η , evidencing the robustness of the hybrid policy under stress.
+The latency distribution in Fig. 3 (evaluated at η=1 ) highlights a tighter delay profile for the hybrid scheme: median ≈60  ms and 95th percentile ≈72  ms, compared to ≈80  ms and ≈110  ms for pure RL. This confirms that table-assisted forwarding reduces queueing and stabilizes end-to-end delay.
+As seen in Fig. 4, the average hop count for pure RL increases markedly with η (from ∼5.6 to ∼7.6 ), reflecting congestion-induced detours. The hybrid scheme maintains shorter paths (about one hop fewer on average), indicating more efficient next-hop selection as η grows.
+Finally, Fig. 5 reports throughput (carried rate at sinks) versus η . The hybrid policy sustains higher carried rate at all operating points and saturates near 220  pkts/s, whereas the pure RL baseline plateaus around 180 –190  pkts/s and slightly declines under saturation, showing more effective utilization of link resources.
+Overall, fully RL-based routing, while adaptive, exhibits instability and inefficiency under heavy input rates. By combining precomputed routes with selective DQL fallback, the proposed hybrid strategy achieves robustness and efficiency: deterministic forwarding ensures stability in nominal conditions, whereas RL adapts to congestion and link unavailability. This dual-mode design is well suited for large-scale, delay-sensitive NGSO deployments.
+Beyond accuracy and throughput, we quantify how often the hybrid policy engages learning. The DQL fallback is rarely needed at low input rates (pfb<1% for η≤0.4 ) and remains moderate even near saturation (pfb≈11% at η=1.2 ). Hence, most decisions are 𝒪⁡(1) table lookups, and the more expensive DQL evaluations are confined to congestion or link outages, which explains the stability and lower average complexity observed in practice.
+V Conclusion and Future Work
+We presented a hybrid routing framework for NGSO constellations that couples deterministic table lookups with a DQL fallback invoked only under link unavailability or congestion. Packet-level evaluations on large constellations show consistent gains over a pure RL baseline—higher PDR, lower end-to-end delay, fewer hops, and larger carried throughput—while preserving adaptability. The benefit stems from table lookups dominating most decisions (thus 𝒪⁡(1) average cost) and restricting DQL evaluations to exceptional events, yielding stable performance under realistic dynamics.
+Future work will explore Multi-agent coordination for cooperative decisions; continual/transfer learning to reduce retraining under topology/traffic shifts; on-board implementations under hardware constraints; and integration with handover control and cross-layer optimization (e.g., power control and scheduling).
+Acknowledgments
+We would also like to thank Joel Grotz from SES, who advised us on the current operational method for routing.
+References
+[1]
+J. Barrueco, J. Montalban, E. Iradier, and P. Angueira, “Constellation design for future communication systems: A comprehensive survey,” IEEE Access, vol. 9, pp. 89 778–89 797, 2021.
+[2]
+S. Pizzi, A. Tropeano, G. Araniti, and A. Molinaro, “Enhancing orbital edge computing through isl-aided federation of satellite constellations,” IEEE Open Journal of the Communications Society, vol. 6, pp. 5829–5839, 2025.
+[3]
+Y. Lyu, H. Hu, R. Fan, Z. Liu, J. An, and S. Mao, “Dynamic routing for integrated satellite-terrestrial networks: A constrained multi-agent reinforcement learning approach,” IEEE Journal on Selected Areas in Communications, vol. 42, no. 5, pp. 1204–1218, 2024.
+[4]
+Y. HUANG, S. WU, Z. KANG, Z. MU, H. HUANG, X. WU, A. J. TANG, and X. CHENG, “Reinforcement learning based dynamic distributed routing scheme for mega leo satellite networks,” Chinese Journal of Aeronautics, vol. 36, no. 2, pp. 284–291, 2023. [Online]. Available: https://www.sciencedirect.com/science/article/pii/S1000936122001297
+[5]
+S. Goutam and A. Goutam, “Recent trends in deployment of multi-protocol label switching (mpls) networks in universities,” in Global Higher Education Practices in Times of Crisis: Questions for Sustainability and Digitalization. Emerald Publishing Limited, 11 2024. [Online]. Available: https://doi.org/10.1108/978-1-83797-052-020241016
+[6]
+B. Soret, I. Leyva-Mayorga, F. Lozano-Cuadra, and M. D. Thorsager, “Q-learning for distributed routing in leo satellite constellations,” in 2024 IEEE International Conference on Machine Learning for Communication and Networking (ICMLCN), 2024, pp. 208–213.
+[7]
+F. Lozano-Cuadra and B. Soret, “Multi-agent deep reinforcement learning for distributed satellite routing,” in 2024 IEEE International Conference on Machine Learning for Communication and Networking (ICMLCN), 2024, pp. 1–2.
+[8]
+F. Lozano-Cuadra, B. Soret, I. Leyva-Mayorga, and P. Popovski, “Continual deep reinforcement learning for decentralized satellite routing,” IEEE Transactions on Communications, pp. 1–1, 2025.
+[9]
+H. Liu, Y. Wang, P. Li, and J. Cheng, “A multi-agent deep reinforcement learning-based handover scheme for mega-constellation under dynamic propagation conditions,” IEEE Transactions on Wireless Communications, vol. 23, no. 10, pp. 13 579–13 596, 2024.
+[10]
+Y. Zhang, W. Jiang, P. Wan, A. Liu, H. Han, J. Mu, S. Liu, W. Gu, S. Huang, and Z. Feng, “Building an efficient satellite network routing scheme: Challenges and opportunities,” IEEE Communications Standards Magazine, vol. 9, no. 2, pp. 30–38, 2025.
+Experimental support, please
+view the build logs
+for errors. Generated by
+L
+A
+T
+E
+xml
+.
+Instructions for reporting errors
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+methods listed below:
+Click the "Report Issue" (
+) button, located in the page header.
+Tip: You can select the relevant text first, to include it in your report.
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+all.
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+We gratefully acknowledge support from
+our major funders,
+member institutions, ,
+and all contributors.
+About
+·
+Help
+·
+Contact
+·
+Subscribe
+·
+Copyright
+·
+Privacy
+·
+Accessibility
+·
+Operational Status (opens in new tab)
+Major funding support from

@@ -1,0 +1,2339 @@
+Contact Plan Optimization and Distributed State
+Estimation for Delay Tolerant Satellite Networks
+
+2024 IEEE Aerospace Conference | 979-8-3503-0462-6/24/$31.00 ©2024 IEEE | DOI: 10.1109/AERO58975.2024.10521114
+
+Keidai Iiyama*
+Aeronautics and Astronautics
+Stanford University
+William F. Durand Building
+496 Lomita Mall
+Stanford, CA 94305
+kiiyama@stanford.edu
+
+Guillem Casadesus Vila*
+Aeronautics and Astronautics
+Stanford University
+William F. Durand Building
+496 Lomita Mall
+Stanford, CA 94305
+guillemc@stanford.edu
+
+Grace Gao
+Aeronautics and Astronautics
+Stanford University
+William F. Durand Building
+496 Lomita Mall
+Stanford, CA 94305
+gracegao@stanford.edu
+
+Regarding the first objective, Sipowa et al. proposed a
+distributed OD framework for satellite swarms that combines
+Covariance Intersection (CI) with Unscented Information
+Filter (UIF) [2]. By using CI, each agent only needs to
+estimate and store their own state estimates and covariances,
+which makes the framework scalable. However, their work
+targeted relative OD, and assumed small separations between
+satellites, restricting it from being used for satellite constellations which typically have larger satellite separations. They
+also did not model nor estimate onboard clock offsets and
+drifts in their work, which needs to be corrected for satellite
+constellation operations.
+
+Abstract—Future deep space exploration, particularly the upcoming lunar missions, stands to benefit significantly from networks of small satellites, given their cost-effective communication and monitoring capabilities. However, challenges like
+frequent network partitions, high communication delays, and
+the demand for onboard orbit determination (OD) and time
+synchronization present obstacles for these satellite networks.
+One of the key problems in this context is how to schedule
+satellite communications and generate a contact plan. This
+paper presents an integrative solution that combines navigation
+and communications performance for contact plan optimization. Additionally, we propose a novel two-way inter-satellite
+link (ISL) scheme to acquire range and differential clock bias
+estimates that take into account rapid inter-satellite range shifts
+and signal propagation delays. Building on these, a distributed
+orbit and clock bias estimation algorithm is introduced, which
+emphasizes the use of batch processing to improve orbit observability. Performance metrics are validated through a simulation
+of a lunar navigation constellation, assessing OD error, time synchronization error, and inter-satellite communication delay. The
+combined insights and proposals presented, especially in terms
+of navigation and communications performance tradeoffs, offer
+promising avenues to enhance the operability and efficiency of
+small satellite networks.
+
+Regarding the second objective, Yan et al. proposed a
+contact plan optimization algorithm that accommodates the
+requirements of both OD and communication [3]. They
+formulated and solved a constraint optimization problem that
+sets inter-satellite communication delay as the optimization
+objective while enforcing the satellites to switch ISL pairs at
+every timeslot for improved geometrical diversity of the ISL
+directions. They also developed a heuristics algorithm based
+on simulated annealing to solve the problem. However, the
+performance of the optimized plan was evaluated only for the
+communication delay, and not for OD or clock synchronization errors.
+
+1. I NTRODUCTION
+
+The goal of this paper is to extend and fuse these two lines
+of work to efficiently coordinate long-range ISLs within
+a small satellite constellation to meet both navigation and
+communication requirements. First, we optimize the contact
+plan solving for the Pareto front of ISL geometrical diversity
+and communication delay by incorporating the result of a
+covariance analysis simulation directly in the objective function. Second, we propose a two-way ISL scheme to obtain
+the range and differential clock bias estimates, considering
+rapid changes in the inter-satellite range and propagation
+delays. Finally, we propose a distributed orbit and clock bias
+estimation algorithm, which processes the two-way range
+and differential clock bias measurements in batch. The
+proposed framework can estimate absolute orbits instead of
+relative orbits, thanks to the improved observability of the
+proposed batch processing scheme. Finally, integrating the
+three segments together, we demonstrate the performance of
+the optimized contact plan and the distributed state estimation
+algorithm by evaluating the OD error, time synchronization
+error, and inter-satellite communication delay in a simulated
+lunar constellation.
+
+Networks of small satellites will play a key role in future deep space exploration, supporting orbit and surface
+missions thanks to their cost-effective communication and
+monitoring capabilities. One representative example is
+NASA’s Lunar Communications Relay and Navigation Systems (LCRNS) [1], a network of satellites providing networking and navigation services in the lunar region.
+These satellite networks, however, are subject to frequent
+partitions and high delays due to the limitation in the resources of small satellite platforms to establish multiple intersatellite links (ISLs), long distances between satellites, and
+signal blockage by planetary bodies. At the same time, future
+satellite networks in deep space will be desired to perform
+onboard orbit determination (OD) and time synchronization,
+with the limited capacity of the Deep Space Network. To fully
+exploit the potential of small satellite networks, onboard OD
+and timing algorithms are desired to be scalable and flexible
+to dynamic network topology. Therefore, the implementation
+of ISLs within the satellite network needs to be designed
+considering the two objectives: 1) facilitating distributed
+onboard OD and time synchronization via inter-satellite ranging, and 2) enabling data exchange among satellites with low
+communication delay.
+
+The paper is arranged as follows. Section 2 introduces
+the background with the related works, while Section 3
+formulates the contact plan design problem as a constrained
+optimization problem. Section 4 proposes a contact plan
+design method based on simulated annealing. Section 5
+
+*Equal contribution
+979-8-3503-0462-6/24/$31.00 ©2024 IEEE
+
+1
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:59:38 UTC from IEEE Xplore. Restrictions apply.
+
+an improved consistent estimate ĉ with covariance Pcc , as
+follows
+
+proposes a two-way ranging and timing scheme that could be
+used for links with large separation and fast relative motion.
+Section 6 provides the details of the proposed distributed state
+estimation algorithm. Performance evaluation is provided in
+Section 7. The paper concludes with Section 8.
+
+−1 −1
+∗
+−1
+Pcc
+= (ωPaa
++ (1 − ω)Pbb
+)
+
+ĉ
+
+2. R ELATED W ORKS
+
+∗
+
+(7)
+
+−1
+∗
+−1
+= Pcc
+(ωPaa
+â + (1 − ω)Pbb
+b̂)
+
+(8)
+
+where ω is a parameter optimized to minimize the trace or determinant of Pcc . CI has been applied for decentralized multirobot cooperative localization and sensor fusion problems [9,
+10]. The overview of CI is shown in Figure 1.
+
+Consensus and Diffusion Kalman Filters
+The distributed estimation problem has been investigated
+extensively for the past two decades. Earlier work by Spyer et
+al. [4] proposed a decentralized Kalman Filter, in which local
+Kalman filters communicate with all other nodes to estimate
+the state of fully connected networks. Later, Olfati-Saber
+et al. [5] proposed a distributed Kalman Filter, where each
+agent only communicates with its neighbor to reach a consensus on estimates with other nodes on the network. While
+these consensus-based methods have excellent mathematical
+properties, they impose significant timing constraints on the
+network, requiring the network to run the consensus step at
+much higher rates than the filter updates [6]. To overcome this
+challenge, Cattivelli, et al. [7] proposed a diffusion Kalman
+filter, in which each node performs a single-step update using
+a convex combination of neighbor node estimates. However,
+these distributed filtering approaches assume that the states to
+be estimated among the agents are the same. This assumption
+does not apply to our scenario, where the primary interest of
+each satellite is in estimating its own state.
+
+3
+2
+1
+
+Paa
+Pbb
+Pcc (known Pab )
+Pcc (function of ω)
+Pcc (optimal ω ∗ )
+
+0
+−1
+−2
+−3
+−3
+
+Covariance Intersection (CI)
+
+−2
+
+−1
+
+0
+
+1
+
+2
+
+3
+
+Figure 1: The overview of Covariance Intersection (CI),
+replicated from [2]. In CI, sensor estimates with covariance
+Paa and Pbb with unknown correlation Pab are combined to
+obtain the consistent and conservative covariance Pcc of the
+new estimate c. The weight ω to combine Paa and Pbb is
+optimized to minimize the determinant of Pcc .
+
+Covariance Intersection (CI) [8] is an algorithm to consistently fuse two measurements with unknown correlations. In
+CI, we consider a scenario where we have two consistent
+estimates â and b̂ of quality of interest x. Here, by consistent
+we mean that the covariance of the errors are smaller than the
+covariance of the estimates, as follows.
+
+Distributed Spacecraft Orbit Determination
+E[x̂x̂T ] − E[(x̂ − x̄)(x̂ − x̄)T ] ≥ 0
+
+(1)
+
+Various multi-agent frameworks have been proposed for
+collaborative orbit determination of networked spacecraft
+swarms with different sensor suites. Example frameworks
+include DiGITAL [11] system for nanosatellites with multiGNSS receivers, Angles-only Absolute and Relative Trajectory Measurement System (ARTMS) [12] for angles-only
+navigation with optical sensors, and Autonomous Nanosatellite Swarming (ANS) [13] framework which simultaneously
+conducts spacecraft state estimation and characterization of
+the unknown gravity field of the orbiting asteroid. In these
+works, the states of all spacecraft within the swarm are
+stacked as a vector with a size of ρN , where ρ is the
+number of states and N is the number of satellites in the
+swarm. While this formulation enables accurate handling of
+the correlations between state estimates of each satellite in
+the swarm, they are not scalable to large swarm sizes, as the
+computational cost of the Kalman Filter grows square with
+respect to the state size.
+
+where x̄ ∈ ℜn is the true value. Let the corresponding covariances of â and b̂ and their cross-correlation Paa , Pbb , Pab ∈
+ℜn×n , respectively. If Pab is known, the new estimate could
+be obtained by
+ĉ = Wa â + Wb b̂
+
+(2)
+
+Pcc = Wa Paa WaT + Wa Pab WbT
++ Wb Pba WaT + Wb Pbb WbT
+
+(3)
+
+where Wa and Wb are weights chosen to minimize the trace
+of Pcc , which leads to the weighted least-squares solution
+ĉ = H ⊤ (C J )−1 H
+T
+
+J
+
+−1
+
+H T (C J )−1 ĉJ
+
+(4)
+
+−1
+
+Pcc = (H (C )H)
+
+(5)
+
+To reduce the state size to be estimated in spacecraft swarm
+navigation, Sipowa et al. applied CI for spacecraft swarm
+navigation [2]. In their framework, CI was combined with the
+Unscented Information Filter (UIF). By using CI, each agent
+only needs to estimate and store their own state estimate and
+covariances, which makes the framework scalable. The algorithm was demonstrated to work robustly in a relative orbit
+determination scenario with 5 satellites, where each satellite
+takes the range, range rate, and orientation measurement with
+respect to the other satellite.
+
+where
+ 
+â
+ĉ =
+,
+b̂
+J
+
+
+P
+C = aa
+T
+Pab
+J
+
+
+Pab
+,
+Pbb
+
+H = [In
+
+In ]
+
+(6)
+
+However, when Pab is not known, if we ignore them by
+setting Pab = 0, we get an overconfident estimate that is
+not consistent. To address this problem, the CI algorithm
+uses a convex combination of the two estimates to obtain
+2
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:59:38 UTC from IEEE Xplore. Restrictions apply.
+
+propose a multi-objective optimization model, using the position dilution of precision of links and the transmission timedelay as the navigation and communications metrics and use
+a genetic algorithm to optimize the contact plans for Earth
+GNSS constellations.
+
+Orbit Determination with Inter-satellite Two-way Range and
+Time Difference Measurement
+The work by [2] only estimated the relative state with respect
+to the reference satellite and assumed that the orbit of the reference satellite is known by all satellites. However, previous
+works [14, 15] showed that when there are a sufficient number
+of measurements and/or perturbations in the dynamics, the
+absolute orbit determination problem with only relative range
+or bearing measurement becomes observable [16].
+
+3. P ROBLEM F ORMULATION
+The satellites will use ISL for both navigation and communication. In this section, we define the satellite states to be
+estimated, visibility between satellites based on geometric
+consideration, and the temporal topology handling scheme.
+Finally, we formulate the contact design problem that incorporates both navigation and communication objectives and
+constraints.
+
+One caveat of the above works, which simulates absolute
+orbit determination with inter-satellite range measurement,
+is that they do not model the two-way raging procedure in
+detail and assume that instantaneous range, clock bias difference, (and range-rate) measurement could be obtained within
+certain errors without delay. In reality, errors arising from
+light time delays, clock drifts, and changes in the crosslink
+range during signal propagation cannot be ignored, especially
+in large separation scenarios.
+
+Satellite States
+We consider a constellation of S spacecraft. We assume that
+each spacecraft is equipped with communication devices that
+permit information exchange between satellites, and a chipscale atomic clock (CSAC). The state of satellite i consists
+of position ri and velocity v i in the body-centered inertial
+frame, and clock bias δτ i and clock drift δ τ̇ i , converted into
+meters by multiplying the light speed c.
+
+
+xi = ri v i cδτ i cδ τ̇ i
+(9)
+
+Mo et al. [17] proposed a scalable multi-satellite scheme to
+obtain range and clock bias difference measurement. The
+authors employed time-division multiple access (TDMA)
+mechanisms and asymmetric double-sided two-way ranging (ADS-TWR). TDMA has advantages over FDMA and
+CDMA methods in terms of scalability, usage of space
+spectrum resources, and power and is well suited for small
+satellite platforms. However, ADS-TWR assumes small
+separation and relative motion, and therefore could generat
+large clock bias estimation errors when these effects become
+non-negligible.
+
+Each spacecraft follows the perturbed two-body dynamics
+around the central body, which is represented as
+i
+
+r
+v˙i = −µ i 3 + fp (ri , v i )
+|r |
+
+Contact Plan Optimization
+
+(10)
+
+where fp is the perturbation forces from the J2 term and thirdbody gravity from the Sun and the Earth. The clock bias and
+drift are modeled as a linear system with noises as shown
+below.
+
+
+
+ i
+1 ∆t cδτ i
+cδτ
++ wclk
+(11)
+= 0 1
+cδ τ̇ i k
+cδ τ̇ i k+1
+
+Different methods for designing contact plans for Global
+Navigation Satellite Systems (GNSS) have been proposed.
+Past research by Noakes et al. [18] centered on contact plans
+aimed at enhancing network connectivity through a process
+known as distributed optimization. Meanwhile, Chang et
+al. [18] applied a link assignment strategy aimed at minimizing the maximum link usage. The authors model the satellite
+network as a finite state automaton (FSA), where each state
+corresponds to an equal-length interval in the system period
+of the constellation, thus solving a set of link assignment
+problems in fixed topology networks. However, these studies [18, 19] were primarily concerned with the design of
+contact plans for communication satellite networks, which do
+not have to account for inter-satellite ranging demands or the
+temporal evolution of the network’s topology.
+
+where the process noise covariance is given by [25]
+"
+#
+2
+2
+2 ∆t3
+σ22 ∆t2
+2 σ1 ∆t + σ2 3
+Qclk = c
+2
+σ22 ∆t2
+σ22 ∆t
+
+(12)
+
+where σ1 , σ2 is the Allan variance power spectrum of the
+white noise and flicker noise. We used σ1 = 3.0 × 10−10 ,
+σ2 = 3.0 × 10−12 retrieved from the Allan variance of
+MICROSEMI CSAC.
+
+Huang et al. [20] proposed methods for controlling the topology that could minimize the cost of the paths and maximize
+reliability in predictable DTNs. Similarly, Fraire et al. [21,
+22] focused on creating fair and routing-aware contact plans,
+proposing several design algorithms. Nevertheless, these
+works mainly target communication satellite networks or
+remote sensing satellite networks and do not take into account
+the requirement for inter-satellite ranging.
+
+We use TDMA to coordinate the communication process
+between satellites. Each transmitter-receiver pair will be
+assigned a time slot to communicate with the other satellite
+based on the contact plan. The detailed mathematical formulation of the measurement equations is derived in Section 6.
+We have two types of satellites: the anchor satellites (nodes)
+and the non-anchor satellites. The anchor nodes has access to
+an external navigation source (e.g. GPS, ground station links)
+that can be used to continuously update its orbit and clock
+bias estimates. Other satellites (e.g. non-anchor nodes) rely
+on ISL range and relative timing measurement to estimate
+their orbit and clock bias. The goal of each agent is to obtain
+a sequential state estimate for their own state xi , without
+estimating the states of other spacecraft in the swarm xj . This
+is achieved by the combination of an EKF and CI, as it will
+be explained in Section 6.
+
+Shi et al. [23] developed a contact plan that considered both
+crosslink ranging and data exchange requirements of ISLs in
+GNSS. However, the author of [23] did not have to account
+for the temporal evolution of the network’s topology because
+each satellite could be equipped with three ISLs. Yan et al. [3]
+address the design of contact plans for navigation satellite
+networks with one ISL per satellite, taking into consideration
+both inter-satellite ranging and inter-satellite communication
+requirements. In recent work by Yan et al. [24], the authors
+3
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:59:38 UTC from IEEE Xplore. Restrictions apply.
+
+Time horizon, T
+1
+
+2
+
+update as follows
+···
+
+3
+
+⊤
+
+i
+i
+Pk|k−1
+= Φik|k−1 Pk−1|k−1
+Φik|k−1 + Qik
+ i,rv
+
+Φk|k−1 06×1 06×1
+Φik|k−1 =  01×6
+1
+∆t 
+01×6
+0
+1
+ rv
+
+Q
+06×2
+Qik =
+02×6 Qclk
+
+N
+
+FSA state
+1
+
+2
+
+3
+
+···
+
+M
+
+CP period
+1
+
+2
+
+3
+
+···
+
+(13)
+(14)
+
+(15)
+
+K
+where P i is the covariance estimate of satellite i, Φik|k−1
+is the state transition matrix (STM) of satellite i state from
+timestep k − 1 to k, and Qrv is the process noise matrix
+for satellite position and velocity. Note that since we are
+not updating the state estimates in covariance analysis, the
+STM Φi,rv
+k|k−1 can be precomputed and stored before the
+optimization using the true trajectory.
+
+Time slot
+Figure 2: Topology handling scheme, including finite state
+automaton (FSA) states, contact plan (CP) periods, and time
+slots.
+
+When satellite i and satellite j perform ISL at time slot
+k, we perform the measurement update at both ends. The
+ISL measurement yki,j consists of inter-satellite range and
+differential clock bias. The details of how we obtain these
+measurements are explained in Section 5, but in the optimization, these are modeled as instantaneous range and
+differential clock bias measurements at the beginning of each
+time slot. The measurement, Jacobian, and the noise matrix
+are set as follows
+ i
+
+∥rk − rkj ∥
+yki,j =
+(16)
+c(δtik − δtjk )
+#
+" 
+⊤
+rj −ri
+i,j
+0
+0
+0
+−
+1×3
+∥rj −ri ∥
+∈ ℜ2×8 (17)
+Hk =
+01×3
+01×3 −1 0
+
+
+σ
+0
+j
+Rki,j = 0r σ + (−Hki,j )Pk|k
+(−Hki,j )⊤ ∈ ℜ2×2 (18)
+
+Topology Handling Based on FSA
+The constellation network topology changes periodically due
+to the movement of the satellites and can be modeled as an
+FSA [26]. The FSA states are derived by dividing the system
+period of the satellites T into N equal-length intervals, disregarding those satellites that are only partially visible within
+a given state. In other words, two satellites are said to be
+visible from each other in a state if they are within lineof-sight throughout the entire state duration. Therefore, the
+contact plan design can be performed in each FSA state based
+on fixed topology.
+Satellites require frequent communication to increase the
+precision of autonomous navigation and typically have fewer
+ISLs than the number of visible satellites. Therefore, they
+need to switch their ISLs to enable inter-satellite ranging with
+different satellites. As in previous work [24], we further
+divide one FSA state into M equal-length time intervals
+denoted as contact plan periods.
+
+t
+
+The second term in (18) is the additional noise from the state
+knowledge uncertainty of the ISL pair satellite j. Note that
+the cross-covariances between satellites i and j estimates are
+not considered in (18), so even with this additional noise,
+the obtained covariance is still optimistic. However, it could
+still be used as a metric to compare different contact plan
+topologies.
+
+Every contact plan period is subsequently split into K time
+slots of the same length. The way the topology is managed is
+illustrated in Figure 2. Depending on the time slot, navigation satellites establish ISLs with different visible satellites.
+The contact plan design is carried out within each FSA state,
+and all contact plan periods within a single FSA state adhere
+to the same contact plan. In other words, contact plans are
+created considering the fixed topology of an FSA state and
+determine the ISLs to be established during each time slot,
+repeating the plan for every contact plan period in the FSA
+state.
+
+The covariance update equation for the measurement update
+at satellite i is written as
+h
+i
+⊤
+⊤ −1
+i
+i
+Kki = αPk|k−1
+(Hki,j ) Rki,j + Hki,j Pk|k
+(Hki,j )
+(19)
+
+State Estimation Accuracy Calculation Based on EKF Covariance Analysis
+
+Jki = I8×8 − Kki Hki,j
+
+⊤
+⊤
+i,j
+i
+i
+(Jki ) + Kki Rk|k
+(Kki )
+Pk|k
+= Jki Pk|k−1
+
+The states of each satellite are estimated using the distributed
+state estimation algorithm with batch CI, which will be explained in detail in Section 6. When evaluating the navigation
+performance of a given contact plan during contact plan
+optimization, to save computational cost, we run a covariance
+analysis with inflated noise instead of actual distributed state
+estimation with CI. The procedure of the covariance analysis
+is detailed below.
+
+(20)
+(21)
+
+where α is the weight to adjust the Kalman gain. We use
+α = 1/2 when the ISL pair is not an anchor node to avoid
+double counting on the same measurements. α = 1 is used
+when the satellite j is an anchor node, which will not update
+its state using ISL measurements.
+Starting from a predefined initial covariance P0|0 , We repeat
+these updates for the entire FSA state, k = 1, . . . , K × M . At
+
+We define timestep k as the beginning of time slot k ∈
+[1, KM ]. Every timestep, each satellite performs a time
+4
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:59:38 UTC from IEEE Xplore. Restrictions apply.
+
+each time step, for each satellite, we compute the square root
+of the trace of the covariance of the position and clock bias as
+follows to evaluate the positioning and timing performance.
+X
+i
+(l, l)
+(22)
+Ptrace (i, k) =
+Pk|k
+
+bidirectional, (26) ensures that the ISL is only established if
+the two satellites are visible to each other, (27) guarantees
+that each satellite establishes one and only one ISL within
+each time slot, and (28) limits the maximum number of ISLs
+that can be established between two satellites during a contact
+plan period to Nmax in order to enforce ISL switches.
+
+l∈{1,2,3,7}
+
+The BDT between two satellites d(i, j, k) can be calculated
+using a Contact Graph Dijkstra Search (Algorithm 2, Appendix 8), a modified Dijkstra search that finds the best
+route through a contact graph [27]. The main advantage of
+expressing the contact plan as a contact graph data structure
+is that it can be used as input for traditional shortest-path
+algorithms such as the one presented in this work.
+
+i
+where Pk|k
+(l, l) shows the l th diagonal element of the matrix
+i
+Pk|k .
+
+Formulation of the Contact Plan Design Problem
+In this section, we formulate the contact plan design problem
+as a constrained optimization problem. The contact plan for
+the navigation satellite network needs to meet the needs of
+both inter-satellite ranging and inter-satellite communication,
+which translates into a desired high number of ISL switches
+and low communication delay. To account for both objectives, we set the objective as a weighted sum of the intersatellite communication delay and the simulated navigation
+error from the covariance analysis, and formulated the contact
+plan design problem as follows:
+minimize F = wcomm Fcomm + wnav Fnav
+subject to
+ui,j,k = uj,i,k , ∀i, j, k
+vi,j − ui,j,k ≥ 0, ∀i, j, k
+
+(23)
+(24)
+(25)
+(26)
+
+∀i, k
+
+(27)
+
+S
+X
+
+ui,j,k = 1,
+
+j=1
+K
+X
+k=1
+
+ui,j,k ≤ Nmax ,
+
+∀i, j
+
+The core difference compared to the previous work [24] is
+the navigation metric Fnav . Compared to calculating PDOP
+at each timestep, the proposed metric, which uses covariance
+analysis, have multiple benefits. First, it can be applied
+when we have less than 3 ISLs in each time slot. Second,
+it can better capture the relationship between dynamics (time
+update) and the measurement that occurs when we batch
+process or filter measurements over time. Finally, it can value
+having more connections with satellites that have better state
+knowledge.
+
+4. C ONTACT P LAN O PTIMIZATION BASED ON
+S IMULATED A NNEALING
+Considering that the contact plan problem defined in the
+previous section would rapidly become computationally intractable, we use a heuristic algorithm based on simulated
+annealing, a stochastic optimization method that mimics the
+slow cooling process in metallurgy to gradually reduce the
+search space and decrease the likelihood of accepting suboptimal solutions. This approach has been demonstrated to be
+effective in topology design problems [19, 22], enabling the
+acquisition of sub-optimal solutions. Algorithm 1 presents
+the algorithm for the contact plan design based on simulated
+annealing. We begin by creating a random initial contact plan
+from which we will derive a new contact plan through branch
+and exchange methods [19, 22]. The branch and exchange
+method consists of exchanging two links while maintaining
+constraint satisfaction.
+
+(28)
+
+ui,j,k ∈ {0, 1}, ∀i, j, k
+i, j = 1, 2, . . . , S, k = 1, 2, . . . , K
+
+(29)
+
+where
+Fcomm =
+
+K X
+S
+S
+X
+X
+1
+1
+d(i, j, k)
+K S(S − 1)
+i=1
+k=1
+
+(30)
+
+j=1,j̸=i
+
+is the average network delay and accounts for communication
+performance,
+
+Then, we calculate and compare the objective functions of
+the new and the current contact plans. If the objective
+function of the new contact plan is improved, we approve the
+new contact plan and reduce the temperature T . Otherwise,
+we accept the new contact plan with a probability P =
+exp (−(Fnew − Fcurr )/T ), where Fnew and Fcurr are the
+objective functions of the new and the current contact plans,
+respectively. If the new contact plan is accepted, we reduce
+the temperature T by a cooling rate r. The algorithm stops
+when a set number of iterations Nit is reached.
+
+S KM
+
+Fnav =
+
+1 1 XXp
+Ptrace (i, k)
+K S i=1
+
+(31)
+
+k=1
+
+is accounts for the navigation performance, S is the number
+of satellites, K is the number of time slots, vi,j is the visibility
+between satellite i and j within a certain FSA state (V =
+[vi,j ] is the visibility matrix), ui,j,k is the ISL connectivity
+between satellite i and j within time slot k (U = [ui,j,k ] is the
+connectivity matrix, which is also the contact plan and decision variable), d(i, j, k) is the cost of the communication—in
+this case, the best delivery time (BDT) between satellite i
+and j starting at time slot k, Pkf is the covariance based on
+covariance analysis, and wcomm and wnav are the weights of
+each objective.
+
+5. T WO - WAY RANGING WITH JOINT D OPPLER
+MEASUREMENT
+
+In this section, we derive the two-way range and clock bias
+measurement for inter-satellite links with large separation and
+relative velocity. The overview of the two-way crosslink
+procedure is illustrated in Figure 3. In the example, the
+transmitter satellite A sends the signal at time t1 . After
+the receiver satellite B receives the signal at time t2 , it retransmits to satellite A at time t3 with delay (we set this delay
+
+If satellites i and j are visible during the entire duration of
+an FSA state, vi,j = 1, and they will establish and ISL
+a the time slots k such that ui,j,k = 1. Constraint (25)
+enforces the communication between two satellites to be
+5
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:59:38 UTC from IEEE Xplore. Restrictions apply.
+
+Algorithm 1 Contact plan design based on simulated annealing.
+1:
+2:
+3:
+4:
+5:
+6:
+7:
+8:
+9:
+10:
+11:
+12:
+13:
+14:
+15:
+16:
+17:
+
+two range estimates from the observed timestamps are given
+by
+
+procedure C ONTACT P LAN D ESIGN(V , T , r, Nit )
+U ← InitialContactPlan(V)
+Fbest ← ObjectiveFunction(U)
+for i ← 1 to Nit do
+U ′ ← GetNeighbor(U)
+F ′ ← ObjectiveFunction(U′ )
+if F ′ ≤ Fbest then
+Ubest ← U ← U ′
+Fbest ← F ′
+else if exp ((Fcurr − F ′ )/T ) ≤ rand(0, 1) then
+U ← U′
+T ←r·T
+else
+U ← Ubest
+end if
+end for
+end procedure
+
+ρˆ12 = c(TB2 − TA1 )
+ρˆ34 = c(TA4 − TB3 )
+
+From first-order Taylor expansion, the range between satellite
+A and satellite B at the reference time is given by [28]
+ρAB
+ref =
+
+ρ12 = ∥rA (TA1 ) − rB (TB2 )∥2
+= c(t2 − t1 )
+= c(T2 − δτB2 − T1 + δτA1 ) + w12
+≈ ρref − ρ̇ref (tref − tA1 )
+ρ34 = ∥rA (TA4 ) − rB (TB3 )∥2
+= c(t4 − t3 )
+= c(T4 − δτA4 − T3 + δτB3 ) + w34
+≈ ρref + ρ̇ref (tA4 − tref )
+
+(40)
+
+(41)
+
+Where ρ12 , ρ34 is the true range, and w12 , w34 are range
+estimate errors coming from receiver thermal noise and clock
+drift, and ρ̇ref is the inter-satellite range rate, evaluated at
+tref . By observing the Doppler shift ωrt = ωr /ωt of the
+received signal at satellite A, we can calculate the range rate
+of the signal as follows.
+ρ̇ref ≈
+
+Let TA1 , TB2 , TB3 , TA4 the local clock time of satellite A
+and B at global time t1 , t2 , t3 , and t4 , respectively, which
+represents the true time the signal is receiver or transmitted.
+The local clock time is related to true time as follows
+
+cωrt
+2 + ωrt
+
+(42)
+
+For this paper, we assumed that we could get the range rate
+information with an error of 1 mm/s (1 σ). Using this
+observed range rate, and plugging into Eq.(40) and Eq.(41),
+we obtain two clock bias difference estimates
+
+(32)
+(33)
+(34)
+(35)
+
+AB
+A
+B
+∆δτ12
+= (δτref
+− δτref
+)12
+
+= −(TB2 − TA1 ) +
+
+where δτ represents the clock bias and wr is the time delay in
+the receiver due to thermal noise. We set the thermal noise
+error to 1.0 m (when converted to range via light speed).
+Combining the observed time stamps listed above, the goal
+of the two-way crosslink is to obtain the range and clock
+bias difference between satellites A and B at the following
+reference epoch
+TA1 + TA4
+2
+
+(39)
+
+We start with the following two equations
+
+Figure 3: Two-way inter-satellite ranging scheme between
+two spacecraft (S/C), retrieved from [16].
+
+tref =
+
+1
+(ρ̂12 + ρ̂34 )
+2
+
+Obtaining the clock bias differences from the timestamps is
+more involved because we have to consider the errors coming
+from light time delay, clock drift, and the range rate. Previously proposed methods such as ADS-TWR assumed close
+separation between satellites and ignored these effects, which
+become non-negligible in large separation formations [17].
+To cancel these errors, we propose a new formulation that
+compensates for the intersatellite rate changes, using the
+range rate estimate obtained from the frequency shift measurement.
+
+to 0.5 seconds in our simulation), which is received at satellite
+A at time t4 . Satellite A will send back the time stamps to
+satellite B, where range and clock bias difference estimates
+will be calculated.
+
+TA1 = t1 + δτA1
+TB2 = t4 + δτB2 + wr2
+TB3 = t3 + δτB3
+TA4 = t4 + δτA4 + wr4
+
+(37)
+(38)
+
+ρref − ρref
+˙ (tref − TA1 )
+c
+
+(43)
+
+AB
+A
+B
+∆δτ34
+= (δτref
+− δτref
+)34
+
+= (TA4 − TB3 ) −
+
+ρref + ρref
+˙ (TA4 − tref )
+(44)
+c
+
+The clock bias difference estimate is calculated as the average
+of these two values
+AB
+∆δτref
+=
+
+(36)
+
+Obtaining the reference range estimate from time stamps is
+straightforward and is commonly done in the literature. The
+
+1
+AB
+AB
+(∆δτ12
++ ∆δτ34
+)
+2
+
+(45)
+
+The advantage of this method is that by averaging the two
+measurements, we can cancel out the majority of the errors
+6
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:59:38 UTC from IEEE Xplore. Restrictions apply.
+
+j to simplify the notation. ω ∈ [0, 1] is a variable that
+is optimized to minimize the determinant of the posterior
+covariance estimate, as follows.
+
+coming from clock drift and range rates. In summary, the two
+measurements obtained per each two-way link is
+
+
+AB T
+∆δτref
+yki,j,obs = ρAB
+(46)
+ref
+
+i
+ω = minimizeω′ Pk|k
+(ω ′ )
+
+Clock Bias Error [m]
+
+Range Error [m]
+
+The obtained measurement error is summarized in Figure 4.
+The obtained range and clock bias error are on the same scale
+as the thermal noise of the receiver, with errors from rangerates and clock drifts being mostly removed.
+2
+1
+0
+1
+2
+3
+2
+1
+0
+1
+2
+3
+
+0
+
+200
+
+400
+
+600
+Time [s]
+
+800
+
+1000
+
+1200
+
+0
+
+200
+
+400
+
+600
+Time [s]
+
+800
+
+1000
+
+1200
+
+As seen in equation (48), ω is determined to balance the two
+covariances: the apriori state estimate covariance mapped
+into the measurement space (first term), and the inflated
+measurement covariance (second term). The variable ω takes
+a value closer to 1 as the second term becomes larger than the
+first term, resulting in a smaller update.
+In our setting, each satellite gets only the range measurement
+and differential clock bias with respect to the ISL pair.
+Therefore, the satellite cannot solve for its 8 states by just
+using a single ISL measurement. Thus, the information
+obtained from each measurement is low compared to the
+apriori estimate from the time update, and if each satellite
+processes the measurements one by one at each timestep,
+they end up getting ω values close to 1, which means the
+measurements will be discarded. To avoid this, we stack
+Nbatch measurements over time as follows.
+
+⊤
+i
+i
+i
+)⊤ . . . (yk+N
+)⊤
+yk,N
+= (yki )⊤ (yk+1
+b
+b −1
+
+
+(Hki )Φi (tref,k , tk )
+i
+ (Hk+1
+)Φi (tref,k+1 , tk ) 
+
+
+i
+Hk,N
+=
+
+
+..
+b
+
+
+.
+
+Figure 4: Simulated range and clock bias measurement error
+with the proposed two-way range with joint Doppler two-way
+scheme
+
+(53)
+
+(54)
+
+i
+(Hk+1
+)Φi (tref,k+Nb −1 , tk )
+
+6. D ISTRIBUTED S TATE E STIMATION
+
+i
+i
+i
+Rk,N
+= diag(Rki , Rk+1
+, . . . , Rk+N
+)
+b
+b −1
+
+Each satellite performs ISL following the optimized plan. All
+satellites except the anchor nodes process the two-way range
+and the differential clock bias measurement obtained by ISL
+in a distributed manner. Since the satellite does not estimate
+or store the cross-covariance estimates with respect to other
+satellites in the constellation, applying a simple Kalman Filter
+update that ignores the cross-terms can result in inconsistent
+estimates. Therefore, we use CI in the measurement update
+to obtain a conservative covariance estimate.
+
+(55)
+
+The size of the batch Nb is decided based on the trade-off
+between the observability and the delay of estimate we get.
+Since the orbit and clock estimation is decoupled when we
+use two-way range measurements, we ran a separate filter for
+the orbit and clock estimation. We set Nb = 5 for the orbital
+states and Nb = 3 for the clock states.
+Note that the batch scheme ignores the correlations between
+i
+the measurement covariances Rki , . . . , Rk+N
+(They are
+b −1
+i
+correlated because each Rk is inflated based on the state
+covariance estimate of the ISL pair, which can be correlated
+each other). However, we observed that the contribution
+from these correlation terms is negligible compared to the
+inflated measurement noises, and consistent estimates can be
+generated. We plan to analyze the effect of the correlations
+within the batch observables in more detail in our future work.
+
+Each satellite estimates its state at the beginning of each
+time slot tk . Note that estimates come with a delay since
+the observable is unavailable until the reception of the twoway signal. In the measurement update scheme using CI, we
+replace the measurement update equation (19), (20), (21) with
+the following equations [29]
+H̃ki = (Hki )⊤ Φi (tref,k , tk )
+1
+1
+i
+(H̃ki )⊤ +
+Ri
+Ski = H̃ki Pk|k−1
+ω
+1−ω k
+1 i
+Kki = Pk|k−1
+(H̃ki )⊤ (Ski )−1
+ω
+1 i
+i
+Pk|k
+= Pk|k−1
+− Kki Ski (Kki )⊤
+ω
+xik|k = xik|k−1 + Kki (yki,obs − yki,pred )
+
+(52)
+
+(47)
+(48)
+
+Using this batch of measurements, the state is updated at
+timestep k as follows
+
+(49)
+
+1
+1 i
+i
+i
+Hk,Nb Pk|k−1
+(Hk,N
+)⊤ +
+Ri
+b
+ω
+1 − ω k,Nb
+1 i
+i
+i
+i
+Kk,N
+= Pk|k−1
+(Hk,N
+)⊤ (Sk,N
+)−1
+b
+b
+b
+ω
+1 i
+i
+i
+i
+Pk|k
+= Pk|k−1
+− Kk,N
+S i (Kk,N
+)⊤
+b k
+b
+ω
+i,obs
+i,pred
+i
+xik|k = xik|k−1 + Kk,N
+(yk,N
+− yk,N
+)
+b
+b
+b
+i
+Sk,N
+=
+b
+
+(50)
+(51)
+
+Above, tk < tref,k < tk+1 is the reference time (36) of
+the measurement obtained at time slot k, and Φi (tref,k , tk ) is
+the state transition matrix of satellite i from the beginning
+of slot k to tref,k . yki,pred is the predicted measurement
+from the current state estimate. Other notations are the
+same of (19), (20), (21), and we dropped the superscript
+
+(56)
+(57)
+(58)
+(59)
+
+The latest estimate at timestep k + Nb − 1 is obtained by
+performing the time update from timestep k.
+7
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:59:38 UTC from IEEE Xplore. Restrictions apply.
+
+Table 1: Orbital elements of the lunar constellation.
+
+7. S IMULATION R ESULT
+In this section, we first present the experimental setup, including the parameters of the satellite constellation and the
+topology handling scheme. Then, we present the results of the
+contact plan design based on simulated annealing, showing
+the tradeoffs in optimizing the contact plan. Finally, we verify
+the navigation performance of the optimized contact plans
+using a distributed state estimation algorithm.
+
+Orbital element
+Semi-major axis a [km]
+Eccentricity e
+Inclination i [deg]
+Lon. of Asc. Node Ω [deg]
+Arg. of periapsis ω [deg]
+True anomaly ν [deg]
+
+Experimental Setup
+We assess the performance of the contact plan design algorithm based on simulated annealing in the lunar constellation
+shown in Figure 5. The orbital elements of the three orbital
+planes are based on [30]. The constellation comprises a
+total of 12 satellites among three planes, with an actual
+anomaly offset between satellites of 90◦ . Each navigation
+satellite is only equipped with a single ISL, which is only
+subject to moon occultation communication constraints. The
+parameters of topology handling are shown in Table 2. There
+are a total of 72 FSA states in one system period, each divided
+into 25 contact plan periods. A contact plan period contains
+8 time slots, each lasting 3 seconds. The orbital elements
+of each satellite are given in Table 1. The 3 anchor satellite
+nodes, which we assume are equipped with better navigation
+capabilities, have an initial position and clock bias error of 1
+m, and a velocity and clock drift error of 1 mm/s. They also
+get direct measurements of their position, velocity, and clock
+bias, with errors of 1 m, 1 mm/s, and 1m (when converted
+to meters), respectively. The remaining 9 satellites have an
+initial position and clock bias error of 50 m, and a velocity
+and clock drift error of 50 mm/s.
+
+Plane 1 Plane 2 Plane 3
+6142.4
+6142.4
+6142.4
+0.001
+0.6
+0.6
+0.001
+57.7
+57.7
+0
+-90
+0
+-45
+-90
+90
+(0, 90, 180, 270)
+
+Table 2: Parameters of topology handling based on FSA [3].
+Parameter
+System Period (T )
+Number of FSA States (N )
+FSA state duration
+Number of contact plan periods (M )
+Contact plan period duration
+Number of time slots (K)
+Time slot duration
+Max same links allowed in K slots (Nmax )
+
+Value
+12 hours
+72
+10 min
+25
+24 s
+8
+3s
+5
+
+annealing, we generate the initial random contact plan by
+solving the constraint satisfaction problem resulting from
+neglecting the objective function. Without the objective function, which can be computationally expensive and involves
+computing the shortest path in contact graphs as well as the
+navigation performance, the new problem is readily solved.
+In this case, we generate the initial plan by solving the
+constraint satisfaction problem using CVXPY [31].
+We implemented the contact plan design based on simulated
+annealing in Algorithm 1 and the branch and exchange algorithm in Algorithm 3 in Python. The initial temperature
+is set to T = 200, the cooling rate is set to r = 0.95, and
+the number of iterations is set to Nit = 1000. We set an
+early stop criteria of 100 iterations without improvement in
+the objective function. It is important to mention that when
+computing the BDT, we consider the delay from the average
+distance between satellite pairs.
+
+Z [km]
+
+5000
+
+0
+
+5000
+5000
+X [k 0
+m] 5000
+
+5000
+
+0
+Y [km]
+
+Number of visible satellites
+
+11
+5000
+
+Figure 5: Constellation of 12 satellites around the Moon used
+for simulation. The points show the initial position of the
+satellites. The green points show the anchor nodes that have
+access to external positioning and navigation aids.
+Figure 6 illustrates the number of visible satellites for the
+first satellite in each orbit. We observe that all three satellites
+have between 5 and 11 visible satellites in every FSA state.
+
+10
+9
+8
+7
+6
+5
+
+0
+
+10
+
+20
+
+30 40
+FSA State
+
+50
+
+60
+
+70
+
+Figure 6: Number of visible satellites in all FSA states. Each
+color corresponds to a satellite in the constellation.
+
+Regarding the optimization algorithm based on simulated
+8
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:59:38 UTC from IEEE Xplore. Restrictions apply.
+
+Improvement [%]
+Improvement [%]
+
+FSA state 1
+
+0
+
+4
+
+wcomm/wnav
+0.001
+100
+
+20
+40
+0
+
+100 200 300 400 500 600 700
+Iteration
+
+1
+
+7
+
+FSA state 2
+
+0
+
+10
+0
+
+11
+2
+
+9
+
+4
+
+5
+
+3
+
+1
+
+7
+
+6
+
+10
+0
+
+11
+2
+
+9
+
+5
+
+3
+
+6
+
+20
+40
+
+8
+
+0
+
+100
+
+200
+
+300 400
+Iteration
+
+500
+
+600
+
+8
+
+(a) 12 satellites in time slot 1.
+
+(b) Satellite 4 during 8 time slots.
+
+Figure 8: ISLs between satellites in the selected constellation
+are obtained from the optimized contact plan.
+
+Figure 7: Objective value improvement vs. iteration number
+for two different FSA states and two different relative objective function weights.
+Contact Plan Optimization
+
+Satellite ID
+
+The proposed method is able to design a contact plan for the
+simulation use case successfully. Thanks to the initialization
+method based on constraint satisfaction and the implemented
+branch and exchange algorithm, we ensure that the contact
+plan is always feasible. Fig 7 shows the decrease of the
+objective function value throughout the optimization of two
+FSA states and two different relative objective weights. The
+algorithm tends to converge after approximately 500 iterations, as better plans are not found.
+Figure 8a shows the scheduled ISLs for all the satellites of the
+constellation in the first time slot, and Figure 8b shows the
+scheduled ISLs for satellite 4 during a complete contact plan
+period of 8 time slots, obtained from the optimized contact
+plan. Fig 9 shows the evolution of the satellites reachable
+from satellite 4 over the first contact plan period, where we
+observe that all satellites are reachable after 5 time slots. The
+orange line shows the path that a message from satellite 4
+would take to reach satellite 5 with minimum delay: it would
+have to go through satellites 3 and 9. This path involving four
+different satellites shows the complexity behind the objective
+function of the optimization problem.
+
+11
+10
+9
+8
+7
+6
+5
+4
+3
+2
+1
+0
+
+0
+
+1
+
+2
+3
+Time (slots)
+
+4
+
+5
+
+Figure 9: Possible routes starting at satellite 4. All the
+satellites are reachable after the first five time slots. In orange,
+we show the fastest route between satellite 4 and satellite 5,
+which includes a total of six different satellites.
+
+performance, the number of unique links, i.e., with different
+satellites, in a contact plan period is 20% higher than in
+contact plans optimized for communications performance.
+This is in agreement with the hypothesis that, for intersatellite ranging, satellites should frequently change their ISL
+targets, thus securing more diversity in the ISL direction
+and enabling superior precision in autonomous navigation.
+In contrast, inter-satellite communication necessitates the
+navigation satellite to establish a more stable link topology
+to efficiently transfer the packets for a given graph structure.
+Therefore, these two contrasting requirements could guide
+the design of the contact plan in divergent directions, and it
+is necessary to consider both objectives in the optimization
+process.
+
+Figure 10 shows the multi-objective optimization results for
+two FSA states. The results are obtained by using different
+weights in the objective function, wcomm and wnav , as well
+as different random initializations of the contact plan. We
+observe how our method is able to explore the solution space
+and trace out the Pareto front. We highlight the tradeoff
+between communication and navigation performance, where
+the communication performance is measured by the average
+delay in the network in the form of BDT, and the navigation
+performance is measured by the position accuracy achieved
+with the scheduled crosslinks.
+
+Distributed State Estimation
+
+Contact plans optimized for communications performance
+present a BDT of 4.5 seconds and a positioning error of over
+10 meters. On the other hand, contact plans optimized for
+navigation performance present a BDT of 6 seconds (25%
+worse) and a positioning error of 6 meters (40% better).
+
+The navigation error obtained as the objective of the contact
+plan optimization is based on covariance analysis simulation
+with simplified assumptions. To verify the positioning and
+timing accuracy of the optimized contact plan, we ran the
+proposed CI distributed state estimation algorithm (from Section 6) with the proposed two-way ranging and timing scheme
+(from Section 5). We used the contact plan with the lowest
+
+This difference is due to the link diversity in the contact plan.
+We observe that in contact plans optimized for navigation
+9
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:59:38 UTC from IEEE Xplore. Restrictions apply.
+
+Network delay [s]
+
+7.0
+
+performance, which need to be accounted for when designing
+and operating these constellations.
+
+FSA state 1
+FSA state 2
+Pareto front
+
+6.5
+
+Finally, we verify the navigation performance of the optimized contact plans beyond the covariance analysis used
+in the optimization through a novel distributed orbit and
+clock bias estimation framework that combines an Extended
+Kalman Filter with a covariance intersection method. The
+filter processes two-way range and clock bias difference
+measurement considering light time delay, clock drifts, and
+large range-rates, being able to create consistent estimates
+given different contact plans.
+
+6.0
+5.5
+5.0
+4.5
+6
+
+8
+
+10
+12
+14
+Position error [m]
+
+16
+ACKOWLEDGEMENT
+
+Figure 10: Netwok delay and navigation performance of the
+optimized contact plans for two FSA states, with the solutions
+in the Pareto front highlighted. Contact plans optimized for
+communications yield a 4.5-second BDT and over 10-meter
+positioning error, while those for navigation result in a 6second BDT (25% worse) and a 6-meter error (40% better).
+
+This work was supported by the Nakajima Foundation fellowship, and the “la Caixa” Foundation fellowship (ID
+100010434, code LCF/BQ/EU21/11890112).
+
+A: A LGORITHMS
+Algorithm 2 shows the contact graph Dijkistra search algorithm that finds the route with best time delivery through a
+contact graph. Algorithm 3 shows the branch and exchange
+method, which is used to find the neighbor solution in simulated annealing.
+
+navigation error for FSA states 0 and 1.
+The results are shown in Figure 11 and Figure 12. The
+position and clock bias estimation error converges within 2 m
+error, which is in the same order as the range and clock bias
+measurement errors we get in the two-way range method. The
+distributed CI algorithm generates consistent estimates with
+errors within the estimated covariance, as shown in Figure 12.
+
+Algorithm 2 Contact Graph Dijkstra Search. [27]
+Input: Root contact Croot , destination D, contact plan U
+Output: Route RSD from source S to destination D, and best
+delivery time BDT
+D
+← {}
+1: RS
+2: Cf in ← {}
+▷ Final contact
+3: BDT ← ∞
+▷ Final arrival time
+4: Ccurr ← Croot
+▷ Current contact is root
+5: while True do
+▷ Contact plan exploration loop
+6:
+▷ Contact review procedure
+7:
+Cf in , BDT ← CRP(U, Ccurr , Cfin , BDT)
+8:
+▷ Contact selection procedure
+9:
+Cnext ← CSP(U, Ccurr , BDT)
+10:
+if Cnext then
+11:
+Ccurr ← Cnext
+12:
+else
+13:
+break
+▷ Review and selection done
+14:
+end if
+15: end while
+16: if Cf in ̸= {} then
+17:
+C = Cf in
+0,∞
+18:
+while C ̸= CS,S
+do
+D
+19:
+RS .hops ← {C}
+20:
+C = C.pred
+▷ Previous contact
+21:
+end while
+22:
+Compute (RSD .tx win, RSD .volume)
+23: end if
+
+Table 3 shows the position, velocity, and clock bias estimation
+error for two different contact plans at both edges of the
+Pareto front. The plan optimized for navigation performance
+also shows lower state estimation errors than the plan optimized for BDT, which demonstrates the validity of the
+objective function based on covariance analysis to capture the
+preferable contact plan geometry.
+
+8. C ONCLUSION
+Designing a contact plan for navigation satellite networks necessitates consideration of both inter-satellite ranging, which
+measures the distances between satellites for accurate positioning, and inter-satellite communication, enabling data
+exchange between satellites to form a global network. In
+this context, we target the complex problem of scheduling
+crosslinks within networks of small satellites in lunar orbit.
+Similarly to previous work on Earth navigation satellite
+constellations, we frame the contact plan design problem
+as a constrained multi-objective optimization problem, considering both navigation and communications performance.
+However, we consider satellites with limited resources that
+need to rely on anchor nodes, i.e., a group of a few satellites
+with better navigation capabilities. Given the problem’s complexity, we resort to a heuristic algorithm based on simulated
+annealing, a stochastic optimization method that gradually
+reduces the search space and decreases the likelihood of
+accepting suboptimal solutions. Simulation results show that
+our proposed method optimizes contact plans with reduced
+network delay and improved orbit determination accuracy,
+according to design criteria. Different solutions, however,
+present tradeoffs in terms of communications and navigation
+
+R EFERENCES
+[1]
+
+D. J. Israel, K. D. Mauldin, C. J. Roberts, J. W. Mitchell,
+A. A. Pulkkinen, D. C. La Vida, M. A. Johnson, S. D.
+Christe, and C. J. Gramling, “Lunanet: a flexible and
+extensible lunar exploration communications and navi-
+
+10
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:59:38 UTC from IEEE Xplore. Restrictions apply.
+
+Clock Bias [m]
+
+2
+
+Velocity [mm/s]
+
+0
+
+0.00
+
+100
+75
+50
+25
+0
+
+0.00
+
+0.05
+
+0.05
+
+0.10
+
+0.10
+
+0.15
+
+0.20
+
+0.15
+0.20
+Time [h]
+
+0.25
+
+0.25
+
+0.30
+
+0.30
+
+Clock Drift [mm/s]
+
+Position [m]
+
+4
+
+4
+2
+0
+
+100
+75
+50
+25
+0
+
+0.00
+
+0.05
+
+0.10
+
+0.15
+
+0.20
+
+0.25
+
+0.30
+
+0.00
+
+0.05
+
+0.10
+
+0.15
+0.20
+Time [h]
+
+0.25
+
+0.30
+
+Clock bias [m]
+
+10
+0
+10
+
+Velocity [mm/s]
+
+0.00
+
+0.05
+
+0.10
+
+0.15
+
+0.20
+
+0.25
+
+200
+0
+200
+0.00
+
+0.05
+
+0.10
+
+0.15
+0.20
+Time [h]
+
+0.25
+
+10
+0
+10
+
+0.30
+
+0.30
+
+Clock driift [mm/s]
+
+Position [m]
+
+Figure 11: Position, velocity, clock bias, and clock drift estimation error obtained by the distributed state estimation algorithm.
+The contact plan with the lowest position error is used. Each line shows different satellites, and the simulation is for FSA states
+0 and 1, which is 20 min in total.
+
+0.00
+
+0.05
+
+0.10
+
+0.15
+
+0.20
+
+0.25
+
+0.30
+
+0.00
+
+0.05
+
+0.10
+
+0.15
+0.20
+Time [h]
+
+0.25
+
+0.30
+
+200
+0
+200
+
+Figure 12: Position, velocity, clock bias, and clock drift estimation error (blue line) and the 3σ covariance estimate (blue
+shaded area) obtained by the distributed state estimation algorithm (Satellite 0). Consistent estimates are generated, with errors
+under the 3 σ covariance estimate. The contact plan with the lowest position error is used, and the simulation is for FSA states
+0 and 1, which is 20 min in total.
+
+[2]
+
+[3]
+
+gation infrastructure,” in 2020 IEEE Aerospace Conference. IEEE, 2020, pp. 1–14.
+
+[7]
+
+H. Kaptui Sipowa and J. McMahon, “Distributed estimator for spacecraft cooperative localization,” Journal
+of Guidance, Control, and Dynamics, vol. 45, no. 6, p.
+1166–1171, 2022.
+
+F. S. Cattivelli and A. H. Sayed, “Diffusion strategies
+for distributed kalman filtering and smoothing,” IEEE
+Transactions on Automatic Control, vol. 55, no. 9, p.
+2069–2084, 2010.
+
+[8]
+
+S. Julier and J. Uhlmann, “A non-divergent estimation
+algorithm in the presence of unknown correlations,” in
+Proceedings of the 1997 American Control Conference
+(Cat. No.97CH36041), vol. 4, 1997, pp. 2369–2373
+vol.4.
+
+[9]
+
+L. C. Carrillo-Arce, E. D. Nerurkar, J. L. Gordillo,
+and S. I. Roumeliotis, “Decentralized multi-robot cooperative localization using covariance intersection,” in
+2013 IEEE/RSJ International Conference on Intelligent
+Robots and Systems. Tokyo: IEEE, Nov. 2013, pp.
+1412–1417.
+
+H. Yan, Q. Zhang, Y. Sun, and J. Guo, “Contact plan design for navigation satellite network based on simulated
+annealing,” in 2015 IEEE International Conference on
+Communication Software and Networks (ICCSN), Jun.
+2015, pp. 12–16.
+
+[4]
+
+J. Speyer, “Computation and transmission requirements
+for a decentralized linear-quadratic-gaussian control
+problem,” IEEE Transactions on Automatic Control,
+vol. 24, no. 2, pp. 266–269, 1979.
+
+[5]
+
+R. Olfati-Saber, “Distributed kalman filtering for sensor
+networks,” in 2007 46th IEEE Conference on Decision
+and Control, 2007, pp. 5492–5498.
+
+[6]
+
+S. P. Talebi and S. Werner, “Distributed kalman filtering: Consensus, diffusion, and mixed,” in 2018 IEEE
+Conference on Control Technology and Applications
+(CCTA), 2018, pp. 1126–1132.
+
+[10] A. Lima, P. Bonnifait, V. Cherfaoui, and
+J. A. Hage, “Data Fusion with Split Covariance
+Intersection for Cooperative Perception,” in 2021
+IEEE International Intelligent Transportation Systems
+Conference (ITSC). Indianapolis, IN, USA: IEEE,
+Sep. 2021, pp. 1112–1118. [Online]. Available:
+https://ieeexplore.ieee.org/document/9564963/
+[11] V. Giralo and S. D’Amico, “Distributed multi-gnss tim11
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:59:38 UTC from IEEE Xplore. Restrictions apply.
+
+Table 3: The obtained position, velocity, and clock bias estimation error with the distributed state estimation algorithm, with the
+two contact plans that are at the two edges of the Pareto front: The lowest navigation error plan and the lowest BDT plan. The
+final row shows the statistics among all satellites. The simulation is for FSA states 0 and 1. The lowest navigation error plan
+optimized based on the covariance analysis objective function also shows lower estimation error when use with the proposed
+CI distributed state estimation algorithm, showing the validity of the objective function to reflect the preference of contact
+geometry to improve positioning and timing. *Satellites 4, 6, and 11 are the anchor nodes, which gets positioning and timing
+aids from external sources.
+
+Satellite
+0
+1
+2
+3
+4*
+5
+6*
+7
+8
+9
+10
+11*
+All
+
+Lowest Navigation Error Plan
+Position
+Velocity
+Clock Bias
+Error [m]
+Error [mm/s]
+Error [m]
+3.27 ± 13.99 9.80 ± 16.34 1.23 ± 7.04 0
+4.23 ± 20.69 11.24 ± 27.09
+0.68 ± 1.95
+3.05 ± 11.23 10.79 ± 15.40
+0.88 ± 2.98
+3.24 ± 12.13 14.74 ± 21.90
+0.74 ± 1.87
+0.10 ± 0.20
+0.38 ± 0.17
+0.34 ± 0.25
+1.60 ± 3.88
+9.37 ± 14.91
+0.98 ± 4.39
+0.09 ± 0.11
+0.39 ± 0.23
+0.34 ± 0.27
+2.72 ± 10.23 10.78 ± 25.57
+0.66 ± 1.02
+3.65 ± 13.83 10.51 ± 10.39
+0.78 ± 2.78
+3.85 ± 15.27
+9.04 ± 9.88
+0.78 ± 1.35
+2.38 ± 8.11
+5.40 ± 5.33
+1.55 ± 9.73
+0.11 ± 0.11
+0.30 ± 0.15
+0.34 ± 0.23
+2.36 ± 1.46
+7.73 ± 4.70
+0.78 ± 0.35
+
+Lowest BDT Plan
+Position
+Velocity
+Clock Bias
+Error [m]
+Error [mm/s]
+Error [m]
+6.20 ± 13.67 20.16 ± 22.18 0.63 ± 1.27
+7.64 ± 14.94 17.48 ± 19.44 0.99 ± 4.89
+17.79 ± 15.01 34.06 ± 22.38 1.61 ± 9.37
+11.39 ± 15.50 67.24 ± 60.50 0.98 ± 1.87
+0.16 ± 0.21
+0.39 ± 0.15
+0.36 ± 0.24
+5.81 ± 22.20 20.07 ± 28.22 1.15 ± 5.34
+0.19 ± 0.16
+0.35 ± 0.18
+0.32 ± 0.24
+25.52 ± 22.29 29.75 ± 18.26 1.90 ± 12.50
+22.14 ± 19.22 30.19 ± 10.91 1.07 ± 4.40
+29.68 ± 28.37 35.41 ± 23.09 0.71 ± 0.60
+2.12 ± 6.49
+11.14 ± 16.82 0.94 ± 4.31
+0.21 ± 0.24
+0.37 ± 0.16
+0.38 ± 0.27
+10.74 ± 10.08 22.22 ± 18.37 0.92 ± 0.47
+ing and localization for nanosatellites,” NAVIGATION,
+vol. 66, no. 4, pp. 729–746, 2019.
+
+[12] J. Sullivan, A. W. Koenig, J. Kruger, and S. D’Amico,
+“Generalized angles-only navigation architecture for
+autonomous distributed space systems,” Journal of
+Guidance, Control, and Dynamics, vol. 44, no. 6, p.
+1087–1105, 2021.
+
+Algorithm 3 Branch and exchange method.
+Input: Contact plan U , visibility matrix V
+Output: New contact plan Unew
+1: Kperm ← randperm(K)
+2: for kidx ← 1 to K do
+3:
+k ← Kperm (kidx )
+4:
+Sperm,1 ← randperm(S)
+5:
+Sperm,2 ← randperm(S)
+6:
+for iidx,1 ← 1 to S do
+7:
+i1 ← Sperm,1 (iidx,1 )
+8:
+j1 ← argmax(U(k, i1 , :))
+9:
+if i2 ≤ i1 then
+10:
+continue
+▷ symmetry
+11:
+end if
+12:
+for iidx,2 ← 1 to S do
+13:
+i2 ← Sperm,2 (iidx,2 )
+14:
+j2 ← argmax(U(k, i2 , :))
+15:
+if V (i1 , j2 ) = 0 or V (i2 , j1 ) = 0 then
+16:
+continue
+▷ visibility
+17:
+end if PK
+′
+>
+0 or
+18:
+if
+k′ =1 U (k , i1 , j2 )
+PK
+′
+U
+(k
+,
+i
+,
+j
+)
+>
+0
+then
+2 1
+k′ =1
+19:
+continue
+▷ ISL switching
+20:
+end if
+21:
+Unew ← Swap(U(k, i1 , j1 ), U(k, i2 , j2 ))
+22:
+break
+▷ exchange completed
+23:
+end for
+24:
+end for
+25: end for
+
+[13] N. Stacey, K. Dennison, and S. D’Amico, “Autonomous
+asteroid characterization through nanosatellite swarming,” in 2022 IEEE Aerospace Conference (AERO),
+2022, pp. 1–21.
+[14] K. A. Hill and G. H. Born, “Autonomous Orbit Determination from Lunar Halo Orbits Using Crosslink Range,”
+Journal of Spacecraft and Rockets, vol. 45, no. 3, pp.
+548–553, 2008.
+[15] Z. Li, Y. Wang, and W. Zheng, “Observability
+analysis of autonomous navigation using intersatellite range:
+An orbital dynamics perspective,” Acta Astronautica, vol. 170, no. July
+2019, pp. 577–585, 2020. [Online]. Available:
+https://doi.org/10.1016/j.actaastro.2020.02.023
+[16] E. Turan, S. Speretta, and E. Gill, “Performance analysis of crosslink radiometric measurement based autonomous orbit determination for cislunar small satellite formations,” Advances in Space Research, p.
+S0273117722010638, Nov. 2022.
+[17] S. Mo, X. Jin, C. Lin, W. Zhang, Z. Xu,
+and Z. Jin, “Multi-Satellite Relative Navigation
+Scheme for Microsatellites Using Inter-Satellite
+Radio Frequency Measurements,” Sensors, vol. 21,
+no. 11, p. 3725, May 2021. [Online]. Available:
+https://www.mdpi.com/1424-8220/21/11/3725
+[18] M. D. Noakes et al., “An adaptive link assignment
+algorithm for dynamically changing topologies,” IEEE
+12
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:59:38 UTC from IEEE Xplore. Restrictions apply.
+
+B IOGRAPHY [
+
+Transactions on Communications, vol. 41, no. 5, pp.
+694–706, 1993.
+
+Keidai Iiyama is a Ph.D. student in
+the Department of Aeronautics and Astronautics at Stanford Univerisity. He
+received his M.E. degree in Aerospace
+Engineering in 2021 from the University
+of Tokyo, where he also received his B.E.
+in 2019. His research is on positioning,
+navigation, and timing of lunar spacecraft and rovers, and system designs for
+lunar navigation systems.
+
+[19] H. S. Chang et al., “Fsa-based link assignment and
+routing in low-earth orbit satellite networks,” IEEE
+Transactions on Vehicular Technology, vol. 47, no. 3,
+pp. 1037–1048, 1998.
+[20] M. Huang et al., “Topology control for time-evolving
+and predictable delay-tolerant network,” IEEE Transactions on Computers, vol. 62, no. 11, pp. 2308–2321,
+2003.
+[21] J. A. Fraire, P. G. Madoery, and J. M. Finochietto, “On
+the design and analysis of fair contact plans in predictable delay-tolerant networks,” IEEE Sensors Journal, vol. 14, no. 11, pp. 3874–3882, 2014.
+
+Guillem Casadesus Vila is an M.Sc.
+candidate in the Department of Aeronautics and Astronautics at Stanford
+University. He received his B.Sc. degree
+in Aerospace and Telecommunications
+Engineering in 2022 from the Universitat Politecnica de Catalunya (UPC)
+under the CFIS program.
+His research interests include robotic space
+exploration, autonomous and distributed
+space systems, as well as navigation and communication
+satellite constellations.
+
+[22] J. A. Fraire and J. M. Finochietto, “Routing-aware
+fair contact plan design for predictable delay tolerant
+networks,” Ad Hoc Networks, vol. 25, no. B, pp. 303–
+313, 2005.
+[23] L. Shi, W. Xiang, and X. Tang, “A link assignment algorithm for gnss with crosslink ranging,” in Proc. 2011
+International Conference on Localization and GNSS
+(ICL-GNSS), Tampere, 2011, pp. 13–18.
+
+Grace Gao is an assistant professor
+in the Department of Aeronautics and
+Astronautics at Stanford University. Before joining Stanford University, she was
+an assistant professor at University of
+Illinois at Urbana-Champaign. She obtained her Ph.D. degree at Stanford University. Her research is on robust and
+secure positioning, navigation, and timing with applications to manned and unmanned aerial vehicles, autonomous driving cars, as well as
+space robotics.
+
+[24] J. Yan, L. Xing, P. Wang, L. Sun, and Y. Chen, “A
+scheduling strategy to inter-satellite links assignment in
+GNSS,” Advances in Space Research, vol. 67, no. 1, pp.
+198–208, Jan. 2021.
+[25] C. Zucca and P. Tavella, “The clock model and its
+relationship with the allan and related variances,” IEEE
+Transactions on Ultrasonics, Ferroelectrics, and Frequency Control, vol. 52, no. 2, pp. 289–296, 2005.
+[26] H. S. Chang, B. W. Kim, C. G. Lee, S. L. Min, Y. Choi,
+H. S. Yang, D. N. Kim, and C. S. Kim, “FSA-based
+link assignment and routing in low-earth orbit satellite
+networks,” IEEE Transactions on Vehicular Technology,
+vol. 47, no. 3, pp. 1037–1048, Aug. 1998.
+[27] J. A. Fraire, O. De Jonckère, and S. C. Burleigh, “Routing in the Space Internet: A contact graph routing tutorial,” Journal of Network and Computer Applications,
+vol. 174, p. 102884, Jan. 2021.
+[28] O. Montenbruck and E. Gill, Satellite Orbits: Models,
+Methods and Applications. Springer Berlin Heidelberg, 2000.
+[29] S. J. Julier and J. K. Uhlmann, “Using covariance intersection for SLAM,” Robotics and Autonomous Systems,
+vol. 55, no. 1, pp. 3–20, 2007.
+[30] Interagency Operations Advisory Group Lunar Communications Architecture Working Group, “The future
+lunar communications architecture final version, v1.3,”
+2022.
+[31] S. Diamond and S. Boyd, “Cvxpy: A python-embedded
+modeling language for convex optimization,” The Journal of Machine Learning Research, vol. 17, no. 1, pp.
+2909–2913, 2016.
+
+13
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:59:38 UTC from IEEE Xplore. Restrictions apply.
+
+

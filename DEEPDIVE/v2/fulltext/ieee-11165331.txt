@@ -1,0 +1,1937 @@
+IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 22, 15 NOVEMBER 2025
+
+46675
+
+Efficient Packet Routing for Large-Scale LEO
+Satellite Networks: A Pareto-Optimal MARL
+Approach With Queueing Theory
+Shuyang Li , Member, IEEE, Guanchen Wu , Qiang Wu , Member, IEEE, Ran Wang , Senior Member, IEEE,
+and Hongke Zhang , Fellow, IEEE
+Abstract—Low Earth orbit (LEO) satellite networks enhance
+terrestrial connectivity by providing global coverage and lowlatency communication. However, their highly dynamic topology,
+time-varying propagation delays, and constrained bandwidth
+severely limit the efficiency of conventional centralized routing, underscoring the necessity for adaptive and distributed
+strategies that can operate effectively under partial observability. Multiagent reinforcement learning (MARL) offers a
+promising foundation for such strategies by enabling decentralized, context-aware decision-making based on local information.
+Nevertheless, existing MARL-based routing approaches often
+struggle to maintain accurate congestion awareness, reconcile
+conflicting objectives, and ensure stable convergence in largescale LEO constellations. To address these challenges, we present
+pareto-optimal multi-agent proximal policy optimization packet
+routing framework (POMAP), a packet routing framework that
+integrates Pareto optimization with multiagent proximal policy
+optimization (MAPPO) to achieve efficient and stable tradeoffs
+across multiple key performance metrics. Specifically, we propose
+a dynamic multiattribute graph model for LEO satellite networks
+that simultaneously captures communication delay and energy
+consumption. Within this framework, each satellite node is
+represented as a G/G/1/K queue equipped with active queue management (AQM) and scheduled using weighted priority queueing
+(WPQ), thereby enabling precise characterization and control of
+packet queueing behavior. We formulate the packet routing problem as a partially observable Markov decision process (POMDP)
+that jointly minimizes delay, energy consumption, and packet
+loss rate, and apply MAPPO to optimize the resulting policy.
+Extensive simulations on realistic satellite network topologies
+demonstrate that the proposed method achieves better convergence stability, improves Pareto front coverage, and enhances
+
+overall network performance compared with the state-of-the-art
+baselines.
+Index Terms—Low Earth orbit (LEO) satellite networks,
+multiagent reinforcement learning (MARL), multiobjective optimization, packet routing.
+
+N OMENCLATURE
+Notation
+T
+G(t)
+V
+E(t)
+di j (t)
+Li j (t)
+hi j (t)
+SNRi j (t)
+Ptx
+Prx
+N0
+Ntotal
+Ri j (t)
+S
+si j (t)
+u ji (t)
+
+Received 4 June 2025; revised 27 August 2025; accepted 12 September
+2025. Date of publication 16 September 2025; date of current version 7
+November 2025. This work was supported in part by the Frontier Technologies
+Research and Development Program of Jiangsu under Grant BF2024067,
+in part by the National Key Research and Development Program of China
+under Grant 2022YFB2901600, and in part by the National Natural Science
+Foundation of China under Grant 62171218. An earlier version of this paper
+was presented at the 2025 IEEE Wireless Communications and Networking
+Conference (WCNC) [DOI: 10.1109/WCNC61545.2025.10978428]. (Shuyang
+Li and Guanchen Wu contributed equally to this work.) (Corresponding
+authors: Qiang Wu; Ran Wang.)
+Shuyang Li and Qiang Wu are with the College of Computer Science and
+Technology, Nanjing University of Aeronautics and Astronautics, Nanjing
+211106, China (e-mail: shuyang.li@nuaa.edu.cn; wu.qiang@nuaa.edu.cn).
+Guanchen Wu is with the School of Mathematics, Jilin University,
+Changchun 130012, China (e-mail: wugc1023@mails.jlu.edu.cn).
+Ran Wang is with the College of Computer Science and Technology,
+Nanjing University of Aeronautics and Astronautics, Nanjing 211106, China,
+and also with the College of Computer and Data Science, Fuzhou University,
+Fuzhou 350108, China (e-mail: wangran@nuaa.edu.cn).
+Hongke Zhang is with the School of Electronic and Information
+Engineering, Beijing Jiaotong University, Beijing 100044, China (e-mail:
+hkzhang@bjtu.edu.cn).
+Digital Object Identifier 10.1109/JIOT.2025.3610772
+
+ri,m (t)
+xi,m (t)
+qi,m (t)
+M
+µi (t)
+µi,m (t)
+Km
+K
+Bi (t)
+Ni (t)
+wi,m (t)
+
+Definition/Explanation
+Set of time slots.
+Satellite network topology at time t.
+Set of satellite nodes.
+Edges representing ISLs at time t.
+Distance between satellites i and j at time
+t.
+Free-space path loss (FSPL).
+Channel gain between satellites i and j.
+Signal-to-noise ratio (SNR) between satellites i and j.
+Transmission power.
+Reception power.
+Noise spectral density.
+Total noise power = N0 B.
+Maximum data rate between satellites i
+and j.
+Size of each packet (in bits).
+Number of packets transmitted from node
+i to node j.
+Number of packets received by node i
+from j.
+Number of arriving class-m packets at
+node i.
+Number of class-m packets served from
+queue m at node i during time slot t.
+Queue length of traffic class m at node i
+at time t.
+Set of traffic classes {1, 2, . . . , M}.
+Total service rate at satellite i at time t.
+Service rate assigned to queue m.
+Queue capacity for traffic class m.
+Total queue capacity at a satellite.
+Set of backlogged queues at node i in the
+highest nonempty priority level.
+Set of neighboring satellites of node i at
+time t.
+Weighted priority queueing (WPQ)
+weight of queue m at node i.
+
+2327-4662 © 2025 IEEE. All rights reserved, including rights for text and data mining, and training of artificial intelligence and
+similar technologies. Personal use is permitted, but republication/redistribution requires IEEE permission.
+See https://www.ieee.org/publications/rights/index.html for more information.
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+46676
+
+∆t
+Dtrans
+i j (t)
+prop
+
+Di j (t)
+queue
+
+Di,m (t)
+queue
+
+Di
+(t)
+Di j (t)
+ai j (t)
+α(t) and β(t)
+δ1,m (t)
+δ2,m (t)
+pm (qi,m (t))
+pmax (t)
+pmax,m (t)
+Eitx (t)
+Eirx (t)
+Ei (t)
+Eiinit
+Eirem (t)
+
+IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 22, 15 NOVEMBER 2025
+
+Time slot duration.
+Transmission delay between satellites i
+and j.
+Propagation delay between satellites i and
+j.
+Queueing delay of class-m traffic at node
+i.
+Aggregate queueing delay at node i.
+Total communication delay between satellites i and j.
+ISL availability from i to j.
+Node-level normalized AQM thresholds
+(fractions of Km ).
+Lower queue threshold for class m under
+AQM.
+Upper queue threshold for class m under
+AQM.
+Drop probability for queue m based on
+queue length.
+Maximum drop probability parameter
+(uniform across all queues at node i).
+Maximum drop probability for class-m at
+node i (equal to pmax (t)).
+Transmission energy consumption at
+satellite i.
+Reception energy consumption at satellite
+i.
+Total energy consumption at satellite i at
+time t.
+Initial energy of satellite i.
+Remaining energy at satellite i at time t.
+
+I. I NTRODUCTION
+ITH the rapid advancement of communication technologies and the growing demand for global connectivity, satellite networks have become indispensable components
+of the next-generation mobile communication systems. Among
+them, low Earth orbit (LEO) satellites are particularly attractive, as they provide high-speed, low-latency global coverage
+and enable emerging applications such as the Internet of
+Things, autonomous vehicles, and smart cities [2]. Driven by
+major industrial initiatives from SpaceX, OneWeb, and Telesat,
+LEO constellations are expected to play a pivotal role in the
+evolution of sixth-generation (6G) communication systems [3],
+[4]. Nevertheless, LEO networks inherently suffer from highly
+dynamic topologies, variable propagation delays, and stringent
+bandwidth constraints [5], [6], which pose severe challenges
+to conventional terrestrial routing protocols that rely on stable
+connectivity and frequent, low-latency link-state updates.
+A wide range of routing protocols and algorithms have
+been proposed in both academia and industry to cope with
+the unique characteristics of satellite networks [7]. Among
+them, centralized routing approaches are conceptually simple
+but suffer from poor scalability as constellation sizes expand.
+Specifically, such schemes impose heavy computational and
+storage burdens, require substantial bandwidth for frequent
+routing updates, and are vulnerable to single-point failures.
+In addition, computing globally optimal routes in large-scale
+LEO constellations is often computationally prohibitive since
+
+W
+
+problems such as multicommodity flow optimization and
+dynamic shortest-path computation are generally intractable
+under realistic conditions. These limitations highlight the
+necessity of decentralized routing strategies that can operate
+efficiently under dynamic topologies and stringent resource
+constraints [8], [9].
+Building on this motivation, fine-grained packet-level forwarding has emerged as a promising direction, as it can
+effectively adapt to dynamic and heterogeneous traffic patterns.
+Nevertheless, fully decentralized packet routing remains challenging since each node must select paths that jointly balance
+distance and congestion based only on local observations. To
+address this issue, many studies formulate packet routing as a
+decision-making problem under partial observability, which is
+often modeled as a partially observable Markov decision process (POMDP). Multiagent reinforcement learning (MARL)
+has shown considerable promise in solving such problems
+[10], [11], [12]. Building on this foundation, several MARLbased approaches have been specifically designed for satellite
+network routing [13], [14], [15].
+Despite these advances, their performance in LEO satellite
+networks remains limited due to several unresolved issues.
+First, most approaches are designed for static terrestrial topologies and rely mainly on link-state metrics (e.g., bandwidth
+and latency), while overlooking critical congestion indicators
+such as queue occupancy and service capacity. This omission
+often delays congestion detection and reduces forwarding
+efficiency [16]. Second, agents are typically trained independently without parameter sharing, which weakens coordination
+and degrades performance at deployment time [17]. Third,
+reward design remains a major challenge: global rewards may
+lead to passive behavior, whereas overly local rewards risk
+encouraging selfish actions, both of which can harm overall
+system performance by slowing convergence and reducing
+resource utilization efficiency. Beyond these single-objective
+issues, practical satellite routing must also optimize multiple conflicting objectives, such as minimizing delay while
+conserving energy. Conventional reinforcement learning (RL)
+methods usually aggregate such objectives into a weighted
+sum, which risks introducing bias toward certain metrics. Multiobjective RL (MORL) alleviates this limitation by defining
+separate rewards for each objective [18], [19], while Pareto
+optimization provides balanced tradeoffs in which no objective
+can be improved without degrading another [20]. However,
+existing MORL approaches have not yet been effectively
+adapted to packet routing in satellite networks, leaving an
+important gap to be addressed.
+To address these unresolved challenges, there is a clear
+need for a packet routing framework that can: 1) jointly
+optimize multiple, often conflicting, performance objectives;
+2) explicitly incorporate congestion awareness into decisionmaking; and 3) maintain scalability under highly dynamic
+LEO topologies. Motivated by this gap, we propose paretooptimal multi-agent proximal policy optimization packet
+routing framework (POMAP), a Pareto-optimal multiobjective optimization framework for packet routing in satellite
+networks. Unlike conventional weighted-sum RL approaches,
+POMAP dynamically balances key performance metrics without requiring heuristic weight assignment, thereby avoiding
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+LI et al.: EFFICIENT PACKET ROUTING FOR LARGE-SCALE LEO SATELLITE NETWORKS
+
+bias and improving adaptability in realistic satellite environments. Within POMAP, we design a packet routing method for
+large-scale LEO satellite networks that integrates multiagent
+proximal policy optimization (MAPPO) with graph attention
+networks (GATs). MAPPO enables decentralized learning of
+efficient packet routing policies, while GATs capture spatial
+dependencies and model dynamic satellite interactions, thereby
+allowing agents to prioritize critical links and adapt more effectively to rapidly changing topologies. To the best of authors’
+knowledge, this is the first work to incorporate multiobjective
+MARL into packet routing for satellite networks. Furthermore,
+a systematic comparison with existing methods is presented in
+Table I, highlighting the distinct advantages of the proposed
+framework. Based on these insights, the main contributions of
+this article are summarized as follows.
+1) Dynamic Multiattribute Graph Representation: We
+design a dynamic graph representation for LEO satellite
+networks that captures temporal variations by discretizing system time and embedding multiple edge attributes,
+which provides a richer and more realistic modeling
+foundation compared with conventional static graph
+models.
+2) Queue-Aware Packet Routing Mechanism: We introduce
+a queue-aware routing mechanism by modeling each
+node as a G/G/1/K queue with active queue management (AQM). Unlike prior link-state-based methods, this
+design explicitly incorporates node-level congestion and
+queueing delay as key optimization objectives.
+3) Pareto-Optimal Multiobjective Packet Routing Framework: We develop a Pareto-based multiobjective routing
+framework that integrates MAPPO with GATs to jointly
+optimize delay, energy, and reliability. This approach
+enhances the ability of agents to process graphstructured observations and adapt to dynamic topologies,
+avoiding the bias of conventional weighted-sum RL
+methods.
+4) Comprehensive Performance Evaluation: We conduct
+extensive experiments on realistic LEO satellite constellations, demonstrating that the proposed POMAP framework consistently outperforms state-of-the-art baselines
+in terms of cumulative reward, Pareto front coverage,
+delay, energy consumption, and packet loss rate.
+The remainder of this article is organized as follows. Section
+II reviews related work on packet routing in satellite networks.
+Section III introduces the system model, and Section IV formulates the routing optimization problem. Section V presents
+the proposed method in detail. Section VI describes the
+simulation setup and presents performance evaluation results.
+Finally, Section VII concludes this article and discusses potential directions for future research.
+II. R ELATED W ORK
+A. RL- and DRL-Based Centralized Packet Routing
+Early studies explored RL methods such as Q-routing to
+enable adaptive packet forwarding in dynamic networks [21],
+[32]. While these approaches demonstrated the potential of
+RL for routing, they suffered from scalability limitations due
+
+46677
+
+to the curse of dimensionality, where the exponential growth
+of the state space restricted their applicability and hindered
+the effective exploitation of historical traffic patterns for route
+selection.
+The emergence of deep RL (DRL) mitigated some of these
+limitations by employing deep neural networks to process
+high-dimensional inputs and learn complex routing policies
+[22]. For example, Liu et al. [22] applied an approach based
+on deep Q-network (DQN) to minimize end-to-end delays in
+aeronautical ad hoc networks. However, centralized DRL generally assumes global observations or relies on a single agent,
+which leads to substantial computational and communication
+overhead, susceptibility to single point of failure, and inadequate modeling of internode interactions. Consequently, such
+centralized strategies are impractical for large-scale dynamic
+networks and naturally motivate the adoption of decentralized
+solutions, particularly in satellite networks.
+B. MARL- and Queueing-Based Decentralized Packet
+Routing
+Unlike centralized schemes, MARL enables nodes to
+make routing decisions independently while coordinating with
+others, thereby utilizing local information and improving
+robustness. You et al. [23] proposed deep Q-routing with
+communication, a fully distributed framework that enhances
+resource utilization and packet delivery, while Chen et al.
+[12] introduced a MAPPO-based meta-learning mechanism
+to adapt policies across diverse traffic patterns. Similar
+MARL approaches have been investigated in integrated
+access/backhaul, tactical sensor networks, uncrewed aerial
+vehicle swarms, and underwater networks [33], [34], [35],
+[36]. For satellite networks, Huang et al. [24] proposed a
+packet routing method to alleviate centralized inefficiencies
+and reduce delay, and Xu et al. [13] designed a spatially
+assisted MARL scheme that jointly optimizes queueing and
+propagation delays.
+Complementary to MARL, queueing theory provides analytical tools for modeling congestion dynamics and delay metrics.
+Early studies employed queueing models for scheduling and
+tandem analysis [37], [38], and later examined convergence
+between discrete packet routing and continuous flow models [39]. More recent works have integrated queueing with
+RL/DRL for dynamic routing [40], [41], [42] although these
+approaches are often centralized or based on independent
+learning. Building on this foundation, researchers combined
+MARL with queueing theory to improve performance in
+diverse networks, including service differentiation, delay prediction, and quality of service (QoS)-oriented strategies [25],
+[27], [28], as well as flow-centric routing for LEO satellites
+[26]. However, existing solutions continue to encounter scalability issues and lack effective multiobjective optimization for
+dynamic satellite networks.
+Despite these advances, most MARL-queueing solutions
+still rely on DQN-like algorithms with discrete action spaces
+and extensive offline tuning, which limit scalability in dynamic
+settings. Moreover, their reliance on weighted-sum objectives
+(e.g., minimizing latency while maximizing throughput) can
+bias results and fail to capture true tradeoffs. These limitations
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+46678
+
+IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 22, 15 NOVEMBER 2025
+
+highlight the need for MORL frameworks, particularly Paretobased methods, to achieve more balanced routing decisions.
+
+the same orbital plane and two interplane links with satellites
+in adjacent planes. As defined by this configuration, each
+satellite maintains up to four ISLs throughout its operation.
+The key notations used in this article are summarized in the
+Nomenclature.
+
+C. Multiobjective Optimization-Based Packet Routing
+Traditional RL/DRL routing typically combines multiple
+metrics (latency, energy, and throughput) into a weighted
+sum, where small weight changes can drastically alter routing behavior and complicate the process of weight selection
+[43]. Such methods often exhibit rigid tradeoffs and limited
+adaptability in dynamic networks. For example, Wei et al.
+[29] introduce a Pareto dominance-based routing algorithm
+that considers delay, congestion, and bandwidth, but it remains
+centralized and lacks scalability. Similarly, Lyu et al. [15]
+develop an MARL-based scheme that minimizes delay while
+ensuring energy efficiency and packet loss constraints, yet it
+still relies on weight-based optimization.
+Several studies have applied Pareto-based optimization to
+routing in different domains. For instance, Zheng et al. [44]
+apply a DRL approach for path planning, evaluating tradeoffs
+using hypervolume metrics and nondominated solution (NDS)
+sets; Ghorai et al. [30] formulate routing in the Internet
+of Vehicles as a multiobjective problem using an evolutionary algorithm to optimize delay, distance, bandwidth, and
+connectivity; and Han et al. [31] propose a multiattribute
+routing method for opportunistic networks that enhances node
+centrality and similarity while reducing energy and cache
+usage. However, these Pareto-based methods lack RL-driven
+adaptability in highly dynamic network environments. This
+limitation motivates the integration of Pareto-based optimization with RL, namely, MORL.
+MORL has emerged as an effective approach for multiobjective optimization. Unlike traditional RL that aggregates
+objectives into a single scalar reward, MORL maintains
+separate reward functions to facilitate tradeoff exploration.
+Pareto-based MORL further identifies Pareto-optimal solutions, thereby enhancing interpretability in complex network
+scenarios [45]. Building on these insights, we propose a
+MAPPO-based packet routing framework that incorporates
+GATs and queueing models, effectively addressing the limitations of existing multiobjective approaches in dynamic satellite
+networks. Details of the proposed method are presented in
+Section V.
+
+B. Communication Model
+1) Transmission Delay: We first consider the transmission
+delay over free-space optical (FSO) ISLs. Following ITU-R
+P.525-5 [47], the FSPL of link e(i, j) is expressed as:
+
+
+4πdi j (t) f 2
+(1)
+Li j (t) =
+c
+where f is the carrier frequency, di j (t) is the distance between
+satellites i and j, and c is the speed of light.
+The system assumes an ideal, symmetric free-space channel,
+where the SNR between satellites i and j is expressed as
+ˇ
+ˇ
+ˇhi j (t)ˇ2 Ptx
+SNRi j (t) =
+(2)
+Li j (t) Ntotal
+where Ptx denotes the transmission power, Li j (t) represents
+the FSPL, and Ntotal = N0 B is the total noise power, with
+N0 denoting the noise spectral density and B denoting the
+bandwidth. The factor |hi j (t)| captures small-scale fading (set
+to 1 for an ideal link), so attenuation is entirely characterized
+by Li j (t).
+According to Shannon’s theorem, the maximum data rate
+between satellites i and j can be expressed as
+
+Ri j (t) = B log2 1 + SNRi j (t)
+(3)
+where B (Hz) denotes the channel bandwidth.
+The transmission delay depends on both the amount of data
+scheduled for transmission and the instantaneous link capacity.
+Let si j (t) represent the number of packets scheduled for transmission from node i to node j during time slot t, as determined
+by the scheduling mechanism introduced in the subsequent
+queueing model. Assuming serialized transmission, the delay
+over ISL e(i, j) is given by
+(t) =
+Dtrans
+ij
+
+si j (t) · S
+Ri j (t)
+
+(4)
+
+A. Network Model
+
+where S is the packet size in bits.
+2) Propagation Delay: Satellite nodes communicate
+through intersatellite optical links, and the propagation delay
+between satellites i and j is expressed as
+
+To accurately model the dynamic topology of LEO satellite
+networks, the system is represented as a sequence of timeevolving graphs over discrete time intervals. System time is
+divided into discrete slots, denoted as t ∈ T = {1, 2, . . . , T }.
+At each time slot t, the satellite network is modeled as a
+static graph G(t) = (V, E(t)), where V denotes the set of
+satellite nodes and E(t) represents the set of intersatellite links
+(ISLs) active at time t. This study focuses on packet routing
+within a single layer of the satellite constellation, and thus,
+the network model is based on a single-shell configuration.
+The ISL configuration follows the Grid+ model [46], in which
+each satellite establishes two intraplane links with neighbors in
+
+di j (t)
+(5)
+c
+where di j (t) denotes the distance between satellites i and j at
+time t, and c represents the speed of light.
+3) Queueing Delay: Each satellite node i maintains M
+queues, indexed by m ∈ M = {1, 2, . . . , M}, each corresponding to a specific traffic class or flow, with arrivals following a
+general distribution consistent with the G/G/1/K model. To
+support heterogeneous traffic requirements, each node employs
+a WPQ strategy. WPQ adopts a strict priority discipline across
+predefined priority levels; queues in higher levels always
+preempt those in lower levels, while within the same level,
+
+III. S YSTEM M ODEL
+
+prop
+
+Di j
+
+(t) =
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+LI et al.: EFFICIENT PACKET ROUTING FOR LARGE-SCALE LEO SATELLITE NETWORKS
+
+service is allocated proportionally to the assigned weights.
+This combines first-in first-out (FIFO) order inside each queue
+with priority-based allocation across queues.
+a) Node-level service capacity constraint: The total forwarding capacity of node i during time slot t is constrained by
+the physical transmission rates of its active ISLs. Specifically,
+the node-level service rate µi (t), expressed in packets/s, is
+defined as
+X Ri j (t)
+(6)
+µi (t) =
+S
+j∈Ni (t)
+
+where Ri j (t) denotes the transmission rate from node i to
+neighbor j (in bits/s), Ni (t) is the set of neighbors of node
+i at time t, and S is the packet size in bits. The effective
+service capacity within a slot of duration ∆t is, then, µi (t)∆t,
+which provides the node-level service bound.
+b) WPQ model: Each queue m at node i is assigned
+a time-varying weight wi,m (t) during slot t. In the WPQ
+model, service rates are first allocated across priority levels
+according to strict priority: queues with higher priority levels
+preempt those with lower levels. Within the same priority level,
+backlogged queues share the service rate in proportion to their
+current weights.
+Let Bi (t) denote, in slot t, the set of backlogged queues
+at node i that belong to the highest nonempty priority level.
+Then, the service rate µi,m (t) for queue m is
+8
+< P wi,m (t)
+· µi (t) , m ∈ Bi (t)
+(7)
+µi,m (t) =
+k∈Bi (t) wi,k (t)
+:
+0,
+otherwise
+P
+where we assume that k∈Bi (t) wi,k (t) > 0 whenever Bi (t) is
+nonempty. This ensures that µi,m (t) > 0 for all m ∈ Bi (t), so
+that the per-class delay approximation in (10) is always welldefined.
+c) Queue length update: In time slot t, the length of
+queue qi,m (t) is updated as
+˚
+
+qi,m (t) = min max qi,m (t − 1) + ri,m (t − 1)
+
+−xi,m (t − 1) , 0 , Km
+(8)
+where ri,m (t − 1) is the number of class-m arrivals, xi,m (t − 1)
+is the number of
+packets served, and Km is the capacity of
+PM
+queue m with
+m=1 Km = K. This equation ensures finite
+queue capacity, with overflow packets dropped.
+The number of packets served in time slot t − 1 is computed
+as
+˚
+xi,m (t − 1) = min qi,m (t − 1) , µi,m (t − 1) ∆t
+(9)
+where ∆t denotes the slot duration. When slot-level scheduling is adopted, any unused service capacity is dynamically
+redistributed to active queues to improve bandwidth utilization.
+This formulation ensures that the backlog never exceeds Km
+and remains consistent with the service capacity µi,m (t).
+d) Queueing delay calculation: In each time slot, the
+queue
+per-class queueing delay, denoted as Di,m (t) for traffic class
+m at node i, is approximated as
+queue
+
+Di,m
+
+(t) ≈
+
+qi,m (t)
+,
+µi,m (t)
+
+m ∈ Bi (t)
+
+(10)
+
+46679
+
+where qi,m (t) is the backlog of class m at node i and µi,m (t) is
+its service rate. This equation approximates delay via Little’s
+law and is defined only for queues in the active backlogged
+set Bi (t), i.e., those belonging to the highest nonempty priority
+level. For empty queues, the delay is naturally zero. For queues
+outside Bi (t) that are backlogged but receive no service when
+higher priority queues are nonempty, the queueing delay is
+not defined within this approximation since they experience
+starvation until the higher priority queues are cleared.
+queue
+The aggregate queueing delay at node i, denoted as Di
+(t),
+is defined as the maximum delay among all backlogged
+queues. To ensure well-defined behavior even when no queues
+are backlogged, we adopt the convention that the aggregate
+delay is zero in this case
+8
+< max Dqueue (t) , if Bi (t) , ∅
+i,m
+queue
+(t) = m∈Bi(t)
+(11)
+Di
+:0,
+if Bi (t) = ∅.
+queue
+
+By this definition, Di
+(t) consistently reflects the maximum
+per-class queueing delay when queues are active, and is zero
+when the node is completely idle. Note that, since Bi (t) is
+defined as the set of backlogged queues within the highest
+nonempty priority level, the aggregate delay corresponds to
+the worst-case latency of the currently dominant priority class,
+while lower priority queues are excluded because they receive
+no service whenever higher priority queues are backlogged.
+e) Active queue management: To proactively manage
+congestion and enhance buffer utilization, each queue m at
+node i employs an AQM mechanism. This mechanism dynamically adjusts the packet drop probability based on the current
+queue length. Under WPQ, congestion control for high-priority
+queues is critical, as their backlog directly impacts delaysensitive services.
+At the beginning of each time slot t, node i selects AQM
+parameters αi (t), βi (t), and pmax,i (t) as part of its control action
+(see Section V-B). These parameters are applied uniformly
+across all queues at the node to reduce implementation overhead and ensure consistent AQM behavior. The thresholds for
+queue m are, therefore, defined as fractions of the maximum
+queue length Km
+δ1,m (t) = αi (t) Km , δ2,m (t) = βi (t) Km
+0 ≤ αi (t) < βi (t) ≤ 1.
+
+(12)
+
+A queue is considered underutilized if its length is below
+δ1,m (t) and overloaded if it exceeds δ2,m (t). The AQM mechanism adjusts the packet drop probability pm (qi,m (t)) according
+to the following rule:
+
+pm qi,m (t)
+8
+ˆ
+0,
+qi,m (t) < δ1,m (t)
+ˆ
+ˆ
+
+2
+<
+q (t)−δ1,m (t)
+= pmax,i (t) i,m
+, δ1,m (t)≤ qi,m (t)< δ2,m (t) (13)
+ˆ
+δ2,m (t)−δ1,m (t)
+ˆ
+ˆ
+:p
+qi,m (t) ≥ δ2,m (t) .
+max,i (t) ,
+The quadratic segment provides a smooth increase of the
+drop probability between the two thresholds; when the queue
+length exceeds the upper threshold, the probability stays at the
+plateau pmax,i (t), ensuring continuity at q = δ2,m (t).
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+46680
+
+IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 22, 15 NOVEMBER 2025
+
+For clarity, the unified parameters across all queues at node
+i are αi (t), βi (t), and pmax,i (t), while the resulting thresholds
+remain queue-specific
+
+where Ptx denotes the transmit power (W), si j (t) denotes the
+number of packets sent from i to neighbor j, S is the packet
+size (bits), and Ri j (t) is the transmission rate (bit/s). The binary
+variable ai j (t) ∈ {0, 1} indicates the availability of the ISL
+between nodes i and j. The term S · si j (t) corresponds to
+the total transmitted bits, and dividing by Ri j (t) yields the
+transmission duration. Multiplying by Ptx produces the transmission energy (J). When ai j (t) = 0, the link is unavailable,
+and no transmission energy is consumed.
+2) Reception Energy: The energy consumed by node i for
+receiving data in time slot t is defined as
+X
+S · u ji (t)
+(17)
+Eirx (t) = Prx ·
+a ji (t)
+R ji (t)
+
+∀m ∈ M :
+
+δ1,m (t) = αi (t) Km ,
+δ2,m (t) = βi (t) Km ,
+
+0 ≤ αi (t) < βi (t) ≤ 1
+
+pmax,m (t) = pmax,i (t) .
+
+(14)
+
+This design guarantees that all traffic classes at a node
+employ the same AQM parameters in each time slot, while
+allowing these parameters to adapt dynamically over time.
+Under WPQ scheduling, packet drops in high-priority queues
+exert a greater influence on end-to-end performance; consequently, the AQM mechanism effectively enforces priorityaware congestion control.
+f) Notification and packet loss: When the queue length
+qi,m (t) reaches its maximum capacity Km , the buffer for traffic
+class m becomes full, and any newly arriving packets of this
+class are dropped immediately. To mitigate congestion and
+prevent sustained packet loss, the node generates a congestion notification and transmits it to neighboring satellites via
+control-plane signaling.
+The notification message includes the traffic class index m,
+the current queue length qi,m (t), and the associated packet drop
+probability pm (qi,m (t)). Upon reception, neighboring nodes can
+adjust their routing policies or reduce the forwarding rate
+toward the congested node. Notifications from high-priority
+queues are assigned greater urgency due to their scheduling
+dominance under WPQ. This distributed feedback mechanism
+facilitates cooperative congestion control, mitigates localized
+congestion, and improves overall network stability and data
+flow efficiency.
+4) Communication Delay Calculation: Based on the preceding analysis, the total communication delay Di j (t) is the
+sum of transmission, propagation, and queueing delays, and is
+defined as
+prop
+
+(t) + Di j
+Di j (t) = Dtrans
+ij
+
+(t) + Dqueue
+(t) .
+i
+
+j∈Ni (t)
+
+where Prx denotes the receive power (W), u ji (t) denotes the
+number of packets received from neighbor j, and R ji (t) is
+the corresponding transmission rate. Analogous to the transmission case, this expression represents the reception time
+multiplied by the receive power, yielding the total reception
+energy. The factor a ji (t) ensures that reception energy is only
+consumed when the incoming ISL from j to i is available.
+3) Total and Remaining Energy: The overall energy consumption of satellite node i in time slot t is defined as the sum
+of transmission and reception energies
+Ei (t) = Eitx (t) + Eirx (t) .
+
+(18)
+
+The remaining energy of node i at time t is calculated as
+Eirem (t) = Eiinit −
+
+t
+X
+
+Ei (τ)
+
+(19)
+
+τ=1
+
+where Eiinit denotes the initial energy allocated to the satellite,
+and Ei (τ) represents the total energy consumed in slot τ.
+This cumulative formulation captures the gradual depletion of
+onboard energy resources, thereby constraining the long-term
+sustainability of routing strategies.
+
+(15)
+
+This aggregate delay metric provides a comprehensive measure
+of per-link delay performance and serves as the foundation
+for evaluating routing and network control strategies. Since
+WPQ scheduling is employed, the queueing delay compoqueue
+nent Di
+(t) primarily reflects the waiting time determined
+by queue priorities, where higher priority classes experience
+shorter delays compared to lower priority ones.
+
+IV. P ROBLEM F ORMULATION
+A. Pareto Optimization Preliminary
+Many real-world optimization problems involve multiple
+conflicting objectives that must be optimized concurrently.
+These problems, referred to as multiobjective optimization
+problems (MOPs), are formally defined as follows.
+Definition 1 (MOP): An MOP is defined as
+
+C. Energy Model
+
+min f (x) = ( f1 (x) , f2 (x) , . . ., fm (x))
+
+(20a)
+
+The energy model focuses on the consumption of satellite
+nodes during packet forwarding. The total energy consumption
+Ei (t) of a satellite node in slot t includes the energy required
+for both data transmission and reception. The presence and
+utilization of an ISL, indicated by ai j (t), directly determine
+the node’s energy cost.
+1) Transmission Energy: The energy consumed by satellite
+node i for transmitting data packets in time slot t is defined
+as
+X
+S · si j (t)
+(16)
+Eitx (t) = Ptx ·
+ai j (t)
+Ri j (t)
+
+s.t. x ∈ X
+
+(20b)
+
+x∈X
+
+j∈Ni (t)
+
+where x = (x1 , x2 , . . . , xn ) is the vector of decision variables, X
+represents the feasible solution space defined by constraints,
+and f(x) = ( f1 (x), f2 (x), . . . , fm (x)) is the objective function
+vector, where each f` (x) is an individual objective to be
+minimized.
+Unlike single-objective optimization problems, which aim
+to identify a single optimal solution, MOPs typically yield
+a set of tradeoff solutions, where improving one objective
+may result in the degradation of another. This introduces the
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+LI et al.: EFFICIENT PACKET ROUTING FOR LARGE-SCALE LEO SATELLITE NETWORKS
+
+concept of Pareto optimality, which serves as a fundamental
+principle in multiobjective optimization.
+Definition 2 (Pareto Dominance): A solution x1 ∈ X Pareto
+dominates another solution x2 ∈ X, denoted as x1 ≺ x2 , if
+∀` ∈ {1, . . ., m} ,
+
+f` (x1 ) ≤ f` (x2 )
+
+(21)
+
+46681
+
+∀ p ∈ P (t) with x p (t) > 0, t ∈ T
+t
+X
+Ei (τ) ≤ Eiinit ∀i ∈ V, t ∈ T
+
+(25e)
+(25f)
+
+τ=1
+
+X
+
+qi,m (t) ≤ K ∀i ∈ V, t ∈ T .
+
+(25g)
+
+m∈M
+
+and at least one strict inequality holds
+∃`0 ∈ {1, . . ., m} ,
+
+f`0 (x1 ) < f`0 (x2 ) .
+
+(22)
+
+This implies that x1 is strictly better than x2 in at least one
+objective while being no worse in any other objective.
+Definition 3 (Pareto-Optimal Solution): A solution x∗ ∈ X
+is a Pareto-optimal solution if no other solution x ∈ X Pareto
+dominates x∗ , i.e.,
+@x ∈ X,
+
+f (x) ≺ f (x∗ ) .
+
+(23)
+
+This implies that improving any objective of x∗ would necessarily degrade at least one other objective.
+Definition 4 (Pareto Front): The set of all Pareto-optimal
+solutions forms the Pareto front, defined as
+ˇ
+
+˚
+(24)
+PF = f (x) ˇx ∈ X, @x0 ∈ X, f x0 ≺ f (x) .
+The Pareto front represents the tradeoff surface where no
+objective can be improved without degrading another.
+Pareto optimization offers a foundational framework for
+addressing MOPs by identifying a set of tradeoff solutions
+rather than a single global optimum. The notions of Pareto
+dominance, Pareto optimality, and the Pareto front enable
+decision-makers to assess feasible solutions and select tradeoffs aligned with their preferences.
+B. MOP Formulation
+In satellite networks, communication delay, energy consumption, and packet loss rate are three critical yet conflicting
+performance metrics. For example, reducing delay often
+requires higher transmission power and thus increases energy
+consumption, while minimizing packet loss may introduce
+longer queueing delays through AQM. Conventional singleobjective approaches that combine these metrics into a
+weighted sum are generally insufficient in dynamic network
+environments. To balance these tradeoffs under highly dynamic
+topology, limited resources, and latency-sensitive services,
+we adopt a Pareto optimization framework, which identifies
+routing strategies where improving one objective necessarily
+involves compromise in others. Based on this principle, we
+formulate an MOP that simultaneously considers the three
+metrics, as detailed in the following:
+min f (x) = ( f1 (x) , f2 (x) , f3 (x))
+x∈X
+X X
+X
+f1 (x) =
+x p (t)
+Di j (t)
+t∈T p∈P(t)
+
+f2 (x) =
+
+XX
+
+(25a)
+(25b)
+
+(i, j)∈p
+
+Ei (t)
+
+(25c)
+
+t∈T i∈V
+
+f3 (x) =
+
+XX X
+t∈T i∈V m∈M
+
+X
+(i, j)∈p
+
+Di j (t) ≤ Dmax
+
+
+pm qi,m (t)
+
+The objective function includes three components: end-toend delay [see (25b)], total energy consumption [see (25c)],
+and congestion-induced packet loss [see (25d)]. The delay
+term accounts for transmission, propagation, and queueing
+delays along the selected paths, with WPQ ensuring that higher
+priority traffic experiences shorter waiting times. The energy
+term aggregates transmission and reception costs across all
+nodes, reflecting the sustainability of routing. The packet loss
+term is expressed via drop probabilities from buffer overflows
+and AQM, which serves as a tractable surrogate for actual
+packet losses. Together, these three objectives capture the
+fundamental tradeoffs among latency, energy efficiency, and
+reliability in LEO satellite routing.
+The feasible region is defined by three classes of constraints.
+First, the end-to-end delay of any selected path must not
+exceed Dmax [see (25e)], which ensures latency compliance
+for delay-sensitive services. Second, the cumulative energy
+consumed by each satellite up to time t cannot exceed its
+initial budget Eiinit [see (25f)], ensuring that residual energy
+remains nonnegative. Third, the buffer occupancy of each node
+must remain within its maximum capacity K [see (25g)],
+thereby preventing unbounded queue growth. Collectively,
+these constraints ensure that the optimization problem remains
+physically realizable and that routing strategies satisfy the
+critical requirements of delay, energy, and congestion control.
+V. P ROPOSED M ETHOD
+A. Decomposition-Based Pareto Optimization Method
+MOPs frequently arise in satellite communication scenarios, where conflicting objectives such as delay minimization,
+energy efficiency, and congestion control must be jointly
+addressed. A widely adopted strategy for solving MOPs is the
+decomposition-based method, which transforms the original
+problem into multiple scalar optimization subproblems [48],
+[49]. Each subproblem represents a specific tradeoff preference
+and, when considered collectively, approximates the Pareto
+front. The decomposition approach employs scalarization techniques such as the weighted sum, Chebyshev distance, and
+penalty-based boundary intersection. In this study, we adopt
+the weighted sum method due to its simplicity and low
+computational cost.
+Formally, let λ1 , λ2 , . . . , λ J denote a set of uniformly distributed weight vectors, where each λ j = (λ1j , λ2j , . . . , λmj )>
+represents the relative importance of the m objective functions.
+The jth subproblem is formulated as
+m
+ˇ  X
+min gws xˇλ j =
+λ`j f` (x)
+x∈X
+
+(25d)
+
+(26)
+
+`=1
+
+where x ∈ X denotes the decision variable within the feasible
+solution space, and f` (x) is the `th objective
+Pm j function. Each
+weight vector satisfies λ`j ≥ 0 and
+`=1 λ` = 1, ensuring
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+46682
+
+a valid convex combination of objectives. Solving each subproblem produces a Pareto-optimal solution corresponding to
+a specific tradeoff vector, and the collection of these solutions
+collectively approximates the complete Pareto front.
+To enhance training efficiency, we introduce a
+neighborhood-based parameter transfer mechanism: since
+adjacent subproblems with similar weight vectors have nearby
+optimal solutions, the optimized parameters [θλ∗ j−1 , φ∗λ j−1 ]
+of subproblem ( j − 1) are used to initialize [θλ j , φλ j ] for
+subproblem j, thereby accelerating convergence. The overall
+procedure of this decomposition-based Pareto optimization
+with neighborhood-based transfer learning is illustrated in
+Fig. 1. We further incorporate this decomposition strategy
+into an MARL framework to address partial observability
+and decentralized control inherent in satellite networks.
+Each subproblem is optimized using an MARL-based
+method, enabling agents to learn cooperative policies that
+effectively balance competing objectives. The integration of
+the decomposition strategy into the MARL framework is
+illustrated in Fig. 2. This approach results in the formulation
+of a POMDP, which specifies the observation space, action
+space, and scalarized reward function tailored to each weight
+vector, as detailed in Section V-B.
+B. POMDP Design
+In MARL scenarios, agents typically operate under partial
+observability, relying on local observations to make decisions
+rather than having access to the full global state. This setting
+can be effectively modeled using a POMDP, which is defined
+as
+M = (S, A, O, P, Z, R, γ)
+(27)
+where S is the set of latent environmental states, A denotes
+the joint action space of all agents, and P(s0 | s, a) represents
+the state transition probability given joint action a. The reward
+function R(s, a) evaluates the system performance based on
+criteria such as latency, energy efficiency, or congestion.
+Each agent receives local observations o from the observation
+function Z(o | s0 , a), and γ ∈ [0, 1) is the discount factor that
+controls the tradeoff between immediate and future rewards.
+Since the decomposition-based Pareto optimization
+approach reformulates the original multiobjective routing
+problem into a set of scalar subproblems, each subproblem can
+be addressed within the standard POMDP framework. Rather
+than handling multiple conflicting objectives simultaneously,
+each agent optimizes a scalar reward function corresponding
+to a specific tradeoff among key routing metrics such as
+delay, energy consumption, and packet loss rate. With this
+POMDP structure in place, the design of states, actions, and
+rewards is specified to enable effective packet routing policies
+under partial observability, and the details are presented as
+follows.
+1) Observation Space: The observation space is designed
+to capture local network conditions and traffic dynamics,
+enabling each satellite node to make informed routing decisions. For node i at time t, it is defined as
+
+
+Oi (t) = Qi (t) , ∆i (t) , Eirem (t) , ηi (t) .
+(28)
+Here, the elements are defined as follows.
+
+IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 22, 15 NOVEMBER 2025
+
+1) Queue Status Qi (t): Queue length qi,m (t) and packet drop
+probability pm (qi,m (t)) for each traffic class m
+˚
+ M
+Qi (t) = qi,m (t) , pm qi,m (t) m=1 .
+(29)
+2) Link Delays ∆i (t): Per-link delays from i to each neighbor j
+˚
+∆i (t) = Di j (t) j∈Ni (t) .
+(30)
+3) Remaining Energy Eirem (t): The remaining energy of
+node i, as defined in (19).
+4) Neighbor Information ηi (t): The number of neighbors
+|Ni (t)| and connectivity indicators ai j (t)
+
+
+˚
+ηi (t) = |Ni (t)| , ai j (t) j∈Ni (t) .
+(31)
+This representation jointly reflects queue status, link conditions, energy constraints, and topology, providing sufficient
+information for satellites to optimize routing while balancing
+efficiency and fairness.
+2) Action Space: In our model, each satellite node i makes
+decisions regarding packet routing, queue scheduling, and
+AQM to optimize network performance, with a focus on
+latency and energy consumption. The action space for each
+agent comprises three key components: traffic distribution,
+WPQ weight assignment, and AQM parameter adjustment. It
+is defined as
+2
+
+
+6
+ai (t) = 4 ρi j (t) j∈Ni (t) , wi,1 (t) , . . . , wi,M (t)
+ƒ‚
+…
+„ ƒ‚ … „
+Traffic Distribution
+
+WPQ Weights
+
+3
+7
+αi (t) , βi (t) , pmax,i (t) 5 .
+„
+ƒ‚
+…
+
+(32)
+
+AQM Parameters
+
+Here, the elements are defined as follows.
+1) Traffic Distribution ρi (t): The traffic distribution vector
+ρi (t) = (ρi j (t)) j∈Ni (t) specifies the proportion of packets
+that node i forwards to each neighbor j at time t, subject
+to
+X
+ρi j (t) = 1, ρi j (t) ≥ 0 ∀ j ∈ Ni (t) .
+(33)
+j∈Ni (t)
+
+2) WPQ Weights [wi,1 (t), . . . , wi,M (t)]: These values represent the relative service weights of the M traffic classes
+at node i. A higher wi,m (t) indicates that class-m packets
+receive a larger share of service among queues of the
+same priority level, consistent with the WPQ discipline.
+3) AQM Parameters [αi (t), βi (t), and pmax,i (t)]: These
+parameters define the queue-length thresholds and the
+packet drop probability of the AQM mechanism at node
+i. Specifically, for each queue m, the thresholds are
+defined as
+δ1,m (t) = αi (t) Km , δ2,m (t) = βi (t) Km
+
+(34)
+
+with 0 ≤ αi (t) < βi (t) ≤ 1, and the maximum drop
+probability is pmax,i (t). All queues at node i share the
+same αi (t), βi (t), and pmax,i (t) to ensure consistent AQM
+configuration.
+This action space enables dynamic traffic control, facilitating efficient routing, priority-based queue scheduling, and
+adaptive congestion management.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+LI et al.: EFFICIENT PACKET ROUTING FOR LARGE-SCALE LEO SATELLITE NETWORKS
+
+3) Reward Function: To achieve Pareto optimization of
+delay, energy consumption, and packet loss, the reward
+function is designed using the weighted-sum scalarization
+approach. As defined in (26), each subproblem is formulated
+as a weighted sum of multiple objectives based on a specific
+weight vector λ j .
+Since the underlying objectives are costs to be minimized,
+we first normalize each cost component to the range [0, 1]
+using min–max normalization. Let
+
+
+delay
+energy
+ct = ct , ct
+, closs
+(35)
+t
+denote the normalized cost vector at time step t. The scalarized
+reward is, then, defined as the negative weighted sum of
+normalized costs
+m
+X
+
+r̃t = −gws ct | λ j = −
+λ`j c(`)
+(36)
+t .
+`=1
+
+Here, λ = (λ1j , λ2j , λ3j )> represents the tradeoff preferences for
+the jth subproblem, where λ1j , λ2j , and λ3j denote the relative
+j
+
+importance of delay, energy consumption, and packet loss,
+respectively. This formulation ensures that maximizing cumulative reward in RL is equivalent to minimizing the original
+multiobjective costs, while allowing different subproblems to
+explore distinct tradeoffs.
+It should be emphasized that this normalization is employed
+solely for reward shaping in RL to stabilize training. The
+underlying MOP in Section IV remains defined in terms of the
+original physical metrics (delay in s, energy in J, and packetloss probability). This decomposition-based reward design not
+only guarantees consistency between RL optimization and the
+underlying cost-minimization problem, but also allows the
+learned policies across all subproblems to approximate the
+Pareto front collectively. Building on this design, our proposed
+method employs MAPPO to optimize the formulated POMDP
+framework, as illustrated in Fig. 3, with the detailed algorithm
+presented in Section V-E.
+C. MAPPO Preliminary
+MAPPO extends the standard PPO algorithm to multiagent settings under the centralized training with decentralized
+execution (CTDE) paradigm. This makes it well-suited for
+multiagent POMDP environments such as satellite routing,
+where agents act on partial observations while benefiting from
+a centralized critic during training.
+To efficiently address multiobjective optimization under partial observability, MAPPO is combined with a decompositionbased Pareto optimization approach. Instead of optimizing a
+single multiobjective policy, the original problem is decomposed into multiple scalar subproblems, each defined by a
+distinct weight vector λ j that encodes a specific tradeoff among
+objectives. Each subproblem is optimized independently using
+MAPPO, and the resulting policies collectively approximate
+the Pareto front. Furthermore, a neighborhood-based parameter
+transfer strategy accelerates training by leveraging the similarity between parameter sets of adjacent subproblems.
+Each agent’s policy is optimized using the clipped surrogate
+PPO objective
+LCLIP (θi )
+
+46683
+
+
+ 
+= E min ρit (θi ) Ait , clip ρit (θi ) , 1 − , 1 +  Ait
+where ρit (θi ) is the importance sampling ratio
+ˇ 
+πθi ait ˇoit
+i
+ˇ .
+ρt (θi ) =
+πθi,old ait ˇoit
+
+(37)
+
+(38)
+
+The centralized critic Vφ estimates the global state value by
+minimizing the loss
+h
+2 i
+LV (φ) = E Vφ (st ) − V̂t
+(39)
+where the one-step bootstrapped target value is defined as
+
+V̂t = r̃t + γVφ st+1 .
+(40)
+The advantage function is estimated using generalized
+advantage estimation (GAE)
+∞
+X
+(γλGAE )k δt+k
+Ait =
+(41)
+k=0
+
+where λGAE is the GAE parameter. The temporal difference
+(TD) residual is defined using the scalarized reward r̃t
+
+δt = r̃t + γVφ st+1 − Vφ (st )
+(42)
+where the scalarized reward r̃t is computed by (36).
+Each agent’s policy parameters are updated via stochastic
+gradient ascent
+θik+1 = θik + α∇θi LCLIP (θi )
+
+(43)
+
+where α denotes the learning rate.
+Instead of solving a single multiobjective problem, MAPPO
+optimizes multiple scalarized subproblems derived through the
+decomposition method. Each subproblem is associated with
+a weight vector λ j , which defines the relative importance
+of objectives. The policy optimization for each subproblem
+follows the standard MAPPO procedure, and the trained
+parameters from one subproblem are used to initialize those
+of neighboring subproblems, enhancing sample efficiency and
+accelerating convergence. By integrating decomposition-based
+Pareto optimization with MAPPO, we address a set of scalarized subproblems, each of which is trained independently and
+warm-started from its neighbors to improve sample efficiency.
+This approach ensures that each policy is optimized for a
+specific tradeoff while leveraging information from adjacent
+subproblems.
+D. GAT-Based Neighborhood Encoder
+The GAT [50] is employed as a lightweight neighborhood
+encoder that assigns learnable attention weights to neighboring
+nodes and encodes each agent’s one-hop neighborhood
+within the time-varying intersatellite graph into a compact
+representation. This encoder integrates the agent’s local
+observation (as specified in the POMDP design) with features
+of directly connected neighbors and, when available, edge
+attributes such as queueing, propagation, or transmission
+delays as well as link availability. Learned attention
+coefficients adaptively emphasize informative neighbors,
+and stacking a small number of layers provides limited
+multihop awareness while preserving decentralized execution.
+Multihead attention can also be applied, with heads combined
+through concatenation or averaging.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+46684
+
+Algorithm 1 Decomposition-Based Pareto Optimization With
+Neighborhood-BasedTransfer Learning
+
+IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 22, 15 NOVEMBER 2025
+
+Algorithm 2 MAPPO-Based Packet Routing Optimization for
+Subproblem j
+
+The decentralized actor consumes the GAT embedding
+instead of the raw observation, while the centralized critic
+applies a permutation-invariant readout (e.g., mean or attention
+pooling) over all agents’ embeddings to estimate the global
+value during training. All encoder parameters are optimized
+jointly with the actor and critic in Algorithm 2, with weight
+sharing across agents to reduce model size and enhance
+generalization. Because neighborhood information is captured
+through the encoder rather than via explicit interagent messaging, no additional online coordination overhead is incurred.
+The resulting topology- and traffic-aware state representation
+aligns with the scalarized objective and provides an effective
+foundation for MAPPO-based policy optimization under partial observability.
+E. Proposed MAPPO-Based Packet Routing Method
+Algorithm 2 describes the procedure for optimizing the
+policies of a scalarized subproblem j using MAPPO within
+a CTDE framework. Each agent i maintains an independent
+decentralized actor πθi,λ j , while all agents share a single centralized critic Vφλ j that takes the global state as input for
+value estimation during training. This optimization procedure
+is invoked by Algorithm 1 for each decomposed subproblem.
+The algorithm proceeds in training rounds for at most Rmax
+rounds. At the beginning of each round, an on-policy buffer
+D j is initialized to store the collected trajectories. For each
+episode, the environment is reset, and both global and local
+observations are obtained. At every time step, each agent
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+LI et al.: EFFICIENT PACKET ROUTING FOR LARGE-SCALE LEO SATELLITE NETWORKS
+
+samples an action from its policy based on its local observation; the joint action is, then, executed in the environment;
+the subsequent global and local states are observed; and the
+multiobjective reward vector is scalarized via the weightedsum function gws (· | λ j ). The corresponding transitions are
+stored in D j . After trajectory collection, the current policies
+are stored as old policies for PPO-style importance sampling;
+the centralized critic computes bootstrapped target values and
+TD residuals using the global state; and per-agent advantages
+are estimated via GAE, optionally normalized for each agent.
+Policy optimization is, then, performed over Kppo epochs
+in each round. In every epoch, the buffer D j is shuffled
+and partitioned into minibatches. For each minibatch, every
+agent updates its policy parameters using the clipped surrogate PPO objective with entropy regularization, based on
+its advantage estimates and importance sampling ratios. The
+centralized critic is updated by minimizing the value loss
+on the same minibatches, with global states as inputs. If
+the average Kullback–Leibler (KL) divergence between the
+old and updated policies exceeds a predefined threshold, the
+update loop is terminated early; otherwise, the procedure
+continues until the epoch finishes and proceeds to the next
+round, up to the limit Rmax .
+Upon termination, the optimized set of independent actors
+{π∗θ j }i∈V and the centralized critic Vφ∗λ j are returned for subi,λ
+problem j. During execution, only the decentralized actors are
+employed, enabling each agent to make decisions solely from
+its local observations, while the centralized critic is utilized
+exclusively during offline training. This design is well-suited
+for large-scale LEO satellite networks, as it reduces online
+communication overhead, enhances scalability, and improves
+robustness, while ensuring that each learned routing policy
+achieves the tradeoff specified by λ j .
+F. Complexity Analysis
+We analyze the computational complexity of the proposed
+framework. For a single subproblem in Algorithm 2, during
+each training round, trajectory collection requires O(N H|V|)
+operations, as |V| agents (satellites) interact with the environment for H steps over N episodes. The subsequent policy
+and critic updates are performed across Kppo epochs, each
+involving all |V| actors and the critic, resulting in a perround cost of O(Kppo N H|V|). Hence, the overall per-round
+time complexity is O(N H|V|(Kppo +1)), and over at most Rmax
+training rounds, the per-subproblem time complexity becomes
+
+O Rmax N H |V| Kppo + 1 .
+(44)
+The corresponding space complexity per round is dominated
+by the trajectory buffer and model parameters, i.e.,
+
+O N H |V| + |V| Pθ + Pφ
+(45)
+which simplifies to O(N H|V|) when parameter sizes are
+negligible since the buffer is reinitialized in each round.
+Because Algorithm 1 sequentially solves J subproblems by
+invoking Algorithm 2, the total time complexity is
+
+O J Rmax N H |V| Kppo + 1
+(46)
+
+46685
+
+Fig. 1. Decomposition-based Pareto optimization method combined with
+neighborhood-based transfer learning [48].
+
+while the space complexity remains of the same order as that
+of a single round for one subproblem. Overall, the framework
+exhibits linear scalability with respect to the number of subproblems J, the number of agents |V|, and the horizon length
+H, which makes it well-suited for parallelization in large-scale
+satellite network scenarios.
+VI. P ERFORMANCE E VALUATION
+A. Simulation Setting
+To evaluate the proposed solution, simulations were conducted using XuanCe [51], an open-source MARL framework,
+within a custom packet routing environment. Experiments
+were performed on a Mac mini equipped with 32 GB of
+RAM and an Apple M2 Pro 10-core CPU, using PyCharm
+2023.3 Professional. Four satellite constellations from the
+Starlink1 network, namely, Group5, Group3, Group2, and
+Group4, were selected, comprising 172, 348, 720, and 1584
+nodes, respectively, as detailed in Table II. Network topologies
+were generated using StarPerf [52], a simulator developed by
+SpaceNetLab at Tsinghua University. For routing evaluation,
+source–destination node pairs with the maximum path length
+(in hops) were selected under each topology to represent
+challenging routing scenarios.
+The proposed method was benchmarked against two categories of baselines, specifically MARL-based distributed
+packet routing strategies and multi-objective evolutionary
+algorithms, which are listed as follows.
+1) GraphPR [53]: A graph neural network-enhanced
+MARL-based routing algorithm for LEO networks. It
+integrates GAT-encoded, one-hop neighbor information
+to enable multihop-aware, distributed decision-making.
+2) MAFDR [54]: A fully distributed MARL routing method
+in which each satellite relies solely on local spatial and
+queue information for decision-making.
+3) -DMOGA [55]: A discrete multiobjective genetic algorithm that optimizes latency, spectral efficiency, and path
+stability.
+4) NC-MOPSO [56]: A centrality-guided multiobjective
+particle swarm optimization approach designed to
+enhance routing efficiency in dynamic environments.
+GraphPR and MAFDR are employed as baseline methods
+for evaluating the performance of MARL-based distributed
+packet routing, whereas -DMOGA and NC-MOPSO are
+used as benchmarks for multiobjective Pareto optimization.
+This two-pronged evaluation strategy enables a comprehensive
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+46686
+
+IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 22, 15 NOVEMBER 2025
+
+TABLE I
+C OMPARISON B ETWEEN T HIS W ORK AND E XISTING R ESEARCH , W HERE THE S YMBOL (X) I NDICATES T HAT THE T OPIC I S A P RIMARY F OCUS
+
+Fig. 2. Framework of the proposed Pareto-optimal multiobjective MARL packet routing optimization method.
+
+assessment of the proposed MARL-based and Pareto-driven
+framework. Classical centralized shortest-path and heuristic
+protocols are not treated as primary baselines in this study
+because they typically rely on global state and single-criterion
+formulations, whereas our setting is decentralized, partially
+observable, and explicitly multiobjective. We, therefore, focus
+on MARL-based distributed routing and multiobjective evolutionary optimizers that better align with our problem
+formulation. The key simulation parameters are summarized
+in Table III, and detailed numerical results are provided in
+Section VI-B.
+B. Numerical Results
+We first examine the convergence behavior of the proposed POMAP method by comparing its episode rewards with
+those of two DRL/MARL-based routing baselines, GraphPR
+
+and MAFDR. As shown in Fig. 4(a)–(d), GraphPR achieves
+faster initial convergence, reaching near-maximum reward
+levels within 2 × 105 steps. However, its performance exhibits
+frequent oscillations thereafter, with amplitude fluctuations
+exceeding 1.5 × 104 , particularly in the 348- and 720-node
+cases. This instability suggests potential issues such as policy
+overfitting or sensitivity to environmental transitions. In contrast, MAFDR yields significantly lower reward values across
+all node scales, with average episode rewards rarely exceeding
+5 × 104 , and a substantial spread throughout training. This
+indicates limited learning capability and poor adaptability to
+dynamic satellite topologies. POMAP converges more gradually, typically requiring around 3.5 × 105 steps, but ultimately
+achieves a peak episode reward of approximately 1.55 × 105 ,
+marginally surpassing GraphPR. More importantly, POMAP
+exhibits a stable learning trajectory with low variability,
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+LI et al.: EFFICIENT PACKET ROUTING FOR LARGE-SCALE LEO SATELLITE NETWORKS
+
+TABLE II
+S ATELLITE C ONSTELLATION PARAMETERS IN S IMULATION
+
+TABLE III
+S IMULATION PARAMETERS AND N OTATIONS
+
+Fig. 3. Proposed MAPPO-based packet routing method for large-scale satellite
+networks.
+
+especially in large-scale scenarios [Fig. 4(c) and (d)]. This
+stability reflects the robustness of its policy updates and the
+effectiveness of the MAPPO-based optimization framework
+in handling partially observable and nonstationary network
+environments. All reported curves represent the mean over five
+independent runs to ensure statistical reliability.
+Building upon this convergence analysis, we next evaluate
+the multiobjective optimization capability of POMAP across
+different network scales. Fig. 5(a)–(d) illustrates the Pareto
+fronts in terms of average packet delay (ms), total energy
+consumption (J), and packet loss rate, where lower values
+on all axes are desirable. Across all network sizes, POMAP
+consistently generates Pareto fronts that span a broader region
+
+46687
+
+in the objective space and exhibit smoother distribution
+patterns compared to -DMOGA and NC-MOPSO. In smaller
+networks (172 and 348 nodes), POMAP’s solutions cover a
+more extensive area across all objectives, achieving lower
+delay and packet loss while maintaining comparable energy
+usage. The fronts of -DMOGA and NC-MOPSO appear more
+clustered and less uniformly distributed, particularly along
+the loss-rate axis. As the network scales increase to 720 and
+1584 nodes, the contrast becomes more pronounced. POMAP
+maintains a well-spread and diverse Pareto surface, whereas DMOGA clusters toward suboptimal regions with high energy
+and loss values. NC-MOPSO achieves moderate dispersion but
+still lags behind POMAP in front coverage and uniformity.
+These results confirm POMAP’s scalability and its ability to
+generate balanced tradeoff solutions under increasing network
+complexity.
+To further validate the effectiveness of the proposed method,
+we evaluate the quality of the obtained Pareto solutions
+using four widely used metrics in multi-objective optimization:
+the number of non-dominated solutions (NDS), hypervolume,
+diversity, and spread. These metrics jointly assess convergence
+accuracy, solution coverage, and distribution balance, and are
+presented in Fig. 6(a)–(d). As shown in Fig. 6(a), POMAP
+consistently achieves higher NDS values across all network
+sizes. Compared to the best-performing baseline, POMAP
+offers over 150% improvement in smaller networks and maintains more than 100% advantage as the node count increases,
+demonstrating superior capacity to discover a broad set of
+tradeoff solutions. Correspondingly, the hypervolume results in
+Fig. 6(b) reveal that POMAP dominates the objective space
+more extensively. Its hypervolume exceeds that of the baselines by more than 100% in all cases, and the performance gap
+grows with increasing network size, highlighting POMAP’s
+scalability and convergence strength. In terms of diversity
+[Fig. 6(c)], POMAP maintains high and consistent values
+across all scenarios. While NC-MOPSO shows slightly higher
+diversity at the largest scale, POMAP’s diversity remains
+more stable. In contrast, -DMOGA consistently underperforms with significantly lower diversity values, indicating poor
+solution spread and exploration. The spread results [Fig. 6(d)]
+further confirm POMAP’s superiority. Its spread is 60%–70%
+smaller than -DMOGA and marginally lower than NCMOPSO in most settings, suggesting that POMAP generates
+more uniformly distributed Pareto solutions with minimal
+clustering.
+Following the multiobjective assessment, we now examine single-objective metrics: communication delay, energy
+consumption, and packet loss rate. Figs. 7–9 report these
+metrics across two large-scale networks with 720 and 1584
+nodes. For communication delay (Fig. 7), POMAP consistently achieves lower median latency compared to both
+baselines. At 720 nodes, the median delay is reduced by
+approximately 9% relative to -DMOGA and by about 6%
+compared to NC-MOPSO. Similar improvements are observed
+at 1584 nodes. Furthermore, POMAP maintains a narrower
+spread in delay distribution, indicating more stable and predictable performance under dynamic conditions. In terms of
+energy consumption (Fig. 8), POMAP demonstrates notable
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+46688
+
+IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 22, 15 NOVEMBER 2025
+
+Fig. 4. Average episode rewards of POMAP, GraphPR, and MAFDR under different Starlink1 network sizes. Results are averaged over five independent runs.
+(a) 172 nodes. (b) 348 nodes. (c) 720 nodes. (d) 1584 nodes.
+
+Fig. 5. 3-D Pareto fronts obtained by POMAP, -DMOGA, and NC-MOPSO on Starlink1 networks of varying sizes. Objectives include average delay (ms),
+energy consumption (J), and packet loss rate. Lower values on all axes indicate better performance. (a) 172 nodes. (b) 348 nodes. (c) 720 nodes. (d) 1584
+nodes.
+
+Fig. 6. Comparison of multiobjective performance metrics for POMAP, -DMOGA, and NC-MOPSO across different network sizes: (a) number of NDSs;
+(b) hypervolume; (c) diversity; and (d) spread. Higher NDS, hypervolume, diversity, and lower spread are desirable.
+
+Fig. 7. Comparison of average packet delay performance metrics across largescale satellite networks: (a) 720 nodes and (b) 1584 nodes.
+
+Fig. 8. Comparison of average energy consumption performance metrics
+across large-scale satellite networks: (a) 720 nodes and (b) 1584 nodes.
+
+efficiency. At 720 nodes, it reduces median energy usage
+by approximately 15% compared to -DMOGA and by
+8% compared to NC-MOPSO. The improvement becomes
+more substantial at 1584 nodes, with reductions up to 17%.
+In both cases, the spread of energy usage remains tighter
+under POMAP, suggesting better control over power efficiency in large-scale environments. Regarding packet loss
+
+rate (Fig. 9), POMAP again outperforms the baselines. At
+720 nodes, it reduces median loss by over 30% compared
+to -DMOGA and around 15% relative to NC-MOPSO.
+At 1584 nodes, the advantage becomes even more evident.
+The compact spread and lack of outlier deviations further
+confirm the robustness of POMAP in ensuring reliable data
+transmission.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+LI et al.: EFFICIENT PACKET ROUTING FOR LARGE-SCALE LEO SATELLITE NETWORKS
+
+Fig. 9. Comparison of average packet loss rate performance metrics across
+large-scale satellite networks: (a) 720 nodes and (b) 1584 nodes.
+
+In summary, POMAP exhibits robust and scalable performance across multiple evaluation metrics and network sizes,
+achieving stable convergence and well-balanced tradeoffs.
+These characteristics underscore its practical potential for
+deployment in heterogeneous satellite constellations and for
+integration with the quality of experience-aware or prioritybased routing strategies in future large-scale network systems.
+Nevertheless, practical deployment in large-scale LEO constellations raises additional challenges, including onboard
+computational constraints, hardware limitations, and the need
+for real-time, fault-tolerant operation under rapidly changing
+topologies. Addressing these challenges through model compression, parameter sharing, lightweight neural architectures,
+and hardware acceleration, as well as partial ground-based
+processing, remains an important direction for future work.
+VII. C ONCLUSION
+This article addresses the challenges of distributed packet
+routing in large-scale LEO satellite networks, where dynamic
+topologies, constrained bandwidth, and partial observability
+significantly hinder the effectiveness of conventional methods. To this end, we propose POMAP, a Pareto-optimal
+MARL framework tailored for multiobjective packet routing. The framework incorporates a G/G/1/K queueing model
+and a dynamic multiattribute graph representation to capture
+node-level queueing behavior, energy consumption, and timevarying link conditions. The inherently conflicting objectives
+of delay minimization, energy efficiency, and packet loss
+reduction are jointly optimized by decomposing the problem
+into scalar subproblems, each addressed with a MAPPO-based
+policy learning mechanism. Simulation results on realistic satellite network topologies confirm that the proposed
+approach effectively alleviates network congestion, improves
+transmission performance, and enhances routing robustness
+under highly dynamic conditions. These results demonstrate
+the potential of integrating Pareto-based MARL with queueaware modeling for scalable, adaptive, and QoS-sensitive
+packet routing in the next-generation satellite communication
+systems.
+Future work may explore enhancing the adaptability and
+scalability of the POMAP framework. One promising direction
+is to integrate meta-learning or transfer learning techniques
+to enable faster policy adaptation across varying traffic patterns and satellite topologies, particularly when extending
+to larger constellations or heterogeneous mission profiles.
+
+46689
+
+Another avenue involves advancing the queue-aware decisionmaking mechanism, such as integrating delay-sensitive or
+QoS-aware traffic classification into the G/G/1/K model,
+thereby improving routing precision under mixed service
+demands. Additionally, deploying lightweight onboard inference modules using AI accelerators may enable real-time
+decision-making with minimal reliance on ground control,
+further supporting autonomous packet routing in resourceconstrained satellite environments. These directions aim to
+further extend the applicability of POMAP to real-world satellite systems operating under diverse and evolving conditions.
+R EFERENCES
+[1]
+
+S. Li, Q. Wu, and R. Wang, “Efficient packet routing in ultra-dense LEO
+satellite networks via cooperative-MARL with queuing theory model,”
+in Proc. IEEE Wireless Commun. Netw. Conf. (WCNC), Mar. 2025,
+pp. 1–6.
+[2] Z. Wang, B. Lin, Q. Ye, and H. Peng, “Two-tier task offloading for
+satellite-assisted marine networks: A hybrid Stackelberg–Bargaining
+game approach,” IEEE Internet Things J., vol. 12, no. 9,
+pp. 13047–13060, May 2025.
+[3] M. Sheng et al., “Coverage enhancement for 6G satellite-terrestrial
+integrated networks: Performance metrics, constellation configuration
+and resource allocation,” Sci. China Inf. Sci., vol. 66, no. 3, Mar. 2023,
+Art. no. 130303.
+[4] J. Zhang et al., “Learning-assisted dynamic VNF selection and chaining
+for 6G satellite-ground integrated networks,” IEEE Trans. Veh. Technol.,
+vol. 74, no. 1, pp. 1504–1519, Jan. 2025.
+[5] C. Westphal, L. Han, and R. Li, “LEO satellite networking relaunched:
+Survey and current research challenges,” 2023, arXiv:2310.07646.
+[6] T. Chen et al., “Efficient uplink transmission in ultra-dense LEO satellite
+networks with multiband antennas,” IEEE Commun. Lett., vol. 26, no. 6,
+pp. 1373–1377, Jun. 2022.
+[7] X. Cao, Y. Li, X. Xiong, and J. Wang, “Dynamic routings in satellite
+networks: An overview,” Sensors, vol. 22, no. 12, p. 4552, Jun. 2022.
+[8] D. Han et al., “Two-timescale learning-based task offloading for remote
+IoT in integrated satellite–terrestrial networks,” IEEE Internet Things J.,
+vol. 10, no. 12, pp. 10131–10145, Jun. 2023.
+[9] T. Chen et al., “Learning-based computation offloading for IoRT
+through Ka/Q-band satellite–terrestrial integrated networks,” IEEE Internet Things J., vol. 9, no. 14, pp. 12056–12070, Jul. 2022.
+[10] X. Li, X. Hu, R. Zhang, and L. Yang, “Routing protocol design
+for underwater optical wireless sensor networks: A multiagent reinforcement learning approach,” IEEE Internet Things J., vol. 7, no. 10,
+pp. 9805–9818, Oct. 2020.
+[11] X. Zhao, C. Wu, and F. Le, “Improving inter-domain routing through
+multi-agent reinforcement learning,” in Proc. IEEE INFOCOM Conf.
+Comput. Commun. Workshops (INFOCOM WKSHPS), Jul. 2020,
+pp. 1129–1134.
+[12] L. Chen, B. Hu, Z.-H. Guan, L. Zhao, and X. Shen, “Multiagent metareinforcement learning for adaptive multipath routing optimization,”
+IEEE Trans. Neural Netw. Learn. Syst., vol. 33, no. 10, pp. 5374–5386,
+Oct. 2022.
+[13] G. Xu, Y. Zhao, Y. Ran, R. Zhao, and J. Luo, “Spatial location
+aided fully-distributed dynamic routing for large-scale LEO satellite
+networks,” IEEE Commun. Lett., vol. 26, no. 12, pp. 3034–3038, Dec.
+2022.
+[14] G. Wang, F. Yang, J. Song, and Z. Han, “Optimization for dynamic
+laser inter-satellite link scheduling with routing: A multi-agent deep
+reinforcement learning approach,” IEEE Trans. Commun., vol. 72, no. 5,
+pp. 2762–2778, May 2024.
+[15] Y. Lyu, H. Hu, R. Fan, Z. Liu, J. An, and S. Mao, “Dynamic routing
+for integrated satellite-terrestrial networks: A constrained multi-agent
+reinforcement learning approach,” IEEE J. Sel. Areas Commun., vol. 42,
+no. 5, pp. 1204–1218, May 2024.
+[16] H. Mao, Z. Gong, and Z. Xiao, “Reward design in cooperative multi-agent reinforcement learning for packet routing,” 2020,
+arXiv:2003.03433.
+[17] C. Zhu, M. Dastani, and S. Wang, “A survey of multi-agent deep
+reinforcement learning with communication,” Auto. Agents Multi-Agent
+Syst., vol. 38, no. 1, p. 4, Jun. 2024.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+46690
+
+IEEE INTERNET OF THINGS JOURNAL, VOL. 12, NO. 22, 15 NOVEMBER 2025
+
+[18] F. Felten et al., “A toolkit for reliable benchmarking and research
+in multi-objective reinforcement learning,” in Proc. Adv. Neural Inf.
+Process. Syst., vol. 36, 2023, pp. 23671–23700.
+[19] E. Liu et al., “Pareto set learning for multi-objective reinforcement
+learning,” 2025, arXiv:2501.06773.
+[20] X.-Q. Cai, P. Zhang, L. Zhao, J. Bian, M. Sugiyama, and A. Llorens,
+“Distributional Pareto-optimal multi-objective reinforcement learning,”
+in Proc. Adv. Neural Inf. Process. Syst., vol. 36, 2024, pp. 15593–15613.
+[21] J. A. Boyan and M. L. Littman, “Packet routing in dynamically changing
+networks: A reinforcement learning approach,” in Proc. Adv. Neural Inf.
+Process. Syst., vol. 6, 1993, pp. 671–678.
+[22] D. Liu et al., “Deep-learning-aided packet routing in aeronautical ad
+hoc networks relying on real flight data: From single-objective to nearPareto multiobjective optimization,” IEEE Internet Things J., vol. 9,
+no. 6, pp. 4598–4614, 2021.
+[23] X. You, X. Li, Y. Xu, H. Feng, J. Zhao, and H. Yan, “Toward packet
+routing with fully distributed multiagent deep reinforcement learning,”
+IEEE Trans. Syst. Man, Cybern. Syst., vol. 52, no. 2, pp. 855–868, Feb.
+2022.
+[24] T. Huang, L. Liu, and S. Liu, “IPR-SN: Intelligent packet routing in
+satellite networks based on distributed deep reinforcement learning,” in
+Proc. Int. Conf. Ind., 2021, pp. 621–632.
+[25] A. Kattepur and S. David, “Malta: Multi-agent reinforcement learning
+for differentiated services in fat tree networks,” in Proc. IEEE Conf.
+Netw. Function Virtualization Softw. Defined Netw. (NFV-SDN), Nov.
+2021, pp. 129–134.
+[26] H. Liu, J. Lai, J. Zhu, L. Gan, and Z. Chang, “Enabling high-throughput
+routing for LEO satellite broadband networks: A flow-centric deep
+reinforcement learning approach,” IEEE Internet Things J., vol. 11,
+no. 17, pp. 28705–28720, Sep. 2024.
+[27] Y. Du, C. Chen, P. Ma, and L. Xue, “A cross-layer routing protocol
+based on quasi-cooperative multi-agent learning for multi-hop cognitive
+radio networks,” Sensors, vol. 19, no. 1, p. 151, Jan. 2019.
+[28] X. Yuan, H. Yao, J. Wang, T. Mai, and M. Guizani, “Artificial intelligence empowered QoS-oriented network association for next-generation
+mobile networks,” IEEE Trans. Cognit. Commun. Netw., vol. 7, no. 3,
+pp. 856–870, Sep. 2021.
+[29] X. Wei, J. Yuan, X. Li, and D. Liu, “NDRA: An efficient multiobjective optimal routing algorithm using Pareto domination,” in Proc.
+18th Workshop Mobility Evolving Internet Archit., Oct. 2023, pp. 19–24.
+[30] C. Ghorai, S. Shakhari, and I. Banerjee, “A SPEA-based multimetric
+routing protocol for intelligent transportation systems,” IEEE Trans.
+Intell. Transp. Syst., vol. 22, no. 11, pp. 6737–6747, Nov. 2021.
+[31] X. Han, H. Wang, J. Tan, H. Lv, and C. Wang, “MR-Pareto: A
+multiattribute opportunistic routing method based on Pareto optimal
+solution for mobile crowdsensing,” Wireless Commun. Mobile Comput.,
+vol. 2022, no. 1, Jan. 2022, Art. no. 3123615.
+[32] H. A. A. Al-Rawi, M. A. Ng, and K.-L.-A. Yau, “Application of
+reinforcement learning to routing in distributed wireless networks: A
+review,” Artif. Intell. Rev., vol. 43, no. 3, pp. 381–416, Mar. 2015.
+[33] S. Yamin and H. H. Permuter, “Multi-agent reinforcement learning for
+network routing in integrated access backhaul networks,” Ad Hoc Netw.,
+vol. 153, Feb. 2024, Art. no. 103347.
+[34] A. A. Okine, N. Adam, F. Naeem, and G. Kaddoum, “Multi-agent
+deep reinforcement learning for packet routing in tactical mobile sensor networks,” IEEE Trans. Netw. Service Manage., vol. 21, no. 2,
+pp. 2155–2169, Apr. 2024.
+[35] X. Qiu, L. Xu, P. Wang, Y. Yang, and Z. Liao, “A data-driven packet
+routing algorithm for an unmanned aerial vehicle swarm: A multiagent reinforcement learning approach,” IEEE Wireless Commun. Lett.,
+vol. 11, no. 10, pp. 2160–2164, Oct. 2022.
+[36] C. Wang, X. Shen, H. Wang, W. Xie, H. Zhang, and H. Mei, “Multiagent reinforcement learning-based routing protocol for underwater
+wireless sensor networks with value of information,” IEEE Sensors J.,
+vol. 24, no. 5, pp. 7042–7054, Mar. 2024.
+[37] L. Le and E. Hossain, “Tandem queue models with applications to QoS
+routing in multihop wireless networks,” IEEE Trans. Mobile Comput.,
+vol. 7, no. 8, pp. 1025–1040, Aug. 2008.
+[38] S. Sarala and K. Krishnamoorthi, “Enhanced packet routing queuing
+model in optical burst switching network using queue-based dynamic
+optical route scheduling,” Microprocessors Microsyst., vol. 79, Nov.
+2020, Art. no. 103296.
+[39] L. Sering, L. Vargas Koch, and T. Ziemke, “Convergence of a packet
+routing model to flows over time,” in Proc. 22nd ACM Conf. Econ.
+Comput., Jul. 2021, pp. 797–816.
+
+[40] G. Kim, Y. Kim, and H. Lim, “Deep reinforcement learningbased routing on software-defined networks,” IEEE Access, vol. 10,
+pp. 18121–18133, 2022.
+[41] J. Liu, D. Li, and Y. Xu, “Deep distributional reinforcement learningbased adaptive routing with guaranteed delay bounds,” IEEE/ACM
+Trans. Netw., vol. 32, no. 6, pp. 4692–4706, Dec. 2024.
+[42] Y. Qi, Q. Huang, L. Yang, C. Zhou, and C. Pan, “Status update frequency
+optimization for in-vehicle LAN route based on deep Q-learning,”
+Results Control Optim., vol. 8, Sep. 2022, Art. no. 100163.
+[43] H. Lu, D. Herman, and Y. Yu, “Multi-objective reinforcement learning:
+Convexity, stationarity and Pareto optimality,” in Proc. 11th Int. Conf.
+Learn. Represent., 2023. [Online]. Available: https://openreview.net/
+pdf?id=TjEzIsyEsQ6
+[44] Z. Zheng, S. Yao, G. Li, L. Han, and Z. Wang, “Pareto improver:
+Learning improvement heuristics for multi-objective route planning,”
+IEEE Trans. Intell. Transp. Syst., vol. 25, no. 1, pp. 1033–1043, Jan.
+2024.
+[45] N. Yang, J. Wen, M. Zhang, and M. Tang, “Multi-objective deep
+reinforcement learning for mobile edge computing,” in Proc. 21st Int.
+Symp. Modeling Optim. Mobile, Ad Hoc, Wireless Netw. (WiOpt), Aug.
+2023, pp. 1–8.
+[46] Y. Li et al., “‘Internet in space’ for terrestrial users via cyberphysical convergence,” in Proc. ACM Workshop Hot Topics Netw., 2021,
+pp. 163–170.
+[47] Calculation of Free-Space Attenuation, document Recommendation
+ITU-R P.525-5, I. T. Union, ITU-R, Geneva, Switzerland, Nov. 2024.
+[Online]. Available: https://www.itu.int/rec/R-REC-P.525-5-202411-I/en
+[48] K. Li, T. Zhang, and R. Wang, “Deep reinforcement learning for
+multiobjective optimization,” IEEE Trans. Cybern., vol. 51, no. 6,
+pp. 3103–3114, Jun. 2021.
+[49] Z. Zhang, Z. Wu, H. Zhang, and J. Wang, “Meta-learning-based deep
+reinforcement learning for multiobjective optimization problems,” IEEE
+Trans. Neural Netw. Learn. Syst., vol. 34, no. 10, pp. 7978–7991, Oct.
+2023.
+[50] P. Veličković, G. Cucurull, A. Casanova, A. Romero, P. Lio, and
+Y. Bengio, “Graph attention networks,” 2017, arXiv:1710.10903.
+[51] W. Liu et al., “XuanCe: A comprehensive and unified deep reinforcement
+learning library,” 2023, arXiv:2312.16248.
+[52] Z. Lai, H. Li, and J. Li, “StarPerf: Characterizing network performance
+for emerging mega-constellations,” in Proc. IEEE 28th Int. Conf. Netw.
+Protocols (ICNP), Oct. 2020, pp. 1–11.
+[53] Y. Ran, Y. Ding, S. Chen, J. Lei, and J. Luo, “Fully-distributed dynamic
+packet routing for LEO satellite networks: A GNN-enhanced multi-agent
+reinforcement learning approach,” IEEE Trans. Veh. Technol., vol. 74,
+no. 3, pp. 5229–5234, Mar. 2025.
+[54] G. Xu, Y. Zhao, Y. Ran, R. Zhao, and J. Luo, “Towards spatial location
+aided fully-distributed dynamic routing for LEO satellite networks,”
+in Proc. GLOBECOM IEEE Global Commun. Conf., Dec. 2022,
+pp. 1570–1575.
+[55] J. Zhang, D. Liu, S. Chen, S. X. Ng, R. G. Maunder, and L. Hanzo,
+“Multiple-objective packet routing optimization for aeronautical ad-hoc
+networks,” IEEE Trans. Veh. Technol., vol. 72, no. 1, pp. 1002–1016,
+Jan. 2023.
+[56] J. Wu, C. Pu, S. Ding, G. Cao, C. Xia, and P. M. Pardalos, “Multiobjective optimization of transport processes on complex networks,”
+IEEE Trans. Netw. Sci. Eng., vol. 10, no. 2, pp. 780–794, Mar. 2023.
+
+Shuyang Li (Member, IEEE) is currently pursuing
+the Ph.D. degree with the College of Computer
+Science and Technology, Nanjing University of
+Aeronautics and Astronautics, Nanjing, China.
+His research interests include space–air–ground
+integrated networks and low Earth orbit (LEO) satellite communications.
+Mr. Li received the National Scholarship from the
+Ministry of Education of China during his undergraduate and master’s studies. He has served as
+a Reviewer for several leading journals in computer networking, including IEEE/ACM T RANSACTIONS ON N ETWORKING,
+IEEE T RANSACTIONS ON M OBILE C OMPUTING, and IEEE T RANSAC TIONS ON W IRELESS C OMMUNICATIONS .
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+LI et al.: EFFICIENT PACKET ROUTING FOR LARGE-SCALE LEO SATELLITE NETWORKS
+
+Guanchen Wu is currently pursuing the B.S. degree
+in mathematics with the School of Mathematics, Jilin
+University, Changchun, China.
+His research interests include numerical analysis,
+mathematical modeling, and multiobjective optimization.
+
+Qiang Wu (Member, IEEE) received the Ph.D.
+degree from the College of Computer Science and
+Technology, Zhejiang University, Hangzhou, China,
+in 2019.
+He is currently a Professor with the College of
+Computer Science and Technology, Nanjing University of Aeronautics and Astronautics, Nanjing,
+China, and was formerly a General Engineer with the
+ZTE Central Research Institute. He holds more than
+100 authorized patents, including over 20 related
+to international standards. His primary research
+interests include future networks, the industrial Internet, cybersecurity, and
+space–air–ground integrated networks.
+Dr. Wu is a fellow of China Institute of Communications, an Executive
+Member of the Service Computing Technical Committee of China Computer
+Federation, and a member of the Technical Committee of the National
+Engineering Laboratory for Mobile Internet System and Application Security.
+He has been recognized by Chinese Government with the Second-Class
+National Science and Technology Progress Award in 2009 and the SecondClass National Technology Innovation Award in 2014.
+
+46691
+
+Ran Wang (Senior Member, IEEE) received the
+B.E. degree in electronic and information engineering from the Honors School, Harbin Institute of
+Technology, Harbin, China, in 2011, and the Ph.D.
+degree in computer science and engineering from
+Nanyang Technological University, Singapore, in
+2016.
+He is currently a Professor and a Doctoral Supervisor with the College of Computer Science and
+Technology, Nanjing University of Aeronautics and
+Astronautics (NUAA), Nanjing, China, and with
+the College of Computer and Data Science, Fuzhou University, Fuzhou,
+China. He has authored or co-authored more than 100 articles in leading
+international journals and conferences. His current research interests include
+telecommunication networking and cloud computing.
+Dr. Wang received the Nanyang Engineering Doctoral Scholarship (NEDS)
+Award in Singapore, in 2011, the Innovative and Entrepreneurial Ph.D.
+Award of Jiangsu Province, China, in 2017, the Second Prize of China
+Communications Society Science and Technology Award in 2022, the Second
+Prize of Jiangsu Provincial Science and Technology Award in 2023, and the
+Best Paper Award at ACM MobiArch 2023. He is a ChangKong Scholar at
+NUAA.
+
+Hongke Zhang (Fellow, IEEE) received the Ph.D.
+degree in communication and information systems
+from the University of Electronic Science and Technology of China, Chengdu, China, in 1992.
+He is currently a Professor with the School
+of Electronic and Information Engineering, Beijing
+Jiaotong University, Beijing, China, where he serves
+as the Director of the National Engineering Center
+on Mobile Specialized Networks. He is an Academician of Chinese Academy of Engineering and
+the Co-Director of the PCL Research Center of
+Networks and Communications, Peng Cheng Laboratory, Shenzhen, China.
+His current research interests include the architecture and protocol design for
+the future Internet and specialized networks.
+Dr. Zhang serves as an Associate Editor for IEEE T RANSACTIONS ON
+N ETWORK AND S ERVICE M ANAGEMENT and IEEE I NTERNET OF T HINGS
+J OURNAL.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:53:21 UTC from IEEE Xplore. Restrictions apply.
+
+

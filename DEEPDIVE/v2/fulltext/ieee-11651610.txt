@@ -1,0 +1,2428 @@
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+1
+
+Graph Neural Network Assisted Deep
+Reinforcement Learning Based Hierarchical Routing
+in Mega LEO Satellite Constellation
+Shenzhan Xu, Student Member, IEEE, Rongke Liu, Senior Member, IEEE, Hangyu Zhang,
+and Aryan Kaushik, Member, IEEE
+
+Abstract—Mega low-Earth-orbit (mLEO) constellations with
+inter-satellite links (ISLs) enable wide-area data delivery, but
+routing in such systems is challenged by large network scale,
+time-varying link availability, and spatially concentrated hotspot
+traffic. This paper studies task route setup over the satellite ISL
+segment and develops a learning-based hierarchical framework
+that decomposes source-to-egress ISL route setup into interregion route setup and intra-region path construction. At the
+upper layer, regions perform synchronized neighbor message
+passing on the slot snapshot to generate local embeddings,
+and a parameter-sharing graph neural network (GNN)-assisted
+Proximal Policy Optimization (PPO) policy determines the interregion route through sequential local decisions of the currently
+active region agent. This design avoids satellite-level real-time
+global search while preserving sensitivity to regional load and
+boundary-link conditions. To improve training under sparse
+success feedback, a heuristic teacher-guided warm start provides
+soft guidance in the early stage of policy learning. At the lower
+layer, a load-aware shortest-path method constructs executable
+intra-region segments, and each segment is revalidated at its
+actual start slot so that local repair can be triggered by link
+disruptions or capacity blocking. Using a simulation environment
+built from real two-line element (TLE) data and the Simplified
+General Perturbations 4 (SGP4) propagator, we evaluate the
+proposed method under different task sizes and runtime ISL
+failures. The results show that the proposed method achieves a
+favorable trade-off among task success rate, penalized average
+delay, and load balance, while maintaining robust performance
+under runtime ISL failures.
+Index Terms—LEO constellation, route planning, graph neural
+network, deep reinforcement learning.
+
+I. I NTRODUCTION
+
+This work was supported in part by the Low-Altitude Airspace Strategic
+Program Portfolio under grant Z25306105, in part by the Shenzhen Fundamental Research Project under grant JCYJ20220818103413029, and in part by the
+Shenzhen Science and Technology Program under grant ZDCY202517012.
+Shenzhan Xu is with the School of Electronic and Information Engineering, Beihang University, Beijing 100191, China, and the Shen Yuan
+Honors College, Beihang University, Beijing 100191, China, and also with
+Shenzhen Institute, Beihang University, Shenzhen 518063, China (e-mail:
+SplayXu@buaa.edu.cn).
+Rongke Liu is with the Shenzhen Institute, Beihang University, Shenzhen 518063, China, and also with the School of Electronic and Information Engineering, Beihang University, Beijing 100191, China (e-mail:
+rongke liu@buaa.edu.cn).
+Hangyu Zhang is with China Mobile Research Institute, Beijing 100053,
+China (e-mail: zhanghangyu@chinamobile.com).
+Aryan Kaushik is with OUF Innovative, UK, and with RakFort, Dublin 2,
+D02 K227 Ireland, and also with the Indraprastha Institute of Information
+Technology Delhi, New Delhi 110020, India (e-mail: a.kaushik@ieee.org).
+
+W
+
+ITH the growth of the information industry and advances in reusable rocket technologies [1], mega low
+Earth orbit (mLEO) satellite constellations have developed
+rapidly in recent years. Such constellations for broadband
+access and global coverage are important components of
+future 6G networks [2]–[4]. Compared with traditional satellite
+communication systems, mLEO constellations offer lower
+propagation delay, better coverage continuity, and stronger
+redundancy [5]. Their large deployment scale also reduces
+average manufacturing and launch cost through mass production and multi-satellite launches [6]. More importantly,
+inter-satellite links (ISLs) enable multi-hop space networking,
+allowing data to be relayed directly across satellites and
+reducing dependence on ground facilities [7].
+Despite these advantages, providing global end-to-end connectivity in mLEO constellations remains challenging. Limited
+onboard resources require congestion-aware load allocation
+under scarce capacity [8]. ISLs may become intermittently
+unavailable because of acquisition, pointing, and tracking
+(APT) errors [9] and other disturbances. In addition, orbital
+dynamics and spatially concentrated task arrivals can produce
+localized hotspot traffic that concentrates load on a small
+set of links, and shortest-path routing alone may therefore
+cause persistent hotspots and cascading congestion [10]. The
+key challenge is to maintain high reachability and low delay
+while distributing load under rapidly changing topology and
+intermittent link failures.
+In recent years, routing for mLEO constellations has attracted increasing attention. Traditional methods such as the
+selective iterative Dijkstra algorithm (SIDA) were studied in
+[11], [12], but routing that depends on global information
+faces synchronization and dissemination difficulties at large
+scale. Learning-based routing has also been explored [13]–
+[15]. These methods usually make decisions from local observations, but many do not explicitly model localized hotspot
+traffic. Another line of work combines graph neural networks
+(GNNs) with deep reinforcement learning (DRL) [16], [17]
+to extract broader structural features. However, the evaluated
+constellations are still limited in size, typically around 1,000
+satellites or fewer, and explicit load-balancing design for
+localized hotspot traffic remains insufficient.
+To complement existing studies, we consider hotspot-aware
+task routing in an mLEO constellation with thousands of satellites and directional backhaul traffic under localized hotspot
+traffic. The considered task route starts from a source satel-
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+lite and ends at a gateway-visible egress satellite. The S2G
+segment is represented by the selected egress satellite and
+is not separately optimized. We develop a learning-based
+hierarchical routing framework that decomposes source-toegress ISL route setup into inter-region route setup with
+synchronized region-level embedding preparation and intraregion path construction. At the beginning of each slot, each
+region builds local features from the current snapshot and
+exchanges compact regional and boundary-link messages only
+with adjacent regions for several synchronous rounds to obtain
+slot-level local embeddings. Based on these embeddings, a
+parameter-sharing regional policy is invoked sequentially by
+the currently active region agent to determine the next region
+hop. The inter-region route is thereby established through local
+decisions. We formulate routing as a joint optimization of
+source-to-egress ISL delay and congestion-aware load balance.
+For upper-layer route setup, we combine a GNN encoder
+with Proximal Policy Optimization (PPO) and introduce a
+heuristic teacher-guided warm start [18] in training, where a
+computable reference policy provides soft guidance in early
+episodes to ease the cold-start problem caused by sparse
+success feedback at large scale. The main contributions of this
+paper are summarized as follows:
+1) We propose a scalable learning-based hierarchical routing
+framework for mLEO constellations that decomposes
+source-to-egress ISL route setup into inter-region route
+setup with synchronized region-level embedding preparation and intra-region path construction. The upper layer
+performs a finite number of synchronized local-neighbor
+message-passing rounds on the region graph to generate
+slot-level regional embeddings, and a parameter-sharing
+regional policy establishes the inter-region route through
+sequential local decisions of the currently active region
+agent. At the lower layer, executable inter-satellite path
+segments are constructed inside each visited region, with
+execution-time revalidation and local repair when necessary.
+2) We formulate a joint optimization problem of sourceto-egress ISL delay and network load balance under
+localized hotspot traffic. Based on slot-level regional
+embeddings, we use a GNN-assisted PPO scheme for
+inter-region route setup, in which each regional agent
+uses only its local observation and candidate-direction
+information. We further introduce a heuristic teacherguided warm start to improve early-stage training stability
+and convergence speed.
+3) We construct an mLEO simulation environment using
+real two-line element (TLE) [19] data and the Simplified
+General Perturbations 4 (SGP4) propagator tool. The environment models satellite orbits, link visibility, gateway
+station connectivity, time-indexed link reservation, and
+runtime ISL failures, enabling realistic network topology
+and visibility conditions for routing evaluation. Experimental results across multiple scenarios show that the
+proposed method achieves a favorable trade-off among
+multiple performance metrics compared with representative benchmark algorithms.
+
+2
+
+The remainder of this article is organized as follows. Section
+II introduces related work. Section III presents the system
+model and problem formulation. Section IV describes the proposed method. The simulation results are shown and discussed
+in Section V. Finally, Section VI concludes this article.
+II. R ELATED W ORK
+A. Hierarchical Routing Methods
+In hierarchical routing, [20] proposed LoHi, a load-aware
+hierarchical information-centric routing protocol for largescale LEO satellite networks. It partitions the constellation
+into satellite groups, uses logical path identifiers to represent
+adjacent-group connectivity, and adjusts forwarding according
+to group-level path load and real-time ISL conditions. This
+design improves scalability and load awareness, but it mainly
+operates as a protocol and forwarding architecture based
+on hierarchical tables and heuristic decisions. [21] proposed
+a quality-of-service (QoS)-oriented hierarchical scheme in
+which a double deep Q-network (DDQN) selects links to balance path length and congestion. However, the evaluation was
+conducted on relatively small networks, and the authors also
+noted potential uncertainty in convergence. [22] decomposed
+routing into control-domain-partition-driven distributed routing and link-state-aware dynamic decisions, restricting linkstate exchange to local and neighboring domains and using
+a deep Q-network (DQN) for path selection. [23] proposed
+a software-defined networking (SDN)-based clustered routing
+scheme in which controllers handle intra-cluster state collection and rule installation, while inter-cluster forwarding adopts
+destination-geography heuristics to reduce signaling overhead.
+Without global network state, however, purely distributed
+inter-cluster routing may produce suboptimal paths, including
+zig-zag routes.
+These studies show that partition-based routing can reduce
+signaling overhead and improve scalability, but they are mainly
+based on protocol mechanisms, heuristic forwarding, or persatellite decisions. In this paper, we focus on hotspot-aware
+source-to-egress ISL route setup in a larger mLEO constellation and study learned inter-region route setup with GNNextracted local embeddings, PPO-based directional action selection, and executable intra-region path construction under
+time-varying links.
+B. Intelligent Routing Based on GNN and DRL
+Machine learning, especially DRL, has attracted increasing attention in satellite network routing, and many recent
+methods therefore combine DRL with GNNs. [24] proposed
+the GRLR method, which uses a GNN to extract graph
+features and applies DRL to learn the path-selection policy.
+This method can handle dynamic topology changes and timevarying link characteristics, thereby reducing end-to-end delay
+and improving network throughput. [25] proposed an intersatellite routing method that integrates GNNs with DRL. Its
+key idea is to use a graph convolutional network (GCN) to
+capture topology dynamics and output node feature vectors,
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+while DRL optimizes routing decisions. [26] proposed a DRLbased routing mechanism using a spatiotemporal GNN (STGNN). It introduces routing-associated age of information
+(RAoI) as a timeliness metric and designs a spatiotemporal
+feature extraction module. [27] proposed a fully distributed
+dynamic packet-routing algorithm based on GNN-enhanced
+multi-agent reinforcement learning (GNN-MADRL). It uses
+a graph attention network (GAT) to process local topology
+and generate node embeddings, together with multi-agent
+coordination.
+These studies present several GNN-assisted DRL-based
+routing methods. Some also evaluate mLEO constellations
+with more than one thousand satellites. However, most of them
+focus on general dynamic routing or timeliness optimization
+rather than hotspot-aware load balancing under spatially localized traffic concentration. In addition, route planning over
+very large constellations still faces a scale challenge, because
+satellite-level planning becomes difficult as the constellation
+grows. The present work therefore focuses on hierarchical
+source-to-egress ISL route setup with GNN-assisted regionlevel representation learning and synchronized regional decisions for large-scale mLEO constellations under localized
+hotspot traffic.
+III. S YSTEM M ODEL AND P ROBLEM F ORMULATION
+This section first introduces the system model of the mLEO
+satellite network. The source-to-egress ISL delay and resource
+occupancy of tasks are then formulated. Finally, we present the
+joint optimization problem of source-to-egress ISL delay and
+load balance. The main notation is summarized in Table I.
+A. Constellation Model
+We consider an mLEO satellite constellation with thousands
+of satellites interconnected by ISLs, where traffic can be
+downlinked through a gateway station. The satellite set is
+denoted by V = {1, 2, . . . , N }, where N is the constellation
+size. The gateway station is denoted by g and has a fixed
+geographic location. We adopt the Walker-delta constellation
+specified by i/NL /ML /F in [28], where i, NL , ML , and F
+denote the orbital inclination, the number of orbital planes,
+the number of satellites per plane, and the phasing factor,
+respectively.
+For inter-satellite connectivity, a fixed candidate ISL neighbor set Nicand is predefined for each satellite i. Owing to
+the structural properties of Walker-delta constellations, each
+satellite can establish ISLs with its two adjacent satellites in
+the same orbital plane and with adjacent satellites in the two
+neighboring planes. A wrap-around rule is adopted to preserve
+connectivity at the boundaries. When the orbital-plane index or
+phase index exceeds its valid range, the candidate connection
+is formed with the satellite on the opposite boundary. We
+define the ISL edge set as E ⊆ V × V. ISLs are assumed to
+be bidirectional under normal conditions, that is, if (i, j) ∈ E,
+then (j, i) ∈ E. This connectivity model keeps the routing
+action space structurally consistent in large-scale networks.
+For satellite-to-ground (S2G) communication, connectivity
+between the gateway and satellites is determined by S2G
+
+3
+
+TABLE I: NOTATIONS
+Notation
+V
+N
+g
+Nicand
+E
+θmin
+Vtg
+T
+Tsim
+∆t
+ri (t)
+rg
+K
+k
+tk
+tk,h
+C
+ρbg
+ij (t)
+ρbg,max
+ρij (t)
+ρblk
+αkij (t)
+α0
+ageo
+ij (t)
+ablk
+ij (t)
+aotg
+ij (t)
+aij (t)
+c0
+E(t)
+sk
+dk
+Bk
+Pk
+Hk
+max
+Hsat
+prop
+τij
+(t)
+tx
+τk,h
+Tk
+Tpen
+T̃k
+V reg
+E reg
+κ(·)
+Phseg
+JFI(t)
+T̄
+J¯
+λT
+λJ
+
+Definition
+Satellite set
+Number of satellites
+Gateway station
+Candidate ISL neighbor set of satellite i
+Candidate ISL set
+Minimum elevation angle threshold
+Gateway-visible satellites at time t
+Time-slot index set
+Number of simulation slots
+System time slot length
+Position vector of satellite i at time t
+Position vector of gateway station g
+Task set
+Task index
+Generation slot of task k
+Start time of hop h of task k
+ISL capacity
+Background occupancy ratio
+Upper bound of the background occupancy ratio
+Total occupancy ratio of link (i, j) at time t
+Blocking threshold for link admission
+Reserved occupancy ratio of task k on link (i, j) at time t
+Fixed occupancy ratio per admitted task
+Geometric availability indicator
+Blocking availability indicator
+Runtime-failure availability indicator
+Link availability indicator
+Speed of light
+Available link set at time slot t
+Source node of task k
+Gateway-visible egress satellite of task k
+Data size of task k
+Source-to-egress ISL path of task k
+Hop count of task k
+Maximum satellite hop count
+Propagation delay
+Transmission delay of task k at hop h
+Source-to-egress ISL delay of task k
+Penalty delay assigned to failed tasks
+Penalized delay of task k
+Region set
+Region-edge set
+Satellite-to-region mapping
+Satellite-level segment at inter-region step h
+Network-wide Jain’s fairness index
+Long-term average penalized delay
+Long-term average Jain’s fairness index
+Weight coefficient of the delay term
+Weight coefficient of the load-balance term
+
+visibility and elevation angle. We consider a single gateway
+station with a fixed geodetic location to support S2G traffic
+transmission. The gateway employs a minimum elevation
+angle threshold θmin . If the LOS condition is satisfied and
+the elevation angle is no smaller than θmin , the satellite is
+regarded as visible to the gateway and an S2G link can be
+established. The set of satellites visible to the gateway at time
+t is denoted by Vtg . We use real TLE data to describe satellite
+orbits and apply the SGP4 orbit propagator over the entire
+simulation period to compute the time-varying position of each
+satellite. This setting captures realistic geometric relationships
+and visibility variations. The system model is shown in Fig.
+1.
+We assume that the system operates in discrete time slots,
+following our previous work [29]. The slot index set is denoted
+by T = {0, 1, . . . , Tsim − 1}, and the duration of each slot is
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+4
+
+Remote
+Sensing
+Satellite
+
+Traffic Generation Region
+
+Mega-LEO
+Communication
+Constellation
+
+Remote
+Sensing
+Aerial
+Vehicles
+
+Traffic Generation Region
+
+Gateway Connectable Satellite Region
+
+Satellite Gateway
+
+Fig. 1: The network model of the proposed mLEO constellation.
+
+∆t. At each slot, SGP4 provides the satellite position vector
+ri (t) ∈ R3 , while the gateway position vector is denoted
+by rg ∈ R3 . ISL availability and S2G link availability are
+assumed to remain unchanged within one slot. Based on
+link visibility and geometric distance, link availability and
+propagation delay can therefore be determined.
+B. Communication and Delay Model
+We model traffic at the task level. The task set is denoted by
+K. For any task k ∈ K, its data volume is set to be Bk > 0. In
+each time slot, the system generates one task for scheduling.
+Localized burstiness is modeled as spatial concentration over
+a refresh window, where consecutive tasks are sampled from
+localized source and egress patches.
+We assume a constant inter-satellite transmission capacity
+for ISLs, which is supported by in-orbit experiments in [30].
+Given the relative stability of optical ISLs and the predictable
+orbit geometry, this assumption is suitable for routing in most
+cases. For any ISL (i, j), the nominal transmission capacity is
+set to C, and all ISLs are assumed to have the same capacity.
+To better reflect practical operation, each ISL carries a
+small amount of background traffic for necessary inter-satellite
+information exchange. This traffic occupies part of the total
+link capacity. The background occupancy ratio on link (i, j)
+at time t is denoted by ρbg
+ij (t) ∈ [0, 1) and satisfies
+0 ≤ ρbg
+ij (t) ≤ ρbg,max < 1,
+
+fraction of C reserved for task k on link (i, j) at time t. The
+total occupancy ratio of link (i, j) is defined as
+ρij (t) = ρbg
+ij (t) +
+
+X
+
+k
+αij
+(t),
+
+(2)
+
+k∈Kij (t)
+
+where Kij (t) denotes the set of tasks that are either transmitting on link (i, j) at time t or have completed resource
+reservation but have not yet started transmission. For simplicity, we assume that each task admitted to a link uses a fixed
+occupancy ratio α0 ∈ (0, 1) throughout its reservation and
+transmission period. Such reservations are time-indexed in
+simulation, so ρij (t) includes active transmissions and active
+reservations with release times later than t. The number of
+tasks that can be carried in parallel is therefore limited by the
+total occupancy constraint.
+We consider that link availability is determined by three
+factors: geometric availability, occupancy-threshold blocking,
+and runtime failures. We use ageo
+ij (t) ∈ {0, 1} to denote the
+geometric-availability indicator determined by the line-of-sight
+(LOS) condition. Since practical systems typically cannot operate at the theoretical capacity limit, an occupancy threshold
+ρblk ∈ (0, 1] is introduced to model blocking caused by
+link occupancy. To avoid timing ambiguity between admission
+checking and occupancy updates, the link occupancy ratio
+immediately before admitting new tasks at time t is denoted
+by ρij (t− ). A link is regarded as unavailable for routing and
+scheduling once the occupancy reaches the threshold:
+
+(1)
+
+where ρbg,max is the upper bound of the background occupancy ratio.
+We further assume that ISLs employ mature multiplexing
+techniques, and multiple tasks can be transmitted in parallel
+on one link. To limit decision dimensionality and system complexity, a reservation-based resource-allocation mechanism is
+adopted as in [31]: once a task is scheduled, its allocated
+communication resources are reserved and remain occupied
+until completion. Resource allocation is characterized by a
+k
+capacity occupancy ratio. Let αij
+(t) ∈ [0, 1] denote the
+
+
+−
+ablk
+ij (t) = I ρij (t ) < ρblk .
+
+(3)
+
+To capture disruptions caused by non-geometric factors such
+as transient hardware glitches, APT errors, and short-term
+anomalies, we introduce a binary runtime failure indicator
+aotg
+ij (t) ∈ {0, 1}. The stable-link setting is obtained by
+setting aotg
+ij (t) ≡ 1 for all links and slots. In the runtimefailure setting, failures are generated by a scheduled linkdisruption process. Let Plf denote the trigger period, plf the
+per-link failure probability at a trigger slot, and Dlf the
+failure duration in slots. At every trigger slot τ satisfying
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+5
+
+(τ − 1) mod Plf = 0, each candidate ISL that is not already in
+a failure interval is independently checked. Each checked ISL
+is determined to suffer a runtime failure with probability plf .
+These failure events are independent and identically distributed
+across checked ISLs at each trigger slot. If link (i, j) is
+determined to fail at slot τ , both directions of this ISL are
+set to unavailable during [τ, τ + Dlf ) and are restored after
+the interval. Equivalently, aotg
+ij (t) = 0 when t falls into an
+active runtime-failure interval of link (i, j), and aotg
+ij (t) = 1
+otherwise. The final availability of link (i, j) at time t is
+defined as
+otg
+blk
+aij (t) = ageo
+ij (t) · aij (t) · aij (t).
+
+(4)
+
+When aij (t) = 0, link (i, j) is unavailable at time t. Based
+on the above model, the delay of each hop in multi-hop
+transmission can be derived. The routing path of task k is an
+ordered node sequence Pk = vk,0 , vk,1 , . . . , vk,Hk , where
+Hk is the hop count. A store-and-forward mode is assumed,
+so the task can enter the next hop only after completing transmission on the current hop. Propagation delay is computed
+from geometric distance. If task k uses link (i, j) at time t,
+the propagation delay is
+prop
+τij
+(t) =
+
+∥ri (t) − rj (t)∥
+,
+c0
+
+(5)
+
+where ri (t) is the satellite position vector and c0 is the speed
+of light. Transmission delay depends on the task data volume
+and the allocated throughput. During execution, each hop is
+admitted only if the link is available and sufficient occupancy
+headroom exists at the actual transmission-start time, that is,
+aij (t) = 1,
+
+node sk ∈ V, and its destination node is the gateway-visible
+egress satellite dk ∈ V. The route therefore starts from sk and
+ends at dk . The S2G segment is represented by the choice of
+dk and is not optimized as a separate routing segment. The
+network is modeled as a directed graph G = (V, E), where V is
+the satellite set and E is the candidate ISL set. The availability
+of link (i, j) ∈ E at time t is described by aij (t) ∈ {0, 1},
+and the set of available links is defined as
+E(t) ≜ {(i, j) ∈ E | aij (t) = 1}.
+
+For task k, its routing path is represented by an ordered
+node sequence
+
+Pk = vk,0 = sk , vk,1 , . . . , vk,Hk = dk ,
+
+(6)
+
+
+
+vk,h , vk,h+1 ∈ E tk,h , ∀k, ∀h = 0, 1, . . . , Hk − 1. (12)
+According to Section III-B, the total occupancy ratio of link
+(i, j) ∈ E at time t is ρij (t) and it is subject to the occupancy
+threshold ρblk . A task must satisfy the admission condition in
+(6) when it enters the transmission stage of a link.
+For the delay metric, the propagation delay of each hop
+prop
+tx
+τij
+(t), the per-hop transmission delay τk,h
+, and the sourceto-egress delay Tk follow (5), (7), and (9), respectively. To
+handle failed tasks within a unified objective, we introduce
+a penalty delay constant Tpen > 0 and define the penalized
+delay T̃k as
+
+T̃k =
+
+−
+
+where t denotes the pre-admission state right before resources are allocated to the new task at time t. Once admitted,
+the task transmits on that link with occupancy ratio α0 until
+completion. The transmission delay of hop h is defined as
+tx
+τk,h
+=
+
+Bk
+,
+α0 · C
+
+(7)
+
+where tk,h denotes the start time when task k enters the
+transmission stage of hop h, which is obtained recursively
+from the completion time of the preceding hop by
+tx
+tk,h+1 = tk,h + τvprop
+(tk,h ) + τk,h
+,
+k,h vk,h+1
+
+h = 0, . . . , Hk − 1.
+(8)
+The source-to-egress ISL delay of task k is the sum over
+hops:
+Tk =
+
+HX
+k −1
+
+τvprop
+k,h vk,h+1
+
+tk,h
+
+
+
+tx
++ τk,h
+
+
+
+.
+
+(9)
+
+h=0
+
+C. Problem Formulation
+Based on the communication and delay model in Section
+III-B, we formulate a long-term routing optimization problem.
+For any task k ∈ K, the task is generated at slot tk at source
+
+(11)
+
+where Hk is the hop count. The reachability requirement of
+each hop is
+
+(
+
+ρij (t− ) + α0 ≤ ρblk ,
+
+(10)
+
+Tk ,
+if task k successfully reaches dk ,
+Tpen , otherwise.
+
+(13)
+
+Failure events include, but are not limited to, the following
+cases: the satellite link is unavailable, the admission condition is violated, or the destination is not reached before the
+maximum satellite hop limit. The long-term average penalized
+delay is defined as
+h i
+T̄ ≜ E T̃k .
+(14)
+We use the global Jain’s fairness index (JFI) [32] to characterize network load balance, where the statistics are computed
+over the currently available ISL set E(t). Since ρij (t) already
+represents the link occupancy ratio, the JFI at time t is given
+by
+
+JFI(t) =
+
+
+
+
+
+
+
+
+
+!2
+P
+
+ρij (t)
+
+(i,j)∈E(t)
+
+P
+
+|E(t)|
+
+
+
+(i,j)∈E(t)
+
+
+
+0,
+
+,
+ρ2ij (t)
+
+P
+
+ρij (t) > 0,
+
+(i,j)∈E(t)
+
+otherwise.
+
+(15)
+When no link carries traffic, such as under total link failure,
+we set JFI(t) = 0 as a sentinel value to explicitly indicate this
+abnormal case. Since JFI is a network-wide fairness metric, it
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+6
+
+is later complemented by HSI in Section V-C to capture load
+concentration on heavily utilized links. To reflect long-term
+balance, we define the time-average JFI as
+
+A. Hierarchical Routing Mechanism
+
+(17)
+
+In mLEO satellite networks, source-to-egress ISL route
+setup is difficult because of the large network scale and timevarying link conditions. Collecting and synchronizing global
+network state over thousands of nodes is costly for online
+decision making, whereas purely hop-by-hop local decisions
+tend to accumulate errors on long paths. In addition, ISLs
+may fail intermittently because of APT errors, and a single
+intermediate failure can invalidate the whole route. To address
+these issues, we decompose routing into inter-region route
+setup and intra-region path construction.
+
+where λT > 0 and λJ > 0 are weight coefficients. Here,
+T̄ captures task-level source-to-egress transmission efficiency
+and incorporates the cost of failure through Tpen , while J¯
+regularizes network-level load distribution to avoid persistent
+overload on hotspot links caused by shortest-path-only routing.
+The proposed optimization problem is described as:
+
+We partition the constellation into Nreg regions, denoted by
+V reg = {1, 2, . . . , Nreg }, and use a mapping κ : V → V reg
+to assign each satellite to a region. Regions are grouped by
+orbital plane and phase indices and remain fixed during the
+simulation. Region adjacency follows a four-neighbor grid
+(up/down/left/right) with wrap-around at boundaries, which
+yields the inter-region topology G reg = (V reg , E reg ).
+
+J¯ ≜ E [JFI(t)] .
+
+(16)
+
+In summary, under long-term task arrivals, we seek a routing
+policy π that jointly optimizes the average penalized delay
+and the long-term load balance subject to time-varying link
+availability and capacity-admission constraints. We adopt a
+weighted-sum single-objective formulation:
+max −λT T̄ + λJ J¯
+π
+
+h i
+max − λT E T̃k + λJ E[JFI(t)]
+π
+
+
+s.t. vk,h , vk,h+1 ∈ E tk,h , ∀k, ∀h,
+
+
+ρvk,h vk,h+1 t−
+k,h + α0 ≤ ρblk , ∀k, ∀h,
+ρij (t) ≤ ρblk , ∀(i, j) ∈ E, ∀t,
+vk,h ̸= v
+
+k,h′
+
+′
+
+, ∀k, ∀h ̸= h ,
+
+max
+Hk ≤ Hsat
+, ∀k.
+
+(18)
+(18a)
+(18b)
+(18c)
+(18d)
+(18e)
+
+Constraint (18a) enforces physical reachability at the corresponding start time of each hop. Constraint (18b) requires
+each hop to satisfy the admission condition under the preadmission occupancy convention. Constraint (18c) limits the
+total occupancy of every link at any time. Constraint (18d)
+prevents repeated nodes in a path and thus avoids loops and
+backtracking. Constraint (18e) bounds the hop count by the
+max
+.
+maximum satellite hop limit Hsat
+Since routing, admission, and path-structure constraints involve discrete decisions coupled with varying link availability
+and network load, the above formulation can be viewed as a
+long-term mixed-integer nonlinear optimization problem. Conventional optimization methods often struggle to obtain highquality solutions at the target constellation scale under such
+dynamics. We therefore adopt a GNN-assisted PPO approach,
+in which region-level graph embeddings support sequential
+inter-region decisions for hotspot-aware task routing.
+IV. P ROPOSED M ETHOD
+This section presents the proposed hierarchical routing
+framework for mLEO constellations. We first describe the
+overall routing mechanism, then introduce the upper-layer
+inter-region route-setup design, including GNN-based feature
+extraction and PPO-based directional action selection. We also
+present the warm-start mechanism used in training. Finally, we
+describe the intra-region path construction strategy and analyze
+the overall complexity.
+
+For task k with source sk and destination dk , we map
+them to regions csrc
+= κ(sk ) and cdst
+= κ(dk ). We then
+k
+k
+perform learning-based inter-region route setup on the region
+graph after synchronized local-neighbor embedding preparation. At planning step h, using the slot-level local embeddings
+generated by a finite number of synchronized local-neighbor
+message-passing layers, the agent of the current region ch
+selects the next region ch+1 under a parameter-sharing policy
+using its local observation. The selected inter-region transition
+(ch → ch+1 ) is first instantiated on the planning snapshot:
+the system determines the boundary pair and constructs the
+corresponding executable intra-region segment Phseg by a loadaware shortest-path algorithm. During execution, each segment
+is revalidated at its actual start slot using the latest link
+availability and time-indexed reservation state. The source-toegress ISL route is obtained by concatenating all successfully
+instantiated satellite-level segments {Phseg }.
+To improve execution robustness, we further introduce local
+repair. If a planned segment becomes infeasible because of link
+disruption or capacity blocking, the lower layer reruns intraregion path construction once with the same entry and exit
+satellites. If the blocked part is a boundary ISL, the boundary
+pair is reselected within the same inter-region direction. If
+repair fails, the task is treated as failed for that segment. In this
+case, the next intra-region segment is replanned accordingly.
+The proposed hierarchical routing method is illustrated in
+Fig. 2. Overall, region partitioning reduces the decision scale
+and yields a two-stage routing design: inter-region route setup
+keeps global planning complexity manageable, while intraregion path construction ensures path executability and enables
+rapid local recovery. Since inter-region route setup involves
+aggregating high-dimensional load and link availability information over a nontrivial region graph, we use GNN-based
+representation learning and DRL-based decision making at
+the region level, while adopting a traffic-aware shortest-path
+method for intra-region path construction because the local
+topology is much smaller.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+7
+
+on G reg . For any directed edge (i → j), the edge-conditioned
+message at layer l is computed by a message function ϕl (·):
+(l)
+
+mi→j = ϕl
+
+h
+
+(l)
+
+(l)
+
+hi , hj , ei→j
+
+i
+
+,
+
+(22)
+
+where [·] denotes vector concatenation. For node j, messages
+from all incoming edges are aggregated as
+(l)
+
+aj =
+
+X
+
+(l)
+
+mi→j .
+
+(23)
+
+i:(i→j)∈E reg
+
+The next layer embedding is obtained by adding the selfloop term and applying an update network:
+
+Source
+
+Inter-Region Route Setup
+
+Link Failure
+
+Destination
+
+Intra-Region Path Construction
+
+Intra-Region Path Replanning
+
+(l+1)
+
+hj
+
+Fig. 2: The proposed hierarchical routing procedure.
+
+B. Graph Neural Network-Based Feature Extraction
+At each planning step, the upper layer performs one interregion directional action selection on the directed graph
+G reg = (V reg , E reg ), where V reg is the region set and E reg ⊆
+V reg × V reg contains directed edges between adjacent regions.
+For each region c ∈ V reg , its adjacency is indexed by the fourdirection set D, and Nd (c) denotes the neighboring region
+reachable from c along direction d ∈ D.
+At slot t, each region c is described by the node feature
+h
+in,std
+xc (t) = ρin,p90
+, ρ̄in
+,
+c
+c , ρc
+i
+(19)
+bun,std
+ρbun,p90
+, ρ̄bun
+.
+c
+c , ρc
+in,std
+where ρin,p90
+, ρ̄in
+are the 90th percentile, mean,
+c
+c , and ρc
+and standard deviation of ISL utilization over internal ISLs of
+bun,std
+are computed over
+, ρ̄bun
+region c, while ρbun,p90
+c , and ρc
+c
+ISLs incident to boundary satellites of region c
+For each directed edge (c → c′ ) ∈ E reg , we define the edge
+feature
+
+h
+i
+min
+sum
+std
+ec→c′ (t) = ρp90
+,
+ρ
+,
+ρ
+,
+ρ
+.
+′
+′
+′
+′
+c→c
+c→c
+c→c
+c→c
+
+(20)
+
+where these terms denote the 90th percentile, minimum, sum,
+and standard deviation of the utilizations of boundary ISLs
+connecting region c and region c′ , respectively.
+Internal-region statistics summarize congestion inside a region, while direction-specific boundary-link statistics retain the
+load state of each candidate crossing direction. Directly feeding these handcrafted statistics to the policy network would
+expose only local summaries. To encode both regional context
+and boundary-link conditions, we use an edge-conditioned
+GraphSAGE encoder [33], [34]. The initial node embedding
+is
+
+
+
+
+
+(l)
+(l)
+= upl self l hj + aj ,
+
+(24)
+
+where self l (·) is the self-loop linear transform and upl (·) is
+the update MLP. After L layers, the node embedding of region
+c is
+zc = h(L)
+c .
+
+(25)
+
+Node embeddings alone do not explicitly distinguish different outgoing directions from the same region. We therefore
+introduce an edge readout network to generate a directionspecific embedding for each directed region edge:
+zec→c′ = edge ro ([zc , zc′ , ec→c′ ]) .
+
+(26)
+
+The encoder thus outputs both the region-state representation set {zc } and the action-specific representation set
+{zec→c′ } for inter-region decision making. The encoder can
+learn structural topology-conditioned regional representations
+on the region graph. The node features summarize internalregion and boundary-link load states, while the directed edge
+features describe the load condition of candidate inter-region
+transitions. Unlike direct use of fixed engineered summaries
+as PPO inputs, the edge-conditioned message-passing process
+updates each region representation by combining the region’s
+own state with edge-conditioned messages from neighboring
+regions. Therefore, after L message-passing layers, zc contains
+load and boundary-link context from the L-hop region-graph
+neighborhood of region c. The edge readout further combines
+zc , zc′ , and ec→c′ to produce a direction-specific representation for action c → c′ . This design is useful for inter-region
+routing because congestion depends not only on the current
+region, but also on neighboring-region load states and the
+boundary ISLs used by different outgoing directions.
+
+C. POMDP Design
+h(0)
+c = fin (xc ) ,
+
+(21)
+
+where fin (·) is a multilayer perceptron (MLP). We then perform L synchronized local-neighbor message-passing layers
+
+We model the upper-layer planning process for one task
+as a partially observable Markov decision process (POMDP),
+denoted by M = (S, A, P, r, O, γ).
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+8
+
+1) State S: At planning step h, let ch denote the current
+region. The latent state is
+
+˜man ,
+sh = G reg , L(t), Alink (t), ch , cdst
+k , V h , τ h , dh
+
+(27)
+
+(a)
+
+where ch denotes the neighboring region reached from ch by
+action a, 1Vh is the visited-region mask induced by Vh , and
+mh = [mh,a ]a∈A is the feasible-action mask.
+3) Action Space A: An inter-region action is defined as
+ah ∈ A = {Up, Right, Down, Left}. These four actions
+specify only the next region direction and do not determine a
+concrete boundary ISL pair or a satellite-level next hop. For
+(a)
+any a ∈ A, let ch denote the neighboring region reached from
+the current region ch by action a. To ensure transition-level
+validity, we introduce a feasible-action mask mh = [mh,a ]a∈A
+during policy sampling and define the feasible action set as
+(29)
+
+The mask removes three types of moves: backtracking to
+ch−1 , revisiting a region already in Vh , and directions that are
+currently unavailable for cross-region transition. If Ah = ∅,
+the episode terminates as failure.
+4) Transition and Termination P: After selecting ah , the
+(a )
+next region is ch+1 = ch h . The environment then attempts
+to instantiate the corresponding satellite-level segment Phseg
+on the planning snapshot at slot tk . This planning-snapshot
+feasibility check is the initial construction step; the segment
+is later revalidated at its actual execution-start slot, where
+capacity blocking or runtime link failure may trigger local
+repair or task failure. Since the transition kernel is highdimensional and time-varying, we adopt a model-free DRL
+approach.
+5) Reward r: Since one episode corresponds to the routesetup process of a single task, the delay-related cost for a
+planning step h that successfully instantiates a satellite-level
+segment is defined as
+
+cdelay
+=
+h
+
+Qk,h −1 
+
+X
+
+
+tx
+τvprop
+(t
+)
++
+τ
+,
+k,h,q
+v
+k,h,q
+k,h,q k,h,q+1
+
+(31)
+
+ρ̄out
+ch ,ah
+
+where L(t) and Alink (t) denote the load and link-availability
+snapshots at slot tk , cdst
+is the destination region, Vh is the
+k
+visited-region set, τh is the segment-start time proxy, and d˜man
+h
+is the Manhattan distance from ch to the destination region
+cdst
+k .
+2) Observation O: The local observation at planning step
+h is denoted by oh ∈ O, and only the current region accesses
+the local observation
+h
+
+
+oh = zch ; concat zec →c(a) a∈A ;
+h
+i h
+(28)
+man
+˜
+dh ; 1Vh ; mh ,
+
+Ah = {a ∈ A | mh,a = 1}.
+
+out
+in
+cbal
+h = w1 · ρ̄ch ,ah + w2 · ρ̄ch+1 ,
+
+(30)
+
+q=0
+
+
+
+where Phseg = vk,h,0 , vk,h,1 , . . . , vk,h,Qk,h is the ordered
+satellite sequence of the segment instantiated at planning step
+h and Qk,h is the hop count of segment Phseg . The balancerelated cost is
+
+where
+is the mean utilization of boundary ISLs
+leaving ch along ah , ρ̄in
+ch+1 is the mean utilization of internal
+ISLs in ch+1 , and w1 , w2 ≥ 0 are normalization weights. The
+running reward is
+
+
+rhrun = − wdelay · cdelay
++ wbal · cbal
+.
+(32)
+h
+h
+This reward serves as a practical step-wise training objective
+whose preference direction is consistent with that of the longterm objective in Section III, while remaining computable
+from local segment-level quantities during route setup. Let
+Isucc ∈ {0, 1} denote the success indicator of the whole
+reg
+trajectory, Tep ≤ Hmax
+denote the realized number of interregion route-setup steps, and Ihseg ∈ {0, 1} denote whether
+planning step h successfully instantiates the satellite-level
+segment Phseg . The implemented reward for PPO is defined
+as
+Rsucc
+Tep
+− (1 − Isucc )I{h = Tep − 1}Rfail , h = 0, . . . , Tep − 1.
+(33)
+
+rh = Ihseg rhrun + Isucc
+
+D. Proximal Policy Optimization
+On the POMDP M, we adopt PPO-Clip [35] with generalized advantage estimation (GAE) [36] to learn the parametersharing inter-region policy πθ (ah | oh ) and value function
+Vψ (oh ). Let (ϕ, θ, ψ) denote the shared encoder, policyhead, and value-head parameters. During deployment, for each
+newly generated task, regions first participate in a finite number of synchronized local-neighbor message-passing rounds
+on the region graph to generate slot-level local embeddings
+from the current planning snapshot. At each planning step,
+only the currently active region invokes the shared policy and
+uses its local observation, while the environment instantiates
+the selected segment under the current execution constraints.
+The same slot-level embeddings are reused for the sequential
+region-hop decisions of this task’s route setup. The DRL
+decision is made from local observations with shared policy
+parameters after region-level neighbor synchronization.
+The policy head uses the action-wise feature
+
+
+Xhπ (a) = zch , zec →c(a) , d˜man
+, mh,a ,
+h
+h
+
+(34)
+
+h
+
+(a)
+
+where ch is the neighboring region reached by action a.
+These action-wise features are concatenated to form Xπh . The
+value head uses
+h
+i
+
+XVh = zch , meana∈Ah zec →c(a) , d˜man
+,
+m
+h .
+h
+h
+
+(35)
+
+h
+
+The outputs are
+zh = fθ (Xπh ; ϕ),
+
+Vψ (oh ) = gψ (XVh ; ϕ).
+
+(36)
+
+We apply feasibility masking
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+9
+
+Action
+GNN
+MPNN
+
+Update
+
+PPO
+
+clip
+
+min
+
+ℒ &'*+ (,)
+
+-. (/ |0 )
+
+……
+
+Node
+Embeddings
+&
+Edge
+Embeddings
+
+-.123 (/ |0 )
+
+Actor
+
+Environment
+
+67123 (0 )
+
+Critic
+
+67 (0 )
+
+• (!)
+
+"
+
+54
+
+clip
+
+ℒ $ (%)
+
+Update
+Current Node
+
+Node Features
+
+1-hop Node
+
+Rollout Buffer
+
+Edge Features
+
+2-hop Node
+
+Fig. 3: The framework of GNN-assisted PPO.
+
+z̃h,a = zh,a + (1 − mh,a ) (−M ),
+
+M ≫ 1,
+
+(37)
+
+c = Eh [log πθ (ah | oh ) − log πθ (ah | oh )] .
+KL
+old
+
+so that probability mass is assigned only to feasible actions,
+and define
+
+For value regression, we use
+
+πθ (ah | oh ) = softmax(z̃h )ah .
+
+Vψclip (oh ) = Vψold (oh )
+
+(38)
+
+Let dh ∈ {0, 1} denote the episode-termination indicator
+after step h.
+Tep −1
+For an episode trajectory {(oh , ah , rh , dh )}h=0
+with
+reg
+, the TD residual, GAE advantage, and return
+Tep ≤ Hmax
+target are
+δh = rh + γ(1 − dh ) · Vψold (oh+1 ) − Vψold (oh ),
+
+
+Tep −1−h
+
+Âh =
+
+X
+
+(γλGAE )l 
+
+l−1
+Y
+
+where ℓ(·) denotes the squared-error loss. To encourage exploration, an entropy regularizer is introduced:
+
+(1 − dh+j ) δh+l ,
+
+(40)
+
+Âh − µÂ
+,
+σÂ + ϵadv
+
+(41)
+
+(42)
+
+where µÂ and σÂ are the mean and standard deviation, and
+ϵadv > 0 is a small constant for numerical stability.
+The PPO ratio is
+πθ (ah | oh )
+.
+πθold (ah | oh )
+
+(43)
+
+The clipped PPO objective is
+h
+
+Lclip (θ) = Eh min ρh (θ)Âh ,
+ i
+clip ρh (θ), 1 − ϵ, 1 + ϵ Âh ,
+where ϵ > 0 is the clipping threshold and we monitor
+
+H (πθ (· | oh )) = −
+
+X
+
+πθ (a | oh ) log πθ (a | oh ).
+
+(48)
+
+a∈Ah
+
+The advantage is normalized within each PPO update:
+
+ρh (θ) =
+
+and let the value loss take the larger one of the unclipped and
+clipped losses:
+h
+
+
+LV (ψ) = Eh max ℓ Vψ (oh ) − R̂h ,
+(47)
+i
+ℓ Vψclip (oh ) − R̂h
+,
+
+
+
+R̂h = Âh + Vψold (oh ).
+
+Âh ←
+
+(46)
+
+(39)
+
+j=0
+
+l=0
+
+
++ clip Vψ (oh ) − Vψold (oh ), −ϵ, ϵ ,
+
+(45)
+
+(44)
+
+To stabilize early-stage training under sparse successful
+trajectories, we employ a heuristic teacher-guided warm start
+based on a cost-aware Dijkstra search on the region graph
+under the current resource snapshot, yielding a reference
+region path cT = [c0 , c1 , . . . , cKT ]. The teacher cost is
+
++ w2 ρ̄in
+,
+cost(c → n) = wdelay d˜man
++ wbal w1 ρ̄out
+n
+c,d(c,n)
+n→cdst
+k
+(49)
+where d˜man
+is the Manhattan distance from region n to the
+n→cdst
+k
+destination region cdst
+k , and d(c, n) is the direction from c to
+n. The teacher is intentionally used as a heuristic reachability
+guide rather than an optimal routing oracle. It is used to
+provide early successful trajectories when PPO rarely reaches
+the destination by itself. The final policy is not trained to
+imitate this heuristic. The delay and load-balance preferences
+are optimized through the PPO reward and update in Eq. (33)
+and Eq. (52) after reachability is learned. At the start of each
+episode, we sample u ∼ Bernoulli(ϵT ). If the teacher action
+aTh is feasible, a rollout-only logit bonus is added:
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+z̃h,a ← z̃h,a + βT I[a = aTh ],
+
+10
+
+(50)
+
+where βT > 0 is the teacher bonus. This bonus is used only
+for rollout sampling and is removed during optimization.
+In our implementation, policy forward uses raw masked logits without teacher-logit injection during optimization. Moreover, the PPO policy loss, likelihood-ratio clipping, empirical
+KL, and clip fraction are computed on samples from nonteacher episodes only. Teacher-guided samples are excluded
+from the PPO policy loss, so Eq. (43)–Eq. (44) are evaluated
+on the non-teacher data stream.
+The teacher provides additional supervision through the
+behavior cloning (BC) loss
+1
+
+X
+
+h νh
+
+h
+
+LBC = − P
+
+νh log πθ (aTh | oh ),
+
+(51)
+
+and LBC = 0 when no valid teacher labels exist in the minibatch.
+Combining the above terms, we minimize the total loss:
+min J = − Lclip (θ) + cv LV (ψ)
+h
+i
+− cent Eh H πθ (· | oh ) + cbc LBC ,
+
+ϕ,θ,ψ
+
+(52)
+
+where Lclip and the entropy term are computed on the nonteacher subset Mppo , LBC on the teacher-valid subset Mbc ,
+and LV on the full mini-batch.
+Algorithm 1 GNN-Assisted PPO
+1: Initialize encoder ϕ, policy head θ, value head ψ, actor optimizer on (ϕ, θ), critic
+optimizer on ψ, and schedulers (ϵT , cbc , cent ).
+
+2: for iteration i = 1 to Imax do
+3:
+Collect rollouts in buffer B.
+4:
+for each episode do
+5:
+Sample teacher flag once: u ∼ Bernoulli(ϵT ).
+6:
+Build local region features by (19) and (20).
+7:
+Perform L synchronized local-neighbor message-passing rounds using (21)–
+(24).
+
+8:
+if u = 1 then
+9:
+Run cost-aware Dijkstra using (49) to obtain the teacher path.
+10:
+end if
+reg
+11:
+for planning step h = 0 to Hmax
+− 1 do
+V
+12:
+Build Xπ
+h (a), Xh ; compute logits/value via (36).
+13:
+Apply feasibility masking via (37).
+14:
+if u = 1 and teacher action valid then
+15:
+Add teacher logit bonus via (50).
+16:
+end if
+17:
+Sample action from the masked policy via (38).
+18:
+Execute the selected inter-region transition.
+19:
+if dh = 1 then
+20:
+break
+21:
+end if
+22:
+end for
+23:
+end for
+24:
+Compute Âh , R̂h by (39)–(41); normalize by (42).
+25:
+for PPO epoch k = 1 to Kppo do
+26:
+for mini-batch M ⊂ B do
+27:
+Recompute raw masked logits and values on M.
+28:
+Split M into Mppo and Mbc .
+29:
+Compute PPO-only policy loss Lclip by (44) on Mppo .
+30:
+Compute value loss LV by (46) and (47) on M.
+31:
+Compute entropy by (48) on Mppo and BC by (51) on Mbc .
+32:
+Update (ϕ, θ) using the actor loss in (52) with global-norm clipping.
+33:
+Update ψ using LV with global-norm clipping.
+34:
+end for
+35:
+end for
+36:
+Monitor PPO-only KL by (45); update ϵT and cbc .
+37: end for
+38: Return (ϕ, θ, ψ).
+
+After each PPO update, we compute the success rate of nonteacher episodes over the current update window and update
+(ϵT , cbc ) by a threshold rule: when the rate exceeds a threshold, both are decreased by fixed steps. The entropy coefficient
+is annealed once per update by cent ← max(cmin
+ent , αent cent ). In
+optimization, we use two optimizers with a shared encoder. We
+first compute gradients of the total objective in Eq. (52), then
+apply them by parameter groups: the actor optimizer updates
+(ϕ, θ), while the critic optimizer updates ψ only.
+E. Intra-Region Path Construction
+At each successful upper-layer transition (ch → ch+1 ), the
+environment constructs one executable satellite-level segment
+on the planning snapshot at slot tk . Let Gch = (Vch , Ech )
+denote the intra-region topology of the current region ch , and
+out
+let sin
+denote the entry and exit satellites of the
+h and sh
+segment to be instantiated. For the selected region transition
+(ch → ch+1 ) at planning step h, let Bch →ch+1 (tk ) denote
+the set of available boundary ISLs between the two regions
+on the planning snapshot. If Bch →ch+1 (tk ) = ∅, the current
+route-setup episode terminates as failure. Otherwise, we select
+the boundary pair (u∗ , v ∗ ) ∈ Bch →ch+1 (tk ) by scanning the
+available boundary ISLs using actual ISL load information
+within the selected region pair and choosing the pair with the
+smallest snapshot cost. We then set sout
+= u∗ as the exit
+h
+∗
+in
+satellite of region ch and sh+1 = v as the entry satellite of
+region ch+1 .
+We formulate intra-region path construction as a minimumout
+cost path search from sin
+on Gch . Since Gch is small,
+h to sh
+we adopt a load-aware Dijkstra algorithm whose edge cost
+combines hop count and link-load terms to bypass congested
+links while controlling path-length growth. For any local edge
+(u, v) ∈ Ech , ρuv denotes the link-occupancy ratio corresponding to ρij (tk ) in Section III-B. Let ρmin = min(u,v)∈Ech ρuv
+and ρmax = max(u,v)∈Ech ρuv . We normalize the link occupancy by
+
+ ρuv − ρmin , ρ
+max > ρmin ,
+(53)
+ρ̃uv = ρmax − ρmin
+0,
+ρ
+=ρ .
+max
+
+min
+
+We then define the local edge weight used by the intraregion Dijkstra search as a linear combination of a hop term
+and a load term:
+wuv = whop + βload ρ̃uv ,
+
+(54)
+
+where whop is the per-hop cost weight and βload is the
+nonnegative load-cost coefficient shared by the local links.
+Accordingly, the total cost of the intra-region segment Phseg
+is
+X
+Cost(Phseg ) =
+wuv .
+(55)
+(u,v)∈Phseg
+
+With this cost design, higher link load leads to a larger
+edge cost, so the planner tends to select edges with lower
+load. If no feasible path exists under the selected boundary
+pair, the current route-setup episode terminates as failure.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+Otherwise, the resulting path is used as the executable intraregion segment Phseg for the current planning step.
+At execution time, the planned segment is revalidated using
+the latest link availability and reservation state. Both link
+disruption and capacity blocking can trigger one local repair
+attempt. The region reruns the load-aware Dijkstra algorithm
+once on the updated local topology and the latest load snapshot
+to obtain a new feasible segment. If a boundary ISL becomes
+unavailable or capacity-blocked, another feasible boundary
+pair between the same two regions is selected. This repair step
+uses the concrete boundary-link and intra-region link states
+of the selected boundary. If the boundary pair is successfully
+changed, the entry satellite of the next region will be altered,
+automatically triggering another intra-region replanning of the
+next region. If local repair and boundary-pair reselection fail,
+the current task is regarded as failed.
+F. Complexity Analysis
+Assume that, in each planning episode, the region graph
+contains Nreg = |V reg | region nodes and Mreg = |E reg |
+directed edges. Let dn and de denote the node-feature and
+edge-feature dimensions, respectively, H the GNN hidden
+dimension, He the edge-embedding dimension, dr the edgereadout hidden dimension, L the number of message-passing
+reg
+the maximum number of inter-region routelayers, Hmax
+setup steps, and dp the hidden dimension of the PPO policy and value heads. For intra-region path construction, let
+Gch = (Vch , Ech ) denote the current region subgraph. Since
+the region graph is encoded once in each planning episode,
+the overall online complexity for a single task is
+
+reg
+Conline = O Nreg dn H + LMreg H(2H + de ) + Hmax
+|A|d2p
+
++ Mreg (2H + de )dr + dr He
+
+
++ R |Vch | + |Ech | log |Vch | .
+(56)
+This equation describes the nominal single-task online complexity when each traversed region triggers one local shortestpath computation on Gch to construct the corresponding segment Phseg .
+V. S IMULATION R ESULTS
+This section presents a simulation analysis of the proposed
+hierarchical routing strategy. First, the simulation parameters
+are introduced. Next, a parametric analysis is performed to
+illustrate the impact of PPO hyperparameters and to verify
+the effectiveness of the teacher-guided warm start mechanism through ablation tests. Finally, the proposed method is
+compared with benchmark algorithms under both stable link
+conditions and runtime ISL failures.
+A. Simulation Setup
+We consider a mega LEO constellation constructed from
+real TLE data. In the simulation, the constellation is instantiated as a Walker-delta-like LEO shell with 60 orbital planes
+and 60 satellites per plane, yielding N = 3600. The Walker
+
+11
+
+structure defines the orbital-plane index, the in-plane satellite
+index, the regular candidate ISL neighborhood, and wraparound connections, while TLE/SGP4 propagation provides
+time-varying satellite positions, link distances, and gateway
+visibility. A single gateway station provides S2G connectivity. To emulate spatially localized bursty traffic, one task is
+generated per slot. During each refresh window, the source
+and gateway-visible egress satellite are repeatedly sampled
+from predefined patches.. The destination egress satellite is
+selected from the satellites visible to the gateway station,
+while the source patch is randomly chosen so that it does
+not overlap with the destination patch. The patch side length
+is set to Lpatch = 8 satellites, and the patch is refreshed every
+Irefresh = 600 time slots to represent hotspot movement. For
+each generated task, each route is first planned on the slot
+snapshot and then checked during execution.
+The main system parameters, together with the main GNN
+and PPO hyperparameters, are summarized in Table II. For fair
+comparison, all algorithms use the same task-generation process, task-size setting, reservation-based resource-allocation,
+execution-time capacity check, and runtime ISL failure setting.
+The global execution baselines output a full satellite-level
+path and are checked by the global execution layer without
+hierarchical segment-level local repair. The hierarchical execution baselines use the same region partition, lower-layer
+path construction, execution-time revalidation, and local repair
+mechanism as the proposed method. Failed tasks are counted
+with a fixed 30 s penalty in the penalized average delay. The
+baseline implementations are specified as follows:
+1) Global centralized (GC): This baseline is a centralized
+satellite-level Dijkstra method on the full 3600-node physical
+graph, inspired by [37]. GC uses a load-aware shortest-hop Dijkstra mode. The load of each feasible physical ISL is defined
+as the cost, and currently blocked physical ISLs are removed
+from the search. After the full satellite path is obtained, it is
+checked by the same time-indexed reservation and executiontime capacity mechanism used by the other algorithms. If
+the planned global path contains a disrupted or capacityblocked link during execution, the task fails because GC does
+not include the hierarchical segment repair or boundary-pair
+reselection used by the hierarchical methods.
+2) Global GNN-assisted PPO (GGAP): This baseline, inspired by [38], evaluates the effect of removing the proposed
+regional hierarchy while keeping a GNN-assisted PPO planner.
+GGAP performs next-hop routing directly on the full 3600node satellite graph. For each task, the physical satellite graph
+is constructed from the current slot snapshot, where each satellite has four directed candidate ISL actions corresponding to
+the top, right, bottom, and left physical neighbors with wraparound connectivity. For each satellite node i, GGAP uses a
+7-dimensional node feature vector that includes normalized
+column and row distances from satellite i to the destination
+satellite, mean load ratio of the four outgoing candidate ISLs
+of satellite i, minimum headroom ratio among these outgoing
+candidate ISLs, normalized satellite coordinates, and a binary
+indicator of whether satellite i is the current task destination.
+For each directed physical ISL (i → j), GGAP uses a 3dimensional edge feature, including load ratio of the directed
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+TABLE II: SIMULATION PARAMETERS
+Parameter
+Orbital inclination i
+Number of orbital planes NL
+Satellites per plane ML
+Phase factor F
+Number of satellites N
+Minimum elevation angle θmin
+Time slot length ∆t
+Total simulation slots Tsim
+ISL nominal rate C
+Background occupancy ratio ρbg
+ij
+Per-task occupancy ratio α0
+Blocking threshold ratio ρblk
+Runtime-failure per-link probability plf
+Runtime-failure trigger period Plf
+Runtime-failure duration Dlf
+Region side length Sc
+Number of regions Nreg
+Regions per row Nreg,row
+reg
+Max inter-region route-setup steps Hmax
+GNN layers L
+GNN hidden dimension H
+Edge embedding dimension He
+Edge readout hidden dimension dr
+PPO head hidden dimension dp
+Discount factor γ
+GAE parameter λGAE
+PPO clipping threshold ϵ
+Value loss coefficient cv
+Initial teacher intervention probability ϵT
+Teacher logit bonus βT
+Warm-start success-rate threshold ζws
+Teacher-probability decay step ∆ϵT
+Mini-batch size Bmb
+PPO epochs per update Kppo
+Failure penalty Rfail
+Terminal bonus Rsucc
+
+Value
+57
+60
+60
+23
+3600
+10.0◦
+0.1 s
+30000
+10000 Mbps
+0.001
+0.2
+0.9
+0.03
+1 slot
+20 slots
+5
+144
+12
+24
+3
+64
+64
+128
+128
+0.99
+0.95
+0.2
+0.5
+0.35
+4
+0.3
+0.05
+512
+3
+5.0
+3.0
+
+ISL, headroom ratio, and a binary blocked-link indicator.
+GGAP uses the same edge-conditioned GraphSAGE form
+and the same main PPO hyperparameters as the proposed
+method. At each planning step, the current satellite scores
+its four candidate physical next-hop actions. The action-wise
+policy input concatenates the current satellite embedding, the
+candidate-neighbor embedding, the corresponding directededge embedding, goal-related scalars, direction-risk terms, and
+the graph readout. The feasible-action mask removes unavailable or capacity-blocked physical ISLs. Previously visited
+satellites are not hard-masked, but revisits are penalized in the
+reward. The planned satellite-level path is finally checked by
+the execution-time capacity validation. Hierarchical segmentlevel local repair is not applied in this baseline.
+3) Hierarchical Without GNN (No GNN): This baseline,
+inspired by baseline algorithm selection in our previous work
+[39], is designed to isolate the contribution of GNN-based representation learning. It keeps the same hierarchical POMDP,
+four-direction region action space, feasible-action mask, reward design, PPO training hyperparameters, lower-layer path
+construction, execution-time capacity check, and local-repair
+mechanism as the proposed method, while removing the GNN
+encoder and the direction-specific edge readout. No GNN
+directly feeds handcrafted region-level features into PPO.
+Specifically, it uses the same 22-dimensional local regional
+context as the proposed method, as described earlier. For each
+
+12
+
+candidate region direction, the actor input is formed by directly
+concatenating the current-region feature, candidate-neighbor
+region feature, directed edge feature, goal-related scalars, and
+direction-risk terms. Therefore, No GNN keeps the same
+compact input categories and the same PPO training setting as
+the proposed method, but removes topology-conditioned GNN
+propagation and learned action-specific edge readout.
+4) Heuristic hierarchical (HH): This baseline, inspired
+by [40], evaluates whether the hierarchical decomposition
+alone is sufficient without a learned inter-region policy. HH
+keeps the same region partition, lower-layer path construction,
+execution-time revalidation, and local repair mechanism as
+the proposed method, but it does not construct or train any
+GNN/PPO model. At the upper layer, HH performs deterministic hop-by-hop region selection. At each step, it enumerates
+the four neighboring regions and selects the direction with
+the smallest normalized region-level Manhattan distance to the
+destination region. After the heuristic region path is selected,
+HH uses the exact same lower-layer segment-instantiation
+mechanism as the proposed method. For each selected interregion transition, the concrete boundary ISL pair is chosen
+by scanning candidate boundary pairs and using the same
+boundary-pair cost form as the hierarchical execution module, with distance and normalized boundary-load terms. The
+corresponding intra-region segment is then constructed by the
+shared load-aware shortest-path routine. Therefore, HH is a
+deterministic hierarchical heuristic baseline: it preserves the
+coarse-to-fine execution and local repair structure, but removes
+both GNN-based representation learning and PPO-based interregion decision making.
+B. Parametric Analysis
+In this subsection, we conduct experiments to determine the
+learning rate with the best convergence behavior and to verify
+the effectiveness of the teacher-guided warm start through
+ablation experiments.
+Since actor updates depend on critic estimates, the critic
+learning rate is set to twice the actor learning rate. For each
+setting, we run 10 rounds with 3000 time slots each and
+smooth the reward curves by exponential moving average
+(EMA) and sliding-window averaging for readability.
+
+Fig. 4: Comparison of convergence performance under
+different learning rates.
+The results show a clear pattern in Fig. 4. A large learning
+rate, such as 0.01, causes strong oscillation and unstable training. Moderate values, especially 0.001 and 0.0005, converge
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+much more reliably, while 0.001 reaches a stable regime faster.
+In contrast, very small learning rates, such as 0.0001 and
+0.00005, make policy improvement too slow. We therefore
+use 0.001 as the actor learning rate in the main experiments.
+
+13
+
+P
+
+ρij (t)
+
+
+top
+
+P
+η (t)
+ (i,j)∈E
+P
+,
+ρij (t) > 0,
+HSI(t) =
+(57)
+ρij (t)
+(i,j)∈E(t)
+
+
+(i,j)∈E(t)
+
+
+0,
+otherwise.
+The time-averaged HSI over a run with Tsim time slots is
+HSI =
+
+Fig. 5: Ablation test of teacher-guided warm start.
+We then evaluate the teacher-guided warm start at the
+two best learning rates, namely 0.001 and 0.0005. The goal
+is to test whether teacher guidance improves convergence
+in the early training stage when successful trajectories are
+very sparse. As shown in Fig. 5, training with the teacher
+mechanism converges earlier and remains stable, whereas
+training without teacher guidance fails to achieve comparable
+convergence under either learning rate. This indicates that
+teacher guidance improves early sample quality and thus helps
+PPO converge faster and more stably.
+We also measure the online planning runtime of the proposed method in the above mentioned network. The measured
+time includes online embedding generation, route setup, and
+execution-time revalidation, excluding training updates, model
+loading and checkpoint saving. The proposed method costs
+32.38 ms on average, with a median of 31.06 ms and a 95th
+percentile of 53.58 ms per measured task on an AMD Ryzen
+7 5800 CPU.
+
+C. Performance Comparison
+This subsection compares all algorithms under two settings
+with the same task-size sweep. We first study stable link
+conditions to evaluate the trade-off among task success rate,
+penalized average delay, and load balance. We then introduce
+runtime ISL failures on the same setup to examine robustness
+under link disruptions during execution.
+We first introduce HSI as an auxiliary evaluation metric that
+complements JFI. JFI measures overall load balance, whereas
+HSI measures load concentration by quantifying how much of
+the total load is concentrated on a small set of hotspot links.
+Specifically, HSI is defined as the fraction of total link load
+carried by the top η % highest-utilization links in each time
+slot. We set η = 0.01, and let k(t) = max {1, ⌈η · |E(t)|⌉}
+denote the number of top 1 % links with the largest utilization
+values. The set of these links is written as Eηtop (t) ⊆ E(t).
+The instantaneous HSI is
+
+1
+
+T
+sim
+X
+
+Tsim t=1
+
+HSI(t).
+
+(58)
+
+A smaller HSI indicates lower load concentration on a small
+set of heavily utilized links. However, HSI should not be
+interpreted alone because early task failure can also reduce
+the amount of carried traffic on hotspot links.
+We observe the performance of the algorithms under different nominal task-size levels. Each experimental point is
+specified by a nominal task-size level Bnom . At the point
+labeled Bnom = x Mb, the task size of each generated task is
+randomly sampled from the interval [x − 50, x + 50] Mb. For
+each nominal task-size level, we run the simulation 5 times
+for each algorithm and present the overall averaged metrics.
+1) Stable link conditions: Under stable link conditions,
+links do not fail because of non-geometric events such as APT
+errors or hardware glitches, that is, aotg
+ij (t) ≡ 1. Fig. 6 reports
+the performance under different nominal task-size levels. A
+larger nominal task size increases the resource demand of
+each task and makes admission control more restrictive. The
+proposed method maintains high reachability in all tested
+scenarios. Averaged over all task-size levels, it achieves a task
+success rate of 0.9980, a penalized average delay of 9.01 s,
+and JFI = 0.9853. At Bnom = 500 Mb, it still maintains a
+task success rate of 0.9983 and a penalized average delay of
+12.73 s. This shows that the proposed method can preserve
+routing feasibility and load fairness under large task sizes.
+GC gives a strong delay reference in the stable-link case.
+At Bnom = 500 Mb, it achieves a task success rate of 0.9993
+and a penalized average delay of 9.40 s. However, its shortesthop rule leads to poorer load distribution, with JFI = 0.7679
+and HSI = 0.3117. No GNN keeps the same hierarchical
+execution and repair mechanism as the proposed method, but
+uses direct engineered-feature inputs instead of GNN message
+passing and direction-specific edge readout. Its task success
+rate and penalized average delay are 0.9697 and 15.16 s at
+Bnom = 500 Mb. The gap between No GNN and the proposed
+method shows the benefit of topology-conditioned regional
+embeddings and direction-specific edge representations.
+We use HH to further evaluate whether the hierarchical
+execution structure alone is sufficient by using a distancebased hierarchical heuristic method. HH shares the same path
+construction and repair setting as the proposed method. At
+Bnom = 500 Mb, HH achieves a task success rate of 0.7070
+and a penalized average delay of 16.51 s. This result shows that
+the hierarchical execution structure needs to be coupled with
+learned region-level decisions to maintain high reachability
+under large task sizes. GGAP gives another reference by
+applying direct satellite-level GNN-PPO routing on the full
+graph. It also underperforms the proposed method in this
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+(a)
+
+(b)
+
+14
+
+(c)
+
+(d)
+
+Fig. 6: Algorithm performance under different nominal task-size levels with stable link conditions. (a) Task success rate. (b)
+Penalized average delay. (c) Jain’s fairness index. (d) Hotspot severity index.
+
+(a)
+
+(b)
+
+(c)
+
+(d)
+
+Fig. 7: Algorithm performance under different nominal task-size levels with runtime ISL failures. (a) Task success rate. (b)
+Penalized average delay. (c) Jain’s fairness index. (d) Hotspot severity index.
+
+setting, with task success rate 0.6880 and penalized average
+delay 16.40 s at Bnom = 500 Mb. Although GGAP reports a
+low HSI, this value should not be interpreted as better hotspot
+control. Its low success rate means that less traffic is carried,
+which can also reduce the measured hotspot concentration.
+Overall, under stable link conditions, the proposed method
+provides a strong trade-off among success rate, penalized
+average delay, JFI-based load balance, and HSI-based load
+concentration.
+2) Runtime ISL failures: We next evaluate the same tasksize sweep under runtime ISL failures. In this setting, some
+ISLs become temporarily unavailable during execution because of non-geometric disruptions such as APT errors or
+hardware glitches. The runtime-failure generator follows the
+rule defined in Section III. The same runtime-failure profile
+and random seed are used for all algorithms. The results are
+shown in Fig. 7.
+Runtime ISL failures make the difference between hierarchical route repair and global path planning clearer. Averaged
+over all task-size levels, the proposed method achieves a task
+success rate of 0.9410, a penalized average delay of 10.55 s,
+and JFI = 0.9755. At Bnom = 500 Mb, it still achieves a
+task success rate above 0.94 and a penalized average delay
+of 14.09 s. These results show that the proposed method
+maintains high reachability and low penalized delay under
+execution-time link failures.
+The global baselines are much more sensitive to runtime
+ISL failures. At Bnom = 500 Mb, GC drops to a task success
+rate of 0.3613, and GGAP drops further to a task success rate
+of 0.1793. Their penalized delays are also higher than that
+of the proposed method. Among the hierarchical baselines,
+
+No GNN remains the closest one, with a task success rate of
+0.8953 and a penalized average delay of 16.62 s. HH reaches
+a task success rate of 0.6820 and a penalized average delay
+of 17.39 s. These results confirm that hierarchical repair is
+robust, but GNN-assisted inter-region decisions are still needed
+for reliable route setup under runtime failures. Overall, the
+proposed method provides the most balanced performance
+across the four reported metrics in the runtime-failure setting.
+
+VI. C ONCLUSION
+This paper studied scalable routing for mLEO satellite
+constellations under localized hotspot traffic. We proposed
+a learning-based hierarchical routing framework that decomposes route setup into inter-region route setup and intraregion path construction. At the upper layer, regions generate
+local embeddings through a finite number of synchronized
+local-neighbor message-passing rounds on the region graph,
+and a parameter-sharing GNN-assisted PPO policy selects the
+inter-region route through sequential decisions based on local
+observations. At the lower layer, executable satellite paths
+are constructed by a load-aware shortest-path method, and
+execution-time revalidation with local repair is used to handle
+disrupted or capacity-blocked segments. Simulation results
+obtained using real TLE data and SGP4 propagation under
+varying task-size levels and runtime ISL failures showed that
+the proposed method achieves a favorable overall trade-off
+among task success rate, penalized average delay, JFI-based
+load balance, and HSI-based load concentration under both
+stable link conditions and runtime ISL failures.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+R EFERENCES
+[1] P. A. Sonawane and L. Daniel Otero, “Analyzing the impact of
+reusable rocket launch system failures on large-scale space missions:
+A simulation-based approach,” in 2024 IEEE International Systems
+Conference (SysCon), 2024, pp. 1–6. 1
+[2] R. Singh, A. Kaushik, W. Shin, M. D. Renzo, V. Sciancalepore, D. Lee,
+H. Sasaki, A. Shojaeifard, and O. A. Dobre, “Toward 6g evolution:
+Three enhancements, three innovations, and three major challenges,”
+IEEE Network, vol. 39, no. 6, pp. 139–147, 2025. 1
+[3] M. A. Jamshed, A. Kaushik, M. Dajer, A. Guidotti, F. Parzysz, E. Lagunas, M. Di Renzo, S. Chatzinotas, and O. A. Dobre, “Non-terrestrial
+networks for 6g: Integrated, intelligent, and ubiquitous connectivity,”
+IEEE Communications Standards Magazine, vol. 9, no. 3, pp. 86–93,
+2025. 1
+[4] N. O. Salau and M. Z. Shakir, “Non-terrestrial networks,” in NonTerrestrial Networks: Paving the Way towards Global Connectivity,
+M. Z. Shakir and A. Kaushik, Eds. Elsevier, 2025, pp. 1–426. 1
+[5] G. Xu, Y. Zhao, Y. Ran, R. Zhao, and J. Luo, “Spatial location aided
+fully-distributed dynamic routing for large-scale leo satellite networks,”
+IEEE Communications Letters, vol. 26, no. 12, pp. 3034–3038, 2022. 1
+[6] X. Wang and S. Zhang, “Cost analysis for mass customized production
+of satellites based on modularity,” IEEE Access, vol. 9, pp. 13 754–
+13 760, 2021. 1
+[7] R. Radhakrishnan, W. W. Edmonson, F. Afghah, R. M. RodriguezOsorio, F. Pinto, and S. C. Burleigh, “Survey of inter-satellite communication for small satellite systems: Physical layer to network layer
+view,” IEEE Communications Surveys & Tutorials, vol. 18, no. 4, pp.
+2442–2473, 2016. 1
+[8] E. Lagunas, F. G. Ortiz, G. Eappen, S. Daoud, W. A. Martins, J. Querol,
+S. Chatzinotas, N. Skatchkovsky, B. Rajendran, and O. Simeone, “Performance evaluation of neuromorphic hardware for onboard satellite
+communication applications,” IEEE Wireless Communications, vol. 31,
+no. 6, pp. 78–84, 2024. 1
+[9] Y. Kaymak, R. Rojas-Cessa, J. Feng, N. Ansari, M. Zhou, and T. Zhang,
+“A survey on acquisition, tracking, and pointing mechanisms for mobile
+free-space optical communications,” IEEE Communications Surveys &
+Tutorials, vol. 20, no. 2, pp. 1104–1123, 2018. 1
+[10] T. Taleb, D. Mashimo, A. Jamalipour, N. Kato, and Y. Nemoto, “Explicit load balancing technique for ngeo satellite ip networks with onboard processing capabilities,” IEEE/ACM Transactions on Networking,
+vol. 17, no. 1, pp. 281–293, 2009. 1
+[11] X. Liu, X. Yan, Z. Jiang, C. Li, and Y. Yang, “A low-complexity routing
+algorithm based on load balancing for leo satellite networks,” in 2015
+IEEE 82nd Vehicular Technology Conference (VTC2015-Fall), 2015, pp.
+1–5. 1
+[12] J. Liu, R. Luo, T. Huang, and C. Meng, “A load balancing routing
+strategy for leo satellite network,” IEEE Access, vol. 8, pp. 155 136–
+155 144, 2020. 1
+[13] J. Zhou, Z. Sun, R. Zhang, G. Lin, S. Zhang, and Y. Zhao, “A cloudedge collaboration cnn-based routing method for isac in leo satellite
+networks,” in Proceedings of the 2nd Workshop on Integrated Sensing
+and Communications for Metaverse, ser. ISACom ’23. New York, NY,
+USA: Association for Computing Machinery, 2023, p. 25–29. 1
+[14] S. Zhang, A. Liu, C. Han, K. An, Z. Lin, G. Ding, J. Wang, and
+S. Chatzinotas, “Antijamming routing-based graph neural network for
+satellite constellation defense,” IEEE Transactions on Aerospace and
+Electronic Systems, vol. 62, pp. 8707–8713, 2026. 1
+[15] C. Han, L. Huo, X. Tong, H. Wang, and X. Liu, “Spatial anti-jamming
+scheme for internet of satellites based on the deep reinforcement learning
+and stackelberg game,” IEEE Transactions on Vehicular Technology,
+vol. 69, no. 5, pp. 5331–5342, 2020. 1
+[16] H. Wang, Y. Ran, L. Zhao, J. Wang, J. Luo, and T. Zhang, “Grouting:
+Dynamic routing for leo satellite networks with graph-based deep
+reinforcement learning,” in 2021 4th International Conference on Hot
+Information-Centric Networking (HotICN), 2021, pp. 123–128. 1
+[17] Y. Kang, Y. Zhu, D. Wang, and Z. Han, “Efficient path selection design
+for large scale leo satellite constellations using graph embedding-based
+reinforcement learning,” IEEE Transactions on Network Science and
+Engineering, vol. 12, no. 3, pp. 2007–2020, 2025. 1
+[18] I. Shenfeld, Z.-W. Hong, A. Tamar, and P. Agrawal, “TGRL: An
+algorithm for teacher guided reinforcement learning,” in Proceedings of
+the 40th International Conference on Machine Learning, ser. Proceedings of Machine Learning Research, A. Krause, E. Brunskill, K. Cho,
+B. Engelhardt, S. Sabato, and J. Scarlett, Eds., vol. 202. PMLR, 23–29
+Jul 2023, pp. 31 077–31 093. 2
+
+15
+
+[19] H. QIN, R. DENG, and H. LYU, “Single-station tle estimation of nc-leo
+satellite for space-based opportunistic positioning,” Journal of Beijing
+University of Aeronautics and Astronautics, vol. 51, no. 12, pp. 4031–
+4040, 2025. 2
+[20] F. Yan, Z. Wang, S. Zhang, Q. Meng, and H. Luo, “Load-aware hierarchical information-centric routing for large-scale leo satellite networks,”
+in 2024 IEEE Wireless Communications and Networking Conference
+(WCNC), 2024, pp. 1–6. 2
+[21] A. Cigliano and F. Zampognaro, “A machine learning approach for routing in satellite mega-constellations,” in 2020 International Symposium
+on Advanced Electrical and Communication Technologies (ISAECT),
+2020, pp. 1–6. 2
+[22] P. Zhang, Z. Xian, M. Liao, H. Huang, and J. Yang, “Adaptive routing
+mechanism for leo satellite network based on control domain partition,”
+IEEE Transactions on Green Communications and Networking, vol. 9,
+no. 1, pp. 70–82, 2025. 2
+[23] M. M. H. Roth, H. Brandt, and H. Bischl, “Distributed sdn-based
+load-balanced routing for low earth orbit satellite constellation networks,” in 2022 11th Advanced Satellite Multimedia Systems Conference
+and the 17th Signal Processing for Space Communications Workshop
+(ASMS/SPSC), 2022, pp. 1–8. 2
+[24] S. Zhang, A. Liu, C. Han, X. Xu, X. Liang, K. An, and Y. Zhang, “Grlr:
+Routing with graph neural network and reinforcement learning for mega
+leo satellite constellations,” IEEE Transactions on Vehicular Technology,
+vol. 74, no. 2, pp. 3225–3237, 2025. 2
+[25] P. Xu, M. Feng, J. Zhou, L. Xiao, P. Xiao, and T. Jiang, “Inter-satellite
+routing for leo satellite networks: A gnn and drl integrated approach,” in
+2024 IEEE/CIC International Conference on Communications in China
+(ICCC), 2024, pp. 1346–1351. 2
+[26] R. Gao, B. Zhang, Q. Zhang, and Z. Yang, “Toward the age in forwarding: A deep reinforcement learning enabled routing mechanism for largescale satellite networks via spatial–temporal graph neural networks,”
+IEEE Transactions on Networking, vol. 34, pp. 292–307, 2026. 3
+[27] Y. Ran, Y. Ding, S. Chen, J. Lei, and J. Luo, “Fully-distributed
+dynamic packet routing for leo satellite networks: A gnn-enhanced
+multi-agent reinforcement learning approach,” IEEE Transactions on
+Vehicular Technology, vol. 74, no. 3, pp. 5229–5234, 2025. 3
+[28] Q. Chen, L. Yang, J. Guo, X. Liu, and X. Chen, “Optimal gateway
+placement for minimizing intersatellite link usage in leo megaconstellation networks,” IEEE Internet of Things Journal, vol. 9, no. 22, pp.
+22 682–22 694, 2022. 3
+[29] H. Zhang, H. Zhao, R. Liu, X. Gao, and S. Xu, “Dynamic user
+association and computation offloading in satellite edge computing
+networks via deep reinforcement learning,” IEEE Transactions on Green
+Communications and Networking, vol. 8, no. 4, pp. 1888–1901, 2024.
+3
+[30] M. Gregory, F. Heine, H. Kämpfner, R. Lange, M. Lutzer, and R. Meyer,
+“Commercial optical inter-satellite communication at high data rates,”
+Optical Engineering, vol. 51, no. 3, pp. 031 202–031 202, 2012. 4
+[31] H. Zhang, R. Liu, A. Kaushik, and X. Gao, “Satellite edge computing
+with collaborative computation offloading: An intelligent deep deterministic policy gradient approach,” IEEE Internet of Things Journal, vol. 10,
+no. 10, pp. 9092–9107, 2023. 4
+[32] R. K. Jain, D.-M. W. Chiu, W. R. Hawe et al., “A quantitative measure
+of fairness and discrimination,” Eastern Research Laboratory, Digital
+Equipment Corporation, Hudson, MA, vol. 21, no. 1, pp. 2022–2023,
+1984. 5
+[33] M. Gori, G. Monfardini, and F. Scarselli, “A new model for learning
+in graph domains,” in Proceedings. 2005 IEEE international joint
+conference on neural networks, 2005., vol. 2. IEEE, 2005, pp. 729–734.
+7
+[34] W. Hamilton, Z. Ying, and J. Leskovec, “Inductive representation
+learning on large graphs,” in Advances in Neural Information Processing
+Systems, I. Guyon, U. V. Luxburg, S. Bengio, H. Wallach, R. Fergus,
+S. Vishwanathan, and R. Garnett, Eds., vol. 30. Curran Associates,
+Inc., 2017. 7
+[35] J. Schulman, F. Wolski, P. Dhariwal, A. Radford, and O. Klimov, “Proximal policy optimization algorithms,” arXiv preprint arXiv:1707.06347,
+2017. 8
+[36] J. Schulman, P. Moritz, S. Levine, M. Jordan, and P. Abbeel, “Highdimensional continuous control using generalized advantage estimation,”
+in ICLR, 2016. 8
+[37] H. Aiache, V. Conan, L. Lebrun, and S. Rousseau, “ A load dependent
+metric for balancing Internet traffic in Wireless Mesh Networks ,” in
+2008 5th IEEE International Conference on Mobile Ad Hoc and Sensor
+Systems (MASS). Los Alamitos, CA, USA: IEEE Computer Society,
+Oct. 2008. 11
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+This article has been accepted for publication in IEEE Transactions on Vehicular Technology. This is the author's version which has not been fully edited and
+content may change prior to final publication. Citation information: DOI 10.1109/TVT.2026.3722870
+
+JOURNAL OF LATEX CLASS FILES, VOL. 14, NO. 8, AUGUST 2015
+
+[38] S. Zhang, A. Liu, C. Han, R. Wang, X. Liang, X. Xu, and X. Lin,
+“Graph neural network and reinforcement learning based routing for
+mega leo satellite constellations,” in 2023 9th International Conference
+on Computer and Communications (ICCC), 2023, pp. 1–6. 11
+[39] S. Xu, R. Liu, H. Zhang, and A. Kaushik, “Heterogeneous resource
+allocation in space–air–ground-integrated networks: A multiagent deep
+deterministic policy gradient approach,” IEEE Internet of Things Journal, vol. 12, no. 20, pp. 43 772–43 787, 2025. 12
+[40] Y. Yao, Z. Peng, and B. Xiao, “Parallel hyper-heuristic algorithm for
+multi-objective route planning in a smart city,” IEEE Transactions on
+Vehicular Technology, vol. 67, no. 11, pp. 10 307–10 318, 2018. 12
+
+16
+
+Aryan Kaushik (Member, IEEE) is CEO at OUF
+Innovative (UK) since 2026, CIO at RakFort (Ireland), and Adjunct Professor at IIITD (India) since
+2025. His previous academic experience includes
+Associate Professor at Manchester Met (UK, 202425), Senior Grade Assistant Professor at the University of Sussex (UK, 2021-24), and Research
+Fellow at University College London (UK, 2020-21),
+with affiliations to the University of Edinburgh and
+HKUST. He also held visiting positions at institutions across Italy, Greece, the UK, Luxembourg, and
+China. A Stanford/Elsevier Top 2% Scientist, he serves as a global external
+assessor/examiner and reviews proposals for UK EPSRC and French ANR.
+He holds key roles in IEEE such as Chair of the IEEE ETI on ESIT and SIG
+on AITNTN, Vice Chair of one6G WG3, edited 5 books (Elsevier/Wiley)
+and multiple IEEE journals—garnering seven Exemplary Editor awards (such
+as for IEEE TMC, IEEE OJCOMS and IEEE COMML)—and founded
+the IEEE ComSoc CTN Podcasts in 2023. He has delivered over 140
+international invited/keynote speeches, chaired committees for 15+ flagship
+IEEE conferences, and led 30+ IEEE workshops and special sessions.
+
+Shenzhan Xu (Student Member, IEEE) received the
+B.Sc. degree from the School of Electronic and Information Engineering, Beihang University, Beijing,
+China, in 2021. He is currently a Ph.D. candidate
+with the School of Electronic and Information Engineering and the Shenyuan Honors College, Beihang
+University, Beijing, China. His research interests
+include satellite edge intelligence, space-air-ground
+integrated networks and resource allocation.
+
+Rongke Liu (Senior Member, IEEE) received the
+B.S. and Ph.D. degrees from Beihang University,
+Beijing, China, in 1996 and 2002, respectively. He
+was a Visiting Professor with the Florida Institute
+of Technology, Melbourne, FL, USA, in 2006, The
+University of Tokyo, Tokyo, Japan, in 2015, and The
+University of Edinburgh, Edinburgh, U.K., in 2018,
+respectively. He is currently a Full Professor with
+the Shenzhen Institute of Beihang University and the
+School of Electronic and Information Engineering,
+Beihang University. He has authored or coauthored
+more than 200 papers in international conferences and journals. His research
+interests include wireless communication and space information networks.
+
+Hangyu Zhang received the B.S. degree from the
+School of Communication Engineering, Jilin University, Changchun, China, in 2019 and the Ph.D. degree from the School of Electronic and Information
+Engineering, Beihang University, Beijing, China, in
+2025. She is currently a researcher at the China
+Mobile Research Institute. Her research interests
+include 6G space-based computing, satellite-ground
+integrated networks, and resource scheduling for
+converged computing and communication.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:51:33 UTC from IEEE Xplore. Restrictions apply.
+© 2026 IEEE. All rights reserved, including rights for text and data mining and training of artificial intelligence and similar technologies. Personal use is permitted,
+but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index.html for more information.
+
+

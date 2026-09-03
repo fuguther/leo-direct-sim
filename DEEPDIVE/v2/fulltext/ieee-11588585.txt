@@ -1,0 +1,480 @@
+2026 International Conference on Signal Processing, Communication and Control Systems (SPCCS) | 979-8-3315-9294-3/26/$31.00 ©2026 IEEE | DOI: 10.1109/SPCCS69331.2026.11588585
+
+2026 International Conference on Signal Processing, Communication and Control Systems (SPCCS)
+
+Prediction-Driven Dual-Timescale Resource
+Allocation for Long-Term QoS in Beam-Hopping
+LEO Satellites
+1st Zhiqiang Yu
+
+2nd Xiaoling Peng
+
+School of Communications and Information Engineering
+Chongqing University of Posts and Telecommunications
+Chongqing 400065, China
+s230131139@stu.cqupt.edu.cn
+
+School of Communications and Information Engineering
+Chongqing University of Posts and Telecommunications
+Chongqing 400065, China
+s250131062@stu.cqupt.edu.cn
+
+3rd Xiaolong Jie
+
+4th Chengchao Liang∗
+
+School of Communications and Information Engineering
+Chongqing University of Posts and Telecommunications
+Chongqing 400065, China
+s240132215@stu.cqupt.edu.cn
+
+School of Communications and Information Engineering
+Chongqing University of Posts and Telecommunications
+Chongqing 400065, China
+liangcc@cqupt.edu.cn
+
+Abstract—Beam-hopping low Earth orbit (LEO) satellite systems support flexible coverage for uneven traffic, but dynamic
+topology, bursty demand, and limited onboard resources make
+long-term quality-of-service (QoS) support challenging. Existing
+methods mainly optimize instantaneous throughput and thus
+struggle to guarantee long-term service reliability. This paper
+proposes a prediction-guided, queue-corrective dual-timescale
+architecture for beam-hopping LEO systems. At the window
+timescale, a Temporal Fusion Transformer (TFT) predicts traffic demand and guides coarse power budgeting. At the slot
+timescale, a Lyapunov virtual-queue mechanism enables queueaware online scheduling and mitigates prediction mismatch. In
+a representative small-scale single-satellite scenario (7 cells, 14
+users), the proposed method improves long-term user satisfaction
+by 40% over myopic baselines and achieves better cell-edge
+performance.
+Index Terms—Beam-hopping LEO satellites, long-term QoS,
+resource allocation, spatio-temporal prediction, Lyapunov optimization, rate-splitting multiple access.
+
+forecasts deviate from actual demand, while queue-aware
+control approaches react only after service deficits occur. To
+address this gap, we propose a prediction-guided, queuecorrective dual-timescale framework that couples windowlevel prediction guidance with slot-level queue correction. The
+main contributions are: 1) a dual-timescale framework for
+long-term QoS-oriented resource allocation; 2) a satisfactionoriented virtual queue that prioritizes deficit users online and
+mitigates moderate prediction mismatch in practice; and 3)
+dynamic user grouping and adaptive SIC as supporting mechanisms for improved fairness with polynomial complexity.
+
+I. I NTRODUCTION
+
+We consider a downlink LEO satellite communication system employing beam-hopping technology. As shown in Figure 1, the satellite equipped with phased array antennas generates multiple spot beams that can be dynamically activated
+to serve different cells. The system operates in full frequency
+reuse mode, where all beams share the same spectrum, leading
+to co-channel interference that must be carefully managed
+through resource allocation.
+The coverage area is divided into M cells, each containing
+multiple users. Time is divided into two scales: windows τ
+(slow timescale, each containing L slots) for resource budgeting, and slots t (fast timescale) for instantaneous scheduling.
+At the window level, the network management system determines which cells to activate (am (τP
+) ∈ {0, 1}) and allocates
+power budgets Bm (τ ) satisfying
+m Bm (τ ) ≤ LNmax ,
+where Nmax is the maximum number of simultaneous beams.
+
+Beam-hopping low Earth orbit (LEO) satellite systems provide flexible coverage for highly uneven traffic distributions,
+but their dynamic topology, time-varying channels, and limited
+onboard resources make long-term QoS provisioning challenging. Existing beam-hopping and RSMA/HRS-based methods
+mainly optimize instantaneous throughput, beam scheduling,
+or interference management [1]–[7], and therefore struggle
+to guarantee long-term service reliability under bursty traffic
+and channel variations. Recent surveys and related studies on
+satellite networking, learning-based resource allocation, and
+RSMA-enabled multibeam systems can be found in [8]–[11].
+Existing studies still lack a unified framework that jointly
+handles slow traffic evolution, fast channel variation, and longterm QoS in beam-hopping LEO systems. Existing predictiondriven methods often lack slot-level corrective feedback when
+979-8-3315-9294-3/26/$31.00 ©2026 IEEE
+
+II. S YSTEM M ODEL AND P ROBLEM F ORMULATION
+A. Network Architecture
+
+420
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:03 UTC from IEEE Xplore. Restrictions apply.
+
+"
+∆V (t) = E L(Q(t + 1)) − L(Q(t)) − V
+
+LEO Satellite
+
+K
+X
+
+#
+ωk Rk (t) | Q(t) ,
+
+k=1
+
+(4)
+where V > 0 is the Lyapunov control parameter and ωk is a fixed
+priority weight. By standard Lyapunov drift analysis, minimizing an
+upper bound of ∆V (t) at each slot is equivalent, after dropping
+terms independent of the slot decision, to maximizing the queueaware weighted sum-rate:
+
+G1
+
+G4
+
+G3
+
+Gateway
+Ground Segment
+
+G2
+
+Power
+
+G7
+
+G5
+G6
+
+Outer
+Common
+Woc
+Inner
+Common
+Wic,g
+Private
+Wp,gk
+
+G8
+
+Beam coverage cell
+
+System Power Layers
+
+Frequency
+
+Control Link
+
+max
+χ(t)
+
+s.t.
+
+Non-beam coverage cell
+
+K
+X
+
+Wk (t)Rk (t)
+
+(5)
+
+k=1
+M
+X
+
+xm (t) ≤ Nmax ,
+
+m=1
+
+Figure 1. System architecture of beam-hopping LEO satellite network with
+Hierarchical Rate Splitting (HRS).
+
+X
+
+Pm (t) ≤ Pmax ,
+
+m
+
+B. HRS Transmission Model
+
+HRS decodability constraints,
+
+At the slot level, we employ Hierarchical Rate Splitting
+(HRS) transmission to manage multi-user interference. The
+transmit signal contains three layers: the outer common message soc for all active users, the inner common messages sic,g
+for user groups, and the private messages sgk for individual
+users. User k’s achievable rate Rk (t) depends on the Signalto-Interference-plus-Noise Ratio (SINR) γk (t) through
+Rk (t) = log2 (1 + γk (t)),
+
+(1)
+
+where the SINR accounts for path loss, shadowing, and
+co-channel interference from simultaneously activated beams
+under full frequency reuse [5]–[7], [10].
+C. Long-Term Satisfaction and Virtual Queues
+To quantify long-term QoS, we define the satisfaction
+indicator for user k at slot t as Sk (t) = 1 if the achieved
+rate meets or exceeds the demand Rk (t) ≥ Dk (t), and 0
+otherwise.
+The long-term satisfaction is the time average S̄k =
+PT
+1
+S
+(t). This demand-matching metric is more suitable
+k
+t=1
+T
+than pure average-rate objectives for bursty and heterogeneous
+satellite traffic, since it directly reflects whether user service
+requirements are met over time. Since the binary metric is
+difficult to optimize directly online, we use a rate-deficit virtual
+queue as a tractable surrogate for queue-aware control.
+Specifically, define the virtual queue Qk (t) as
+Qk (t + 1) = max{Qk (t) + Dk (t) − Rk (t), 0},
+
+K
+
+1X 2
+Qk (t),
+2
+k=1
+
+and the drift-plus-penalty term as
+
+III. P ROPOSED D UAL -T IMESCALE A LGORITHM
+A. Window-Level Planning with TFT Prediction
+At the window level, we employ Temporal Fusion Transformer
+(TFT) [12] to predict spatio-temporal traffic demands D̂m (τ ) and
+channel efficiency ηm (τ ) for each cell. TFT effectively captures
+both temporal patterns and spatial correlations between cells. The
+role of this slow-timescale planner is not to determine exact slot
+decisions, but to provide coarse-grained resource guidance robust to
+traffic fluctuations.
+Given predictions, we formulate the window planning problem to
+maximize weighted satisfaction via capped utility:
+M
+X
+
+(
+
+ηm (τ )Bm (τ )
+max
+ωm min 1,
+{Bm (τ )}
+LD̂m (τ )
+m=1
+
+)
+,
+
+(6)
+
+P
+subject to
+m Bm (τ ) ≤ LNmax and 0 ≤ Bm (τ ) ≤ L. The
+capped utility equals one once the predicted window demand is
+fully met, and otherwise increases linearly with the allocated budget.
+Since it is monotone and piecewise concave in Bm (τ ), the relaxed
+planning problem is a convex program and can be efficiently solved
+in O(M log M ) by a sorting/water-filling procedure.
+
+B. Slot-Level Optimization via Fractional Programming
+(2)
+
+where Dk (t) denotes the instantaneous traffic demand of user
+k. A larger Qk (t) indicates persistent service deficit and thus
+higher urgency.
+Define the Lyapunov function as
+L(Q(t)) =
+
+where Wk (t) = V ωk +Qk (t) and χ(t) collects the slot-level decision
+variables, including beam activation xm (t), power allocation Pm (t),
+and precoding variables.
+
+(3)
+
+At each slot, given the budget constraints from window planning, we solve the weighted sum-rate maximization using Fractional
+Programming (FP) [13]. The non-convexity arises from the coupled
+log-SINR rate terms under interference and HRS decodability constraints. Using a standard FP-based reformulation, the problem is
+converted into an iterative procedure that alternates between updating
+auxiliary SINR-related variables and solving a convexified powerallocation subproblem. This yields a stationary point with complexity
+O(Niter K 3 ) per slot, where Niter ≤ 3 typically suffices. More importantly, the Lyapunov queue weights naturally mitigate prediction
+mismatch, since persistently underserved users automatically obtain
+higher priority in subsequent slots.
+
+421
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:03 UTC from IEEE Xplore. Restrictions apply.
+
+(a) Avg sum-rate
+
+Figure 2. Performance-delay tradeoff versus Lyapunov parameter V under
+prediction-guided and no-prediction settings.
+
+(b) 5% cell-edge rate
+
+C. Dynamic User Grouping based on Statistical CSI
+To adapt to channel variations at the window timescale, we propose
+dynamic user grouping based on statistical CSI. Since statistical CSI
+evolves more slowly than instantaneous SINR, grouping is updated
+at the slow timescale. Define the spatial similarity between users i
+and j using the cosine similarity of average channel vectors:
+si,j =
+
+|h̄H
+i h̄j |
+,
+∥h̄i ∥∥h̄j ∥
+
+(7)
+
+where h̄i is the time-averaged channel vector over the window.
+The grouping utility function balances intra-group similarity
+against inter-group interference:
+Ugrp =
+
+(c) Hard satisfaction
+Figure 3. Overall performance comparison.
+
+G
+X
+X
+X
+X X
+1
+1
+si,j − λinter
+si,j .
+′
+|Gg | i,j∈G
+|Gg ||Gg | i∈G j∈G
+′
+g=1
+g
+
+g<g
+
+g
+
+g′
+
+(8)
+We employ K-means clustering for initialization, followed by
+local search where users are iteratively migrated between groups if
+utility improves. This executes every Tgrp windows with complexity
+O(K 2 + KGT0 ).
+
+D. Dynamic SIC Decoding Order
+At each slot, given power allocation from FP optimization, we
+dynamically adjust the Successive Interference Cancellation (SIC)
+decoding order based on instantaneous weights and SINR conditions.
+Since decoding priority depends on instantaneous interference and
+queue urgency, SIC ordering is updated at the fast timescale.
+Define the importance metric for user k’s private layer as
+πkpri (t) = Wk (t) · log2 (1 + γkpri (t)),
+SINR. For common layers, we use the bottleneck principle:
+k∈Gg
+
+subsequent layers. This improves weighted service reliability without
+re-optimizing power.
+
+(9)
+
+where Wk (t) is the Lyapunov weight and γkpri (t) is the instantaneous
+πc,g (t) = min {Wk (t) · log2 (1 + γk,c,g (t))},
+
+Figure 4. CDF of long-term user satisfaction.
+
+(10)
+
+ensuring that the worst user in the group can decode the common
+message.
+The decoding order follows descending π values, so high-priority
+users are decoded earlier and their interference can be removed before
+
+IV. C OMPLEXITY AND C ONVERGENCE A NALYSIS
+The proposed framework operates hierarchically at three
+timescales. Window-level prediction and budget allocation require
+O(M log M ), while slot-level FP optimization requires O(Niter K 3 )
+with typically small Niter . Dynamic grouping incurs O(K 2 +KGT0 )
+and is amortized over multiple windows. The slot-level FP optimization converges to a KKT stationary point because each iteration
+monotonically improves an upper-bounded objective. Under standard
+bounded-arrival and feasible-control assumptions, Lyapunov theory
+
+422
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:03 UTC from IEEE Xplore. Restrictions apply.
+
+ensures strong stability of the virtual queues, which implies longterm QoS satisfaction up to the usual O(1/V ) trade-off.
+
+V. S IMULATION R ESULTS AND D ISCUSSION
+We evaluate the proposed framework in a representative smallscale single-satellite scenario with 7 cells, 14 users, and 800 slots.
+Accordingly, the results and conclusions in this paper are restricted
+to the considered setting. We compare four schemes: Proposed,
+Myopic-HRS, LongTerm-OMA, and PF. The Lyapunov parameter V
+is selected from a moderate range to balance satisfaction improvement
+and queue growth. Fig. 2 illustrates this performance-delay tradeoff
+under prediction-guided and no-prediction settings.
+Figure 3 presents the comprehensive performance comparison.
+The proposed method achieves comparable average sum-rate to
+Myopic-HRS while significantly improving the 5% cell-edge rate
+by 35%. Most importantly, the hard satisfaction metric shows 40%
+improvement over Myopic-HRS, demonstrating the effectiveness of
+long-term QoS optimization. These results indicate that the proposed
+framework improves long-term service reliability without paying a
+prohibitive throughput penalty.
+Figure 2 examines the sensitivity to the Lyapunov control parameter V . As V increases, average satisfaction exhibits diminishing
+returns, while queue length grows steadily, reflecting the classical
+performance-delay tradeoff. The comparison between predictionguided and no-prediction settings further highlights the value of prediction guidance, while showing that the queue-correction mechanism
+still maintains reasonable service quality in the considered setting.
+Figure 4 shows that 95% of users achieve satisfaction > 0.6 under
+the proposed scheme, whereas the baselines remain substantially
+lower, confirming improved long-term fairness in the considered
+setting.
+
+VI. C ONCLUSION
+We proposed a prediction-guided dual-timescale resource allocation framework for beam-hopping LEO satellite systems, improving
+long-term QoS and fairness with competitive efficiency in the considered setting. The results highlight the value of coupling window-level
+prediction guidance with slot-level queue correction for long-term
+service reliability.
+
+R EFERENCES
+
+[1] L. Lei, A. Wang, E. Lagunas, X. Hu, Z. Zhang, Z. Wei, and S. Chatzinotas, “Spatial-Temporal Resource Optimization for Uneven-Traffic LEO
+Satellite Systems: Beam Pattern Selection and User Scheduling,” IEEE
+J. Sel. Areas Commun., vol. 42, no. 5, pp. 1279–1291, May 2024, doi:
+10.1109/JSAC.2024.3383445.
+
+[2] C. Liang, Y. Huang, Y. Liu, R. Chai, and Q. Chen, “Enhanced
+Resource Allocation for Beam-Hopping Satellite Networks with
+Rate-Splitting Multiple Access,” in Proc. IEEE 29th Asia-Pacific
+Conf. Commun. (APCC), Bali, Indonesia, 2024, pp. 222–228, doi:
+10.1109/APCC62576.2024.10767931.
+[3] L. Chen, A. Wang, E. Lagunas, S. Chatzinotas, and B. Ottersten, “Joint
+Power Allocation and Beam Scheduling in Beam-Hopping Satellites: A
+Two-Stage Framework With a Probabilistic Perspective,” IEEE Trans.
+Wireless Commun., vol. 23, no. 10, pp. 14685–14701, Oct. 2024, doi:
+10.1109/TWC.2024.3417707.
+[4] J. Zhang, W. Li, Y. Li, H. Wang, and S. Li, “A Framework for Joint
+Beam Scheduling and Resource Allocation in Beam-Hopping-Based
+Satellite Systems,” Electronics, vol. 14, no. 14, Art. no. 2887, 2025,
+doi: 10.3390/electronics14142887.
+[5] W. U. Khan, Z. Ali, E. Lagunas, A. Mahmood, M. A. Jamshed, S.
+Chatzinotas, B. Ottersten, and O. A. Dobre, “Rate Splitting Multiple
+Access for Next Generation Cognitive Radio Enabled LEO Satellite
+Networks,” IEEE Trans. Wireless Commun., vol. 22, no. 11, pp. 8423–
+8435, Nov. 2023, doi: 10.1109/TWC.2023.3263116.
+[6] J. Lee, J. Lee, L. Yin, W. Shin, and B. Clerckx, “Coordinated RateSplitting Multiple Access for Integrated Satellite-Terrestrial Networks
+With Super-Common Message,” IEEE Trans. Veh. Technol., vol. 73, no.
+2, pp. 2989–2994, Feb. 2024, doi: 10.1109/TVT.2023.3318646.
+[7] H. Cui, L. Zhu, Z. Xiao, B. Clerckx, and R. Zhang, “Energy-Efficient
+RSMA for Multigroup Multicast and Multibeam Satellite Communications,” IEEE Wireless Commun. Lett., vol. 12, no. 5, pp. 838–842, May
+2023, doi: 10.1109/LWC.2023.3245631.
+[8] W. Jiang, “Software Defined Satellite Networks: A Survey,” Digit.
+Commun. Netw., vol. 9, no. 6, pp. 1243–1264, Dec. 2023, doi:
+10.1016/j.dcan.2023.01.016.
+[9] C. Westphal, L. Han, and R. Li, “LEO Satellite Networking Relaunched:
+Survey and Current Research Challenges,” ITU J. Future Evol. Technol.,
+vol. 4, no. 4, pp. 711–744, Dec. 2023, doi: 10.52953/LWXC1928.
+[10] J. Lee et al., “RSMA-Enabled Multigroup Multicast Rate-Matching for
+Multibeam Satellite Systems,” in Proc. IEEE 24th Int. Workshop Signal
+Process. Adv. Wireless Commun. (SPAWC), Shanghai, China, 2023, pp.
+251–255, doi: 10.1109/SPAWC53906.2023.10304489.
+[11] J. Xu, S. Fan, Z. Zhao, F. Li, and Y. Zhang, “Deep reinforcement
+learning-based dynamic multi-beam power allocation for GEO-LEO coexisting satellites,” Acta Astronaut., vol. 223, pp. 197–209, 2024, doi:
+10.1016/j.actaastro.2024.07.004.
+[12] B. Lim, S. O. Arik, N. Loeff, and T. Pfister, “Temporal Fusion
+Transformers for Interpretable Multi-horizon Time Series Forecasting,” Int. J. Forecasting, vol. 37, no. 4, pp. 1748–1764, 2021, doi:
+10.1016/j.ijforecast.2021.03.012.
+[13] K. Shen and W. Yu, “Fractional Programming for Communication
+Systems—Part I: Power Control and Beamforming,” IEEE Trans.
+Signal Process., vol. 66, no. 10, pp. 2616–2630, May 2018, doi:
+10.1109/TSP.2018.2812733.
+
+423
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:56:03 UTC from IEEE Xplore. Restrictions apply.
+
+

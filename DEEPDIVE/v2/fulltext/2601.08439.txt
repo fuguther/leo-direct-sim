@@ -1,0 +1,655 @@
+
+
+Statistical Characterization and Prediction of E2E Latency over LEO Satellite Networks
+
+ Report GitHub Issue
+ ×
+
+ Title:
+
+Content selection saved. Describe the issue below:
+
+ Description:
+
+ Submit without GitHub
+ Submit in GitHub
+
+ arXiv is now an independent nonprofit!
+ Learn more
+ ×
+
+ Back to arXiv
+
+ Why HTML?
+
+ Report Issue
+
+ Back to Abstract
+
+ Download PDF
+
+Abstract
+
+1 Introduction
+
+2 Methods
+
+2.1 Latency collection testbed and procedure
+
+3 Results
+
+3.1 Period segmentation and summary statistics
+
+3.1.1 Model MSE investigation
+
+3.1.2 Classification and precision-recall
+
+3.1.3 Discounted service availability
+
+4 Discussion
+
+References
+
+ License: arXiv.org perpetual non-exclusive license
+
+arXiv:2601.08439v1 [cs.NI] 13 Jan 2026
+
+\unnumbered
+
+Statistical Characterization and Prediction of E2E Latency over LEO Satellite Networks
+
+Andreas Casparsen
+
+Email: aca@es.aau.dk
+
+Affiliation: Department of Electronic Systems, Aalborg University, Aalborg, Denmark
+
+Jonas Ellegaard Jakobsen
+
+Email: jej@es.aau.dk
+
+Affiliation: Department of Electronic Systems, Aalborg University, Aalborg, Denmark
+
+Jimmy Jessen Nielsen
+
+Email: jjn@es.aau.dk
+
+Affiliation: Department of Electronic Systems, Aalborg University, Aalborg, Denmark
+
+Petar Popovski
+
+Email: petarp@es.aau.dk
+
+Affiliation: Department of Electronic Systems, Aalborg University, Aalborg, Denmark
+
+Israel Leyva Mayorga
+
+Email: ilm@es.aau.dk
+
+Affiliation: Department of Electronic Systems, Aalborg University, Aalborg, Denmark
+
+Abstract
+
+Low Earth Orbit (LEO) satellite networks are emerging as an essential communication infrastructure, with standardized 5G-based non-terrestrial networks and their integration with terrestrial systems envisioned as a key feature of 6G. However, current LEO systems still exhibit significant latency variations, limiting their suitability for latency-sensitive services.
+We present a detailed statistical analysis of end-to-end latency based on 500Hz experimental bidirectional one-way measurements and introduce a segmentation of the deterministic 15-second periodic behavior observed in Starlink. We characterize handover-induced boundary regions that produce latency spikes lasting approximately 140 ms at the beginning and 75 ms at the end of each cycle, followed by a stable intra-period regime, enabling accurate short-term prediction.
+This analysis shows that latency prediction based on long-term statistics leads to pessimistic estimates. In contrast, by exploiting the periodic structure, isolating boundary regions, and applying lightweight parametric and non-parametric models to intra-period latency distributions, we achieve 99th-percentile latency prediction errors below 50 ms. Furthermore, period-level latency prediction and classification enable adaptive transmission strategies by identifying upcoming periods where application latency requirements cannot be satisfied, necessitating the use of alternative systems.
+
+keywordsSatellite, Starlink, Statistics, Latency
+
+1 Introduction
+
+Ubiquitous satellite-based internet access is rapidly expanding through Low Earth Orbit (LEO) constellations such as SpaceX’s Starlink, Iridium, and OneWeb, with additional systems under development, including Amazon LEO and the EU’s Interconnectivity and Security by Satellite (IRIS2). Compared to traditional Geostationary Earth Orbit (GEO) systems, LEO networks offer substantially lower latency, broader coverage, and more flexible routing. While they cannot match the capacity of terrestrial fiber and cellular infrastructure, they provide valuable advantages in coverage and independence from ground networks. In some scenarios, such as rural regions, satellite links may even offer a more stable latency than cellular connectivity, albeit higher López et al. (2023).
+Unlike terrestrial infrastructure, LEO constellations are inherently dynamic: orbital motion induces predictable yet disruptive variations in the network geometry that affect latency.
+This predictability concerns deterministic topology changes—not the underlying tropospheric or shadowing-induced radio fading, which remains random.
+While such geometric regularity can benefit network management through scheduled reconfigurations, it also degrades Quality of Service (QoS) for latency-sensitive applications by introducing variations from handovers, ground-station transitions, and dynamic routing Zhao and Pan (2024). These events not only increase latency but can also introduce transient packet-loss, throughput reductions, which together contribute to the overall performance variability observed.
+Long-term latency studies confirm this effect, consistently reporting higher variance and frequent outliers in Starlink compared to terrestrial networks across multiple regions Ma et al. (2023).
+
+Previous studies have observed the effect on latency and throughput of such reconfigurations in the Starlink network. Empirical studies have consistently identified a 15-second periodicity in Starlink latency and throughput, attributed to deterministic handovers between satellites or ground stations Mohan et al. (2024); Pan et al. (2024); Garcia et al. (2024). These works observe that latency remains relatively stable within each period but shifts significantly between periods, often accompanied by drops in throughput.
+Related observations of latency volatility caused by mobility and handover mechanisms are reported in Husseyn et al. (2025), which characterizes latency inflation in mobile and satellite networks and identifies handovers as a dominant source of transient delay spikes. However, such studies do not resolve the fine-grained temporal structure or duration of these spikes within operational LEO systems.
+To address the uncertainty in satellite networks, Tiwari et al. (2023) introduces a middleware that predicts short-term latency and throughput at 1 Hz, helping applications anticipate degradation. However, its coarse 1 Hz sampling obscures fine-grained variations during handovers and does not fully capture the short-term effects.
+For example, Rojas et al. (2025) studies the latency trade-off between space-based and terrestrial cloud computing, identifying distance-dependent regimes where satellite or terrestrial processing is preferable, while van’t Hof et al. (2019) applies geometry-based modeling to decompose propagation and routing latency in LEO constellations.
+These studies provide valuable insights into long-term latency behavior and architectural trade-offs, but they do not capture short-term latency dynamics at fine temporal resolution, nor do they address repeatable intra-period structures observed in operational LEO systems.
+
+Beyond latency characterization, works also investigate how latency knowledge can be exploited at the system or application level. For instance, Liu et al. (2025) leverages throughput and latency prediction to improve video streaming quality over Starlink via application-layer adaptation, while Zhu and Lu (2024) proposes intelligent scheduling mechanisms that use network-state information to reduce latency under congestion in large-scale satellite networks.
+Approaches to mitigate latency and throughput fluctuations in LEO satellite systems include multi-connectivity López et al. (2022) and application-level adaptations Zhao and Pan (2024). Multi-connectivity relies on the use of multiple interfaces via packet duplication or interface selection to increase reliability, but it is inefficient when the statistical properties of the individual interfaces are unknown. Similarly, application-level adaptations rely on predicting changes in the statistics of the network performance to adapt transmissions. For instance, a cloud gaming platform might proactively pre-buffer assets and data before a predicted high-latency interval, reducing the risk of rendering artifacts. Similarly, an edge computing system could delay non-critical transmissions during volatile windows to preserve responsiveness. While such predictions can be made using AI methods Zhao and Pan (2024), a statistical analysis might provide an equally accurate and more explainable solution.
+Short-term latency prediction is particularly relevant for certain application domains. Latency-sensitive and safety-critical services - such as remote operation, real-time telemetry, cyber-physical control loops, and systems employing multi-connectivity - benefit from advance knowledge of whether an upcoming interval will satisfy a latency requirement. Such information enables concrete actions, including adjusting the operation mode (e.g., slowing or halting vehicles), deferring transmissions, or selecting an alternative interface, motivating the need for methods that characterize and predict latency over short time horizons in LEO systems.
+
+Furthermore, research indicates that novel solutions are required as traditional protocols for data transport on terrestrial networks find limited potential when applied to satellite constellations.
+Garcia et al. (2023) highlights this by showing TCP under-utilizes Starlink bandwidth due to mismatched expectations, reporting a 46% reduction in throughput efficiency, underscoring a fundamental mismatch between TCP’s congestion-control assumptions and satellite link dynamics. Meanwhile, Lai et al. (2022) suggests a novel utilization of satellites in broader networks that enhances application performance over cloud.
+This line of research suggests that major reconsiderations for how protocols and systems are designed are necessary when a satellite link is incorporated. Traditional solutions to ensure high and stable Quality of Experience (QoE) are insufficient for fully utilizing the functionality and features of non-terrestrial communication.
+This further underscores the need for accurate short-term characterization and prediction of latency dynamics in satellite networks. Traditional solutions to ensure high and stable QoE are insufficient for fully exploiting the functionality and features of non-terrestrial communication.
+
+While prior studies have identified the existence of Starlink’s 15-second periodicity, they have not resolved or modeled the fine-grained intra-period latency structure due to coarser sampling rates or differing measurement objectives. In contrast, our high-rate measurements reveal the detailed boundary regions and intra-period dynamics that enable accurate short-term latency prediction.
+Motivated by the need to reconsider how to utilize satellite communication more efficiently, we propose a statistical framework for End-To-End (E2E) latency characterization and prediction in LEO satellite systems, which operates on high-rate latency measurements to segment 15-second periods, isolate handover-induced latency spikes, and model intra-period latency distributions.
+Specifically, this framework leverages the known 15-second periodic structure observed in Starlink Mohan et al. (2024); Pan et al. (2024); Garcia et al. (2024) to predict short- and long-term latency statistics within each period. We perform a thorough statistical analysis of the latency of Internet connectivity through LEO constellations with Starlink as a case study and characterize the deterministic and stochastic temporal dynamics of latency. The proposed latency characterization and classification approach can be utilized by applications to predict the QoS and service availability up to 15 seconds in advance, and to adapt the application and transmission parameters according to the predicted latency conditions, thereby maximizing QoE and guaranteeing Service Level Agreement (SLA). The main technical contributions of this work are as follows.
+
+• 
+
+We design a provider-agnostic testbed at Aalborg University for accurate E2E latency measurements across Uplink (UL), Downlink (DL), and round-trip paths.
+
+• 
+
+Using multi-month Starlink traces, we provide a fine-grained statistical characterization of its deterministic 15-second latency structure, distinguishing boundary-induced spikes from the stable intra-period core and comparing intra-period latency distributions and high quantiles for UL, DL, and Round-Trip Time (RTT).
+
+• 
+
+We evaluate parametric and non-parametric methods for predicting latency quantiles within each cycle, enabling short-term application adaptation.
+
+• 
+
+We introduce a statistical framework for predicting SLA-compliant service availability under latency and reliability constraints up to 15 seconds ahead.
+
+Figure 1: Diagram of the latency testbed at Aalborg University.
+
+2 Methods
+
+2.1 Latency collection testbed and procedure
+
+We developed and deployed a local testbed to support the proposed framework by measuring E2E latency, both one-way and round-trip, over a LEO satellite network. As shown in Fig. 1, data is transmitted from a local client (i.e., the source) located physically at Aalborg University (57°N) through the satellite network and up to a server (i.e., the sink) hosted at the same physical location. The collocation of client and server enables tight clock synchronization and full control of both endpoints despite the traffic traversing the satellite network and public internet.
+We use Isochronous Round-Trip Tester (IRTT) Heist (2016), a UDP-based tool similar to the Internet Control Message Protocol (ICMP) ping but designed for high-rate one-way delay measurement at the application layer. Unlike ICMP, IRTT supports non-blocking transmission and does not wait for replies before sending new packets. The client and server clocks are synchronized using Chrony, which implements Network Time Protocol (NTP) to enable one-way latency estimation with sub-millisecond precision on local area networks Chrony Project (2024).
+The probe traffic generated by IRTT carries only minimal transport-layer overhead and does not emulate higher-layer protocol behavior. As such, the measured delays primarily reflect latency introduced by the network path itself, rather than application-specific processing, and can therefore be interpreted as a lower bound on the latency experienced by real applications.
+
+Latency measurements are collected by transmitting probe packets to record three E2E latency metrics: 1) the UL, i.e., one-way latency from client to server; 2) the DL, i.e., one-way latency from server to client; and 3) the RTT, i.e., the latency from client to server and back. Specifically, let LUL​(t)L_{\text{UL}}(t), LDL​(t)L_{\text{DL}}(t), and LRTT​(t)L_{\text{RTT}}(t) be the UL, DL, and RTT latency experiences by a packet transmitted at time tt by the client. These quantities are related by the decomposition
+
+LRTT​(t)≥LUL​(t)+LDL​(t).L_{\text{RTT}}(t)\geq L_{\text{UL}}(t)+L_{\text{DL}}(t).
+
+(1)
+
+Strict equality may not hold due to small local endpoint effects (e.g., host timestamping, OS scheduling) that are not always perfectly accounted for by measurement tools.
+Each of these latency components is time-dependent due to satellite dynamics and the status of the transmission queues at the satellites and the ground network elements at the specific time of the packet transmission. Specifically, as shown in Fig. 1, the E2E path can be split into a satellite path (user terminal → space segment → gateway/Point of Presence (PoP)) and a terrestrial path (PoP → Internet → Aalborg).
+We then write the composition as:
+
+Li​(t)=Lsat,i​(t)+Lterr,i​(t),i∈{UL,DL}.L_{i}(t)=L_{\mathrm{sat},i}(t)+L_{\mathrm{terr},i}(t),\qquad i\in\{\mathrm{UL},\mathrm{DL}\}.
+
+(2)
+
+The satellite path is the highest contributor to latency variations over time and can be further decomposed into propagation, processing, queueing, and handover effects:
+
+Lsat,i​(t)=Lprop,i​(t)+Lproc,i​(t)+Lqueue,i​(t)+LHO,i​(t).L_{\mathrm{sat},i}(t)=L_{\mathrm{prop},i}(t)+L_{\mathrm{proc},i}(t)+L_{\mathrm{queue},i}(t)+L_{\mathrm{HO},i}(t).
+
+(3)
+
+Here Lprop,iL_{\mathrm{prop},i} accounts for propagation along the dish–satellite–gateway hop, Lproc,iL_{\mathrm{proc},i} for terminal/gateway processing, Lqueue,iL_{\mathrm{queue},i} for queueing in the satellite/gateway path, and LHO,iL_{\mathrm{HO},i} for handover-induced excess delay near the 15-second boundaries (often spilling into the subsequent seconds).
+In contrast, the terrestrial terms represent the PoP-to-Internet-to-Aalborg segment. Based on prior measurements showing that terrestrial Internet paths exhibit relatively stable latency Davisson et al. (2021); Bhat et al. (2025), we assume this component to be approximately time-invariant.
+
+Probe packets were transmitted at 2 ms intervals, corresponding to a sampling rate of 500 Hz. This rate provided the highest temporal resolution supported by the system without inducing significant observer effects. When configured at higher probing rates, we observed increased packet loss and irregular sampling intervals, indicating that intermediate buffers or scheduling constraints were exceeded.
+To ensure stable and reproducible measurements, all subsequent analysis was therefore based on the 500 Hz probing rate, which yields high-resolution insight into the short-term latency dynamics of the satellite link. Prior measurement studies have shown that the handover-related term LHO,i​(t)L_{\text{HO},i}(t) dominates latency near period boundaries; in this work, we explicitly quantify the duration and magnitude of these boundary regions. While the terms Lprop,i​(t)+Lproc,i​(t)+Lqueue,i​(t)L_{\text{prop,i}}(t)+L_{\mathrm{proc},i}(t)+L_{\text{queue,i}}(t) cannot be separated, we investigate their combined impact, striving to characterize how these operate on average and within periods.
+
+The proposed latency characterization framework is provider-agnostic in that it operates solely on end-to-end latency samples and does not rely on satellite identifiers, elevation angles, or routing information. As such, it can be applied to any LEO system. The measured latency naturally depends on factors such as satellite geometry, gateway selection, time of day, and network load. To mitigate these effects, we collect datasets across different days and months and verify that the statistical structure found in our analysis remains consistent across traces. Naturally, with time-series measurement, the collected samples are not statistically independent; however, our analysis operates on aggregated intra-period latency distributions rather than individual samples, and therefore does not rely on independence assumptions between consecutive samples.
+
+3 Results
+
+3.1 Period segmentation and summary statistics
+
+As observed in previous studies Mohan et al. (2024); Pan et al. (2024); Garcia et al. (2024), the E2E latency, illustrated in Fig. 2 for the UL, exhibits clear periodic variations with approximately 15-second intervals. Furthermore, the beginning and end of the 15-second periods are affected by exceptionally high latency.
+Based on the observed periodic behavior, we formulate a statistical data analysis procedure for latency prediction based on time-scale separation that 1) segments the data into 15-second periods and 2) performs a statistical characterization of the latency within individual periods.
+
+We define Δ​t=2\Delta t=2 ms to be the period between transmissions of probe packets and T=15T=15 s to be the duration of the period in which latency remains stable. Consequently, we collect S=T/Δ​t=7500S=T/\Delta t=7500 samples within each 15 s interval. Building on this, we can partition every 15 s period into SS discrete time bins, which are indexed by nn, starting at n=0n=0 for a probe packet transmitted at an initial sampling time t=0t=0. Next, let l⁡(n)l(n) denote the latency at global discrete time bin nn.
+After choosing a reference start n=0n=0 for the first period, we map n=p​S+sn=pS+s with periods indexed by p∈𝒫={0,1,…,P−1}p\in\mathcal{P}=\{0,1,\dots,P-1\} and within-period bins by s∈𝒮={0,1,…,S−1}s\in\mathcal{S}=\{0,1,\dots,S-1\}, and define lp​(s)=l⁡(p​S+s)l_{p}(s)=l(pS+s).
+To identify the start of each 15 s period, we apply edge detection to the difference between consecutive samples, Δ​l​(n)=l⁡(n)−l⁡(n−1)\Delta l(n)=l(n)-l(n-1), detecting sharp peaks that correspond to the handover-induced spike between periods. Candidate edges are identified at 2 ms bins where Δ​l​(n)\Delta l(n) exceeds a threshold θ\theta (robustly chosen). Leveraging the known 15-second periodicity, we enforce a minimum spacing of TT between accepted edges. We then map candidate times to phase bins s=nmodSs=n\bmod S and form a histogram over phases,
+
+h(s)=∑p∈𝒫𝟏{Δl(pS+s)>θ}.h(s)=\sum_{p\in\mathcal{P}}\mathbf{1}\{\Delta l(pS+s)>\theta\}.
+
+(4)
+
+We locate the most dominant bin, s0=arg⁡maxs⁡h⁡(s)s_{0}=\arg\max_{s}h(s). For robustness to binning jitter, we then compute a weighted circular mean over the top k bins in a neighborhood of s0s_{0} to obtain a refined start s⋆s^{\star}, which we treat as the periodic reference. This reference remains stable across months. The persistent phase alignment suggests the effect is driven by pre-planned, clocked reconfigurations of the network.
+
+Figure 2: Latency measurements for UL transmission. The beginning of the first period is set as time t=0t=0, and the beginning of each period is indicated by a dashed line. Latency measurements for different periods are indicated with different colors.
+
+Next, to highlight intra-period dynamics, we remove inter-period variation through mean centering. For p∈𝒫p\in\mathcal{P} and s∈𝒮s\in\mathcal{S}, the period mean is
+
+l¯p=1S​∑s∈𝒮lp​(s),\bar{l}_{p}=\frac{1}{S}\sum_{s\in\mathcal{S}}l_{p}(s),
+
+(5)
+
+and the mean-centered intra-period profile is
+
+l^​(s)=1P​∑p∈𝒫(lp​(s)−l¯p),s∈𝒮.\hat{l}(s)=\frac{1}{P}\sum_{p\in\mathcal{P}}\bigl(l_{p}(s)-\bar{l}_{p}\bigr),\qquad s\in\mathcal{S}.
+
+(6)
+
+By aligning all periods and averaging according to (6), yields a representative mean-centered latency profile mapped to the 15-second cycle.
+The results, shown in Fig. 3, exhibit a sharp peak at the start of each interval, reaching an average of 74 ms above the mean latency, followed by a rapid decline and a secondary rise near the end of the period. These latency spikes increase jitter and are attributed to reconfiguration events in the Starlink system, such as scheduling changes and handovers. The red regions in Fig. 3 correspond to the first 140 ms and the last 75 ms of each period; these edge windows are excluded from subsequent analysis to focus on the stable intra-period regime.
+
+Figure 3: Mean-centered instantaneous uplink latency averaged over multiple 15 second intervals. The red areas, first 140 ms and last 75ms, are the periods affected by a sharp latency increase.
+
+Figure 4: Violin plot showing the intra-period latency for UL, DL, and RTT across three different periods.
+
+Although all periods share the same latency spikes at their start and end, the stable intra-period regions exhibit distinct latency distributions. Moreover, UL, DL, and RTT distributions differ considerably across periods. This is illustrated in Fig. 4 for three different periods using a violin plot for UL, DL, and RTT. While the UL latency tends to follow a smoother, more continuous distribution, the DL latency often appears more concentrated in specific latency values, which is more pronounced for Periods 2 and 3 than for Period 1. This is largely attributed to the bundling of packet transmissions in the DL due to queueing at the sink. Building on these differences, we conclude our summary statistics by analysing high quantiles of latency within individual periods. For this, Fig. 5 shows a box plot with the 95th and 99th quantiles of latency at each individual period for UL, DL, and RTT. The UL latency exhibits a broad range and heavier tails than the DL, which are also reflected in the RTT. In contrast, DL latencies remain lower with fewer severe outliers, indicating the UL ’s dominant role in RTT latency variation.
+
+Figure 5: Intra-period latency 95th and 99th quantiles across multiple periods for UL, DL, and RTT.
+
+3.1.1 Model MSE investigation
+
+The previous analysis shows that Starlink latency exhibits a consistent statistical structure within each 15-second period, which can be leveraged for prediction.
+For practical use, however, this predictability must be translated into rapid prediction and classification. Such capabilities are valuable because they allow applications or network functions to adapt transmission strategies early in a period, thereby preserving QoS and providing statistical evidence of performance compliance. To maximize the available communication time, predictions should be performed as early as possible within each cycle. In practice, we begin sampling 140 ms after the start of each period—excluding the initial latency spike—and evaluate prediction and classification accuracy as a function of the sampling duration.
+
+Low-latency applications are primarily concerned with upper latency quantiles rather than mean latency. We therefore focus on predicting the 99th percentile of latency within individual periods, considering parametric and non-parametric approaches. Specifically, we investigate the latency profile of UL traffic.
+In the parametric approach, a distribution must first be selected according to the behavior of the samples to avoid model mismatch. Then, the parameters for the distribution are estimated from the observed data (via maximum likelihood), and the desired quantile is then computed from the fitted distribution.
+In our setting, we consider uniform, Gaussian, and Gaussian mixture models (GMM) distributions, defined respectively as follows.
+
+𝒰⁡(x∣a,b)\displaystyle\mathcal{U}(x\mid a,b)
+={1b−a,a≤x≤b,0,otherwise,\displaystyle=\begin{cases}\frac{1}{b-a},&a\leq x\leq b,\\
+0,&\text{otherwise},\end{cases}
+
+(7)
+
+𝒩⁡(x∣μ,σ2)\displaystyle\mathcal{N}(x\mid\mu,\sigma^{2})
+=12​π​σ2​exp⁡(−(x−μ)22​σ2),\displaystyle=\frac{1}{\sqrt{2\pi\sigma^{2}}}\exp\!\left(-\frac{(x-\mu)^{2}}{2\sigma^{2}}\right),
+
+(8)
+
+GMM​(x)\displaystyle\text{GMM}(x)
+=∑k=1Kπk​𝒩​(x∣μk,σk2),∑k=1Kπk=1.\displaystyle=\sum_{k=1}^{K}\pi_{k}\,\mathcal{N}(x\mid\mu_{k},\sigma_{k}^{2}),\qquad\sum_{k=1}^{K}\pi_{k}=1.
+
+(9)
+
+For the non-parametric case, we estimate the 99th percentile directly from the empirical distribution of the samples. The qq-quantile is given by F−1​(q)F^{-1}(q), where FF is the CDF of the fitted distribution.
+In addition to these parametric and non-parametric approaches, we investigate a tail-oriented modeling strategy based on Extreme Value Theory (EVT), which is explicitly designed to characterize high-latency events.
+When fitting a Generalized Pareto Distribution (GPD) tail model, we follow the peaks-over-threshold approach, where the threshold is implicitly defined by the largest kk values (the tail fraction). We select the top-kk (k=25k=25) samples in each window to ensure consistent GPD modeling across periods. Fixed-quantile-based rules, such as the upper 10% threshold, can also be applied but are considered inappropriate from a theoretical viewpoint Scarrott and MacDonald (2012). Because our application requires fitting many short-duration windows, ideally in real time, using a fixed number of exceedances stabilizes GPD parameter estimation, mitigates the high variance associated with very high-percentile thresholds, and ensures reduced computational cost.
+
+Fig. 6 shows the Mean Squared error (MSE) of the 99th percentile prediction as a function of sampling time. We have taken three ∼\sim8-hour-long datasets from different days across months to test the generalization of prediction over time.
+The parametric estimation with a uniform distribution performs worst overall due to its sensitivity to outliers; as the number of samples increases, extreme values dominate the estimated quantile, reducing accuracy.
+On the other hand, parametric estimation with the Gaussian distribution provides the best short-term accuracy (below 1.5 s), but its error plateaus and even worsens at longer horizons. EVT exhibits poor accuracy with very short sampling windows, but improves steadily as more samples are observed.
+In contrast, mixture models and non-parametric regression show stable improvement with increasing sample duration, reaching an MSE of ≈65​ms2\approx 65~\text{ms}^{2} after 1 s and ≈21​ms2\approx 21~\text{ms}^{2} after 5 s, corresponding to absolute errors of about 8 ms and 4.5 ms, respectively. However, the improvement rate diminishes beyond the initial sampling phase, indicating that extended sampling yields only marginal gains in predictive accuracy. Similarly, increasing the complexity of mixture models can enhance the representational capacity, but the accuracy gains are marginal and come at the cost of additional computation and fitting time, which limits the practical value.
+
+Figure 6: MSE for the prediction of the 99-th percentile of UL latency as a function of the sampling time.
+
+3.1.2 Classification and precision-recall
+
+Once we have identified the distributions that best fit the data, we utilize the temporal dynamics identified in Period segmentation and summary statistics to determine whether a given period can meet application latency requirements.
+A period pp is classified as Good if at least 99% of packets meet the latency threshold ltl_{t}, and as Degraded otherwise. Specifically, by defining 𝟙​{⋅}\mathbbm{1}\{\cdot\} as the indicator function that takes the value of 11 when the condition between braces is True, we define the underlying class of a period pp as
+
+Class​(p)={Good,1S∑s∈𝒮𝟙{lp(s)≤lt}≥0.99,Degraded,otherwise.\text{Class}(p)=\begin{cases}\text{Good},&\frac{1}{S}\sum_{s\in\mathcal{S}}\mathbbm{1}\{l_{p}(s)\leq l_{t}\}\geq 0.99,\\[6.0pt]
+\text{Degraded},&\text{otherwise}.\end{cases}
+
+(10)
+
+We apply this classification to define for each period whether they are Good or Degraded, and investigate how well the fitted models can predict the class.
+The performance of classification with these models is evaluated across different thresholds using Precision-Recall (PR) curves, which require a particular probability before designating a prediction as either Good or Degraded.
+PR curves simplify the process of threshold selection by focusing on and quantifying the tradeoff between:
+
+• 
+
+Precision: Fraction of periods classified as degraded that were correctly classified, which is the ratio of true to total positives.
+
+• 
+
+Recall: Fraction of degraded periods that were correctly classified, which is the ratio of correctly identified degraded periods to all degraded periods.
+
+These are calculated from the total number of true positives TP\mathrm{TP}, false positives FP\mathrm{FP}, and false negatives FN\mathrm{FN} as
+
+Precision=TPTP+FP,Recall=TPTP+FN,\text{Precision}=\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FP}},\qquad\text{Recall}=\frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FN}},
+
+(11)
+
+We measure the classification performance using the Area Under the PR-Curve (AUPRC), which is well-suited to imbalanced datasets, such as ours, where unstable periods are rarer. A perfect classifier would achieve an AUPRC of 1, and lower values indicate a weaker classification performance for Precision and Recall, and require further consideration.
+It is especially interesting to classify a period as accurately and as early as possible, as this would enable the exploitation of good periods, as well as the early adaptation during degraded periods. The AUPRC is computed as
+
+AUPRC=∑ℓ=1L−1(rℓ+1−rℓ)⋅pℓ+1+pℓ2,\text{AUPRC}=\sum_{\ell=1}^{L-1}(r_{\ell+1}-r_{\ell})\cdot\frac{p_{\ell+1}+p_{\ell}}{2},
+
+(12)
+
+where (rℓ,pℓ)(r_{\ell},p_{\ell}) are precision–recall pairs at different threshold levels, of which we have LL level pairs.
+
+Figure 7 shows AUPRC as a function of sampling time for a 50 ms threshold (ltl_{t}) on the 99th latency quantile, which is a typical value for cyber-physical systems, 5G NR satellite access, and the minimal service level for 5G NR 3rd Generation Partnership Project (3GPP) (2024); 3rd Generation Partnership Project (3GPP) (2025).
+All models achieve AUPRC ≈0.85\approx 0.85 within 100 ms.
+In contrast, the Gaussian Mixture Model (GMM) model with 3 kernels is the fastest to achieve an AUPRC of 0.95, taking just 1.6 s. While improvements can be made to the classification performance, such as increasing the number of kernels or discarding outliers, our results show that these lead to negligible improvements of no more than 2% in the sample time needed to achieve the same AUPRC target. Interestingly, EVT was slow to outperform on predicting exactly the 99th percentile, but instead exhibits a stronger classification ability. Despite poor initial performance, it outperforms the others after 3.5 seconds and reaches near-perfect classification. While less precise in its predictions, it is more accurate in classifying whether the 99th percentile will exceed or fall below 50ms.
+
+Figure 7: AUPRC as a function of the sampling time from the end of the initial latency spike. 
+
+3.1.3 Discounted service availability
+
+Finally, we consider a scenario where an intelligent transmission scheduler employs the period-level classification defined in Classification and precision-recall to stop data transmission through the satellite network during periods classified as degraded. Such a scheduler is relevant for latency-sensitive applications that must react to predicted violations of their latency budget, as discussed in Introduction.
+These transmissions can, therefore, be queued at the client when the application can tolerate short delays. For example, in latency-sensitive applications such as remote operation, commands may be safely delayed or execution temporarily paused until latency returns to acceptable levels, or sent through an additional radio interface if such an interface is available, as considered in multi-connectivity approaches such as Nielsen et al. (2017). In this case, false negatives would lead the scheduler to needlessly stop transmissions during good periods. On the other hand, false positives would not stop data transmission during degraded periods, which might lead to degraded performance but no loss of data and, hence, we consider false negatives to be more costly than false positives.
+
+Building on this scenario, we define a holistic score called the Discounted Service Availability (DSA) formulated in equation 14. This is a weighted metric based on the true service availability, defined as the number of good periods PGoodP_{\text{Good}} over a total of PP considered periods. Then, the service availability is weighed by 1) the fraction of the available communication time after sampling and 2) the true positive rate, or Recall. Note that the DSA metric is upper-bounded by the true service availability (SA), defined as
+
+SA=PGoodP=∑p=0P−1𝟙{Class(p)=Good}P\mathrm{SA}=\frac{P_{\text{Good}}}{P}=\frac{\sum_{p=0}^{P-1}\mathbbm{1}\left\{\text{Class}(p)=\text{Good}\right\}}{P}
+
+(13)
+
+equal to 39.6% for our test dataset.
+
+Furthermore, given that we consider false negatives to be more costly than false positives, the threshold level ℓ\ell for classification is defined by setting a maximum False Positive Rate (FPR). The choice of threshold is the first one that can support the maximum false positive rate, which is set to 11%, 55%, and 1010% in our experiments.
+Then, given a sampling duration s⋅Δ​ts\cdot\Delta t within the T=15T=15 s period and a specific FPR, the discounted service availability is
+
+DSA⁡(s,FPR)=SA⋅(T−s⋅Δ​t)T⋅TPR⁡(s⋅Δ​t)≤SA\mathrm{DSA}(s,\mathrm{FPR})=\mathrm{SA}\cdot\dfrac{(T-s\cdot\Delta t)}{T}\cdot\mathrm{TPR}(s\cdot\Delta t)\leq\mathrm{SA}
+
+(14)
+
+where TPR​(s⋅Δ​t)\text{TPR}(s\cdot\Delta t) is the true positive rate achieved with s⋅Δ​ts\cdot\Delta t seconds of sampling. From (14), the DSA is upper bounded by the true SA because the true positive rate cannot exceed 11 and the probing duration s⋅Δ​ts\cdot\Delta t is positive and upper bounded by TT.
+
+Next, we evaluate the DSA at different sample times and FPRs for both GMM and EVT predictors. Figure 8 shows the resulting DSA curves for GMM models with 2 and 3 kernels with 3 different defined maximum acceptable FPR.
+The graphs indicate that relaxing the FPR leads to a higher score for the DSA formulation. This follows from stringent requirements, which necessitate more sampling to achieve the desired FPR accurately. Consequently, the DSA decreases as less time is available for communication. Comparatively, GMM can rapidly achieve good prediction performance, whereas EVT requires additional samples; however, this results in less time for using the link, leading to a lower achievable DSA for EVT.
+
+Our findings confirm that lightweight statistical models can achieve near-optimal classification performance with only limited sampling. This enables the fine-tuning of the classifier to achieve a specific trade-off between false positives and detection delay, benefiting specific applications. This approach also provides a practical balance between responsiveness and service reliability. Therefore, our methods can be leveraged according to the requirements of specific applications and the capabilities of specific systems, for example, based on the availability of multiple communication interfaces. Specifically, for systems with multi-connectivity or interface-diversity capabilities, the early detection of degraded periods can be used for steering the traffic between interfaces and/or networks, enabling real-time and efficient system adaptation.
+
+Figure 8: DSA as a function of the sampling time from the beginning of the period for a pre-defined maximum FPR.
+
+4 Discussion
+
+In this article, we presented a statistical framework for period-level characterization, prediction, and classification of end-to-end latency in LEO satellite networks. By applying these methods to Starlink’s system, we characterized its deterministic 15-second periodic structure, investigating Uplink (UL), Downlink (DL), and Round-Trip Time (RTT). We also showed that the initial and final portions of each cycle consistently exhibit deterministically high latency, attributable to satellite handovers, and thus provide limited predictive value.
+Excluding these boundary regions, we focused on the stable intra-period core and demonstrated that lightweight parametric and non-parametric models can predict and classify latency with high accuracy from only a few samples. Predictive accuracy was quantified using both regression (Mean Squared error (MSE)) and classification (Area Under the PR-Curve (AUPRC)), confirming the feasibility of simple yet effective forecasting approaches.
+These findings highlight the potential of predictive middleware to leverage Starlink’s deterministic latency structure more effectively. By anticipating low- and high-latency windows, latency-sensitive applications can proactively adapt through pacing, buffering, quality adjustment, or safe-mode transitions, thereby improving quality of service and user experience.
+Our results provide the statistical foundation for such middleware, which can operate passively in the background to enable application-aware adaptation over LEO satellite networks, thereby achieving optimal performance while accounting for the inherent uncertainty of satellite links.
+
+Future work could investigate how specific transport and application protocols interact with the characterized latency dynamics, providing further insights for protocol design in LEO satellite networks. Additionally, extending this characterization framework to other LEO constellations would validate its generalizability across different satellite systems.
+
+References
+
+López et al. (2023)
+
+López, M.,
+Damsgaard, S.B.,
+Rodríguez, I.,
+Mogensen, P.:
+Connecting rural areas: an empirical assessment of 5g terrestrial-leo satellite multi-connectivity.
+In: 2023 IEEE 97th Vehicular Technology Conference (VTC2023-Spring),
+pp. 1–5
+(2023).
+IEEE
+
+Zhao and Pan (2024)
+
+Zhao, J.,
+Pan, J.:
+Low-latency live video streaming over a low-earth-orbit satellite network with dash.
+In: Proceedings of the 15th ACM Multimedia Systems Conference,
+pp. 109–120
+(2024)
+
+Ma et al. (2023)
+
+Ma, S.,
+Chou, Y.C.,
+Zhao, H.,
+Chen, L.,
+Ma, X.,
+Liu, J.:
+Network characteristics of leo satellite constellations: A starlink-based measurement from end users.
+In: IEEE INFOCOM 2023-IEEE Conference on Computer Communications,
+pp. 1–10
+(2023).
+IEEE
+
+Mohan et al. (2024)
+
+Mohan, N.,
+Ferguson, A.E.,
+Cech, H.,
+Bose, R.,
+Renatin, P.R.,
+Marina, M.K.,
+Ott, J.:
+A multifaceted look at starlink performance.
+In: Proceedings of the ACM on Web Conference 2024,
+pp. 2723–2734
+(2024)
+
+Pan et al. (2024)
+
+Pan, J.,
+Zhao, J.,
+Cai, L.:
+Measuring the satellite links of a leo network.
+In: IEEE International Conference on Communications
+(2024)
+
+Garcia et al. (2024)
+
+Garcia, J.,
+Sundberg, S.,
+Brunstrom, A.:
+Fine-grained starlink throughput variation examined with state-transition modeling.
+In: 2024 19th Wireless On-Demand Network Systems and Services Conference (WONS),
+pp. 69–76
+(2024).
+IEEE
+
+Husseyn et al. (2025)
+
+Husseyn, D.,
+Saranya, D.G.,
+Babu, D.K.,
+Kishore, D.D.,
+Kiruthikadevi, K.:
+Characterizing latency inflation in mobile and satellite internet connections.
+Journal of Internet Services and Information Security
+15,
+573–586
+(2025)
+https://doi.org/10.58346/JISIS.2025.I3.039
+
+Tiwari et al. (2023)
+
+Tiwari, S.,
+Bhushan, S.,
+Taneja, A.,
+Kassem, M.,
+Luo, C.,
+Zhou, C.,
+He, Z.,
+Raman, A.,
+Sastry, N.,
+Qiu, L., et al.:
+T3p: Demystifying low-earth orbit satellite broadband.
+arXiv preprint arXiv:2310.11835
+(2023)
+
+Rojas et al. (2025)
+
+Rojas, C.,
+Fraire, J.A.,
+Patrone, F.,
+Marchese, M.:
+On the latency trade-off between space and terrestrial clouds in non-terrestrial networks.
+In: 2025 12th Advanced Satellite Multimedia Systems Conference and the 18th Signal Processing for Space Communications Workshop (ASMS/SPSC),
+pp. 1–8
+(2025).
+IEEE
+
+van’t Hof et al. (2019)
+
+Hof, J.,
+Karunanithi, V.,
+Speretta, S.,
+Verhoeven, C.,
+McCune, E.:
+Low latency iot/m2m using nano-satellites.
+In: 70th International Astronautical Congress (IAC), Washington DC, United States,
+pp. 21–25
+(2019)
+
+Liu et al. (2025)
+
+Liu, Z.,
+Reidys, F.-X.G.,
+Tanveer, S.,
+Vasisht, D.:
+Vivisecting starlink throughput: Measurement and prediction.
+Proceedings of the ACM on Networking
+3(CoNEXT4),
+1–23
+(2025)
+
+Zhu and Lu (2024)
+
+Zhu, Y.,
+Lu, D.:
+Latency guaranteed joint optimal traffic intelligent scheduling in large-scale satellite networks.
+Computer Networks
+242,
+110236
+(2024)
+
+López et al. (2022)
+
+López, M.,
+Damsgaard, S.B.,
+Rodríguez, I.,
+Mogensen, P.:
+An empirical analysis of multi-connectivity between 5g terrestrial and leo satellite networks.
+In: Proc. IEEE Globecom Workshops (GC Wkshps),
+pp. 1115–1120
+(2022)
+
+Garcia et al. (2023)
+
+Garcia, J.,
+Sundberg, S.,
+Caso, G.,
+Brunstrom, A.:
+Multi-timescale evaluation of starlink throughput.
+In: Proceedings of the 1st ACM Workshop on LEO Networking and Communication,
+pp. 31–36
+(2023)
+
+Lai et al. (2022)
+
+Lai, Z.,
+Liu, W.,
+Wu, Q.,
+Li, H.,
+Xu, J.,
+Wu, J.:
+Spacertc: Unleashing the low-latency potential of mega-constellations for real-time communications.
+In: IEEE INFOCOM 2022-IEEE Conference on Computer Communications,
+pp. 1339–1348
+(2022).
+IEEE
+
+Heist (2016)
+
+Heist, P.:
+IRTT (Isochronous Round-Trip Tester).
+Accessed: 2025-09-09
+(2016).
+https://github.com/heistp/irtt
+
+Chrony Project (2024)
+
+Chrony Project:
+Configuration examples and accuracy.
+Accessed: 2025-09-09
+(2024).
+https://chrony-project.org/examples.html
+
+Davisson et al. (2021)
+
+Davisson, L.,
+Jakovleski, J.,
+Ngo, N.,
+Pham, C.,
+Sommers, J.:
+Reassessing the constancy of end-to-end internet latency.
+In: IFIP Network Traffic Measurement and Analysis Conference
+(2021)
+
+Bhat et al. (2025)
+
+Bhat, A.,
+Ganatra, V.,
+Shaha, A.,
+Chandrasekaran, B.,
+Naik, V.:
+On the constancy of latency at the internet’s edge.
+In: 2025 9th Network Traffic Measurement and Analysis Conference (TMA),
+pp. 1–10
+(2025).
+IEEE
+
+Scarrott and MacDonald (2012)
+
+Scarrott, C.,
+MacDonald, A.:
+A review of extreme value threshold estimation and uncertainty quantification.
+REVSTAT-Statistical journal
+10(1),
+33–60
+(2012)
+
+3rd Generation Partnership Project (3GPP) (2024)
+
+3rd Generation Partnership Project (3GPP):
+Service requirements for cyber-physical control applications in vertical domains.
+3GPP TS 22.104, V18.4.0.
+Accessed: 2025-09-09
+(2024).
+https://www.3gpp.org/ftp/Specs/archive/22_series/22.104/22104-h40.zip
+
+3rd Generation Partnership Project (3GPP) (2025)
+
+3rd Generation Partnership Project (3GPP):
+Service requirements for the 5G system; Stage 1.
+3GPP TS 22.261, V20.2.0.
+Accessed: 2025-09-09
+(2025).
+https://www.3gpp.org/ftp/Specs/archive/22_series/22.261/22261-i20.zip
+
+Nielsen et al. (2017)
+
+Nielsen, J.J.,
+Liu, R.,
+Popovski, P.:
+Ultra-reliable low latency communication using interface diversity.
+IEEE Transactions on Communications
+66(3),
+1322–1334
+(2017)
+
+ Experimental support, please
+ view the build logs
+ for errors. Generated by
+
+ L
+ A
+ T
+ E
+
+ xml
+
+ .
+
+ Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+ support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+ methods listed below:
+
+Click the "Report Issue" (
+
+ ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+ may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+ should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+ all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+ We gratefully acknowledge support from
+ our major funders,
+ member institutions, ,
+ and all contributors.
+
+ About
+ ·
+ Help
+ ·
+ Contact
+ ·
+ Subscribe
+ ·
+ Copyright
+ ·
+ Privacy
+ ·
+ Accessibility
+ ·
+ Operational Status (opens in new tab)
+
+Major funding support from
+

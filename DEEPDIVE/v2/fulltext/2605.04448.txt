@@ -1,0 +1,1116 @@
+Report GitHub Issue
+
+ × 
+
+ 
+ Title: 
+
+ Content selection saved. Describe the issue below:
+
+ Description: 
+
+ 
+
+ 
+ Submit without GitHub 
+ Submit in GitHub 
+
+ 
+
+ 
+ arXiv is now an independent nonprofit! 
+ Learn more 
+ × 
+
+ 
+
+ 
+ Back to arXiv 
+
+ 
+
+ 
+
+ Why HTML? 
+
+ 
+
+ 
+ Report Issue 
+
+ 
+
+ 
+
+ 
+ Back to Abstract 
+
+ 
+
+ 
+
+ 
+ Download PDF 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+ Abstract 
+
+ I Introduction 
+
+ II Related Work 
+
+ III System Model 
+
+ III-A Inter-satellite communication 
+
+ III-B Space-to-ground communication 
+
+ III-C Outage probability 
+
+ III-D Objective 
+
+ 
+
+ IV Proposed Solution Approach 
+
+ V Performance Evaluation 
+
+ VI Conclusion 
+
+ References 
+
+ 
+
+ 
+
+ 
+ License: arXiv.org perpetual non-exclusive license
+
+ 
+arXiv:2605.04448v1 [cs.NI] 06 May 2026
+
+ 
+
+ Queue-Aware and Resilient Routing in LEO Satellite Networks Using Multi-Agent Reinforcement Learning Thanks:  We acknowledge the support provided by the Government of Canada and Natural Sciences and Engineering Research Council of Canada (NSERC), [funding reference number RGPIN-2022-03364]. 
+
+ 
+
+ Mudassar Liaq, Mahyar Tajeri and Peng Hu
+
+ Affiliation:  Department of Electrical and Computer Engineering, University of Manitoba, MB, Canada.
+
+{mudassar.liaq, mahyar.tajeri, peng.hu}@umanitoba.ca 
+
+ Affiliation:  
+
+ Abstract
+
+ 
+ With the rapid growth in data demand and stringent latency requirements of modern applications has driven significant interest in Low Earth Orbit (LEO) satellite constellations as an emerging solution for global Internet coverage. However, routing in LEO networks remains a fundamental challenge due to highly dynamic topologies, time-varying traffic conditions, and its susceptibility to link failures. Conventional routing algorithms typically assume static link metrics and fail to account for queue backlogs or real-time system variations, making them less effective in such environments.
+We propose a queue-aware multi-agent deep reinforcement learning (MA-DRL) framework for routing in LEO satellite networks. Each satellite is modeled as an independent agent responsible for making local routing decisions, enabling a distributed and scalable solution. The proposed framework formulates a latency-aware optimization problem that incorporates background traffic, queue dynamics at each satellite, and a resilience score to improve robustness.
+We evaluate the proposed approach against the state-action-reward-state-action (SARSA) and Dijkstra algorithms. While Dijkstra achieves the lowest end-to-end latency under ideal conditions, its computational and signaling overhead becomes a significant bottleneck as the network scales. In contrast, our proposed approach incurs significantly lower overhead (approximately 50% of Dijkstra at a 5 s recalculation interval), scales efficiently with network size, and effectively manages queue backlogs and resilience under increasing traffic load, demonstrating enhanced robustness and scalability in LEO satellite networks while maintaining competitive latency and resilience scores.
+
+ 
+
+ 
+ Index Terms: 
+LEO satellite networks, routing, reinforcement learning, resilience score
+
+ 
+ I Introduction 
+
+ 
+ As the demand for low-latency and data-intensive applications continues to grow, low Earth orbit (LEO) satellite networks are increasingly being utilized to provide global internet coverage [ 1 ] . While these LEO satellites enable connectivity for data and latency sensitive applications at a global scale, they also introduce several fundamental challenges. In particular, the rapidly changing topology, intermittent connectivity, and large-scale deployment of satellites make efficient and optimized routing a complex problem [ 2 ] . Traditional routing approaches often fail to capture these dynamics and are therefore not well suited for LEO constellations.
+
+ 
+ Various works have explored routing and resource optimization to enhance network performance under such dynamic conditions, with a focus on latency, power consumption, and time-varying link characteristics [ 3 , 4 , 5 ] . Some studies have addressed quality of service (QoS) requirements by integrating higher-orbit satellite systems, such as geostationary orbit (GEO) and medium Earth orbit (MEO) , to improve service continuity and network resilience. Additionally, while some works [ 6 ] aim to improve network resilience through secondary routing paths or multi-orbit integration, significant research gaps still exist in jointly addressing latency, congestion, and robustness. More recently, machine learning-based solutions, particularly deep reinforcement learning (DRL) approaches, have been investigated to enable adaptive and distributed routing decisions [ 7 , 8 ] .
+
+ 
+ Despite these advancements, several challenges are still remaining. Many existing approaches rely on simplified assumptions and fail to capture the practical complexities of LEO satellite systems [ 3 , 5 ] . Although DRL -based methods have been widely explored, most focus primarily on latency minimization without explicitly considering network queue conditions, which play a critical role in such environments, especially under varying traffic loads. To address this challenge, this work makes the following contributions: (i) We propose a queue-aware multi-agent deep reinforcement learning (MA-DRL) framework for routing in LEO satellite constellations, where each satellite makes decentralized routing decisions based on local and neighboring queue information. (ii) We incorporate network resilience into the routing framework by focusing on reducing the probability of node failures, rather than solely relying on post-failure recovery mechanisms. (iii) We evaluate the proposed approach against well-established baseline methods, including Dijkstra and state–action–reward–state–action (SARSA) , providing a comprehensive performance comparison. (iv) We demonstrate that the proposed framework achieves improved scalability and adaptability in dynamic LEO environments, effectively balancing latency, congestion, and network stability.
+
+ 
+ The remainder of the paper is structured as follows. Section II discusses the related work. Section III presents the proposed system model. Section IV discusses the proposed solution approach, followed by the performance evaluation in Section V. Section VI outlines the conclusive remarks.
+
+ 
+ II Related Work 
+
+ 
+ Recent works in LEO satellite networks have explored routing, resource optimization, and system design under dynamic and time-varying topologies.
+Several studies focused on routing and performance analysis. In  [ 3 ] , the trade-off between inter-satellite distance, hop count, transmission power, and latency was analyzed using shortest-path routing in Starlink and Kuiper constellations. Similarly,  [ 5 ] investigated the impact of dynamic link topology and channel conditions on downlink performance using detailed physical-layer modeling.
+ QoS provisioning has also been studied in multi-layer satellite systems. In  [ 4 ] , a joint GEO – LEO architecture was proposed to improve service continuity, with optimization formulated to maximize user rate and system throughput. Similarly,  [ 9 ] addressed multi-orbit satellite selection as a joint optimization problem under power and connectivity constraints.
+
+ 
+ Hybrid and integrated architectures have been explored to enhance system capabilities. In  [ 10 ] , a UAV– LEO system was proposed, where DRL was used to optimize trajectory and communication decisions. Similarly,  [ 11 ] investigated multi-band and multi-orbit integration for efficient resource utilization across heterogeneous links.
+Resilience in LEO networks has also been investigated. In  [ 12 ] , routing strategies were designed to maintain performance under failures using constraint optimization. Structural and temporal resilience were further analyzed in  [ 13 , 14 ] using graph-based models to evaluate network robustness and node importance.
+Machine learning-based approaches have also gained attention for routing in LEO constellations. In  [ 7 ] , a distributed Q-learning framework was proposed for delay minimization using local information, highlighting the impact of queuing delay under congestion. Building on this,  [ 8 ] introduced a multi-agent deep reinforcement learning (MA-DRL) framework with federated learning for decentralized routing decisions.
+
+ 
+ Despite these advancements, several key limitations remain in existing works. Many studies assume simplified conditions and do not explicitly account for dynamic factors such as node failures and time-varying traffic patterns, while also overlooking internal network load conditions, particularly queue dynamics, which play a critical role in congestion and delay. Although integrated architectures, such as joint LEO – GEO systems, have been explored, they primarily emphasize structural enhancements rather than adaptive, traffic-aware routing. In addition, the notion of resilience remains inconsistent, with most approaches focusing on post-failure recovery rather than proactive mitigation. Furthermore, while MA-DRL has been applied for decentralized routing, existing works provide limited benchmarking and lack comprehensive comparisons with classical and optimization-based baselines.
+
+ 
+ III System Model 
+
+ 
+ We consider a LEO satellite constellation composed of O O orbital planes, each containing N o = N O N_{o}=\frac{N}{O} evenly spaced satellites. The set of orbital planes is denoted by o ∈ { 1 , 2 , … , O } o\in\{1,2,\dots,O\} . Each plane is located at an altitude h o h_{o} above the Earth’s surface, with an inclination angle δ \delta and latitude ϵ o \epsilon_{o} (in radians). The satellite orbits are assumed to be circular, with a negligible eccentricity (e.g., e ≈ 0.00001 e\approx 0.00001 ).
+Each satellite is equipped with five communication antennas: four for inter-satellite links (ISLs) and one for ground-to-satellite communication. Among the four ISL antennas, two are dedicated to intra-plane communication (i.e., communication with neighboring satellites within the same orbital plane), while the remaining two are used for inter-plane communication (i.e., communication with satellites in adjacent orbital planes)  [ 15 ] .
+Each satellite i ∈ N i\in N can communicate with all four antennas with other satellites i.e., | ε i , s ​ a ​ t | ≤ 4 |\varepsilon_{i,sat}|\leq 4 .
+On ground, we have gateways 𝔾 \mathbb{G} across Earth, with each represented as ( g l ​ a ​ t , g l ​ o ​ n ) (g_{lat},g_{lon}) for g ∈ 𝔾 g\in\mathbb{G} .
+The mobile devices on the ground communicate with the satellite network using these gateways.
+These gateways collect data from connected devices, aggregate it, and then transmit it to their linked device.
+We designate two of these gateways as source and destination ground station, i.e., s , d ∈ 𝔾 s,d\in\mathbb{G} .
+Each gateway g ∈ 𝔾 g\in\mathbb{G} keeps one ground-to-satellite link to closest satellite i ∈ 𝕊 i\in\mathbb{S} within its visible range.
+This link is denoted by ε ( i , g ) \varepsilon_{(i,g)} , and for all ground terminals, it can be denoted as ε G = ⋃ g ∈ G ε ( i , g ) \varepsilon_{G}=\bigcup_{g\in G}\varepsilon_{(i,g)} .
+
+ 
+ We can classify each link ( i , j ) (i,j) to one of three categories. A link connecting a gateway node to a satellite node (i.e., i ∈ 𝔾 i\in\mathbb{G} and j ∈ N j\in N ) represents an uplink, while a link from a satellite node to a gateway node (i.e., i ∈ N i\in N and j ∈ 𝔾 j\in\mathbb{G} ) corresponds to a downlink. When both nodes i , j ∈ N i,j\in N , the link represents an inter-satellite link (ISL).
+The overall node set is defined as ℕ = N ∪ 𝔾 \mathbb{N}=N\cup\mathbb{G} , and the set of communication links can be expressed as ε = ε N ∪ ε 𝔾 \varepsilon=\varepsilon_{N}\cup\varepsilon_{\mathbb{G}} , where ε N \varepsilon_{N} denotes inter-satellite links and ε 𝔾 \varepsilon_{\mathbb{G}} denotes ground-to-satellite links.
+
+ 
+ III-A Inter-satellite communication 
+
+ 
+ The data rate on an inter-satellite link (ISL) can be defined as:
+
+ 
+
+ 
+
+ R ⁡ ( i , j ) = l ​ o ​ g 2 ​ ( 1 + P ( i , j ) ​ d ( i , j ) − α ​ | h i , j | 2 ​ G i ​ G j q ​ σ 2 ) R{(i,j)}=log_{2}\big(1+\frac{P_{(i,j)}d_{(i,j)}^{-\alpha}|h_{i,j}|^{2}G_{i}G_{j}}{q\sigma^{2}}\big) 
+
+ (1) 
+
+ Here, P ( i , j ) P_{(i,j)} denotes the transmission power of satellite i i when communicating with satellite j j , while G i G_{i} and G j G_{j} represent the antenna gains of satellites i i and j j , respectively. The distance between the two satellites is denoted by d ( i , j ) d_{(i,j)} , and α \alpha represents the path-loss exponent. The term h ( i , j ) h_{(i,j)} corresponds to the normalized channel gain, and σ 2 \sigma^{2} denotes the noise power at the receiver. Furthermore, q = 4 ​ π λ q=\frac{4\pi}{\lambda} represents the free-space path-loss factor at unit distance, where λ \lambda is the wavelength.
+Based on these parameters, the signal-to-noise ratio (SNR) of the link between satellites i i and j j , denoted by μ ( i , j ) \mu_{(i,j)} , is defined as
+
+ 
+
+ 
+
+ μ ( i , j ) = 2 R ⁡ ( i , j ) / W − 1 \mu_{(i,j)}=2^{R(i,j)/W}-1 
+
+ (2) 
+
+ where W W is the channel bandwidth.
+
+ 
+ III-B Space-to-ground communication 
+
+ 
+ The received SNR over the link between LEO satellite i i and ground base station j j can be written as
+
+ 
+
+ 
+
+ μ j d = P ( i , j ) ​ G j ​ G i ​ | g j d | 2 σ 2 \mu_{j}^{d}=\frac{P_{(i,j)}G_{j}G_{i}|g_{j}^{d}|^{2}}{\sigma^{2}} 
+
+ (3) 
+
+ 
+ and uplink as:
+
+ 
+
+ 
+
+ μ j u = P ( j , i ) ​ G j ​ G i ​ | g j u | 2 σ 2 \mu_{j}^{u}=\frac{P_{(j,i)}G_{j}G_{i}|g_{j}^{u}|^{2}}{\sigma^{2}} 
+
+ (4) 
+
+ where P ( i , j ) P_{(i,j)} is the transmission power of the satellite i i for the link to the ground station j j , G i G_{i} and G j G_{j} are maximum antenna gains of satellite i i and ground station j j respectively.
+ g n u g_{n}^{u} and g n d g_{n}^{d} are Nakagami-m distributed uplink and downlink channel coefficients, respectively.
+
+ 
+ The per-hop latency incurred when transmitting a packet from the i th i^{\text{th}} node (satellite) to the j th j^{\text{th}} node can be decomposed into three main components: queueing delay, transmission delay, and propagation delay. The queueing delay at node i i , denoted by t q ​ ( i ) t_{q}(i) , represents the time a packet spends waiting in the FIFO transmission buffer before it is served. Let q i q_{i} denote the queue length at node i i , and B B represent the packet size. Since packets ahead in the queue may be destined for different links with varying transmission rates R ⁡ ( i , ⋅ ) R(i,\cdot) , the queueing delay can be approximated as t q ​ ( i ) = q i ⋅ B / R ⁡ ( i , ⋅ ) . t_{q}(i)=q_{i}\cdot B/R(i,\cdot). 
+The transmission delay corresponds to the time required to place the packet onto the communication link between nodes i i and j j , and is given by B R ⁡ ( i , j ) \frac{B}{R(i,j)} , where R ⁡ ( i , j ) R(i,j) denotes the transmission rate of the link. The propagation delay accounts for the time taken by the signal to travel the physical distance between nodes i i and j j . This is given by ‖ i ​ j ‖ c \frac{\|ij\|}{c} , where ‖ i ​ j ‖ \|ij\| represents the distance between the two nodes and c c is the speed of light.
+
+ 
+ Accordingly, the total per-hop latency from node i i to node j j can be expressed as [ 8 ] :
+
+ 
+
+ 
+
+ D ⁡ ( i , j ) = ‖ i ​ j ‖ c + B R ⁡ ( i , j ) + t q ​ ( i ) . D(i,j)=\frac{\|ij\|}{c}+\frac{B}{R(i,j)}+t_{q}(i). 
+
+ (5) 
+
+ 
+ III-C Outage probability 
+
+ 
+ We can define the outage probability for uplink and downlink to be
+
+ 
+
+ 
+
+ P o ​ u ​ t u , d = Pr { μ j u ≤ μ t ​ h | | μ j d ≤ μ t ​ h } P_{out}^{u,d}=\text{Pr}\{\mu_{j}^{u}\leq\mu^{th}||\mu_{j}^{d}\leq\mu^{th}\} 
+
+ (6) 
+
+ where μ t ​ h \mu^{th} is the minimum SNR threshold we can tolerate [ 16 ] .
+The outage probability for all the links in the satellite network can be defined as:
+
+ 
+
+ 
+
+ P o ​ u ​ t N = ∏ ∀ i , j ∈ N & i ≠ j ( 1 − P o ​ u ​ t i , j ) × S ( i , j ) P^{N}_{out}=\prod_{\forall i,j\in N~\&~i\neq j}(1-P^{i,j}_{out})~\times~S_{(i,j)} 
+
+ (7) 
+
+ where S ( i , j ) ∈ { 0 , 1 } S_{(i,j)}\in\{0,1\} is the path selection variable, and denotes weather the link is selected as part of optimal path.
+ P o ​ u ​ t ( i , j ) P_{out}^{(i,j)} is the outage probability of each hop in the satellite network and can be defined as:
+
+ 
+
+ 
+
+ P o ​ u ​ t i , j = P ​ r ​ P i , j ​ d i , j − α ​ | h i , j | 2 G i − 1 ​ G j − 1 ​ q ​ σ 2 P_{out}^{i,j}=Pr{\frac{P_{i,j}d_{i,j}^{-\alpha}|h_{i,j}|^{2}}{G_{i}^{-1}G_{j}^{-1}q\sigma^{2}}} 
+
+ (8) 
+
+ 
+ Total outage probability can be written as:
+
+ 
+
+ 
+
+ P o ​ u ​ t a ​ l ​ l = 1 − ( 1 − P o ​ u ​ t u ) ​ ( 1 − P o ​ u ​ t d ) × ∏ ∀ i , j ∈ N & i ≠ j ( 1 − P o ​ u ​ t i , j ) × S ( i , j ) P_{out}^{all}=1-(1-P_{out}^{u})(1-P_{out}^{d})~\times~\prod_{\forall i,j\in N~\&~i\neq j}(1-P^{i,j}_{out})~\times~S_{(i,j)} 
+
+ (9) 
+
+ 
+ We define a new metric resilience score over each path, which for is a combination of outage probability and system queue conditions.
+
+ 
+
+ 
+
+ R a ​ l ​ l \displaystyle R^{all} 
+ = ω 1 ​ ( 1 − P o ​ u ​ t a ​ l ​ l ) \displaystyle=\omega_{1}(1-P_{out}^{all}) 
+
+ (10) 
+
+ 
+
+ 
+ + ω 2 ​ max i , j ∈ N i ≠ j ⁡ ( max ⁡ ( 1 − q i , 1 − q j ) ⋅ S ( i , j ) ) \displaystyle\quad+\omega_{2}\max_{\begin{subarray}{c}i,j\in N\\
+i\neq j\end{subarray}}\left(\max(1-q_{i},1-q_{j})\cdot S_{(i,j)}\right) 
+
+ (11) 
+
+ 
+ III-D Objective 
+
+ 
+ Our goal is to deliver data packets from source gateway s ∈ G s\in G to receiver destination gateway d ∈ G d\in G through satellite constellation. Our objective is to minimize the latency while minimizing the inherent uncertainties of the network. Morever we optimize compute and offloading energy while also considering communication overhead. The complete problem can be formulated as follows.
+
+ 
+
+ 
+
+ 
+ min R g , d : ∑ p = 1 | P g ​ d | D p ​ ( g , d ) , ∀ g , d ∈ 𝔾 , g ≠ d \displaystyle\underset{R_{g,d}}{\min}:\sum_{p=1}^{|P_{gd}|}D_{p}(g,d),\forall g,d\in\mathbb{G},g\neq d 
+
+ 
+
+ 
+
+ Subject to: 
+
+ 
+
+ 
+ C ​ 1 \displaystyle C1 
+ : f i , j ≤ R ⁡ ( i , j ) ​ ∀ i , j ∈ N \displaystyle:f_{i,j}\leq R(i,j)\forall i,j\in N 
+
+ 
+
+ 
+ C ​ 2 \displaystyle C2 
+ : ∑ e j ∈ ε i , s f j , i = ∑ e k ∈ ε i , s f i , k ​ ∀ i ∈ 𝕊 \displaystyle:\sum_{e_{j}\in\varepsilon_{i,s}}f_{j,i}=\sum_{e_{k}\in\varepsilon_{i,s}}f_{i,k}\forall i\in\mathbb{S} 
+
+ 
+
+ 
+ C ​ 3 \displaystyle C3 
+ : f i , i = 0 ​ ∀ i ∈ N \displaystyle:f_{i,i}=0\forall i\in N 
+
+ (12) 
+
+ 
+
+ C ​ 5 \displaystyle C5 
+ : ( 1 − ( 1 − P o ​ u ​ t u ) ​ ( 1 − P o ​ u ​ t d ) CLOSE \displaystyle:\bigg(1-(1-P_{out}^{u})(1-P_{out}^{d}) 
+
+ 
+
+ 
+
+ × ∏ ∀ i , j ∈ N & i ≠ j ( 1 − P o ​ u ​ t i , j ) ) ≤ P o ​ u ​ t t ​ h ​ r ​ e ​ s ​ h ​ o ​ l ​ d \displaystyle\times\prod_{\forall i,j\in N\&i\neq j}(1-P^{i,j}_{out})\bigg)\leq P_{out}^{threshold} 
+
+ 
+
+ 
+ IV Proposed Solution Approach 
+
+ 
+ In this work, we utilize a DRL -based approach to address the formulated problem. Our methodology is inspired by the framework presented in [ 8 ] . Specifically, we consider a Kepler, Starlink, and OneWeb constellation comprising O O orbital planes, with S S satellites deployed in each orbit. On the ground, we assume the presence of G G ground terminals, where each terminal serves multiple users.
+
+ 
+ Each ground terminal handles data generated by its associated users in real time, resulting in continuous traffic generation across the network. In particular, each user may transmit data to another user connected either to the same or a different ground terminal. If both the source and destination users are associated with the same ground terminal, the data is delivered locally without traversing the satellite constellation. Otherwise, the data is forwarded to the LEO satellite network and subsequently routed to the destination ground terminal.
+
+ 
+ From a system-level perspective, this interaction results in traffic exchange among all ground terminals. To model this behavior, we consider two types of traffic generation patterns: (i) uniform traffic generation, where each ground terminal produces an equal amount of data, and (ii) population-based traffic generation, where the data generation is proportional to the number of users connected to each ground terminal. These traffic patterns introduce additional background load on the LEO constellation during the transmission process between the source and destination [ 7 ] .
+
+ 
+ We employ a DRL framework to train a model that can optimally route data from a source to a destination based on the current traffic conditions in the LEO satellite constellation.
+To formulate the problem as a Markov Decision Process (MDP), several key components must be defined. First, we define the state representation. The state includes the coordinates of the current satellite, the coordinates of its four neighboring satellites, the queue levels associated with each neighbor (across their respective queues), and the coordinates of the packet destination. This state formulation enables the DRL agent to make routing decisions based on both network congestion and spatial information.
+
+ 
+ The action space is defined in terms of the next-hop routing decision. Specifically, each agent selects one of the neighboring satellites as the next hop, corresponding to four possible directions: upward, downward, rightward, or leftward.
+The reward function is formulated as a combination of four key metrics. First, it accounts for the queueing delay at the current satellite prior to forwarding. Second, it captures the reduction in distance toward the destination achieved by the selected action. Third, a penalty is imposed to discourage revisiting previously traversed nodes, thereby avoiding routing loops. Finally, the reward incorporates the resilience associated with the selected path, promoting more reliable routing decisions.
+
+ 
+ We adopt a Double Deep Q-Network (DDQN)-based DRL algorithm to solve the considered problem. The proposed framework consists of a neural network that approximates the action-value (Q) function, a target network used to stabilize training by periodically updating its weights, and a replay memory buffer for experience storage and sampling.
+Initially, we train a global Q-network to learn routing policies across the entire satellite constellation. This centralized training enables the model to capture the overall traffic dynamics and network conditions. Once the global model converges, it is deployed on individual satellites, where each utilizes the trained model to make local routing decisions. Furthermore, we incorporate online learning at each satellite to continuously update the model based on local observations, thereby improving decision-making in dynamic network conditions.
+
+ 
+ We incorporate a resilience score for each satellite link as a measure of its reliability. This consideration is particularly important in the presence of potential jamming attacks, which may render multiple satellites or inter-satellite links temporarily unavailable. The resilience score represents the confidence that a given link will remain available for the duration required to forward a packet toward its destination. This metric is integrated into both the reward function and the input state representation of the proposed model. Specifically, we extend the state space by introducing four additional features corresponding to the resilience score of the four connected links, where values range from 0 (highly vulnerable) to 1 (highly reliable). The action space remains unchanged, with the model selecting the next-hop link for packet forwarding. The reward function is extended with a fourth component, the resiliency score, which provides a reward proportional to the resilience of the selected route. The simulation environment is configured based on [ 8 ] and [ 16 ] . The detailed configurations are summarized in Table  I .
+
+ 
+ TABLE I: Simulation parameters.
+
+ 
+
+ 
+
+ 
+ Description 
+
+ 
+
+ Parameter 
+
+ 
+
+ Value 
+
+ 
+
+ 
+ Satellite constellations 
+
+ 
+
+ 
+ Starlink shell 1 
+
+ 
+
+ 
+ Orbital planes 
+
+ 
+
+ O O 
+
+ 
+
+ 72 
+
+ 
+
+ 
+ Total satellites 
+
+ 
+
+ S S 
+
+ 
+
+ 1584 
+
+ 
+
+ 
+ Altitude 
+
+ 
+
+ h 0 h_{0} 
+
+ 
+
+ 550 km 
+
+ 
+
+ 
+ Satellite architecture 
+
+ 
+
+ 
+ Walker Delta 
+
+ 
+
+ 
+ Num. of ground terminals 
+
+ 
+
+ 
+ 200 
+
+ 
+
+ 
+ Power budget for each ground terminal link 
+
+ 
+
+ P i , j P_{i,j} 
+
+ 
+
+ 10 W 
+
+ 
+
+ 
+ Power budget for a satellite link 
+
+ 
+
+ P i , j P_{i,j} 
+
+ 
+
+ 20 W 
+
+ 
+
+ 
+ Bandwidth 
+
+ 
+
+ B 
+
+ 
+
+ 500 MHz 
+
+ 
+
+ 
+ Noise 
+
+ 
+
+ σ 2 \sigma^{2} 
+
+ 
+
+ -174 dBm/Hz 
+
+ 
+
+ 
+ Speed of light 
+
+ 
+
+ c c 
+
+ 
+
+ 3 ∗ 10 8 3*10^{8} m/s 
+
+ 
+
+ 
+ Radius of Earth 
+
+ 
+
+ r e r_{e} 
+
+ 
+
+ 6371 Km 
+
+ 
+
+ 
+ Antenna gain 
+
+ 
+
+ G i d , G j u G_{i}^{d},G_{j}^{u} 
+
+ 
+
+ 60 DB 
+
+ 
+
+ 
+ Path loss exponent 
+
+ 
+
+ α \alpha 
+
+ 
+
+ 2 
+
+ 
+
+ 
+ Nakagami-m parameter 
+
+ 
+
+ 
+ 2 
+
+ 
+
+ 
+ Frequency 
+
+ 
+
+ f c f_{c} 
+
+ 
+
+ 30 ∗ 10 9 ​ H ​ z 30*10^{9}Hz 
+
+ 
+
+ 
+ Packet size 
+
+ 
+
+ B B 
+
+ 
+
+ 64 kb 
+
+ 
+
+ 
+ DRL architecture 
+
+ 
+
+ 
+ DDQN 
+
+ 
+
+ 
+ Policy iteration 
+
+ 
+
+ - 
+
+ 
+
+ Epsilon Greedy policy 
+
+ 
+
+ 
+ Training iterations 
+
+ 
+
+ - 
+
+ 
+
+ 100000 
+
+ 
+
+ 
+ Replay memory 
+
+ 
+
+ - 
+
+ 
+
+ 2000 
+
+ 
+
+ 
+ DRL batch size 
+
+ 
+
+ - 
+
+ 
+
+ 128 
+
+ 
+
+ 
+ Epsilon start 
+
+ 
+
+ - 
+
+ 
+
+ 0.99 
+
+ 
+
+ 
+ Epsilon end 
+
+ 
+
+ - 
+
+ 
+
+ 0.1 
+
+ 
+
+ 
+ Epsilon decay rate 
+
+ 
+
+ - 
+
+ 
+
+ 1000 
+
+ 
+
+ 
+ Loss function 
+
+ 
+
+ - 
+
+ 
+
+ Huber loss 
+
+ 
+
+ 
+ Optimizer 
+
+ 
+
+ - 
+
+ 
+
+ Adam 
+
+ 
+
+ 
+ Optimizer learning rate 
+
+ 
+
+ - 
+
+ 
+
+ 0.0001 
+
+ 
+
+ 
+ Policy neural network 
+
+ 
+
+ - 
+
+ 
+
+ DNN with three layers 
+
+ 
+
+ 
+ Target neural network 
+
+ 
+
+ - 
+
+ 
+
+ DNN with three layers 
+
+ 
+
+ 
+
+ 
+ V Performance Evaluation 
+
+ 
+ In this work, we adopt a DRL framework for routing decisions. The primary motivation for selecting DRL over traditional routing algorithms lies in its computational efficiency during deployment. Classical shortest-path algorithms, such as Dijkstra’s algorithm and Bellman–Ford algorithm, incur computational complexities of O ⁡ ( E + V ​ l ​ o ​ g ​ ( V ) ) O(E+Vlog(V)) or O ⁡ ( v 2 ) O(v^{2}) in dense graphs and O ⁡ ( V ​ E ) O(VE) , respectively where V V and E E denote the number of nodes and edges. These complexities become prohibitive in large-scale satellite constellations with rapidly changing topologies. Satellite networks are inherently dynamic, with link states potentially changing on the order of milliseconds, necessitating near real-time routing decisions. In contrast, once trained, the DRL model performs inference through a forward pass of the neural network, enabling routing decisions in constant time, i.e., O ⁡ ( 1 ) O(1) . This makes DRL particularly well-suited for such environments, as it avoids repeated global recomputation. Consequently, the proposed approach enhances the stability and reliability of the network by enabling fast and adaptive routing in the presence of frequent topology changes. Our observations indicate that the developed solution achieves performance comparable to [ 8 ] in terms of data blocks lost, where both approaches report negligible packet loss under their respective definitions.
+
+ 
+ We evaluate the performance of the proposed framework against three baseline approaches at Starlink Shell 1. We consider a SARSA -based method trained in a centralized manner using complete constellation information and then copied on each node to get better performance, serving as a learning-based benchmark. In addition, we include the traditional routing baseline Dijkstra’s algorithm to provide a comparison with the classical method.
+
+ 
+
+ 
+
+ Fig. 1: Latency comparison of Dijkstra, SARSA , and MA-DRL .
+
+ 
+
+ Fig.  1 presents a comparison of the packet delivery latency obtained using the Dijkstra’s algorithm and the proposed MA-DRL approach. In the baseline implementation, Dijkstra’s algorithm utilizes link latency as the edge weight to construct routing tables, enabling each satellite to forward packets along the minimum-latency path. However, this approach does not incorporate queue state information in its decision-making process. To ensure a fair comparison and isolate latency performance, the queue capacity in the simulation is set to 1 Gb/s, effectively preventing queue overflow and allowing Dijkstra’s algorithm to operate under near-ideal conditions. Under the same simulation setup, the proposed MA-DRL -based routing is evaluated, and the corresponding latency is measured. The results indicate that the average latency achieved by MA-DRL is 49.31 ms, compared to 38.54 ms for Dijkstra’s algorithm. SARSA algorithm has the worst performance as compared to the other two approaches, with an average latency of 59.28 ms. While Dijkstra’s algorithm shows lower latency under these controlled conditions, it does not explicitly account for queue dynamics. In contrast, the proposed MA-DRL framework and SARSA incorporate queue backlog information into their decision process, enabling it to mitigate packet drops in more realistic network scenarios.
+
+ 
+
+ 
+
+ Fig. 2: Aggregate decision-making time for each routing algorithm.
+
+ 
+
+ In Fig. 2 , we show the impact of the cost associated with routing decision computation across the entire satellite constellation aggregated. Due to the dynamic nature of the constellation, Dijkstra’s algorithm must repeatedly recompute routing paths to adapt to topology changes. Even when deployed on a high-performance ground base station, this frequent recomputation, combined with the overhead of disseminating updated routing tables to all relevant satellites, results in a significantly higher decision cost. SARSA and MA-DRL are deployed on each satellite, therefore the cost of getting a decision for each one is forward inference of their neural networks. As we decrease the frequency of updates based on changing topology, we see a decrease in the computation time for Dijkstra. This is because most of this overhead time is utilized to compute the global state in Dijkstra’s algorithm, which is then utilized to update local routing tables at each satellite. We observed that after increasing the update frequency for Dijkstra to more than 10 s, the cost of decision making becomes less then of MA-DRL and SARSA , but this causes other unintended side effects.
+
+ 
+
+ 
+
+ Fig. 3: Aggregate path changes for the Dijkstra algorithm.
+
+ 
+
+ Fig. 3 shows the average path changes in percentage as the route recalculation frequency of Dijkstra-based routing increases. While less frequent recalculations reduce decision cost, they come at the cost of optimality, as rapid topology changes make previously optimal paths suboptimal. Some of the paths that were available before are no longer available. This leads to increased overall latency despite faster decision updates. In contrast, both MA-DRL and SARSA rely on pre-trained models and perform only inference. As a result, their performance remains largely unaffected by topology variations, enabling more stable and consistent latency without the need for continuous route recomputation.
+
+ 
+
+ 
+
+ Fig. 4: Comparison of resilience scores across different routing algorithms under varying traffic conditions.
+
+ 
+
+ Fig.  4 shows the average resilience score across all network links over the entire simulation, under varying levels of background traffic, expressed as the average data generated by each base station. As observed, Dijkstra achieves the highest resilience score. This is primarily due to its global view of the network, allowing it to make routing decisions based on complete constellation information and overall traffic conditions. In contrast, the proposed approach exhibits comparatively lower resilience. Although each agent has access to its local queue state as well as the queue conditions of its neighboring nodes and attempts to make optimal routing decisions, it lacks a global view of the network. This limited observability results in slightly reduced resilience performance for both MA-DRL and SARSA . Furthermore, the resilience scores of SARSA and MA-DRL are comparable, as both approaches follow a distributed decision-making architecture.
+
+ 
+ VI Conclusion 
+
+ 
+ In this work, we investigated routing in LEO satellite constellations under dynamic topology and traffic conditions. We incorporated end-to-end latency, queue dynamics, and a resilience score into the system model to provide a more realistic representation of the network environment. Unlike traditional approaches (e.g., Dijkstra-based), the proposed formulation accounts for queue backlogs as well as real-time changes in network topology. We developed a queue-aware, MA-DRL framework, in which each satellite operates as an independent agent making routing decisions based on local observations. This distributed design enables timely decision-making while allowing the agents to continuously learn network traffic patterns, thereby mitigating congestion and improving resilience under high system utilization. The experimental results validate the effectiveness of the proposed MA-DRL approach, which sustains stable performance with lower overhead by proactively managing queue states and link resilience. Future work will investigate advanced learning techniques and hybrid learning–traditional formulations for improved efficiency and robustness.
+
+ 
+ References
+
+ 
+ [1] 
+ M. Handley (2018) 
+
+ Delay is not an option: Low latency routing in space .
+
+ In Proceedings of the 17th ACM Workshop on Hot Topics in Networks ,
+
+ pp. 85–91 .
+
+ Cited by: §I .
+
+ [2] 
+ I. Del Portillo, B. G. Cameron, and E. F. Crawley (2019) 
+
+ A technical comparison of three low earth orbit satellite constellation systems to provide global broadband .
+
+ Acta astronautica 159 , pp. 123–135 .
+
+ Cited by: §I .
+
+ [3] 
+ J. Liang, A. U. Chaudhry, E. Erdogan, H. Yanikomeroglu, G. K. Kurt, P. Hu, K. Ahmed, and S. Martel (2023) 
+
+ Free-space optical (FSO) satellite networks performance analysis: Transmission power, latency, and outage probability .
+
+ IEEE Open Journal of Vehicular Technology 5 , pp. 244–261 .
+
+ Cited by: §I ,
+ §I ,
+ §II .
+
+ [4] 
+ S. Han, Z. Li, W. Meng, and C. Li (2025) 
+
+ Multi-orbit multibeam satellite soft handover strategy based on rate-splitting multiple access .
+
+ IEEE Transactions on Wireless Communications .
+
+ Cited by: §I ,
+ §II .
+
+ [5] 
+ W. Li, A. Naqi, X. Zhai, S. ul Hassan, and Y. Zhang (2025) 
+
+ Performance evaluation of multi-shell LEO satellite constellations in 6G communication systems .
+
+ Journal of Information and Intelligence .
+
+ Cited by: §I ,
+ §I ,
+ §II .
+
+ [6] 
+ J. K. Rai, B. Abudehais, A. Bhattacharya, and K. Sinha (2025) 
+
+ Optimized multi-path routing for IoT connectivity in LEO satellite networks: A load-balanced approach .
+
+ In 2025 IEEE World AI IoT Congress (AIIoT) ,
+
+ pp. 0940–0949 .
+
+ Cited by: §I .
+
+ [7] 
+ B. Soret, I. Leyva-Mayorga, F. Lozano-Cuadra, and M. D. Thorsager (2024) 
+
+ Q-learning for distributed routing in LEO satellite constellations .
+
+ In 2024 IEEE International Conference on Machine Learning for Communication and Networking (ICMLCN) ,
+
+ pp. 208–213 .
+
+ Cited by: §I ,
+ §II ,
+ §IV .
+
+ [8] 
+ F. Lozano-Cuadra, B. Soret, I. Leyva-Mayorga, and P. Popovski (2025) 
+
+ Continual deep reinforcement learning for decentralized satellite routing .
+
+ IEEE Transactions on Communications .
+
+ Cited by: §I ,
+ §II ,
+ §III-B ,
+ §IV ,
+ §IV ,
+ §V .
+
+ [9] 
+ Y. Sun, Y. Gao, M. Xiao, Z. Han, and O. A. Dobre (2025) 
+
+ Visibility-aware Satellite Selection and Resource Allocation in Multi-Orbit LEO Networks .
+
+ arXiv preprint arXiv:2511.12678 .
+
+ Cited by: §II .
+
+ [10] 
+ J. Lee, J. Park, M. Bennis, and Y. Ko (2023) 
+
+ Integrating LEO satellites and multi-UAV reinforcement learning for hybrid FSO/RF non-terrestrial networks .
+
+ IEEE Transactions on Vehicular Technology 72 ( 3 ), pp. 3647–3662 .
+
+ Cited by: §II .
+
+ [11] 
+ M. Al-Ansi, J. Querol, E. Lagunas, M. Alsenwi, and S. Chatzinotas (2025) 
+
+ Collaborative Multi-Band Multi-Orbit 6G Satellites with Multi-Connectivity: The Roles of Carrier Aggregation and Dual Connectivity .
+
+ Authorea Preprints .
+
+ Cited by: §II .
+
+ [12] 
+ Z. Lai, H. Li, Y. Wang, Q. Wu, Y. Deng, J. Liu, Y. Li, and J. Wu (2023) 
+
+ Achieving resilient and performance-guaranteed routing in space-terrestrial integrated networks .
+
+ In IEEE INFOCOM 2023-IEEE Conference on Computer Communications ,
+
+ pp. 1–10 .
+
+ Cited by: §II .
+
+ [13] 
+ J. Zhou, X. Zhu, and H. Yao (2025) 
+
+ Resilience evaluation and optimization method of large-scale leo satellite networks based on entropy theory .
+
+ IEEE Internet of Things Journal .
+
+ Cited by: §II .
+
+ [14] 
+ B. Guo, Z. Xiong, Z. Zhang, B. Li, D. Niyato, C. Yuen, and Z. Han (2025) 
+
+ Resilience of mega-satellite constellations: How node failures impact inter-satellite networking over time? .
+
+ IEEE Transactions on Communications .
+
+ Cited by: §II .
+
+ [15] 
+ I. Leyva-Mayorga, B. Soret, and P. Popovski (2021) 
+
+ Inter-plane inter-satellite connectivity in dense LEO constellations .
+
+ IEEE Transactions on Wireless Communications 20 ( 6 ), pp. 3430–3443 .
+
+ Cited by: §III .
+
+ [16] 
+ A. Abdulkarim and B. Maham (2024) 
+
+ Multi-LEO satellite networks for integrated access and backhaul: Outage performance analysis .
+
+ In 2024 32nd European Signal Processing Conference (EUSIPCO) ,
+
+ pp. 2097–2101 .
+
+ Cited by: §III-C ,
+ §IV .
+
+ 
+
+ 
+
+ 
+
+ Experimental support, please
+ view the build logs 
+ for errors. Generated by
+
+ 
+ L
+ A 
+ T
+ E 
+
+ xml 
+
+ .
+
+ 
+ Instructions for reporting errors
+
+ We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+ support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+ methods listed below:
+
+ 
+ Click the "Report Issue" ( 
+
+ ) button, located in the page header.
+
+ 
+ Tip: You can select the relevant text first, to include it in your report.
+
+ Our team has already identified the following issues . We appreciate your time reviewing and reporting rendering errors we
+ may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+ should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+ all.
+
+ Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion , and welcome developer contributions .
+
+ 
+
+ 
+
+ 
+
+ We gratefully acknowledge support from
+ our major funders ,
+ member institutions , ,
+ and all contributors.
+
+ 
+ About 
+ · 
+ Help 
+ · 
+ Contact 
+ · 
+ Subscribe 
+ · 
+ Copyright 
+ · 
+ Privacy 
+ · 
+ Accessibility 
+ · 
+ Operational Status (opens in new tab) 
+
+ 
+
+ 
+ Major funding support from

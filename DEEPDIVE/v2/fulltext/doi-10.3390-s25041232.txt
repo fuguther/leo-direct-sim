@@ -1,0 +1,467 @@
+
+
+pmcSensors (Basel)Sensors (Basel)1660sensors101204366sensorsSensors (Basel, Switzerland)1424-8220Multidisciplinary Digital Publishing Institute (MDPI)PMC11861639PMC11861639.111861639118616394000646110.3390/s25041232sensors-25-012321Article
+
+### Deep Reinforcement Learning-Based Routing Method for Low Earth Orbit Mega-Constellation Satellite Networks with Service Function Constraintshttps://orcid.org/0009-0006-1233-3357ChenYanMethodologySoftwareValidationWriting – original draftSupervision1234*CaoHuanWriting – review & editingSupervisionFunding acquisition234*WangLongheMethodologyWriting – review & editingSupervision234ChenDaojinSoftwareValidationSupervision234https://orcid.org/0009-0009-9215-7956LiuZifanSoftwareValidation234ZhouYiqingWriting – review & editingSupervisionFunding acquisition12345ShiJinglinSupervision12345AranitiGiuseppeAcademic EditorSuraciChiaraAcademic EditorMandalariAnna MariaAcademic EditorMorabitoRobertoAcademic EditorOrsinoAntoninoAcademic Editor1University of Chinese Academy of Sciences, Beijing 100049, China; zhouyiqing@ict.ac.cn (Y.Z.); sjl@ict.ac.cn (J.S.)2State Key Laboratory of Processors, Institute of Computing Technology, Chinese Academy of Sciences, Beijing 100190, China; wanglonghe@ict.ac.cn (L.W.); chendaojin@ict.ac.cn (D.C.); liuzifan@ict.ac.cn (Z.L.)3Institute of Computing Technology, Chinese Academy of Sciences, Beijing 100190, China4Beijing Key Laboratory of Mobile Computing and Pervasive Device, Beijing 100190, China5Nanjing Mobile Communication and Computing Innovation Institute, Chinese Academy of Sciences, Nanjing 211135, China*Correspondence: chenyan19s@ict.ac.cn (Y.C.); caohuan@ict.ac.cn (H.C.); Tel.:+86-186-3719-7162 (Y.C.)18220252202525448293412320312202411220251122025180220252602202503032025© 2025 by the authors.2025https://creativecommons.org/licenses/by/4.0/Licensee MDPI, Basel, Switzerland. This article is an open access article distributed under the terms and conditions of the Creative Commons Attribution (CC BY) license (https://creativecommons.org/licenses/by/4.0/).Low-orbit satellite communication networks have gradually become the research focus of fifth-generation (5G) beyond and sixth generation (6G) networks due to their advantages of wide coverage, large communication capacity, and low terrain influence. However, the low earth orbit mega satellite network (LEO-MSN) also has difficulty in constructing stable traffic transmission paths, network load imbalance and congestion due to the large scale of network nodes, a highly complex topology, and uneven distribution of traffic flow in time and space. In the service-based architecture proposed by 3GPP, the introduction of service function chain (SFC) constraints exacerbates these challenges. Therefore, in this paper, we propose GDRL-SFCR, an end-to-end routing decision method based on graph neural network (GNN) and deep reinforcement learning (DRL) which jointly optimize the end-to-end transmission delay and network load balancing under SFC constraints. Specifically, this method constructs the system model based on the latest NTN low-orbit satellite network end-to-end transmission architecture, taking into account the SFC constraints, transmission delays, and network node loads in the end-to-end traffic transmission, uses a GNN to extract node attributes and dynamic topology features, and uses the DRL method to design specific reward functions to train the model to learn routing policies that satisfy the SFC constraints. The simulation results demonstrate that, compared with graph theory-based methods and reinforcement learning-based methods, GDRL-SFCR can reduce the end-to-end traffic transmission delay by more than 11.3%, reduce the average network load by more than 14.1%, and increase the traffic access success rate and network capacity by more than 19.1% and two times, respectively.LEO satellite networkroutingservice function constraintsgraph convolution networkdeep reinforcement learningNational Key Research and Development Program of China2020YFB1808004Jiangsu Key Research and Development ProgramBE2021013-2This work was supported by the National Key Research and Development Program of China (no. 2020YFB1808004), in part by the Jiangsu Key Research and Development Program (no. BE2021013-2).pmc-status-qastatus0pmc-status-liveyespmc-status-embargonopmc-status-releasedyespmc-prop-open-accessyespmc-prop-olfnopmc-prop-manuscriptnopmc-prop-legally-suppressednopmc-prop-has-pdfyespmc-prop-has-supplementnopmc-prop-pdf-onlynopmc-prop-suppress-copyrightnopmc-prop-is-real-versionnopmc-prop-is-scanned-articlenopmc-prop-preprintnopmc-prop-in-epmcyespmc-license-refCC BY
+1. Introduction
+
+At present, the global commercialization of 5G mobile communication networks is advancing [1,2,3,4,5]; however, due to the constraints of geographic conditions and construction costs, it is impossible to achieve seamless global coverage [6]. 6G non-terrestrial network (NTN) technology [7], which is the convergence of satellite communication networks and 5G, has gradually become the focus of attention in academia and industry [8,9,10,11]. For example, the 3rd Generation Partnership Project (3GPP) proposed four star-earth converged network architecture schemes based on on-planet processing/transparent forwarding with/without relaying [12], and ITU proposed four application scenarios for the convergence of 5G and satellite communications [13]. Compared to medium earth orbit (MEO) and geostationary earth orbit (GEO) satellite networks, LEO-MSN has the advantages of low transmission delay, low propagation loss, high regional capacity, and low manufacturing and launching costs, and it has been considered to be an essential part of next-generation communication networks [14,15,16,17,18].In recent years, a large number of low-orbit mega-constellation programs, represented by StarLink, OneWeb, and Kuiper, have been proposed. These constellations usually consist of hundreds or thousands of satellites and operate in 200–2000 km near-Earth orbits at speed of 7.2 km/s [19]. Among them, SpaceX’s StarLink constellation has grown the most rapidly, with more than 6300 satellites deployed as of June 2024 [20], providing satellite-accessed internet communication services to more than 2.5 million subscribers in more than 70 countries and territories, with up to 500 Mbps downlink speed, 40 Mbps uplink speed, and 20 ms latency internet access services [21].As one of the key technologies for LEO-MSN communication, routing significantly impacts traffic transmission delay and quality of service [22]. However, in LEO-MSN, the routing technology still faces the following challenges. Firstly, the massive scale of mega constellations and the nodes with high dynamics make the network topology highly complex, and it is difficult to construct stable traffic transmission paths. In addition, the uneven distribution of the traffic in time and space makes the LEO-MSN face problems such as load imbalance and congestion [23]. With the increasing capacity of on-board load processing, the LEO-MSN network architecture has evolved from transparent payload (TP) mode to regenerative payload (RP) [24] mode. According to the Service-Based Architecture (SBA) proposed by 3 GPP [25], the functions of the access network, transmission network, and core network can be segmented on demand and deployed flexibly on the satellite or the ground, which brings new constraints to routing and transmission strategies. Under the new service architecture, the routing policy must satisfy the Service Function Chain (SFC) constraints [26], i.e., the traffic transmission path from the source node to the target node must pass through the nodes of relevant service functions in order.In the dynamic topology and resource-constrained environment of LEO-MSN, the introduction of SFC constraints will make satellite routing face more challenges. First, the functional nodes need to centrally process multi-path traffic, resulting in drastic fluctuations in network load, which becomes a key bottleneck for network congestion. In addition, the high-speed movement of satellites causes frequent reconstruction of SFC paths. Traditional routing methods lack global perception of the functional chain status and are difficult to maintain service continuity during link switching, further exacerbating the risk of transmission interruption.Facing the new large-scale satellite network scenarios and the introduction of SFC constraints, existing satellite routing methods are no longer applicable, which is mainly due to the fact that some of the methods only optimize from a single metric. For example, refs. [27,28,29,30,31] only considers the optimization of path delay, refs. [32,33] only considers the optimization of network load without considering the SFC constraints in the service transmission process, and some of the methods [26,34] consider that the SFC constraints only optimize the path delay, neglecting the load optimization of the whole network.Inspired by AI-based communication algorithms [35,36], this paper proposes a GDRL-SFCR routing decision method that integrates a GNN and DRL to systematically solve the core challenges caused by SFC constraints in LEO-MSN. For the problem of frequent path throughput due to satellite dynamic topology, a GNN is used to extract the link state and functional attributes of multi-hop neighbors, and dynamic graph embedding is used to achieve adaptive sensing of topology changes. For the multi-objective optimization with SFC constraints, low latency, and load balancing, DRL agents are used to dynamically adjust the weights of the composite reward function, and the competitiveness metrics are automatically balanced in the policy optimization. The main contributions of this paper are summarized as follows.
+A more realistic LEO-MSN model: Compared to [26], we consider more constrained models. Specifically, channel model, network functions such as access network, core network, and end-to-end bidirectional traffics in satellite communication networks as specified in the latest 3GPP NTN protocol are considered.A novel routing method: We propose a method, GDRL-SFCR to solve the end-to-end routing problem under SFC constraints. This method uses a GNN to learn the dynamically changing topological features of the LEO-MSN network and trains using DRL to learn routing strategies to make appropriate routing decisions, which can rationally utilize network resources and improve network performance. Specifically, making routing decisions with network load balancing minimizes the end-to-end traffic transmission delay while guaranteeing the SFC constraints are met.Performance evaluation: We constructed mega-satellite networks to validate the performance of the proposed algorithms, and to the best of our knowledge, the size of the simulation network we used is the largest among the papers available so far. The simulation results show that the proposed method outperforms other routing methods in terms of network metrics such as average end-to-end path delay, average network load, traffic access success rate, and network capacity.The remainder of this paper is organized as follows. Section 2 summarizes the relevant literature. Section 3 describes the system model and the routing decision problem under SFC constraints. Next, Section 4 describes the proposed GDRL-SFCR method in detail. Then, Section 5 presents and analyzes the simulation results. Finally, Section 6 summarizes this paper.
+
+### 2. Literature Review
+
+Due to the dynamic topology of networks, the limited resources of satellites, and the imbalanced demands of users, ground routing strategies are deemed unsuitable for satellite networks. Consequently, extensive studies had been conducted in the routing of LEO satellite constellations. In this section, we review the recent works in LEO satellite routing. Existing studies have extensively researched routing in satellite networks, and the mainstream routing algorithms can be divided into two types: static routing and dynamic routing. The static routing algorithm discretizes the network topology in time and space and then makes routing decisions, e.g., the “snapshot”-based routing algorithm [27] and the Contact Graph Routing (CGR) algorithm [28]. However, the static routing algorithm cannot be changed in real time according to network status, resulting in a lack of flexibility and fault tolerance [37]. Dynamic routing algorithms make routing decisions by obtaining real-time state information about the satellite network [29,30,31,32,33,38,39]. For example, time-varying graph-based routing algorithms [29,30] construct a time-varying graph model by jointly considering the transmission volume and the start moment of the traffic, the connectivity opportunities of the links, and the storage resources of the nodes, and based on this, they decide on the paths with the minimum latency. In [38], Zhang et al. proposed a routing algorithm based on the global routing table generated on the ground and supplemented by the local routing table generated by satellite nodes. It updates the local and global routing tables based on network information, reducing the routing calculation overhead. In [31], Wu et al. proposed a status and reputation-adaptive-based dynamic routing (SRADR) algorithm that introduces security attributes expressed in terms of node reputation, which guarantees the security of the path while deciding the path with the shortest delay.The above algorithms are mainly based on the shortest path, which selects a path with the least forwarding nodes during traffic transmission. However, as the amount of traffic in the network increases, the satellite nodes on the shortest path will carry a large amount of traffic flow, which results in an unbalanced network load. Because of this, a series of load balancing routing algorithms have been proposed. The segmentation routing-based load balancing algorithm [32] dynamically divides the light- and heavy-traffic-load areas, adopting the snapshot routing algorithm in the light-traffic-load areas and adopting the minimum weight path defined by the congestion index as the routing rule in the heavy-traffic-load areas. The QoS routing algorithm considers energy consumption (QER) [33] and adjusts the next-hop forwarding node according to the node cache queue size and remaining energy to control the link traffic. Distributed routing algorithms based on neighbor satellite load status [39] alleviate the network condition of satellite congestion by introducing mechanisms such as adjacent satellite load state updating, load balancing, and route adjudication, obtaining low-latency and low-packet-drop rate paths.However, the above algorithms do not take into account the SFC constraints for traffic transmission and are not suitable under the new network architecture. There have been few efforts to investigate the routing strategy satisfying SFC constraints in the LEO-MSN. In [33], the joint optimization of NFV deployment and routing strategy in the space–air–ground integrated network was studied without considering the time-varying characteristics of this network. In [26], the routing problem in LEO-MSN was studied by considering the SFC constraints; however, there is a lack of consideration of factors such as end-to-end link, channel modeling, and network node load. In [34], Xu et al. introduce an effective Deep Reinforcement Learning (DRL) approach to effectively tackle the SFC routing problem in LEO-MSN.Previous studies have explored the routing problem in LEO-MSN from several angles, which has laid a good foundation for the study of routing strategies. However, considering the new network architecture, there is still room for improvement in the current study. It mainly includes the following aspects:When designing the algorithms, most of the work focuses on the theoretical models and algorithms proposed, and it lacks the consideration of the evolution of network architectures and protocols, as well as the functional constraints of transmission paths;This study only considered inter-satellite links, feeder links, and unidirectional traffic, lacking consideration of user links and end-to-end bidirectional traffic flows. Table 1 shows some existing methods for satellite routing.
+
+### 3. System Model and Problem Formulation
+
+### 3.1. LEO-MSN Model
+
+The LEO-MSN communication network, including satellites, ground stations, user terminals, and remote servers, is considered in this paper. The communication starts with a user terminal and ends with a remote server, and the data packets can be forwarded through ISLs of LEO satellite in space. The LEO-MSN at each moment can be defined as an undirected graph [FORMULA] , where V and E represent the set of vertices and edges in the graph, respectively. Node [FORMULA] represents a satellite, ground station, user terminal, or remote server. Edge [FORMULA] represents a link between two network nodes i and j in the network. The position of each satellite is calculated based on the simplified general perturbations 4 (SGP4) [40] orbital propagation model with the input parameter TLE (Two-Line Element set). The satellite coordinates are updated with the following formula:(1)ri(t)=SGP4(TLEi,t),Δt=60 s
+where [FORMULA] contains the parameters of the orbital half-length axis, the eccentricity, the orbital inclination, and the ascending node declination.Each LEO satellite can establish an Inter-Satellite Link (ISL) with two satellites in the same orbital plane and two satellites in adjacent orbital planes. Since the spatial distance between the front and rear satellites in the same orbital plane is fixed, the ISL within the orbit is assumed to be stable over the system period. For satellites that are uniformly distributed in the same orbital plane, the distance between two neighboring satellites can be calculated using the following equation:(2)Linter=2(Rearth+h)·sin(π2NL)
+Satellites in adjacent orbital planes can be calculated using the following formula:(3)Ladj=2(Rearth+h)·sin(ΔΩ·sinθ2)
+where [FORMULA] is the radius of the Earth (in km), and h is the height of the satellite orbit. [FORMULA] is the number of satellites in the same orbital plane, [FORMULA] is the orbital inclination, and [FORMULA] is the difference in longitude of the orbital plane. The relevant terms introduced in this section are listed in Table 2.According to the NTN networking architecture proposed by 3GPP [25], user terminals need to pass through nodes with different functional protocols when accessing the network for service transmission, specifically including the service functions of the access network, transmission network, and core network. In this paper, we assume that the satellites and ground stations in LEO-SN can deploy different network functions, and each satellite or ground station can provide at most one function. Based on this, the network nodes in LEO-SN can be classified into nodes with processing functions and nodes with transparent forwarding functions [41,42], where the processing function nodes can provide certain functions during service transmission, including two kinds of functions, gNB and NGC (core network functions, including AMF, UPF, etc.), which can provide on-board access and on-board data processing functions, while the satellite with transparent forwarding function nodes only provides transparent forwarding service (TM). We can denote the set of nodes with the processing function and the set of nodes with the transparent forwarding function as [FORMULA] , [FORMULA] , respectively, so the set of nodes in LEO-SN can also be denoted as [FORMULA] .
+
+### 3.2. Channel Model
+
+In LEO mega-satellite communication networks, transmission channels can be divided into two main categories:Inter-satellite link channel model: In this paper, the inter-satellite link channel model we used is the free-space path loss model. The path loss can be expressed as follows:(4)FSPL=(4πRfc)2
+where R is the communication distance, c is the speed of light (in m/s), and f is the communications center frequency (in Hz) of inter-satellite links. The received power [FORMULA] can be calculated using the following equation:(5)PR=PTx·GT·GR·c2(4πRf)2L
+where [FORMULA] is the transmit power, and [FORMULA] and [FORMULA] are the transmit and receive antenna gains, respectively. L is the additional system loss. The data rate (in bps) of inter-satellite links can be expressed as follows:(6)RISL=B·log2(1+PRN0B)
+here, [FORMULA] is the noise power spectral density, and B is the channel bandwidth.Satellite–ground link channel model: This includes the transmission channel between user terminals and satellites as well as between ground stations and satellites. From the ground node to the satellite node, the wireless signal propagation experiences the ground, the atmosphere, and the space environment, and it needs to consider the influence of various factors such as the ground shadow effect, the multipath effect, the atmospheric propagation loss, the free space propagation loss, etc. In this paper, we refer to the relevant parameters of 3GPP TR 38.811 [24] to establish the satellite–ground link channel model. Specifically, the parameter set of the urban scenario in Table 6.7.2 is used.The Path Loss (PL) is composed of the following components:(7)PL=PLb+PLg+PLs+PLe
+where [FORMULA] is the total path loss (in dB), [FORMULA] is the basic path loss (in dB), [FORMULA] is the attenuation due to atmospheric gasses (in dB), [FORMULA] is the attenuation due to either ionospheric or tropospheric scintillation in dB, and [FORMULA] is the building entry loss (in dB).The basic path loss in units of dB is modeled as follows:(8)PLb=FSPL(s,fc)+SF+CL(α,fc)
+where [FORMULA] is the free space path loss, [FORMULA] is the clutter loss, and [FORMULA] is the shadow fading loss represented by a random number generated by the normal distribution, i.e., [FORMULA] .The SNR can be calculated as follows:(9)SNR=EIRP−k−PL−B+GT
+where [FORMULA] is the effective isotropic radiated power (in dBW), [FORMULA] is the antenna gain-to-noise-temperature (in dB/K), k is the Boltzmann constant, equal to −228.6 dBW/K/Hz, [FORMULA] is the path loss (in dB), and B is the channel bandwidth (in dBHz). Although the original unit of each component is different, the unit is unified by standardization in decibel operation. By adding and subtracting decibels, the formula unifies the transmit power, path loss, noise, and receive performance into SNR, which visually reflects the link quality.EIRP can be calculated as follows:(10)EIRP=PT−LC+GT
+where [FORMULA] is the antenna transmit power (in [FORMULA] ), [FORMULA] is the cable loss (in dB), and [FORMULA] is the transmit antenna gain (in dBi).Antenna gain-to-noise-temperature [FORMULA] can be derived as follows:(11)GT=GR−Nf−10log10(T0+(Tα−T0)10−0.1Nf)According to the Shannon formula, the data rate (in bps) of the satellite–ground link can be expressed as follows:(12)RGSL=Blog2(1+SNR)
+
+### 3.3. End-to-End Traffic Transmission Model with Service Function Constraints
+
+According to the NTN networking architecture proposed by 3GPP [25], as shown in Figure 1, the end-to-end traffic transmission modes of the LEO-MSN can be divided into three types: (a) the gNB and the NGC are both on the ground, and the user terminal is relayed to the ground station for processing via the satellite; (b) the gNB is on the satellite and the NGC is on the ground, the user terminal is connected to the satellite node, and the data are transmitted back to the ground; (c) the gNB and the NGC are both on the satellite, and data on the traffic are processed on the satellite without landing. The constraints for completing the end-to-end service transmission in different deployment modes are different, in which the network nodes containing the gNB and NGC functions must be passed through. The path can be expressed as [FORMULA] , where [FORMULA] denotes the ith functional node through which the end-to-end service transmission passes, and [FORMULA] denotes the total number of functional nodes of the SFC in the path.The transmission delay of traffic d with path [FORMULA] can be defined as follows:(13)Delayd=∑eij∈PathdBvdR(i,j)
+where [FORMULA] represents the data size of traffic d, and [FORMULA] represents the transmission rate of the link [FORMULA] .
+
+### 3.4. Problem Formulation
+
+Based on the assumptions of the above models, the following constraints can be established:Link capacity constraint: At any given moment, the amount of traffic carried on each link must not exceed the link capacity:(14)0≤Xtd(i,j)≤Ct(i,j),∀ei,j∈E(t)
+where [FORMULA] represents the amount of traffic transmitted on link [FORMULA] at time t, and [FORMULA] represents the capacity of link [FORMULA] at time t.Node capacity constraint: The amount of data stored on node u cannot exceed the node’s cache capacity limit, i.e.,(15)0≤∑∫tt+Δtfv,u(t)dt−∑∫tt+Δtfu,w(t)dt≤St(u)
+where [FORMULA] is the cache size of the node u, and [FORMULA] and [FORMULA] denote the flows into and out of node u at time t, respectively.Service function constraint: The traffic with source node [FORMULA] , destination node [FORMULA] , and routing path [FORMULA] needs to satisfy the service function constraints, i.e.,(16)PathSrc,Dst={VSrc→⋯→VFi⋯→VFFN⋯→VDst}
+where [FORMULA] denotes the ith functional node through which the end-to-end service transmission passes, and [FORMULA] denotes the total number of functional nodes of the SFC in the path.In this paper, in order to achieve the joint optimization of network load and path delay for routing under SFC constraints in LEO-MSN, we formulate it as a weighted multi-objective problem and dynamically balance the delay minimization and load balancing through adaptive coefficients. Based on the established model and the constraints mentioned above, the objective function of the routing problem in this paper can be expressed as follows:(17)minP(θ1·∑Pathij∈PathDelayij︸PathDelay+θ2·Load︸LoadBalancing)s.t.Equation(13)–Equation(16)
+where [FORMULA] and [FORMULA] are the weight parameters used to balance the influence of the end-to-end delay and network load. [FORMULA] denotes the delay of node i and j, and [FORMULA] represents the average network load, which can be calculated using the following equation:(18)Load=1N′∑v∈V′N′Stc(v)St(v)
+where [FORMULA] and [FORMULA] denote the used cache capacity and cache capacity of node v, respectively; [FORMULA] is the set of satellite nodes and ground station nodes in the network, and [FORMULA] is the number of satellite nodes and ground station nodes. The weighted sum form of Equation (17) aims to transform end-to-end delay minimization and network load balancing into a single-objective problem that can be jointly optimized. Although there may be local conflicts between the two, GDRL-SFCR is able to achieve the co-optimization of the two at the global level by choosing the weights [FORMULA] appropriately.Since the objective and constraints are linear functions, this class of problems is NP-hard [43], and this optimization problem can be solved using ILP or heuristic algorithms. However, it is non-trivial to use these techniques to model dynamic metrics. Therefore, we propose a graph neural network and deep reinforcement learning-based minimum delay routing method, GDRL-SFCR, which minimizes the delay of the end-to-end transmission path of traffic and reduces the network load while satisfying the SFC constraints.To systematically address the constraints of link capacity, node capacity, and service function chaining, our proposed GDRL-SFCR framework integrates the following innovations: (a) dynamically extracting network topology features using a GNN and adjusting edge weights in real time according to the available bandwidth of the links to ensure that the routing paths always satisfy the bandwidth constraints; (b) applying penalties to decisions that exceed the node’s memory during DRL intelligence training to ensure that all decision paths satisfy the node capacity constraints; (c) blocking invalid routing options during the exploration phase of DRL intelligence and embedding SFC metadata into the GNN messaging process to ensure that the paths satisfy the functional order constraints.
+
+### 4. Proposed Intelligent Routing Method
+
+In this section, we propose GDRL-SFCR, an end-to-end routing decision method based on a GNN and DRL, which jointly optimizes the end-to-end transmission delay and network load balancing under SFC constraints. In this paper, solving the routing problem with SFC constraints is modeled as a sequential decision-making process that iteratively executes and decides the next hop node for the packet in each state until the destination node is reached. In each iteration, the current state of the network nodes is first obtained and converted into a graph structure. Then, the GNN is applied to extract the feature embedding of the network. Multilayer Perceptron (MLP) is used to obtain the current valid state based on the features of the current node and the neighboring nodes, followed by the use of a decision network to generate the action probability distributions based on the valid states and sampling from them to determine the next hop node.
+
+### 4.1. MDP Formulation
+
+The routing problem in satellite networks can be generally described as follows: obtaining the network state at the current moment by obtaining information about the bandwidth information of the link, the link distance, the satellite network topology, and the node load. Then, decide the next hop for sending packets and pass them to other nodes. After that, each hop node cycles in turn. The action taken by each node is related only to the current state of the network, and the process can be described as a Markov Decision Process (MDP) [44]. We can represent it as a quaternion [FORMULA] , where S is the state space that the agent can observe, A denotes the action space associated with the decision, [FORMULA] is short for [FORMULA] ’, which is the probability of changing from state S to state [FORMULA] after executing action a, and [FORMULA] is the reward that the agent receives for executing action a. In the context of the end-to-end SFC routing problem for satellite networks, we will describe each element of the tuple of the SFC routing decision problem in detail:
+(a)State space: Let S denote the environment’s finite set of acceptable states. The state consists of six parts: the source node, destination node, current network node, current node load value, number of functional nodes through which the current path passes, and set of neighboring nodes of the current node.(b)Action space: Define A as the set of next-hop satellites that the agent can select at the current moment. Since the number of neighboring nodes is different for different network nodes, in order to unify the size of the action space and minimize the complexity of the action space design, we construct the action space as a one-hot vector with the same size as the node with the highest degree in the network and set the dimension of the action space to [FORMULA] . When the node is [FORMULA] and when [FORMULA] , only the first [FORMULA] nodes are considered for sampling from the policy.(c)Reward: The most important goal of this paper is to achieve load balancing and delay joint optimal routing while satisfying SFC constraints. To achieve this goal, we consider factors such as path delay, network load, and SFC constraints when designing the reward function, which is used to guide the agent to learn the optimization strategy and make correct routing decisions to achieve the goal of this paper. The reward function in this paper combines the following factors:Rewards for network node load [FORMULA] : Load negatively affects latency and network performance, so providing positive rewards for low-loaded nodes and negative rewards for high-loaded nodes is possible.Reward for the number of functional nodes in the current path [FORMULA] : To encourage the agent to choose SFC-compliant paths, we provide positive rewards for paths satisfying SFC constraints and negative rewards for those not, thus guiding the model to optimize step by step during the training process and ultimately satisfy the SFC constraints.Reward for delay between current satellite node and next hop node [FORMULA] : Adding a delay penalty trains the agent to know how to deliver the packet to the destination node with the shortest delay.Reward for other factors: In order to avoid routing loops and enable the model to converge quickly, the occurrence of routing loops is “punished” to reduce the risk of recurring routing loops occurring.Taking these factors into account, we can define the reward function as follows:(19)Reward=−1,u∈Vis−RL+RF+RT,u∉Vis−RL+RF+RT+1,u∉Vis&u=Dst&RF=FN
+where [FORMULA] denotes the average path delay, [FORMULA] denotes the number of functional nodes visited, and [FORMULA] denotes the average network load. [FORMULA] denotes the destination node of the current service, u denotes the current node, and [FORMULA] denotes the set of nodes that have been routed in the current round. If [FORMULA] indicates that there is a loop, the reward value is set to the minimum value of [FORMULA] to reduce the probability of loop appearance; if [FORMULA] , [FORMULA] , and [FORMULA] , then the destination node is successfully reached, and the reward value is additionally increased by 1 to guide the algorithm to converge in the direction of correctly completing the routing requirements. The rest of the cases are given a normal reward value.
+
+### 4.2. GDRL-SFCR Intelligent Routing Framework
+
+The model architecture of GDRL-SFCR, illustrated in Figure 2, consists of three components: embedding of the LEO satellite network, obtaining a valid state space, and making the routing decision. In the proposed GDRL-SFCR method, a GNN and DRL are combined to optimize routing decisions. The GNN processes the graph-structured data representing the network topology, capturing essential structural features such as node connections and link properties. Then, a MLP is used to obtain the current valid state based on the features of the current node and the neighboring nodes. These features are then fed into the DRL framework, which learns the optimal policy for routing decisions. We will explain the components in detail.
+
+### 4.2.1. Embedding of LEO Satellite Network
+
+Graph data employ a data structure that represents entities and relationships by nodes and edges [45]. The connections in a satellite network are modeled as weighted undirected graphs, where nodes (satellites, ground stations, UEs, remote servers) and edges (inter-satellite/ground links) define complex spatial–temporal relationships. Most traditional deep learning models, such as convolutional neural networks (CNNs) and recurrent neural networks (RNNs), cannot be directly applied to graph data due to the lack of capacity to capture geometric features from a graph. This is because traditional models are designed based on the translation invariance or local connectedness of data in Euclidean space. However, graph data do not have the same regular spatial structure as image and text data. The proposal of using a GNN extends the existing neural network mechanism, which can achieve end-to-end processing of graph data [46]. GNNs [47] consist of multi-layer graph convolution, and their essential purpose is to use graph convolutions to extract the spatial features of graph data. They have strong generalization and reasoning capabilities in resource management, end-to-end communication, MIMO detection, and other applications, and they have achieved good results [48,49].In order to extract the characteristics of the LEO network topology, we utilized a GNN to process the network topology data. It passes messages between the nodes of the graph through an iterative message passing algorithm so that each node can acquire the characteristics of its surrounding neighbors, expanding the node’s perceptual domain, which can help to make more appropriate routing decisions. At each time step t, the current state of the LEO satellite network [FORMULA] is fed into the GNN to learn a new matrix [FORMULA] .The forward propagation of the graph convolution is given as follows:(20)Ht=σD˜−12A˜D˜−12XW
+where [FORMULA] represents the activation function, and W is the trainable parameters. [FORMULA] is the approximated graph convolution filter that is similar to the Convolutional Neural Network (CNN). [FORMULA] represents the degree matrix, and [FORMULA] ; [FORMULA] is the adjacency matrix of the LEO satellite network with added self-connections using a renormalization trick, where ∧ is the identity matrix.
+
+### 4.2.2. Obtaining State Space and Action Distribution
+
+The above embedding process can be thought of as converting the original feature [FORMULA] of each network node into an embedding [FORMULA] using the GNN. When making a routing decision, we only need to consider selecting an optimal next-hop node based on the states of the current network node and its neighbor nodes. In order to reduce the dimensionality of the state space, we consider using the degree of similarity between the current node and its neighbor nodes as the current effective state space. After applying the GNN, the embedding of the current node [FORMULA] and the embedding of its neighboring nodes [FORMULA] are transformed in their dimensions using [FORMULA] and [FORMULA] , respectively, after which the inner product of these node embeddings is computed and expanded to be consistent with the dimensions of the states defined earlier in the paper to obtain the current desired effective state, as follows:(21)Hc′=MLPf[Hc]=Wf·Hc+bf(22)Hn′=MLPg[Hn]=Wg·Hn+bg(23)St′=∑j=1Nf∑i=1dim(G)Hc′(j)·Hn,i′(j)(24)St=[St′,0,⋯,0]The above process allows states with different numbers of neighboring nodes to be transformed into valid states with uniform dimensions.
+
+### 4.2.3. Routing Decision
+
+DRL can solve MDPs by learning long-term strategies that maximize the objective function in an optimization problem. Specifically, the agent learns the optimal policy [FORMULA] through an iterative process that continuously explores the state and action space and is guided by a reward function. In this paper, our decision-making process involves the agent finding all the neighbor nodes of the current node v, generating feature vectors for each case, and inputting them into the GNN. Then, based on the processing results of the GNN, it makes the final routing decision, i.e., the selection of the next-hop forwarding neighbor, using the policy learned from the policy network. In the action selection phase, all path options that violate the SFC order are directly blocked. Based on the objectives of this paper, we designed the corresponding policy network.For each feasible action [FORMULA] at step t, the effective state values after the inner product of its state embedding and the state embeddings of its neighboring nodes are sent to the policy network to obtain the index of the distribution in which it is selected in state [FORMULA] as follows:(25)P(at,St)=MLPω[St]
+where [FORMULA] has three hidden layers and a ReLu activation layer. The probability of selecting each [FORMULA] is then calculated by applying softmax to all [FORMULA] :(26)πω(at∣St)=exp(P(at,St))∑at′P(at′,St),∀at∈AtDuring training, actions should be sampled according to the policy to explore. There are typically two strategies for solving a given instance using a trained strategy [FORMULA] , including greedily selecting the actions with a maximum probability and sampling the actions that follow [FORMULA] in each state. Unlike the greedy strategy, the random sampling strategy may provide a different solution for each run, which provides an additional possibility to find a better solution. Therefore, this paper adopts the random sampling strategy.
+
+### 4.3. DRL-SFCR Training Algorithm
+
+In the experiments in this paper, GDRL-SFCR adopts a centralized training architecture, where the training nodes are located at the logical center node where the centralized network controller is located. This is mainly because the GNN needs to integrate network topology, node state, and link load information to generate a global graph representation, and a centralized architecture facilitates real-time access to network data. In addition, centralized training ensures that all nodes execute the same policy version and avoids decision conflicts caused by unsynchronized policies in distributed training. The training data are obtained from the full network topology at a fixed period.This paper uses PPO [50] for training, which employs an actor–critic structure. The actor is the policy network [FORMULA] , and the critic is the value network [FORMULA] used to predict the value of state st. In this paper, we design the critic as an MLP, which inputs the computed state to obtain [FORMULA] . [FORMULA] and [FORMULA] have the same structure, with two d1 dimensions and a tanh-activated hidden layer, but with different parameter [FORMULA] and input dimensions. The routing agent is trained as shown in Algorithm  1 with [FORMULA] training iterations, during which the DRL agent first initializes the environment and obtains the node embeddings of the current network using the GNN, followed by using the MLP to obtain the features of the current node and its surrounding neighboring nodes and calculating their inner product as the input state [FORMULA] . With this information as input, the actor network generates actions [FORMULA] . The environment computes the reward and the next state [FORMULA] based on the current action a1, obtains this information, saves it in the cache queue, uses MSE to compute the loss, and uses the Adam optimizer to optimize the network parameters. The policy is validated in a new environment every five iterations during the training period.
+Algorithm 1 GDRL-SFC training algorithmInput: GNN network, policy network and critic networkOutput: Some parameters
+ 1:Initialize actor network and critic network. 2:for 
+ [FORMULA]  
+do 3:    Initialize env, memory buffer; 4:    while not Done do 5:        Extract node embeddings using GNN; 6:        Get the valid state [FORMULA] use [FORMULA] ; 7:        Actor network sample action [FORMULA] ; 8:        Calculate the reward [FORMULA] and receive next state [FORMULA] ; 9:        Store the current experience in the memory buffer.10:        Update [FORMULA] = [FORMULA] 11:    end while12:    Sample a batch from the memory buffer.13:    Compute loss [FORMULA] , and optimize the parameters;14:    Update network parameters;15:    if Done then16:        Break;17:    end if18:    if  [FORMULA]  then19:        Test the policy;20:    end if21:end forreturn;Although GDRL-SFCR performs well in end-to-end routing decision optimization, its computational cost still needs to be considered. (a) GNN message passing overhead: the time complexity of node embedding updates is [FORMULA] , where N is the number of network nodes. (b) The agent needs to interact with the environment a great deal in order to converge on the routing decision policy.Considering the traffic problem that may be caused by the large-scale features of the nodes in the LEO-MSN network, the solution proposed in this paper involves a series of optimizations, which include the following. (a) Reducing the dimensionality of the nodes’ features: in this paper, the GNN adopts 32-dimensional node features and combines them with 8-bit quantization. The single node feature packet is reduced from 512 KB to 256 KB. (b) DRL model lightweighting: the DRL strategy network fuses GNN-MLP features, and it is trained with 16-bit mixed precision with gradient sparsification (threshold [FORMULA] 10−5). The single model update is compressed to 154 KB, and the update frequency is adaptively adjusted to two times per hour. (c) The feature data are transmitted in bulk using the Polar Satellite with a 12-times-over-head window every day (the top of which is not exceeded by the top of the window), and the feature data are transmitted in bulk using the Polar Satellite over the top window batch transmission (8 min each time). Therefore, the total global daily communication amount is 6000 × (256 KB × 4 + 154 KB × 12) = 16.43 GB, and the bandwidth requirement is 16.43 × 8 ÷ (24 × 3600) ≈ 1.55 Mbps. This value is significantly lower than the earth station uplink capacity (>10 Mbps), proving that the scheme is feasible.
+
+### 5. Simulation and Performance Analysis
+
+In this section, we test the performance of the proposed GDRL-SFCR method.
+
+### 5.1. Experiment Setting
+
+### 5.1.1. Simulation Scenario Setting
+
+The LEO satellite network considered in this paper consists of 6048 LEO satellites, ground stations, and user terminals. Specifically, it is a mega constellation of 6048 satellites constructed with reference to the parameters of StarLink, with 84 constellation orbits, 72 satellites uniformly distributed in each orbit, an orbital inclination of [FORMULA] , and an orbital altitude of 550 km [51]. The satellite nodes are randomly assigned the TM, gNB, and NGC functions. For the ground station, StarLink has already completed the deployment of the data [52]. We constructed user terminals of different sizes based on the World Grid Population v4 dataset [53]. The distribution of remote servers uses the same data as the Starlink ground station, and the source node is randomly chosen from one of the user terminals, while the destination node is randomly chosen from the remote servers. The data flow size is in the range of [5, 100] Mb and satisfies the lognormal distribution. In order to verify the performance of the proposed algorithm, we conducted 1000 simulation experiments. The algorithms were implemented in Python (Version 3.13.2). The critical simulation parameters are shown in Table 3.
+
+### 5.1.2. Model Parameters
+
+In this paper, the convolutional layer of the GNN is set to [FORMULA] , and the embedding dimension of the satellite network node is set to [FORMULA] . For the MLP, the hidden dimension is set to [FORMULA] and [FORMULA] . For training, the number of training iterations and maximum number of trial sizes were set to [FORMULA] and [FORMULA] , respectively. For the PPO loss function, the coefficients of policy loss (with a clipping ratio of 0.2), value loss, and entropy were set to 1, 0.6, and 0.02, respectively. The PPO optimization period was set to [FORMULA] , and the discount factor was set to [FORMULA] . The actor and critic networks used the Adam optimizer to update the parameters, and the learning rate was [FORMULA] . To solve the problem of long model training time, we used OpenRL [54] to accelerate the training process. All experiments were performed using a machine equipped with an Intel i7-11700K CPU (Intel Corporation, Santa Clara, CA, USA), 32 GB of memory, an Nvidia GeForce RTX 3080 GPU (NVIDIA Corporation, Santa Clara, CA, USA), and an Ubuntu 22.04 64-bit OS.
+
+### 5.2. Methods of Comparison
+
+In order to verify the effectiveness of the proposed method, we compared GDRL-SFCR with other routing methods, including the SFC-constrained augmenting path selection (SFC-APS) [26] algorithm, the DQN-LBR [39] algorithm, and the Deep Q-Routing (DQR) [34] algorithm.SFC-APS: SFC-APS is SFC routing method based on traditional graph theory; by joining a virtual node, the search for each sub-path satisfying the SFC constraints is carried out sequentially using a method similar to BFS.DQN-LBR: DQN-LBR takes into consideration the queuing delay, storage space, communication bandwidth, and propagation delay of a one-hop satellite node.DQR: DQR is a greedy online SFC routing method based on a Deep Q Network (DQN). The difference with GDRL-SFCR is that no critic network is added, and only DQN is used as a policy network for routing decisions. The DQR algorithm only considers the remaining link bandwidth of its current node to find the next-hop node without considering the state of the neighboring nodes. The neural network parameters of the DQR algorithm are set in the same way as those of the GDRL-SFCR method.The main reason for choosing [26,34,39] as the baseline is that [26] represents the path delay and SFC constraint optimization class of methods, but it ignores load balancing, which may lead to network congestion. Ref. [39] represents path delay and load balancing optimization class algorithms, but it does not consider SFC constraints and is suitable for fixed network function scenarios, and [34] represents load balancing and SFC constraint optimization class methods, but it ignores delay and is suitable for high-throughput but low-delay sensitive scenarios. By comparing these typical methods, the necessity of multi-objective joint optimization of path delay and load balancing in this paper can be verified.
+
+### 5.3. Evaluation Metrics
+
+In our experiments, we compare the performance of the above three methods regarding traffic access success rate, average network load, average end-to-end path delay, network capacity, and average running time.
+Traffic access success rate: The ratio of the amount of traffic that meets the SFC constraint transmission path to the total amount of traffic can be calculated using the following formula:(27)Rsuc=NSFCNtotal
+where [FORMULA] represents the amount of traffic that meets the SFC constraint transmission path, and [FORMULA] represents the total amount of traffic.Average network load: The load average of all satellite and ground station nodes.Average end-to-end path delay: The average delay of all transmission paths that meet the SFC constraint.Network capacity: The sum of the service rates of all transmission paths that meet the SFC constraints.Average running time: The ratio of the time it takes for the algorithm to complete the calculation of all traffic transmission paths to the total amount of traffic.
+
+### 5.4. Results and Analysis
+
+First, we analyzed the proposed method’s service access success rate performance. Figure 3 demonstrates the relationship between service access success rate and the number of functional constraints for different scales. As the number of function constraints increases, the access success rates of all algorithms decrease. The reason is that the increase in the number of functions in the SFC brings more constraints; thus, the number of paths satisfying the SFC constraints decreases.In addition, as the number of data flows increases, the access success rates of all the algorithms also decrease. The reason is that the larger the data flow scale is, the greater the probability of collision during access, and the fewer the paths that satisfy the SFC conditions. Moreover, it is observed that the algorithms proposed in this paper significantly outperform the DQN-LBR, DQR and SFC-APS algorithms, and the access success rate is improved by more than 19.1%. The reason is that the SFC-APS method involves rule-based local optimization, which makes it difficult to balance global objectives in complex tasks; the DQR method does not explicitly utilize the topological relationships of graph structures, which leads to slow training of decision networks; and the DQN-LBR approach does not consider SFC constraints, which leads to some data flows failing to satisfy their SFC constraints.Next, we analyzed the network average load performance of the proposed algorithm. Figure 4 shows the satellite node and ground station node average network load value with different numbers of data flows and different numbers of functional constraints. The performance of the algorithm proposed in this paper and DQN-LBR is better than that of the DQR and SFC-APS algorithms. The load decreased by more than 14.1%. The reason is that the DQR and SFC-APS methods did not consider the load of the network nodes and only used a path length similar to that of BFS as a search constraint, resulting in some nodes being fully loaded early.Then, we analyzed the path delay performance of the proposed algorithm. Figure 5 shows the average path delay under different numbers of data flows and numbers of function constraints. As seen in Figure 5, the path delay of the GDRL-SFCR algorithm is lower than other algorithms. As the number of functional constraints increases, the path delays of all the algorithms increase. However, compared to the other algorithms, the delay of the GDRL-SFCR algorithm is reduced by more than 11.3%. The reason is that the other algorithms do not consider network loading and are not sufficiently adaptive to the dynamic environment of the mega-constellation networks. When the nodes are fully loaded, the length of the searched paths that satisfy the SFC constraints increases, and the delay increases.We also analyzed the network capacity performance of the proposed algorithm. Figure 6 shows the network capacity under different numbers of data flows and numbers of function constraints. The network capacity performance of the algorithm proposed in this paper is significantly better than that of the other algorithms. The reason is that the other algorithms do not consider the joint optimization of network load and path delay in decision making, while the GDRL-SFCR method considers the optimization of the network load, which effectively reduces the network load and increases the network capacity.We also analyzed the impact of the weights on the objectives of this paper, and we tested the delay D, load variance L, and comprehensive KPI for [FORMULA] (step 0.1) under the same traffic load. KPI was calculated using [FORMULA] , and [FORMULA] and [FORMULA] are the maximum observed values in the experiment. As can be seen from Figure 7, when [FORMULA] achieves a better balance between delay and load, and the algorithmic performance is insensitive to the change in [FORMULA] in the interval of [FORMULA] .Finally, we analyzed the running time performance of all the algorithms. As can be seen from Figure 8, the running time of DQR is significantly higher than thate of SFC-APS and GDRL-SFCR. In addition, when there are more than 2000 data flows, the running time of DQR increases rapidly. This is because when there are more data flows, the state space and action space in the Q-table greatly increase. In this case, finding the optimal strategy based on the table becomes difficult, as it takes more time to find the optimal strategy in large networks.Although GDRL-SFCR takes more time to train the neural network compared to DQR, after it is trained and deployed, it simply uses the trained neural network to perform inference. The main reasons for this include high computational cost due to the complexity of updating the policy and value network, prolonged execution time due to the high-dimensional state and action space, and model scalability issues as the network size increases, leading to exponential growth in resource requirements. To address these issues, we employ several mitigating measures during training: parallelizing the task using the OpenRL [54] distributed computing framework, simplifying the dimensionality of the state space by using only the features of neighboring nodes, accelerating the training process by using GPUs, and employing optimization algorithms such as Adam to speed up convergence. These strategies can improve the efficiency and scalability of GDRL-SFCR and make it more suitable for large-scale applications.
+
+### 6. Conclusions
+
+In this paper, we propose the GDRL-SFCR method, which realizes end-to-end routing decision by jointly optimizing transmission delay and network load balancing while satisfying SFC constraints in low-orbit mega constellation satellite networks. The method models the routing process as an MDP and uses a graph neural network to transform node features and topological information in the satellite network into feature embeddings. It uses reinforcement learning to make routing decisions based on historical experience and the current network state, and it uses PPO to train agents to learn optimal routing policies. Extensive simulation results show that our proposed GDRL-SFCR algorithm outperforms other routing methods regarding end-to-end path delay, average network load, and service access success rate performance. Considering a real mega-constellation network scenario such as Starlink, the GNN module of the GDRL-SFCR method can be used to parse satellite orbit parameters and link status in real time, predict the dynamic connection windows of different satellites, and guide the DRL agent to plan low-latency paths in advance. Considering the computational and scalability challenges of the proposed method, it is possible to consider adding federated learning and lightweight model deployment strategies in the future to significantly reduce computational and communication overhead while ensuring routing in real-time. In addition, multi-agent joint learning is a promising approach to solving the routing decision problem of mega-constellation networks. In future work, we will consider using multi-agent reinforcement learning to study smarter routing algorithms.Disclaimer/Publisher’s Note: The statements, opinions and data contained in all publications are solely those of the individual author(s) and contributor(s) and not of MDPI and/or the editor(s). MDPI and/or the editor(s) disclaim responsibility for any injury to people or property resulting from any ideas, methods, instructions or products referred to in the content.
+
+### Author Contributions
+
+Methodology, Y.C. and L.W.; software, Y.C., D.C. and Z.L.; validation, Y.C., D.C. and Z.L.; writing—original draft preparation, Y.C.; writing—review and editing, L.W., Y.Z. and H.C.; supervision, Y.C., H.C., L.W., D.C., Z.L., Y.Z. and J.S.; funding acquisition, Y.Z. and H.C. All authors have read and agreed to the published version of the manuscript.
+
+### Institutional Review Board Statement
+
+Not applicable.
+
+### Informed Consent Statement
+
+Not applicable.
+
+### Data Availability Statement
+
+The data are contained within the article.
+
+### Conflicts of Interest
+
+The authors declare no conflicts of interest.
+
+### References
+
+1.
+GongS.
+XingC.
+LiuH.
+ZhaoX.
+WangJ.
+AnJ.
+QuekT.Q.
+Hardware-impaired RIS-assisted mmWave hybrid systems: Beamforming design and performance analysisIEEE Trans. Commun.2023712317233410.1109/TCOMM.2023.32413282.
+LinJ.
+WangG.
+AtapattuS.
+HeR.
+YangG.
+TellamburaC.
+Transmissive metasurfaces assisted wireless communications on railways: Channel strength evaluation and performance analysisIEEE Trans. Commun.2023711827184110.1109/TCOMM.2023.32399323.
+ZhouY.
+LiuL.
+WangL.
+HuiN.
+CuiX.
+WuJ.
+PengY.
+QiY.
+XingC.
+Service-aware 6G: An intelligent and open network based on the convergence of communication, computing and cachingDigit. Commun. Netw.2020625326010.1016/j.dcan.2020.05.0034.
+ZhaoZ.
+DuQ.
+KaragiannidisG.K.
+Improved grant-free access for URLLC via multi-tier-driven computing: Network-load learning, prediction, and resource allocationIEEE J. Sel. Areas Commun.20234160762210.1109/JSAC.2023.32346965.
+LiuL.
+ZhouY.
+YuanJ.
+ZhuangW.
+WangY.
+Economically optimal MS association for multimedia content delivery in cache-enabled heterogeneous cloud radio access networksIEEE J. Sel. Areas Commun.2019371584159310.1109/JSAC.2019.29162806.
+WangC.X.
+YouX.
+GaoX.
+ZhuX.
+LiZ.
+ZhangC.
+WangH.
+HuangY.
+ChenY.
+HaasH.
+
+On the road to 6G: Visions, requirements, key technologies, and testbedsIEEE Commun. Surv. Tutorials20232590597410.1109/COMST.2023.32498357.
+IqbalA.
+ThamM.L.
+WongY.J.
+WainerG.
+ZhuY.X.
+DagiuklasT.
+Empowering non-terrestrial networks with artificial intelligence: A surveyIEEE Access20231110098610100610.1109/ACCESS.2023.33147328.
+QiY.
+ZhouY.
+CaiQ.
+ZhangH.
+XuY.
+ShiJ.
+LiS.
+Architecture, Characteristics, and Resource Management of Integration of Sensing, Communications, and Computing in 6GIEEE Netw.202438546110.1109/MNET.2024.33521309.
+EshoA.O.O.
+IluyomadeT.D.
+OlatundeT.M.
+IgbinenikaroO.P.
+A comprehensive review of energy-efficient design in satellite communication systemsInt. J. Eng. Res. Updat.2024601302510.53430/ijeru.2024.6.2.002410.
+SamyR.
+YangH.C.
+RakiaT.
+AlouiniM.S.
+Space-air-ground FSO networks for high-throughput satellite communicationsIEEE Commun. Mag.202260828710.1109/MCOM.002.220001811.
+SuY.
+LiuY.
+ZhouY.
+YuanJ.
+CaoH.
+ShiJ.
+Broadband LEO satellite communications: Architectures and key technologiesIEEE Wirel. Commun.201926556110.1109/MWC.2019.180029912.
+DarwishT.
+KurtG.K.
+YanikomerogluH.
+BellemareM.
+LamontagneG.
+LEO satellites in 5G and beyond networks: A review from a standardization perspectiveIEEE Access202210350403506010.1109/ACCESS.2022.316224313.
+El-MoghaziM.
+WhalleyJ.
+The itu imt-2020 standardization: Lessons from 5g and future perspectives for 6gJ. Inf. Policy20221228132010.5325/jinfopoli.12.2022.000514.
+BanafaaM.
+ShayeaI.
+DinJ.
+AzmiM.H.
+AlashbiA.
+DaradkehY.I.
+AlhammadiA.
+6G mobile communication technology: Requirements, targets, applications, challenges, advantages, and opportunitiesAlex. Eng. J.20236424527410.1016/j.aej.2022.08.01715.
+MahboobS.
+LiuL.
+Revolutionizing future connectivity: A contemporary survey on AI-empowered satellite-based non-terrestrial networks in 6GIEEE Commun. Surv. Tutorials2024261279132110.1109/COMST.2023.334714516.
+MohantaK.
+Al-RubayeS.
+Towards 6G Satellite–Terrestrial Networks: Analysis of Air Mobility OperationsElectronics202413285510.3390/electronics1314285517.
+ShengM.
+ZhouD.
+BaiW.
+LiuJ.
+LiJ.
+6G service coverage with mega satellite constellationsChina Commun.202219647610.23919/JCC.2022.01.00618.
+XiaoZ.
+YangJ.
+MaoT.
+XuC.
+ZhangR.
+HanZ.
+XiaX.G.
+LEO satellite access network (LEO-SAN) towards 6G: Challenges and approachesIEEE Wirel. Commun.202231899610.1109/MWC.011.220031019.
+GlennA.B.
+CollenP.L.
+McGilvrayM.
+Experimental Non-Equilibrium Radiation Measurements for Low-Earth Orbit ReturnProceedings of the AIAA SciTech 2022 ForumSan Diego, CA, USA3–7 January 2022215420.NORAD GP Element Sets Current Data2024Available online: https://celestrak.com/NORAD/elements/(accessed on 20 November 2024)21.
+ShaengchartY.
+KraiwanitT.
+The Spacex Starlink Satellite Project: Business Strategies and PerspectivesCorp. Bus. Strategy Rev.20245303710.22495/cbsrv5i1art322.
+NiS.
+YueY.
+ZuoY.
+LiuW.
+XiaoW.
+YeX.
+The Status Quo and Prospect of Satellite Network Routing TechnologyJ. Electron. Inf. Technol.20234538339523.
+CaoX.
+LiY.
+XiongX.
+WangJ.
+Dynamic routings in satellite networks: An overviewSensors202222455210.3390/s2212455235746331PMC923138124.
+3GPP
+Study on New Radio (NR) to Support Non-Terrestrial Networks. Technical Report (TR) 38.811, 3rd Generation Partnership Project (3GPP)2020Version 15.4.0Available online: https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=3234(accessed on 20 November 2024)25.
+3GPP
+Solutions for NR to Support Non-Terrestrial Networks (NTN). Technical Report (TR) 38.821, 3rd Generation Partnership Project (3GPP)2023Version 16.2.0Available online: https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=3525(accessed on 20 November 2024)26.
+YangH.
+LiuW.
+LiH.
+LiJ.
+Maximum flow routing strategy for space information network with service function constraintsIEEE Trans. Wirel. Commun.2021212909292310.1109/TWC.2021.311698327.
+WangP.
+ZhangX.
+ZhangS.
+LiH.
+ZhangT.
+Time-expanded graph-based resource allocation over the satellite networksIEEE Wirel. Commun. Lett.2018836036310.1109/LWC.2018.287299628.
+FraireJ.A.
+De JonckèreO.
+BurleighS.C.
+Routing in the space internet: A contact graph routing tutorialJ. Netw. Comput. Appl.202117410288410.1016/j.jnca.2020.10288429.
+LiH.
+ZhangT.
+ZhangY.
+WangK.
+LiJ.
+A maximum flow algorithm based on storage time aggregated graph for delay-tolerant networksAd Hoc Netw.201759637010.1016/j.adhoc.2017.01.00630.
+ZhangT.
+LiH.
+ZhangS.
+LiJ.
+ShenH.
+STAG-based QoS support routing strategy for multiple missions over the satellite networksIEEE Trans. Commun.2019676912692410.1109/TCOMM.2019.292975731.
+WuZ.
+HuG.
+JinF.
+JiangB.
+FuY.
+Agent-based dynamic routing in the packet-switched LEO satellite networksProceedings of the 2015 International Conference on Wireless Communications & Signal Processing (WCSP)Nanjing, China15–17 October 2015IEEEPiscataway, NJ, USA20151632.
+LiuW.
+TaoY.
+LiuL.
+Load-balancing routing algorithm based on segment routing for traffic return in LEO satellite networksIEEE Access2019711204411205310.1109/ACCESS.2019.293493233.
+YangG.
+YongZ.
+KunL.
+YingleiT.
+JinxiongW.
+Joint multi-QoS and energy saving routing for LEO satellite networkJ. China Univ. Posts Telecommun.201926253434.
+XuM.
+JiaM.
+GuoQ.
+Delay-Sensitive SFC Scheduling Optimization with DRL in Satellite-Terrestrial NetworksProceedings of the 2023 IEEE 23rd International Conference on Communication Technology (ICCT)Wuxi, China20–22 October 2023IEEEPiscataway, NJ, USA20231680168435.
+PengY.
+TangX.
+ZhouY.
+LiJ.
+QiY.
+LiuL.
+LinH.
+Computing and communication cost-aware service migration enabled by transfer reinforcement learning for dynamic vehicular edge computing networksIEEE Trans. Mob. Comput.20222325726910.1109/TMC.2022.322523936.
+PengY.
+TangX.
+ZhouY.
+HouY.
+LiJ.
+QiY.
+LiuL.
+LinH.
+How to tame mobility in federated learning over mobile networks?IEEE Trans. Wirel. Commun.2023229640965710.1109/TWC.2023.327292037.
+ZhaP.
+LongC.
+WuJ.
+LiS.
+Satellite lifetime predicted greedy perimeter stateless routing protocol for LEO satellite networkProceedings of the 2020 Chinese Automation Congress (CAC)Shanghai, China6–8 November 2020IEEEPiscataway, NJ, USA20205102510738.
+YiZ.
+QuanZ.
+JunL.
+WeiL.
+The generation and update algorithm of routing table in satellite networkProceedings of the 2015 IEEE International Conference on Communication Problem-Solving (ICCP)Guilin, China16–18 October 2015IEEEPiscataway, NJ, USA201561962239.
+ZuoP.
+WangC.
+WeiZ.
+LiZ.
+ZhaoH.
+JiangH.
+Deep reinforcement learning based load balancing routing for LEO satellite networkProceedings of the 2022 IEEE 95th Vehicular Technology Conference:(VTC2022-Spring)Helsinki, Finland19–22 June 2022IEEEPiscataway, NJ, USA20221640.
+DongW.
+Chang-yinZ.
+An accuracy analysis of the SGP4/SDP4 modelChin. Astron. Astrophys.201034697610.1016/j.chinastron.2009.12.00941.
+AnttonenA.
+RuuskaP.
+KivirantaM.
+3GPP Nonterrestrial Networks: A Concise Review and Look AheadVTT Technical Research Centre of FinlandEspoo, Finland201942.
+HosseinianM.
+ChoiJ.P.
+ChangS.H.
+LeeJ.
+Review of 5G NTN standards development and technical challenges for satellite integration with the 5G networkIEEE Aerosp. Electron. Syst. Mag.202136223110.1109/MAES.2021.307269043.
+TuH.
+ZhaoG.
+XuH.
+ZhaoY.
+ZhaiY.
+A robustness-aware real-time SFC routing update scheme in multi-tenant cloudsIEEE/ACM Trans. Netw.2022301230124410.1109/TNET.2021.313741844.
+François-LavetV.
+HendersonP.
+IslamR.
+BellemareM.G.
+PineauJ.
+An introduction to deep reinforcement learningFound. Trends. Mach. Learn.20181121935410.1561/220000007145.
+LiY.
+XuY.
+ZhangQ.
+YangZ.
+Age-optimized multihop information update mechanism on the LEO satellite constellation via continuous time-varying graphsIEEE Internet Things J.2022107189720310.1109/JIOT.2022.322902846.
+JiangB.
+WangL.
+ChengJ.
+TangJ.
+LuoB.
+Gpens: Graph data learning with graph propagation-embedding networksIEEE Trans. Neural Netw. Learn. Syst.2021343925393810.1109/TNNLS.2021.31201003470565747.
+ChenM.
+WeiZ.
+HuangZ.
+DingB.
+LiY.
+Simple and deep graph convolutional networksProceedings of the International Conference on Machine Learning, PMLROnline13–18 July 20201725173548.
+JiangW.
+Graph-based deep learning for communication networks: A surveyComput. Commun.2022185405410.1016/j.comcom.2021.12.01549.
+WangY.
+LiY.
+ShiQ.
+WuY.C.
+ENGNN: A general edge-update empowered GNN architecture for radio resource management in wireless networksIEEE Trans. Wirel. Commun.2023235330534410.1109/TWC.2023.332573550.
+SchulmanJ.
+WolskiF.
+DhariwalP.
+RadfordA.
+KlimovO.
+Proximal policy optimization algorithmsarXiv20171707.0634751.
+ChenQ.
+GiambeneG.
+YangL.
+FanC.
+ChenX.
+Analysis of inter-satellite link paths for LEO mega-constellation networksIEEE Trans. Veh. Technol.2021702743275510.1109/TVT.2021.305812652.
+CakajS.
+The parameters comparison of the “Starlink” LEO satellites constellation for different orbital shellsFront. Commun. Netw.2021264309510.3389/frcmn.2021.64309553.
+WarszawskiL.
+FrielerK.
+HuberV.
+PiontekF.
+SerdecznyO.
+ZhangX.
+TangQ.
+PanM.
+TangY.
+TangQ.
+
+Center for international earth science information network—Ciesin—Columbia university. (2016). gridded population of the world, version 4 (gpwv4): Population density. palisades. ny: Nasa socioeconomic data and applications center (sedac)Atlas of Environmental Risks Facing China Under Climate ChangeSpringerCham, Switzerland201722810.7927/h4np22dq54.
+HuangS.
+ChenW.
+SunY.
+BieF.
+TuW.W.
+OpenRL: A Unified Reinforcement Learning FrameworkarXiv20232312.16189
+Figure 1
+End-to-end traffic transmission model. Dashed arrows indicate wireless links and realized arrows indicate wired links.
+Figure 2
+Model architecture of the proposed method.
+Figure 3
+Access success rates of different data flows. The red curve is the result based on the reinforcement learning algorithm (DQR), the green curve is the result of the traditional graph theory algorithm (SFC-APS), the magenta curve is the result of the algorithm proposed in this paper (DQN-LBR), and the blue curve is the result of the algorithm proposed in this paper (GDRL-SFCR). FN represents the total number of functional nodes in the end-to-end path SFC constraint.
+Figure 4
+Network average load of different data flows. The red curve is the result based on the reinforcement learning algorithm (DQR), the green curve is the result of the traditional graph theory algorithm (SFC-APS), the magenta curve is the result of the algorithm proposed in this paper (DQN-LBR), and the blue curve is the result of the algorithm proposed in this paper (GDRL-SFCR). FN represents the total number of functional nodes in the end-to-end path SFC constraint.
+Figure 5
+Average path delay of different data flows. The red curve is the result based on the reinforcement learning algorithm (DQR), the green curve is the result of the traditional graph theory algorithm (SFC-APS), the magenta curve is the result of the algorithm proposed in this paper (DQN-LBR), and the blue curve is the result of the algorithm proposed in this paper (GDRL-SFCR). FN represents the total number of functional nodes in the end-to-end path SFC constraint.
+Figure 6
+Network capacity of different data flows. The red curve is the result based on the reinforcement learning algorithm (DQR), the green curve is the result of the traditional graph theory algorithm (SFC-APS), the magenta curve is the result of the algorithm proposed in this paper (DQN-LBR), and the blue curve is the result of the algorithm proposed in this paper (GDRL-SFCR). FN represents the total number of functional nodes in the end-to-end path SFC constraint.
+Figure 7
+Impact of weight [FORMULA] on performance metrics. The green curve is the result of KPI variation with weights. The blue curve is the path delay variance as a function of weight. The blue curve is the result of network load variance variation with weights.
+Figure 8
+Average running time of different data flows for all algorithms. The red curve is the result based on the reinforcement learning algorithm (DQR), the green curve is the result of the traditional graph theory algorithm (SFC-APS), the magenta curve is the result of the algorithm proposed in this paper (DQN-LBR), and the blue curve is the result of the algorithm proposed in this paper (GDRL-SFCR). FN represents the total number of functional nodes in the end-to-end path SFC constraint.
+sensors-25-01232-t001_Table 1Table 1
+Summary of existing methods for satellite routing. ✓ means that the corresponding algorithm considered the features of this column, and × means that it did not.WorkOptimization ObjectiveSFC ConstraintsLoad BalanceApplicability AnalysisWang et al. [27]Max-flow××Ignore SFC constraints and load balanceFraire et al. [28]Path delay××Ignore SFC constraints and load balanceZhang et al. [29,30]Routing QoS××Ignore SFC constraints and load balanceWu et al. [31]Path delay××Ignore SFC constraints and load balanceLiu et al. [32]Load balance×✓Ignore SFC constraints and path delayYang et al. [33]Satellites node load×✓Ignore SFC constraints and path delayYang et al. [26]Path delay and SFC constraints✓×Ignore load balanceZuo et al. [39]Path delay and load balance×✓Ignore SFC constraintsXu et al. [34]Path delay and SFC constraints✓×Ignore load balance
+sensors-25-01232-t002_Table 2Table 2
+List of terms.TermDefinitionNon-Terrestrial Networ k(NTN)Communication networks that include satellites or other non-terrestrial nodes.3GPP3rd Generation Partnership Project; develops mobile communication standards.Node TypesSatellites: Orbiting communication nodes.Ground Stations: Fixed communication points on Earth.User Terminals: Devices that connect to the network.LinksInter-Satellite Links (ISLs): connections between satellites.Ground-to-satellite links: Connections between ground stations and satellites.User-to-satellite links: Connections between user terminals and satellites.Network topologyThe arrangement of nodes and links in the network.Key constraintsLink capacity: The maximum amount of data that a communication link can transmit per unit of time.Node capacity: Maximum amount of data that can be processed per unit of time by a satellite or ground station.Graph Neural Network (GNN)A type of neural network designed to operate on graph structures.Deep Reinforcement Learning (DRL)A machine learning technique that enables agents to learn optimal actions through trial and error.Service Function Chaining (SFC)A networking concept where a set of network functions is applied to a traffic flow in a specific order.
+sensors-25-01232-t003_Table 3Table 3
+Summary of simulation parameters.ParametersValuesNumber of satellites6048Simulation time5400 sSimulation step60 sSatellite orbit altitude550 kmNumber of orbit planes84Number of satellites per plane72Inclination of orbit
+ [FORMULA] 
+Eccentricity of orbit0Phase factor2Number of ground stations117Number of function nodes[3, 4, 5]Number of user terminals[2000, 4000, 6000, 8000]Minimum elevation angle of ground station
+ [FORMULA] 
+Minimum elevation angle of user terminal
+ [FORMULA] 
+Central frequency20 GHz(UL), 30 GHz(DL)Satellite Tx gain30 dBiSatellite EIRP density4 dBW/MHzBandwidth250 MHz(UL), 62.5 (DL)Satellite G/T13 dB K−1Satellite Rx gain38.5 dBiUser terminal Rx antenna gain39.7 dBiUser terminal noise figure1.2 dBUser terminal antenna temperature150 KAmbient temperature290 KUser terminal Tx antenna gain43.2 dBiUser terminal Tx transmit power2W (33 dBm)

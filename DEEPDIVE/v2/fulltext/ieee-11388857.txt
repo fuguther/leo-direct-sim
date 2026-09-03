@@ -1,0 +1,1494 @@
+2025 12th International Forum on Electrical Engineering and Automation (IFEEA) | 979-8-3315-3943-6/25/$31.00 ©2025 IEEE | DOI: 10.1109/IFEEA66847.2025.11388857
+
+2025 12th International Forum on Electrical Engineering and Automation (IFEEA)
+
+ST-QoS-A*: Spatio-Temporal QoS-Aware A*
+Routing on Time-Expanded Graphs for LEO Satellite
+Constellations
+Xin Lu
+Shanghai Institute of Satellite Engineering
+Shanghai, China
+lx444098232@163.com
+
+Zhaopeng Ning
+College of Electronics and Info. Engineering
+Tongji University
+Shanghai, China
+2411902@tongji.edu.cn
+
+additional physical constraints [4]–[6]. Therefore, designing
+routing protocols that can simultaneously guarantee Quality of
+Service (QoS) and computational feasibility in such a highly
+dynamic and resource-constrained environment has become a
+central issue of interest to both academia and industry.
+
+Abstract—Large-scale Low Earth Orbit (LEO) constellations
+such as Starlink and OneWeb are creating highly dynamic intersatellite networks, where rapid topology evolution poses major
+challenges for routing optimization. To guarantee end-to-end
+Quality of Service (QoS) under such spatio-temporal dynamics,
+this paper proposes a Spatio-Temporal QoS-A* (ST-QoS-A*)
+routing algorithm. Built upon the Time-Expanded Graph (TEG)
+model, the algorithm introduces a transmission-time-aligned cost
+accumulation mechanism and a physically admissible heuristic
+bounded by light-speed propagation delay, ensuring both
+temporal consistency and optimality. The algorithm is still
+effective under polar orbits, despite minor performance reduction
+due to frequent occlusions. An event-driven adaptation
+mechanism further enables real-time responses to congestion and
+link disruptions. A dynamic simulation platform integrating AGI
+STK 12 and MATLAB is developed to validate the proposed
+approach. Compared with traditional shortest-path routing, STQoS-A* increases the task success rate by over 100\%, reduces the
+average propagation delay by 10–20\%, and decreases the
+maximum link load by more than 60\%.
+The results demonstrate that ST-QoS-A* effectively balances
+delay, congestion, and stability while maintaining low
+computational complexity, providing a practical and scalable
+solution for QoS-aware routing in future space–ground integrated
+networks.
+
+To address the strong temporal variability of LEO networks,
+the Time-Dependent Shortest Path (TDSP) theory and the TimeExpanded Graph (TEG) framework have been recognized as two
+of the most effective modeling tools [7]–[9]. By capturing
+network snapshots on discrete time layers, TEG can integrate
+both time-varying node states and link weights into a unified
+static expanded graph. This approach transforms the complex
+dynamic routing problem into a formally defined combinatorial
+optimization problem solvable on a static graph, providing a
+solid theoretical foundation for algorithmic design [10], [11].
+Early studies focused on designing distributed routing schemes
+that minimize end-to-end delay in multi-plane polar
+constellations and demonstrated their robustness under partial
+congestion or node failures [4], [5].
+However, with the exponential growth of constellation scale
+and complexity, building a TEG model alone is no longer
+sufficient. The key bottleneck now lies in efficient and predictive
+path computation on this expanded graph. Traditional methods
+periodically execute standard shortest-path algorithms such as
+Dijkstra on the TEG, but face two major challenges. First, the
+computational complexity grows polynomially with the size of
+the TEG (number of nodes × time layers), making real-time
+online computation infeasible for large constellations. Second,
+decisions based only on current or historical snapshots lack
+prediction of future topology evolution, often leading to
+suboptimal routes during actual packet transmission. Although
+recent advances have introduced data-driven approaches
+combining Graph Neural Networks (GNNs) and Deep
+Reinforcement Learning (DRL), these methods typically lack
+optimality guarantees, and their interpretability and
+generalization capabilities remain limited [12], [13].
+
+Keywords ： Low Earth Orbit (LEO) satellite network; TimeExpanded Graph (TEG); QoS-aware routing; Spatio-Temporal A*
+algorithm; Event-driven adaptation; Space–ground integrated
+network
+
+I. INTRODUCTION
+With the rapid deployment of large-scale Low Earth Orbit
+(LEO) constellations such as Starlink and OneWeb, densely
+distributed inter-satellite links (ISLs) are transforming orbital
+infrastructures into a highly dynamic and autonomous spacebased self-organizing network, greatly enhancing global
+communication coverage and service continuity [1]–[3].
+However, compared with terrestrial networks that have
+relatively stable structures, LEO constellation networks present
+unique systemic challenges: the network topology changes
+continuously due to high orbital velocities, link availability is
+strictly constrained by orbital dynamics, satellite attitude, and
+line-of-sight (LoS) visibility, while Doppler shifts, limited
+onboard energy, and restricted computational resources impose
+979-8-3315-3943-6/25/$31.00 ©2025 IEEE
+
+Gang Li*
+College of Electronics and Info. Engineering
+Tongji University
+Shanghai, China
+*Corresponding author: lig@tongji.edu.cn
+
+Therefore, the key research gap lies in designing a routing
+algorithm that can exploit the deterministic predictability of
+orbital motion in LEO networks while simultaneously achieving
+optimality guarantees and high computational efficiency. An
+ideal paradigm should combine physically interpretable lower
+bounds (e.g., light-speed propagation delay) with upper-bound
+232
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:47 UTC from IEEE Xplore. Restrictions apply.
+
+penalties on congestion and risk, and employ event-driven
+mechanisms to adapt to online topology changes [9], [10], [14].
+
+An event-driven dynamic adaptation framework. This
+framework enables rapid response to online events such as
+congestion, capacity saturation, or physical link disruptions.
+Through incremental updates and penalty-based cost
+adjustments, it supports smooth path switching and adaptive
+route re-optimization in real time.
+
+Motivated by this, this paper aims to address the problem of
+spatio-temporal consistent routing for LEO constellations,
+considering three key QoS dimensions—delay, congestion, and
+stability. The main contributions of this work are summarized as
+follows.
+
+Simulation results under typical LEO constellation
+parameters and traffic scenarios show that the proposed STQoS-A* algorithm significantly outperforms baseline methods
+in end-to-end delay, congestion mitigation, and route stability,
+while maintaining excellent computational efficiency and
+scalability.
+
+High-fidelity spatio-temporal network modeling. We
+integrate orbital dynamics, visibility, pointing and field-of-view
+constraints, Doppler effects, and strategic link restrictions into a
+unified link-adjacency framework. Within the TEG structure, a
+composite additive cost function is designed to capture multiple
+QoS dimensions simultaneously.
+
+The remainder of this paper is organized as follows. Section
+2 presents the system model and formal problem formulation.
+Section 3 introduces the framework and core mechanisms of the
+proposed ST-QoS-A* routing algorithm. Section 4 provides the
+experimental setup and simulation results. Finally, Section 5
+concludes the paper and discusses its limitations as well as
+future research directions.
+
+An efficient heuristic routing algorithm with optimality
+guarantee (ST-QoS-A*). The algorithm introduces a timealigned cost accumulation mechanism that ensures temporal
+consistency between path cost computation and network state
+evolution. A physically admissible heuristic function bounded
+by light-speed propagation delay enables significant searchspace pruning while preserving optimality.
+100
+
+20
+45
+
+80
+
+49
+
+34 24
+
+42 6
+39
+
+28
+
+12
+33
+15
+
+40
+
+3
+35
+17
+32
+16
+8
+50
+43
+
+7
+
+26
+40
+29
+
+0
+0
+
+20
+
+60
+
+7
+
+4
+
+4
+
+40
+
+16
+
+15
+8
+
+1
+
+20
+107 19
+
+1
+2
+11
+
+0
+80
+
+60
+12
+
+20
+25
+
+40
+
+3
+
+1
+9
+
+41
+
+4
+
+14
+
+17
+
+40
+
+31
+
+21
+
+6
+
+60
+
+10
+
+2
+
+14
+
+3
+
+9
+
+12
+8
+
+80
+6
+
+2
+
+5
+
+10
+5
+
+20
+
+13
+
+44
+
+19
+
+27
+
+38
+
+100
+
+18
+
+13
+
+80
+
+18
+
+20
+
+9
+
+36
+
+30
+
+47
+
+46
+
+60
+
+100
+
+11
+
+5 23
+37
+
+22
+48
+
+100
+
+0
+
+20
+
+40
+
+60
+
+x (km)
+
+x (km)
+
+(a)
+
+(b)
+
+80
+
+100
+
+0
+
+11
+
+0
+
+10
+
+20
+
+30
+
+40
+
+50
+
+60
+
+70
+
+80
+
+90
+
+x (km)
+
+(c)
+
+Figure 1. (a) Clusters centralized networking communication topology. (b) Clusters distributed networking communication topology. (c) Clusters dynamic
+combined networking communication topology.
+
+II. SYSTEM MODEL AND PROBLEM FORMULATION
+A. Basic Topology Structure
+As shown in Fig. 1(a), the centralized networking
+communication topology (CNCT) uses one satellite as the
+control core of the cluster, while the other satellites connect to
+the core satellite to complete information exchange. CNCT
+enables unified optimization and allocation of cluster resources,
+shortens routing time, and reduces end-to-end propagation delay.
+However, since the satellites must remain within the
+communication range of the core control satellite, the cluster size
+is limited, which may lead to excessive spatial density, wireless
+signal collisions, and risks of channel interference, connection
+disruption, and link congestion.
+As shown in Fig. 1(b), in the distributed networking
+communication topology (DNCT), satellites are capable of
+detecting surrounding nodes and actively adjusting their transmit
+power and routing strategy. Data transmission relies on relaying
+and cooperative forwarding among multiple nodes to ensure the
+coherence of the entire cluster. The initial node is randomly
+established and must be within the communication coverage of
+existing nodes. DNCT features independent intelligence, high
+
+robustness, scalable group size, and broad applicability.
+However, DNCT lacks centralized scheduling and management,
+which may result in higher latency and more complex routing
+policies in large-scale networks.
+As shown in Fig. 1(c), by integrating the characteristics of
+CNCT and DNCT, the dynamic combined networking
+communication topology (DCNCT) is proposed. The general
+motion trend of DCNCT is consistent with that of the cluster
+control center, but overall the topology remains more dispersed.
+DCNCT maintains motion consistency among the entire satellite
+cluster through the central control unit. It supports larger cluster
+sizes, demonstrates strong robustness and resilience to failures,
+and includes a central node for unified resource scheduling.
+DCNCT can accommodate larger groups, offers high stability
+and protection, and effectively integrates extensive sensing and
+information resources.
+B. Problem Formulation
+We model the instantaneous state of a Low Earth Orbit
+(LEO) satellite constellation network consisting of 𝑁 satellites
+at time 𝑡 as a dynamic, multi-attribute weighted graph 𝐺 𝑡
+𝒱, ℰ 𝑡 , 𝒞 𝑡 . Here, 𝒱
+𝑣 , 𝑣 , … , 𝑣 denotes the set of
+
+233
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:47 UTC from IEEE Xplore. Restrictions apply.
+
+satellite nodes, ℰ 𝑡 represents the set of active inter-satellite
+links (ISLs) at time 𝑡, and 𝒞 𝑡 denotes the set of link attributes
+associated with ℰ 𝑡 .
+
+∞,
+𝑓
+
+The existence of a link 𝑒 𝑡 ∈ ℰ 𝑡 is determined by a
+binary adjacency function 𝐴 𝑡 ∈ 0,1 . Based on the
+predictability of satellite orbits and attitudes (Assumption A1),
+1 if and only if all the following physical and policy
+𝐴 𝑡
+constraints are satisfied:
+𝐴
+
+𝑡
+
+𝕀 𝑑
+𝕀 LoS
+
+𝑑
+
+𝑡
+𝑑
+⋅𝕀 𝜃
+1 ⋅ 𝕀 Policy 𝑡
+
+𝑡
+
+𝑡
+
+𝜃
+1
+
+⋅
+(1)
+
+𝜏
+
+𝑡
+
+𝑡; 𝛼, 𝛽, 𝛾
+
+𝛼𝜏
+
+𝑡
+
+𝛽𝑓
+
+𝛾𝑓
+
+𝑃∗ 𝑣 , 𝑣 , 𝑡
+
+𝑡 (3)
+
+(4)
+
+ℓ
+
+ℓ
+
+(7)
+
+𝑤
+
+𝑡ℓ ; 𝛼, 𝛽, 𝛾
+
+(8)
+
+arg
+
+min
+
+∈𝒫
+
+,
+
+∑
+
+∈
+
+𝜔 𝑒
+
+(9)
+
+III. ALGORITHM FRAMEWORK
+
+Stability Cost: To prevent link failures caused by relative
+satellite motion, an exponential penalty-based stability cost is
+, a normalized
+introduced. Within a warning zone 𝑑 , 𝑑
+proximity indicator 𝜉 𝑡 ∈ 0,1 is defined as:
+𝑡
+
+(6)
+
+C. Polar-Orbiting Constellations and Periodic Occlusions
+In polar-orbiting constellations, repeated high-latitude seam
+crossings and Earth-occlusion windows lead to shorter visibility
+intervals and more frequent inter-satellite link break–reconnect
+cycles. In the Time-Expanded Graph (TEG), this results in
+higher inter-layer link churn for arcs near seams, reduced
+residual link lifetime within the prediction window, and greater
+variance of the stability proximity indicator described in
+equation (5). Consequently, congestion and topology triggers
+occur more frequently, as described in equation (13), shortening
+the effective stability horizon over which the switching penalty
+can operate. To mitigate these effects, we recommend using a
+finer time discretization near polar seams and introducing
+hysteresis into event triggers in Section Ⅲ to prevent oscillatory
+re-routing.
+
+where 𝜖 is a small stability term to avoid division by zero.
+This function captures the nonlinear growth of queuing delay
+with increasing load. In addition, each link is subject to a hard
+, i.e.,
+limit on the number of concurrent sessions 𝑈
+𝑈 .
+Sess 𝑡
+
+𝜉
+
+,
+
+denotes the set of feasible paths
+where 𝒫 𝑣 , 𝑣
+connecting 𝑣 , 𝑡 to 𝑣 , 𝑡 𝑡 .
+
+Congestion Cost: Each link is approximated as an M/M/1
+queue, with the congestion cost strongly correlated with the link
+utilization 𝜌 𝑡 ≜ 𝐿 𝑡 /𝐶 𝑡 . The congestion cost function
+is defined as:
+𝑡
+
+,𝑑
+
+For a given source-destination pair 𝑣 , 𝑣 and departure
+time 𝑡 , the routing problem becomes a shortest-path problem
+on the TEG:
+
+where 𝛼, 𝛽, 𝛾 0 are tunable weights that balance different
+service-level requirements.
+
+𝑓
+
+, if 𝑑 𝑡 ∈ 𝑑
+otherwise.
+
+𝜔 ,ℓ → ,ℓ
+
+(2)
+
+𝑡
+
+𝜖
+
+The cost of each arc is evaluated at the transmission layer:
+
+To capture the quality-of-service (QoS) characteristics of
+the network, each link 𝑒 𝑡 is assigned a composite cost
+composed of latency, congestion, and stability components:
+𝑤
+
+𝑡
+
+ℓ
+
+⏟
+Protocol Processing Time
+
+⏟
+
+exp 𝜉
+1,
+
+,
+
+𝑑
+
+A feasible arc in TEG connects 𝑖, ℓ to 𝑗, ℓ if the link
+1), and the receiving layer
+𝑖, 𝑗 is active at time 𝑡ℓ (𝐴 𝑡ℓ
+ℓ is determined by:
+
+The effective single-hop transition time 𝜏 𝑡 consists of
+both propagation and protocol processing delays:
+𝑡
+
+𝑡
+
+if 𝑑
+
+Conventional snapshot-based network models neglect the
+evolution of topology during data transmission. To address this,
+we employ the Time-Expanded Graph (TEG) framework.
+The prediction window 𝒯 is discretized into time layers ℓ ∈
+ℓΔ. Each physical
+ℤ , each corresponding to time 𝑡ℓ 𝑡
+node 𝑣 is expanded into a set of spatio-temporal nodes 𝑣 , ℓ .
+
+where 𝕀 ⋅ denotes the indicator function. The Euclidean
+distance between satellites 𝑣 and 𝑣 is 𝑑 𝑡 ∥ 𝐩 𝑡
+𝐩 𝑡 ∥ , and 𝜃 𝑡 is the pointing angle. LoS 𝑡 indicates
+line-of-sight visibility, and Policy 𝑡 further captures
+engineering constraints such as the minimum safety distance
+, maximum tolerable
+𝑑safe , maximum pointing rate 𝜃
+Doppler shift 𝑓 , , and seam-crossing avoidance windows.
+
+𝜏
+
+𝑡
+
+A. Core Principle: Heuristic Search on the Time-Expanded
+Graph
+The proposed ST-QoS-A* algorithm performs heuristic
+𝒱 ,ℰ
+using an evaluation
+search on the TEG 𝐺
+function:
+
+(5)
+
+The stability cost function then takes an exponential form:
+
+𝑓 𝑛
+
+𝑔 𝑛
+
+ℎ 𝑛
+
+(10)
+
+234
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:47 UTC from IEEE Xplore. Restrictions apply.
+
+where 𝑔 𝑛 is the accumulated cost from the source to node 𝑛,
+and ℎ 𝑛 is the heuristic estimate of the remaining cost to the
+destination.
+
+stability. However, since the existing event-driven mechanism
+defined by the maximum session limit and topology mutation
+already achieves stable performance with minimal
+computational overhead, the original trigger design is retained
+for algorithm implementation and validation.
+
+Unlike static routing approaches, ST-QoS-A* accumulates
+costs in a time-consistent manner. When expanding from node
+𝑣 ,ℓ
+to 𝑛
+𝑣 ,ℓ
+, the marginal cost
+𝑛
+𝜔 ,ℓ → ,ℓ is evaluated at the transmission time 𝑡ℓ . Hence,
+the cumulative cost is:
+𝑔 𝑛
+∑
+
+∑
+
+,ℓ → ,ℓ
+
+∈ →
+
+∈ → 𝑤
+
+,ℓ → ,ℓ
+
+𝜔 ,ℓ → ,ℓ
+
+The overall procedure of ST-QoS-A* is shown in Algorithm
+which includes graph construction, initialization, heuristicguided search, and dynamic event adaptation. Its worst-case
+computational complexity is 𝒪 𝑑‾ 𝑁𝐿log 𝑁𝐿 .
+Algorithm ST-QoS-A* for LEO Network Routing
+
+(11)
+
+𝑡ℓ ; 𝛼, 𝛽, 𝛾
+
+Inputs: Time window 𝒯
+𝑡 ,𝑡
+𝑇 ; time step Δ ;
+source/destination nodes 𝑣 , 𝑣 ; satellite ephemeris data;
+QoS weights 𝛼, 𝛽, 𝛾 .
+
+This mechanism ensures temporal consistency with the
+continuous-time TDSPP formulation.
+
+Output: Optimal spatio-temporal path 𝑃∗ .
+
+B. Admissible Heuristic Design
+For optimality, the heuristic ℎ 𝑛 must be admissible, i.e.,
+never overestimate the true minimal remaining cost. Given that
+congestion and stability costs cannot be safely estimated
+without risking overestimation, we set ℎ
+𝑛
+0 and
+ℎ
+𝑛
+0. The latency term, however, has a physical lower
+bound given by the speed-of-light propagation delay:
+ℎ 𝑛
+
+𝛼⋅
+
+∥𝐩
+
+ℓ
+
+𝐩
+
+ℓ ∥
+
+Pre-computation and Graph Construction:
+Based on ephemeris, predict physical link availability 𝐴
+for all 𝑡ℓ ∈ 𝒯.
+
+𝒱 ,ℰ
+by
+Construct Time-Expanded Graph 𝐺
+creating feasible arcs 𝑖, ℓ → 𝑗, ℓ according to eq. (7).
+Compute and store the cost 𝜔 for each arc according to
+eq. (8).
+
+(12)
+
+This guarantees admissibility and effectively guides the
+search toward the destination.
+
+Initialization:
+
+For polar segments, we retain the latency-only heuristic ℎ ⋅
+for admissibility while incorporating polar-aware pruning via
+residual-lifetime screening: when the predicted residual
+visibility 𝑇 𝑡 of link 𝑖, 𝑗 at transmission time 𝑡 is below a
+guard time 𝑇 , the arc is either pruned or penalized 𝑔 ⋅ in
+equation (5). This preserves optimality (heuristic unchanged)
+yet reduces expansions that would immediately violate stability
+cost under rapid occlusion.
+
+OpenSet ← A min-priority queue, initialized with 𝑛start .
+𝑓 𝑛 ← ∞ for all 𝑛 ∈ 𝒱
+eq. (12).
+
+To efficiently adapt to dynamic topology changes, ST-QoSA* employs an event-driven mechanism with two main triggers:
+
+while OpenSet is not empty do
+
+1. Congestion and Capacity Trigger: When Sess 𝑡ℓ
+𝑈 , the link becomes unavailable, and the corresponding arc
+is removed or penalized:
+
+if 𝑛current node is v_d then
+
+𝜔 ,ℓ → ,ℓ ← 𝜔 ,ℓ → ,ℓ
+
+𝜆
+
+𝑡ℓ ,
+
+𝜆
+
+𝑡ℓ ∝ 𝜌
+
+𝑡ℓ
+
+𝑛start ← 𝑣 , ℓ .
+𝑔 𝑛 ← ∞ for all 𝑛 ∈ 𝒱 ; 𝑔 𝑛start ← 0.
+; 𝑓 𝑛start ← ℎ 𝑛start
+
+using
+
+Come From ← An empty map to reconstruct the path.
+A* Search Loop:
+𝑛current ←← Node in OpenSet with the lowest f-score
+return ReconstructPath(cameFrom, 𝑛current )
+end if
+
+𝑡ℓ
+(13)
+
+OpenSet.remove(𝑛current )
+for each neighbor 𝑛neighbor of 𝑛current in G_TE do
+
+2. Topology Trigger: When 𝐴 𝑡 changes due to physical
+or policy violations, all affected arcs are pruned from ℰ , and
+disrupted flows are re-routed accordingly.
+
+𝑔tentative ← 𝑔 𝑛current
+
+𝜔 current → neighbor
+
+if 𝑔tentative < g[𝑛neighbor] then
+
+Introducing an additional early-warning trigger based on
+link-load reaching 80% can further stabilize routing behavior.
+When link utilization approaches this threshold, preemptive
+rerouting is initiated before full congestion occurs, allowing the
+algorithm to redistribute traffic more smoothly. This
+mechanism effectively reduces abrupt path switching caused by
+overload-induced link disruptions, thereby lowering route
+oscillation frequency and improving overall transmission
+
+Come From[𝑛neighbor ] ← n_current
+g[𝑛neighbor] ← 𝑔tentative
+𝑓 𝑛neighbor ← 𝑔tentative
+
+ℎ 𝑛neighbor
+
+if 𝑛neighbor is not in OpenSet then
+
+235
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:47 UTC from IEEE Xplore. Restrictions apply.
+
+OpenSet.add(𝑛neighbor)
+
+∑, ∈
+
+𝐵
+
+end if
+
+(14)
+
+where 𝑛 𝑖 and 𝑛 denote the number of shortest paths
+between nodes 𝑗 and 𝑘 that pass through node 𝑖, and the total
+number of such paths, respectively. The average median reflects
+connectivity, while the maximum median indicates blockage
+likelihood, as shown in Fig. 2.
+
+end if
+end for
+end while
+
+180
+
+180
+CNCT
+DNCT
+DCNCT
+
+160
+
+return Failure
+
+IV. SIMULATION RESULTS AND ANALYSIS
+
+140
+
+120
+
+120
+
+100
+
+100
+
+80
+
+80
+
+60
+
+60
+
+40
+
+40
+
+20
+
+A. Experimental Setup
+To verify the performance advantages of the proposed STQoS-A* routing algorithm in Low-Earth Orbit (LEO)
+constellation networks, we built a simulation environment
+based on AGI STK 12 and a customized MATLAB control
+interface to implement a full-process simulation of dynamic
+satellite topologies. The simulation uses six ground facility
+nodes (FAC1–FAC6) and a multi-plane satellite constellation
+to construct a heterogeneous network environment. Eight FACFAC traffic flows were automatically injected to compare the
+performance of traditional static routing and intelligent spatiotemporal predictive routing (Smart). The experiments recorded
+the evolution of metrics at a one-second resolution, focusing on
+four key indicators: Succeeded Tasks, Average Propagation
+Delay, Average Hops, and Maximum Link Load.
+
+0
+
+CNCT
+DNCT
+DCNCT
+
+160
+
+140
+
+20
+
+2
+
+4
+
+6
+
+8
+
+10
+
+12
+
+14
+
+16
+
+18
+
+0
+
+20
+
+2
+
+4
+
+6
+
+8
+
+Number of UAVs
+
+10
+
+12
+
+14
+
+16
+
+18
+
+20
+
+Number of UAVs
+
+(a)
+
+(b)
+
+Figure 2. (a) Maximum number of meshes. (b) Mean median.
+
+C. Results Analysis and Discussion
+TABLE I. PERFORMANCE COMPARISON BETWEEN TRADITIONAL AND SMART
+ROUTING AT DIFFERENT TIME POINTS
+
+During the initialization stage, constellation creation,
+facility distribution, and link data precomputation were
+performed. The STK scenario automatically generated visual
+trajectories for both the traditional and intelligent routes.
+Subsequently, a time-sliding window mechanism was applied
+to periodically scan and replan routes every 120 seconds within
+a ±30-minute window. The traditional strategy considered only
+geometric distance and capacity limits, whereas the intelligent
+strategy incorporated additional congestion-square, temporalsmoothing, and switching-penalty terms into the cost function
+to enable proactive control of network congestion and path
+stability. The simulation outputs were formatted using a
+dedicated summary function.
+
+Tim
+e (s)
+
+Metric
+
+Traditi
+onal
+
+Smart
+
+Improvem
+ent (%)
+
+Remarks
+
+0.00
+
+Succeede
+d Tasks
+
+3
+
+6
+
++100.0
+
+Avg.
+Delay (s)
+Avg.
+Hops
+Max Link
+Load
+
+0.0430
+
+0.0338
+
++21.4
+
+Success rate
+doubled with
+Smart scheme
+Significant delay
+reduction
+
+3.67
+
+4.67
+
+–
+
+More distributed
+but stable paths
+
+3
+
+0.831
+
++72.3
+
+Succeede
+d Tasks
+
+1
+
+4
+
++300.0
+
+Avg.
+Delay (s)
+Avg.
+Hops
+
+0.0827
+
+0.0749
+
++9.4
+
+Remarkably
+improved load
+balance
+Smart converges
+faster at early
+stage
+Nearly 10%
+delay reduction
+
+9.00
+
+10.00
+
+–
+
+Max Link
+Load
+
+2
+
+0.725
+
++63.8
+
+Succeede
+d Tasks
+Avg.
+Delay (s)
+Avg.
+Hops
+
+2
+
+5
+
++150.0
+
+0.0419
+
+0.0350
+
++16.5
+
+Continuous delay
+improvement
+
+2.50
+
+4.50
+
+–
+
+Max Link
+Load
+Succeede
+d Tasks
+
+2
+
+0.581
+
++70.9
+
+Higher hops
+enhance
+reachability
+More balanced
+link utilization
+
+2
+
+5
+
++150.0
+
+Avg.
+Delay (s)
+Avg.
+Hops
+
+0.0426
+
+0.0400
+
++6.1
+
+3.50
+
+4.50
+
+–
+
+Max Link
+Load
+
+3
+
+0.986
+
++67.1
+
+8640.
+00
+
+2138
+5.47
+
+To evaluate robustness under frequent occlusions, we add a
+polar-orbiting constellation segment with near-polar inclination
+(𝑖 97∘ ) and seam-crossing avoidance windows enabled in
+adjacency 𝐴 𝑡 . We keep traffic injection identical to the
+baseline. To capture faster link churn, we set Δ𝑡 to 0.5–1 s
+within 10∘ latitude of seams via a non-uniform TEG layering
+policy while retaining 1 s elsewhere. Trigger hysteresis is
+enabled as in Section 3.2. Metrics remain: Succeeded Tasks,
+Average Propagation Delay, Average Hops, and Maximum
+Link Load.
+
+4420
+1.29
+
+B. DCNCT Analysis
+For two nodes of equal degree in a cluster communication
+network, their traffic may vary due to spatial distribution. To
+quantify node centrality, the betweenness centrality 𝐵 is
+defined as:
+
+Higher
+redundancy,
+better robustness
+Significantly
+reduced peak
+load
+Smart maintains
+high success rate
+
+Long-term
+stability
+advantage
+Slight rebound
+but still superior
+Balanced
+stability and
+redundancy
+Effective
+congestion
+control
+
+From TableⅠ, it can be observed that under identical task sets
+and temporal conditions, the ST-QoS-A* algorithm consistently
+achieves a higher task success rate than the traditional approach,
+236
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:47 UTC from IEEE Xplore. Restrictions apply.
+
+indicating superior reachability and completion capability under
+link congestion and capacity constraints. In the early time
+window (t = 8640 s), the intelligent algorithm successfully
+completed four tasks, whereas the traditional algorithm
+completed only one, confirming that the spatio-temporal
+prediction mechanism can proactively avoid potential link
+breaks and overloaded routes.
+
+As shown in Table II and Fig. 5,6, the polar-orbiting scenario
+exhibits much higher trigger frequency and shorter residual link
+lifetimes around high-latitude seams, where orbital crossings
+and Earth-occlusion windows occur more frequently than in the
+multi-plane baseline. This leads to more dynamic link variations
+and shortened stable corridors, as reflected by the increased
+fluctuations in task success and delay curves in Figure 5.
+Consequently, the absolute gains in average propagation delay
+are moderately reduced, and the peak-load reduction benefit
+becomes narrower due to temporarily constrained spatial
+diversity. Nevertheless, the results in Table II demonstrate that
+ST-QoS-A* consistently outperforms the traditional shortestpath routing across all time windows—achieving three to four
+times higher task success and slightly lower average delay while
+maintaining near-uniform link utilization (MaxLd ≈ 1.0).
+Furthermore, the topology visualization in Figure 6 confirms
+that the intelligent routing maintains smoother and more
+balanced link activity even in the dense polar seam regions.
+These results verify that the integration of non-uniform temporal
+discretization and the 80 % early-warning trigger with hysteresis
+(as described in Section Ⅲ) effectively suppresses oscillatory rerouting, thereby improving overall transmission stability and
+network robustness under highly dynamic polar conditions.
+
+Figure 3. Algorithm Metrics Comparison
+
+Figure 4. STK Simulation Visualization
+
+In terms of propagation delay, the intelligent routing scheme
+reduces the average delay by approximately 9.4% to 16.5%
+compared with the traditional method, benefiting from the
+admissible heuristic that prioritizes physically shorter and less
+congested links. Although the average hop count increases
+slightly, this multi-path distribution effect effectively alleviates
+peak link load, reducing maximum link utilization by more than
+60% and significantly improving overall load balance.
+
+Figure 5. Time Curve in Polar Coordinate Scenes
+
+As shown in Fig. 3,4, further analysis of the temporal
+performance curves shows that the traditional algorithm exhibits
+pronounced fluctuations, whereas the intelligent routing
+maintains relatively stable task success and delay levels across
+continuous time windows. This demonstrates that the
+exponential smoothing and path-switching penalty mechanisms
+in ST-QoS-A* effectively suppress oscillations caused by
+frequent re-routing, enabling stable transmission performance in
+dynamic topological environments.
+
+Figure 6. STK Simulation Visualizatio in Polar Topology
+
+V. CONCLUSIONS
+This paper proposes a spatio-temporal prediction–aware
+routing algorithm, ST-QoS-A*, to address the challenges of
+routing optimization in dynamic Low Earth Orbit (LEO) satellite
+networks with multidimensional Quality of Service (QoS)
+constraints. Built upon the Time-Expanded Graph (TEG)
+framework, the algorithm employs a time-aligned cost
+accumulation mechanism and a physically admissible heuristic
+based on light-speed propagation delay, ensuring temporal
+consistency and global optimality. An event-driven adaptation
+mechanism further enables real-time responsiveness to
+
+TABLE II. TRADITIONAL VS. ST-QOS-A UNDER POLAR SCENARIO
+Time
+
+Succ_
+T
+
+Delay_
+T
+
+MaxL
+d_T
+
+Succ
+_S
+
+Delay_
+S
+
+MaxLd_
+S
+
+3193.5744
+
+2
+
+0.0657588
+072161881
+
+2
+
+7
+
+0.06446941
+88394001
+
+0.9985412536
+15479
+
+4393.5744
+
+2
+
+0.0786781
+696036955
+
+2
+
+8
+
+0.07717413
+75623256
+
+0.9999897993
+15238
+
+5593.5744
+
+2
+
+0.0668455
+481869939
+
+2
+
+8
+
+0.06553485
+11637195
+
+0.9999999998
+13149
+
+6793.5744
+
+2
+
+0.0648561
+318820611
+
+2
+
+7
+
+0.06358444
+30216286
+
+0.9999999999
+99582
+
+237
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:47 UTC from IEEE Xplore. Restrictions apply.
+
+congestion and topology changes, significantly improving
+computational efficiency. Simulations on an integrated AGI
+STK 12 and MATLAB platform demonstrate that ST-QoS-A*
+doubles task success rates, reduces propagation delay by 10–
+20%, and lowers maximum link load by over 60% compared
+with traditional methods. Under polar-orbiting constellations,
+where line-of-sight occlusions occur more frequently, the
+algorithm continues to maintain lower delay and balanced link
+utilization, confirming its robustness and adaptability in highly
+dynamic orbital environments. Overall, ST-QoS-A* provides a
+practical and scalable solution for QoS-aware routing in future
+space–ground integrated networks.
+
+[10] K. Shi, H. Li, and L. Suo, “Temporal Graph-Based Energy-Limited MaxFlow Routing over Satellite Networks,” in 2021 IFIP Networking
+Conference
+(IFIP
+Networking),
+pp.
+1–3,
+2021,
+doi:
+10.23919/IFIPNetworking52078.2021.9472794.
+[11] D. V. Huynh, S. R. Khosravirad, S. L. Cotton, O. A. Dobre, and T. Q.
+Duong, “DRL-Based Optimisation for Task Offloading in Space-AirGround Integrated Networks: A Reliability-Driven Approach,” in Proc.
+IEEE ICC 2025 – International Conference on Communications, pp.
+6958–6963, 2025, doi: 10.1109/ICC52391.2025.11161527.
+[12] P. Xu, M. Feng, J. Zhou, L. Xiao, P. Xiao, and T. Jiang, “Inter-Satellite
+Routing for LEO Satellite Networks: A GNN and DRL Integrated
+Approach,” in 2024 IEEE/CIC International Conference on
+Communications in China (ICCC), pp. 1346–1351, 2024, doi:
+10.1109/ICCC62479.2024.10681995.
+[13] J. Liu, Y. Shi, Z. M. Fadlullah, and N. Kato, “Space-Air-Ground
+Integrated Network: A Survey,” IEEE Communications Surveys &
+Tutorials, vol. 20, no. 4, pp. 2714–2741, 2018, doi:
+10.1109/COMST.2018.2841996.
+[14] A. Warford et al., “Resilient Routing for Low Earth Orbit MegaConstellation Networks,” in NDSS Workshops (SpaceSec), 2024.
+
+ACKNOWLEDGMENT
+This work was supported by Shanghai Science and
+Technology Commission Project (Grant Nos. 24ZR1492700
+and
+2021SHZDZX0100),
+Industry-University-Research
+Cooperation Fund of the Eighth Research Institute of China
+Aerospace Science and Technology Corporation (SAST2023019), Eastern Talent Program, Shanghai Pilot Program for
+Basic Research, and Fundamental Research Funds for the
+Central Universities. (Corresponding author: Gang Li)
+Gang Li are with the College of Electronics and Information
+Engineering, Tongji University, Shanghai 201804, China, with
+the Shanghai Research Institute for Intelligent Autonomous
+Systems, Shanghai 200120, China, and with the National Key
+Laboratory of Autonomous Intelligent Unmanned Systems,
+Shanghai 200120, China, with the Shanghai Institute of
+Intelligent Science and Technology, Tongji University,
+Shanghai 201804, China.
+REFERENCES
+[1]
+
+[2]
+[3]
+
+[4]
+
+[5]
+
+[6]
+[7]
+
+[8]
+
+[9]
+
+C. Westphal, L. Han, and R. Li, “LEO Satellite Networking Relaunched:
+Survey and Current Research Challenges,” arXiv preprint
+arXiv:2310.07646,
+2023.
+[Online].
+Available:
+https://arxiv.org/abs/2310.07646
+A. Warford et al., “Resilient Routing for Low Earth Orbit MegaConstellation Networks,” in NDSS Workshops (SpaceSec), 2024.
+A. U. Chaudhry and H. Yanikomeroglu, “Laser Intersatellite Links in a
+Starlink Constellation: A Classification and Analysis,” IEEE Vehicular
+Technology Magazine, vol. 16, no. 2, pp. 48–56, 2021, doi:
+10.1109/MVT.2021.3063706.
+M. Werner, C. Delucchi, H.-J. Vogel, G. Maral, and J.-J. De Ridder,
+“ATM-Based Routing in LEO/MEO Satellite Networks with Intersatellite
+Links,” IEEE Journal on Selected Areas in Communications, vol. 15, no.
+1, pp. 69–82, 1997, doi: 10.1109/49.553679.
+E. Ekici, I. F. Akyildiz, and M. D. Bender, “A Distributed Routing
+Algorithm for Datagram Traffic in LEO Satellite Networks,” IEEE/ACM
+Transactions on Networking, vol. 9, no. 2, pp. 137–147, 2001, doi:
+10.1109/90.917071.
+Z. Liu et al., “Space-Air-Ground Integrated Network (SAGIN): A Survey,”
+arXiv preprint arXiv:2307.14697, 2023.
+Y. Wang, G. Li, and N. Tang, “Querying Shortest Paths on TimeDependent Road Networks,” Proc. VLDB Endow., vol. 12, pp. 1249–
+1261, 2019.
+A. A. Chaudhry et al., A Case for Time-Dependent Shortest Path
+Computation in Spatial Networks, Tech. Rep., University of Colorado
+Denver, 2021.
+J. Li, P. Wang, H. Li, and K. Shi, “Enhanced Time-Expanded Graph for
+Space Information Network Modeling,” Science China Information
+Sciences, vol. 65, no. 9, p. 192301, 2022, doi: 10.1007/s11432-020-32022.
+
+238
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:47 UTC from IEEE Xplore. Restrictions apply.
+
+

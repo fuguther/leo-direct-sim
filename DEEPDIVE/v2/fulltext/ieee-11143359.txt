@@ -1,0 +1,1386 @@
+Beneath the Heavens: A Thorough Measurement
+Study of the Starlink Terrestrial Network
+Yanbo Wu∗† , Mingxin Cui∗† B , Gaopeng Gou∗† , Yuhao Wei∗† ,
+Gang Xiong∗† , Zhen Li∗† , Xinlei Ju∗† , Wei Xia∗†
+∗ Institute of Information Engineering, Chinese Academy of Sciences, Beijing, China
+† School of Cyber Security, University of Chinese Academy of Sciences, Beijing, China
+
+2025 IEEE/ACM International Symposium on Quality of Service (IWQoS) | 979-8-3315-4940-4/25/$31.00 ©2025 IEEE | DOI: 10.1109/IWQOS65803.2025.11143359
+
+{wuyanbo, cuimingxin, gougaopeng, weiyuhao, xionggang, lizhen, jvxinlei, xiawei}@iie.ac.cn
+
+Abstract—The emerging low earth orbit (LEO) satellite Internet has gained worldwide popularity. Starlink, a prominent
+LEO satellite Internet service provider, has attracted the most
+users due to its low latency, wide coverage, and strong usability.
+Current research on Starlink primarily focuses on the space
+segment and its impact on network performance. However, as an
+essential component, the architecture and unique features of the
+Starlink Terrestrial Network (SLTN) are not well-explored, which
+significantly affects the performance, security, and development
+of the whole network. In this paper, we fill this gap by conducting
+a thorough measurement study to profile the SLTN from various
+aspects and reveal its potential effects, with specific attention to
+the network assets, topology, and routing strategies.
+We developed a novel framework including active and passive
+measurement methods for collecting multiple network assets,
+tracing different route paths, and scanning active service of the
+SLTN. The open source intelligence was utilized for the first
+time to collect extensive real-user network status. Leveraging
+these techniques, we observed a rapid expansion of the Starlink
+service with the latest network assets, collected in January 2025,
+including over 23.5K /28 IP prefixes residing in 143 countries. We
+mapped the consistent topology of the global Starlink Internet
+access service and identified the specific IP addresses associated
+with the four types of network routing nodes. Multiple internal
+routing strategies were uncovered, which facilitate direct userto-user interactions. Particularly, we revealed the switches of
+terrestrial infrastructure that users connected and the changes in
+routing strategies, which should be considered in future quality
+of service (QoS) evaluations. Our measurement also provides
+methods for improving users’ perceptions and serves as a basis
+for studies like security risk evaluation and service discovery.
+Index Terms—Satellite-Terrestrial Integrated Network, Starlink, Internet Measurement
+
+I. INTRODUCTION
+Satellite Internet provides Internet access service by utilizing communication satellites, offering broadband access with
+extensive coverage. Compared with geostationary satellites,
+LEO satellites are positioned closer to the surface, which
+reduces network latency and improves service quality [1].
+Starlink, operated by SpaceX, has been publicly available since
+February 2021, establishing a vast LEO satellite network that
+serves over 100 countries and areas. By September 2024,
+Starlink has deployed over 7K LEO satellites and reached
+more than 4 million subscribers, making it the leading satellite
+Internet service provider in terms of coverage, latency, and
+user-friendliness. Moreover, Starlink has been utilized for
+military communications during the Russo-Ukrainian War [2].
+
+The Starlink network’s infrastructure consists of space and
+terrestrial segments. The space segment is primarily composed
+of a series of low-orbit satellites, while the terrestrial segment
+encompasses the User Terminal, Ground Station (GS), and
+Internet Point of Presence (PoP). Studies of the Starlink network primarily focus on the space segment. A large group of
+researchers measured the performance of the Starlink network
+from various aspects [13] [15] [16] and explored how spatial
+factors, like weather and satellite coverage, affect the quality
+of service (QoS) [11] [17]. Novel network protocols have
+been designed to align with the performance requirements [21]
+[22]. The terrestrial segment, as an essential component, is
+also crucial in data transmission (Fig. 1). Its special network
+architecture could greatly affect the QoS evaluation, security
+analysis, and development of the whole Starlink network
+ecosystem. However, to the best of our knowledge, there is
+a significant lack of understanding of the terrestrial network
+and the effects. Furthermore, insufficient comprehension has
+already misled some applied research, such as the scanning of
+irrelevant hosts in security risk evaluations [9] [10].
+To fill this gap, we conducted a thorough measurement
+study of the Starlink Terrestrial Network. Novel methods were
+proposed to collect sufficient research data. We then presented
+an in-depth analysis, with special attention to network assets,
+topology, and routing strategies. The effect of the SLTN on
+QoS evaluation, security, etc., is given significant attention.
+Profiling the SLTN is by no means trivial since it is
+a black-box system with a wide distribution and network
+fluctuations. To this end, we proposed a specific measurement
+framework with active and passive measurement methods
+to collect effective research data. We applied Open Source
+Intelligence (OSINT) to collect extensive real-user network
+status data for the first time, addressing the challenge of limited volunteers while broadening measurement coverage. The
+active measurement methods consist of StarCollect, a method
+for collecting comprehensive network assets continuously and
+automatically; StarTrace, a specialized network path tracing
+method for discovering multiple route paths of the SLTN; and
+StarScan, an active host scanning tool that efficiently identified
+open services of important network routing nodes.
+Leveraging the collected data, we profiled the SLTN from
+various aspects, along with a set of insightful findings affecting
+the QoS evaluation, security evaluations, etc. During our
+
+979-8-3315-4940-4/25/$31.00 © 2025 IEEE
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 20:00:40 UTC from IEEE Xplore. Restrictions apply.
+
+II. BACKGROUND
+Satellite Internet has emerged as a pivotal technology
+for global connectivity, offering broadband access in remote
+and underserved regions. Traditionally, geostationary satellites
+have been the primary means of satellite-based Internet, providing wide coverage but facing high latency due to their distance. In contrast, low earth orbit satellites are positioned much
+closer to the Earth’s surface, reducing latency and improving
+
+Space
+Segment
+
+LEO
+Satellite
+KU-KA
+
+Ground
+Station
+
+User
+Terminal
+Dish
+
+Terrestrial
+Segment
+
+Ethernet
+
+measurement between January 2023 and January 2025, we
+observed a rapid expansion of the Starlink service according to
+associated network assets. The latest data includes over 23.5K
+/28 IP prefixes (a 48% growth), 290 domain names, and 6
+autonomous systems (AS), residing in 143 countries and regions both supporting Starlink service and under construction.
+Based on the statistics of five types of route paths, we mapped
+the consistent topology of the global Starlink Internet access
+service and identified four types of network routing nodes.
+Besides, we proposed an efficient classification algorithm,
+determining that 79.6% of the IP addresses were associated
+with Starlink user nodes and 2.3% associated with the PoP
+exit nodes. Moreover, multiple internal routing strategies were
+identified, which facilitate direct user-to-user interactions without traditional Internet transit. More importantly, our findings
+help to improve users’ perceptions of the current network
+status, such as identifying the specific terrestrial infrastructure
+they are connecting through the network path tracing method.
+The measurement results on network architecture serve as a
+basis for studies like security risk evaluations and service
+discovery. For instance, we observed there were open BGP
+and router management services exposed to the Internet, which
+bring security risks and should be protected. In particular, we
+revealed the switches of PoP that Starlink users connected and
+the changes in routing strategies of the SLTN, which should
+be considered in QoS measurements and evaluations.
+The contributions of the paper are summarized as follows:
+• New Techniques: We developed a specialized measurement
+framework for the SLTN to collect associated network
+assets, discover network route paths, and implement host
+scanning. We first utilized OSINT to collect wide real-user
+network status data. The framework provides novel insights
+for the measurement of other satellite Internet systems.
+• New Findings: We collected sufficient research data and
+distilled a set of insightful findings specifically in network
+assets, topology, and routing strategies of the SLTN.
+• Practical Applications: We proposed practical applications.
+Our study serves as a crucial basis for improving user
+perception and studies like security risk evaluation. The
+findings on routing variations also facilitate QoS evaluations.
+The rest of the paper is organized as follows: §II present
+an overview of the Starlink network. In §III, we propose focused research questions and the corresponding measurement
+methodology. §IV details our in-depth analysis of the SLTN.
+The applications of our measurement study are shown in §V.
+§VI presents the ethical issues. §VII summarizes previous
+works related to the SLTN. §VIII concludes this paper.
+
+Fiber
+
+Network
+Routing
+Device at PoP
+
+Static IP :
+192.168.100.1
+Net: 100.64.0.0/10
+Gateway:
+100.64.0.1
+
+Router
+
+Internet
+Access
+
+User
+
+Internet
+Fig. 1. The network infrastructure supporting the Starlink service in
+each area. The orange lines represent the network transmission link of
+the Internet Access Service.
+
+overall service quality. Starlink, operated by SpaceX, LLC, has
+been available to the public since February 2021. It has established a comprehensive network system with LEO satellites,
+providing satellite Internet access to over 100 countries and
+territories. Since early 2022, the Starlink program has emerged
+as the preeminent Satellite Internet System regarding satellite
+count and overall scale. As of September 2024, SpaceX has
+successfully deployed over 7K LEO satellites and announced
+reaching more than 4 million subscribers. Starlink emerged
+as the preeminent satellite Internet system because of its
+extensive coverage, low latency, and high user-friendliness.
+Moreover, Starlink has been used in the Russo-Ukrainian
+War for military communications [1] [2]. A military version,
+Starshield, is designed for government use.
+Fig. 1 illustrates the infrastructure of Starlink and the
+entire data transmission with network information. To enable
+Internet access, data is exchanged among several neighboring
+infrastructures [2]. In this study, the SLTN refers to the network based on the interconnections of the Starlink terrestrial
+segment infrastructure.
+The user is required to acquire a user terminal to access
+the Starlink network. Data packets originating from the user’s
+PC are transmitted through the user terminal as KU-KA band
+signals to a satellite. This satellite subsequently relays the
+packets to a nearby GS. The GS then routes these packets
+via wired fiber to a connected PoP, which forwards them to
+the Internet [3]. The details are summarized as follows.
+User Terminal. The user terminal comprises a router and a
+dish connected via Ethernet. It converts the Ethernet packets
+from the user’s network devices into satellite signals in the
+KU-KA band and transmits them to the LEO satellite. The
+router’s WAN port acquires network addresses by parsing
+DHCP packets from the Starlink network. Owing to the
+scarcity of IPv4 resources, Starlink employs CGNAT technology. Regular users receive private IP addresses, whereas
+premium users can switch to dedicated public IP addresses.
+Following the Starlink routing algorithm, the dish converts
+users’ Ethernet frames and sends them to a specific satellite.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 20:00:40 UTC from IEEE Xplore. Restrictions apply.
+
+StarScan
+
+StarCollect
+OSINT Search
+
+Real-users’ Public IPs
+
+Network Assets
+Classification Algorithm
+Network
+Assets
+Databse
+
+Real-user Network Status
+Official Certificate
+
+Domain-based
+Iterative Strategy
+
+Network Nodes’ IP
+
+ICMP and SYN
+SCAN: Open Ports
+
+Fingerprints of Key
+Network Nodes
+
+ZGrab, Nmap:
+Banners and Services
+
+StarTrace
+GS and PoP Locations
+Selected Probes
+Internet Repository
+
+AS Path, Origin AS,
+IP Geolocation, Domains
+
+① Passive measurement
+
+Enhanced
+Path Tracing
+Technique with
+ICMP, Http,
+and DNS Query
+
+(1) Internet Servers
+(2) Starlink Probes
+(3) Active Hosts
+
+In-depth and Continuous Analyses
+5 types of
+Potential Paths
+
+ü
+ü
+ü
+ü
+
+Network Assets
+Topology
+Multiple Routing Strategies
+Unique Features
+
+② Active measurement methods for network assets, route paths and fingerprints.
+
+Fig. 2. Our measurement framework with active and passive measurement methods.
+
+Satellite and Ground Station. After receiving user data, the
+satellite selects a specific nearby GS and transmits the data to
+that GS via KU-KA band signals. However, wireless signals
+have inherent distance limitations. For example, satellites over
+the US cannot directly communicate with the GS in Europe.
+Starlink has deployed over 150 GS worldwide to expand its
+service coverage. Meanwhile, Starlink is exploring reducing
+the number of GS with the technique of inter-satellite laser
+link (ISL). ISL is still under evaluation and experiment with
+limited scale, we do not consider its impact in this paper [2].
+Internet Point of Presence. The GS employs wired fiber to
+transmit data packets to network routing devices at the PoP.
+Specifically, these routing devices bridge the internal Starlink
+network to the Internet
+III. STUDY DESIGN AND METHODOLOGY
+We first proposed focused research questions (RQ) for
+profiling the SLTN. To meet the needs of this measurement
+study, we designed a specialized framework to collect various
+data, with active and passive measurement methods. The data
+was utilized for in-depth analysis of the SLTN in §IV and will
+facilitate further applications and research discussed in §V.
+A. Research Questions
+Our research is driven by the following RQs:
+RQ1: The Network Assets. As a crucial component and an
+identifier of a network system, we wonder what network assets
+are associated with the SLTN, including AS information, IP
+addresses, domain names, and other network identifiers. The
+network assets and their attributes can also reveal the scale,
+distribution, and key characteristics of the SLTN system.
+RQ2: The Internet Access Topology. Starlink has constructed
+a novel Internet access network. We wonder about the characteristics of the topology, including identifying connectivity
+relationships among important network routing nodes and their
+unique roles. The effect of this type of topology on QoS is
+also an interesting topic.
+RQ3: Network Assets Classification. We wonder whether
+there is an effective approach to classify a public IP address
+to its associated network routing node within the SLTN. The
+classification has important applications in fingerprinting and
+finding potential security risks via active network services.
+
+RQ4: Multiple Routing Strategies. The Starlink service has
+an extensive distribution. We wonder whether multiple internal
+routing strategies are supported to facilitate direct user-to-user
+interactions without traditional Internet transit.
+B. Challenges and Methodology Overview
+Due to the characteristics of the Starlink network, we
+encountered several challenges in collecting research data.
+• Starlink is a closed-source system with a lack of transparency in network protocols and routing algorithms, making traditional measurement methods inapplicable.
+• The high deployment cost of user terminals poses challenges
+to the traditional measurement way of deploying widespread
+network probes. An efficient approach is required to collect
+extensive real-user data.
+• The ongoing development of Starlink necessitates specific
+methods to continuously and effectively monitor the changes
+in network infrastructure and network resources.
+• The movement of LEO satellites and other potential factors
+lead to network fluctuations, including latency and data
+packet reachability, which means specialized methods are
+required to ensure data reliability.
+These factors were critical considerations throughout our
+methodology design. In short, as shown in Fig. 2, we proposed
+an automated framework StarCollect for collecting multidimensional network assets continuously and automatically, a
+specialized network path tracing method StarTrace for discovering multiple route paths, and an active host scanning tool
+StarScan that efficiently discovers active network services. In
+addition to the active measurement methods, we are the first to
+leverage OSINT to obtain real users’ network status, mitigating
+the lack of volunteers while extending the measurement coverage. Other relevant datasets include GS and POP Locations,
+AS Path, Origin AS, IP Geolocation, and Passive DNS. A
+detailed explanation is provided below.
+C. Active Measurement
+a) StarCollect: We designed a framework, StarCollect,
+for the collection of a wide range of network assets from
+multiple aspects, ultimately creating a comprehensive Network
+Asset Database (NADB). In other words, StarCollect implements a binary classification algorithm to distinguish network
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 20:00:40 UTC from IEEE Xplore. Restrictions apply.
+
+TABLE I
+T HE N ETWORK P ROBES W ITHIN T HE SLTN.
+Country
+US
+FR
+CA
+DE
+GB
+IT
+AU
+
+# Number
+21
+11
+8
+6
+4
+3
+3
+
+Country
+BE
+NL
+HT
+CL
+KI
+CO
+ES
+
+# Number
+2
+2
+2
+2
+2
+1
+1
+
+Country
+MG
+JP
+HU
+CZ
+PL
+GR
+BJ
+
+TABLE II
+S ELECTED P ROBES AND TARGETS FOR N ETWORK PATH T RACING .
+# Number
+1
+1
+1
+1
+1
+1
+1
+
+resources associated with Starlink from other networks. The
+database contains SLTN-related network identifiers including
+IP addresses, autonomous systems, domain names, IP geolocations, etc. Specifically, StarCollect can continuously and
+automatically monitor network assets’ changes.
+The input of StarCollect is a number of Starlink realusers’ public IP addresses from our OSINT data. We then
+use an iterative algorithm to collect the whole assets. At the
+initial stage, we utilize the Origin AS data to map the input
+to their corresponding AS. The IP addresses announced by
+these AS are then inserted into the database. Our iterative
+strategy is based on the following domain-level insight: (1)
+We found 95% of the input IP addresses were associated with
+domains in the format of customer.*.{pop, mc}.starlinkisp.net,
+subdomains of starlink.isp.net. (2) The rest IP addresses are
+associated with undefined.hostname.localhost. Consequently,
+the next step is to retrieve the subdomains of starlinkisp.net
+and their associated IP addresses with the Passive DNS dataset.
+The initial stage will be repeated until no new IPs are inserted
+into the database, indicating the algorithm has reached convergence. We classify these IP addresses using a prefix length of
+28 for ease of data deduplication. Additionally, we looked up
+IP geolocations as part of the database using the IP Geolocation dataset. The NADB constructed by StarCollect not only
+provides information on ASs, IP addresses, domain names,
+and IP geolocations but also details the relationship mapping
+among these different types of assets. The database proved
+effective through subsequent in-depth analyses in §IV-C.
+Metadata of the NADB. Since 2023, we have been continuously collecting the data. We show the metadata for three key
+time points. In May 2023, we observed 15,804 /28 IP prefixes,
+266 hostnames, and associated 107 countries and areas. In May
+2024, the number is 20,828; 278; and 130. In January 2025,
+the number is 23,562; 290; and 143. A comprehensive analysis
+of the NADB is presented in §IV-A.
+b) StarTrace: Considering the fluctuations of the Starlink
+network, we designed a specialized network path tracing
+method StarTrace. It was used to discover multiple potentially supported route paths in the Starlink network and the
+corresponding route-level network information.
+StarTrace uses a route-tracing technique based on TTLlimited probes [26]. We employed the following improvements to address the corresponding issues: (1) In the Starlink network, the TTL response strategy adopted by network
+routing nodes may cause traditional techniques to fail. We
+
+Index
+
+Potential Route Paths
+
+Path-1
+
+Starlink user → Internet
+
+Starlink user terminals controlled cloud servers
+
+Path-2
+
+Internet → Starlink user
+
+controlled cloud servers Starlink user terminals
+
+Path-3 Starlink users under the same GS
+Path-4
+
+Starlink users under different
+GS but the same PoP
+
+Path-5 Starlink users under different PoPs
+
+Probe
+
+Target
+
+Starlink users from the same city
+Starlink users of the same IP geolocation
+from nearby cities
+Starlink users of the same different IP
+geolocations from different countries
+
+complemented the responses using ICMP ECHO packets,
+DNS queries, and HTTP GET requests. These diverse packets
+can effectively provide additional route path information and
+bypass potential network firewalls. (2) We found that the
+Starlink network’s high fluctuations can lead to significant
+variability in tracing results, specifically route paths and
+network latency. To enhance stability, we perform repeated
+path tracings. Experiments showed that over 80% of the
+path tracing results were consistent after repeating the tests
+continuously more than 15 times. This experiment result was
+true for different times throughout the day. Consequently, we
+selected the most frequent paths from the 15 identical path
+tracings and calculated the average network latency.
+Before the start of StarTrace, based on the potential communication link we want to discover, we need to carefully
+select a probe for sending tracing packets and a target IP
+address. First, we gathered a set of sufficient network resources
+for probing: (1) Internet Servers: 7 cloud servers deployed
+in five across Asia, Europe, Oceania, South America, and
+North America. (2) Active Hosts: IP addresses of active hosts
+within the Starlink network identified by StarScan. (3) Starlink
+Probes: Ripe public probes which are voluntarily hosted by
+Starlink users [39] [40]. We used a total of 70 probes across
+over 20 countries, illustrated in Table I. Each Ripe probe also
+offers the public IP address and their city-level geographical
+location. (4) Specific volunteers with Starlink user terminals
+recruited in specific countries. Next, as illustrated in Table II,
+we carefully defined five distinct types of route paths that
+Starlink may potentially support and selected appropriate
+probes and detection targets for each path. PATH-1 presents
+the link from Starlink users to Internet servers. Thus, we used
+Starlink Probes to visit Internet servers. PATH-2 presents the
+link from Internet servers to Starlink users. Thus, we used
+Internet servers to visit Active Hosts. PATH-3 presents the
+communication link of users under the same GS. Based on our
+analysis in §IV-A and §IV-B, we recruited Starlink volunteers
+from the same city with the same IP geolocation to visit each
+other. PATH-4 presents the link of users under different GS
+but the same PoP. Correspondingly, we recruited volunteers
+who had the same IP geolocations but from nearby cities in
+the country. PATH-5 presents the link of users under different
+PoPs. We used Starlink Probes of the different IP geolocations
+from different countries to visit each other.
+We conducted a large-scale path tracing since early 2023,
+sending a total of over 50K probe packets to obtain various
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 20:00:40 UTC from IEEE Xplore. Restrictions apply.
+
+route paths. According to our subsequent statistical analysis
+in §IV-D, our selected probes and path tracing targets proved
+to be effective. In other words, the tracing results’ statistics of
+the same route path are consistent, but statistics of different
+potential route paths are significantly different, which ensures
+the reliability of StarTrace.
+c) StarScan: We developed an active host scanning tool
+StarScan. The tool efficiently scans for active hosts and
+extracts host features, including device banners and specific
+services hosted on open ports.
+StarScan integrates several existing active scanning techniques. We first send ICMP and TCP SYN probe packets to
+scan the first 1024 ports of the target device to determine open
+ports. Next, Nmap [32] is used to send up to 16 different
+TCP, UDP, and ICMP probe packets to these open ports,
+aiming to elicit a response from the device and capture a
+potential device banner. Based on the accumulated database
+of fingerprints, Nmap then provides a detailed explanation of
+the services hosted on the device. We also used Shodan [47],
+which regularly scans over 1,500 ports of nearly all Internet
+hosts, to find additional service information.
+To mitigate the impact of geographic factors on the measurement [38], we purchased 7 cloud servers in five regions across
+Asia, Europe, and North America, and performed scanning
+on the IPv4 addresses collected by starCollect. We found the
+active hosts changed rapidly, and there were over 64.9K open
+ports during our scanning in January 2025. Meanwhile, in
+early 2023, the number was only 3.7K.
+D. Passive Measurement
+This section explains our passive measurement, specifically
+collecting effective data from different open source platforms.
+Open Source Intelligence. The Starlink network has an
+extensive terrestrial infrastructure worldwide. Undoubtedly,
+deploying numerous probes through volunteer recruitment is
+cost-prohibitive. To this end, we are the first to utilize open
+source intelligence to gather information on the Starlink IP
+address allocation and network routing. OSINT comprises
+information from publicly accessible sources such as government documents, news reports, social media, etc. We collected
+network status from Starlink real users from over 20 countries,
+which improves both the comprehensiveness and accuracy
+of our measurement. Furthermore, variations in OSINT data
+could indicate the developmental trajectory of the SLTN. The
+ethical issues will be discussed later.
+We utilized the following tricks to collect effective network
+information. Firstly, we observed that Starlink users often test
+network performance using traceroute [26] to Internet hosts
+and share the results in the community [23] - [25]. Since the
+default gateway of the user router and the terrestrial gateway
+are officially configured as 192.168.100.1 and 100.64.0.1 respectively [5], we used these two IP addresses as keywords for
+searching within the community, including posting, comment,
+and media section. Overall, we manually collected a total of
+87 users’ traceroute results. Furthermore, a few Starlink users
+inadvertently exposed their public IP address and geographic
+
+location while addressing network issues. We conducted a
+keyword search to collect the data, focusing on keywords
+including ’DHCP’, ’network troubleshot’, ’public IP’, etc. In
+addition, several Starlink users, serving as network probes,
+have voluntarily disclosed their public IP addresses and citylevel geographic locations [39] [40]. Overall, we manually
+collected a total of 120 users’ public IP addresses and corresponding geographic locations covering over 20 countries
+and regions across six continents.
+Based on the OSINT data, we also inferred that the Starlink
+operator implemented a standardized adjustment to the SLTN
+network architecture at the end of 2022. During the data
+cleaning, we found that users’ traceroute results released
+before December 2022 were significantly different from those
+afterward. The route paths released after 2023 show significant
+statistical consistency, discussed in §IV-B, whereas pre-2022
+data displays variability. Thus, the OSINT data we used above
+in this study was all released in 2024 or later to reflect the
+latest network architecture.
+GS and PoP Location. Areas with access to the Starlink service necessitate supporting ground infrastructure and network
+resources. The collection of GS and PoP locations helps to understand the service scale and associated network assets. Our
+collection primarily stems from several novel observations.
+Firstly, the construction of GS requires legal authorization. For
+example, in the US, the Federal Communications Commission
+is empowered to issue these access certificates [27]. Besides,
+for the construction of PoP, network exchange centers typically
+maintain records of network edge node deployments [34].
+Secondly, volunteers report the infrastructure construction in
+Starlink user communities [23] - [25]. Additionally, social
+media also contribute to this dataset [28]. After de-duplicating
+the data, we amassed 137 GS worldwide and 27 PoP in 16
+countries with city-level locations and registration details.
+AS Path and Origin AS. To map an IP address to its original
+AS, we utilized the data published by Routeviews [29] to
+extract the AS paths of each IP prefix. We collected metadata
+from Thyme [30] to ensure data accuracy. In instances of
+inconsistency, we manually validated a small sample of AS
+paths to minimize errors through traceroute [26].
+IP Geolocation and Passive DNS. IP geolocation refers to
+the process of determining the geographical location of an
+Internet-connected device based on its IP address, utilizing
+WHOIS records, network routing data, etc. IPinfo [31] is a
+trusted IP data provider. We utilized IPinfo’s data to map an
+IP address to its IP geolocation (country, city, etc.) and find
+associated domain names.
+IV. IN-DEPTH ANALYSIS OF
+THE STARLINK TERRESTRIAL NETWORK
+We analyzed the collected research data from various aspects to report an in-depth analysis of the SLTN and answer
+the RQs proposed in §III-A.
+A. The Network Assets
+StarCollect had classified the network assets associated with
+the SLTN. The latest NADB (January 2025), as shown in
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 20:00:40 UTC from IEEE Xplore. Restrictions apply.
+
+boring countries. For instance, one user geographically located
+in Mongolia had an accurate IP geolocation of Mongolia,
+where the IP geolocation service providers may correct the
+data through WHOIS [46].
+(a) Distribution.
+
+(b) Metadata.
+
+Fig. 3. Metadata of the Starlink network assets.
+
+Fig. 3, mainly included over 23.5K /28 IP prefixes, 290 domain
+names, and the city-level geographic locations of these network identifiers. These network assets are associated with 143
+countries and regions, including 113 regions Starlink service
+has officially supported and those under construction [6]. We
+correlated these assets from various aspects to reveal the scale,
+distribution, and characteristics of the SLTN.
+The SLTN is associated with several different ASs, including SpaceX AS14593 AS45700 AS27277, Google AS36492,
+and Trans-System INC AS14597. This discovery confirms
+Starlink’s public statements regarding its collaboration with
+network operators like Google, to provide faster Internet
+access service [33]. AS14593 is central to the SLTN. On
+the one hand, it has the most significant asset scale, with an
+announcement of 329,984 IPs across 131 countries, demonstrating the global coverage of the Starlink service. On the
+other hand, §IV-C indicates that over 95% of the critical
+network nodes, that we identified, use IP addresses originating
+from AS14593. AS14593 peers with over 370 ASs, including
+29 upstreams and only four downstream [33] [17], aligned
+with typical ISP design practices [42]. This indicates that the
+Starlink network, as an ISP, is designed to offer the best
+possible service to its customers. In addition, we detected
+several ASs through the identifiers (SpaceX, Starlink, etc.),
+including SpaceX AS27277, Starlink AS142475, and SpaceX
+AS397763. However, these ASs were only observed in the
+OSINT data up to December 2021 and are not included in
+our latest network asset database, possibly phased out due
+to the development of the Starlink network. Meanwhile, the
+growth in network assets highlights the ongoing evolution of
+the Starlink network systems. Compared with January 2023,
+there has been a 48% increase in the number of associated IP
+addresses, a 52% rise in the number of countries covered, and
+an 182% growth in the regions providing services.
+In addition, we preliminarily explored the locations of the
+real Starlink users with OSINT data. We noted that there is a
+notable disparity, where 96% of users’ IP geolocation (public
+IP addresses) corresponds to a geographically proximate PoP
+rather than their real geographic location. For instance, one
+Starlink user geographically located in Birmingham had an IP
+geolocation of Atlanta, where a PoP is situated. We attributed
+this disparity to the limitations of existing IP geolocation methods, most of which can only provide PoP-level accuracy [45].
+Meanwhile, geographically proximate users shared the same
+nearby PoP, which aligns with the Starlink working principle.
+The other 4% of the Starlink users were from countries without
+Starlink infrastructure, relying on the infrastructure of neigh-
+
+Answer to RQ1: The SLTN is associated with a few
+AS operated by SpaceX and its partners and with
+multiple network assets including over 23.5K /28 IP
+prefixes. The global AS14593 plays a crucial role,
+reflecting typical ISP features. The significant distribution (143 countries) and the increase in network assets
+indicate a rapid expansion of the Starlink service.
+
+B. The Internet Access Topology
+Using StarTrace, we got the route paths from Starlink users
+to Internet servers (Path-1) and the paths from Internet servers
+to Starlink users (Path-2). Table III illustrates the statistics
+of these route paths, including network routing nodes and IP
+prefixes. Subsequently, we analyzed these statistics to map the
+Starlink Internet access topology and uncovered the switch of
+the PoP Starlink users connected.
+While different regions rely on separate infrastructure and
+network resources, their topological statistics are consistent.
+We presented the mapped Starlink Internet access network
+topology in Fig. 4, based on Table III. The topology indicates
+that Path-1 and Path-2 demonstrate a distinct symmetry, with
+adjacent network routing nodes belonging to the same network. The finding aligns with the bidirectional communication
+behavior. Through querying the ASN, we discovered that the
+data packets, transmitted from Hop 0, passed through three
+routing nodes within the Starlink network (AS14593). The
+IP address of each routing node is associated with specific
+IP prefixes. Hops 0 to Hop 2 belong to the internal Starlink
+network utilizing private IP addresses, while Hop 3 serves as
+the connection point between the Starlink network and the
+Internet. Specifically, Hop 0 (user node) represents the router
+of Starlink users, Hop 1 (gateway node) serves as the user’s
+default gateway [5], and Hop 3 (exit node) corresponds to a
+network device at the PoP. We refer to Hop 2 as link node. The
+network latency from Hop 0 to Hop 1 always accounts for over
+67% of the total within the internal network (Hop 0 to Hop
+3), which is attributed to satellite wireless communication.
+We then conducted further exploration of IP geolocation
+and network latency. Based on the topology, Starlink users
+can identify the PoP they connect to by querying the IP
+geolocation of the hop 4 exit node. Through this method, we
+observed there were switches of the PoP that users connected.
+For instance, Starlink users in Mongolia connected to the PoP
+in Germany before October 2024, but afterward, it switched
+to Japan. We double-checked the switch with network latency
+from our cloud server in Berlin, Germany, which increased
+from an average of 160.63 ms to 411.93 ms. The observation
+also indicated that the switch of the connected PoP can affect
+the network latency.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 20:00:40 UTC from IEEE Xplore. Restrictions apply.
+
+TABLE III
+THE ROUTE PATHS S TATISTICS OF S TARLINK I NTERNET ACCESS S ERVICE .
+HOP
+
+Path-1
+
+0
+
+1
+
+2
+
+{User}
+
+100.64.0.1
+
+172.16.0.0/16
+
+User Node Gateway Node
+Path-2
+
+{User}
+
+{no response}
+
+(reverse) User Node Gateway Node
+NOTE
+
+/
+
+Private IPs
+
+3
+
+4
+
+Link Node
+
+206.224.64.0/19,
+149.19.108.0/23
+Exit Node
+
+206.224.64.0/19,
+149.19.108.0/23
+Link Node
+
+206.224.64.0/19,
+149.19.108.0/23
+Exit Node
+
+{Internet}
+/
+
+{Internet}
+/
+
+Private IPs and
+Internet and
+Public IPs of AS14593
+Public IPs of AS14593
+other ASs
+
+PATH-1 presents the link from Starlink users to Internet servers.
+PATH-2 presents the link from Internet servers to Starlink users.
+
+Internet
+
+PoP Exit Node
+( Device at the PoP )
+
+Logical Link
+
+Static IP of PoP:
+206.224.64.0/19
+149.19.108.0/23
+
+Net:
+206.224.64.0/19
+149.19.108.0/23
+
+Physical Link
+Link Node
+
+User Node
+
+Gateway Node
+
+Net:
+172.16.0.0/16
+
+( Router )
+
+Net:
+100.64.0.0/10
+
+Fig. 4. The topology of the Starlink Internet access service.
+
+Answer to RQ2: The global Starlink Internet access
+service has a consistent topology. It consists of four
+essential network routing nodes, collectively forming
+the link from the internal network to the Internet. Each
+routing node exhibits a unique consistency regarding
+IP addresses. Through the topology, we found there
+were switches of the users’ connected PoP, which
+could affect the network latency.
+C. Network Assets Classification
+We here introduce an effective rule-based heuristic algorithm to classify a given public IP address to the associated
+SLTN network routing node. The algorithm, illustrated in Algorithm 1, helps us understand the role of each type of network
+routing node and facilitates security evaluation studies. We
+verified the accuracy of the algorithm by analyzing the network
+services that each type of routing node hosted.
+For determining the associated IP addresses of user nodes,
+in addition to PATH-2 path tracing, we can utilize RFC
+8805 Standard [35] that Starlink follows. In other words,
+Starlink periodically publishes a set of public IP addresses,
+which is claimed to be reserved for Starlink users to improve
+the user experience [36]. Notably, we discovered that these
+released IP addresses of RFC 8805 constitute a subset of
+our NADB. Furthermore, the domain format, customer.*.{pop,
+mc}.starlinkisp.net and undefined.hostname.localhost, is another key factor. The determination of exit nodes is primally
+based on the statistics of path tracing illustrated in Table III.
+StarCollect implemented the algorithm in our NADB. The
+result showed that each IP address was determined uniquely to
+one type of network routing node. Specifically, 79.6% of the
+IP addresses are associated with user nodes, 2.3% with exit
+nodes, and the rest are not associated with any node, possibly
+deprecated or for other unknown uses.
+
+Algorithm 1 Network Assets Classification
+Input: A Public IP in the NADB
+Output: The Associated Network Routing Node
+1: Domain ← PassiveDNS(IP)
+2: N ameSet ← {*.starlinkisp.net, *.hostname.localhost}
+3: U serSet ← Store(StarlinkRFC8805)
+4: ExitSet ← { 206.224.64.0/19, 149.19.108.0/23 }
+5: if IP in U serSet and Domain in N ameSet then
+6:
+RouteP ath ← PathTracing(IP)
+7:
+if IP matches HOP 0 in RouteP ath then
+8:
+Return User Node
+9:
+end if
+10: end if
+11: if IP in ExitSet then
+12:
+RouteP ath ← PathTracing(IP)
+13:
+if IP matches HOP 2 or HOP 3 in RouteP ath then
+14:
+Return Exit Node
+15:
+end if
+16: end if
+17: Return Unknown Network Node
+
+We confirmed the reliability of this classification algorithm
+through the active network services. We conducted host scanning of the IP addresses associated with the user nodes and exit
+nodes through StarScan. The results indicated that there were
+over 64k open ports of user nodes. The top services hosted
+in these ports are HTTP (24.5%), the services of wireless
+routers (7.3%), and SSH (6.5%), which are typically hosted by
+individual users rather than network devices. However, for exit
+nodes, only 9 open ports hosting BGP service were detected,
+which was used for interaction with other ASs. We inferred
+that network protection measures have been implemented to
+prevent the vital routing nodes from scanning. Moreover, we
+searched the Starlink router’s default IP address 192.168.1.1
+in the device banners. Several management interfaces of the
+Starlink router were found exposed to the public Internet, potentially allowing external attackers to manipulate them easily.
+While the risk has been revealed in previous studies [43], it
+remains prevalent.
+Answer to RQ3: We proposed an efficient classification algorithm, determining that 79.6% of the IP
+addresses in the NADB were associated with user
+nodes and 2.3% with the exit nodes. These two types of
+routing nodes hosted over 64K open services, mostly
+related to Web and SSH. Meanwhile, the exposed BGP
+and router management services brought security risks.
+D. The Multiple Routing Strategies
+In this section, we first identified the routing strategies
+implemented to facilitate the internal communication of Starlink users. The analysis also revealed the Starlink internal
+backbone network, as observed in previous research [7]. Then,
+we explored the routing strategy presented by this backbone
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 20:00:40 UTC from IEEE Xplore. Restrictions apply.
+
+TABLE IV
+S TATISTICS OF THE P OTENTIAL ROUTE PATHS W E IDENTIFIED WITHIN THE SLTN.
+
+HOP
+Path-3
+
+0
+{User}
+User Node
+
+1
+100.64.0.1
+Gateway Node
+
+2
+{Target}
+User Node
+
+3
+
+4
+
+5
+
+6
+
+206.224.64.0/19,
+206.224.64.0/19,
+172.16.0.0/16
+{Target}
+149.19.108.0/23
+149.19.108.0/23
+User Node
+Gateway Node
+Link Node
+Exit Node
+Link Node
+Gateway Node
+User Node
+206.224.64.0/19,
+206.224.64.0/19,
+206.224.64.0/19,
+{User}
+100.64.0.1
+172.16.0.0/16
+...
+Path-5
+149.19.108.0/23
+149.19.108.0/23
+149.19.108.0/23
+User Node
+Gateway Node
+Link Node
+Exit Node
+Exit Node
+Exit Node
+...
+PATH-3 presents the communication link of Starlink users under the same GS. PATH-4 presents the link under different GS but
+the same PoP. PATH-5 presents the link different PoP.
+Path-4
+
+{User}
+
+100.64.0.1
+
+172.16.0.0/16
+
+network. The result disclosed that there were changes in the
+Starlink backbone routing strategies, which could also impact
+the network latency.
+Using StarTrace, we obtained different routing paths including communications of Starlink users under the same GS
+(Path-3), users under different GS but the same PoP (Path4), and users under different PoP (Path-5). The statistics of
+these routing paths are illustrated in Table IV. The pathtracing results indicate that Starlink supports a variety of
+routing strategies for internal communication. Each type of
+routing strategy exhibits distinct routing paths. We presented
+a simplified diagram with the discovered route paths in Fig. 5.
+Specifically, communications between users under the same
+GS typically complete at the gateway node, without the routing
+of the upstream network. Conversely, communications between users at different GS depend on network transit through
+the link nodes and exit nodes. Furthermore, we observed
+there were logical connections between PoP exit nodes of
+different areas, enabling user communication under different
+PoP without Internet transit. In other words, Starlink has constructed an internal backbone network, connecting the PoP exit
+nodes across the world, which may enhance data transmission
+efficiency. It also clarifies the reason why exit nodes worldwide
+are assigned IP addresses of the same subnets, 206.224.64.0/19
+and 149.19.108.0/23. We also identified the MPLS method
+deployed within the backbone through ICMP trace [44]. It is
+noteworthy that Pan et al. [7] have consistently measured the
+backbone topology through the recruitment of volunteers.
+Based on the architecture of the Starlink backbone network,
+we inferred that several specific routing strategies were designed to optimize the communication from Internet users to
+Starlink users. The inference was validated through the following case study. In our analysis of routing paths from our cloud
+server in Berlin to the active Starlink hosts in Seattle. We found
+the probe packets first reached the PoP exit node in Frankfurt
+during April and May 2024. The Starlink backbone then routed
+the packets to Seattle via the PoP in Chicago (Probe→Starlink
+backbone→Target). However, after June 2024, the routing
+paths changed back to the traditional strategy, which means
+the probe packets reached the POP in Seattle directly through
+Internet transit (Probe→Internet→Target). The average latency
+
+Internet
+9,
+4.0/1 3
+24.6
+/2
+206.2 .19.108.0
+9
+or 14
+
+[The Network under PoP]
+User
+
+Gateway
+
+Link Node
+
+PoP
+
+206.2
+or 14 24.64.0
+/1
+9.19
+.108 9,
+.0/23
+
+The Starlink Backbone
+PoP
+
+User
+
+Gateway
+
+[The Network under PoP]
+
+PoP
+
+9,
+4.0/1 3
+24.6
+/2
+206.2 .19.108.0
+9
+or 14
+
+PoP
+
+Link Node
+
+User
+
+User
+
+Gateway
+
+Link Node
+
+Path-1 and Path-2
+
+Path-3
+
+Path-4
+
+Path-5
+
+Internet
+
+Fig. 5. The topology diagram of the whole SLTN and the multiple route paths
+that Starlink supports to facilitate diverse communication needs. (Path-1 and
+Path-2: Internet Access Service, Path-3: communication of users under the
+same GS, Path-4: users under different GS but the same PoP, Path-5: users
+under different PoP).
+
+of the optimized routing strategy (135.20 ms) is 79.43%
+of the traditional (170.21 ms). We also observed a similar
+optimization in the path tracing from Berlin to Sydney. In
+summary, we found potential changes in the routing strategies
+of the Starlink backbone, which had impacted the latency.
+Answer to RQ4: Starlink has developed multiple
+internal routing strategies and a specific backbone network to facilitate direct user-to-user interactions without traditional Internet transit. Each strategy employed
+a distinct routing path to meet diverse communication
+requirements. We found there were changes in routing
+strategies, which affected the network latency.
+V. APPLICATION AND FUTURE WORK
+Our measurement profiled a closed-source network system
+for researchers. This work is non-trivial and has the following practical applications. It also gives inspiration to future
+measurement studies of the SLTN.
+For Starlink users, our measurement helps to improve users’
+perceptions of the current network status. We noticed several
+users complained that the network performance varied each
+time they used Starlink, which may be attributed to being
+assigned a poor network link temporarily. Through the path
+tracing method of PATH-1 and the IP geolocation of HOP
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 20:00:40 UTC from IEEE Xplore. Restrictions apply.
+
+3, the location of the connected PoP will be easily identified
+from the user’s view. It also acts as an indication of ISL if
+the connected PoP is far from the user. These measures assist
+users in reporting and troubleshooting network issues. We are
+working on a user-friendly tool to display the current network
+link and network status.
+For service discovery and security risk evaluation of the
+SLTN, we provide reliable base data including the standardized
+NADB and the algorithm for classifying network assets. The
+data revisions mitigated the errors of active services due
+to irrelevant scanning targets as input [9]. With the exact
+usage of the network assets, network service discovery engines
+can avoid the large-scale scanning of critical network nodes.
+Furthermore, our study also develops network fingerprints
+for essential network routing nodes, including IP address,
+active service, IP geolocation, and the specific role within the
+network. These fingerprints will help researchers identify and
+track the security risks within the system. For instance, we
+found the open BGP and router management services exposed
+to the Internet, which had been protected.
+For QoS evaluation, previous studies ignored the effect
+of the Starlink terrestrial segment on the whole network.
+However, we found there were periodic switches of PoP
+that Starlink users connected and periodic changes in routing
+strategies of the SLTN. These two factors were both observed
+to cause significant variations in network latency. We believe
+it is highly necessary to track and monitor the network routing
+path while recording the performance, which helps to assess
+how other factors like weather and satellite movement affect
+QoS more accurately.
+Furthermore, we propose several perspectives for future
+measurement. In topology recovery of the Starlink backbone,
+studies still highly rely on the user volunteers as probes [7].
+As detailed in §IV-D, we observed that, due to the particular
+BGP policy, part of the routing paths from Internet servers to
+the Starlink users traversed the Starlink backbone network. It
+means that regular Internet probes are also feasible for recovering the topology with a large-scale external measurement.
+Besides, the exact countries and areas that each PoP covers
+should be measured and analyzed in depth, which helps us
+understand the routing strategies of the whole network. In
+addition, the frequency and triggers of the changes in SLTN
+routing strategies have also not been carefully investigated.
+VI. E THICS
+Our path-tracing and host-scanning strictly relied on and
+followed the guidelines outlined in the Menlo and Belmont
+reports [37]. The sending rate of probe packets in our measurement was controlled, which was suggested by previous similar
+measurement work [41] and had little resource consumption.
+Besides, our research is strictly based on data collection
+and analysis. The OSINT we used does not include existing academic publications or technical reports, and we have
+clarified potential overlaps and their differences. In addition,
+we carefully examined whether the OSINT data collected
+from the Internet was released voluntarily by individuals
+
+and organizations. The analysis of users’ previous network
+status was of a large user base statistically, with no focus on
+individuals. The user’s privacy was not compromised.
+VII. RELATED WORK
+In this section, we provide an overview of the previous
+research related to the SLTN.
+Architecture Measurement. During the same period of our
+study, Pan et al. [7] provided an empirical explanation of how
+Starlink works, including Starlink access networks, gateway,
+PoP structures, etc. However, the study lacks a systematic and
+specific measurement methodology and robust data analysis,
+which severely undermines the accuracy of the results. The
+explanation is also limited to the users’ views, based on
+the observations of Starlink user volunteers. In our study,
+we proposed a set of specialized methods and conducted a
+systematic measurement of the SLTN. We not only profiled
+this closed network system from various aspects, but also
+developed a standardized dataset and effective classification
+algorithms of network assets based on real network status and
+topology. We also highlight the practical applications of our
+findings in future studies on security, QoS evaluations, etc.
+Security Evaluation. In service discovery and security risk
+evaluation, Zhang et al. [8] proposed an efficient method
+for detecting various types of servers and their open services within the Starlink network. ZoomEye [9] performed
+an active host scan on some IP addresses associated with
+Starlink and gave statistics on the open services. Kareem
+et al. [18] analyzed the cybersecurity landscape surrounding
+Starlink, with a focus on identifying potential threats, assessing
+associated risks, and proposing mitigation strategies to bolster
+the resilience of the network. Tieby et al. [19] conducted an
+empirical study, revealing illicit scanning events, Mirai-based
+infections, source address spoofing, etc. Nonetheless, these
+works frequently scanned numerous network resources irrelevant to the SLTN, leading to erroneous service listings. Little
+attention is paid to constructing a reliable and comprehensive
+network assets dataset.
+QoS Measurement. In QoS measurement and evaluation, a
+considerable amount of research has focused on evaluating
+the performance of the Starlink network from multiple dimensions, such as bandwidth, round-trip time, and one-way
+delay [12] [13] [15] [16]. These studies have also identified
+characteristics such as the internal adjustment every 15 seconds [14]. Traditional research is conducted with specialized
+hardware or recruiting large numbers of satellite Internet
+customers. In comparison, Izhikevich et al. [12] proposed
+HitchHiking, a methodology that provides global visibility into
+LEO. HitchHiking is the first job mainly based on Internetexposed services that use LEO Internet and completed the
+most extensive study to date of Starlink network latency.
+Furthermore, studies have investigated how spatial factors,
+including weather and satellite coverage, affect the QoS [11]
+[17]. We note that these studies did not typically take the
+network status of the SLTN as a factor affecting QoS, whereas
+our findings revealed that the status was not stable.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 20:00:40 UTC from IEEE Xplore. Restrictions apply.
+
+VIII. CONCLUSION
+Starlink has emerged as a preeminent satellite Internet
+service provider with LEO satellites. We noticed the terrestrial segment, as an essential component of the Starlink
+network, gained less attention from researchers. In this paper,
+we conducted a thorough measurement study to profile the
+SLTN and reveal its potential effects. Since the SLTN is
+a closed-source and widely distributed system with network
+fluctuations, a specific measurement framework was proposed
+to collect various research data. A set of novel findings was
+then distilled through in-depth data analysis. We presented the
+scale, distribution, and features of the network assets, mapped
+the consistent topology, and identified four types of routing
+nodes. An effective algorithm was proposed to classify the
+network assets. We also uncovered multiple internal routing
+strategies. Particularly, we emphasized and demonstrated the
+practical applications of our measurement. We observed the
+switches of terrestrial infrastructure and the changes in routing
+strategies, which should be considered in QoS evaluations.
+It also provides insights for improving users’ perceptions
+and studies like security risk evaluation. Moving forward,
+we believe it is necessary to continuously monitor the SLTN
+architecture and its behavior. Further research on Starlink
+needs to get a more comprehensive view of the terrestrial
+segment and carefully consider its effect.
+ACKNOWLEDGMENT
+We sincerely thank all potential ”volunteers” in Starlink
+communities who inadvertently shared their network status on
+social media to help improve the QoS. We are grateful to the
+anonymous reviewers for their insightful comments. This work
+is supported by the project (No. E3H02611E1) of the National
+Key Laboratory of Science and Technology on Blind Signal
+Processing (No. 23007522).
+R EFERENCES
+[1] Wikipedia, “Satellite Internet Access,” https://en.wikipedia.org/wiki/Sa
+tellite Internet access, 2024
+[2] Wikipedia, “Starlink,” https://en.wikipedia.org/wiki/Starlink, 2024
+[3] Starlink, “Starlink,” https://www.starlink.com/, 2024
+[4] Starlink, “Starlink Satellite Technology,” https://www.starlink.com/tec
+hnology, 2024
+[5] Starlink, “Starlink Help Center,” https://www.starlink.com/support, 2024
+[6] Starlink, “Starlink Service Availability Map,” https://www.starlink.com
+/map, 2024
+[7] Pan, Jianping, Jinwei Zhao, and Lin Cai. ”Measuring a low-earth-orbit
+satellite network.” 2023 IEEE 34th Annual International Symposium on
+Personal, Indoor and Mobile Radio Communications (PIMRC), 2023.
+[8] Zhang, Linkang, et al. ”SeeStar: An Efficient Starlink Asset Detection
+Framework.” International Conference on Science of Cyber Security.
+Cham: Springer Nature Switzerland, 2023
+[9] Secrss. ”ZoomEye Starlink Scan Report,” https://www.secrss.com/artic
+les/44419, 2022.
+[10] Censys. ”Censys: The Leading Internet Intelligence Platform,” https:
+//censys.com/, 2024.
+[11] Pan, Jianping, Jinwei Zhao, and Lin Cai. ”Measuring the Satellite Links
+of a LEO Network.” IEEE International Conference on Communications
+2024. 2024.
+[12] Izhikevich, Liz, Manda Tran, Katherine Izhikevich, Gautam Akiwate,
+and Zakir Durumeric. ”Democratizing LEO Satellite Network Measurement.” Proceedings of the ACM on Measurement and Analysis of
+Computing Systems 8, no. 1 (2024): 1-26.
+
+[13] Izhikevich, Liz, et al. ”A Global Perspective on the Past, Present, and
+Future of Video Streaming over Starlink.” Proceedings of the ACM on
+Measurement and Analysis of Computing Systems 8.3 (2024): 1-22.
+[14] Mohan, Nitinder, et al. ”A multifaceted look at starlink performance.”
+Proceedings of the ACM on Web Conference 2024. 2024.
+[15] Ferguson, Andrew E., et al. ”Starlink Performance from Different
+Perspectives.” Proceedings of the 30th Annual International Conference
+on Mobile Computing and Networking. 2024.
+[16] Ma, Sami, et al. ”Network characteristics of leo satellite constellations:
+A starlink-based measurement from end users.” IEEE INFOCOM 2023IEEE Conference on Computer Communications. IEEE, 2023.
+[17] Laniewski, Dominic, et al. ”Wetlinks: a large-scale longitudinal starlink
+dataset with contiguous weather data.” arXiv preprint (2024).
+[18] Kareem, Karwan Mustafa. ”Cyber Threat Landscape Analysis for Starlink Assessing Risks and Mitigation Strategies in the Global Satellite
+Internet Infrastructure.” arXiv, 2024.
+[19] Tieby, Nasser, Joseph Khoury, and Elias Bou-Harb. ”Characterizing and
+analyzing leo satellite cyber landscape: A starlink case study.” In IEEE
+International Conference on Communications, 2024.
+[20] Yu, Lingjing, et al. ”A Comprehensive Analysis of Security Vulnerabilities and Attacks in Satellite Modems.” Proceedings of ACM SIGSAC
+Conference on Computer and Communications Security. 2024.
+[21] Stock, Gregory, et al. ”A Stability-first Approach to Running TCP
+over Starlink.” 2024 IEEE International Conference on Communications
+Workshops (ICC Workshops). IEEE, 2024.
+[22] Jiang, Li, et al. ”LEOTP: An Information-Centric Transport Layer
+Protocol for LEO Satellite Networks.” 2023 IEEE 43rd International
+Conference on Distributed Computing Systems (ICDCS). IEEE, 2023.
+[23] Reddit, “Reddit Starlink User Community,” https://www.reddit.com/r/S
+tarlink/, 2024
+[24] Facebook, “Facebook Starlink User Community,” https://www.facebook
+.com/groups/spacexstarlink/, 2024
+[25] Starlink, “Starlinkforum,” https://starlinkforum.net/, 2024
+[26] Wikipedia, “Traceroute,” https://en.wikipedia.org/wiki/Traceroute, 2024
+[27] The US FCC, “Satellite Communications Servic,” https://docs.fcc.gov/p
+ublic/attachments/DOC-390517A1.pdf, 2023
+[28] Starlinkspot, “Starlink-ground-station-locations,” https://starlinkspot.c
+om/starlink-ground-station-locations/, 2024
+[29] Routeviews, “Routeview,” https://routeview.visivi.com/, 2024
+[30] Thyme, “BGP Routing Table,” https://thyme.apnic.net/, 2024
+[31] IPinfo, “IP Address Data,” https://ipinfo.io/, 2024
+[32] Nmap, “Nmap: the Network Mapper,” https://nmap.org/, 2024
+[33] INC, “Google Cloud has signed a deal with SpaceX to connect its
+Starlink internet connectivity,” https://theincmagazine.com/google-cl
+oud-has-signed-a-deal-with-spacex-to-connect-its-starlink-internet-con
+nectivity/, 2023
+[34] Peeringdb, “SpaceX Starlink Internet Peering,” https://www.peeringdb.
+com/net/18747, 2024
+[35] RFC8805, “A Format for Self-Published IP Geolocation Feeds,” https:
+//datatracker.ietf.org/doc/html/rfc8805, 2020
+[36] Expressvpn, “How to use starlink-vpn,” https://www.expressvpn.com/b
+log/starlink-vpn/, 2024
+[37] Kenneally, Erin, and David Dittrich. ”The menlo report: Ethical principles guiding information and communication technology research.”
+Available at SSRN 2445102, 2012.
+[38] Wan, Gerry, et al. ”On the origin of scanning: The impact of location
+on internet-wide scans.” Proceedings of the ACM Internet Measurement
+Conference. 2020.
+[39] HERRICANE ELECTRIC. ”AS14593 Space Exploration Technologies
+Corporation. ” https://bgp.he.net/AS14593# traceroute. 2024.
+[40] RIPE. ”RIPE Atlas. ” https://atlas.ripe.net/. 2024.
+[41] Durumeric, Zakir, et al. ”Ten years of zmap.” Proceedings of the 2024
+ACM on Internet Measurement Conference. 2024.
+[42] Wikipedia. ”Tier 1 network.” https://en.wikipedia.org/wiki/Tier 1 net
+work. 2024.
+[43] Yu, Lingjing, et al. ”A Comprehensive Analysis of Security Vulnerabilities and Attacks in Satellite Modems.” Proceedings of ACM SIGSAC
+Conference on Computer and Communications Security. 2024.
+[44] Wikipedia. ”Multiprotocol Label Switching.” https://en.wikipedia.org/w
+iki/Multiprotocol Label Switching. 2024.
+[45] Zu, Shuodi, et al. ”City-level IP geolocation algorithm based on PoP
+network topology.” IEEE Access 6 (2018): 64867-64875.
+[46] Wikipedia. ”WHOIS.” https://en.wikipedia.org/wiki/WHOIS. 2024.
+[47] Shodan. ”Shodan Search Engine.” https://www.shodan.io/. 2024.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 20:00:40 UTC from IEEE Xplore. Restrictions apply.
+
+

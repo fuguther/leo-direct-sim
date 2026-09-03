@@ -1,0 +1,553 @@
+Report GitHub Issue 
+ × 
+
+ Title: 
+
+Content selection saved. Describe the issue below: 
+
+ Description: 
+
+ Submit without GitHub 
+ Submit in GitHub 
+
+ arXiv is now an independent nonprofit! 
+ Learn more 
+ × 
+
+ Back to arXiv 
+
+ Why HTML? 
+
+ Report Issue 
+
+ Back to Abstract 
+
+ Download PDF 
+
+ Abstract 
+
+ I Introduction 
+
+ II System Description 
+
+ II-A Network Model 
+
+ II-B Communication Model 
+
+ II-B 1 Inter-Satellite Link Model 
+
+ II-B 2 Downlink Model 
+
+ II-C Cache Model 
+
+ II-C 1 Request Model 
+
+ II-C 2 Content Caching Model 
+
+ II-D Success Model 
+
+ II-D 1 Delivery Delay 
+
+ II-D 2 Success Rate 
+
+ II-E Traffic Model 
+
+ II-E 1 Request Response Traffic 
+
+ II-E 2 Cache Update Traffic 
+
+ II-F Objective 
+
+ III Graph-Temporal SAC-Based Caching and Routing Optimization 
+
+ III-A Overview of the GT-SAC Framework 
+
+ III-B Spatiotemporal Representation of Satellite Network 
+
+ III-B 1 Graph Construction 
+
+ III-B 2 Message-Passing-Based Routing Representation 
+
+ III-C SAC-Based Joint Routing and Caching Optimization 
+
+ III-C 1 MDP Formulation 
+
+ III-C 2 Algorithm Design 
+
+ IV Simulation Results 
+
+ IV-A Simulation Setup 
+
+ IV-B Simulation Results 
+
+ V Conclusions 
+
+ References 
+
+ License: arXiv.org perpetual non-exclusive license
+
+arXiv:2508.16184v1 [cs.NI] 22 Aug 2025 
+
+Joint Cache Placement and Routing in Satellite-Terrestrial Edge Computing Network: A GNN-Enabled DRL Approach 
+
+ Yuhao Zheng
+
+ Ting You
+
+ Kejia Peng
+
+ Chang Liu
+ † † thanks: 
+Yuhao Zheng is with the School of Information and Communication Engineering, Beijing University of Posts and Telecommunications, Beijing, 100876, China (e-mail: yuhao_zheng@bupt.edu.cn).
+Ting You and Chang Liu are with Beijing Sport University, Beijing, 100084, China (e-mail: t.you@bsu.edu.cn; c.liu@bsu.edu.cn).
+Kejia Peng is with Nanjing University of Science and Technology, Nanjing, 210094, China, and also with Mendeleev University of Chemical Technology of Russia, Moscow, 125047, Russia (e-mail: 230997@muctr.ru).
+*Corresponding authors: Yuhao Zheng, Chang Liu
+
+ Abstract 
+
+In this letter, we investigate the problem of joint content caching and routing in satellite-terrestrial edge computing networks (STECNs) to improve caching service for geographically distributed users. To handle the challenges arising from dynamic low Earth orbit (LEO) satellite topologies and heterogeneous content demands, we propose a learning-based framework that integrates graph neural networks (GNNs) with deep reinforcement learning (DRL). The satellite network is represented as a dynamic graph, where GNNs are embedded within the DRL agent to capture spatial and topological dependencies and support routing-aware decision-making. The caching strategy is optimized by formulating the problem as a Markov decision process (MDP) and applying soft actor-critic (SAC) algorithm. Simulation results demonstrate that our approach significantly improves the delivery success rate and reduces communication traffic cost. 
+
+ Index Terms:  Satellite-terrestrial network, graph neural network, deep reinforcement learning, content placement.
+
+ I Introduction 
+
+With the continuous evolution of 6G technology and satellite communications, the global demand for seamless connectivity and ubiquitous computing services is rapidly increasing [ 1 ] . To meet the requirements of wide coverage and highly reliable communication, the satellite-terrestrial network (STN) has emerged to provide broad access [ 2 ] . Meanwhile, mobile edge computing (MEC) has become a key technology for addressing the low-latency needs by deploying computing resources closer to users [ 3 ] . Based on the integration of STN and MEC, the satellite-terrestrial edge computing network (STECN) has been proposed as a critical architecture for supporting wide-area intelligent services [ 4 ] . STECN enhances the capacity of terrestrial networks in densely populated urban areas and extends computing services to remote regions, thereby enabling the deployment of latency-sensitive and computation-intensive applications across a broader geographic area [ 5 ] . 
+
+STECN introduces edge computing into satellite-terrestrial architectures to enhance computational responsiveness, transmission efficiency, and real-time task processing in recent years. Esmat et al. in [ 6 ] proposed a slicing scheme using Markov models and restless multi-armed bandits to optimize slice allocation in STECN. Huang et al. in [ 7 ] developed a dual-timescale optimization framework to solve task scheduling and resource slicing problem in STECN. Current research largely focuses on slicing and task scheduling, while edge caching remain underexplored. With rising demand for artificial intelligence (AI) services, satellite caches are shifting from traditional data to AI-related models or images. Pre-cached computational images or function modules in edge caches can be directly utilized to facilitate fast task execution. Central challenge is to dynamically decide what content to cache and when to replace it, considering request and resource states. 
+
+Despite the great potential of STECN in enabling global edge intelligence caching services, its highly dynamic network structure and limited onboard resources pose significant challenges. Unlike static terrestrial networks, the fast movement of LEO satellites causes frequent changes in network topology, making it critical to dynamically cache the appropriate AI model versions for different regions at different times. Given the limited onboard storage, it is infeasible to cache all models simultaneously, necessitating trade-offs among task hotspots, content validity, and network conditions. Therefore, there is an urgent need for intelligent mechanisms that integrate network-awareness, temporal modeling, and adaptive decision-making to enable dynamic optimization of caching. 
+
+To address the challenges in STECN, we propose a novel learning-based framework that jointly optimizes caching and routing. The network is modeled as a dynamic spatiotemporal graph, where graph neural networks (GNNs) are embedded into the reinforcement learning agent to enable routing representation. The caching decision is formulated as a Markov decision process (MDP) and optimized using deep reinforcement learning (DRL). GNNs capture the structural information for routing, while DRL determines cache placement strategies. This integration enables the system to adaptively learn strategies to improve delivery success rate and reduce traffic. 
+
+ II System Description 
+
+In this section, we first describe our STECN system model. 
+
+ II-A Network Model 
+
+We consider STECN where LEO satellites provide caching to support terrestrial user requests. Due to the highly dynamic and periodic nature of LEO satellites, the system operates in discrete time slots indexed by t ∈ { 1 , 2 , … , T } . Let 𝒩 = { 1 , 2 , … , N } denote the set of LEO satellites, where each LEO satellite n ∈ 𝒩 is equipped with a local cache. The LEO satellites form a dynamically changing topology network that evolves periodically with orbital motion. The relative positions of LEO satellites within the same orbital plane remain stable, and stable inter-orbital distances enable connections with nearby LEO satellites in adjacent planes [ 8 ] . With four inter-satellite links (ISLs), LEO satellites form a grid topology orbital network. 
+
+ II-B Communication Model 
+
+The communication model includes the ISL model and the downlink model. 
+
+ II-B 1 Inter-Satellite Link Model 
+
+LEO satellites use laser communication to establish ISLs. The data transmission rate from LEO satellite n to satellite m at time slot t is given by [ 9 ] : 
+
+ R n , m ​ ( t ) = P n ​ G n TX ​ G m RX ​ L n , m ​ ( t ) h 1 ​ T S ⋅ ( E b / N 0 ) req ⋅ M , 
+
+ (1) 
+
+where L n , m ​ ( t ) = ( c 4 ​ π ​ H n , m ​ ( t ) ​ f ) 2 denotes the free space path loss. c is the speed of light, f is the carrier frequency of the ISL, and H n , m ​ ( t ) is the distance between LEO satellite n and m at time t . P n is the transmission power of LEO satellite n , G n TX and G m RX are the antenna gains of LEO satellites n and m , respectively. h 1 is the Boltzmann constant, T S is the system noise temperature, ( E b / N 0 ) req is the required energy per bit to noise power spectral density, and M is the link margin. 
+
+ II-B 2 Downlink Model 
+
+The channel from LEO satellites to ground users is mainly influenced by rain attenuation modeled by Weibull distribution. The power attenuation from LEO satellite n to the ground at time t is given by [ 10 ] : 
+
+ ∥ h n , 0 ( t ) ∥ 2 = G n TX ​ G 0 RX ​ λ 2 ( 4 ​ π ​ H n , 0 ​ ( t ) ) 2 ⋅ 10 − F rain / 10 , 
+
+ (2) 
+
+where λ is the carrier wavelength, G 0 RX is the antenna gain of ground user device. H n , 0 ​ ( t ) is the distance between LEO satellite n and ground user at time t . F rain is the rain attenuation following Weibull distribution. The maximum transmission rate from LEO satellite n to the ground at time t is given by: 
+
+ R n , 0 ​ ( t ) = W ​ log 2 ⁡ ( 1 + P n ​ ‖ h n , 0 ​ ( t ) ‖ 2 W ​ ‖ σ ‖ 2 ) , 
+
+ (3) 
+
+where W is the communication bandwidth of the LEO satellite, σ S is the noise power. We use orthogonal frequency division multiplexing (OFDM) to assign unique subchannels to requests, and to ensure orthogonality to prevent interference. 
+
+ II-C Cache Model 
+
+ II-C 1 Request Model 
+
+The set of contents is defined as ℱ = { 1 , … , F } , where the size of file f is denoted by ζ f . The popularity distribution of content is characterized by the Zipf distribution. The popularity of the f -th ranked content is [ 11 ] : 
+
+ P f = f − α ∑ f = 1 F f − α , ∀ f ∈ ℱ , 
+
+ (4) 
+
+where α is Zipf exponent. Let ℛ n ​ ( t ) = { r n , 1 ​ ( t ) , … , r n , F ​ ( t ) } be the request set received by LEO satellite n at time t , where r n , f ​ ( t ) represents the number of requests for f . 
+
+ II-C 2 Content Caching Model 
+
+To describe the caching status of each LEO satellite in the system, we define a content caching matrix. We denote the caching status of the system at time t as Ψ ⁡ ( t ) = { Ψ 1 ​ ( t ) , Ψ 2 ​ ( t ) , … , Ψ N ​ ( t ) } , where Ψ n ​ ( t ) = { Ψ n , 1 ​ ( t ) , Ψ n , 2 ​ ( t ) , … , Ψ n , F ​ ( t ) } represents the caching vector of the LEO satellite n . Ψ n , f ​ ( t ) = 1 indicates that LEO satellite n caches content f in time slot t , otherwise, Ψ n , f ​ ( t ) = 0 . 
+
+ II-D Success Model 
+
+ II-D 1 Delivery Delay 
+
+The total delay for delivering content f from LEO satellite n to the ground user can be expressed as: 
+
+ D n , f ​ ( t ) = ζ f R n , 0 S ​ T ​ ( t ) + ( 1 − Ψ n , f ) ⋅ ∑ p , q ∈ e ⁡ ( n , m ) ζ f R p , q S ​ ( t ) 
+
+ (5) 
+
+where e ⁡ ( n , m ) is the transmission path in the ISL. If the LEO satellite n caches f , there is no need for ISL transmission. Otherwise, the request need to find LEO satellite m that meets the satisfaction Ψ m , f ​ ( t ) = 1 . 
+
+ II-D 2 Success Rate 
+
+Reliability is a fundamental indicator of system performance. A key threat to reliability is request expiration, which occurs when a request fails to complete within its tolerable latency threshold D f thres ​ ( t ) . The number of discarded request at time slot t is calculated as: 
+
+ K ( t ) = ∑ n ∈ 𝒩 ∑ r ​ ( t ) ∈ ℛ n ​ ( t ) 𝔻 [ D n , f ( t ) > D f thres ( t ) ] 
+
+ (6) 
+
+where 𝔻 ⁡ [ ⋅ ] is an indicator function that equals 1 if the condition is true, and 0 otherwise. The success rate is the ratio of successful requests to the total requests across all LEO satellites: 
+
+ S ⁡ ( t ) = 1 − K ⁡ ( t ) ∑ n ∈ 𝒩 | ℛ n ​ ( t ) | . 
+
+ (7) 
+
+ II-E Traffic Model 
+
+We construct traffic model from two perspectives as follows. 
+
+ II-E 1 Request Response Traffic 
+
+If the request content is not locally cached, the content must be fetched via ISL. The total transmission traffic at LEO satellite n in time slot t is given by: 
+
+ T ​ r n req ​ ( t ) = ∑ r ​ ( t ) ∈ Q n ​ ( t ) ( ζ f + ( 1 − Ψ n , f ​ ( t ) ) ⋅ ∑ e ∈ e ⁡ ( n , m ) ζ f ) 
+
+ (8) 
+
+ II-E 2 Cache Update Traffic 
+
+The cache states dynamically change. Let Ψ n , f ​ ( t − 1 ) denote the cache state in the previous time slot. If Ψ n , f ​ ( t − 1 ) ≠ Ψ n , f ​ ( t ) = 1 , it indicates that content f is newly cached. The cache update traffic at LEO satellite n in time slot t can be expressed as: 
+
+ T r n update ( t ) = ∑ f = 1 F 𝔻 [ Ψ n , f ( t − 1 ) ≠ Ψ n , f ( t ) = 1 ] ⋅ ζ f 
+
+ (9) 
+
+The total traffic of the system at time slot t is defined as: 
+
+ T ​ r ​ ( t ) = ∑ n = 1 N ( T ​ r n req ​ ( t ) + T ​ r n update ​ ( t ) ) . 
+
+ (10) 
+
+ II-F Objective 
+
+In our work, the objective is to jointly maximize the success rate and minimize the communication traffic overhead. Therefore, the optimization problem is defined as: 
+
+ (P1) : max ⁡ lim T → ∞ π ⁡ 1 T ​ ∑ t = 1 T E ⁡ [ c ⁡ ( t ) ∣ π ] 
+
+ (11) 
+
+where the reward function is formulated as: 
+
+ c ⁡ ( t ) = λ 1 ⋅ S ⁡ ( t ) − λ 2 ⋅ T ​ r ​ ( t ) T ​ r m ​ a ​ x , 
+
+ (12) 
+
+where λ 1 , λ 2 are weight coefficients. T ​ r m ​ a ​ x is the maximum update traffic as a normalization factor. 
+
+ III Graph-Temporal SAC-Based Caching and Routing Optimization 
+
+This section introduces our proposed routing and caching optimization method for dynamic LEO satellite networks. 
+
+ III-A Overview of the GT-SAC Framework 
+
+To address the challenges posed by rapidly changing LEO satellite topologies and user requests, we design a graph-temporal SAC (GT-SAC) algorithm. This method models the LEO satellite network as a dynamic graph structure and employs GNN [ 12 ] to extract spatial dependencies. Temporal fluctuations in user demands and network states are captured via a sequential modeling mechanism. These spatiotemporal features are then fed into a SAC-based agent to jointly optimize routing paths and caching decisions. By coupling graph-based representation learning with policy optimization, GT-SAC effectively captures the structural and temporal dynamics of the LEO satellite network, enabling adaptive and efficient decision-making. 
+
+ III-B Spatiotemporal Representation of Satellite Network 
+
+ III-B 1 Graph Construction 
+
+We model the LEO satellite network at time slot t as a dynamic undirected graph 𝒢 t = ( 𝒱 t , ℰ t ) , where 𝒱 t = 𝒩 t represents LEO satellites and each edge ℰ t denotes active ISLs. Each LEO satellite is represented by a feature vector 𝐱 n t , which incorporates its 3D spatial coordinates ( ϕ n t , λ n t , h n t ) , the corresponding regional one-hot encoding l n t , its content request matrix ℛ n ​ ( t ) , and cache state Ψ n ​ ( t ) ∈ { 0 , 1 } | ℱ | . These features are aggregated into form a matrix 𝐗 t ∈ ℝ | 𝒱 t | × d . Edge features, including distance d i ​ j t and bandwidth b i ​ j t are stored in an edge feature matrix 𝐄 t ∈ ℝ | ℰ t | × d , representing real-time communication quality. 
+
+ III-B 2 Message-Passing-Based Routing Representation 
+
+To enable distributed routing decision-making in the dynamic LEO satellite graph, we adopt a spatiotemporal message-passing neural network that explicitly incorporates edge features. Each LEO satellite node i is initialized with a feature vector 𝐱 i t , each edge e i ​ j is associated with a feature vector 𝐞 i ​ j t . The node embeddings are updated through iterative message passing. The node embeddings are updated through iterative message passing. At each iteration t , the hidden representation 𝐡 i ( t ) is updated as: 
+
+ 𝐡 i ( t + 1 ) = σ ⁡ ( ∑ j ∈ 𝒩 ⁡ ( i ) f msg ​ ( 𝐡 i ( t ) , 𝐡 j ( t ) , 𝐞 i ​ j t ) ) , 
+
+ (13) 
+
+where f msg ​ ( ⋅ ) is a learnable message function that fuses neighbor node features and link characteristics, and σ ⁡ ( ⋅ ) is a non-linear activation function. After T iterations, final embedding 𝐡 i ( T ) encodes both multi-hop topological structure and communication quality used for routing and DRL caching decisions. 
+
+ Algorithm 1 GT-SAC Cache Optimization Algorithm 
+
+ Input: User request set ℛ ⁡ ( t ) , previous cache state Ψ ⁡ ( t − 1 ) , communication state R n ​ ( t ) | n ∈ 𝒩 
+
+ Output: Optimized caching strategy π 
+
+ 1 
+ Initialize network π ϕ , Q θ 1 , Q θ 2 , V ψ , V ψ ′ , M R , M b .
+
+ 2 
+ for episode = 1 to E ​ p ​ s ​ i ​ o ​ d ​ e ​ s do 
+
+ 3 
+ Initialize environment and initial state s 0 
+
+ 4 
+ for t = 1 to T do 
+
+           // Graph Construction 
+
+ 5 
+ Construct 𝒢 t = ( 𝒱 t , ℰ t ) based on topology and requests.
+
+ 6 
+ Extract node feature.
+
+ 7 
+ Encode global state s t by GNN.
+
+           // Experience Storage 
+
+ 8 
+ Select action a t based on policy π ϕ .
+
+ 9 
+ Execute a t , update cache state Ψ ⁡ ( t ) .
+
+           // Routing via Message Passing 
+
+ 10 
+ Message passing to get embedding by Eq. ( 13 ).
+
+ 11 
+ Route requests over 𝒢 t based on embeddings.
+
+ 12 
+ Obtain S ⁡ ( t ) and T ​ r ​ ( t ) by Eq. ( 7 , 10 ).
+
+ 13 
+ Observe environment reward r t and state s t + 1 .
+
+ 14 
+ Store transition ( s t , a t , r t , s t + 1 ) in buffer M R .
+
+           // SAC Optimization Phase 
+
+ 15 
+ Sample M b from buffer M R .
+
+ 16 
+ Calculate Q-value by Eq.( 15 );
+
+ 17 
+ Update Q-Critic network by Eq.( 14 );
+
+ 18 
+ Calculate V-value by Eq.( 16 );
+
+ 19 
+ Update V-Critic network by Eq.( 17 );
+
+ 20 
+ Update actor network by Eq.( 18 );
+
+ 21 
+ Soft update target V-Critic network by Eq.( 19 );
+
+ Fig. 1: GT-SAC algorithm framework. 
+
+ III-C SAC-Based Joint Routing and Caching Optimization 
+
+ III-C 1 MDP Formulation 
+
+Our objective is to achieve minimization of the traffic cost and maximization of the success rate. Since the solution is influenced by current state but independent of previous states, the problem can be formulated as MDP. The state space, action space, and cost function are defined as follows. 
+
+ ∙ State: Let S denote the set of possible states. The composite state at timeslot t , represented as s t ∈ S , is defined as s t = { R ⁡ ( t ) , Ψ ⁡ ( t − 1 ) , ℛ n ​ ( t ) | n ∈ 𝒩 } . 
+
+ ∙ Action: execute computing task action. The action is denoted as a t ∈ A and can be described as a t = { Ψ ⁡ ( t ) } . 
+
+ ∙ Reward: The objective of optimization is to comprehensively the state of LEO satellites to make optimal caching placement decisions. Based on the optimization goal of maximizing reward, we define the reward at time slot t as r t = c ⁡ ( t ) . 
+
+ III-C 2 Algorithm Design 
+
+We propose a solution based on DRL, utilizing the soft actor-critic (SAC) [ 13 ] to train the policy. We considered several common algorithms, such as deep Q-Network (DQN). However, DQN performs poorly in high-dimensional action spaces, leading to increased computational complexity and slower convergence. SAC is based on maximum entropy, which maximizes both cumulative rewards and policy entropy to encourage exploration. The steps are as follows. 
+
+ ∙ Initialization: We initialize network π ϕ , Q θ 1 , Q θ 2 , V ψ and V ψ ′ . Initialize experience replay buffer M r , mini-batch size M b . 
+
+ ∙ Experience storage: The agent uses the actor network to compute the action probabilities π ϕ ​ ( a | s t ) . a t is sampled based on these probabilities and obtain state s t + 1 and reward r t . ( s t , a t , r t , s t + 1 ) is stored in M r . 
+
+ ∙ Parameter Update: The actor and critic networks update their parameters by randomly sampling M b from M r . 
+
+ a. Q-critic network update : The smaller Q-value between Q θ 1 and Q θ 2 is considered the true Q -value. θ i , where i ∈ { 1 , 2 } , are updated by minimizing the loss function: 
+
+ L Q ( θ i ) = 𝔼 M b [ ( Q θ i ( s t , a t ) − y t Q ) 2 ] , i = 1 , 2 
+
+ (14) 
+
+where y t Q is the Q value, computed as: 
+
+ y t Q = r t + γ ​ V ψ ′ ​ ( s t + 1 ) . 
+
+ (15) 
+
+where γ is the discount rate, V ψ ′ ​ ( s t + 1 ) is the output of the target V-critic network. 
+
+ b. V-critic network update :
+The state value is estimated using entropy-regularized formulation, value of V-critic network is: 
+
+ y t V = 𝔼 a t ∼ π ​ [ min i = 1 , 2 ⁡ Q θ i ​ ( s t , a t ) − α ​ log ⁡ π ⁡ ( a t | s t ) ] . 
+
+ (16) 
+
+V-critic network is updated by minimizing the loss function: 
+
+ L V ​ ( ψ ) = 𝔼 M b ​ [ ( V ψ ​ ( s t ) − y t V ) 2 ] . 
+
+ (17) 
+
+ c. Actor update : The policy network aims to maximize both rewards and entropy. The policy loss function, derived from the Kullback-Leibler (KL) divergence, simplifies to: 
+
+ J π ​ ( ϕ ) = 𝔼 M b , a t ∼ π ​ [ α ​ log ⁡ π ⁡ ( a t | s t ) − min i = 1 , 2 ⁡ Q θ i ​ ( s t , a t ) ] . 
+
+ (18) 
+
+where ϕ are updated by determining the gradient of J π ​ ( ϕ ) . 
+
+ d. Soft update : SAC employs soft updates to gradually update target network. The target V-critic network is updated as follows: 
+
+ ψ ′ ← τ ​ ψ + ( 1 − τ ) ​ ψ ′ , 
+
+ (19) 
+
+where τ is hyperparameter controlling the update rate. The DRL model is pre-trained on ground servers with high-performance hardware. After convergence, the trained model is deployed to LEO satellites. The steps of the proposed algorithm are summarized in Algorithm 1 and Fig. 1 . 
+
+ IV Simulation Results 
+
+In this section, we perform extensive simulations to evaluate the performance of our proposed algorithm. 
+
+ IV-A Simulation Setup 
+
+During the simulation process, we used the PyTorch framework to construct our software environment. We established a Walker constellation consisting of 144 LEO satellites, evenly distributed across 12 circular orbits, with 12 LEO satellites per plane. The LEO satellite altitude is set to 1000km, and the orbital plane inclination is 60°. We utilized the satellite tool kit (STK) to obtain latitude and longitude for LEO satellites. The LEO satellite transmission power is assumed to be 5W, and the total system noise temperature is 25dBK. For ISLs, the transmission and reception antenna gains of LEO satellites are both set to 20dB. The required energy per bit to noise density ratio is 9.6dB, and the link margin is 2500km. We set up 6 cache contents, each with a size of 100MB. The timeslot is set to 5 seconds. Numerical results are obtained after 500 training episodes. We adopt 2 propagation layers with hidden dimension 32 to implement the message function followed by ReLU activation. We compare our proposed scheme with baseline methods: SAC, popular-content-first (PCF), and cloud scheme. The SAC scheme employs the same reinforcement learning framework but without GNN-based routing, retrieving content only from neighboring LEO satellites. The PCF scheme caches the most frequently requested contents based on request matrix. The cloud scheme retrieves content from the ground cloud center. 
+
+ IV-B Simulation Results 
+
+ (a) Different algorithms 
+
+ (b) Different learning rates 
+
+ (c) Different batch sizes 
+
+ Fig. 2: Convergence performance of DRL-based algorithms. 
+
+We first conducted simulations to validate the effectiveness of the proposed method. In Fig. 2 , we comprehensively evaluate the DRL algorithms and the hyperparameter settings of the proposed algorithm. In Fig. 2a , under the same training conditions, the proposed algorithm demonstrates the best performance as training progresses under different caching numbers, eventually achieving stable convergence. In Fig. 2b , we compare the training performance of the proposed algorithm under different learning rates. When the learning rate is set to 0.0003, the reward value increases rapidly in the early training stages, and the algorithm converges faster. Therefore, we set LR at 0.0003 for subsequent experiments. In Fig. 2c , we present the training performance of the proposed algorithm under different batch sizes. When we set batch size to 32, the algorithm exhibits better convergence and stability. Overall, the proposed algorithm outperforms the other three algorithms, and it achieves the best training performance when learning rate is 0.0003 and batch size is 32. 
+
+ (a) Cache number is 1 
+
+ (b) Cache number is 2 
+
+ Fig. 3: Performance comparison under different schemes. 
+
+In Fig. 3 we discuss the success rate and traffic performance of four schemes under different cache numbers and different request number per LEO satellite. Fig. 3a shows the comparison of success rate and update traffic when LEO satellite can only cache one content. As the number of request increases, the update traffic decreases, which is speculated that the increase in requests reduces the possibility of accidental updates, making the cached content more fixed. The update traffic graph of the proposed scheme is lower than that of the SAC scheme. This is mainly due to the optimized design of the content routing strategy. When the number of requests per LEO satellite is 6, the update traffic of the proposed scheme is approximately 27.6% and 62.3% lower than that of SAC and PCF schemes. In terms of success rate, as the number of requests increases, the success rate of the PCF gradually increase. This may be because as the number of requests increases, the probability of requesting content gradually approaches the popularity of the content, which is good for PCF. When the number of requests per LEO satellite is 6, the success rate of the proposed scheme is improved by approximately 59.2%, 23.3%, and 2.5% compared to the cloud, PCF, and SAC schemes, respectively. 
+
+Fig. 3b shows the the comparison when LEO satellite can cache two contents. Caching two contents results in lower update traffic, because the LEO satellite does not have to update the content as frequently when caching more content. When the number of requests per LEO satellite is 6, the update traffic of the proposed scheme is approximately 20.8% and 64.8% lower than that of SAC and PCF schemes. In terms of of success rate, the cloud scheme has the same success rate because it does not retrieve contents from onboard cache. Compared to caching one contents, other three schemes have higher success rate due to more contents can be accessed on satellites. When the number of requests per LEO satellite is 6, the success rate of the proposed scheme is improved by approximately 65.8%, 26.8%, and 2.6% compared to the cloud, PCF, and SAC schemes, respectively. 
+
+ V Conclusions 
+
+In this work, we propose a learning-based framework for joint caching and routing in STECN. By modeling the network as a dynamic spatiotemporal graph, we leverage GNN to extract structural and communication-aware representations for routing. The caching decisions are trained and optimized through SAC. Simulation results demonstrate that our method significantly improves the delivery success rate and reduces traffic cost, highlighting its effectiveness. 
+
+References 
+
+ [1] 
+
+B. Di, L. Song, Y. Li and H. V. Poor, “Ultra-dense LEO: Integration of satellite access networks into 5G and beyond,”  IEEE Wireless Commun. , vol. 26, no. 2, pp. 62-69, Apr. 2019.
+
+ [2] 
+
+R. M. Ferre et al., “Is LEO-based positioning with mega-constellations the answer for future equal access localization?,” IEEE Commun. Mag. , vol. 60, no. 6, pp. 40–46, Jun. 2022.
+
+ [3] 
+
+D. Jiang et al., “QoE-aware efficient content distribution scheme for satellite-terrestrial networks,” IEEE Trans. Mobile Comput. , vol. 22, no. 1, pp. 443-458, Jan. 2023.
+
+ [4] 
+
+R. Xie, Q. Tang, Q. Wang, X. Liu, F. R. Yu and T. Huang, “Satellite-terrestrial integrated edge computing networks: Architecture challenges and open issues,” IEEE Netw. , vol. 34, no. 3, pp. 224-231, Jun. 2020.
+
+ [5] 
+
+G. Zhong, J. Yan and L. Kuang, “QoE-driven social aware caching placement for terrestrial-satellite networks,” China Commun. , vol. 15, no. 10, pp. 60-72, Oct. 2018.
+
+ [6] 
+
+H. H. Esmat, B. Lorenzo and W. Shi, “Toward Resilient Network Slicing for Satellite–Terrestrial Edge Computing IoT,” IEEE Internet Things J. , vol. 10, no. 16, pp. 14621-14645, 15 Aug.15, 2023.
+
+ [7] 
+
+T. Huang, Z. Fang, Q. Tang, R. Xie, T. Chen and F. R. Yu, “Dual-Timescales Optimization of Task Scheduling and Resource Slicing in Satellite-Terrestrial Edge Computing Networks,” IEEE Trans. Mobile Comput. , vol. 23, no. 12, pp. 14111-14126, Dec. 2024.
+
+ [8] 
+
+M. Rodríguez-Pérez, S. Herrería-Alonso, A. Suárez-Gonzalez, J. C. López-Ardao and R. Rodríguez-Rubio, “Cache Placement in an NDN-Based LEO Satellite Network Constellation,” IEEE Trans. Aerosp. Electron. Syst. , vol. 59, no. 4, pp. 3579-3587, Aug. 2023.
+
+ [9] 
+
+D. Zhou, M. Sheng, R. Liu, Y. Wang, and J. Li, “Channel-aware mission scheduling in broadband data relay satellite networks,” IEEE J. Sel. Areas Commun. vol. 36, no. 5, pp. 1052–1064, 2018.
+
+ [10] 
+
+T. Chen et al., “Learning-based computation offloading for IoRT through Ka/Q-band satellite–terrestrial integrated networks,” IEEE Internet Things J. , vol. 9, no. 14, pp. 12056-12070, Jul. 2022.
+
+ [11] 
+
+L. Breslau, P. Cao, L. Fan, G. Phillips and S. Shenker, “Web caching and zipf-like distributions: Evidence and implications,” in Proc. IEEE Int. Conf. Comput. Commun. (INFOCOM) , vol. 1, pp. 126-134, 1999.
+
+ [12] 
+
+K. Rusek, J. Suárez-Varela, P. Almasan, P. Barlet-Ros and A. Cabellos-Aparicio, “RouteNet: Leveraging graph neural networks for network modeling and optimization in SDN,” IEEE J. Sel. Areas Commun. , vol. 38, no. 10, pp. 2260-2270, Oct. 2020.
+
+ [13] 
+
+H. Tuomas et al., “Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor,” 2018, arXiv:1801.01290 .
+
+ Experimental support, please
+ view the build logs 
+ for errors. Generated by
+
+ L
+ A 
+ T
+ E 
+
+ xml 
+
+ .
+
+Instructions for reporting errors 
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+ support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+ methods listed below: 
+
+Click the "Report Issue" ( 
+
+ ) button, located in the page header. 
+
+ Tip: You can select the relevant text first, to include it in your report. 
+
+Our team has already identified the following issues . We appreciate your time reviewing and reporting rendering errors we
+ may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+ should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+ all. 
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion , and welcome developer contributions . 
+
+ We gratefully acknowledge support from
+ our major funders ,
+ member institutions , ,
+ and all contributors.
+
+ About 
+ · 
+ Help 
+ · 
+ Contact 
+ · 
+ Subscribe 
+ · 
+ Copyright 
+ · 
+ Privacy 
+ · 
+ Accessibility 
+ · 
+ Operational Status (opens in new tab) 
+
+Major funding support from

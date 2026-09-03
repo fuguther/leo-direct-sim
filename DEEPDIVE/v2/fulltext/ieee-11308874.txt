@@ -1,0 +1,713 @@
+2025 International Conference on Modeling, Analysis and Simulation of Wireless and Mobile Systems (MSWiM) | 979-8-3315-6873-3/25/$31.00 ©2025 IEEE | DOI: 10.1109/MSWiM67937.2025.11308874
+
+Analysis of OSPFv3 in LEO Satellite Networks
+Sergio Machado Sánchez
+
+Jorge Mata Dı́az
+
+Department of Network Engineering
+Universitat Politècnica de Catalunya
+Castelldefels, Spain
+sergio.machado@upc.edu
+
+Department of Network Engineering
+Universitat Politècnica de Catalunya
+Barcelona, Spain
+jorge.mata@upc.edu
+
+Javier Ozón Górriz
+
+Juanjo Alins Delgado
+
+Department of Civil and Environmental Engineering
+Universitat Politècnica de Catalunya
+Barcelona, Spain
+francisco.javier.ozon@upc.edu
+
+Department of Network Engineering
+Universitat Politècnica de Catalunya
+Terrasssa, Spain
+juanjo.alins@upc.edu
+
+Abstract—Low Earth Orbit (LEO) satellite constellations are
+poised to become key enablers of global connectivity. However,
+their dynamic topologies, high latency, and intermittent links pose
+significant challenges for traditional IP routing protocols. This
+paper evaluates the applicability of OSPFv3 in LEO networks using a novel emulation framework that integrates accurate orbital
+modeling with full-stack network simulation. Our framework
+decouples topology generation from network emulation, enabling
+protocol-independent testing in realistic conditions. We analyze
+OSPFv3 performance using the Iridium constellation as a case
+study, assessing protocol convergence, stability, and routing efficiency under worst-case scenarios. Results reveal the limitations
+of default OSPFv3 configurations in LEO environments and offer
+insights into potential optimizations for future integration of
+satellite networks into global IP infrastructures.
+Index Terms—LEO satellites, OSPFv3, network emulation, dynamic topology, inter-satellite links, routing protocol evaluation.
+
+links are typically stable due to fixed orbital spacing. The other
+two faces maintain inter-plane ISLs with satellites in adjacent
+co-rotating planes that share a similar angular phase. These
+links vary in distance and angle, especially near the poles,
+and are disabled beyond latitudes of ±60◦ due to geometric
+and antenna beamwidth limitations.
+Figure 1 illustrates a typical LEO satellite constellation.
+Each vertical arc represents a distinct orbital plane, with satellites connected by solid lines indicating intra-plane ISLs and
+dotted lines for inter-plane ISLs. At the so-called seam, where
+adjacent orbital planes rotate in opposite directions (counterrotating), no inter-plane links are possible, resulting in a
+discontinuity in connectivity. These topological characteristics
+directly influence routing, latency, and fault tolerance in LEO
+satellite network design.
+
+I. I NTRODUCTION
+Low Earth Orbit (LEO) satellite networks are satellite
+systems that operate at altitudes between 500 and 2,000
+kilometers above Earth. Unlike traditional geostationary satellites, LEO satellites orbit the planet more quickly and in
+greater numbers, enabling low-latency high-speed communication. These networks are increasingly used to provide global
+broadband coverage, especially in remote or underserved areas, and play a growing role in modern telecommunications
+infrastructure.
+LEO satellite networks are composed of M satellites uniformly distributed across N orbital planes, typically with an
+inclination below 90◦ . Each satellite is a cube or a modular
+unit built from 10 × 10 × 10 cm cubes, with antennas on five
+faces—including the one oriented toward Earth’s center. The
+Earth-facing antenna provides ground-satellite links (GSLs),
+while two lateral faces establish intra-plane inter-satellite links
+(ISLs) with neighboring satellites in the same orbit. These
+This research has been funded by the Spanish Ministry of Science and
+Education under the project TCO-SeamSat (PID2021-123450OB-I00) within
+MCIN/AEI/ 10.13039/501100011033/FEDER.
+
+979-8-3315-6873-3/25/$31.00 ©2025 IEEE
+
+Fig. 1. LEO satellite constellation.
+
+Our research focuses on applying the Low Latency Low
+Loss Scalable Throughput Internet Service (L4S) architecture
+[13], originally designed for terrestrial networks, to large-scale
+LEO satellite communications. The aim is to develop algorithms and protocols that enable seamless integration between
+LEO networks and ground-based infrastructures, with special
+
+388
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:18 UTC from IEEE Xplore. Restrictions apply.
+
+attention to aeronautical communications. Satellite networks,
+known for overcoming geographic barriers and offering secure
+communications, present unique challenges such as high latency, packet loss, and constantly changing topologies, which
+this work seeks to address.
+This work explores the use of the OSPFv3 routing protocol
+in satellite constellations composed of satellites interconnected
+via Inter-Satellite Links (ISLs) and linked to ground stations
+through Ground-to-Satellite Links (GSLs). These constellations create multiple potential communication paths that, combined with high latency and constantly changing topology,
+pose significant routing challenges [4]. In this context, it
+becomes essential to conduct an in-depth analysis of OSPFv3,
+one of the leading candidates for routing in Low Earth
+Orbit (LEO) satellite constellations. This link-state protocol,
+widely established in terrestrial infrastructures, is based on
+maintaining an updated topological database at each node and
+computing optimal paths using Dijkstra’s algorithm. Its design
+incorporates features that make it a strong candidate for highly
+dynamic space environments.
+Our study analyzes the unmodified OSPFv3 protocol with
+adjusted configuration parameters using a custom emulation
+framework. The ultimate goal is to evaluate its viability in
+enabling reliable communication between aircraft and control
+centers through global coverage satellite networks.
+This paper is organized as follows. Section II reviews related
+work on routing protocols in satellite networks. Section III
+presents the emulation framework developed to evaluate the
+performance of OSPFv3 in LEO satellite constellations. Section IV details the OSPFv3 analysis, describing the emulated
+scenario and key findings. Finally, Section V draws conclusions and outlines future research directions.
+II. R ELATED W ORK
+The design of routing algorithms in Low Earth Orbit (LEO)
+satellite networks remains a critical research area due to
+their highly dynamic topology. Frequent link interruptions and
+topological changes, especially in inter-satellite links (ISLs),
+introduce significant challenges to the scalability, stability, and
+efficiency of conventional routing protocols. These difficulties
+are reflected in the ongoing standardization efforts led by
+organizations such as 3GPP and the IETF to adapt routing
+strategies for LEO satellite environments [17].
+Researchers have proposed various strategies to address
+these issues, including adapting distributed protocols originally
+developed for terrestrial networks and employing centralized
+approaches, often based on Software-Defined Networking
+(SDN). Distributed methods offer autonomous management
+of topological dynamics and benefit from native IP compatibility, facilitating seamless integration with existing ground
+networks. In contrast, centralized strategies divide the network
+operation into discrete snapshots where topology is considered
+static during each interval. Routes are precomputed offline
+and sent in advance to the network nodes, which apply them
+synchronously. While effective in predictable environments,
+
+centralized schemes may exhibit reduced resilience to unexpected link failures [17].
+Previous evaluations of distributed protocols have discarded
+the applicability of OLSR (Optimized Link State Routing)
+in satellite environments. Although designed for ad-hoc networks, OLSR is unsuitable for low node counts and fast link
+changes, and exhibits limited efficiency when using mechanisms such as multipoint relaying [8]. Similarly, reactive
+protocols such as AODV have shown limited viability in
+broadband satellite connectivity, particularly for large-scale
+LEO constellations. Existing ad hoc approaches that depend
+on distance vector routing or flooding are generally inadequate
+for highly mobile environments [11].
+Among the distributed protocols studied, OSPF has received significant attention. However, the literature presents
+contradictory findings regarding its effectiveness. Some studies
+suggest that minor enhancements are sufficient to adapt OSPF
+to LEO networks, while others argue that a comprehensive
+redesign is necessary. Most works proposing modifications
+to OSPF evaluate their enhancements against the baseline
+protocol using default terrestrial configurations. This often
+leads to misleading conclusions, as inappropriate simulations,
+flawed emulation environments, inadequate parameter tuning,
+or unsuitable chosen evaluation metrics may fail to accurately
+reflect the true behavior of LEO networks.
+In response to this fragmented research landscape, the
+present study aims to conduct a systematic and thorough
+evaluation of OSPFv3 in LEO constellations. The objective
+is to identify the operational issues and challenges of the
+protocol and propose adaptations that enable its efficient use in
+future space-ground integrated infrastructures, where control
+plane stability is vital for next-generation services. One of the
+few comprehensive studies in this area is by Wang et al. [8],
+which highlights the lack of a reliable reference for OSPF
+performance in satellite systems. Their results indicate that
+OSPF suffers from significant packet loss and routing overhead
+in large-scale LEO deployments, making it unsuitable without
+substantial adaptation. Other comparative studies, such as that
+by Yan et al. [14], contrast OSPF with the Named-Data LinkState Routing protocol, a link-state algorithm for InformationCentric Networking (ICN). Their findings suggest that OSPF
+outperforms its counterpart in terms of convergence speed and
+control overhead.
+Several enhancements to OSPF have been proposed to
+improve its scalability in LEO networks. For instance, Zhang
+et al. [6] introduce Area-based Satellite Routing, which partitions the constellation into stable inter-area segments to
+reduce routing updates. Li et al. [15] define clusters within
+four quadrants and adopt a joint intra- and inter-area routing
+scheme based on periodic link-state updates.
+The hybrid approach, which combines distributed protocols
+with centralized precomputed routes, has also gained attraction. Fischer et al. [5] were the first to propose Predictable
+Link-State Routing, which leverages the predictability of satellite motion. Based on this approach, Yan et al. [19] developed
+SATNET-OSPF, an extension of OSPF that uses cross-layer
+
+389
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:18 UTC from IEEE Xplore. Restrictions apply.
+
+techniques for early detection of predicted disconnections and
+proactive route updates. Wang et al. [7] improve the OSPF
+protocol incorporating orbital area division, preloaded linkstate databases, and refined neighbor state machines. A recent
+contribution by Wang et al. [18] enhances this approach with
+Deep Q-Network-based dynamic adaptations to congestion.
+Geolocation-based forwarding strategies offer another line
+of research. Li et al. [12] present SER, a routing algorithm
+that computes shortest paths using only orbit and satellite
+IDs, thereby avoiding link-state flooding and reducing intermediate node overhead. Wang et al. [20] introduced MPLF,
+a distributed, convergence-free architecture that incorporates
+satellite orientation and location into next-hop decisions. Yang
+et al. [16] proposed IFAR, which combines geolocation-aware
+forwarding with linear programming to match satellites with
+ground stations while taking into account capacity constraints.
+Similarly, OPSPF [9] calculates routing tables based on satellite positions in real time and activates on-demand routing only
+upon detection of unexpected topological changes.
+Our work makes a substantial contribution to the reassessment of the OSPFv3 protocol in a realistic LEO satellite environment. By implementing an innovative emulation
+framework that combines accurate orbital modeling with
+comprehensive network simulation, this study establishes a
+foundational knowledge base and provides valuable insights
+for the future design of routing protocols in such dynamic
+systems. The evaluation results demonstrate that OSPFv3 is
+capable of maintaining robust connectivity and achieving low
+convergence latency, even under continuous satellite mobility.
+These findings align with and support the recent guidelines
+outlined in RFC 9717 [21], which presents a scalable routing
+architecture for satellite networks based on existing IETF link
+state routing protocols, enhanced by awareness of scheduled
+link connectivity changes. This RFC recommends IS-IS as
+the preferred protocol due to its inherent flexibility in area
+definition.
+To address predictable topological variations, RFC 9717
+advocates the proactive assignment of high metrics to links
+expected to disconnect. This approach enables traffic redirection toward alternative routes before link degradation occurs,
+facilitating a more secure and coordinated transition compared
+to abrupt link removal. By avoiding problems such as incomplete state propagation and timing inconsistencies, the strategy
+ensures network convergence ahead of the actual topological
+event. This proactive metric assignment mechanism is one of
+the main conclusions confirmed by our findings.
+
+of time-evolving graphs that accurately represent the dynamic
+behavior of the satellite constellation over time. The second
+component is responsible for the emulation of network behavior using a routing protocol. In this study, OSPFv3 is used
+to evaluate its performance in the context of highly dynamic
+LEO satellite networks.
+A. Dynamic Topology Modeling
+This subsection presents the module in charge of generating
+the dynamic topology of the satellite network. It relies on
+a modified version of the Hypatia orbital propagator [10] to
+compute satellite positions, active inter-satellite links (ISLs),
+and visibility with ground stations over time. The original
+satgenpy module was extended to calculate ISL and Ground
+Station Link (GSL) parameters, determine satellite–ground station visibility, and generate a sequence of GML files describing
+the network’s temporal evolution.
+In the orbital propagator, three types of input data are used
+in the emulator: the configuration of the satellite constellation
+and its active inter-satellite links, and the set of satellites
+within communication range of each ground station along
+with their respective distances. Both of these are provided for
+each time interval to capture the temporal evolution of the
+network topology. The third input is the geographical location
+of the ground stations, which remains static. This information
+is processed to generate a single JSON file per snapshot,
+describing the resulting LEO network topology.
+Each generated JSON file represents the network topology
+at a given snapshot through two main components. One
+component defines a set of labeled virtual networks, each
+corresponding to an inter-satellite or ground-to-satellite link,
+using default configuration parameters. The other component
+describes all nodes in the network, including satellites and
+ground stations, each identified by a label derived from the
+input data. For each node, a set of configuration parameters
+is provided, including those related to the routing protocol,
+which in this case is OSPFv3.
+The generation of each snapshot involves three main stages.
+First, the spatial configuration of the constellation is extracted,
+including satellite positions and ISLs with their associated
+delays. Then, based on the relative positions of satellites and
+ground stations, the most suitable connections are established
+using a hard handover criterion. Finally, all this information is
+combined into a structured JSON description that captures the
+network state at that instant, serving as the basis for subsequent
+emulation stages.
+
+III. E MULATION F RAMEWORK
+This section explains the design and implementation of the
+LEO satellite network emulation framework, on which we will
+perform the analysis of OSPFv3 as an IP routing protocol.
+The design has been made in such a way that it is routing
+protocol independent, thus allowing us to evaluate different
+routing solutions, not only OSPFv3.
+The framework is structured into two main components. The
+first focuses on topology generation, producing a sequence
+
+B. Network Emulation
+The network emulation relies on Linux bridges to model
+both ISLs and GSLs, enabling the representation of network
+connectivity and delay in a realistic manner per snapshot.
+Each network node, whether it is a satellite, a ground station
+or a traffic sink, is instantiated as a Linux container using
+Incus, providing an isolated and lightweight environment that
+supports full network stack emulation. This combination of
+
+390
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:18 UTC from IEEE Xplore. Restrictions apply.
+
+containers and virtual networking allows precise control over
+the topology and its dynamics during the emulation.
+The network emulation block is responsible for recreating
+the dynamic behavior of the satellite network over time.
+It operates in two main phases. The first phase involves
+initializing the emulation environment by deploying containers
+that simulate satellites, ground stations, and the network links
+between them. These links include both inter-satellite and
+satellite-to-ground connections, and are configured to reflect
+realistic transmission delays based on their physical distances.
+Once the initial topology is built, the second phase introduces time-based events that reflect the evolution of the
+network. These events simulate changes in connectivity, such
+as the appearance or disappearance of links between nodes, or
+updates to the delay associated with existing links. Events are
+scheduled using a dedicated event management library, which
+allows the emulation to reproduce the time-varying nature of
+the topology throughout the simulation.
+Two main types of events are considered: those affecting
+ISLs and those involving ground station connectivity. For
+ISLs, events include the activation or deactivation of links and
+updates to their latency. For ground stations, events reflect the
+changing visibility of satellites as they move in and out of
+range. Each event is scheduled to occur at a specific moment
+during the emulation, and includes the relevant parameters for
+applying the changes dynamically.
+The output of this emulation process consists of detailed
+packet-level traces. These include routing protocol messages,
+which allow for the analysis of routing dynamics over time.
+Additionally, performance metrics such as packet loss, delay,
+and jitter can be extracted, providing a realistic characterization of how the satellite network behaves under dynamic
+conditions.
+
+to multiple airspace control centers (sinks). This setup represents a worst-case scenario, as satellites do not constantly
+transmit traffic and aircraft maintain intermittent connections
+to different satellites during flight.
+
+IV. OSPF V 3 A NALYSIS IN LEO S ATELLITE N ETWORKS
+In this section, we analyze the performance of OSPFv3
+within a LEO satellite constellation. Given the highly dynamic
+topology and stringent timing requirements of LEO constellations, evaluating OSPFv3’s scalability and convergence
+characteristics in this environment is critical. The Iridium
+constellation [1], with its global coverage and inter-satellite
+links, provides an ideal case study to understand the challenges
+and potential adaptations required for OSPFv3 to operate
+efficiently in satellite-based networks.
+Fig. 2 shows the scenario emulated and analyzed in this
+section. All tests generate traffic from a single satellite located
+at the equator over a full orbit of the Iridium constellation.
+This satellite features six interfaces: two for intra-plane ISLs,
+one for an inter-plane ISL, one unused due to its position
+near the seam between planes, one loopback interface for
+OSPFv3 router identification assignment, and one connecting
+to the aircraft traffic generator that communicates via ground
+stations. The analyzed network comprises 66 Iridium satellites
+and 4 ground stations (in Tempe, Fairbanks, Svalbard, and
+Punta Arena), which relay data through a terrestrial gateway
+
+Fig. 2. Schema of the emulation.
+
+A. OSPFv3
+OSPFv3 [3], the version of OSPF designed for IPv6, was
+published in 1999 and updated in 2008, as specified in RFC
+5340. It retains the core mechanisms of OSPFv2, such as
+the flooding algorithm for information distribution and the
+use of Dijkstra’s shortest path algorithm for route calculation.
+However, OSPFv3 introduces important changes to support
+IPv6, including modifications to address formats and router
+identifiers, and the removal of built-in authentication due to
+IPv6 security features. The protocol organizes routers into
+areas, but in highly dynamic networks like LEO satellite
+constellations, the concept of stable areas is challenging to
+apply.
+
+391
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:18 UTC from IEEE Xplore. Restrictions apply.
+
+Routers in OSPFv3 exchange five types of messages directly
+over the IP layer to build and synchronize their link-state
+databases, ensuring all routers within the same area have
+a consistent view of the network topology. Hello messages
+maintain neighbor relationships, while Link State Advertisements (LSAs) carry detailed network information using a
+reliable flooding mechanism. This synchronization is essential
+to compute loop-free, optimal routes. Of the several LSA types
+defined, this work focuses on Router LSAs, Link LSAs, and
+Intra-Area Prefix LSAs, which respectively describe router
+interfaces, neighbor link-local addresses, and IPv6 prefixes
+within an area.
+Despite its strengths, OSPFv3 faces scalability challenges
+in large satellite networks. The volume of LSAs generated
+can be very high, increasing control message overhead. Additionally, the computational effort for route calculation grows
+exponentially with the number of nodes, limiting the protocol’s
+responsiveness to frequent topology changes typical in LEO
+satellite networks.
+The OSPFv3 configuration for satellites includes assigning
+an IPv4 address from the 10.0.0.X/32 range to the loopback
+interface, which serves as the router identifier in OSPFv3, and
+an IPv6 address from the 2002::X/128 range, where X is an
+8-bit identifier for the satellite. For ground stations, the IPv4
+address is assigned from the 10.X.255.255/32 range, while all
+ground stations share the IPv6 anycast address 2002::ffff/128.
+Anycast is used to enable routing toward any available ground
+station, with the protocol automatically selecting the nearest
+one. Interfaces connected to ISLs and GSLs are configured as
+point-to-point links, which prevents the election of designated
+routers and avoids the generation of Network LSAs. Additionally, the Hello and Dead intervals are reduced to one and two
+seconds respectively, allowing for rapid neighbor discovery
+and failure detection in OSPFv3.
+
+Fig. 3. Satellite ground track, ∆t = 5 s.
+
+interval. The data reveal that the most frequent convergence
+time, which represents the latency for routers to propagate and
+assimilate topological changes, lies within the 0 to 1 second
+interval. The calculated average convergence time across all
+observed events is 2.1842 seconds.
+
+Fig. 4. OSPFv3 convergence time histogram, ∆t = 5 s.
+
+B. Results for OSPFv3
+The study was carried out by performing two-hour emulations, which exceed one full orbit of the Iridium constellation
+(100 minutes), using different snapshot intervals. Specifically,
+analyses were performed with 5-second and 20-second intervals under two distinct transmission configurations:
+The results presented encompass the following analyses:
+• Distribution of convergence times of OSPFv3 Router
+LSAs.
+• Histogram-based quantification of the hop count distribution between satellites and their nearest ground stations.
+Fig. 3 illustrates the satellite ground track over the two-hour
+emulation period with a snapshot interval of 5 seconds. The
+satellite initiates its trajectory at the equator above northern
+Brazil (latitude 0º) and concludes over northern Canada. Variations in the satellite’s trajectory directly impact the number
+of hops required to reach the ground stations, as the intersatellite and satellite-to-ground distances change dynamically
+throughout the orbit.
+Fig. 4 depicts the distribution of convergence times for
+OSPFv3 Router LSAs corresponding to the specified snapshot
+
+Fig. 5 illustrates the distribution of the number of hops
+required by the source satellite, defined as the satellite simulating a connected aircraft, to reach the nearest ground station
+according to the OSPFv3 cost metric for each snapshot.
+The hop count distribution is relatively uniform with most
+observations concentrated at distances of three, four and five
+hops, indicating a stable multi-hop routing pattern within the
+network topology.
+Fig. 6 depicts the satellite ground track over the two-hour
+emulation period. The snapshots captured at 5-second intervals
+correspond to the same temporal window, resulting in an
+identical satellite trajectory, beginning in northern Brazil and
+concluding in northern Canada. Notably, fewer data points
+are present, particularly at latitudes beyond 60◦ North and
+below −60◦ South, which is attributed to the increased spacing
+between consecutive snapshots.
+Fig. 7 presents the convergence time distribution of OSPFv3
+Router LSAs for this snapshot interval configuration. As
+observed, the most frequent convergence time once again lies
+within the 0 to 1 second range, indicating a rapid propagation
+
+392
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:18 UTC from IEEE Xplore. Restrictions apply.
+
+Fig. 8. Number of hops histogram, ∆t = 20 s.
+Fig. 5. Number of hops histogram, ∆t = 5 s.
+
+Fig. 6. Satellite ground track, ∆t = 20 s.
+
+of topology changes across the network. The average convergence time measured is 2.3529 seconds.
+
+of topology changes throughout the network. The average
+convergence times, 2.1842 seconds for the five-second interval
+and 2.3529 seconds for the twenty-second interval, confirm
+that OSPFv3 maintains low convergence delays even under
+continuous satellite mobility. The slightly higher average in
+the latter case may be attributed to the coarser temporal
+granularity, which can mask finer grained routing dynamics
+and lead to larger observed transitions between states.
+The distribution of hop counts required for a satellite to
+reach the nearest ground station remains consistent across both
+scenarios, with 3, 4, and 5-hop paths being the most common.
+This suggests that the underlying inter-satellite topology provides sufficient redundancy and stability to maintain efficient
+multi-hop routing. Furthermore, the satellite ground tracks
+reveal that coverage is more sparse at latitudes beyond ±60◦ ,
+where fewer observations are recorded due to increased snapshot spacing. These regions may therefore experience reduced
+visibility or fewer available paths to ground stations. Overall,
+the findings indicate that OSPFv3, when tuned appropriately,
+is capable of delivering fast and stable routing performance in
+LEO constellations, even as link states change rapidly due to
+orbital motion.
+C. Traffic Performance Evaluation
+
+Fig. 7. OSPFv3 convergence time histogram, ∆t = 20 s.
+
+Fig. 8 shows the number of hops it takes source satellite to
+reach the nearest ground station in each snapshot. With this
+spacing between snapshots, columns of 3, 4 and 5 hops are
+dominant.
+The results highlight the robustness of OSPFv3 in highly
+dynamic LEO satellite networks. In both configurations with
+snapshot intervals of five and twenty seconds, the most frequent convergence time for Router LSAs falls within the
+zero to one second range, indicating rapid dissemination
+
+In this section, we present the end-to-end performance
+results for the LEO satellite network using OSPFv3 as the
+routing protocol, with a snapshot interval of ∆t = 5 s. The
+analysis focuses on key traffic metrics including delay, jitter,
+throughput, and packet loss. These metrics provide insight into
+the quality of service experienced by data flows traversing
+the dynamically changing satellite topology. Traffic generation
+was carried out using the Distributed Internet Traffic Generator
+(D-ITG) [2], enabling fine-grained control and measurement
+of network performance under realistic transmission patterns.
+Table I summarizes the key performance metrics collected
+during the two-hour traffic generation with a snapshot interval
+of 5 seconds. The network transmitted a total of 357,552
+packets at an average rate of approximately 49.66 packets
+per second. The reception side successfully received 351,769
+packets, indicating a packet loss rate of about 1.62%, which
+reflects moderate network reliability under the tested conditions.
+
+393
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:18 UTC from IEEE Xplore. Restrictions apply.
+
+TABLE I
+T RAFFIC PERFORMANCE METRICS , ∆t = 5 S
+Total time
+Transmission Metrics
+Total packets sent
+Average packet rate
+Reception Metrics
+Total packets received
+Minimum delay
+Maximum delay
+Average delay
+Average jitter
+Delay standard deviation
+Average packet rate
+Packets dropped
+
+7200 s
+357,552 pkt
+49.66 pkt/s
+351,769 pkt
+4.186 ms
+131.54 ms
+46.148 ms
+359 µs
+18.221 ms
+48.8568 pkt/s
+5,783 (1.62%)
+
+The observed delays ranged from a minimum of 4.186 ms
+up to a maximum of 131.54 ms, with an average end-to-end
+delay of 46.148 ms. The delay jitter was low, with an average
+of 359 microseconds and a standard deviation of 18.221
+ms, suggesting relatively stable latency fluctuations during
+the emulation. The received packet rate closely matches the
+transmission rate, confirming consistent throughput throughout
+the experiment.
+Overall, these results demonstrate that the LEO satellite network with OSPF routing achieves satisfactory packet delivery
+and maintains latency and jitter within reasonable bounds for
+this configuration, supporting its viability for delay-sensitive
+traffic.
+Fig. 9 presents a comparative analysis of the packet delay
+and the number of hops observed at each time step throughout the entire emulation period. The two curves exhibit a
+strong correlation, indicating that an increase in the number
+of hops corresponds to a proportional increase in packet
+delay. Notably, the transient peaks lasting approximately 5
+seconds are attributed to the short interval between snapshots,
+which may introduce inaccuracies in path selection during
+the generation of snapshot files. Additionally, it is important
+to highlight that packets registering zero delay correspond to
+dropped packets. An illustrative example of this phenomenon
+is observed between seconds 400 and 500.
+Fig. 10 presents the histogram of packet delays for the received traffic. The distribution exhibits notable concentrations
+within the intervals (15, 20] ms and (70, 75] ms, with dominant
+peaks observed in the (30, 35] ms and (40, 45] ms ranges.
+According to the D-ITG metrics summarized in Table I, the
+average packet delay under the current scenario is measured
+at 46.148 ms.
+Fig. 11 illustrates the evolution of the packet loss rate over
+time, alongside the corresponding satellite latitude, in order
+to assess potential correlations between geographical position
+and network reliability. A total of seven instances of complete
+packet loss (100%) are observed. The first occurs at t = 5 s
+and is attributed to the initialization of GSL events, during
+which links are momentarily dropped and re-established at
+each ground station. A prolonged loss is detected between
+400 s and 500 s, which appears unrelated to network behavior
+
+Fig. 9. Packet delay and number of hops, ∆t = 5 s.
+
+Fig. 10. Packet delay histogram, ∆t = 5 s.
+
+and is instead attributed to internal limitations in D-ITG
+performance during that interval. Additional losses at 740 s
+and 6770 s coincide with the satellite crossing the 60º latitude,
+where the inter-plane ISL drops as part of the network’s
+dynamic topology. Finally, packet losses at 2655 s, 3205 s,
+and 3750 s occur near the equator, a region characterized by
+a greater number of hops between the satellite and the ground
+stations.
+The end to end performance evaluation of the LEO satellite
+network under OSPFv3 routing and a snapshot interval of
+∆t = 5 s reveals that the system is capable of maintaining
+acceptable quality of service metrics in a dynamic orbital
+context. The average delay and jitter remain within tolerable
+limits for many delay sensitive applications, and the overall
+packet delivery rate is consistent with moderate network
+reliability, as evidenced by a loss rate of 1.62 percent. Correlation analyses indicate that packet delay closely follows
+the number of hops, confirming the sensitivity of end to end
+latency to topological variations. Furthermore, the temporal
+occurrence of packet losses linked to events such as inter
+satellite link drops, ground station handovers and simulation
+tool limitations highlights critical periods where routing adaptability or protocol resilience may be challenged. These insights
+
+394
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:18 UTC from IEEE Xplore. Restrictions apply.
+
+Fig. 11. Packet loss rate and satellite orbit latitudes, ∆t = 5 s.
+
+underscore the importance of robust routing strategies and
+adaptive mechanisms to mitigate the inherent variability of
+LEO constellations, especially in regions of high mobility or
+frequent topological changes.
+V. C ONCLUSIONS AND F UTURE W ORK
+This work presents a comprehensive study on the applicability of OSPFv3 in LEO satellite networks, supported by a
+custom emulation framework that combines realistic orbital
+dynamics with full-featured network stack simulation. Our
+results demonstrate that although OSPFv3 can maintain connectivity under dynamic LEO conditions, its default behavior
+and timing parameters are not well suited for highly timevariant topologies.
+The proposed framework represents a significant advancement in the evaluation of routing protocols for satellite communications. By decoupling the topology generation from
+protocol operation and emulating realistic ground and intersatellite interactions, it enables precise analysis of protocol
+performance in complex scenarios. This contribution lays the
+groundwork for future developments in adaptive routing strategies and highlights the necessity of protocol enhancements to
+support next-generation space-based Internet services.
+Building upon the satellite network emulation framework
+developed in this study, future work will focus on the evaluation of additional routing algorithms. In particular, we plan
+to assess not only traditional approaches but also routing
+strategies specifically designed to exploit the predictable temporal evolution of satellite network topologies. Given the
+deterministic nature of orbital mechanics, such time-aware
+algorithms may offer significant improvements in performance
+and reliability compared to static or purely reactive solutions.
+R EFERENCES
+[1] J. K. Holtzman, “Iridium: A global satellite communications system,”
+IEEE Commun. Mag., vol. 35, no. 10, pp. 116–121, Oct. 1997.
+
+[2] A. Botta, A. Dainotti, and A. Pescapé, “D-ITG: A distributed tool for
+generating traffic and measuring network performance,” in Proc. 1st
+Int. Conf. Quantitative Evaluation of Systems (QEST), pp. 316–317,
+Sept. 2004.
+[3] R. Coltun, D. Ferguson, and J. Moy, “OSPF for IPv6,” RFC 5340,
+July 2008.
+[4] Xiaogang Qi, Jiulong Ma, Dan Wu, Lifang Liu, and Shaolin Hu,
+“A survey of routing techniques for satellite networks,” Journal of
+Communications and Information Networks, vol. 1, no. 4, pp. 66–85,
+2016.
+[5] Daniel Fischer, David Basin, Knut Eckstein, and Thomas Engel, “Predictable Mobile Routing for Spacecraft Networks,” IEEE Transactions
+on Mobile Computing, vol. 12, no. 6, pp. 1174–1187, 2013.
+[6] Xiang Zhang, Yuan Yang, Mingwei Xu, and Jing Luo, “ASER: Scalable
+Distributed Routing Protocol for LEO Satellite Networks,” in 2021 IEEE
+46th Conference on Local Computer Networks (LCN), pp. 65–72, 2021.
+Organization: IEEE.
+[7] Yucheng Wang, Wenfeng Li, Kanglian Zhao, and Yuan Fang, “An
+Improved Version of the OSPF Routing Protocol Designed for LargeScale Polar Orbit Constellations,” in International Conference on
+Wireless and Satellite Systems, pp. 311–320, 2020.
+[8] Bo Wang, Lixiang Liu, Shuaijun Liu, Shan Wu, and Hailong Hu,
+“Performance Analysis of OSPF in Integrated Satellite and Terrestrial
+Network,” in 2020 12th International Conference on Communication
+Software and Networks (ICCSN), pp. 435–439, 2020.
+[9] Tian Pan, Tao Huang, Xingchen Li, Yujie Chen, Wenhao Xue, and
+Yunjie Liu, “OPSPF: Orbit Prediction Shortest Path First Routing for
+Resilient LEO Satellite Networks,” in Proceedings of the IEEE International Conference on Communications, pp. 1–6, 2019. Organization:
+IEEE.
+[10] S. Kassing, D. Bhattacherjee, A. B. Águas, J. E. Saethre, and A. Singla,
+“Exploring the ’Internet from space’ with Hypatia,” Proc. ACM Internet
+Measurement Conf. (IMC), pp. 214–229, Oct. 2020.
+[11] Tim Schubert, Lars Wolf, and Ulf Kulau, “ns-3-leo: Evaluation Tool
+for Satellite Swarm Communication Protocols,” IEEE Access, vol. 10,
+pp. 11527–11537, 2022.
+[12] Kejun Li, Changlin Jiang, Yu Wang, Dan Zhao, Qing Li, and Yong Jiang,
+“Achieving Scalable and Efficient Routing in LEO Constellations,” in
+MILCOM 2022 - 2022 IEEE Military Communications Conference,
+pp. 404–411, 2022.
+[13] Bob Briscoe, Koen De Schepper, Marcelo Bagnulo, and Greg White,
+“Low Latency, Low Loss, and Scalable Throughput (L4S) Internet
+Service: Architecture,” RFC 9330, RFC Editor, 2023.
+[14] Fei Yan, Hongbin Luo, Shan Zhang, Zhiyuan Wang, and Peng Lian,
+“A comparative study of IP-based and ICN-based link-state routing
+protocols in LEO satellite networks,” Peer-to-Peer Networking and
+Applications, vol. 16, no. 5, pp. 3032–3046, 2023. Publisher: Springer
+Science
+[15] Rui Li, Jiaxin Zhang, Shuang Zheng, Kaiwei Wang, Peng Wang, and
+Xing Zhang, “LEO Mega-Constellations Routing Algorithm Based on
+Area Segmentation,” arXiv preprint arXiv:2302.01525, 2023.
+[16] Zijian Yang, Feng Tian, Jifeng Jin, and Huijie Liu, “Rethinking LEO
+Mega-Constellation Routing to Provide Fast Internet Access Services,”
+Sensors, vol. 23, no. 6, art. 3207, 2023.
+[17] Cedric Westphal, Lin Han, and Richard Li, “LEO Satellite Networking
+Relaunched: Survey and Current Research Challenges,” ITU Journal on
+Future and Evolving Technologies, vol. 4, no. 4, pp. 1–?, Dec. 2023. Affiliation: Futurewei Technologies Inc., Santa Clara, CA, USA. [Online].
+Available: https://www.itu.int/en/journal/
+[18] Kaiwei Wang, Jiaxin Zhang, Shuang Zheng, Peng Wang, Xing Zhang,
+and Barry Evans, “An Intelligent Area-Segmentation Enabled Hybrid
+Routing Method in Mega-Constellations,” 2023.
+[19] Hongcheng Yan, Liang Qiao, Wei Wu, Juan A. Fraire, Dong Zhou,
+Luming Li, and Yong Xu, “Routing in Future Space-Terrestrial Integrated Networks with SATNET-OSPF,” International Journal of Satellite
+Communications and Networking, vol. 42, no. 1, pp. 1–25, 2024.
+Publisher: Wiley.
+[20] Xiangtong Wang, Menglong Yang, Songchen Han, and Wei Li, “MultiProtocol Location Forwarding (MPLF) for Space Routing,” arXiv
+preprint arXiv:2401.07517, 2024. [Online]. Available: https://arxiv.org/
+abs/2401.07517
+[21] T. Li, “RFC 9717: A Routing Architecture for Satellite Networks,”
+RFC 9717, 2025.
+
+395
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:57:18 UTC from IEEE Xplore. Restrictions apply.
+
+

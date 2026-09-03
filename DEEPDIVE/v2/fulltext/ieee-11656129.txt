@@ -1,0 +1,370 @@
+2026 24th International Conference on Optical Communications and Networks (ICOCN) | 979-8-3195-0817-1/26/$31.00 ©2026 IEEE | DOI: 10.1109/ICOCN70692.2026.11656129
+
+Load-Balanced and Congestion-Aware Routing for
+LEO Laser Satellite Networks Based on Deep
+Reinforcement Learning
+Haoxin Li,1 Junling Yuan,1,* Xuhong Li,2 and Qikun Zhang1
+Zhengzhou University of Light Industry, Zhengzhou, China
+2
+Zhongyuan University of Technology, Zhengzhou, China
+*yuanjunling@foxmail.com
+
+1
+
+Abstract—To address load imbalance in low earth orbit
+(LEO) laser satellite networks (LSN), this paper proposes a
+deep reinforcement learning (DRL) based routing algorithm,
+which combines proximal policy optimization (PPO) and
+K-shortest path (KSP) strategies to transform the large-scale
+routing problem into a decision-making process over a small
+set of paths. Simulation results demonstrate that, compared
+with traditional Dijkstra and random routing algorithms, the
+proposed algorithm fully exploits network resources,
+effectively prevents network bottlenecks, and significantly
+enhances the network’s service-carrying capacity.
+
+constellation, consisting of N orbits, each with M satellites.
+Each satellite is connected to four neighboring satellites via
+LISLs, thereby forming intra-orbit and inter-orbit links. The
+network is modeled as a weighted graph G= V, L .
+
+Keywords—LEO satellite network, laser inter-satellite link,
+load balancing, deep reinforcement learning, 6G
+
+The system calculates a routing path Ld for any service
+d∈D. A service will only be accepted if all links along the
+selected path meet the bandwidth constraints. Thus, the total
+number of services carried by the network is:
+
+I. INTRODUCTION
+With the evolution of the Internet of Things and
+sixth-generation (6G) technology, future networks must
+support ultra-low latency, high capacity, and global coverage
+[1]–[3]. Low earth orbit (LEO) satellite constellations,
+particularly LEO laser satellite networks (LSNs) enabled by
+laser
+inter-satellite
+links
+(LISLs),
+can
+provide
+high-bandwidth, low-interference communications that are
+not subject to spectrum constraints [4]. However, uneven
+spatiotemporal service distribution can lead to load
+imbalance and link congestion, thereby limiting network
+performance.
+Traditional methods improve performance through
+service-aware mechanisms such as dynamic link assignment,
+time-scale load balancing, and backpressure routing [5]–[7],
+as well as congestion-aware strategies [8], but they lack
+adaptability. DRL-based methods, such as DDPG [9], SAC
+[10], and DQN [11], can achieve adaptive routing, but suffer
+from issues such as an overly large action space, low
+decision accuracy, or training instability.
+To address these issues, this paper proposes an algorithm
+called KSP Enhanced PPO for Load-Balancing and
+Congestion-Aware Routing (PPO-KSP), which uses KSP to
+generate candidate paths, thereby reducing the action space,
+while also leveraging PPO to learn adaptive routing
+strategies under dynamic network conditions. In this way, the
+proposed method improves service capacity, achieves
+effective load balancing as well as congestion awareness.
+
+B. Problem Analysis
+In LSN, each LISL l∈L is allocated a bandwidth of bl .
+Therefore, the total network bandwidth can be expressed as:
+BLSN =2×b� ×N×M
+
+αld
+
+(2)
+
+1, if bd ≤ cld
+0,otherwise
+
+(3)
+
+DNum =
+d∈D
+
+αld =
+
+(1)
+
+ld ∈Ld
+
+Where cld denotes the remaining available bandwidth on
+link ld , bd denotes the bandwidth required for service
+demands.
+The average link utilization (ALU) is defined as the ratio
+of the link resources occupied by DNum to the total
+resources of the entire network. It is used to reflect network
+resource utilization and expressed as follows:
+η=
+
+d∈D
+
+ld ∈Ld
+
+bd
+
+BLSN
+
+(4)
+
+To address the issues of underutilized resources and
+limited service capacity caused by load imbalance in satellite
+networks, this paper proposes the following optimization
+objective: Maximize the number of services the network can
+support while ensuring that no service is blocked, that is:
+max DNum , s.t. η ≤ 1
+
+(5)
+
+II. SYSTEM MODEL
+
+III. THE PROPOSED ALGORITHM
+
+A. Network Model
+This paper considers an LSN based on the Walker
+
+A. DRL Model
+1) State Space:In this paper, the agent pre-stores K
+candidate paths calculated by the KSP algorithm for each
+source-destination pair of Vs and Vd . For Vs and Vd , the
+
+This work is supported by Henan Science and Technology Department
+Project No. 262300420305, 252102211112, and 252102211089.
+
+979-8-3195-0817-1/26/$31.00 ©2026 IEEE
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:54:29 UTC from IEEE Xplore. Restrictions apply.
+
+corresponding set of candidate paths ���,�� is defined as
+follows:
+���,�� = P1�s ,�d , P2�s,�d ,⋯, PK�s ,�d
+
+(6)
+
+fk = �min,k, ck , μmax,k, �∗� , Lenk
+
+(7)
+
+At each decision point, the state of the environment is
+composed of the joint features of the K candidate paths
+corresponding to the current service. For the Pk�s,�d , its
+feature vector fk ∈ℝ5 contains the following components:
+
+where �min,k denotes the minimum remaining bandwidth of
+all links on Pk�s,�d , ck denotes the average remaining
+available bandwidth of Pk�s,�d , μmax,k denotes the maximum
+link utilization of Pk�s,�d , �∗� denotes the demand value of
+the current service normalized by the rated bandwidth of the
+network links, and Lenk denotes the path length of Pk�s,�d .
+The state space S observed by the agent at the time of
+routing decision-making can be represented as a set of
+feature vectors fk , i.e.:
+S= f1 , f2 ,⋯, fK T
+
+(8)
+
+2) Action Space:The action space is:
+A= 1,2,⋯,K
+
+(9)
+
+Each action � selects the Pk�s,�d from the cache list as
+the routing path for the current service.
+3) Reward: After the service has been successfully
+routed along the path selected by the agent, the reward for
+this action � is calculated as follows:
+r=R+Y(a)+Z(a)−H(a)
+
+(10)
+
+To prevent differences in units across metrics from
+interfering with policy learning, the metrics are normalized
+in the reward function and a composite reward function is
+constructed using a linear weighting method. � represents
+the fixed positive reward obtained for successfully routing a
+service, Y a is the reward term calculated based on the
+normalized average link utilization of the path selected by
+action �, � a is the reward term calculated based on the
+normalized maximum link utilization of the selected path,
+� a is the penalty term calculated based on the normalized
+path length of the selected path. If the routing fails, the
+reward is set to 0.
+B. Algorithm Flow
+The PPO-KSP algorithm integrates the PPO algorithm
+from DRL with the KSP algorithm from graph theory, the
+latter being a classic method for computing multiple
+candidate paths between nodes [12]. KSP reduces the
+complexity of the action space, while PPO enables the
+learning of optimal path selection under dynamic conditions.
+The agent interacts with the environment, collects samples,
+and updates its policy using truncated objective optimization
+with generalized advantage estimation (GAE), thereby
+ensuring stable convergence [13]. The overall procedure of
+
+the proposed PPO-KSP algorithm is summarized in
+Algorithm 1. (For brevity, the detailed environment
+interaction and constraint checking processes have been
+omitted.)
+Algorithm 1: PPO-KSP
+Compute KSP candidate paths ���,��
+Initialize πθ , Vϕ , replay buffer Rp
+for episode=1 to M do
+Reset environment
+for t=1 to Tmax do
+Construct state St
+Select at ~πθ ∙|St , execute and obtain r via (10)
+Store St , at , r in Rp
+end for
+Compute At , Rt (GAE), update πθ , Vϕ
+end for
+IV. SIMULATION SETTINGS AND RESULT ANALYSIS
+A. Simulation Settings
+This paper presents a Python-based simulation platform
+for the Walker Delta satellite constellation. The constellation
+consists of 42 satellites distributed across 6 orbital planes,
+with 7 satellites in each plane. The DRL model is
+implemented using PyTorch, and the proposed PPO-KSP
+algorithm is systematically evaluated. In the comparative
+experiments, to simulate dynamic arrivals, the traffic follows
+a Poisson distribution with a density range of 900 to 2800, in
+increments of 100. To ensure statistical reliability, each
+algorithm undergoes 10 independent simulations at each
+density level, processing 100,000 traffic instances per
+simulation.
+B. Simulation Result Analysis
+As shown in Fig. 1, the value of K has a significant
+impact on both convergence behavior and final performance.
+When K=20 , the algorithm performs best, indicating an
+appropriate balance between action diversity and training
+stability. Smaller values of K limit the set of candidate paths,
+thereby restricting the policy’s expressive power and leading
+to less than optimal solutions. Conversely, larger values of K
+expand the action space, which increases the variance of the
+policy gradient estimates and slows down the convergence
+rate.
+This paper uses the blocking probability (BP) to measure
+the network service capacity of different algorithms. The
+
+Fig. 1. Learning curves of the PPO-KSP algorithm with different K
+values.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:54:29 UTC from IEEE Xplore. Restrictions apply.
+
+Fig. 2. Performance comparison of three routing algorithms under different traffic densities
+
+calculation of BP is shown in (11) [14]:
+BP=
+
+D −DNum
+D
+
+allocation and suppressing bottlenecks.
+(11)
+
+This paper employs maximum link utilization (MLU) to
+evaluate the network bottleneck suppression capabilities of
+different algorithms. The MLU calculation is shown in (12):
+bli −cli
+li ∈L bl
+i
+
+MLU = max
+
+(12)
+
+Fig. 2 compares the performance of different routing
+algorithms under various traffic densities, with Fig. 2(a), Fig.
+2(b), and Fig. 2(c) showing the BP, ALU, and MLU,
+respectively.
+As shown in Fig. 2(a), the PPO-KSP algorithm achieves
+the lowest BP across all traffic densities, indicating that it
+significantly enhances network service capacity. This
+improvement can be explained by the utilization
+characteristics observed in Fig. 2(b) and Fig. 2(c).
+Specifically, Fig. 2(b) shows that PPO-KSP maintains a
+balanced ALU, demonstrating its ability to utilize network
+bandwidth resources efficiently and uniformly. Compared to
+the Dijkstra algorithm, which tends to concentrate traffic on
+the shortest path and results in underutilization of other links,
+PPO-KSP achieves more comprehensive utilization of
+overall network resources. At the same time, compared to
+random routing algorithms that distribute traffic randomly,
+PPO-KSP avoids unbalanced resource allocation and
+achieves more coordinated link utilization.
+Fig. 2(c) further demonstrates that PPO-KSP effectively
+suppresses excessive growth in link utilization, thereby
+delaying link saturation. In contrast, the random routing
+algorithm often leads to early congestion due to uncontrolled
+traffic distribution, while the Dijkstra algorithm causes local
+overload by concentrating traffic on a small set of shortest
+paths.
+V. CONCLUSION
+In summary, by combining KSP-based action space
+reduction with PPO-based adaptive decision-making, the
+PPO-KSP algorithm achieves load balancing and congestion
+awareness. Simulation results show that, compared to
+traditional routing strategies, this algorithm significantly
+increases network service capacity by balanced resource
+
+REFERENCES
+[1]
+
+N. Cheng, H. E. Jingchao, Z. Yin, C. Zhou, W. U. Huaqing, F. Lyu, H.
+Zhou, X. Shen, "6G service-oriented space-air-ground integrated
+network: A survey," Chinese Journal of Aeronautics, no. 9, pp. 1–18,
+2022.
+[2] H. Guo, J. Li, J. Liu, N. Tian and N. Kato, "A survey on
+space-air-ground-sea integrated network security in 6G," in IEEE
+Communications Surveys & Tutorials, vol. 24, no. 1, pp. 53–87, First
+quarter 2022.
+[3] M. Y. Abdelsadek, et al., "Future space networks: Toward the next
+giant leap for humankind," in IEEE Transactions on Communications,
+vol. 71, no. 2, pp. 949–1007, Feb. 2023.
+[4] R. Li, B. Lin, Y. Liu, M. Dong and S. Zhao, "A survey on laser space
+network: Terminals, links, and architectures," in IEEE Access, vol. 10,
+pp. 34815–34834, 2022.
+[5] X. Qi, et al., "A dynamic link allocation strategy for efficient load
+balancing in multi-layer satellite networks," 2025 IEEE International
+Conference on Communications Workshops (ICC Workshops),
+Montreal, QC, Canada, 2025, pp. 80–85.
+[6] S. Liu, J. Liu and B. Xia, "Adaptive timescale load balancing routing
+algorithm for LEO satellite network," 2023 IEEE/CIC International
+Conference on Communications in China (ICCC), Dalian, China,
+2023, pp. 1–5.
+[7] W. Deng, X. Lv and J. Liu, "Delay-optimized backpressure algorithm
+for load balancing in LEO satellite networks," in IEEE
+Communications Letters, vol. 30, pp. 922–926, 2026.
+[8] Y. Ning, et al., "Load-balancing routing algorithms for service
+congestion avoidance in LEO optical satellite networks," in Journal of
+Optical Communications and Networking, vol. 15, no. 12, pp.
+1038–1049, Dec. 2023.
+[9] Y.-H. Hsu, J.-I. Lee and F.-M. Xu, "A deep reinforcement learning
+based routing scheme for LEO satellite networks in 6G," 2023 IEEE
+Wireless Communications and Networking Conference (WCNC),
+Glasgow, United Kingdom, 2023, pp. 1–6.
+[10] J. Zhu, X. Sun and D. Chen, "Deep reinforcement learning for
+congestion control and routing optimization in LEO satellite
+networks," 2023 5th International Conference on Artificial
+Intelligence and Computer Applications (ICAICA), Dalian, China,
+2023, pp. 739–742.
+[11] F. Dong, et al., "DRL-based load-balancing routing scheme for 6G
+space–air–ground integrated networks," Remote Sensing, no. 11,
+2023.
+[12] J. Yuan, Q. Zhang, and X. Zhang, "A routing modulation and
+spectrum assignment algorithm for semi-filterless elastic optical
+networks," Optical Switching and Networking, vol. 51, pp. 1–9, Feb.
+2024.
+[13] A. d. Rio, D. Jimenez and J. Serrano, "Comparative analysis of A3C
+and PPO algorithms in reinforcement learning: A survey on general
+environments," in IEEE Access, vol. 12, pp. 146795–146806, 2024.
+[14] J. Yuan, et al., "Service provisioning for anycast requests in
+semi-filterless optical networks with spectrum and IT resource
+balancing," Optical Fiber Technology, vol. 93, 2025.
+
+Authorized licensed use limited to: University of Chinese Academy of SciencesCAS. Downloaded on September 03,2026 at 19:54:29 UTC from IEEE Xplore. Restrictions apply.
+
+
