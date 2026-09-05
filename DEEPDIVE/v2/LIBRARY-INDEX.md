@@ -1,6 +1,6 @@
-# 统一文献库索引 v3
+# 统一文献库索引 v4
 
-位置: DEEPDIVE/v2/PAPER-LIBRARY/ — 185 文件(PDF 106 / MD 38 / TXT 41)。VM 副本: /data/论文/papers-lib/PAPER-LIBRARY/
+位置: DEEPDIVE/v2/PAPER-LIBRARY/ — 188 文件(PDF 106 / MD 41 / TXT 41)。VM 副本: /data/论文/papers-lib/PAPER-LIBRARY/
 
 | 文件 | 类型 | 大小 |
 |---|---|---|
@@ -132,8 +132,11 @@
 | [43]_Sukhbaatar_2016_CommNet_NeurIPS.pdf | PDF | 4232KB |
 | doi-10.1186-s13677-024-00621-z.md | MD | 54KB |
 | doi-10.1186-s13677-024-00621-z.txt | TXT | 54KB |
+| doi-10.3390-app15094664.md | MD | 56KB |
 | doi-10.3390-app15094664.txt | TXT | 58KB |
+| doi-10.3390-electronics8090920.md | MD | 63KB |
 | doi-10.3390-electronics8090920.txt | TXT | 60KB |
+| doi-10.3390-s25041232.md | MD | 80KB |
 | doi-10.3390-s25041232.txt | TXT | 73KB |
 | ieee-10016705.md | MD | 190KB |
 | ieee-10016705.pdf | PDF | 4847KB |
