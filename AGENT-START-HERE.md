@@ -23,7 +23,7 @@ python3 scripts/check_document_governance.py --mode all --report /tmp/leo-docume
 
 1. `AGENTS.md`：稳定、长期的仓库硬规则。
 2. `ANALYSIS/DOCUMENT-STATUS.json`：每份指导和记录文档的状态、用途、替代入口及复核周期。
-3. **论文选题任务**：先读 `LITERATURE/README.md`，按其中的证据防火墙形成冷启动问题草图。在草图和第一轮外部文献碰撞完成前，不读取详细实验计划、历史结果、旧候选排序或平台功能清单。
+3. **论文选题任务**：先读 `LITERATURE/README.md`，按其中的方向地图 → 方向比较 → 具体问题 → 近邻核验逐层收敛，遵守证据防火墙。在独立问题形成和直接近邻核验完成前，不读取详细实验计划、历史结果、旧候选排序或平台功能清单。
 4. **实验、实现和复核任务**：读取 `ANALYSIS/CURRENT-EXPERIMENT-READINESS.md`、`ANALYSIS/EXPERIMENT-PROGRAM.md` 与 `EXPERIMENTS/experiment-program.yaml`，实时核对其中的外部状态。
 5. 选题候选已经独立形成后，才可把上一步的 CURRENT 文档作为本地证据揭示，用于反证、边界和可行性判断，不得据此生成或排序候选。
 6. 按任务读取当前专题合同：
