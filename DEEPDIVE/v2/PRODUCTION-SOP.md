@@ -54,4 +54,5 @@
 | MinerU 批量 3 篇挂 | 单篇串行 |
 | torchvision::nms 缺 | 同 cu126 源重装 torchvision |
 | libGL 缺 | opencv-python-headless |
+| MDPI 403 反爬 | Playwright headed + JS 跳转绕 goto（mdpi_dl3.py 模式），成功率 100% |
 | 沙箱禁 ~/.cache | HF_HOME 指 /private/tmp 或 VM 数据目录 |
