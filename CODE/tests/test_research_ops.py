@@ -65,6 +65,15 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(self.store.read()["papers"]["p1"]["doi"], "10.1234/test")
         self.unchanged_failure({"op": "paper", "record": {"id": "p2", "doi": "10.1234/TEST", "title": "P", "metadata_source": "fixture"}})
 
+    def test_malformed_patch_does_not_write(self):
+        before = (self.store.root / "state.json").read_bytes()
+        for malformed in ([], None, "patch"):
+            with self.assertRaises(ops.Invalid):
+                self.store.apply(malformed)
+        self.unchanged_failure("operation")
+        self.unchanged_failure({"op": "paper", "record": []})
+        self.assertEqual((self.store.root / "state.json").read_bytes(), before)
+
     def test_wrong_asset_hash_is_atomic(self):
         self.unchanged_failure({"op": "source", "record": dict(self.source, id="wrong", sha256="0"*64)})
 
@@ -134,6 +143,19 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(s["claims"]["c1"]["currency"], "needs_recheck")
         self.assertEqual(s["tasks"]["t1"]["currency"], "needs_recheck")
         self.assertEqual((self.store.root / "blobs" / self.sha).read_bytes(), b"%PDF-fixture-one")
+
+    def test_first_activation_invalidates_previously_read_other_source(self):
+        self.apply([{"op": "paper", "record": {"id": "p2", "title": "Another paper", "metadata_source": "fixture"}},
+                    {"op": "source", "record": dict(self.source, id="p2-old", paper_id="p2")},
+                    {"op": "source", "record": dict(self.source, id="p2-new", paper_id="p2", version="another version")},
+                    {"op": "read", "record": dict(self.receipt, id="p2-read", source_id="p2-old")},
+                    {"op": "claim", "record": dict(self.claim, id="p2-claim", paper_id="p2", source_id="p2-old", read_id="p2-read")},
+                    {"op": "task", "record": {"id": "p2-task", "worker_session": "w", "question": "q", "claim_ids": ["p2-claim"], "execution": "queued"}}])
+        self.apply([{"op": "activate_source", "paper_id": "p2", "source_id": "p2-new"}])
+        s = self.store.read()
+        self.assertEqual(s["claims"]["p2-claim"]["currency"], "needs_recheck")
+        self.assertEqual(s["tasks"]["p2-task"]["currency"], "needs_recheck")
+        self.assertEqual(s["claims"]["c1"]["currency"], "current")
 
     def test_review_reject_is_successful_delivery(self):
         _, sha = self.task()

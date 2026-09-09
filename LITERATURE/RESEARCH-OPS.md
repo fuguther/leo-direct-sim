@@ -34,6 +34,8 @@ python3 -m pytest CODE/tests/test_research_ops.py -q
 
 support=unverified/supported/partial/contradicted，与 interpretation=author_report/our_inference/hypothesis 分开。checked 是核验人的声明，程序不认证科学正确。页数与论文身份须回原文核验；错误MD靠hash/关联检查与原页核对共同防止，不声称仅凭hash能识别错文。
 
+待复核恢复采用追加式：重新核验后建立新read和新claim（supersedes旧claim），建立引用新claim的新task，并更新本地binding。v1不把旧任务原地重新认证为current，保留其当时证据和审查历史。
+
 ## Hook接线
 
 适配器只处理 `PreToolUse` 的 `update_goal(action=complete)`：检查绑定任务是否交付、审查有无结果、产物与依赖是否有效。reject允许结束执行；不拦pause/blocked；不配置Stop无限续跑。

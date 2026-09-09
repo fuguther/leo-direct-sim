@@ -112,6 +112,7 @@ class Store:
             require(path.is_file() and digest(path.read_bytes()) == sha, "missing/corrupt blob: " + sha)
 
     def apply(self, patch):
+        require(isinstance(patch, dict), "patch must be an object")
         require(type(patch.get("expected_revision")) is int, "expected_revision integer required")
         require(text(patch.get("actor")) and text(patch.get("reason")), "actor and reason required")
         require(isinstance(patch.get("operations"), list) and patch["operations"], "operations required")
@@ -140,8 +141,10 @@ class Store:
             return state
 
     def operation(self, s, op):
+        require(isinstance(op, dict), "operation must be an object")
         kind = op.get("op")
         record = copy.deepcopy(op.get("record", {}))
+        require(isinstance(record, dict), "record must be an object")
         if kind in {"paper", "source", "derived", "read", "claim", "task", "review"}:
             key = ident(record.get("id"))
             table = {"paper": "papers", "source": "sources", "derived": "derived", "read": "reads",
@@ -188,14 +191,13 @@ class Store:
             paper = s["papers"][op["paper_id"]]
             source = s["sources"][op["source_id"]]
             require(source["paper_id"] == op["paper_id"], "source/paper mismatch")
-            old = paper.get("active_source")
             paper["active_source"] = op["source_id"]
             stale = set()
-            if old and old != op["source_id"]:
-                for key, claim in s["claims"].items():
-                    if claim["source_id"] == old and claim["currency"] != "superseded":
-                        claim["currency"] = "needs_recheck"
-                        stale.add(key)
+            for key, claim in s["claims"].items():
+                if (claim["paper_id"] == op["paper_id"] and claim["source_id"] != op["source_id"]
+                        and claim["currency"] != "superseded"):
+                    claim["currency"] = "needs_recheck"
+                    stale.add(key)
             self.invalidate(s, stale)
         elif kind == "note":
             paper_id = op["paper_id"]
@@ -335,7 +337,7 @@ def main():
                     store.verify_blobs(state)
         print(json.dumps({"ok": True, "revision": state["revision"], "counts": {k: len(state[k]) for k in ("papers", "sources", "derived", "reads", "claims", "notes", "tasks", "reviews")}}, ensure_ascii=False))
         return 0
-    except (Invalid, OSError, KeyError, TypeError, json.JSONDecodeError) as exc:
+    except (Invalid, OSError, KeyError, TypeError, AttributeError, json.JSONDecodeError) as exc:
         print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
 
