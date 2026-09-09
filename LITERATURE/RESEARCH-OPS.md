@@ -19,6 +19,8 @@ python3 -m pytest CODE/tests/test_research_ops.py -q
 
 补丁：`expected_revision`、`actor`、`reason`、`operations`。先读取 revision 再构造补丁；冲突须重读合并，不能改数字盲重试。机器可跑例子见测试 `EvidenceTests.setUp`；真实论文演示记录保存在本地数据目录。
 
+弱模型默认不手写完整事务补丁。阅读 worker 先提交一个小型“语义候选”：`statement`、`scope`、`verbatim`、`locator`、支持判断、与现有主张的重复性判断和 caveat。主控回到原文核查内容价值，随后才把获准候选规范化为下表字段，补齐 read/note 继承关系、受控枚举、路径、哈希和 revision，并在隔离副本 apply+validate。语义正确但重复的主张应判 revise/reject；机械校验通过不能替代内容审核。
+
 | 操作 | 核心字段与行为 |
 |---|---|
 | paper | id/title/metadata_source，doi 可选，规范化并拒绝重复 DOI；无 DOI 身份人工核验，Zotero/其他标识可附存 |
@@ -53,3 +55,5 @@ support=unverified/supported/partial/contradicted，与 interpretation=author_re
 flock+expected_revision串行合并，先校验、保留旧快照再原子替换。校验关联、定位、文件hash及审查产物；不是全文理解器。
 
 worker若有任意shell写权限，就能绕过脚本或伪造session，这些是防误操作机制而非隔离安全系统。用户接受与关键内容审查仍由主控负责。v1未实现跨任务DAG传播、自动唤醒、Zotero写回、全文覆盖语义识别，不宣称完整科研自动化。
+
+真实验收显示，要求 Flash worker 同时阅读、判断并拼装完整事务补丁会产生明显无效推理开销；语义候选接口是默认路径。完整补丁只适用于已有固定模板的机械执行任务。
