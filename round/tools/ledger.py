@@ -19,14 +19,14 @@ ledger_add.py 缺陷复现: round/logs/repro-ledger-cli.txt（spec_from_file_loc
 - new_evidence 非空必须同时给 --evidence-source 与 --evidence-judgment（主控判定），否则拒绝。
 - 状态词表: backlog(待建设) awaiting_evidence(待证据) needs_revision(需修订)
   recommended_pending_review(推荐待审) archived(归档) merged(合并簿记)。
-- 中断恢复: 追加即时 flush+fsync；doctor 校验行完整性，残尾行 --repair 用临时文件+原子替换截除。
+- 中断恢复: 追加即时 flush+fsync；doctor 报告完整性问题；R3 起停用破坏性截断——原件保留，--repair-out 产出重建候选文件由人采纳。
 
 用法:
   python3 ledger.py add --cards cards.json --ledger L.csv [--old OLD.csv] [--writer WHO]
   python3 ledger.py revise --cand-id ID --set '{"difficulty":"新值"}' --reason "为何" --ledger L.csv [--status S]
   python3 ledger.py status --cand-id ID --status awaiting_evidence --reason "为何" --ledger L.csv
   python3 ledger.py show --ledger L.csv [--all]
-  python3 ledger.py doctor --ledger L.csv [--repair]
+  python3 ledger.py doctor --ledger L.csv [--backup] [--repair-out PATH]
   python3 ledger.py review-register --review-id R1 --cand-id ID --content-hash H --role builder --file F --reviews RV.csv
   python3 ledger.py invalidate-reviews --cand-id ID --content-hash H --reviews RV.csv
 """
@@ -51,7 +51,7 @@ STATUSES = ("backlog", "awaiting_evidence", "needs_revision",
 
 HEADER = ["row_no", "cand_id", "version", "op", "status", "title"] + list(CARD_FIELDS[1:]) + [
     "new_evidence", "new_evidence_source", "evidence_judgment", "old_topic_match",
-    "supersedes_row", "content_hash", "source", "writer", "written_at", "note"]
+    "similar_to", "merged_into", "supersedes_row", "content_hash", "source", "writer", "written_at", "note"]
 
 # 归一化语义复制自 research-ops pool.py（sha256 前缀 15989feaeedc497d），保持合并键可比
 _STRIP = re.compile(r"[^\w]+")
@@ -76,8 +76,9 @@ def content_hash(card: dict) -> str:
 
 
 def _norm_lb(text) -> str:
-    """承重比较归一化：去全部空白与标点后小写（标点级修改不触发审查失效）。"""
-    return re.sub(r"[\s\W_]+", "", (text or "").lower(), flags=re.UNICODE)
+    """承重比较归一化（R3 修复1）：仅折叠空白——至多忽略纯空白差异。
+    正负号/不等号/小数点等一切符号与标点改变都算承重变化，触发审查失效。"""
+    return re.sub(r"\s+", " ", (text or "").lower()).strip()
 
 
 # ------------------------------------------------------------------ IO ----
@@ -150,7 +151,7 @@ def cmd_add(args):
         return 2
     rows, bad = _read_ledger(args.ledger)
     if bad:
-        print("LEDGER_TAINTED: 台账存在坏行，先 doctor --repair 再入账", file=sys.stderr)
+        print("LEDGER_TAINTED: 台账存在坏行，先 doctor --repair-out 重建并人工采纳，再入账", file=sys.stderr)
         return 2
     proj = current_projection(rows)
     old_proj = {}
@@ -168,28 +169,30 @@ def cmd_add(args):
                   % card.get("title", "?")[:40], file=sys.stderr)
             return 2
         ch = content_hash(card)
-        cid = cand_id_for(card)
+        cid = "c" + ch[1:11]  # 身份=首见内容（R3 修复2：相似≠同一身份；重试同内容→同 id→幂等）
         dup = next((r for r in rows + added if r["cand_id"] == cid and r["content_hash"] == ch and r["op"] == "add"), None)
         if dup:
-            skipped.append({"cand_id": cid, "title": card.get("title", ""), "reason": "content_hash 与既有行相同（幂等跳过）"})
+            skipped.append({"cand_id": cid, "title": card.get("title", ""), "reason": "content_hash 与既有行相同（重试幂等跳过）"})
             continue
         key = merge_key(card)
         old_hit = old_proj.get(key)
-        sibling = proj.get(cid)
-        version = (int(sibling["version"]) + 1) if sibling else 1
-        note = ""
-        if sibling:
-            note = "同键同候选的新版本卡（同批/重入），需主控决定合并或保留"
+        # 相似线索：同合并键的其他候选（仅报告；合并必须主控显式裁决）
+        sim = sorted({r["cand_id"] for r in list(proj.values()) + added
+                      if r["cand_id"] != cid and merge_key(r) == key})
+        if old_hit and old_hit not in sim:
+            sim.append(old_hit)
         row = {
-            "row_no": len(rows) + len(added) + 1, "cand_id": cid, "version": version,
+            "row_no": len(rows) + len(added) + 1, "cand_id": cid, "version": 1,
             "op": "add", "status": "awaiting_evidence", "title": card.get("title", ""),
             **{f: card.get(f, "") for f in CARD_FIELDS[1:]},
             "new_evidence": ev, "new_evidence_source": card.get("new_evidence_source", ""),
             "evidence_judgment": card.get("evidence_judgment", ""),
             "old_topic_match": ("old:" + old_hit) if old_hit else "",
-            "supersedes_row": sibling["row_no"] if sibling else "",
+            "similar_to": " ".join(sim),
+            "merged_into": "",
+            "supersedes_row": "",
             "content_hash": ch, "source": card.get("source", ""), "writer": args.writer,
-            "written_at": _now(), "note": note,
+            "written_at": _now(), "note": "",
         }
         _append(args.ledger, row)
         added.append(row)
@@ -197,7 +200,10 @@ def cmd_add(args):
         if old_hit:
             print("OLD_TOPIC_MATCH: %s <-> 旧卡 %s（仅报告，处置权在主控；同键无新证据不自动淘汰）"
                   % (cid, old_hit))
-        print("ADDED %s v%s %s" % (cid, version, str(card.get("title", ""))[:40]))
+        if sim:
+            print("SIMILAR_CANDIDATES: %s <-> %s（同合并键线索；相似≠同一题，合并须主控显式裁决）"
+                  % (cid, ",".join(sim)))
+        print("ADDED %s v1 %s" % (cid, str(card.get("title", ""))[:40]))
     for s in skipped:
         print("SKIPPED %s %s | %s" % (s["cand_id"], str(s["title"])[:40], s["reason"]))
     print("SUMMARY added=%d skipped=%d" % (len(added), len(skipped)))
@@ -211,7 +217,7 @@ def cmd_revise(args):
         return 2
     rows, bad = _read_ledger(args.ledger)
     if bad:
-        print("LEDGER_TAINTED: 先 doctor --repair", file=sys.stderr)
+        print("LEDGER_TAINTED: 先 doctor --repair-out 重建并人工采纳", file=sys.stderr)
         return 2
     proj = current_projection(rows)
     cur = proj.get(args.cand_id)
@@ -269,6 +275,45 @@ def cmd_status(args):
     return 0
 
 
+def cmd_merge(args):
+    """显式合并（R3 修复2）：相似度/同键永不自动合并；只有本命令建立合并关系。"""
+    if args.cand_id == args.into:
+        print("REJECTED: 不能合并到自身", file=sys.stderr); return 2
+    rows, bad = _read_ledger(args.ledger)
+    if bad:
+        print("LEDGER_TAINTED: 先 doctor --repair-out 重建并人工采纳", file=sys.stderr); return 2
+    proj = current_projection(rows)
+    src, dst = proj.get(args.cand_id), proj.get(args.into)
+    if not src or not dst:
+        print("NOT_FOUND: %s / %s" % (args.cand_id, args.into), file=sys.stderr); return 2
+    if src["status"] == "merged":
+        print("REJECTED: %s 已是 merged（merged_into=%s）" % (args.cand_id, src["merged_into"]), file=sys.stderr); return 2
+    row = dict(src)
+    row.update({"row_no": len(rows) + 1, "version": int(src["version"]) + 1, "op": "merge",
+                "status": "merged", "merged_into": args.into, "writer": args.writer,
+                "written_at": _now(), "note": "merge -> %s: %s" % (args.into, args.reason)})
+    _append(args.ledger, row)
+    print("MERGED %s -> %s (v%s, 理由已留痕)" % (args.cand_id, args.into, row["version"]))
+    return 0
+
+
+def cmd_migrate(args):
+    """schema 迁移（R3）：旧头台账 → 当前 HEADER；先备份原件。"""
+    rows, bad = _read_ledger(args.ledger)
+    if not bad and _check_schema(args.ledger):
+        print("ALREADY_CURRENT"); return 0
+    import shutil, time as _t
+    bak = args.ledger + ".bak-" + _t.strftime("%Y%m%d-%H%M%S")
+    shutil.copy2(args.ledger, bak)
+    out = []
+    for r in rows:
+        nr = {k: r.get(k, "") for k in HEADER}
+        out.append(nr)
+    _atomic_replace(args.ledger, _dump_csv(out, HEADER))
+    print("MIGRATED rows=%d backup=%s" % (len(out), bak))
+    return 0
+
+
 def cmd_show(args):
     rows, bad = _read_ledger(args.ledger)
     for b in bad:
@@ -283,6 +328,13 @@ def cmd_show(args):
 
 
 def cmd_doctor(args):
+    """完整性报告与**安全**恢复（R3 修复3）：
+    - 默认只报告（记录级 csv 解析 + EOF 换行 + 重复键）。
+    - 已停用按物理行截断的原地修复（会破坏含多行字段的合法记录）。
+    - --backup：原件复制为 <path>.bak-<ts>（原件不动）。
+    - --repair-out PATH：从可解析记录重建候选文件写到 PATH；结构级损坏则不产出。
+      原件任何情况下不被修改；采纳由人执行（mv/替换）。
+    """
     raw = open(args.ledger, encoding="utf-8").read() if os.path.exists(args.ledger) else ""
     rows, bad = _read_ledger(args.ledger)
     problems = list(bad)
@@ -299,20 +351,27 @@ def cmd_doctor(args):
         return 0
     for p in problems:
         print("PROBLEM line=%s: %s" % (p["line"], p["reason"]))
-    if args.repair:
-        good_lines = raw.splitlines(keepends=True)
-        bad_lines = {p["line"] for p in problems if isinstance(p["line"], int)}
-        kept = [ln for i, ln in enumerate(good_lines, start=1) if i not in bad_lines]
-        text = "".join(kept)
-        if text and not text.endswith("\n"):
-            text += "\n"
-        _atomic_replace(args.ledger, text)
-        rows2, bad2 = _read_ledger(args.ledger)
-        fixed = not bad2
-        print("REPAIRED: 移除 %d 个坏行（截尾/坏行），原子替换完成；复验 %s"
-              % (len(bad_lines), "通过" if fixed else "仍有问题"))
-        return 0 if fixed else 1
-    print("HINT: 加 --repair 截除坏行（不做其他改写）")
+    if args.backup:
+        import shutil, time as _t
+        bak = args.ledger + ".bak-" + _t.strftime("%Y%m%d-%H%M%S")
+        shutil.copy2(args.ledger, bak)
+        print("BACKUP: %s（原件未动）" % bak)
+    if args.repair_out:
+        struct_bad = any("field_count" not in p["reason"] for p in bad)
+        if struct_bad:
+            print("REPAIR_ABORTED: 存在 csv 结构级损坏（引号不闭合等），记录级重建不安全；仅保留报告与备份", file=sys.stderr)
+            return 1
+        kept, kseen = [], set()
+        for r in rows:
+            k = (r["cand_id"], r["version"])
+            if k in kseen:
+                continue
+            kseen.add(k)
+            kept.append(r)
+        _atomic_replace(args.repair_out, _dump_csv(kept, HEADER))
+        print("REPAIR_OUT: %s（%d 条记录；原件未动；采纳由人执行）" % (args.repair_out, len(kept)))
+        return 1  # 存在过问题：即使产出修复件也返回 1，提示人工采纳
+    print("HINT: --backup 备份原件；--repair-out PATH 产出重建候选文件（原件不动）")
     return 1
 
 
@@ -380,7 +439,12 @@ def main(argv):
     p.add_argument("--reason", required=True); p.add_argument("--ledger", required=True)
     p.add_argument("--writer", default="agent/20260910-topic-loop")
     p = sub.add_parser("show"); p.add_argument("--ledger", required=True); p.add_argument("--all", action="store_true")
-    p = sub.add_parser("doctor"); p.add_argument("--ledger", required=True); p.add_argument("--repair", action="store_true")
+    p = sub.add_parser("doctor"); p.add_argument("--ledger", required=True)
+    p.add_argument("--backup", action="store_true"); p.add_argument("--repair-out")
+    p = sub.add_parser("merge"); p.add_argument("--cand-id", required=True); p.add_argument("--into", required=True)
+    p.add_argument("--reason", required=True); p.add_argument("--ledger", required=True)
+    p.add_argument("--writer", default="agent/20260910-topic-loop")
+    p = sub.add_parser("migrate"); p.add_argument("--ledger", required=True)
     p = sub.add_parser("review-register"); p.add_argument("--review-id", required=True); p.add_argument("--cand-id", required=True)
     p.add_argument("--content-hash", required=True); p.add_argument("--role", default="reviewer")
     p.add_argument("--file", required=True); p.add_argument("--reviews", required=True); p.add_argument("--note")
@@ -388,7 +452,8 @@ def main(argv):
     p.add_argument("--content-hash", required=True); p.add_argument("--reviews", required=True)
     args = ap.parse_args(argv)
     return {"add": cmd_add, "revise": cmd_revise, "status": cmd_status, "show": cmd_show,
-            "doctor": cmd_doctor, "review-register": cmd_review_register,
+            "doctor": cmd_doctor, "merge": cmd_merge, "migrate": cmd_migrate,
+            "review-register": cmd_review_register,
             "invalidate-reviews": cmd_invalidate}[args.cmd](args)
 
 

@@ -48,22 +48,29 @@ def t1(tmp):
     rows2, _ = ld._read_ledger(L)
     assert len(rows2) == 2  # 幂等：无新行
 
-# T2 同批重复 / 重复执行 / 同证据重试 → 唯一当前候选
-@case(2, "同批重复/重复执行/同证据重试不产生多个当前候选")
+# T2 身份与相似度分离：同键不同内容=不同候选+线索；重试幂等
+@case(2, "同批同键不同内容=不同候选身份；重复执行幂等；相似只报线索")
 def t2(tmp):
     L = os.path.join(tmp, "l.csv")
-    k1 = dict(CARD_A); k2 = dict(CARD_A); k2["title"] = "卡A 变体（同键不同标题）"
+    k1 = dict(CARD_A); k2 = dict(CARD_A); k2["title"] = "卡A 变体（同键不同标题，实为不同候选）"
     cards = os.path.join(tmp, "c2.json")
     json.dump([k1, k2], open(cards, "w", encoding="utf-8"), ensure_ascii=False)
-    run_cli("add", "--cards", cards, "--ledger", L)
+    r = run_cli("add", "--cards", cards, "--ledger", L)
+    assert "SIMILAR_CANDIDATES" in r.stdout, r.stdout  # 同键线索必须报告
     run_cli("add", "--cards", cards, "--ledger", L)  # 重复执行
     rows, _ = ld._read_ledger(L)
+    assert len(rows) == 2 and len({r["cand_id"] for r in rows}) == 2, "同键不同内容必须是两个候选身份"
+    assert all(r["version"] == "1" for r in rows), "相似不得变成另一候选的新版本"
+    assert any(r["similar_to"] for r in rows), "相似线索必须写入 similar_to（后到者指向先到者）"
     proj = ld.current_projection(rows)
-    cids = [r["cand_id"] for r in rows]
-    assert len(set(cids)) == 1, f"同键出现多个 cand_id: {cids}"
-    assert len(proj) == 1, "当前投影必须唯一"
-    cur = list(proj.values())[0]
-    assert cur["version"] == "2" and cur["note"].startswith("同键同候选"), cur
+    assert len(proj) == 2  # 两个独立当前候选
+    # 合并必须显式：merge 后 A1 归档
+    cid1, cid2 = sorted(proj)
+    run_cli("merge", "--cand-id", cid1, "--into", cid2, "--reason", "主控裁决：实为同一题", "--ledger", L)
+    rows2, _ = ld._read_ledger(L)
+    proj2 = ld.current_projection(rows2)
+    assert proj2[cid1]["status"] == "merged" and proj2[cid1]["merged_into"] == cid2
+    assert proj2[cid2]["status"] != "merged"
 
 # T3 修订 → 唯一当前版本，旧记录保留
 @case(3, "修订后唯一当前版本正确，旧记录保留")
@@ -184,6 +191,25 @@ def t8(tmp):
     rrows, _ = ld._read_ledger(RV)
     st = {r["review_id"]: r["status"] for r in rrows}
     assert st["R1"] == "needs_review" and st["R2"] == "active", st
+    # R3 修复1：符号改变必须触发（τ<15s → τ≤15s）
+    rows_r3, _ = ld._read_ledger(L)
+    run_cli("review-register", "--review-id", "R3", "--cand-id", cid,
+            "--content-hash", rows_r3[-1]["content_hash"],
+            "--role", "evidence", "--file", "op3.md", "--reviews", RV)
+    run_cli("revise", "--cand-id", cid, "--set", json.dumps({"conditions": "屏蔽阈值 T*：τ_ho<15s"}, ensure_ascii=False),
+            "--reason", "符号级承重修订", "--ledger", L, "--reviews", RV)
+    rrows, _ = ld._read_ledger(RV)
+    assert {r["review_id"]: r["status"] for r in rrows}["R3"] == "needs_review", "符号改变必须触发重审"
+    # 纯空白差异不触发
+    rows_r4, _ = ld._read_ledger(L)
+    run_cli("review-register", "--review-id", "R4", "--cand-id", cid,
+            "--content-hash", rows_r4[-1]["content_hash"],
+            "--role", "builder", "--file", "op4.md", "--reviews", RV)
+    cond_now = rows_r4[-1]["conditions"]
+    run_cli("revise", "--cand-id", cid, "--set", json.dumps({"conditions": cond_now.replace(" ", "  ", 1)}, ensure_ascii=False),
+            "--reason", "仅空白", "--ledger", L, "--reviews", RV)
+    rrows, _ = ld._read_ledger(RV)
+    assert {r["review_id"]: r["status"] for r in rrows}["R4"] == "active", "纯空白差异不得触发重审"
 
 # T9 依赖指纹漂移被明确识别
 @case(9, "依赖缺失或指纹变化被明确识别")
@@ -200,23 +226,58 @@ def t9(tmp):
         f.write("| t | /nonexistent/file.py | x | " + "0" * 64 + " | y |\n")
     assert dc.main(["--manifest", bad]) == 1  # 文件缺失 → missing
 
-# T10 中断恢复：残尾行识别与修复，不重复入账、不覆盖证据
-@case(10, "中断后恢复不会重复入账或覆盖已有证据")
+# T10 中断恢复：原件不动 + 可恢复路径；多行字段不被破坏
+@case(10, "CSV 含合法多行字段及损坏尾部时，原件不被破坏")
 def t10(tmp):
     L = os.path.join(tmp, "l.csv")
     cards = os.path.join(tmp, "c10.json")
-    json.dump([CARD_A], open(cards, "w", encoding="utf-8"), ensure_ascii=False)
+    card = dict(CARD_A)
+    card["conditions"] = "多行条件第一行\n第二行（合法引号内换行）"
+    json.dump([card], open(cards, "w", encoding="utf-8"), ensure_ascii=False)
     run_cli("add", "--cards", cards, "--ledger", L)
     with open(L, "a", encoding="utf-8") as f:
-        f.write('25,cabc12345,1,add,awaiting_evidence,"残尾行被中')  # 模拟中断的半行
+        f.write('25,cabc12345,1,add,awaiting_evidence,"残尾行被中')  # 模拟中断半行
+    corrupt = open(L, "rb").read()
     r = run_cli("doctor", "--ledger", L, expect=1)
-    assert "PROBLEM" in r.stdout or "BAD_LINE" in r.stdout
-    run_cli("doctor", "--ledger", L, "--repair")
-    rows, bad = ld._read_ledger(L)
-    assert not bad and len(rows) == 1
-    run_cli("add", "--cards", cards, "--ledger", L)  # 修复后重试 → 幂等跳过
+    assert open(L, "rb").read() == corrupt, "默认 doctor 不得修改原件"
+    # 旧破坏性 --repair 已移除（argparse 前缀匹配 --repair-out 需参数→exit 2；无论哪种解析都不得截断台账）
+    rb = subprocess.run([sys.executable, os.path.join(HERE, "ledger.py"), "doctor", "--ledger", L, "--repair"],
+                        capture_output=True, text=True)
+    assert rb.returncode == 2, rb.stderr
+    assert open(L, "rb").read() == corrupt, "探针后原件仍不得被修改"
+    rout = os.path.join(tmp, "repaired.csv")
+    run_cli("doctor", "--ledger", L, "--backup", "--repair-out", rout, expect=1)
+    assert open(L, "rb").read() == corrupt, "--repair-out 也不得修改原件"
+    assert os.path.exists(rout)
+    rep_rows, rep_bad = ld._read_ledger(rout)
+    assert not rep_bad and len(rep_rows) == 1
+    assert "第二行（合法引号内换行）" in rep_rows[0]["conditions"], "多行字段必须完整保留"
+    # 采纳（人工 mv 模拟）后重试幂等
+    os.replace(rout, L)
+    run_cli("add", "--cards", cards, "--ledger", L)
     rows2, _ = ld._read_ledger(L)
-    assert len(rows2) == 1, "恢复后重试不得重复入账"
+    assert len(rows2) == 1, "恢复采纳后重试不得重复入账"
+
+
+# T12 解析失败 ≠ 成功无命中（走 safe_search 真实分类路径）
+@case(12, "检索记录解析失败被记为解析错误，不冒充成功无命中")
+def t12(tmp):
+    orig = pn._retrieve.keyword_query
+    pn._retrieve.keyword_query = lambda q, limit=20: [{"junk": True}, {"junk2": True}]
+    try:
+        out = pn.safe_search("any query")
+    finally:
+        pn._retrieve.keyword_query = orig
+    assert out["status"] == pn.ST_EXEC, out
+    assert "解析失败" in (out["error"] or "")
+    card = {"title": "x", "conditions": "c", "difficulty": "d", "cause_hypothesis": "h", "possible_change": "p"}
+    orig2 = pn._retrieve.keyword_query
+    pn._retrieve.keyword_query = lambda q, limit=20: [{"junk": True}]
+    try:
+        out2 = pn.novelty_assess(card)  # 默认 search_fn=safe_search
+    finally:
+        pn._retrieve.keyword_query = orig2
+    assert out2["verdict"] == "incomplete" and out2["overall_status"] == "degraded"
 
 
 def main():

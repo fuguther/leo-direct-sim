@@ -74,8 +74,14 @@ def safe_search(query, limit=20):
             continue
         if p is not None:
             papers.append(p)
+        else:
+            skipped += 1  # None 返回（缺 paperId/title）也是解析失败，R3 修复4
+    if skipped and not papers:
+        # R3 修复4：全部解析失败 ≠ 成功无命中 → 执行/解析错误（incomplete），不产生 ok_empty
+        return {"status": ST_EXEC, "papers": [],
+                "error": "%d 条结果全部解析失败（记录级错误）" % skipped, "channel": "s2"}
     if skipped:
-        return {"status": ST_OK_HITS if papers else ST_OK_EMPTY, "papers": papers,
+        return {"status": ST_OK_HITS, "papers": papers,
                 "error": "%d 条结果解析失败被跳过" % skipped, "channel": "s2"}
     return {"status": ST_OK_HITS if papers else ST_OK_EMPTY, "papers": papers, "error": None, "channel": "s2"}
 
