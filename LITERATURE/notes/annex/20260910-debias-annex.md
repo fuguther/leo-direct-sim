@@ -721,3 +721,91 @@
 - 提案: out/research-ops/notes-cleanup/proposals/r2-b/SHI-2024-GNNDQN.json
 - 移出原文: “AoI-of-state 空白维持”移附录（PROJECT，我们的空白）。
 
+## ARXIV-2111.09217.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/ARXIV-2111.09217.json
+- 移出原文: 自"与 F0/F1 信息阶梯同构"起的对账/互证内容移 annex。
+
+## ARXIV-2111.09217.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/ARXIV-2111.09217.json
+- 移出原文: "即使 ISL 利用率<3%…"至句末移 annex。
+
+## ARXIV-2111.09217.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/ARXIV-2111.09217.json
+- 移出原文: "→ AoI-of-state 空白依旧成立"移 annex。
+
+## ARXIV-2111.09217.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/ARXIV-2111.09217.json
+- 移出原文: "恰是我们 LEO 场景所缺"移 annex。
+
+## ARXIV-2111.09217.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/ARXIV-2111.09217.json
+- 移出原文: "可作…基线，直接进 DDQN/GAT 对照"移 annex。
+
+## CHOU-2026-STL.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/CHOU-2026-STL.json
+- 移出原文: "比我们 280×14 小两个数量级，结论外推存疑"移 annex。
+
+## CHOU-2026-STL.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/CHOU-2026-STL.json
+- 移出原文: "与我们的 F0 负结果…正面打架"与【我的推测…】移 annex（推测可标 EXTERNAL）。
+
+## CHOU-2026-STL.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/CHOU-2026-STL.json
+- 移出原文: "与我们在 ISL 利用率<3% 的零差异不矛盾：瓶颈不同…"移 annex。
+
+## CHOU-2026-STL.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/CHOU-2026-STL.json
+- 移出原文: "反衬"ISL 利用率/接入才是真瓶颈""移 annex。
+
+## CHOU-2026-STL.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/CHOU-2026-STL.json
+- 移出原文: "③ AoI-of-state 空白…正是我们缺口"移 annex。
+
+## WEIL-2024-RMP.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/WEIL-2024-RMP.json
+- 移出原文: “天然可当"信息年龄旋钮"来设计我们的远端信息价值实验”移附录（PROJECT，我们的实验设计）。
+
+## WEIL-2024-RMP.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/WEIL-2024-RMP.json
+- 移出原文: “这正是我们要补的空”移附录（PROJECT，我们的空白）。
+
+## WEIL-2024-RMP.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/WEIL-2024-RMP.json
+- 移出原文: **评级**：B
+
+## WEIL-2024-RMP.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/WEIL-2024-RMP.json
+- 移出原文: “印证我们的 ISL 低利用率”移附录（PROJECT）。
+
+## WEIL-2024-RMP.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/WEIL-2024-RMP.json
+- 移出原文: “**AoI-of-state 空白**”标签与“正是我们三重核实的空白”移附录（PROJECT）。
+
+## WEIL-2024-RMP.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/WEIL-2024-RMP.json
+- 移出原文: “其"被迫停留 −0.2"≈我们的 holding/access 压力源”移附录（PROJECT，平台概念映射）。
+
+## ZHANG-2024-NGAT.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/ZHANG-2024-NGAT.json
+- 移出原文: “和我们的"路由状态年龄"空白无关”移附录（PROJECT，我们的空白框架）。
+
+## ZHANG-2024-NGAT.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/ZHANG-2024-NGAT.json
+- 移出原文: **与我们对账**：保留“该文 AoI 仍是接收端数据龄（与 LUR 同类），非"路由状态信息年龄"；但调度状态特征**含 A_u(t) 与在传包数**，说明"把年龄放进决策状态"有先例，只是他们的年龄是优化目标而非状态新鲜度”（EXTERNAL）；
+
+## ZHANG-2024-NGAT.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/ZHANG-2024-NGAT.json
+- 移出原文: “① AoI-of-state 空白——”标签与“我们的空白依旧成立，且动机可借其先例”移附录（PROJECT）。
+
+## ZHANG-2024-NGAT.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/ZHANG-2024-NGAT.json
+- 移出原文: “≈我们"holding/access+ISL 路由"联合优化的形状”“正呼应我们 holding 瓶颈：上层决策必须感知下层路由代价”“我们一体分散”移附录（PROJECT）。
+
+## ZHANG-2024-NGAT.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/ZHANG-2024-NGAT.json
+- 移出原文: “③ F0/F1——”“对应我们的 F0/F1 阶梯”“无法直接对照零差异结论”移附录（PROJECT）。
+
+## ZHANG-2024-NGAT.md（batch r2-a）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-a/ZHANG-2024-NGAT.json
+- 移出原文: **评级**：B
+
