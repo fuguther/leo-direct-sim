@@ -415,3 +415,227 @@
 - 提案: out/research-ops/notes-cleanup/proposals/b2-3/ZHOU-2026-DTAR.json
 - 移出原文: **可复用**：action masking（连通性+跳预算）可直接移植我们 DDQN/GAT 臂；GAT 节点/边特征模板与 δ 方向塑形奖励；离线划分+在线路由两时间尺度解耦；开源 https://github.com/ChenZ-code/DTAR_Routing。
 
+## ARXIV-2111.09217.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/ARXIV-2111.09217.md.json
+- 移出原文: **与我们对账**：① Age Difference 恰是"把局部新鲜度信息加进调度决策"——与 F0/F1 信息阶梯同构，但结论相反方向：加年龄差**显著改变 AoI 表现** → 反证我们"改道~1/3 而交付零差异"是**度量解耦**（交付率/时延对新鲜度不敏感，须用 AoI 惩罚度量才能体现信息价值），与 2512.00985 结论互证；
+
+## ARXIV-2111.09217.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/ARXIV-2111.09217.md.json
+- 移出原文: ② 线网理论给年龄尺度律：多跳平均年龄 O(hops²)（A*=(N−1)²，行~320）——即使 ISL 利用率<3% 不饱和，跳数本身放大年龄惩罚 → 支持"瓶颈在等待/接入而非链路吞吐"的解读；
+
+## ARXIV-2111.09217.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/ARXIV-2111.09217.md.json
+- 移出原文: ③ AoI 仍是**数据更新年龄**（目标端最新样本年龄），决策依据是"年龄差/债务队列"，始终不是**路由决策状态年龄** → AoI-of-state 空白依旧成立；
+
+## ARXIV-2111.09217.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/ARXIV-2111.09217.md.json
+- 移出原文: 其 future work（分布式实现、随机到达、时变拓扑，VII 行~693）恰是我们 LEO 场景所缺。
+
+## ARXIV-2111.09217.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/ARXIV-2111.09217.md.json
+- 移出原文: Age Debt（Lyapunov drift+虚拟队列）可作无需分布知识、有流控的确定性 AoI 路由/调度基线，直接进 DDQN/GAT 对照；
+
+## ARXIV-2111.09217.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/ARXIV-2111.09217.md.json
+- 移出原文: A*=(N−1)² 作多跳年龄 sanity bound；
+
+## BAI-2025-GRLRR.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/BAI-2025-GRLRR.md.json
+- 移出原文: 不舒服处：「只控关键链路」省算力但漏掉非关键链路局部拥塞，与我们「瓶颈在 holding/接入排队」的观察不同层；可靠性指标定义未给。
+
+## BAI-2025-GRLRR.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/BAI-2025-GRLRR.md.json
+- 移出原文: 与课题：级联失效/韧性对应我们 ISL 故障实验的极端场景，失效建模值得读；但集中 SDN 与全分布式逐跳差一个决策层级，只借鉴不基线。
+
+## CHOU-2026-STL.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/CHOU-2026-STL.md.json
+- 移出原文: 不舒服：规模小（提示称 45 星），比我们 280×14 小两个数量级，结论外推存疑；
+
+## CHOU-2026-STL.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/CHOU-2026-STL.md.json
+- 移出原文: 奖励 r=-(αD+βQ)、β>α（提示称，未核实）把队列权重压过时延，与我们的 F0 负结果（局部队列不改变聚合交付率）正面打架【我的推测：分歧多半来自流量压力合同不同】。
+
+## CHOU-2026-STL.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/CHOU-2026-STL.md.json
+- 移出原文: 连接：状态组成、奖励权重都是可直接对照的变量，适合进我们的对照实验表。
+
+## CHOU-2026-STL.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/CHOU-2026-STL.md.json
+- 移出原文: **对账**：① F0/F1 交锋——他们的局部队列+邻接时延入状态在 β>α 的重拥塞合同下（240Mbps 丢包仍≤46.81%）才显效，与我们在 ISL 利用率<3% 的零差异不矛盾：瓶颈不同，他们压队列、我们卡 holding/access；
+
+## CHOU-2026-STL.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/CHOU-2026-STL.md.json
+- 移出原文: ② 全篇无 ISL 利用率与接入段建模，240Mbps 时延≈498ms 说明排队主导，反衬"ISL 利用率/接入才是真瓶颈"；
+
+## CHOU-2026-STL.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/CHOU-2026-STL.md.json
+- 移出原文: ③ AoI-of-state 空白：状态取瞬时 Q_i/D_ij，假设本地信息零龄、无陈旧度维度，正是我们缺口。
+
+## CHOU-2026-STL.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/CHOU-2026-STL.md.json
+- 移出原文: **可复用**：GAT+LSTM+DQN 管线；NHPP 周期流量合同；Green-AI 成本表法（TDP30W/495g/kWh）。
+
+## CHOU-2026-STL.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/CHOU-2026-STL.md.json
+- 移出原文: 45 星 vs 我们 3920 星差两数量级；
+
+## GANNON-2024.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/GANNON-2024.md.json
+- 移出原文: 对我们:它挑战"GSL 切换必然断流"的假设——若切换可无间隙,仿真把 GSL 切换建模成长期不可用就是过度悲观(我们 ISL 利用率约 3%,瓶颈在接入,切换是否真造成丢包值得实测对照);
+
+## GUVEN-2023.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/GUVEN-2023.md.json
+- 移出原文: 对我们:它给的抽象(链路处于某态→决定 BER/速率)与我们的 MCS 动态速率同构;想给仿真加"链路态随机切换导致速率跳变"的机制,它是最现成的模板,但别直接搬参数。
+
+## GUVEN-2023.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/GUVEN-2023.md.json
+- 移出原文: 与 GILBERT-ELLIOTT 的两态简化互为两端:多态+物理参数 vs 两态+参数难标定,中间粒度值得做消融。
+
+## HUANG-2024-GMR.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/HUANG-2024-GMR.md.json
+- 移出原文: 不舒服处：①「路径质量」用什么估计、多久更新一次是核心机制，摘要不给——更新周期一长就是「陈旧路径质量」，恰好落进路由状态年龄问题域；
+
+## HUANG-2024-GMR.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/HUANG-2024-GMR.md.json
+- 移出原文: 与课题：多径分流对研究链路级压力有参考，但集中式 TE（流级）+NS-3 与我们 SimPy 逐包分布式不同轨，只作参照。
+
+## LI-2025-POMAP.md（batch batch3a）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3a/LI-2025-POMAP.md.json
+- 移出原文: 连接：与我们 holding/access 瓶颈分析同一工具箱，恰好对照"接入排队是瓶颈、ISL 利用率<3%"的实证；联合路由-调度方向的强参照。
+
+## LYU-2024-CMADR.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/LYU-2024-CMADR.json
+- 移出原文: 地面站参与改变了问题边界，与纯 ISL 直连脱耦，可借鉴的只剩约束处理本身；
+
+## LYU-2024-CMADR.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/LYU-2024-CMADR.json
+- 移出原文: 连接：瓶颈感知拥塞控制可抄它的 Lagrangian 法；
+
+## LYU-2024-CMADR.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/LYU-2024-CMADR.json
+- 移出原文: 精读优先级低于 GraphPR/POMAP。
+
+## OPENALEX-SENSORS-DRL-ROUT.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/OPENALEX-SENSORS-DRL-ROUT.json
+- 移出原文: 对账：它是四篇里唯一把用户接入链路+NTN 端到端双向流量建进模型的（贴近我们 holding/access 瓶颈），
+
+## OPENALEX-SENSORS-DRL-ROUT.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/OPENALEX-SENSORS-DRL-ROUT.json
+- 移出原文: "路径改变≠交付收益"的 F0/F1 警示对它依然成立；
+
+## OPENALEX-SENSORS-DRL-ROUT.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/OPENALEX-SENSORS-DRL-ROUT.json
+- 移出原文: state 全为实时值、无状态年龄——AoI-of-state 空白无一处被触碰
+
+## OPENALEX-SENSORS-DRL-ROUT.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/OPENALEX-SENSORS-DRL-ROUT.json
+- 移出原文: （其引文 [45] 是 LEO 信息更新年龄优化，属另一问题，可作我们 AoI 引证素材）
+
+## OPENALEX-SENSORS-DRL-ROUT.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/OPENALEX-SENSORS-DRL-ROUT.json
+- 移出原文: 可复用：Vis 防环+终局 bonus 奖励整形（eq.19）；SFC 违例动作屏蔽机制；6048 节点图上的 GNN+PPO+OpenRL 训练管线；θ1 权重敏感性协议（Fig.7）。
+
+## SHI-2024-GNNDQN.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/SHI-2024-GNNDQN.json
+- 移出原文: 与我们课题的连接：可作 GraphSAGE+DQN 逐跳的对照基线，它信息贫乏的状态恰好反衬我们 F0/F1 阶梯里"加了局部队列+广告后 1/3 ISL 路径变了但聚合交付率零差异"的结论——说明路径改变并不等于收益。
+
+## SHI-2024-GNNDQN.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/SHI-2024-GNNDQN.json
+- 移出原文: 风险：宣称的百分比缺乏方差与场景细节，基线可比性存疑，不能直接引用数字。
+
+## SHI-2024-GNNDQN.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/SHI-2024-GNNDQN.json
+- 移出原文: MDPI 开放获取，值得精读核对实验设置。
+
+## SHI-2024-GNNDQN.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/SHI-2024-GNNDQN.json
+- 移出原文: 实验合同（Sec 5）：**核心场景造假级替代——训练与评估都用 NSFNet 地面拓扑（KDN 数据集，OMNeT++ 生成）代替 LEO 星座**，原文明言 "Since the LEO networks lack of the dataset for training, we use NSFNet dataset instead"；
+
+## SHI-2024-GNNDQN.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/SHI-2024-GNNDQN.json
+- 移出原文: 对账：在 14 节点级地面拓扑上验证"LEO 路由"、与真实星座动力学无关——其百分比是场景伪影，不能支撑 LEO 主张，直接佐证我们「文献收益多为场景产物」的判断；
+
+## SHI-2024-GNNDQN.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/SHI-2024-GNNDQN.json
+- 移出原文: flow 级分配粒度报出收益，与我们 F0/F1 包级动态、聚合交付零差异形成对照：收益宣称对粒度/瓶颈位置高度敏感；
+
+## SHI-2024-GNNDQN.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/SHI-2024-GNNDQN.json
+- 移出原文: holding/access/AoI 全线缺席——AoI-of-state 空白维持。
+
+## SHI-2024-GNNDQN.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/SHI-2024-GNNDQN.json
+- 移出原文: 可复用：边→节点特征重构图技巧（Algorithm 1）；GraphSAGE+DQN 逐跳模板；KDN/NSFNet 数据集可作非 LEO 对照组参照。
+
+## STARTCAP-2024.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/STARTCAP-2024.json
+- 移出原文: 对我们:(1) 它给出 GSL 切换周期的实测锚点,支持我们仿真里 GSL 中断/切换的抽象;
+
+## STARTCAP-2024.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/STARTCAP-2024.json
+- 移出原文: (2) 切换中断与真实拥塞信号混在一起,与我们"瓶颈在接入/holding"的观察互补——接入链路周期性断流会使拥塞信号失真,路由/拥塞控制需要能区分二者。
+
+## WEIL-2024-RMP.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/WEIL-2024-RMP.json
+- 移出原文: 这是十篇里唯一把"部分/过时观测"当一等公民的：消息每环境步刷新一轮，刷新间隔就是那部分状态信息的年龄——天然可当"信息年龄旋钮"来设计我们的远端信息价值实验。
+
+## WEIL-2024-RMP.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/WEIL-2024-RMP.json
+- 移出原文: 不舒服处：非 LEO、图的规模语义（1000 张宏观拓扑）与 280×14 节点逐包流量不同构；它只声称泛化，没有量化陈旧观测到底损伤多少——这正是我们要补的空。
+
+## WEIL-2024-RMP.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/WEIL-2024-RMP.json
+- 移出原文: 代码已验证公开，是最适合做机制基线/复现对照的一篇。
+
+## WEIL-2024-RMP.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/WEIL-2024-RMP.json
+- 移出原文: **与我们对账**
+
+## WEIL-2024-RMP.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/WEIL-2024-RMP.json
+- 移出原文: 1. **F0/F1 零差异同构**：表 4 无带宽限制下 Ours*（action masking）reward 1.74/thr 3.49，仅**追平未超过**静态 SP（1.77/3.54）——加表征信息不产生端到端收益，与"~1/3 包改道但交付零差异"同构，瓶颈在动作/容量而非信息。
+
+## WEIL-2024-RMP.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/WEIL-2024-RMP.json
+- 移出原文: 2. **ISL 利用率<3% 侧写**：§5.2 明言 "effect of communication is very small"，DQN 与 DGN 几乎无差——其图同样从不拥塞到通信信息无用，印证我们的 ISL 低利用率。
+
+## WEIL-2024-RMP.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/WEIL-2024-RMP.json
+- 移出原文: 3. **AoI-of-state 空白**：其"消息每环境步刷新一轮"=信息年龄隐式旋钮，却**从不量化陈旧观测的损伤曲线**（无 age↔性能实验），正是我们三重核实的空白。
+
+## WEIL-2024-RMP.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/WEIL-2024-RMP.json
+- 移出原文: 4. **holding/access 瓶颈机制近邻**：带宽受限模式吞吐骤降、延迟上升（§5.2），学到的策略在受限模式反超 SP；其"被迫停留 −0.2"≈我们的 holding/access 压力源。
+
+## WEIL-2024-RMP.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/WEIL-2024-RMP.json
+- 移出原文: **可复用部件**：跨步 LSTM 状态 + 共享参数循环消息传递（可直接替换/对比我们的 GAT/MPNN 信息阶梯）；§5.4 动态边时延扰动协议（2→10）；action masking 抑制环路；带宽受限模式设计。
+
+## ZHANG-2024-NGAT.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/ZHANG-2024-NGAT.json
+- 移出原文: 注意它的 AoI 仍是接收端数据龄，与 LUR 同类，和我们的"路由状态年龄"空白无关。
+
+## ZHANG-2024-NGAT.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/ZHANG-2024-NGAT.json
+- 移出原文: 真正与我们相关的是两处机制：NGAT 的归一化+收缩映射为图注意力的稳定性提供了理论抓手，值得移植进我们 GAT 臂；分层路由/调度拆解与我们的联合路由-调度方向结构相似（但它是集中式分层，我们是一体的）。
+
+## ZHANG-2024-NGAT.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/ZHANG-2024-NGAT.json
+- 移出原文: 非 LEO、有线 ISP 图，方法价值大于应用价值。
+
+## ZHANG-2024-NGAT.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/ZHANG-2024-NGAT.json
+- 移出原文: ① AoI-of-state 空白——该文 AoI 仍是接收端数据龄（与 LUR 同类），非"路由状态信息年龄"；但调度状态特征**含 A_u(t) 与在传包数**，说明"把年龄放进决策状态"有先例，只是他们的年龄是优化目标而非状态新鲜度——我们的空白依旧成立，且动机可借其先例。
+
+## ZHANG-2024-NGAT.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/ZHANG-2024-NGAT.json
+- 移出原文: ② 结构对照——"调度(选目的)+路由(建树)"跨层拆解≈我们"holding/access+ISL 路由"联合优化的形状，且 λ 把路由成本回传给调度层，正呼应我们 holding 瓶颈：上层决策必须感知下层路由代价；但他们是集中式分层，我们一体分散。
+
+## ZHANG-2024-NGAT.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/ZHANG-2024-NGAT.json
+- 移出原文: ③ F0/F1——图嵌入消融 TG-MLP vs TG 对应我们的 F0/F1 阶梯，但度量是组合近似比非交付率；无交付/负载指标，无法直接对照零差异结论。
+
+## ZHANG-2024-NGAT.md（batch batch3b）
+- 提案: out/research-ops/notes-cleanup/proposals/batch3b/ZHANG-2024-NGAT.json
+- 移出原文: **可复用**：NGAT 归一化+收缩映射（Theorem 1）可移植我们 GAT 臂做稳定性论证；调度状态特征模板（AoI/在传包数入特征）支持"信息年龄入状态"动机；λ 跨层信号机制。
+
