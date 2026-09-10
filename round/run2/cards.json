@@ -1,0 +1,110 @@
+[
+ {
+  "title": "run2-A1 负载合同审计+固定策略强度扫描+强度条件化输入",
+  "conditions": "逐包逐跳 RL 路由；策略在单一强度 ℓ 训练、部署到不同强度；库内 11 篇全文抽查无一报告训练-评估强度分离实验（QRLSN 锁死 Poi(5)；SaTE 为监督侧唯一混强度对等物）",
+  "difficulty": "跨强度失配退化曲线在库内缺失：多数论文不披露训练负载合同，做负载扫描者视其为对比曲线而非泛化测试",
+  "cause_hypothesis": "训练覆盖不足使价值函数在未访问强度区间外推有偏（信息侧：策略无从感知强度标量）",
+  "possible_change": "先测出第一条跨强度退化曲线（0.25–4× 冻结扫描 vs 每强度重训差值），再让策略显式感知强度：状态注入 λ̂/λ_ref",
+  "strongest_alternative": "普通混载训练可吃掉 60–80%（若漂移主导）",
+  "decision_shift": "测量协议 + 状态条件化",
+  "next_cheap_check": "SatCom-TELMA 开源仿真器复现 Poi(5) DQN + 冻结策略强度扫描，1–2 天",
+  "new_evidence": "",
+  "source": "run2/path-A-intensity.md 卡A1"
+ },
+ {
+  "title": "run2-A2 强度三通道分解→相对化状态+溢出约束更新",
+  "conditions": "强度变化同时改变占用分布/奖励尺度/最优结构三通道；现有方法未分离三者贡献",
+  "difficulty": "无法判断退化来自占用分布漂移、奖励尺度失配还是最优动作结构改变，导致改动选错靶",
+  "cause_hypothesis": "奖励尺度随负载变化使 Q 值量级漂移，且最优结构（是否绕行）整体改变",
+  "possible_change": "相对化状态（邻居占用秩+均值偏移）+ 溢出约束对偶更新（约束 P(overflow)≤ε，借用 C-DQN 的奖励尺度免疫论证）",
+  "strongest_alternative": "混合负载训练+简单归一化即可（若尺度主导）；规则路由兜底（若结构主导）",
+  "decision_shift": "状态表示 + 约束式更新",
+  "next_cheap_check": "同平台双状态变体对照，1–2 天",
+  "new_evidence": "",
+  "source": "run2/path-A-intensity.md 卡A2"
+ },
+ {
+  "title": "run2-A3 塌陷先发生在决策器：推理排队瓶颈与前兆",
+  "conditions": "逐包 RL 推理有物理时延与缓存上限（M/D/C/N）；21k pps 实测决策时延 17.5ms、丢包 21%（S85KQ4FC 图2）",
+  "difficulty": "塌陷形状分两型：推理缓存硬悬崖 vs 链路饱和渐变；多数论文不建模决策器排队，退化归因可能错位",
+  "cause_hypothesis": "到达率上升使推理排队饱和，决策缓存溢出丢包——这是独立于链路拥塞的到达率损失通道",
+  "possible_change": "双粒度决策（flow table 命中沿用 + θ_dec 超限/miss 触发 DNN 推理）+ 决策缓存占用作前兆 + 超限降级规则路由",
+  "strongest_alternative": "纯链路容量解释（若决策时延占比 <5%）；现有推理加速/批处理优化即可消除",
+  "decision_shift": "决策结构与推理物理",
+  "next_cheap_check": "加 M/D/C/N 决策器模块测悬崖右移与前兆曲线，1–2 天",
+  "new_evidence": "",
+  "source": "run2/path-A-intensity.md 卡A3"
+ },
+ {
+  "title": "run2-B1 热点可辨识性：拥塞场相位注入观测",
+  "conditions": "地转+人口决定的拥塞场是（星下点,UTC）近似确定函数；现有观测只有队列快照；CMNCS52M 表3 静态 zone 模型 RL NMB≈15%，时变 population/traffic 恶化至 40–70%",
+  "difficulty": "逐跳策略被迫反应式追逐热点，MDP 一致性被破坏（状态不含决定拥塞位置的相位变量）",
+  "cause_hypothesis": "信息不可辨识：同样队列快照可能对应不同未来热点位置，策略无法区分",
+  "possible_change": "状态注入轨道相位+邻域队列斜率（不改网络结构/奖励）",
+  "strongest_alternative": "zone 静态模型可得同增益则驳回；单纯增加训练分布覆盖（混热点位置训练）可吃掉大部分",
+  "decision_shift": "观测特征（信息可辨识性）",
+  "next_cheap_check": "相位消融 5 seed，0.5–1 天",
+  "new_evidence": "",
+  "source": "run2/path-B-hotspot.md 卡B1"
+ },
+ {
+  "title": "run2-B2 热点迁移下的决策面拥塞：推理成本作独立到达率损失通道",
+  "conditions": "热点迁移使推理负载与数据负载同步集中；S85KQ4FC 图2 实测 21k pps 时 DNN 决策时延 17.5ms、丢包 21%",
+  "difficulty": "文献全部未把推理丢包计入到达率口径——收益被高估、退化被误归因",
+  "cause_hypothesis": "控制面（推理）与数据面共享资源，热点迁移同时压垮二者",
+  "possible_change": "事件触发+流级动作复用（不改学习算法）",
+  "strongest_alternative": "决策时延占比 <5% 则本卡无空间（淘汰线）",
+  "decision_shift": "决策执行机制",
+  "next_cheap_check": "测决策时延占比与推理丢包占比，1–2 天",
+  "new_evidence": "",
+  "source": "run2/path-B-hotspot.md 卡B2"
+ },
+ {
+  "title": "run2-B3 热点迁移评估协议：守恒 OD 漂移算子分离三假说",
+  "conditions": "空间非平稳是测量盲区：库内无一在训练/测试间互换 OD 分布或热点位置",
+  "difficulty": "失败原因三假说（信息不可辨识/策略记忆/数据面拥塞）从未被正面分离",
+  "cause_hypothesis": "未分离导致所有改动都缺乏归因依据",
+  "possible_change": "守恒 OD 漂移算子（热点平移/OD重连/UTC相位平移/强度对照）+ L0基线/L1信息增强/L2在线微调/L3重训上界四层对照，判读规则写死",
+  "strongest_alternative": "G-AODV 测过不同连接对（非逐跳 RL、无守恒约束）",
+  "decision_shift": "评估协议（方法论卡）",
+  "next_cheap_check": "先幅度定标，1–2 天",
+  "new_evidence": "",
+  "source": "run2/path-B-hotspot.md 卡B3"
+ },
+ {
+  "title": "run2-C1 突发持续时间×反应时间常数错配→瞬态窗到达率塌陷",
+  "conditions": "同均值不同突发持续时间/占空比；策略反应时间常数与突发时长可比",
+  "difficulty": "Boyan&Littman 记录负载上调适应快、降回后极慢且不收敛回最优（迟滞）；FRL-SR 显式剔除初始瞬态时段",
+  "cause_hypothesis": "瞬态窗内策略仍在旧体制，且降载后过估计滞留导致迟滞",
+  "possible_change": "状态加 Δq_τ+突发龄计数；动作加改路最小驻留 T_dwell；奖励加瞬态窗丢包惩罚项（Bellman 更新式不变）",
+  "strongest_alternative": "普通混载训练含突发（40–80%）；固定阈值滞回规则路由",
+  "decision_shift": "观测+动作约束+奖励塑形",
+  "next_cheap_check": "ON-OFF 同均值扫描 T_on{0.2,1,10}s×duty{0.2,0.5}，输出瞬态窗条件指标 vs 时间平均指标，1.5 天",
+  "new_evidence": "",
+  "source": "run2/path-C-burst.md 卡C1"
+ },
+ {
+  "title": "run2-C2 负载过程是训练与评估的共享盲区：同均值突发扫描协议",
+  "conditions": "Traffic-Aware MARL 负载=外生队列采样（占用率~N(μz,0.1μz)）、明确\"不是时间相关的\"、时间特征从状态删除；SaTE 最好只到 1s 粒度泊松",
+  "difficulty": "流量模型普遍无时间过程：负载只有空间快照没有突发结构；训练与评估共享同一简化",
+  "cause_hypothesis": "外生队列模型的断裂——真实突发的相关性/持续时间不在任何模型内",
+  "possible_change": "同均值突发扫描协议（CV×T_on×ρ 网格）+ 训练域随机化 + 状态 (q,Δq,EWMA) 三通道",
+  "strongest_alternative": "CBR 与 ON-OFF 同均值策略性能无差异则本卡无空间",
+  "decision_shift": "评估协议 + 训练分布 + 状态通道",
+  "next_cheap_check": "20 篇流量模型审计表 + 一个已训策略 CBR vs ON-OFF 同均值对照，1 天",
+  "new_evidence": "",
+  "source": "run2/path-C-burst.md 卡C2"
+ },
+ {
+  "title": "run2-C3 突发负载下瞬时队列快照的信息可辨识性",
+  "conditions": "突发使队列快照与真实负载状态解耦；状态无年龄/变化率语义（LOZANO/QARR 状态为瞬时值）",
+  "difficulty": "陈旧或偏样本观测系统性误导逐跳策略，且突发下快照信息量骤降",
+  "cause_hypothesis": "快照不含变化率与信息年龄，策略把瞬时高队列误判为持续拥塞",
+  "possible_change": "信息年龄戳 + EWMA_τ(q) + 按年龄加权 TD（α_i=α0·f(a_j)，一行式改动）",
+  "strongest_alternative": "直接提高 hello 频率消除陈旧（若开销可接受）；加 Δq 单特征即够",
+  "decision_shift": "观测端（信息可辨识性）",
+  "next_cheap_check": "人工陈旧化 δ∈{0,0.5,1,2}×hello 周期，画平稳 vs 突发两条性能-陈旧度曲线，1 天",
+  "new_evidence": "",
+  "source": "run2/path-C-burst.md 卡C3"
+ }
+]
