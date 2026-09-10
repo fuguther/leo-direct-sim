@@ -46,7 +46,7 @@
 
 ## 5. 审查绑定版本
 
-- 每份审查意见登记于 `round/reviews/reviews.csv`：review_id / cand_id / 所审 content_hash / 角色 / 文件路径 / 状态(active|needs_review|superseded)。
+- 每份审查意见登记于 `round/reviews/reviews.csv`：review_id / cand_id / 所审 ledger_content_hash 与候选文件 sha256 / 角色 / 文件路径 / 状态(active|needs_review|superseded)。
 - 同模型不同角色 = **互补意见**，不声称天然独立；异模型通道当前不可用（chatgpt_dispatch 插件故障，已记录）。
 - 建设者输出独立修订建议，主控整合后才写入台账（审查者禁止修改生产者原件）。
 - 承重变更 → 相关旧意见自动 needs_review；非承重字段修改不触发；承重字段仅纯空白差异不触发（标点/符号/小数点变化即触发）。
