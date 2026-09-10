@@ -1,7 +1,7 @@
 # 探索继续与失败升级协议（EXPLORATION-FALLBACK v1.0，2026-09-10）
 
 > 回答的问题：**如果本轮 9 张卡全部不通过，下一步怎么继续探索？** 以及每一级失败意味着什么、该做什么、何时该停。
-> 前置：`QUALITY-GATE-R2.md`（G1–G5 闸门）、`EFFECTIVE-RULES-R2.md` §8（流水线）、`ELIMINATED-REGISTER.md`（淘汰台账）。
+> 前置：`QUALITY-GATE-R3.md`（G1–G5 闸门）、`EFFECTIVE-RULES-R2.md` §8（流水线）、`ELIMINATED-REGISTER.md`（淘汰台账）。
 
 ## 1. 先做失败归因，而不是"再试一次"
 

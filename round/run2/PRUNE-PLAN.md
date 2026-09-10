@@ -60,7 +60,7 @@
 | 文件 | 处置 | 理由 |
 |---|---|---|
 | `CHAIN-AUDIT.md` | **移出 rules** → `ANALYSIS/TOPIC-LOOP-20260910/run2/`（与 FRAMEWORK-SELFCHECK 同处） | 是一次性审计报告，不是活规则 |
-| `QUALITY-GATE-R2.md` + `LOOP-CONTROLLER.md` | **合并**为 `QUALITY-GATE-R3.md` | 前者说"怎么判"，后者说"循环几次"，属同一议题；两处都写"≤3 轮"存在重复 |
+| `QUALITY-GATE-R3.md` + `QUALITY-GATE-R3.md（第二部分：循环控制）` | **合并**为 `QUALITY-GATE-R3.md` | 前者说"怎么判"，后者说"循环几次"，属同一议题；两处都写"≤3 轮"存在重复 |
 | 其余 8 份 | 保留 | 各司其职 |
 
 **合并后规则清单（8 份）**：
@@ -93,7 +93,7 @@
 
 1. `git rm` 选定的文件（选项②=11 项）；
 2. `git mv` A1 六项 → `round/tools/archive/`；
-3. 合并 `QUALITY-GATE-R2` + `LOOP-CONTROLLER` → `QUALITY-GATE-R3.md`，并更新所有引用；
+3. 合并 `QUALITY-GATE-R3` + `QUALITY-GATE-R3` → `QUALITY-GATE-R3.md`，并更新所有引用；
 4. `git mv round/rules/CHAIN-AUDIT.md ANALYSIS/TOPIC-LOOP-20260910/run2/`；
 5. 更新 `TOPIC-SELECTION-METHOD.md` 的文件索引表；
 6. 重跑回归（12/12）与 `deps_check`（指纹一致性）；

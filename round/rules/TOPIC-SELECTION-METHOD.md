@@ -21,7 +21,7 @@
 
 | 闸门 | 判据（简版） | 详见 |
 |---|---|---|
-| **G1 现象成立** | ≥1 条原文事实（回全文，给节号/表号）+ ≥1 独立第二来源或明确"单一来源"；四档标注清晰；**"论文没测"≠"论文做不好"** | QUALITY-GATE-R2 §1 |
+| **G1 现象成立** | ≥1 条原文事实（回全文，给节号/表号）+ ≥1 独立第二来源或明确"单一来源"；四档标注清晰；**"论文没测"≠"论文做不好"** | QUALITY-GATE-R3 §1 |
 | **G2 原因有依据** | 机制链完整（条件→量变→哪一步失效→到达率/时延受损）；**排除≥1 个竞争解释**；跨论文可比性检查通过 | 同上 |
 | **G3 改动对症** | 先辨因再选法；能写出**一次具体决策或学习更新**；写明失效条件；不以模块数衡量创新 | 同上 |
 | **G4 简单办法为何不足** | 在信息/预算/条件**对齐后**比较：混合负载训练、在线微调、已有信息、规则路由、直接近邻；须存在"尚存困难+机制依据" | 同上 |
@@ -65,7 +65,7 @@
 ### 3.1 证据防火墙（隔离）
 - 生成器**只读论文事实**，绝不读历史候选、旧排序、淘汰理由、其他生成器的卡面；
 - 违反 → 产物**作废重跑**（不是"标注一下继续用"）；
-- 完整隔离矩阵见 EFFECTIVE-RULES-R2 **§8.1**；审计工具 `audit_contamination4.py`（只判路径参数位，已修掉三代误报）。
+- 完整隔离矩阵见 EFFECTIVE-RULES-R2 **§8.1**；审计工具 `audit_contamination.py`（只判路径参数位，已修掉三代误报）。
 
 ### 3.2 死因必须闭环（防"不断选出旧题"）
 生成隔离 → 历史审查（判撞车+给死因）→ **死因作 must-address 回传深化者** → 未逐条处理+新证据 → 不得推荐 → 淘汰登记 → 下轮仍隔离。
@@ -120,7 +120,7 @@
 | 轮次硬计数 | `round/tools/gate_rounds.py`（≤3 轮，超限硬拒绝） |
 | 路线与降级链 | `round/rules/ROUTE-POLICY.md` |
 | 断点审计报告 | `round/rules/CHAIN-AUDIT.md`（一次性报告，非活规则） |
-| 质量闸门 | `round/rules/QUALITY-GATE-R2.md` |
+| 质量闸门 | `round/rules/QUALITY-GATE-R3.md` |
 | 失败后怎么办 | `round/rules/EXPLORATION-FALLBACK.md` |
 | Undermind 用法 | `round/rules/UNDERMIND-PLAYBOOK.md` |
 | 流程图 | `ANALYSIS/TOPIC-LOOP-20260910/run2/PIPELINE-MAP.md` |
@@ -134,7 +134,7 @@
 | VM 转换 | `round/tools/vm_mineru_one.py`（逐篇串行，唯一活跃转换脚本） |
 | 依赖指纹 | `round/tools/gen_manifest.py`、`deps_check.py` |
 | 查新/检查/审计工具 | `round/tools/patched_novelty.py` / `patched_checks.py` / `patched_audit.py` |
-| 污染审计 | `round/tools/audit_contamination4.py` |
+| 污染审计 | `round/tools/audit_contamination.py` |
 | 回归测试 | `round/tools/test_rework_regressions.py`（13 项） |
 | 闸门/反馈模板 | `round/run2/gates/GATE-TEMPLATE.md`、`round/run2/feedback/FEEDBACK-TEMPLATE.md` |
 

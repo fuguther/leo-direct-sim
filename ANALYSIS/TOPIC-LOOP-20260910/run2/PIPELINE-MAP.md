@@ -1,6 +1,6 @@
 # 完整选题流程与输入隔离图（PIPELINE-MAP v1.0，2026-09-10）
 
-> 配套规则：\`round/rules/EFFECTIVE-RULES-R2.md\`（§2 白名单 v3、§8 流水线、§8.1 隔离矩阵）、\`round/rules/QUALITY-GATE-R2.md\`（G1–G5 闸门与 ≤3 轮迭代）、\`round/history/ELIMINATED-REGISTER.md\`（淘汰台账）。
+> 配套规则：\`round/rules/EFFECTIVE-RULES-R2.md\`（§2 白名单 v3、§8 流水线、§8.1 隔离矩阵）、\`round/rules/QUALITY-GATE-R3.md\`（G1–G5 闸门与 ≤3 轮迭代）、\`round/history/ELIMINATED-REGISTER.md\`（淘汰台账）。
 > 判定标准：**任一隔离格被违反 → 该环节产物作废重跑**（不是"标注一下继续用"）。
 
 ## 1. 主流程图

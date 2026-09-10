@@ -1,7 +1,7 @@
 # 子代理提示词模板库（PROMPT-TEMPLATES v1.0，2026-09-10）
 
 > 用途：让方法论**可操作**。每次派活从此处拷模板填空，避免提示词质量随心情波动。
-> 配套：`TOPIC-SELECTION-METHOD.md`（总纲）、`EFFECTIVE-RULES-R2.md` §8.1（隔离矩阵）、`QUALITY-GATE-R2.md`（闸门）。
+> 配套：`TOPIC-SELECTION-METHOD.md`（总纲）、`EFFECTIVE-RULES-R2.md` §8.1（隔离矩阵）、`QUALITY-GATE-R3.md`（闸门）。
 
 ## 0. 所有模板的公共前缀（必填，不可省）
 
@@ -32,7 +32,7 @@
 禁止（黑名单；**含禁止对其执行 ls/find/glob 列目录**）：
 LITERATURE/notes/raw/**、LITERATURE/KNOWLEDGE-MAP.md、ANALYSIS/**、NOTES.md、
 round/run1/**、round/CANDIDATE-LEDGER.csv、round/reviews/**、round/history/**、
-round/ROUND-LOG.md、round/rules/QUALITY-GATE-R2.md、round/knowledge/P0-SEMANTIC-SPOTCHECK.md、
+round/ROUND-LOG.md、round/rules/QUALITY-GATE-R3.md、round/knowledge/P0-SEMANTIC-SPOTCHECK.md、
 round/run2/cards.json、任何候选台账/旧卡/评审意见、其他 worktree。
 ```
 
@@ -128,4 +128,4 @@ round/run2/cards.json、任何候选台账/旧卡/评审意见、其他 worktree
 1. 三个生成器**必须在同一批次同时派发**（互不可见，避免后者看到前者的卡面）；
 2. 深化者与审查者**一律新上下文**；同一张卡的深化者与审查者不得是同一个子代理；
 3. 派发后在 `round/dispatch/DISPATCH-RECORD.md` 登记：角色、是否新上下文、实际投喂文件清单；
-4. 初筛后必跑污染审计：`python3 round/tools/audit_contamination4.py <子会话ID...>`，违规即作废重跑。
+4. 初筛后必跑污染审计：`python3 round/tools/audit_contamination.py <子会话ID...>`，违规即作废重跑。

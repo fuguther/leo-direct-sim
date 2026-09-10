@@ -7,7 +7,7 @@
 
 | 组件 | 实际抓到什么 | 证据 |
 |---|---|---|
-| **独立污染审计**（`audit_contamination4.py`） | 生成器 C 执行 `ls round/run1/`，**目录列举泄漏旧卡文件名**；修工具后 A/B/C 三路 0 违规 | DRYRUN-REPORT D-3；审计输出 |
+| **独立污染审计**（`audit_contamination.py`） | 生成器 C 执行 `ls round/run1/`，**目录列举泄漏旧卡文件名**；修工具后 A/B/C 三路 0 违规 | DRYRUN-REPORT D-3；审计输出 |
 | **dry-run 走查** | 抓到审查绑定缺陷：空 `content_hash` 被接受 → **永不过期的陈旧意见**（承重字段改了仍显示 active） | 缺陷 D-1 + 回归 T13（13/13 PASS） |
 | **历史碰撞审查（独立上下文）** | ① 判出 **C3 与 F1 家族卡真子集级重合**（机制层+核验层双重重合）；② 判出 **A1 与 run1-B3 方法件/替代件互换**；③ 主动指出**框架缺口**：批内近重复无属主 | `round/run2/op-history-review.md` |
 | **历史审查 → 主控回全文核验（接力）** | 审查发现"承重锚出自 truncated 全文"→ 主控用 MinerU 全文核验 → **炸出严重混淆**：CMNCS52M 三模型同时改了 5 个变量（分布/容量/占用率/时变性/状态维度），生成器当成单因素证据 | `round/knowledge/notes-neutral/CMNCS52M-CONFOUND.md` |

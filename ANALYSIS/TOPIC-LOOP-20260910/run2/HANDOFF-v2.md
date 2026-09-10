@@ -73,7 +73,7 @@
 | 产物 | 位置 | 作用 |
 |---|---|---|
 | 方法论总纲 | `round/rules/TOPIC-SELECTION-METHOD.md` | **单一入口**：合格定义、十步流水线、四条原则、文件索引、反面清单 |
-| 质量闸门 | `round/rules/QUALITY-GATE-R2.md` | G1–G5 判据、致命项一票否决、≤3 轮迭代 |
+| 质量闸门 | `round/rules/QUALITY-GATE-R3.md` | G1–G5 判据、致命项一票否决、≤3 轮迭代 |
 | 失败升级协议 | `round/rules/EXPLORATION-FALLBACK.md` | 全灭时怎么办（三级阶梯 + 停止条件） |
 | Undermind 手册 | `round/rules/UNDERMIND-PLAYBOOK.md` | 四种检索模式、踩坑、工作区防火墙 |
 | MinerU SOP | `round/rules/MINERU-CONVERSION-SOP.md` | 实测四后端对比、质量瑕疵与规避 |
@@ -82,7 +82,7 @@
 | 淘汰台账 | `round/history/ELIMINATED-REGISTER.md` | A/B/C 三类分离 + 复活条件登记 |
 | 历史索引 | `round/history/HISTORY-INDEX.md` | 38 题全量 + §5 失败原因货币性 |
 | 闸门/反馈模板 | `round/run2/gates/GATE-TEMPLATE.md`、`round/run2/feedback/FEEDBACK-TEMPLATE.md` | 逐条判定与 must-address |
-| 工具 | `round/tools/ledger.py`、`patched_novelty.py`、`patched_checks.py`、`patched_audit.py`、`audit_contamination4.py`、`test_rework_regressions.py`（13 项回归） | 台账/查新/检查/审计 |
+| 工具 | `round/tools/ledger.py`、`patched_novelty.py`、`patched_checks.py`、`patched_audit.py`、`audit_contamination.py`、`test_rework_regressions.py`（13 项回归） | 台账/查新/检查/审计 |
 
 ---
 
@@ -151,7 +151,7 @@
 
 1. 生成器**不读**历史候选/淘汰理由/其他生成器卡面；**列目录也算违规**；
 2. 深化者**不拿**历史全集，只拿本卡 must-address；
-3. 初筛后必跑 `audit_contamination4.py`；
+3. 初筛后必跑 `audit_contamination.py`；
 4. 快照绑定：审查须绑 `ledger_content_hash` + `candidate_file_sha256`（空/畸形一律拒绝）；
 5. "论文没测" ≠ "论文做不好"（没测标【待证】）；
 6. 不靠改名/加条件/补风险声明维持推荐；

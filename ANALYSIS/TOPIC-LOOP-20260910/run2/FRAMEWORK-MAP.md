@@ -11,8 +11,8 @@
 ~~~~
 flowchart LR
     M["TOPIC-SELECTION-METHOD.md<br/>总纲·单一入口"] --> R["EFFECTIVE-RULES-R2.md<br/>强制规则(白名单/流水线/隔离)"]
-    M --> G["QUALITY-GATE-R2.md<br/>G1-G5 闸门"]
-    M --> L["LOOP-CONTROLLER.md<br/>循环与终止"]
+    M --> G["QUALITY-GATE-R3.md<br/>G1-G5 闸门"]
+    M --> L["QUALITY-GATE-R3.md（第二部分：循环控制）<br/>循环与终止"]
     M --> F["EXPLORATION-FALLBACK.md<br/>全灭后怎么办"]
     R --> P["PROMPT-TEMPLATES.md<br/>五类派发模板"]
     P --> RP["⚠ tools/REVIEW-ROLE-PROMPTS.md<br/>旧版·内容重复"]
@@ -63,7 +63,7 @@ flowchart TD
 ~~~~
 flowchart TD
     A["① 生成 ×3 隔离"] --> B["② 初筛"]
-    B --> B2["②b 污染审计<br/>audit_contamination4"]
+    B --> B2["②b 污染审计<br/>audit_contamination"]
     B2 -->|违规| VOID["作废重跑"]
     B2 -->|干净| IB["批内对账 §8.0<br/>(R5 新增)"]
     IB --> H["③ 历史碰撞审查"]
@@ -169,7 +169,7 @@ flowchart TD
 ~~~~
 flowchart LR
     GEN["生成器"] -.禁止.-> BL["黑名单"]
-    AU["audit_contamination4"] -->|读子会话日志| CHECK{"违规?"}
+    AU["audit_contamination"] -->|读子会话日志| CHECK{"违规?"}
     CHECK -->|是| VOID["作废"]
     CHECK -->|否| PASS["放行"]
     MAT["§8.1 隔离矩阵"] --> GEN
@@ -184,7 +184,7 @@ flowchart LR
 
 | 类别 | 文件 | 处置建议 |
 |---|---|---|
-| **核心保留（8）** | `ledger.py` `patched_checks.py` `patched_audit.py` `patched_novelty.py` `test_rework_regressions.py` `gate_check.py` `gate_rounds.py` `audit_contamination4.py` | 保留（`audit_contamination4` 建议改名去掉版本号） |
+| **核心保留（8）** | `ledger.py` `patched_checks.py` `patched_audit.py` `patched_novelty.py` `test_rework_regressions.py` `gate_check.py` `gate_rounds.py` `audit_contamination.py` | 保留（`audit_contamination` 建议改名去掉版本号） |
 | **语料管道（7）** | `sanitize_notes.py` `gen_neutral_view.py` `gen_manifest.py` `deps_check.py` `gen_zotero_index.py` `zotero_pdf_manifest.py` `stage_zotero_pdfs.py` `build_citekey_crosswalk.py` `vm_mineru_one.py` `watch_one_txt.sh` | 保留（9 个） |
 | **一次性已完成（9）** | `fix_chu.py` `revert_backfill.py` `neutral_residual_fix1/2.py` `backfill_facts_min.py` `annotate_confound.py` `freeze_neutral_hashes.py` `spotcheck_removed2.py` `corpus_gap.py` `check_local_paths.py` `zotero_compare.py` `audit_reads2.py` | **归档**（移入 `round/tools/archive/`；保留证据可追溯性） |
 | **迭代残留（8）** | `vm_mineru_batch.py` `batch2` `batch3` `vm_convert_pdfs.py` `vm_extract_evidence.py` `vm_mineru_quality_test.py` `audit_contamination2.py` `audit_reads.py` `spotcheck_removed.py` | **删除**（被取代，且旧版有已知缺陷/误报） |
