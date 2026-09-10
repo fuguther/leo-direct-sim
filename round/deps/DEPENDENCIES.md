@@ -1,4 +1,4 @@
-# 依赖指纹清单（DEPENDENCIES，重生成于 2026-09-10 22:26）
+# 依赖指纹清单（DEPENDENCIES，重生成于 2026-09-10 23:36）
 
 > 本轮所有承重组件的内容指纹。deps_check.py 重算比对；指纹变化必须显式报告，不静默换版。
 > 重生成工具：round/tools/gen_manifest.py（承重文件被显式修改后运行）。
@@ -19,12 +19,12 @@
 | 本线 patched_checks.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/patched_checks.py | agent/20260910-topic-loop | 2782ce963843006509d77cd06d0ae5ff6bfaac0ce1242cacbf7f19f795ab8de0 | 本线自有 |
 | 本线 patched_audit.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/patched_audit.py | agent/20260910-topic-loop | b9f91423b42d26c9ca8dd96a60e09675b9e3db57b6e0a5dbe099236ce7c0253d | 本线自有 |
 | 本线 patched_novelty.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/patched_novelty.py | agent/20260910-topic-loop | c6f7e520558b5cab7fbb27b692f581dd13fef5d5755cf1df118acfc572435aba | 本线自有 |
-| 本线 ledger.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/ledger.py | agent/20260910-topic-loop | 15cec1b5e04fa5bd41d0d70540e1e86b99faf153ee15f99d85193d0db3a483ad | 本线自有 |
+| 本线 ledger.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/ledger.py | agent/20260910-topic-loop | 6ac25bb3d14283e43add464ea11d81aa3fbfcc62dc04c0e395b6f8900e755ea6 | 本线自有 |
 | 本线 merge_sim.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/merge_sim.py | agent/20260910-topic-loop | 4a2cf57d1eef594f33de26e04049c2ddd5f3fb30ce0a7fc670ab9785b8b2af8f | 本线自有 |
 | 本线 deps_check.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/deps_check.py | agent/20260910-topic-loop | 35ff71067c7512f8ab6ffe4dd2dd405827278473f88e35a0a42bc72b48b01316 | 本线自有 |
 | 本线 gen_manifest.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/gen_manifest.py | agent/20260910-topic-loop | 0eb40bd8e3f8b250b9d41c23e08db00ea1d6b6113ae2d400db234acc8f36ae46 | 本线自有 |
 | 本线 gen_neutral_view.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/gen_neutral_view.py | agent/20260910-topic-loop | 8176a4eeb145cd0ce4c9ac0970b1f18eb08d498ab8a08fdfdc7ab2d70feb5c59 | 本线自有 |
-| 本线 test_rework_regressions.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/test_rework_regressions.py | agent/20260910-topic-loop | 90df988479efc0a7f7b231aecc6c457ed30934f62e8636130e70c31de6969efd | 本线自有 |
+| 本线 test_rework_regressions.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/test_rework_regressions.py | agent/20260910-topic-loop | fbff34709e4902d4314caa5384def95c0746aab712df2599d058a70989a5ba31 | 本线自有 |
 | 本线 NEUTRAL-KNOWLEDGE-VIEW.md | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/knowledge/NEUTRAL-KNOWLEDGE-VIEW.md | agent/20260910-topic-loop | 47995fa2fa057194f8647e9efd773e0dd242d7ef4df37432136c7a6dd5f462c9 | 本线自有（程序化切片） |
 | notes/raw 规模 | /Users/lge/Desktop/leo-direct-sim/LITERATURE/notes/raw/ | 主库 | count=41（目录级，文件级不固定） | 只读 |
 

@@ -12,7 +12,7 @@
 | 2C | 检查器异常被当作正确否定 | checker 异常与未知检查器在 expected=BLOCK 时 kind=正确、all_ok=True（audit.py 自称 fail-loud 实为 fail-into-pass） | patched_audit.py：五类记账（correct/false_release/false_kill/EXEC_ERROR/UNKNOWN_CHECKER/PARAM_ERROR）；all_ok 收紧=零执行错误；"程序未能检查"与"确实找到反例"分离 | T6 PASS（两类异常均使审计失败） | 同上 §C |
 | 2D | 空字段/占位文本假通过 | 四例+补充第五例（rhos 有而 claimed_W 空→PASS）全部复现 | patched_checks.py：新增 INPUT_INSUFFICIENT（占位=TODO/待补/空）与 NOT_APPLICABLE；数值检查只对给定输入负责；PASS 理由限定"给定输入下成立" | T7 PASS（8 断言） | 同上 §D |
 | 3A | 台账 CLI 崩溃+幂等缺失 | dataclass AttributeError（Python 3.14.2，根因=spec_from_file_location 未注册 sys.modules）精确复现；批内重复/同证据重试会重复入账（本线原实现自认） | 重写 ledger.py：自含数据结构（不跨 checkout 导入）；content_hash 幂等；批内投影实时更新；cand_id 稳定+唯一当前版本；修订=新版本行+supersedes_row；new_evidence 强制 source+judgment（fail-loud）；旧题匹配只报告不淘汰；LEDGER_SCHEMA_MISMATCH 拒写；doctor 残尾行识别+原子修复；appends fsync | T1/T2/T3/T8/T10 PASS（含重复执行/修订留痕/中断恢复） | round/logs/repro-ledger-cli.txt；round/tools/ledger.py |
-| 3B | 审查不绑定版本、路径冲突 | 流程层面缺陷（审查意见无版本锚；模板禁读路径过宽） | REVIEW-ROLE-PROMPTS v2：意见强制记录 cand_id+实算 sha256；只读原件只写意见文件；同模型角色=互补意见声明；EFFECTIVE-RULES-R2 §5；ledger.py 承重修订自动置旧意见 needs_review（标点级不触发） | 小流程实测：R1-R3 登记@v1 哈希→v2 承重修订→自动全部 needs_review | round/MINIFLOW-RECORD.md |
+| 3B | 审查不绑定版本、路径冲突 | 流程层面缺陷（审查意见无版本锚；模板禁读路径过宽） | REVIEW-ROLE-PROMPTS v2：意见强制记录 cand_id+实算 sha256；只读原件只写意见文件；同模型角色=互补意见声明；EFFECTIVE-RULES-R2 §5；ledger.py 承重修订自动置旧意见 needs_review（触发口径 R4 精化：承重字段仅纯空白差异不触发，标点/符号变化即触发；非承重字段修改不触发） | 小流程实测：R1-R3 登记@v1 哈希→v2 承重修订→自动全部 needs_review | round/MINIFLOW-RECORD.md |
 
 **不同意见**：无未采纳的审查发现。两处精确化：①2B 的"进而 collision"在 title-only 卡成立，多字段卡实为稀释不稳定（已修）；②3A 根因=sys.modules 注册缺失（已记录，供原件 owner 参考）。
 

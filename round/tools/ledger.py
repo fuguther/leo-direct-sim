@@ -13,7 +13,7 @@ ledger_add.py 缺陷复现: round/logs/repro-ledger-cli.txt（spec_from_file_loc
 - 同批重复：批内投影实时更新，同键第二张 → 同 cand_id 的新版本行 + note 标记待主控合并。
 - 修订 revise = 同 cand_id version+1、supersedes_row 指旧行；承重字段（条件/困难/原因/改动/
   替代/决策变化/新证据）发生实质变化 → 自动把 reviews.csv 中审过旧 content_hash 的意见置
-  needs_review（归一化后仅标点/空白差异不触发）。
+  needs_review（归一化仅折叠空白：非承重字段修改不触发；承重字段仅纯空白差异不触发；承重字段的标点/符号/小数点变化即触发）。
 - 旧题匹配只报告（old_topic_match + stdout OLD_TOPIC_MATCH），不自动淘汰；处置权在主控
   （revise/status/merge）。判定语义归一化复制自 pool.py@sha256:15989feaeedc497d。
 - new_evidence 非空必须同时给 --evidence-source 与 --evidence-judgment（主控判定），否则拒绝。
@@ -27,7 +27,7 @@ ledger_add.py 缺陷复现: round/logs/repro-ledger-cli.txt（spec_from_file_loc
   python3 ledger.py status --cand-id ID --status awaiting_evidence --reason "为何" --ledger L.csv
   python3 ledger.py show --ledger L.csv [--all]
   python3 ledger.py doctor --ledger L.csv [--backup] [--repair-out PATH]
-  python3 ledger.py review-register --review-id R1 --cand-id ID --content-hash H --role builder --file F --reviews RV.csv
+  python3 ledger.py review-register --review-id R1 --cand-id ID --content-hash H --role builder --file F --reviews RV.csv --candidate-file CAND.md --verify-ledger L.csv
   python3 ledger.py invalidate-reviews --cand-id ID --content-hash H --reviews RV.csv
 """
 from __future__ import annotations
@@ -48,6 +48,11 @@ LOAD_BEARING = ("conditions", "difficulty", "cause_hypothesis", "possible_change
                 "strongest_alternative", "decision_shift", "new_evidence")
 STATUSES = ("backlog", "awaiting_evidence", "needs_revision",
             "recommended_pending_review", "archived", "merged")
+
+# 审查登记表（R4 补强）：ledger_content_hash=台账 canonical 字段哈希；
+# candidate_file/candidate_file_sha256=被审候选文件及其 sha256（工具实算，非人工传参）。
+REVIEWS_HEADER = ["review_id", "cand_id", "ledger_content_hash", "candidate_file",
+                  "candidate_file_sha256", "role", "file", "status", "updated_at", "note"]
 
 HEADER = ["row_no", "cand_id", "version", "op", "status", "title"] + list(CARD_FIELDS[1:]) + [
     "new_evidence", "new_evidence_source", "evidence_judgment", "old_topic_match",
@@ -382,13 +387,13 @@ def invalidate(cand_id: str, old_hash: str, reviews_path: str):
     rrows, _ = _read_ledger(reviews_path)
     changed = []
     for r in rrows:
-        if r["cand_id"] == cand_id and r["content_hash"] == old_hash and r["status"] == "active":
+        if r["cand_id"] == cand_id and r["ledger_content_hash"] == old_hash and r["status"] == "active":
             r["status"] = "needs_review"
             r["updated_at"] = _now()
             r["note"] = (r.get("note") or "") + " | 承重字段变更，自动置待复核"
             changed.append(r["review_id"])
     if changed:
-        _atomic_replace(reviews_path, _dump_csv(rrows, ["review_id", "cand_id", "content_hash", "role", "file", "status", "updated_at", "note"]))
+        _atomic_replace(reviews_path, _dump_csv(rrows, REVIEWS_HEADER))
     return changed
 
 
@@ -403,6 +408,12 @@ def _dump_csv(rows, header):
 
 
 def cmd_review_register(args):
+    """审查登记（R4 补强）：双哈希绑定。
+    - --content-hash = 台账 content_hash（canonical 字段哈希）；--verify-ledger 给出时校验其确存在于台账。
+    - --candidate-file = 被审候选文件路径（工具实算 sha256）；或 --candidate-file-sha256 显式给出（64 位十六进制）。
+      两者至少其一必填；意见文件仍须自录两值以便交叉核对。
+    - 同 review_id 已存在且绑定完整 → 拒绝（意见不可覆盖）；存在但缺 candidate_file_sha256 → 允许仅补绑（bind-completion）。
+    """
     rows = []
     if os.path.exists(args.reviews):
         rows, bad = _read_ledger(args.reviews)
@@ -410,14 +421,46 @@ def cmd_review_register(args):
             print("REVIEWS_TAINTED", file=sys.stderr)
             return 2
     dup = next((r for r in rows if r["review_id"] == args.review_id), None)
-    if dup:
-        print("REJECTED: review_id 已存在 %s（意见不可覆盖，登记新 id）" % args.review_id, file=sys.stderr)
+    completing = bool(dup and not dup.get("candidate_file_sha256"))
+    if dup and not completing:
+        print("REJECTED: review_id 已存在且绑定完整 %s（意见不可覆盖，登记新 id）" % args.review_id, file=sys.stderr)
         return 2
-    rows.append({"review_id": args.review_id, "cand_id": args.cand_id, "content_hash": args.content_hash,
-                 "role": args.role, "file": args.file, "status": "active",
-                 "updated_at": _now(), "note": args.note or ""})
-    _atomic_replace(args.reviews, _dump_csv(rows, ["review_id", "cand_id", "content_hash", "role", "file", "status", "updated_at", "note"]))
-    print("REGISTERED %s -> %s@%s (%s)" % (args.review_id, args.cand_id, args.content_hash, args.role))
+    if args.verify_ledger:
+        lrows, lbad = _read_ledger(args.verify_ledger)
+        if lbad:
+            print("LEDGER_TAINTED", file=sys.stderr)
+            return 2
+        if not any(r["content_hash"] == args.content_hash for r in lrows):
+            print("REJECTED: ledger_content_hash %s 不存在于台账 %s（绑定校验失败，防人工传参错绑）"
+                  % (args.content_hash, args.verify_ledger), file=sys.stderr)
+            return 2
+    if args.candidate_file:
+        if not os.path.exists(args.candidate_file):
+            print("REJECTED: candidate_file 不存在 %s" % args.candidate_file, file=sys.stderr)
+            return 2
+        csha = hashlib.sha256(open(args.candidate_file, "rb").read()).hexdigest()
+    elif args.candidate_file_sha256:
+        csha = args.candidate_file_sha256.strip().lower()
+        if not re.fullmatch(r"[0-9a-f]{64}", csha):
+            print("REJECTED: candidate_file_sha256 必须为 64 位十六进制", file=sys.stderr)
+            return 2
+    else:
+        print("REJECTED: 绑定不完整——必须给 --candidate-file（工具实算）或 --candidate-file-sha256", file=sys.stderr)
+        return 2
+    if completing:
+        dup["candidate_file"] = args.candidate_file or dup.get("candidate_file", "")
+        dup["candidate_file_sha256"] = csha
+        dup["updated_at"] = _now()
+        dup["note"] = (dup.get("note") or "") + " | bind-completion"
+        _atomic_replace(args.reviews, _dump_csv(rows, REVIEWS_HEADER))
+        print("BOUND %s candidate_file_sha256=%s（补绑完成）" % (args.review_id, csha[:16]))
+        return 0
+    rows.append({"review_id": args.review_id, "cand_id": args.cand_id,
+                 "ledger_content_hash": args.content_hash, "candidate_file": args.candidate_file or "",
+                 "candidate_file_sha256": csha, "role": args.role, "file": args.file,
+                 "status": "active", "updated_at": _now(), "note": args.note or ""})
+    _atomic_replace(args.reviews, _dump_csv(rows, REVIEWS_HEADER))
+    print("REGISTERED %s -> %s@%s (%s) file_sha256=%s" % (args.review_id, args.cand_id, args.content_hash, args.role, csha[:16]))
     return 0
 
 
@@ -448,6 +491,7 @@ def main(argv):
     p = sub.add_parser("review-register"); p.add_argument("--review-id", required=True); p.add_argument("--cand-id", required=True)
     p.add_argument("--content-hash", required=True); p.add_argument("--role", default="reviewer")
     p.add_argument("--file", required=True); p.add_argument("--reviews", required=True); p.add_argument("--note")
+    p.add_argument("--candidate-file"); p.add_argument("--candidate-file-sha256"); p.add_argument("--verify-ledger")
     p = sub.add_parser("invalidate-reviews"); p.add_argument("--cand-id", required=True)
     p.add_argument("--content-hash", required=True); p.add_argument("--reviews", required=True)
     args = ap.parse_args(argv)

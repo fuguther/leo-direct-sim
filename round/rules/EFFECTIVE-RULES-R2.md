@@ -39,7 +39,7 @@
 
 ## 4. 台账与修订语义
 
-- 唯一 CLI：`round/tools/ledger.py`（`ledger_add.py` 已废弃，缺陷复现存档）。只追加；cand_id 稳定；当前版本=最大 version；content_hash 幂等（重试/同批不重复入账）；修订=新版本行+supersedes_row；承重字段实质变化自动把审过旧哈希的意见置 needs_review（标点级差异不触发）。
+- 唯一 CLI：`round/tools/ledger.py`（`ledger_add.py` 已废弃，缺陷复现存档）。只追加；cand_id 稳定；当前版本=最大 version；content_hash 幂等（重试/同批不重复入账）；修订=新版本行+supersedes_row；承重字段变化自动把审过旧哈希的意见置 needs_review。触发口径（R4 精化）：非承重字段修改不触发；承重字段仅纯空白差异不触发；承重字段的标点/符号/小数点变化即触发。
 - 状态词表：`backlog(待建设) / awaiting_evidence(待证据) / needs_revision(需修订) / recommended_pending_review(推荐待审) / archived(归档) / merged(合并簿记)`。**"文件已交付"≠"科研通过"**。
 - 旧题匹配只报告不淘汰：old_topic_match 字段 + stdout 提示，处置由主控核对旧判断后决定（保留/修订/合并/归档），并留理由。
 - new_evidence 非空必须携带 new_evidence_source 与 evidence_judgment（主控判定），否则 CLI 拒绝（fail-loud）。
@@ -49,7 +49,8 @@
 - 每份审查意见登记于 `round/reviews/reviews.csv`：review_id / cand_id / 所审 content_hash / 角色 / 文件路径 / 状态(active|needs_review|superseded)。
 - 同模型不同角色 = **互补意见**，不声称天然独立；异模型通道当前不可用（chatgpt_dispatch 插件故障，已记录）。
 - 建设者输出独立修订建议，主控整合后才写入台账（审查者禁止修改生产者原件）。
-- 承重变更 → 相关旧意见自动 needs_review；标点/排版修改不触发。
+- 承重变更 → 相关旧意见自动 needs_review；非承重字段修改不触发；承重字段仅纯空白差异不触发（标点/符号/小数点变化即触发）。
+- 审查登记双哈希（R4 补强）：reviews.csv 同时记 ledger_content_hash（台账字段哈希，--verify-ledger 校验存在性）与 candidate_file/candidate_file_sha256（被审候选文件+工具实算 sha256）；登记缺一即拒绝。
 
 ## 6. 依赖固定
 

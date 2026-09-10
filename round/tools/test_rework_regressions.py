@@ -4,7 +4,7 @@
 运行: python3 test_rework_regressions.py   → 全过 exit 0，任一失败 exit 1。
 """
 from __future__ import annotations
-import csv, importlib.util, json, os, subprocess, sys, tempfile
+import csv, hashlib, importlib.util, json, os, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -167,8 +167,8 @@ def t7(tmp):
     out = pc.run_check("queue_divergence", {})
     assert out["verdict"] == pc.VERDICT_INSUF
 
-# T8 承重修订 → 相关审查失效；标点级修订不触发
-@case(8, "候选承重修订后相关审查失效；标点修改不触发")
+# T8 承重字段修订（含标点/符号变化）→ 相关审查失效；仅纯空白差异不触发；双哈希绑定
+@case(8, "承重字段修订(含标点/符号)触发审查失效;仅纯空白不触发;登记双哈希绑定")
 def t8(tmp):
     L = os.path.join(tmp, "l.csv"); RV = os.path.join(tmp, "rv.csv")
     cards = os.path.join(tmp, "c8.json")
@@ -176,40 +176,63 @@ def t8(tmp):
     run_cli("add", "--cards", cards, "--ledger", L)
     rows, _ = ld._read_ledger(L)
     cid, ch = rows[0]["cand_id"], rows[0]["content_hash"]
+    cand = os.path.join(tmp, "cand.md")
+    open(cand, "w", encoding="utf-8").write("# 候选正文 v1\n")
+    csha = hashlib.sha256(open(cand, "rb").read()).hexdigest()
+    # 登记（新接口）：--candidate-file 工具实算 + --verify-ledger 校验 content_hash 存在性
     run_cli("review-register", "--review-id", "R1", "--cand-id", cid, "--content-hash", ch,
-            "--role", "evidence", "--file", "op.md", "--reviews", RV)
+            "--role", "evidence", "--file", "op.md", "--reviews", RV,
+            "--candidate-file", cand, "--verify-ledger", L)
+    rv_rows, _ = ld._read_ledger(RV)
+    assert rv_rows[0]["candidate_file_sha256"] == csha, "文件哈希必须由工具实算入表"
+    assert rv_rows[0]["ledger_content_hash"] == ch
+    # 错绑探针：content_hash 不在台账 → 拒绝
+    rb = subprocess.run([sys.executable, os.path.join(HERE, "ledger.py"), "review-register", "--review-id", "RX",
+                         "--cand-id", cid, "--content-hash", "hdeadbeef0000", "--role", "evidence", "--file", "x.md",
+                         "--reviews", RV, "--candidate-file", cand, "--verify-ledger", L], capture_output=True, text=True)
+    assert rb.returncode == 2 and "绑定校验失败" in rb.stderr, (rb.returncode, rb.stderr[-200:])
+    # 缺候选哈希来源 → 拒绝
+    rb2 = subprocess.run([sys.executable, os.path.join(HERE, "ledger.py"), "review-register", "--review-id", "RY",
+                          "--cand-id", cid, "--content-hash", ch, "--role", "evidence", "--file", "x.md",
+                          "--reviews", RV, "--verify-ledger", L], capture_output=True, text=True)
+    assert rb2.returncode == 2 and "绑定不完整" in rb2.stderr
+    # 承重修订 → 失效
     run_cli("revise", "--cand-id", cid, "--set", json.dumps({"cause_hypothesis": "寿命不在观测向量（修订表述）"}, ensure_ascii=False),
             "--reason", "机制表述承重修订", "--ledger", L, "--reviews", RV)
     rrows, _ = ld._read_ledger(RV)
     assert rrows[0]["status"] == "needs_review", rrows
-    # 标点级：加句号
+    # 承重字段标点变化（句号）→ 必须触发（R4 精化口径）
+    rows_r2, _ = ld._read_ledger(L)
     run_cli("review-register", "--review-id", "R2", "--cand-id", cid,
-            "--content-hash", ld._read_ledger(L)[0][1]["content_hash"],
-            "--role", "builder", "--file", "op2.md", "--reviews", RV)
-    run_cli("revise", "--cand-id", cid, "--set", json.dumps({"title": CARD_A["title"] + "。"}, ensure_ascii=False),
-            "--reason", "仅标点", "--ledger", L, "--reviews", RV)
+            "--content-hash", rows_r2[-1]["content_hash"],
+            "--role", "builder", "--file", "op2.md", "--reviews", RV,
+            "--candidate-file-sha256", csha)
+    run_cli("revise", "--cand-id", cid, "--set", json.dumps({"difficulty": CARD_A["difficulty"] + "。"}, ensure_ascii=False),
+            "--reason", "承重字段标点变化（句号）", "--ledger", L, "--reviews", RV)
     rrows, _ = ld._read_ledger(RV)
-    st = {r["review_id"]: r["status"] for r in rrows}
-    assert st["R1"] == "needs_review" and st["R2"] == "active", st
-    # R3 修复1：符号改变必须触发（τ<15s → τ≤15s）
+    assert {r["review_id"]: r["status"] for r in rrows}["R2"] == "needs_review", "承重字段标点变化必须触发重审"
+    # 承重字段纯空白差异 → 不触发
     rows_r3, _ = ld._read_ledger(L)
     run_cli("review-register", "--review-id", "R3", "--cand-id", cid,
             "--content-hash", rows_r3[-1]["content_hash"],
-            "--role", "evidence", "--file", "op3.md", "--reviews", RV)
-    run_cli("revise", "--cand-id", cid, "--set", json.dumps({"conditions": "屏蔽阈值 T*：τ_ho<15s"}, ensure_ascii=False),
-            "--reason", "符号级承重修订", "--ledger", L, "--reviews", RV)
-    rrows, _ = ld._read_ledger(RV)
-    assert {r["review_id"]: r["status"] for r in rrows}["R3"] == "needs_review", "符号改变必须触发重审"
-    # 纯空白差异不触发
-    rows_r4, _ = ld._read_ledger(L)
-    run_cli("review-register", "--review-id", "R4", "--cand-id", cid,
-            "--content-hash", rows_r4[-1]["content_hash"],
-            "--role", "builder", "--file", "op4.md", "--reviews", RV)
-    cond_now = rows_r4[-1]["conditions"]
+            "--role", "builder", "--file", "op3.md", "--reviews", RV,
+            "--candidate-file-sha256", csha)
+    cond_now = rows_r3[-1]["conditions"]
     run_cli("revise", "--cand-id", cid, "--set", json.dumps({"conditions": cond_now.replace(" ", "  ", 1)}, ensure_ascii=False),
             "--reason", "仅空白", "--ledger", L, "--reviews", RV)
     rrows, _ = ld._read_ledger(RV)
-    assert {r["review_id"]: r["status"] for r in rrows}["R4"] == "active", "纯空白差异不得触发重审"
+    assert {r["review_id"]: r["status"] for r in rrows}["R3"] == "active", "纯空白差异不得触发重审"
+    # 非承重字段（title）标点 → 不触发
+    rows_r4, _ = ld._read_ledger(L)
+    run_cli("review-register", "--review-id", "R4", "--cand-id", cid,
+            "--content-hash", rows_r4[-1]["content_hash"],
+            "--role", "builder", "--file", "op4.md", "--reviews", RV,
+            "--candidate-file-sha256", csha)
+    run_cli("revise", "--cand-id", cid, "--set", json.dumps({"title": CARD_A["title"] + "。"}, ensure_ascii=False),
+            "--reason", "非承重字段标点", "--ledger", L, "--reviews", RV)
+    rrows, _ = ld._read_ledger(RV)
+    assert {r["review_id"]: r["status"] for r in rrows}["R4"] == "active"
+
 
 # T9 依赖指纹漂移被明确识别
 @case(9, "依赖缺失或指纹变化被明确识别")
