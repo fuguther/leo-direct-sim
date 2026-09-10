@@ -22,11 +22,18 @@
 > v2→v3 原因：Codex 内容审核发现 raw 笔记仍含 F0/F1、旧候选与『我们的机会点』内容，与『已去倾向』声明不一致（实测 41 篇中 15 篇 30 处命中）。run1 生成器实际经 raw 笔记浏览 14 篇，暴露属实，已记入 ROUND-LOG §13。v3 起 raw 笔记移出生成入口，仅保留给生成后历史审查。
 
 1. `LITERATURE/SOURCES.csv`（论文总目录）
-2. `round/knowledge/notes-neutral/*.md`（程序化剥离倾向句的事实笔记，manifest: `round/knowledge/notes-neutral-manifest.json`，含源文件 sha256 与删除统计；只当线索，承重断言回原文）
+2. `round/zotero/ZOTERO-INDEX.md`（**Zotero 本机库总索引：111 篇，2026-09-10 新增**；每篇附 itemKey，用 `zotero_fulltext(itemKey=…)` **直接读 PDF 全文**——这是当前最大的全文来源，111 篇全部可得）
+3. `round/knowledge/notes-neutral/*.md`（程序化剥离倾向句的事实笔记，manifest: `round/knowledge/notes-neutral-manifest.json`；只当线索，承重断言回原文）
 3. `round/knowledge/NEUTRAL-KNOWLEDGE-VIEW.md`（中性事实视图——Claim/Assumption/Evidence 三图 + 全文阅读证据表；不含候选关系与旧未找到判断）
 4. Zotero 本机库（"毕设"集合等）
 5. 本地 PDF：`LITERATURE/papers/`、`tao25.pdf`（身份=arXiv 2512.03211，内容为 2001 Olpomdp 经典）
 6. Undermind search_papers（定向补查 ≤3 次；禁 launch_deep_search）、arXiv API、web 搜索
+
+**语料升级 v4（2026-09-10，用户指正后）**：
+- **Zotero 本机库 = 111 篇论文，全部有本地 PDF 全文**（探针实测 `zotero_fulltext` 可抽全文，单篇 2.8 万字符级）。
+- 此前只有 52 篇题录、41 篇笔记、14 篇本地 PDF —— **94/111 篇从未进入过选题语料**（含 Traffic-Aware MARL 路由、On-Demand Laser ISL 路由、SaTE 流量工程、DQN 负载均衡等直接相关文献）。
+- **生成器必须读 ZOTERO-INDEX.md 并用 zotero_fulltext 回原文**；承重引文须给篇名+itemKey+节号/页码。
+- 若某篇在 Zotero 中无 PDF 抽取（mode≠text），标注"全文不可得"，不得用标题代替证据。
 
 **语料可得性声明（2026-09-10 实测，详见 `round/knowledge/CORPUS-COVERAGE.md`）**：
 - 题录 52 篇 / 笔记 41 篇 / 本地 PDF 仅 14 篇 —— "看得见"与"读得到"分层，无笔记又无 PDF 的论文只能看到一行元数据；
