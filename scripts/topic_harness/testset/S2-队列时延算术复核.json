@@ -1,0 +1,17 @@
+{
+  "id": "S2-队列时延算术复核",
+  "check": "queue_divergence",
+  "params": {
+    "mu": 12500,
+    "rhos": {
+      "0.9": 0.9,
+      "0.999": 0.999
+    },
+    "claimed_W": {
+      "0.9": 0.00072,
+      "0.999": 0.0799
+    }
+  },
+  "expected_verdict": "PASS",
+  "origin": "run-20260910 review：W(0.9)=0.72ms、W(0.999)≈80ms 算术程序复核数字（mu=12500/s）"
+}
