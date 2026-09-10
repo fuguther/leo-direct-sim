@@ -2,3 +2,4 @@ review_id,cand_id,content_hash,role,file,status,updated_at,note
 R1-B3-builder,cc72be0cbef,haa9dadab679e,builder,round/miniflow/op-builder.md,needs_review,2026-09-10T21:32:19+0800, | 承重字段变更，自动置待复核
 R2-B3-neighbor,cc72be0cbef,haa9dadab679e,neighbor,round/miniflow/op-neighbor.md,needs_review,2026-09-10T21:32:19+0800, | 承重字段变更，自动置待复核
 R3-B3-evidence,cc72be0cbef,haa9dadab679e,evidence,round/miniflow/op-evidence.md,needs_review,2026-09-10T21:32:19+0800, | 承重字段变更，自动置待复核
+R5-A1-history,c30b20940a3,h30b20940a388,history-collision,round/miniflow-r3/op-history-cardA1.md,active,2026-09-10T22:55:51+0800,历史碰撞审查③：对账义务见 MASTER-DISPOSITION
