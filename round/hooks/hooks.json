@@ -1,0 +1,48 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "read|bash|glob|grep|run_code|write|edit|read_document",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/round/hooks/hook_blacklist_guard.py\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "write|edit|run_code",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/round/hooks/hook_delivery_gate.py\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "subagent|subagent_fork|subagent_codex|run_code",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/round/hooks/hook_prompt_scope.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "bash|run_code",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/round/hooks/hook_ledger_integrity.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
