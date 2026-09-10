@@ -663,3 +663,15 @@
 - 提案: out/research-ops/notes-cleanup/proposals/r2-c/GUVEN-2023.json
 - 移出原文: "中间粒度值得做消融"移 annex
 
+## IZHIKEVICH-2024.md（batch r2-d）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-d/IZHIKEVICH-2024.json
+- 移出原文: 对账：——ISL 使用是低频边缘事件（仅海上/偏远用户长期依赖），且 ISL 路径大幅拉长地面站-POP 距离（尼日利亚 154ms 中约 110ms 是地面段，Sec 7.2 方程）；路由/路径变化是运营方控制的负载动作且带来时延尖峰；AoI-of-state 无关。
+
+## LOZANO-2025-CONTINUAL.md（batch r2-d）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-d/LOZANO-2025-CONTINUAL.json
+- 移出原文: 疑时间尺度过短(仿真秒级 vs 我们的分钟级退火)
+
+## ZHOU-2026-DTAR.md（batch r2-d）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-d/ZHOU-2026-DTAR.json
+- 移出原文: **与我们对账**：normal/surge 场景只报 CV/延迟改善、**无交付率量化提升**，fault 场景才有 pp 级收益。③ holding/access 瓶颈完全缺席：无地面段/接入链路/排队；"端到端时延"口径未明（IV-A 截断处）。
+
