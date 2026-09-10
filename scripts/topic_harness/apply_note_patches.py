@@ -44,10 +44,25 @@ def save_state(path: str, done: set) -> None:
     json.dump(sorted(done), open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 
+
+def resolve_note(path: str, raw_dir: str) -> str:
+    """提案里的 file 字段可能是绝对路径或主库相对路径；归一化到当前运行的 raw 目录。"""
+    if os.path.exists(path):
+        return path
+    base = os.path.basename(path)
+    cand = os.path.join(raw_dir, base)
+    if os.path.exists(cand):
+        return cand
+    if path.startswith(".worktrees/research-ops/"):
+        cand2 = path[len(".worktrees/research-ops/"):]
+        if os.path.exists(cand2):
+            return cand2
+    return path
+
 def apply_proposal(prop_path: str, batch: str, raw_dir: str,
                    annex_lines: list, done: set, report: list) -> None:
     prop = json.load(open(prop_path, encoding="utf-8"))
-    note = prop["file"]
+    note = resolve_note(prop["file"], raw_dir)
     if not os.path.exists(note):
         report.append("SKIP " + os.path.basename(prop_path) + " 笔记不存在: " + note)
         return
@@ -87,6 +102,8 @@ def residue_scan(raw_dir: str, notes: list) -> list:
     pat = re.compile(RESIDUE_PAT)
     out = []
     for n in sorted(notes):
+        if not os.path.exists(n):
+            continue
         s = open(n, encoding="utf-8").read()
         hits = pat.findall(s)
         if hits:
