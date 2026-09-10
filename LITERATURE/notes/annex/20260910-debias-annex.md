@@ -675,3 +675,49 @@
 - 提案: out/research-ops/notes-cleanup/proposals/r2-d/ZHOU-2026-DTAR.json
 - 移出原文: **与我们对账**：normal/surge 场景只报 CV/延迟改善、**无交付率量化提升**，fault 场景才有 pp 级收益。③ holding/access 瓶颈完全缺席：无地面段/接入链路/排队；"端到端时延"口径未明（IV-A 截断处）。
 
+## ARXIV-2007.05449.md（batch r2-b）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-b/ARXIV-2007.05449.json
+- 移出原文: - **与我们对账**：
+ 1. AoI 对负载呈 U 型（Fig.7，低负载时 AoI 由源生成间隔主导）；
+ 2. 他们结论反指"年龄瓶颈节点"（加强关键链路速率/可靠性比改路由更影响 AoI，Abstract/VI）；
+
+## ARXIV-2007.05449.md（batch r2-b）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-b/ARXIV-2007.05449.json
+- 移出原文: - **可复用 + 危险信号**：数字存疑/未核实：μ_ISL=1、μ_DL=0.8 为归一化服务率（Table II，非真实星座速率）；N_pkt=10^5、无 seed 说明（TabII），仿真方差未报告；ε=0.01 对所有链路同值且重传机制未核实于正文。
+
+## ARXIV-2512.00985.md（batch r2-b）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-b/ARXIV-2512.00985.json
+- 移出原文: - **与我们对账**：① 路由选择的价值只在 AoI 惩罚度量、且惩罚陡峭时显现——α=1 时最优比最佳单路由惩罚低 ~60%（VII-D1 行~1340），时延/交付率度量下改道无收益；② 路由可用性 p_k（II-A 行~289）：p 小时 MAD-Zero Wait 反劣于简单策略、与最优差距收窄（VII-D3 行~1358）；
+
+## ARXIV-2512.00985.md（batch r2-b）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-b/ARXIV-2512.00985.json
+- 移出原文: - **可复用部件**：**危险信号**：只有 2~3 条抽象路由、无真实星座/争用，Table II/III（惩罚代价 α=0.1→1）、VII-D2 能量数（联合最优 E=4.14 vs 单路由 E1=3.4/E2=2.75，行~1348）均系玩具参数下数值，不可外推；"高方差路由反而有益"结论强依赖特定分布配置；无 seed/重复实验报告。
+
+## OPENALEX-SENSORS-DRL-ROUT.md（batch r2-b）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-b/OPENALEX-SENSORS-DRL-ROUT.json
+- 移出原文: “（贴近我们 holding/access 瓶颈）”移附录（PROJECT，平台概念关联）。
+
+## OPENALEX-SENSORS-DRL-ROUT.md（batch r2-b）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-b/OPENALEX-SENSORS-DRL-ROUT.json
+- 移出原文: “AoI-of-state 空白无一处被触碰”移附录（PROJECT，我们的空白表述）。
+
+## OPENALEX-SENSORS-DRL-ROUT.md（batch r2-b）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-b/OPENALEX-SENSORS-DRL-ROUT.json
+- 移出原文: “可作我们 AoI 引证素材”移附录（PROJECT）。
+
+## SHI-2024-GNNDQN.md（batch r2-b）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-b/SHI-2024-GNNDQN.json
+- 移出原文: **评级**：A
+
+## SHI-2024-GNNDQN.md（batch r2-b）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-b/SHI-2024-GNNDQN.json
+- 移出原文: “直接佐证我们「文献收益多为场景产物」的判断”移附录（PROJECT）。
+
+## SHI-2024-GNNDQN.md（batch r2-b）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-b/SHI-2024-GNNDQN.json
+- 移出原文: “与我们 F0/F1 包级动态、聚合交付零差异形成对照：收益宣称对粒度/瓶颈位置高度敏感；”移附录（PROJECT）。
+
+## SHI-2024-GNNDQN.md（batch r2-b）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-b/SHI-2024-GNNDQN.json
+- 移出原文: “AoI-of-state 空白维持”移附录（PROJECT，我们的空白）。
+
