@@ -1,111 +1,118 @@
-# Hook 套件说明与挂载方案（HOOKS-README v1.0，2026-09-11）
+# Hook 套件 v2（按 Codex 三项收口重做，2026-09-11）
 
-> **当前状态：脚本已就绪并通过自测（11/11），未挂载——不影响任何运行中的流程。**
-> 位置：`round/hooks/`（全部在本 worktree 内，未触碰系统配置）。
+> 状态：**已按 Codex 实测收口；未挂载**（用户决定不全局挂载）。所有脚本在本 worktree 内，零系统改动。
+> 取证依据：`HOOK-CONTRACT.md`（hook 载荷字段、沙箱能力、三个反例复现）。
 
 ---
 
-## 1. 为什么需要 hook（回答"规则写成文档就够吗"）
+## 1. 能力分级（**先说边界，再说功能**）
 
-**不够。** 现有 8 份规则是**软约束**——只在我读了并且愿意遵守时生效。实测过的断点：
-
-| 规则（文档） | 实际发生 | 文档能防住吗 |
+| 访问方式 | 约束级别 | 机制 |
 |---|---|---|
-| "生成器禁止读黑名单" | 生成器 C 执行 `ls round/run1/` 泄漏旧卡文件名 | ❌ 靠事后审计才发现 |
-| "承重变更必须失效旧审查" | 空 `content_hash` 被接受 → 意见永不过期 | ❌ 靠 dry-run 才发现 |
-| "推荐必须附闸门判定表" | 尚无机制 | ❌ 靠自觉 |
-| "深化者不得拿历史全集" | 尚无机制 | ❌ 靠我派活时记得 |
+| `read`/`read_document`/`glob`/`grep` 等工具路径 | ✅ **可强制** | 载荷里有结构化路径 → realpath 归一化 → 角色授权表 |
+| `write`/`edit` 工具路径 | ✅ **可强制** | 同上（写权限须派发端显式授予具体文件） |
+| 越权**写**（沙箱外） | ✅ OS 级 | 现有 workspace-write 沙箱 |
+| `bash`/`run_code` 内任意命令与代码 | ⚠️ **仅尽力检测** | 字面路径匹配；**任意 shell/Python 可绕过，不构成硬隔离** |
+| 越权**读**（任意路径只读） | ❌ **不可约束** | 沙箱只限"写"范围；root 全盘 ro-bind → **读隔离在现有接口下不可得** |
+| 角色/父会话身份 | ❌ 载荷不提供 | 只能由**派发端显式登记**（见 §3） |
 
-**hook 是硬约束**：命中即 exit 2 阻塞，操作**物理上发生不了**，且原因会显示给模型。
-
----
-
-## 2. 四个拦截器
-
-| # | 脚本 | 事件 | 拦什么 | 自测 |
-|---|---|---|---|---|
-| **1** | `hook_blacklist_guard.py` | PreToolUse | 对黑名单路径的读/写/列目录（含 `run_code` 里嵌的调用） | ✅ 4/4 |
-| **2** | `hook_ledger_integrity.py` | PostToolUse | `ledger revise` 承重变更却无失效输出；`review-register` 缺双哈希；`merge` 缺理由 | ✅ 3/3 |
-| **3** | `hook_delivery_gate.py` | PreToolUse | 无闸门判定表却写交付物；存在 `VERDICT: BLOCK` 的表 | ✅ 2/2 |
-| **4** | `hook_prompt_scope.py` | PreToolUse | 派发子代理的提示词里夹带历史全集（HISTORY-INDEX / 淘汰台账 / 其他卡） | ✅ 2/2 |
-
-另：`lib_hook.py` 是共享库（黑名单判定、路径提取、协议封装），`hooks.json` 是配置草案。
+**因此本套件的定位是**：把"可机械判定的路径类违规"从文档变成拦截；**不宣称**对任意代码的硬隔离。
 
 ---
 
-## 3. 自测结果（可复跑）
+## 2. 三个收口点的落实
+
+### 收口 #1：角色权限（原缺陷：所有子代理同一对待，正常接地被拦）
+
+- 新增 `perm.py`：run-scoped 权限清单，把 **角色 → 读/写范围** 绑定到运行时 `session_id`；
+- 角色五类：`generator`（读中性资料，写**被授权的具体文件**）、`deepener`（读指定卡+反馈）、`history_reviewer`（读历史库与旧卡）、`reviewer`、`auditor`；
+- **身份只认 `session_id`**：不再用任何环境变量判定；实测子代理**不会继承**父会话的 `DSH_HOOK_ORCHESTRATOR`（探针验证 ORCH=(empty)），且即便手工注入该变量，子代理仍按角色拦（用例通过）；
+- **写权限改为必须显式授予**：真实身份测试发现"生成器可写 staging 下任意文件"（可覆盖他人卡）→ 已把 base write 置空，要求 `--extra-write` 指定确切文件。
+
+### 收口 #2：实际访问边界（原缺陷：换写法就绕过）
+
+- 路径统一 `realpath` 归一化：`./`、相对、绝对、符号链接 → **同一判定**；
+- Codex 三个反例全部修复：`cat round/run2/...`、`./round/run1/...`、`open()` 读旧候选；
+- **不再堆正则**：`bash`/`run_code` 明确降级为"尽力检测"，README 与本文件均标注，不再宣称硬隔离；
+- 工作区外高危目标（`~/.dsh/sessions/`、其他 worktree、旧仓库）单独拦截。
+
+### 收口 #3：推荐检查绑定台账（原缺陷：检查"目录里有什么"）
+
+- **删除** `hook_delivery_gate.py`（扫目录式，会被无关 TODO 放行、被无关 BLOCK 误拦）；
+- 新增 `round/tools/gate_verdict.py`：判定记录绑定 **候选 ID + 当前 content_hash + 卡文件 sha256**；
+- **接入台账**：`ledger.py status --status recommended_pending_review` 现在强制校验该绑定；不通过即拒绝（`REJECTED`）；
+- 实测五条路径：无判定→拒、BLOCK→拒、PASS→过、**卡改动后→拒（版本失效）**、无关候选的草稿/淘汰写入→正常；
+- `hook_ledger_diagnostic.py` 由门禁降级为**事后诊断**（解析失败→记录并放行），不声称自动纠正。
+
+---
+
+## 3. 现行文件
+
+| 文件 | 类型 | 作用 |
+|---|---|---|
+| `perm.py` | 工具 | 权限清单：init / bind / unbind / show / resolve / grants / audit |
+| `permissions.json` | 运行时状态 | run-scoped 清单（含临时 session id，**已 gitignore**） |
+| `lib_hook.py` | 库 | realpath 归一化、glob 匹配、角色解析、协议封装 |
+| `hook_access_guard.py` | **门禁** | 角色化访问守卫（PreToolUse）；解析失败→保守阻塞 |
+| `hook_prompt_scope.py` | **门禁** | 派发提示词不得夹带历史全集；解析失败→保守阻塞 |
+| `hook_dispatch_register.py` | 门禁（事后） | 派发后未登记角色 → 立即报错要求补 bind |
+| `hook_ledger_diagnostic.py` | **诊断** | 台账操作事后提示（不阻断） |
+| `selftest.py` | 测试 | 离线自测（Python 版，无 shell 重定向，不产生中间文件） |
+| `hooks.json` | 配置草案 | 四个 hook 的事件/matcher 绑定 |
+
+`round/tools/gate_verdict.py` + `ledger.py`（状态守卫）构成推荐门禁，不依赖 hook。
+
+---
+
+## 4. 验证结果（**离线与真实分开记录**）
+
+### 4.1 离线自测：`python3 round/hooks/selftest.py` → **25 passed / 0 failed**
+
+覆盖：三个 Codex 反例、正常接力五类（生成器写自己产出/读中性、深化者读反馈与指定卡、历史审查者读历史）、越权四类（读淘汰台账/写台账/读未授权旧卡/写非本职路径）、身份隔离（子代理带 ORCHESTRATOR=1 仍拦、主控全权）、未登记会话放行、非法载荷保守阻塞、派发登记强制、台账诊断。
+
+**并已修复**：旧 bash 版自测的错误重定向（会生成 `chk` 文件）——新版为 Python 实现，且结束时不产生任何中间文件（已核 `git status`）。
+
+### 4.2 真实 Harness 会话验证（**已做**）
+
+| 验证项 | 方法 | 结果 |
+|---|---|---|
+| 运行时身份链 | 派发真实探针子代理，比对返回值与其自身 `DSH_SESSION_ID` | ✅ **一致**（`d98202af-…`），即"派发端登记的 id = 子会话身份" |
+| 父会话标记不泄漏 | 探针内 `echo $DSH_HOOK_ORCHESTRATOR` | ✅ 空（即便泄漏也不影响，因身份不依赖环境变量） |
+| 真实身份判定 | 用**真实 session_id** 跑守卫五例 | ✅ **5/5**（读旧卡拦、读中性放、写授权放、写他人拦、写根目录拦） |
+| 无关会话不受影响 | 未登记会话访问 | ✅ 放行并计入 `unregistered.log`（`perm.py audit` 可查） |
+
+### 4.3 真实接入**未验证**（如实上报）
+
+| 项 | 状态 | 原因 |
+|---|---|---|
+| 真实工具调用被 hook 拦截 | ❌ **未验证** | hook 未挂载；挂载需改 `~/.dsh/profiles/web/`（全局配置），用户决定不挂载 |
+| 沙箱对越权写的实际拦截 | ⚠️ 未单独验证 | 依赖现有沙箱行为，非本套件控制 |
+| `bash` 绕过的实际发生率 | ⚠️ 不可测 | 无拦截则无日志 |
+
+---
+
+## 5. 上报的具体缺口（Codex 要求：接口不支持则报缺口）
+
+1. **角色不由运行时提供**：`PreToolUse` 载荷仅含 `session_id`/`cwd`/`tool_name`/`tool_input`，**无角色、无父会话、无子代理标记**（`agent_id` 只在 SubagentStart/Stop）。→ 已用"派发端登记 + 派发后强制补登记"绕过，但这依赖派发端不遗漏；
+2. **读隔离不可得**：现有沙箱（bwrap/seatbelt）在 workspace-write 下 **root 全盘 ro-bind**，只能限写不能限读。→ 无法用现有接口阻止"读取历史文件"，只能靠 hook 拦工具级路径 + 尽力检测；
+3. **任意代码不可约束**：`bash`/`run_code` 内可构造任意访问；除非提供"只读工作目录 + 受限工具集"的沙箱档位，否则**无法宣称硬隔离**；
+4. **实时拦截无法自测**：不挂载即无真实拦截数据，故 §4.3 标注未验证。
+
+---
+
+## 6. 使用方式（派发端每次必做的两步）
 
 ```bash
-cd <worktree> && bash round/hooks/selftest.sh
+# ① 初始化（每轮一次）
+python3 round/hooks/perm.py init --run run2-20260911
+
+# ② 每次派发后立即绑定（id 取 dispatch 返回值；未绑定则该子代理不受约束）
+python3 round/hooks/perm.py bind --session <subagentId> --role generator \
+    --extra-write round/run2/staging/path-A-intensity.md
+python3 round/hooks/perm.py bind --session <subagentId> --role deepener \
+    --extra-read round/run2/cards.json --extra-write round/run2/drafts/A3.md
+python3 round/hooks/perm.py bind --session <subagentId> --role history_reviewer
+
+# ③ 轮末审计未登记访问
+python3 round/hooks/perm.py audit
 ```
-
-| 用例 | 期望 | 实测 |
-|---|---|---|
-| 生成器读 `round/run1/card-B3-window.md` | 阻塞 | ✅ exit 2 |
-| **主控**读同一文件 | 放行 | ✅ exit 0 |
-| 生成器读 `ZOTERO-INDEX.md`（白名单） | 放行 | ✅ exit 0 |
-| 生成器 `ls round/run1/` | 阻塞 | ✅ exit 2 |
-| `revise` 无 `REVIEWS_INVALIDATED` | 阻塞 | ✅ exit 2 |
-| `revise` 带失效输出 | 放行 | ✅ exit 0 |
-| 非 ledger 命令 | 放行 | ✅ exit 0 |
-| 子代理写交付物且无闸门表 | 阻塞 | ✅ exit 2 |
-| 主控写同一交付物 | 放行 | ✅ exit 0 |
-| 派发提示词含 `HISTORY-INDEX` | 阻塞 | ✅ exit 2 |
-| 派发提示词只提本卡反馈 | 放行 | ✅ exit 0 |
-
----
-
-## 4. 关键设计决策（避免误伤）
-
-1. **主控放行**：通过环境变量 `DSH_HOOK_ORCHESTRATOR=1` 或"无 `agent_id`（非子代理）"判定——否则主控无法管理这些文件，会把流程锁死；
-2. **只判路径参数位，不判正文**：`run_code` 里写黑名单路径名（如防火墙声明）**不违规**，只有**真实访问目标**才拦——这是审计工具三代误报的教训；
-3. **`ls/find/glob` 同样违规**：实测过生成器靠列目录泄漏旧卡文件名；
-4. **PostToolUse 语义较弱**：它无法阻止已发生的动作，只能"事后强制自纠"——已在脚本 docstring 中标注，不假装它是硬拦；
-5. **解析失败时保守**：hook 输入无法解析 → 阻塞（拒绝在无法判定时放行）；但事后检查（#2）不做硬失败，避免误杀。
-
----
-
-## 5. 挂载方案（三选一，**都需你批准**）
-
-### 方案 A：profile 挂载（全局生效，1 行改动）
-在 `~/.dsh/profiles/web/cordis.patch.yml` 增加 hooks 桥接与配置路径：
-```yaml
-- id: hooks-claude-code
-  config:
-    hooksPath: /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/hooks/hooks.json
-    projectDir: /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910
-```
-- ✅ 优点：一处生效，覆盖所有工具调用；
-- ⚠️ 代价：**对本机所有会话生效**（不只本任务），可能影响其他工作线；
-- ⚠️ 需改工作区外文件（`~/.dsh/`），须你批准。
-
-### 方案 B：手动串联（零系统改动）
-不挂载，改为在**我的执行纪律**里串联：每次派发子代理前/后手动跑对应脚本。等价于"人肉 hook"。
-- ✅ 零风险、零配置；
-- ❌ 依赖我记得跑——**这正是软约束的老问题**，只能作为过渡。
-
-### 方案 C：只挂最关键的 1 个
-只挂 #1 黑名单拦截（PreToolUse）——它拦的是**唯一会污染研究方向**的动作，收益/风险比最高。
-- ✅ 影响面最小；
-- ⚠️ 其余三个仍需人工。
-
----
-
-## 6. 我需要你决定的事
-
-1. **是否挂载**（A / B / C / 暂不）；
-2. 若选 A：是否接受"对本机所有会话生效"；
-3. 主控放行标记怎么设——我建议挂载时注入 `DSH_HOOK_ORCHESTRATOR=1` 到主会话环境（否则主控自己会被拦住）。
-
----
-
-## 7. 挂载后能立刻兑现的价值（对照本轮真实事故）
-
-| 本轮真实事故 | 若有 hook |
-|---|---|
-| 生成器 C `ls round/run1/` | **当场拦死**，不需事后审计 |
-| 空 `content_hash` 被接受（陈旧意见） | 登记时即报错（已有回归 T13 兜底，hook 再加一层） |
-| 批内 3 张重复卡（A3↔B2 等） | 不拦（属判断问题，非路径问题）——**hook 只管可机械判定的部分** |
-| CMNCS52M 锚件混淆 | 不拦（属证据判断）——同上 |
-
-**结论**：hook 能消灭"路径/协议"类断裂，**不能替代判断**。两者配合才是完整护栏。

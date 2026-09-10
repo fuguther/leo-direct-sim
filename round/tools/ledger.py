@@ -39,6 +39,8 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
+import sys
 import time
 
 CARD_FIELDS = ("title", "conditions", "difficulty", "cause_hypothesis", "possible_change",
@@ -271,6 +273,25 @@ def cmd_status(args):
     if not cur:
         print("NOT_FOUND: cand_id %s" % args.cand_id, file=sys.stderr)
         return 2
+    # R5 收口（Codex #3）：置为推荐前，必须存在绑定"该候选当前 content_hash"的通过判定。
+    # 判定记录由 round/tools/gate_verdict.py 生成（候选 ID + 当前版本 + 判定 三元绑定）。
+    if args.status == "recommended_pending_review":
+        try:
+            import importlib.util as _ilu
+            _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gate_verdict.py")
+            _spec = _ilu.spec_from_file_location("gate_verdict_guard", _p)
+            _gv = _ilu.module_from_spec(_spec)
+            sys.modules["gate_verdict_guard"] = _gv
+            _spec.loader.exec_module(_gv)
+            _ok, _why = _gv.check(args.cand_id, Path(args.ledger))
+        except Exception as _e:
+            print("REJECTED: 无法校验闸门判定（%s）—— 拒绝在无法校验时置为推荐" % _e, file=sys.stderr)
+            return 2
+        if not _ok:
+            print("REJECTED: %s" % _why, file=sys.stderr)
+            print("  说明：推荐必须绑定「候选 ID + 当前版本 + 通过判定」；"
+                  "草稿/淘汰/工作记录不受影响。", file=sys.stderr)
+            return 2
     row = dict(cur)
     row.update({"row_no": len(rows) + 1, "version": int(cur["version"]) + 1, "op": "status_change",
                 "status": args.status, "writer": args.writer, "written_at": _now(),

@@ -1,121 +1,164 @@
 #!/usr/bin/env python3
-"""hook 共享库：黑名单判定、路径提取、输入/输出协议封装。
+"""hook 共享库 v2（2026-09-11 重写，对应 Codex 三项收口）。
 
-协议要点（实测自 dsh-hook-protocol / dsh-hooks-claude-code）：
-  - 输入：stdin 收 JSON（含 tool_name / tool_input / cwd / session_id / hook_event_name）
-  - 阻塞：exit 2 + stderr 写原因（模型会看到）
-  - 放行：exit 0；附加上下文用结构化 stdout（本套件暂不用）
-  - 其他退出码 = 非阻塞失败（记录但不拦）——本库坚持用 2 表达"确实要拦"
+与 v1 的关键差异：
+  1. 身份只认 session_id + 权限清单（perm.py），**不用任何环境变量判定子代理身份**；
+  2. 路径统一 realpath 归一化（./ 相对 绝对 符号链接 一律同判）；
+  3. 显式区分"可强制"（工具级路径）与"仅尽力检测"（bash/run_code 任意代码）。
 """
-import json, os, re, sys
+import fnmatch, json, os, re, sys, time
 from pathlib import Path
 
-# ── 黑名单（与 EFFECTIVE-RULES-R2 §8.1 隔离矩阵一致）────────────────
-BLACKLIST_PREFIXES = [
-    "LITERATURE/notes/raw/",
-    "round/run1/",
-    "round/reviews/",
-    "round/history/",
-    "round/run2/",                   # 整个 run2 目录对生成端不可见（含 cards/scope/errata/审阅）
-    "ANALYSIS/",                     # 交付与分析文档不进生成端
-    "round/tools/archive/",
-    "round/hooks/",                  # hook 配置不进生成端
+HOOK_DIR = Path(__file__).resolve().parent
+PERM_FILE = HOOK_DIR / "permissions.json"
+LOG_FILE = HOOK_DIR / "unregistered.log"
+
+# 工作区外的高危读取目标（偷看其他会话/其他代理，等于绕过隔离）
+EXTERNAL_DENY_SUBSTR = [
+    "/.dsh/sessions/",
+    "/.worktrees/research-ops/",
+    "LEO-Research-Workspace",
 ]
-BLACKLIST_EXACT = [
-    "LITERATURE/KNOWLEDGE-MAP.md",
-    "round/CANDIDATE-LEDGER.csv",
-    "round/ROUND-LOG.md",
-    "round/knowledge/notes-neutral-manifest.json",
-    "round/knowledge/P0-SEMANTIC-SPOTCHECK.md",
-    "round/zotero/undermind-gap-review.txt",
-]
-BLACKLIST_SUBSTR = [
-    "KNOWLEDGE-MAP.md",
-    "ELIMINATED-REGISTER",
-    "HISTORY-INDEX",
-    "CANDIDATE-LEDGER",
-    "notes-neutral-manifest",
-    "QUALITY-GATE-R",
-]
-# 命令级高危模式（bash 里出现即视为试图触碰黑名单）
-BLACKLIST_CMD = re.compile(
-    r"(ls|find|glob|cat|head|tail|grep|rg|tree|less|more|wc)\s+[^|;]*"
-    r"(notes/raw|run1/|reviews/|history/|CANDIDATE-LEDGER|KNOWLEDGE-MAP|ELIMINATED-REGISTER|HISTORY-INDEX|staging/)"
-)
+
+TOOL_PATH_KEYS = ("file_path", "path", "target", "notebook_path")
+READ_TOOLS = {"read", "read_document", "read_image", "glob", "grep", "ls"}
+WRITE_TOOLS = {"write", "edit", "notebook_edit"}
 
 
-def norm_path(p: str, cwd: str = "") -> str:
-    """把绝对路径规整为相对 worktree 的形式，便于前缀匹配。"""
-    if not p:
-        return ""
-    p = p.strip()
-    for root in (cwd, os.environ.get("DSH_WORKSPACE", ""), os.getcwd()):
-        if root and p.startswith(root):
-            p = p[len(root):]
-            break
-    p = p.lstrip("/")
-    if p.startswith(".worktrees/"):
-        parts = p.split("/", 2)
-        p = parts[2] if len(parts) > 2 else p
-    return p
+# ── 工作区定位与路径归一化 ───────────────────────────────────────────
 
-
-def is_blacklisted(path: str, cwd: str = "") -> str | None:
-    """命中返回原因字符串，否则 None。"""
-    np = norm_path(path, cwd)
-    if not np:
-        return None
-    for pre in BLACKLIST_PREFIXES:
-        if np.startswith(pre):
-            return "路径命中黑名单前缀：%s" % pre
-    if np in BLACKLIST_EXACT:
-        return "路径命中黑名单（精确）：%s" % np
-    for sub in BLACKLIST_SUBSTR:
-        if sub in np:
-            return "路径含黑名单标记：%s" % sub
+def find_worktree(cwd: str = "") -> Path | None:
+    for base in (cwd, os.getcwd()):
+        if not base:
+            continue
+        p = Path(base).resolve()
+        for cand in (p, *p.parents):
+            if (cand / "round" / "rules").is_dir():
+                return cand
     return None
 
 
-def extract_targets(tool_name: str, ti: dict) -> list[str]:
-    """从工具调用参数里提取"真实访问目标"（不含正文内容）。"""
-    out = []
-    if not isinstance(ti, dict):
-        return out
-    for k in ("file_path", "path", "target", "notebook_path"):
-        v = ti.get(k)
-        if isinstance(v, str):
-            out.append(v)
-    if tool_name in ("bash", "shell"):
-        cmd = ti.get("command", "")
-        if isinstance(cmd, str):
-            out.append("__CMD__" + cmd)
-    code = ti.get("code")
-    if isinstance(code, str):
-        # run_code 里嵌的工具调用：抽取 path/file_path/command 参数位
-        for m in re.finditer(r"(?:file_path|path|target)\s*:\s*['\"]([^'\"]+)['\"]", code):
-            out.append(m.group(1))
-        for m in re.finditer(r"command\s*:\s*['\"]([^'\"]+)['\"]", code):
-            out.append("__CMD__" + m.group(1))
-        for m in re.finditer(r"command\s*:\s*`([^`]{0,400})", code):
-            out.append("__CMD__" + m.group(1))
-    for k in ("pattern", "query"):
-        v = ti.get(k)
-        if isinstance(v, str) and ("/" in v or v.endswith(".md") or v.endswith(".csv")):
-            out.append(v)
-    return out
+def normalize(raw: str, cwd: str, wt: Path | None) -> tuple[str, str]:
+    """返回 (类别, 归一化值)。类别 ∈ worktree / external / empty。
 
+    归一化使用 realpath，因此 ./x、x、/abs/.../x 与符号链接指向同一文件时结果一致。
+    """
+    if not raw or not isinstance(raw, str):
+        return "empty", ""
+    s = raw.strip().strip("'" + '"')
+    if not s:
+        return "empty", ""
+    if not os.path.isabs(s):
+        s = os.path.join(cwd or os.getcwd(), s)
+    try:
+        real = os.path.realpath(s)
+    except Exception:
+        real = os.path.abspath(s)
+    if wt is not None:
+        try:
+            rel = os.path.relpath(real, str(wt))
+        except Exception:
+            rel = real
+        if not rel.startswith(".."):
+            return "worktree", rel.replace(os.sep, "/")
+    return "external", real.replace(os.sep, "/")
+
+
+# ── glob 匹配（支持 **）────────────────────────────────────────────
+
+def _glob_to_re(pat: str) -> re.Pattern:
+    out, i, n = [], 0, len(pat)
+    while i < n:
+        c = pat[i]
+        if c == "*":
+            if pat[i:i + 2] == "**":
+                out.append(".*"); i += 2
+                if i < n and pat[i] == "/":
+                    i += 1
+                continue
+            out.append("[^/]*")
+        elif c == "?":
+            out.append("[^/]")
+        else:
+            out.append(re.escape(c))
+        i += 1
+    return re.compile("^" + "".join(out) + "$")
+
+
+_GLOB_CACHE: dict = {}
+
+
+def glob_match(pattern: str, path: str) -> bool:
+    rx = _GLOB_CACHE.get(pattern)
+    if rx is None:
+        rx = _glob_to_re(pattern)
+        _GLOB_CACHE[pattern] = rx
+    return bool(rx.match(path))
+
+
+# ── 权限清单 ─────────────────────────────────────────────────────
+
+def load_perms() -> dict:
+    if not PERM_FILE.exists():
+        return {}
+    try:
+        return json.loads(PERM_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def resolve_role(session_id: str) -> tuple[str, dict]:
+    """返回 (role, session_entry)。role ∈ orchestrator / <角色> / unknown。"""
+    d = load_perms()
+    if not d:
+        return "unknown", {}
+    if session_id and session_id == d.get("orchestrator_session"):
+        return "orchestrator", {}
+    entry = (d.get("sessions") or {}).get(session_id or "")
+    if entry:
+        return entry.get("role") or "unknown", entry
+    return "unknown", {}
+
+
+def grants_for(role: str, entry: dict) -> dict:
+    """角色授权 + 该会话的额外授权（派发端 bind 时指定）。"""
+    try:
+        sys.path.insert(0, str(HOOK_DIR))
+        from perm import ROLE_GRANTS
+        base = ROLE_GRANTS.get(role)
+    except Exception:
+        base = None
+    if base is None:
+        return {"read": [], "write": [], "shell": "deny"}
+    return {
+        "read": list(base.get("read", [])) + list(entry.get("extra_read") or []),
+        "write": list(base.get("write", [])) + list(entry.get("extra_write") or []),
+        "shell": base.get("shell", "deny"),
+    }
+
+
+def log_unregistered(session_id: str, tool: str, detail: str) -> None:
+    try:
+        with LOG_FILE.open("a", encoding="utf-8") as f:
+            f.write("%s\t%s\t%s\t%s\n" % (session_id or "?", tool, detail[:200], time.strftime("%H:%M:%S")))
+    except Exception:
+        pass
+
+
+# ── 协议 ─────────────────────────────────────────────────────────
 
 def read_input() -> dict:
     try:
         raw = sys.stdin.read()
     except Exception:
-        return {}
+        return {"_parse_error": "stdin read failed"}
     if not raw.strip():
         return {}
     try:
-        return json.loads(raw)
-    except Exception:
-        return {"_parse_error": raw[:200]}
+        d = json.loads(raw)
+        return d if isinstance(d, dict) else {"_parse_error": "not an object"}
+    except Exception as e:
+        return {"_parse_error": str(e)}
 
 
 def block(reason: str, hint: str = "") -> None:
@@ -126,7 +169,17 @@ def block(reason: str, hint: str = "") -> None:
     sys.exit(2)
 
 
-def allow(note: str = "") -> None:
-    if note:
-        print("[HOOK-OK] " + note, file=sys.stderr)
-    sys.exit(0)
+def note(msg: str) -> None:
+    print("[HOOK] " + msg, file=sys.stderr)
+
+
+def tool_paths(tool: str, ti: dict) -> list:
+    """只取**结构化路径参数位**——这是可强制的部分。"""
+    out = []
+    if not isinstance(ti, dict):
+        return out
+    for k in TOOL_PATH_KEYS:
+        v = ti.get(k)
+        if isinstance(v, str) and v.strip():
+            out.append(v)
+    return out

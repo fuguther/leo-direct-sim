@@ -22,3 +22,8 @@ GROUP-MEETINGS-LOCAL/
 
 # 文献 PDF（版权文件，本地留存，不入 GitHub；清单见 LITERATURE/notes/FETCH-LIST.md）
 LITERATURE/papers/
+
+# hook 运行时状态（含临时 session id，不入库）
+round/hooks/permissions.json
+round/hooks/unregistered.log
+round/hooks/__pycache__/

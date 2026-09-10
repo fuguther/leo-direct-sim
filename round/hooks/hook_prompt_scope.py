@@ -27,7 +27,9 @@ DISPATCH_TOOLS = ("subagent", "subagent_fork", "subagent_codex")
 def main() -> None:
     p = read_input()
     if p.get("_parse_error"):
-        sys.exit(0)
+        # 门禁类：解析失败保守阻塞（与 HOOKS-README 声明一致；Codex 收口 #3 指出旧版此处放行）
+        block("hook 载荷无法解析：%s" % p["_parse_error"],
+              "协议异常时拒绝放行；请检查 bridge 版本或载荷格式")
     tool = p.get("tool_name") or ""
     ti = p.get("tool_input") or {}
     blob = ""
