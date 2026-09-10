@@ -44,9 +44,9 @@
 
 ## 6. 已知环境故障（交接时必须知晓）
 
-- **git 不可用**：`/usr/bin/git` 报 `You have not agreed to the Xcode license agreements`；无备用 git 二进制。**未执行 sudo、未接受许可**（用户指示）。
-  - 影响：`7958d82` 之后的所有改动（notes-neutral、P0 报告、run2 产物、dispatch 记录）**仅存于本地 worktree，未提交未推送**。
-  - 待备份清单：`round/knowledge/notes-neutral/`、`round/knowledge/notes-neutral-manifest.json`、`round/knowledge/P0-SEMANTIC-SPOTCHECK.md`、`round/tools/{sanitize_notes,neutral_residual_fix1,neutral_residual_fix2,fix_chu,spotcheck_removed2,backfill_facts_min,revert_backfill}.py`、`round/rules/EFFECTIVE-RULES-R2.md`（白名单 v3）、`round/ROUND-LOG.md`（§13）、`round/dispatch/DISPATCH-RECORD.md`、`round/run2/**`。
+- ~~git 不可用~~ **已恢复（2026-09-10 02:5x）**：早前 `/usr/bin/git` 报 `You have not agreed to the Xcode license agreements`（macOS 把 Apple Git 拦在 Xcode 许可门禁后），现 `/usr/bin/git --version` = `git version 2.50.1 (Apple Git-155)`，EXIT=0。
+  - 已提交并推送：`7958d82..25f3a5a`（三个 commit：P0 输入链修复 / 派发取证记录 / 本交接包）。
+  - 当时未备份、现已入库的清单（留档）：`round/knowledge/notes-neutral/`、`round/knowledge/notes-neutral-manifest.json`、`round/knowledge/P0-SEMANTIC-SPOTCHECK.md`、`round/tools/{sanitize_notes,neutral_residual_fix1,neutral_residual_fix2,fix_chu,spotcheck_removed2,backfill_facts_min,revert_backfill}.py`、`round/rules/EFFECTIVE-RULES-R2.md`（白名单 v3）、`round/ROUND-LOG.md`（§13）、`round/dispatch/DISPATCH-RECORD.md`、`round/run2/**`。
 - **子代理路线配额**：`Qwen/Qwen3.8-Flash` 与 `meta/muse-spark-1.3-contributor` 报 403 五小时用量上限；`deepseek-v4-flash` 可用但用户禁止；`z-ai/glm-5.3-flash` 可用（本会话在用）。
 
 ## 7. 新会话开工清单（4.1）
