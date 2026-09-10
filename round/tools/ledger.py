@@ -217,6 +217,32 @@ def cmd_add(args):
     return 0
 
 
+def _guard_recommendation(cand_id: str, status: str, ledger_path: str) -> bool:
+    """推荐资格校验：状态转换的**共同入口**（status / revise 等一律经过）。
+
+    绑定要求：候选当前 content_hash 必须有对应的 PASS 判定记录，且被审卡文件仍存在、未被改动。
+    """
+    if status != "recommended_pending_review":
+        return True
+    try:
+        import importlib.util as _ilu
+        _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gate_verdict.py")
+        _spec = _ilu.spec_from_file_location("gate_verdict_guard", _p)
+        _gv = _ilu.module_from_spec(_spec)
+        sys.modules["gate_verdict_guard"] = _gv
+        _spec.loader.exec_module(_gv)
+        ok, why = _gv.check(cand_id, Path(ledger_path))
+    except Exception as e:
+        print("REJECTED: 无法校验闸门判定（%s）—— 拒绝在无法校验时置为推荐" % e, file=sys.stderr)
+        return False
+    if not ok:
+        print("REJECTED: %s" % why, file=sys.stderr)
+        print("  说明：任何进入推荐的路径（status/revise）都必须绑定「候选 ID + 当前版本 + 通过判定」；"
+              "草稿/淘汰/工作记录不受影响。", file=sys.stderr)
+        return False
+    return True
+
+
 def cmd_revise(args):
     updates = json.loads(args.set)
     if not _check_schema(args.ledger):
@@ -243,6 +269,8 @@ def cmd_revise(args):
     if args.status:
         if args.status not in STATUSES:
             print("REJECTED: 未知状态 %s（词表 %s）" % (args.status, STATUSES), file=sys.stderr)
+            return 2
+        if not _guard_recommendation(args.cand_id, args.status, args.ledger):   # #5 共同入口
             return 2
         row["status"] = args.status
     row.update({
@@ -273,25 +301,9 @@ def cmd_status(args):
     if not cur:
         print("NOT_FOUND: cand_id %s" % args.cand_id, file=sys.stderr)
         return 2
-    # R5 收口（Codex #3）：置为推荐前，必须存在绑定"该候选当前 content_hash"的通过判定。
-    # 判定记录由 round/tools/gate_verdict.py 生成（候选 ID + 当前版本 + 判定 三元绑定）。
-    if args.status == "recommended_pending_review":
-        try:
-            import importlib.util as _ilu
-            _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gate_verdict.py")
-            _spec = _ilu.spec_from_file_location("gate_verdict_guard", _p)
-            _gv = _ilu.module_from_spec(_spec)
-            sys.modules["gate_verdict_guard"] = _gv
-            _spec.loader.exec_module(_gv)
-            _ok, _why = _gv.check(args.cand_id, Path(args.ledger))
-        except Exception as _e:
-            print("REJECTED: 无法校验闸门判定（%s）—— 拒绝在无法校验时置为推荐" % _e, file=sys.stderr)
-            return 2
-        if not _ok:
-            print("REJECTED: %s" % _why, file=sys.stderr)
-            print("  说明：推荐必须绑定「候选 ID + 当前版本 + 通过判定」；"
-                  "草稿/淘汰/工作记录不受影响。", file=sys.stderr)
-            return 2
+    # 推荐资格校验走共同入口（status / revise 同一个守卫）
+    if not _guard_recommendation(args.cand_id, args.status, args.ledger):
+        return 2
     row = dict(cur)
     row.update({"row_no": len(rows) + 1, "version": int(cur["version"]) + 1, "op": "status_change",
                 "status": args.status, "writer": args.writer, "written_at": _now(),

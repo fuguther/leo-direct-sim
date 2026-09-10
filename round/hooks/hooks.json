@@ -1,6 +1,6 @@
 {
-  "_note": "本文件为 hook 配置草案，尚未挂载。挂载前请阅读 HOOKS-README.md 与 HOOK-CONTRACT.md。",
-  "_scope": "run-scoped：权限由 round/hooks/permissions.json 决定，与全局配置无关。",
+  "_note": "DSH hooks 配置（claude-code 方言）。command 用绝对路径，避免 CLAUDE_PROJECT_DIR 未设时失效。",
+  "_scope": "脚本内部按载荷 cwd 自限：仅约束本 worktree 内的研究会话；区外会话放行并记录。",
   "hooks": {
     "PreToolUse": [
       {
@@ -8,7 +8,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/round/hooks/hook_access_guard.py\"",
+            "command": "python3 /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/hooks/hook_access_guard.py",
             "timeout": 15
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/round/hooks/hook_prompt_scope.py\"",
+            "command": "python3 /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/hooks/hook_prompt_scope.py",
             "timeout": 15
           }
         ]
@@ -26,21 +26,11 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "subagent|subagent_fork|subagent_codex|run_code",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/round/hooks/hook_dispatch_register.py\"",
-            "timeout": 15
-          }
-        ]
-      },
-      {
         "matcher": "bash|run_code",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/round/hooks/hook_ledger_diagnostic.py\"",
+            "command": "python3 /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/hooks/hook_ledger_diagnostic.py",
             "timeout": 15
           }
         ]

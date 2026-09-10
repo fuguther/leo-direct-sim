@@ -90,11 +90,14 @@ def check(cand_id: str, ledger_path: Path):
     v = rec.get("verdict")
     if v != "PASS":
         return False, "候选 %s 当前版本判定为 %s（%s）" % (cand_id, v, rec.get("note") or "无备注")
+    # #5b 修复（Codex 实查）：卡文件缺失时必须失败，不能跳过校验后返回 PASS。
     card = WT / rec["card"] if not os.path.isabs(rec.get("card", "")) else Path(rec["card"])
-    if card.exists():
-        now = hashlib.sha256(card.read_bytes()).hexdigest()
-        if now != rec.get("card_sha256"):
-            return False, "卡文件在判定后已被修改（sha256 不匹配）—— 须重新判定"
+    if not card.exists():
+        return False, ("被审卡文件不存在（%s）—— 判定记录失去可校验对象，视为未通过；"
+                       "请补齐卡文件或重新判定" % rec.get("card"))
+    now = hashlib.sha256(card.read_bytes()).hexdigest()
+    if now != rec.get("card_sha256"):
+        return False, "卡文件在判定后已被修改（sha256 不匹配）—— 须重新判定"
     return True, "PASS @%s v%s" % (ch, ver)
 
 

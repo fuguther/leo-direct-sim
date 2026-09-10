@@ -1,102 +1,101 @@
 #!/usr/bin/env python3
-"""hook：角色化访问守卫（PreToolUse）。
+"""hook：角色化访问守卫（PreToolUse）—— v4（路径判定版）。
 
-强制级别（诚实分级，见 HOOK-CONTRACT.md §3）：
-  【可强制】read/write/edit/glob/grep 等工具的结构化路径参数 —— 按角色授权表判定；
-  【尽力检测】bash / run_code 内的任意命令与代码 —— 只做字面路径匹配，
-               **不构成硬隔离**（任意 shell/Python 可绕过），仅作预警与常见路径拦截。
+v3 → v4 的关键修正：
+  实测发现子代理 session cwd = 主仓库（不是本 worktree），按 cwd 判定"是否研究会话"会漏判；
+  现改为**按访问路径判定**：受控研究区 = 本 hook 所在 worktree（HOOK_WORKTREE 固定）。
 
-身份来源：载荷 session_id → 权限清单（perm.py）。不使用任何环境变量判定身份。
-未登记会话：放行但记录（避免误伤无关会话），由 perm.py audit 事后核对。
+规则：
+  - 主控（清单中的 orchestrator）：全权；
+  - 已登记角色：按授权表校验其访问的**研究区路径**；
+  - 未登记（无票据）：只要访问到研究区路径 → 暂停并报告；只访问区外 → 放行并记录；
+  - 权限清单 missing/corrupt：研究会话失败关闭；主控凭 orchestrator.id 可修复。
+
+强制级别：【可强制】结构化路径参数；【尽力检测】bash/run_code 内任意代码。
 """
 import json, os, re, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from lib_hook import (EXTERNAL_DENY_SUBSTR, READ_TOOLS, WRITE_TOOLS, block, find_worktree,
-                      glob_match, grants_for, load_perms, log_unregistered, normalize,
+import lib_hook as L
+from lib_hook import (EXTERNAL_DENY_SUBSTR, HOOK_WORKTREE, READ_TOOLS, WRITE_TOOLS, block,
+                      glob_match, grants_for, in_worktree, log_unregistered, normalize,
                       read_input, resolve_role, tool_paths)
 
 SHELL_TOOLS = {"bash", "shell", "run_code"}
-# 尽力检测：命令/代码里出现的"像路径"的字符串（含引号内、heredoc 内）
-PATHLIKE = re.compile(r"[A-Za-z0-9_./\-]*\.(?:md|csv|json|pdf|txt|py)\b|(?:round|LITERATURE|ANALYSIS|tao25\.pdf)[A-Za-z0-9_./\-]*")
+PATHLIKE = re.compile(r"[A-Za-z0-9_./\-]*\.(?:md|csv|json|pdf|txt|py)\b|(?:round|LITERATURE|ANALYSIS)[A-Za-z0-9_./\-]*")
+HINT_UNREG = "已暂停本次操作。请主控执行 perm.py reserve --role <角色> --count N 预留票据，或 perm.py bind --session <id> --role <角色> --extra-read/--extra-write <具体文件> 后重试。"
 
 
-def check_path(kind: str, val: str, grants: dict, tool: str, session: str) -> None:
-    if kind == "empty":
-        return
-    if kind == "external":
-        for sub in EXTERNAL_DENY_SUBSTR:
-            if sub in val:
-                block("访问工作区外的高危目标（%s）" % sub,
-                      "跨会话/跨代理读取等同绕过隔离；需要该信息请由主控转述")
-        return
-    if tool in READ_TOOLS or (tool in SHELL_TOOLS and False):
-        if not any(glob_match(g, val) for g in grants["read"]):
-            block("角色不允许读取：%s（工具 %s）" % (val, tool),
-                  "当前角色的可读范围见 perm.py grants；需要更多材料请让主控用 --extra-read 追加授权")
-    if tool in WRITE_TOOLS:
-        if not any(glob_match(g, val) for g in grants["write"]):
-            block("角色不允许写入：%s（工具 %s）" % (val, tool),
-                  "只允许写自己的产出；需要更多写权限请让主控用 --extra-write 追加授权")
+def collect(payload_tool, ti, cwd):
+    """收集本次访问涉及的（归一化）路径：结构化参数 + shell 字面路径（尽力）。
 
-
-def best_effort_shell(tool: str, ti: dict, grants: dict, cwd: str, wt, session: str) -> None:
-    """尽力检测：从命令/代码里抽出字面路径，按同一授权表判定。"""
-    blob = ""
-    if isinstance(ti, dict):
+    修正（实测漏洞）：bash 可带 workdir 参数，此时相对路径应基于 **workdir** 解析；
+    此前一律用 session cwd（主仓库）解析，导致 `workdir=<worktree> + cat round/run1/...`
+    被归一化到主仓库路径而漏拦。
+    """
+    out = []
+    for raw in tool_paths(payload_tool, ti):
+        kind, val = normalize(raw, cwd, HOOK_WORKTREE)
+        out.append((kind, val, "param"))
+    if payload_tool in SHELL_TOOLS and isinstance(ti, dict):
+        base = ti.get("workdir") or cwd
+        cwd = base if isinstance(base, str) and base else cwd
         blob = " ".join(str(ti.get(k, "")) for k in ("command", "code", "script"))
-    if not blob:
-        return
-    seen = set()
-    for m in PATHLIKE.finditer(blob):
-        cand = m.group(0)
-        if cand in seen or len(cand) < 4:
-            continue
-        seen.add(cand)
-        kind, val = normalize(cand, cwd, wt)
-        if kind != "worktree":
-            if kind == "external":
-                for sub in EXTERNAL_DENY_SUBSTR:
-                    if sub in val:
-                        block("命令涉及工作区外高危目标（%s）" % sub, "同上：由主控转述所需信息")
-            continue
-        if not any(glob_match(g, val) for g in grants["read"]) and \
-           not any(glob_match(g, val) for g in grants["write"]):
-            block("命令字面涉及未授权路径：%s" % val,
-                  "注意：这是【尽力检测】，不是硬隔离——请只用授权范围内的路径；确需越界由主控追加授权")
+        seen = set()
+        for m in PATHLIKE.finditer(blob):
+            c = m.group(0)
+            if c in seen or len(c) < 4:
+                continue
+            seen.add(c)
+            kind, val = normalize(c, cwd, HOOK_WORKTREE)
+            out.append((kind, val, "shell-literal"))
+    return out
 
 
-def main() -> None:
+def main():
     p = read_input()
     if p.get("_parse_error"):
-        # 门禁类 hook：解析失败保守阻塞（与声明一致）
-        block("hook 载荷无法解析：%s" % p["_parse_error"],
-              "协议异常时拒绝放行；请检查 bridge 版本或载荷格式")
+        block("hook 载荷无法解析：%s" % p["_parse_error"], "协议异常时拒绝放行")
     session = p.get("session_id") or ""
     tool = p.get("tool_name") or ""
     ti = p.get("tool_input") or {}
-    cwd = p.get("cwd") or os.getcwd()
-
+    cwd = p.get("cwd") or ""
     if not session:
         block("载荷缺少 session_id，无法判定角色（拒绝在无法判定时放行）")
 
-    role, entry = resolve_role(session)
+    targets = collect(tool, ti, cwd)
+    research_touch = [(k, v, s) for (k, v, s) in targets if k == "worktree" and in_worktree(v)]
+    external_touch = [(k, v, s) for (k, v, s) in targets if k == "external"]
+
+    role, entry, why = resolve_role(session, HOOK_WORKTREE)
+
     if role == "orchestrator":
         sys.exit(0)
+
     if role == "unknown":
-        log_unregistered(session, tool, json.dumps(ti, ensure_ascii=False)[:180])
+        if research_touch:
+            log_unregistered(session, tool, "BLOCKED(%s): %s" % (why, research_touch[0][1]))
+            block("本研究运行中的会话身份/权限异常（%s）：试图访问研究区文件 %s"
+                  % (why, research_touch[0][1]), HINT_UNREG)
+        log_unregistered(session, tool, "allowed-outside: " + json.dumps(ti, ensure_ascii=False)[:150])
         sys.exit(0)
 
     grants = grants_for(role, entry)
-    wt = find_worktree(cwd)
-
-    for raw in tool_paths(tool, ti):
-        kind, val = normalize(raw, cwd, wt)
-        check_path(kind, val, grants, tool, session)
-
-    if tool in SHELL_TOOLS:
-        best_effort_shell(tool, ti, grants, cwd, wt, session)
+    # 区外高危目标
+    for kind, val, _src in external_touch:
+        for sub in EXTERNAL_DENY_SUBSTR:
+            if sub in val:
+                block("访问工作区外的高危目标（%s）" % sub, "跨会话/跨代理读取等同绕过隔离；需要该信息请由主控转述")
+    for kind, val, src in research_touch:
+        if tool in READ_TOOLS or src == "shell-literal":
+            if not any(glob_match(g, val) for g in grants["read"]) and not any(glob_match(g, val) for g in grants["write"]):
+                block("角色 %s 不允许访问：%s（%s）" % (role, val, src),
+                      "可读范围见 perm.py grants；需要更多材料请让主控用 --extra-read 授予具体文件")
+        if tool in WRITE_TOOLS:
+            if not any(glob_match(g, val) for g in grants["write"]):
+                block("角色 %s 不允许写入：%s" % (role, val),
+                      "只允许写派发端授予的具体文件；需要时用 --extra-write 追加")
     sys.exit(0)
 
 
