@@ -639,3 +639,27 @@
 - 提案: out/research-ops/notes-cleanup/proposals/batch3b/ZHANG-2024-NGAT.json
 - 移出原文: **可复用**：NGAT 归一化+收缩映射（Theorem 1）可移植我们 GAT 臂做稳定性论证；调度状态特征模板（AoI/在传包数入特征）支持"信息年龄入状态"动机；λ 跨层信号机制。
 
+## ALMASAN-2022-DRLGNN.md（batch r2-c）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-c/ALMASAN-2022-DRLGNN.json
+- 移出原文: **评级**：C
+
+## BAI-2025-GRLRR.md（batch r2-c）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-c/BAI-2025-GRLRR.json
+- 移出原文: "与我们「瓶颈在 holding/接入排队」的观察不同层"移 annex
+
+## DONG-2023-DQNLLRA.md（batch r2-c）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-c/DONG-2023-DQNLLRA.json
+- 移出原文: 对账：其 state 正是 F1 阶梯内容（局部队列+物理链路），但全部收益指标是**路径级队列统计**，通篇无丢包/交付/端到端业务指标；holding/access 完全缺席；state 皆假设决策时刻"实时"取得，无任何状态年龄。
+
+## GANNON-2024.md（batch r2-c）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-c/GANNON-2024.json
+- 移出原文: "对我们:…过度悲观…值得实测对照"整段移 annex
+
+## GUVEN-2023.md（batch r2-c）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-c/GUVEN-2023.json
+- 移出原文: "与我们 MCS 动态速率同构…最现成的模板，但别直接搬参数"移 annex
+
+## GUVEN-2023.md（batch r2-c）
+- 提案: out/research-ops/notes-cleanup/proposals/r2-c/GUVEN-2023.json
+- 移出原文: "中间粒度值得做消融"移 annex
+
