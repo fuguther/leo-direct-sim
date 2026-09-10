@@ -130,3 +130,10 @@ REVIEW-REQUEST-FOR-CODEX.md 写入 worktree 根：自包含审查请求（背景
 按 EFFECTIVE-RULES-R2 §8 全流水线执行：三路生成（A/B/C 各 4 卡+4 诚实放弃线）→初筛入账 12 卡→历史碰撞审查两批（批1 家族合并裁决=A1/B1/C1/C4→F1 三机制层，T-C1 前身继承；批2 7×②+1×③*，B4 并入 L1、B2+C2 信用族）→深化（F1/B3 有限反馈接力，深化者隔离验证=其草案唯一出处=反馈文件）→三角色审查（builder 11 条/neighbor 发现 Wang24b 部分覆盖+TEG/GANNON 缺口/evidence 23 条含 M1 TAP-DAR 摘要级直接对手）→主控整合（全采纳，修订触发 R6-R13 失效链）→**推荐裁决：L1（cc72be0cbef v6）+B3（cc029fa6119 v3）推荐待审；F1（cc24a3f94e5 v3）条件保留（TAP-DAR/Wang24b 全文核读为第一淘汰条件）；A2/A3/A4/C3 backlog；信用族 awaiting_evidence（PRIMAL 0% 前提）**。
 证据改变判断：M1（F1 降条件保留）、Wang24b、TEG+GANNON（L1 收窄）、IZHIKEVICH 反证方向。
 交付物：ANALYSIS/TOPIC-LOOP-20260910/{PROPOSAL,AUDIT-SUMMARY,LITERATURE-GUIDE,PROCESS-APPENDIX}.md。本轮未启动训练/仿真；性能收益全部标为待验证假设。
+
+## 13. run2 输入链修复与暴露声明（2026-09-10，Codex 内容审核驱动）
+
+- **Codex 发现**：白名单 v2 声明 \`LITERATURE/notes/raw/*.md\` 为「已去倾向笔记」，但 raw 仍含 F0/F1、旧候选推荐及「我们的机会点」内容。实测：41 篇 raw 中 15 篇 30 处命中黑名单词（grep F0/F1/机会点/我们的/对账/信息阶梯）。发现属实。
+- **run1 实际暴露（诚实声明）**：run1 三路生成器声明「浏览 14 篇全部经 notes/raw 笔记」，即生成阶段实际读入了含倾向句的 raw 笔记——v2 的「已去倾向」声明不成立，run1 卡的生成隔离存在缺陷。run1 推荐结论（L1/B3/F1）的证据链在 AUDIT-SUMMARY 中均已标注回原文核验状态，结论处置以 Codex 审核为准；run2 不继承 run1 卡作为生成输入。
+- **修复**：\`round/tools/sanitize_notes.py\` 程序化剥离（块级删『与我们对账/连接：』+句级删黑名单句），产出 \`round/knowledge/notes-neutral/*.md\`（41/41 残留零容忍通过），manifest 含源 sha256 与删除统计；白名单升 v3，raw 移入黑名单、仅留给生成后历史审查。
+- **run2 范围（用户锁定）**：低轨卫星网络中，负载变化下 RL 路由如何保持良好的到达率与端到端时延。旧 B3 的窄负载带/阈值失标定/课程学习恢复为待检查假设，不作生成前提；链路寿命方向退出主线。
