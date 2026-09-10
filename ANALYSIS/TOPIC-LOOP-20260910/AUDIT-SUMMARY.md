@@ -1,40 +1,41 @@
-# 返工验收摘要（REWORK SUMMARY，2026-09-10 R2）
+# 审核摘要（正式选题循环 run1 收口，2026-09-11）
 
-> 范围：Codex+Luna 架构深审后的返工包（四组修复+验收+备份）。**选题推荐与实验仍冻结。**
-> 状态：**待 Codex 架构返工验收**。完整台账：`round/ROUND-LOG.md`；小流程：`round/MINIFLOW-RECORD.md`。
+> 状态：**待 Codex 内容审核**（框架 PR #199 已 READY+auto-merge 挂起；run1 全部产物在 agent/20260910-topic-loop 分支）。历史返工记录：round/ROUND-LOG.md、R3-DELIVERY.md。
 
-## 1. 每项发现：复现 → 修法 → 验收
+## 1. 实际完成了什么 / 哪些能力真实验证
 
-| # | 发现 | 复现结果 | 实际修法 | 验收 | 证据 |
-|---|---|---|---|---|---|
-| 2A | 检索失败被升级为新颖 | 空近邻→"novel"确认；执行异常裸逃出 novelty_check；test_vendor_adapters.py:195-197 确把空→novel 规定为正确 | patched_novelty.py：四态检索（ok_hits/ok_empty/service_unavailable/exec_error）；失败→incomplete 绝不输出 novel；成功无命中只支持"限定范围未命中"；服务失败即停（断点+未执行查询清单）；输出=线索+未决项，不认证新颖性 | T4 PASS；小流程中真实通道 429→degraded/incomplete 被原样记录 | round/logs/repro-group2.txt §A；round/tools/patched_novelty.py |
-| 2B | 标题相似被升级为同一工作 | 判定级确认：dice=0.8632≥0.85→"same"；聚合逻辑按代码对 title-only 卡会输出 collision。**补充发现**：原件对多字段卡用展平文本首行比较，相似度被稀释→行为不稳定 | patched_novelty.py：相似度值域改 high/mid/low_similarity_lead（线索）；卡标题取 title 字段（修稀释）；LLM 提示词重写为覆盖比对（同信号≠覆盖，须引条件/机制依据）；same_or_covering 仅为主控裁决线索，不自动淘汰 | T5 PASS（相似标题不同条件→leads_only，非 collision 非 novel） | 同上 §B |
-| 2C | 检查器异常被当作正确否定 | checker 异常与未知检查器在 expected=BLOCK 时 kind=正确、all_ok=True（audit.py 自称 fail-loud 实为 fail-into-pass） | patched_audit.py：五类记账（correct/false_release/false_kill/EXEC_ERROR/UNKNOWN_CHECKER/PARAM_ERROR）；all_ok 收紧=零执行错误；"程序未能检查"与"确实找到反例"分离 | T6 PASS（两类异常均使审计失败） | 同上 §C |
-| 2D | 空字段/占位文本假通过 | 四例+补充第五例（rhos 有而 claimed_W 空→PASS）全部复现 | patched_checks.py：新增 INPUT_INSUFFICIENT（占位=TODO/待补/空）与 NOT_APPLICABLE；数值检查只对给定输入负责；PASS 理由限定"给定输入下成立" | T7 PASS（8 断言） | 同上 §D |
-| 3A | 台账 CLI 崩溃+幂等缺失 | dataclass AttributeError（Python 3.14.2，根因=spec_from_file_location 未注册 sys.modules）精确复现；批内重复/同证据重试会重复入账（本线原实现自认） | 重写 ledger.py：自含数据结构（不跨 checkout 导入）；content_hash 幂等；批内投影实时更新；cand_id 稳定+唯一当前版本；修订=新版本行+supersedes_row；new_evidence 强制 source+judgment（fail-loud）；旧题匹配只报告不淘汰；LEDGER_SCHEMA_MISMATCH 拒写；doctor 残尾行识别+原子修复；appends fsync | T1/T2/T3/T8/T10 PASS（含重复执行/修订留痕/中断恢复） | round/logs/repro-ledger-cli.txt；round/tools/ledger.py |
-| 3B | 审查不绑定版本、路径冲突 | 流程层面缺陷（审查意见无版本锚；模板禁读路径过宽） | REVIEW-ROLE-PROMPTS v2：意见强制记录 cand_id+实算 sha256；只读原件只写意见文件；同模型角色=互补意见声明；EFFECTIVE-RULES-R2 §5；ledger.py 承重修订自动置旧意见 needs_review（触发口径 R4 精化：承重字段仅纯空白差异不触发，标点/符号变化即触发；非承重字段修改不触发） | 小流程实测：R1-R3 登记@v1 哈希→v2 承重修订→自动全部 needs_review | round/MINIFLOW-RECORD.md |
+按 EFFECTIVE-RULES-R2 §8 流水线完整跑通一轮：**三路独立生成**（A 场景推演/B 文献行为/C 方法迁移，各 4 卡+4 条诚实放弃线）→ **主控初筛**（12 卡入账，12 个独立身份）→ **历史碰撞审查**（两批全新上下文审查者：批1 新鲜度四卡→家族合并裁决（三机制层不可互替）；批2 八卡→7×②+1×③*，B4 并入寿命卡、信用族合成）→ **深化**（F1/B3 有限反馈接力）→ **三角色内容审查**（builder 11 条+neighbor（发现 Wang24b 部分覆盖、TEG/GANNON 近邻缺口）+evidence 23 条（M1：TAP-DAR 真实直接对手坐实））→ **主控整合**（全部实质修订落账）→ **推荐裁决**。
+真实验证的能力：五类历史判别（S1-S5 样例 5/5+R1 实跑）、家族合并键裁决、意见双哈希绑定（R6-R13 登记，修订自动失效链）、生成端隔离（深化者只收有限反馈）、证据链逐字核对（LOZANO/CHOU/LIAQ/WEIL/HE 原文+代码抽核）。
 
-**不同意见**：无未采纳的审查发现。两处精确化：①2B 的"进而 collision"在 title-only 卡成立，多字段卡实为稀释不稳定（已修）；②3A 根因=sys.modules 注册缺失（已记录，供原件 owner 参考）。
+## 2. 推荐候选与三个核心问题直答
 
-## 2. 已更正的旧"通过"声明
+**L1 星历可预报的链路剩余寿命（cc72be0cbef v6，推荐）**：①ISL 计划内遥断+非计划失效的逐包路由层，观测向量无寿命字段（四篇已核）、可预报性只用于模型层继承（eq.13 限定）、"刚选完就断"的在途损失无人防；②针对"可预报性闲置在观测/动作层"，改观测（τ_ho 通道）+动作（T* 屏蔽进选择）+更新（target 同掩码同步）；③计划内分量被 TEG 规划部分覆盖、GSL 坑被 StarTCP/GANNON 夹击、固定死线解决计划内大半——生存域=分布式逐包+非计划失效的交集外。
+**B3 队列感知价值的负载带塌陷窗（cc029fa6119 v3，推荐）**：①队列感知价值只在窄负载带成立（四锚互证：LOZANO 低载无差异/HE 工程化拥塞才有收益/LIAQ 自认 Dijkstra 理想最优且隔离排队/WEIL 无带宽限制≈SP），跨体制迁移的阈值行为从未被测量；②针对"训练合同单一化"，改训练合同（负载课程，profile 层零代码改动）+评估协议（阈值显式化+稳态/瞬态两腿）；③ELB/TLR 带内解决跨体制同坏、多负载混合可能拿走大半（自承最可能归宿）、负载数率入状态为生死对照——胜负条件均已写明。
 
-- run-test-20260910 验收线"误放0误杀0"→ 审计异常曾计入正确；现 all_ok 含执行错误记账。
-- "unnoted≥40%/入池≥6"→ 取消验收资格，降为诊断记录（EFFECTIVE-RULES-R2 §1/§7）。
-- "ledger add 完成"→ 原实现幂等/唯一当前版本/中断恢复均不成立，已重写并以回归证明。
-- 三路生成产物"冷生成"→ 改标"接触过旧候选信息的试运行材料"（三文件头横幅）。
+## 3. 为什么值得开展（而非仅未被淘汰）
 
-## 3. 完整小流程走到哪里
+- L1：观测向量缺字段是四篇论文的**逐字级负证据**；"唯一用点=模型层"有 eq.(13) 原文锚；生存域是被两个部分覆盖域夹击后的明确交集外，验证第一步（现象占比统计）半天可判生死——负结果同样可发表（现象不存在=对"切换坑"直觉的澄清）。
+- B3：四锚各自合同已回原文核对，其中 **LIAQ 自认构成可引用的自证锚**（卖 queue-aware 的论文自认 Dijkstra 理想时延最低且隔离排队）；测量对象（跨体制阈值行为）限定范围负断言成立且被 evidence 审查确认未越界。
 
-七步全部实际执行（入账→建设→近邻→证据→主控整合→修订→失效链→状态），证据=round/MINIFLOW-RECORD.md。
-**未验证/超范围**：候选价值裁决（冻结）；语义同族自动检测（明确不做，主控人工兜底）；S2 实通（429，通道状态已记录）；UNDERMIND 深查（按收口标准未扩大）。
+## 4. 哪些证据改变了原判断
 
-## 4. 版本 / 写入范围 / 测试 / 备份
+1. **TAP-DAR 真实存在且摘要级高度重叠**（evidence M1）——F1 从"空白家族"降为"条件保留"（原拟推荐）。
+2. **Wang24b（GLOBECOM 自适应 LSU）**（neighbor 新发现）——F1 层①信令控制层[部分覆盖]，"年龄是隐式常量"表述须纳入反例。
+3. **TEG 规划+GANNON**（neighbor C2）——L1 计划内分量[部分覆盖]，生存域收窄为 ISL 逐包+非计划失效。
+4. **IZHIKEVICH"尖峰与切换无关"**（evidence L1-3）——L1 主机制假设的库内反证方向，已正面纳入竞争解释。
 
-- 分支 `agent/20260910-topic-loop`（base=origin/main 8a30409）；写集=round/**、ANALYSIS/TOPIC-LOOP-20260910/**、ANALYSIS/DOCUMENT-STATUS.json（登记 7 条目，纯增项）、.worktrees 外无触碰；research-ops checkout 只读未改。
-- 测试：test_rework_regressions.py **10/10 PASS**；deps_check **20/20 一致**（含修复后重指纹，gen_manifest.py 流程化）；governance 检查在 worktree 内仅余主库既有 2 项 STALE_CURRENT。
-- 备份：commit→push→**Draft PR**（见 PR 正文证据合同），未合并（待 Codex 验收）。
+## 5. 最大未决项及其对推荐的影响
 
-## 5. 阻碍恢复选题的事项 / 非阻塞优化
+- **TAP-DAR/Wang24b 全文核读不可得**（arXiv 环境阻断、Undermind 仅摘要）——F1 不推荐（第一淘汰条件悬空）；L1 已对其开窗限定但不阻塞（其领地=lag 补偿，与 L1 的寿命屏蔽机制不同）。
+- **现象存在性未测**（L1 占比、B3 窗宽）——两卡的验证第一步都是半天-两天级廉价核验，存在性证伪不影响本轮结论（已按"不承诺阴性结果必有论文价值"设计）。
+- **Nie25/Hua25b 不在库**——F1 层③（塑形理论）维持挂起。
 
-**阻碍**：无技术性阻塞。恢复选题前需 Codex 验收本返工包 + 用户解冻指令（流程性）。
-**非阻塞（明确不做，按收口标准）**：sentence-transformers 嵌入后端（语义同族检测）；S2 API key；chatgpt_dispatch 插件修复；检查器覆盖面扩充；任何仪表盘/架构重设计。
+## 6. 本轮消耗与重要执行限制
+
+- 模型：全部子代理走配置的默认非 Pro 路由；派发总计=生成×3+历史审查×2+深化×2+内容审查×3（前台/后台混合）；Undermind 每生成器 ≤3 次、每审查者 ≤2 次（限额遵守）；S2 公共档 429 全程受限（已切换 Undermind/arXiv 通道）。
+- 限制：arXiv API 在部分子代理环境被 DNS 策略阻断（库外全文不可得，均如实标 INPUT_INSUFFICIENT）；LOZANO 开源模拟器无 LICENSE（仅内部复现义务已写入两卡）。
+- 产物绝对路径：主文稿 /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/ANALYSIS/TOPIC-LOOP-20260910/PROPOSAL.md；证据 /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/run1/（staging/op-*/feedback/draft）；台账 /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/CANDIDATE-LEDGER.csv；审查登记 /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/reviews/reviews.csv；全程台账 /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/ROUND-LOG.md。
+
+## 7. 交付物索引
+
+PROPOSAL.md（方案正文+机制图）｜ LITERATURE-GUIDE.md（文献导读）｜ PROCESS-APPENDIX.md（过程附件）｜ README.md（入口）。

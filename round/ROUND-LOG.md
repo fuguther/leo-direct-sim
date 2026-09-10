@@ -125,3 +125,8 @@ REVIEW-REQUEST-FOR-CODEX.md 写入 worktree 根：自包含审查请求（背景
 - 单卡流程接力（card-A1，path-A 卡A 切片）：初筛（主控卡片合同检查）→ 历史审查（后台子代理，全新上下文，唯一历史入口=索引，按需 git show 原件）→ 结论 ③（T-C1 最强匹配/D卡10/T-C3/F-I=②/缺失维度⑤）→ 主控处置（继续+四项前置义务，MASTER-DISPOSITION.md）→ 有限反馈 feedback-cardA1.md（仅卡相关 5 条）→ 深化者接力产出 card-A1-revised-draft.md（对账登记/基线升格 B0-B4/检索义务前置/竞争解释 6 项）。
 - 隔离验证：深化者输入仅卡+有限反馈（无历史索引/台账）；其草案自证"历史前置名称唯一出处=反馈文件"并标未核实。台账：A1 入账 c30b20940a3 + R5-A1-history 意见登记绑定 content_hash。
 - 未验证：S2 检索实际重跑（429 受限，义务已登记未执行——流程验证不含）；age-conditioned 先例是否存在（属下一步深化的检索义务）；台账 lexical 键不触发跨 run 匹配（语义匹配=历史审查者职责，已验证其工作）。
+## 12. 正式选题循环 run1（2026-09-10 深夜→09-11）
+
+按 EFFECTIVE-RULES-R2 §8 全流水线执行：三路生成（A/B/C 各 4 卡+4 诚实放弃线）→初筛入账 12 卡→历史碰撞审查两批（批1 家族合并裁决=A1/B1/C1/C4→F1 三机制层，T-C1 前身继承；批2 7×②+1×③*，B4 并入 L1、B2+C2 信用族）→深化（F1/B3 有限反馈接力，深化者隔离验证=其草案唯一出处=反馈文件）→三角色审查（builder 11 条/neighbor 发现 Wang24b 部分覆盖+TEG/GANNON 缺口/evidence 23 条含 M1 TAP-DAR 摘要级直接对手）→主控整合（全采纳，修订触发 R6-R13 失效链）→**推荐裁决：L1（cc72be0cbef v6）+B3（cc029fa6119 v3）推荐待审；F1（cc24a3f94e5 v3）条件保留（TAP-DAR/Wang24b 全文核读为第一淘汰条件）；A2/A3/A4/C3 backlog；信用族 awaiting_evidence（PRIMAL 0% 前提）**。
+证据改变判断：M1（F1 降条件保留）、Wang24b、TEG+GANNON（L1 收窄）、IZHIKEVICH 反证方向。
+交付物：ANALYSIS/TOPIC-LOOP-20260910/{PROPOSAL,AUDIT-SUMMARY,LITERATURE-GUIDE,PROCESS-APPENDIX}.md。本轮未启动训练/仿真；性能收益全部标为待验证假设。
