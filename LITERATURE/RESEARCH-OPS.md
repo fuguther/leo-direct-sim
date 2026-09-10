@@ -90,3 +90,20 @@ CLI 也禁止自动回退 headless。显式 command 参数仅保留已有模拟�
 
 回归：`python3 -m unittest discover -s CODE/tests -p 'test_research*.py' -q`。
 本轮真实模型调用0次；未使用10元联调预算。旧夜跑产物保持原样。
+
+### 请求钩子候选（未安装）
+
+`scripts/research_request_guard.mjs` 按已装 Harness `llm/stream` waterfall
+实现拦截候选，依赖 `researchBudgetBroker`：binding/reserve/beforeDispatch/
+finish/uncertain。模拟验证预留先于发送、重试独立预留、失败保留额度、取消阻止发送。
+该 broker 尚未实现真实请求路由证明与计价绑定，所以插件未装入用户 Harness，
+不能称真实预算熔断已启用。模型名称相符也不证明底层 HTTP 目的地相符。
+`node --test CODE/tests/test_research_request_guard.mjs`：7项通过。
+
+Safari 网页人工读取已确认原生“未分组”中有 reason-first、paper-first 等条目；
+因此“CLI 会话永远不出现在网页”不成立。该观察不等于新适配器创建/打开验证通过，
+新任务仍需原生工作区关联、认证 RPC 和总任务停止事件的端到端验收。
+
+### 2026-09-10 历史接口修正
+
+控制适配器现通过 `session/follow` 的 snapshot 获取真实 cursor，再以 `address + throughSeq` 调用 `session/page`，替换无效的 sessionId-only 请求。快照流异常、非法游标和无效历史页均阻止可见性验收，连接始终关闭。依赖 websocket-client。接口形状依据当前安装包核对；本轮为协议模拟测试，不等于已完成带登录态真实接力。SQLite 预算连接现显式关闭。40 项 Python 测试、7 项 Node 护栏测试通过；真实请求护栏仍未安装。

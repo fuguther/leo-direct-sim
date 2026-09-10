@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch, MagicMock
 from concurrent.futures import ThreadPoolExecutor
 
 spec = importlib.util.spec_from_file_location('rh', Path(__file__).resolve().parents[2] / 'scripts/research_harness.py')
@@ -19,11 +20,18 @@ class Fake:
         if method == 'session/create':
             self.rows[sid] = dict(sessionId=sid, cwd=payload['cwd'])
             return {'sessionId': sid}
+        if method == 'session/page':
+            assert set(payload) == {'address', 'throughSeq', 'maxMessages'}
+            assert payload['address']['kind'] == 'session'
+            assert payload['throughSeq'] == 7
+            return {'records': [], 'hasMore': False}
         if method == 'session/list':
             return {'items': [] if self.hidden else list(self.rows.values())}
         if method == 'session/cancel' and self.fail_cancel:
             raise rh.Blocked('disconnected')
         return {}
+    def snapshot(self, sid):
+        return {'type': 'snapshot', 'cursor': 7}
     visible = rh.Harness.visible
 
 
@@ -74,6 +82,36 @@ class Tests(unittest.TestCase):
             s=rh.cancel(root,c)
             self.assertEqual(s['status'],'cancel_unconfirmed')
             self.assertEqual(len(s['cancel_unconfirmed']),3)
+
+    def test_native_snapshot_protocol_and_close(self):
+        sock = MagicMock()
+        def reply():
+            sent = json.loads(sock.send.call_args.args[0])
+            self.assertEqual(sent['endpoint'], 'session/follow')
+            self.assertEqual(sent['payload']['address'],
+                             {'kind': 'session', 'sessionId': 'sample'})
+            return json.dumps({'type': 'item', 'streamId': sent['streamId'],
+                               'value': {'type': 'snapshot', 'cursor': 12}})
+        sock.recv.side_effect = reply
+        with patch('websocket.create_connection', return_value=sock) as connect:
+            result = rh.Harness(cookie='synthetic').snapshot('sample')
+            self.assertEqual(result['cursor'], 12)
+            self.assertEqual(connect.call_args.args[0],
+                             'ws://127.0.0.1:3080/api/remote.mux')
+        sock.close.assert_called_once()
+
+    def test_stream_errors_never_count_as_visible(self):
+        for value in ({'type': 'snapshot', 'cursor': True}, None):
+            sock = MagicMock()
+            def reply():
+                sent = json.loads(sock.send.call_args.args[0])
+                return json.dumps({'type': 'item' if value else 'error',
+                                   'streamId': sent['streamId'], 'value': value or {}})
+            sock.recv.side_effect = reply
+            with patch('websocket.create_connection', return_value=sock):
+                with self.assertRaises(rh.Blocked):
+                    rh.Harness().snapshot('sample')
+            sock.close.assert_called_once()
 
     def test_no_real_admission(self):
         with self.assertRaisesRegex(rh.Blocked,'LIVE_REQUEST_GUARD'):

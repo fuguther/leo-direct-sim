@@ -5,6 +5,7 @@ Transport implements the installed Harness RPC envelope, not a private database
 writer. Authentication is supplied by the caller; secrets never enter journals.
 """
 import argparse
+from contextlib import contextmanager
 import datetime as dt
 import hashlib
 import json
@@ -12,6 +13,7 @@ import os
 from pathlib import Path
 import sqlite3
 import tempfile
+import time
 import urllib.request
 from urllib.parse import urlsplit
 import uuid
@@ -82,8 +84,14 @@ class Budget:
             db.execute('CREATE TABLE IF NOT EXISTS calls (id TEXT PRIMARY KEY, reserved INTEGER, actual INTEGER)')
             db.execute('CREATE TABLE IF NOT EXISTS faults (reason TEXT NOT NULL)')
 
+    @contextmanager
     def connect(self):
-        return sqlite3.connect(self.path, timeout=10)
+        db = sqlite3.connect(self.path, timeout=10)
+        try:
+            with db:
+                yield db
+        finally:
+            db.close()
 
     def reserve(self, request_id, maximum_fen):
         if type(maximum_fen) is not int or maximum_fen <= 0:
@@ -153,12 +161,55 @@ class Harness:
             raise Blocked('Harness rejected RPC: ' + str(result.get('error', {}).get('code', 'unknown')))
         return result.get('value')
 
+    def snapshot(self, sid):
+        """Read a bounded native follow snapshot; never invent a history cursor."""
+        try:
+            import websocket
+        except ImportError:
+            raise Blocked('websocket-client required for Harness history') from None
+        stream_id = str(uuid.uuid4())
+        socket = None
+        try:
+            socket = websocket.create_connection(
+                self.base.replace('http://', 'ws://', 1) + '/api/remote.mux',
+                cookie=self.cookie, origin=self.base, timeout=10)
+            socket.send(json.dumps(dict(type='open', streamId=stream_id,
+                endpoint='session/follow', payload=dict(
+                    address=dict(kind='session', sessionId=sid), maxMessages=1))))
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                socket.settimeout(max(.01, deadline - time.monotonic()))
+                frame = json.loads(socket.recv())
+                if frame.get('streamId') != stream_id:
+                    continue
+                value = frame.get('value', {})
+                if frame.get('type') == 'item' and value.get('type') == 'snapshot':
+                    cursor = value.get('cursor')
+                    if type(cursor) is not int or cursor < 0:
+                        raise Blocked('invalid history snapshot cursor')
+                    return value
+                if frame.get('type') in ('error', 'end'):
+                    raise Blocked('history stream ended without snapshot')
+            raise Blocked('history snapshot timeout')
+        except Blocked:
+            raise
+        except Exception as exc:
+            raise Blocked('Harness history unavailable: ' + type(exc).__name__) from None
+        finally:
+            if socket is not None:
+                socket.close()
+
     def visible(self, sid, cwd):
         rows = self.rpc('session/list', {})['items']
         row = next((r for r in rows if r['sessionId'] == sid), None)
         if row is None or row.get('cwd') != cwd:
             raise Blocked('session absent from list or wrong project')
-        self.rpc('session/page', {'sessionId': sid})
+        snapshot = self.snapshot(sid)
+        page = self.rpc('session/page', {
+            'address': {'kind': 'session', 'sessionId': sid},
+            'throughSeq': snapshot['cursor'], 'maxMessages': 1})
+        if not isinstance(page, dict) or not isinstance(page.get('records'), list):
+            raise Blocked('invalid Harness history page')
         return row
 
     def admit_prompt(self, *args, **kwargs):
