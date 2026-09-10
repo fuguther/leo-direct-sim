@@ -17,16 +17,18 @@
 > 同步义务：research-ops 线的 RESEARCH-ENTRIES.md 归 harness-unify 代理所有（单写入者，本线不改其文件）。
 > 其 owner 后续合入时应参照本表对齐；在此之前，本线一切生成/审查活动以本文件为准。
 
-## 2. 生成阶段知识入口（白名单 v2）
+## 2. 生成阶段知识入口（白名单 v3，2026-09-10 run2 修订）
+
+> v2→v3 原因：Codex 内容审核发现 raw 笔记仍含 F0/F1、旧候选与『我们的机会点』内容，与『已去倾向』声明不一致（实测 41 篇中 15 篇 30 处命中）。run1 生成器实际经 raw 笔记浏览 14 篇，暴露属实，已记入 ROUND-LOG §13。v3 起 raw 笔记移出生成入口，仅保留给生成后历史审查。
 
 1. `LITERATURE/SOURCES.csv`（论文总目录）
-2. `LITERATURE/notes/raw/*.md`（已去倾向笔记；只当线索，承重断言回原文）
+2. `round/knowledge/notes-neutral/*.md`（程序化剥离倾向句的事实笔记，manifest: `round/knowledge/notes-neutral-manifest.json`，含源文件 sha256 与删除统计；只当线索，承重断言回原文）
 3. `round/knowledge/NEUTRAL-KNOWLEDGE-VIEW.md`（中性事实视图——Claim/Assumption/Evidence 三图 + 全文阅读证据表；不含候选关系与旧未找到判断）
 4. Zotero 本机库（"毕设"集合等）
 5. 本地 PDF：`LITERATURE/papers/`、`tao25.pdf`（身份=arXiv 2512.03211，内容为 2001 Olpomdp 经典）
 6. Undermind search_papers（定向补查 ≤3 次；禁 launch_deep_search）、arXiv API、web 搜索
 
-**黑名单（生成阶段禁止读取）**：`out/**`、其他代理 worktree 产物、`LITERATURE/notes/COLDSTART-20260903.md`、`00-READING-QUEUE.md`、`related-work-notes/`、**任何候选台账（旧卡与本线卡）**、**原版 KNOWLEDGE-MAP.md**、`ANALYSIS/**`、`NOTES.md`、`PAPER/**`、历史 run 报告。
+**黑名单（生成阶段禁止读取）**：`out/**`、其他代理 worktree 产物、`LITERATURE/notes/raw/*.md`（v3 起移出，倾向句未清除）、`LITERATURE/notes/COLDSTART-20260903.md`、`00-READING-QUEUE.md`、`related-work-notes/`、**任何候选台账（旧卡与本线卡）**、**原版 KNOWLEDGE-MAP.md**、`ANALYSIS/**`、`NOTES.md`、`PAPER/**`、历史 run 报告。
 
 **留给生成后比较阶段**：旧候选关系、旧排序、旧"未找到"判断——由主控在合并对账时使用并判定旧判断是否仍然成立、是否适用。
 

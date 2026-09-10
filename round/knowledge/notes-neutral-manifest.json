@@ -1,0 +1,377 @@
+{
+  "generated": "2026-09-10",
+  "rule": "block-drop 对账/连接 + sentence-drop 黑名单(我们/机会点/信息阶梯/F0/F1/旧候选/本线/选题/防火墙/倾向)",
+  "files_total": 41,
+  "files_clean": 41,
+  "entries": [
+    {
+      "file": "ALMASAN-2022-DRLGNN.md",
+      "source_sha256": "6804a2fce47ad7eae892961361a2cab2cc258483be5d468d7f8a38552082ec6b",
+      "source_relpath": "LITERATURE/notes/raw/ALMASAN-2022-DRLGNN.md",
+      "removed_blocks": 0,
+      "removed_sentences": 8,
+      "residual_hits": 0,
+      "out_sha256": "d21a4a0cb9bbec4176b6b515153f7fe7a47c9606eab20079160a165e08fae751"
+    },
+    {
+      "file": "ARXIV-2007.05449.md",
+      "source_sha256": "e420aa290bacb13752475525660e24533b14ade45048ca1a9185b9e763d581dc",
+      "source_relpath": "LITERATURE/notes/raw/ARXIV-2007.05449.md",
+      "removed_blocks": 0,
+      "removed_sentences": 5,
+      "residual_hits": 0,
+      "out_sha256": "e44c02815ec5bc3c5b5a08609e81fea62345a53589c4d8473ea1af7b3746de06"
+    },
+    {
+      "file": "ARXIV-2111.09217.md",
+      "source_sha256": "37919177bc106877e98e899ba73933178465cfada2d1e5d775bd6b07002ddf83",
+      "source_relpath": "LITERATURE/notes/raw/ARXIV-2111.09217.md",
+      "removed_blocks": 0,
+      "removed_sentences": 2,
+      "residual_hits": 0,
+      "out_sha256": "65ec9bc14c1e2c5607ee87ceed62ba458797572621ebf63022ba143717e49c40"
+    },
+    {
+      "file": "ARXIV-2310.03969.md",
+      "source_sha256": "37f180c9d0c76fd6d750d239571a5c0c980a2c4e6b1cfe8b15163ce454a59d20",
+      "source_relpath": "LITERATURE/notes/raw/ARXIV-2310.03969.md",
+      "removed_blocks": 0,
+      "removed_sentences": 6,
+      "residual_hits": 0,
+      "out_sha256": "1c295e49cc25a81b00676f2f64184ba233ee6d3676538e405b95dfb0bd24c76f"
+    },
+    {
+      "file": "ARXIV-2512.00985.md",
+      "source_sha256": "4e50b8317928563ea27be8385445793ba18f00a4d5716a9eac717228152e5cd0",
+      "source_relpath": "LITERATURE/notes/raw/ARXIV-2512.00985.md",
+      "removed_blocks": 0,
+      "removed_sentences": 2,
+      "residual_hits": 0,
+      "out_sha256": "4c7e96632c1f94d0e2ad8b8c60905efa1f2bba5f695e58070efd14c9016964fc"
+    },
+    {
+      "file": "BAI-2025-GRLRR.md",
+      "source_sha256": "5ee2ecb31a92851b2d090e9ec9623b46d7941deaa4e49d5ae8d25f2befa5e54e",
+      "source_relpath": "LITERATURE/notes/raw/BAI-2025-GRLRR.md",
+      "removed_blocks": 0,
+      "removed_sentences": 2,
+      "residual_hits": 0,
+      "out_sha256": "d8f3740abc0fd25aec28efb9adf156b86830a266a58413f1bf199b2593552a90"
+    },
+    {
+      "file": "BHAVANASI-2023-GNNMADRL.md",
+      "source_sha256": "4b200f68d0efdca104e4ba2496cd60f30abe5a0fec1fec812d671c5a28e4dc4a",
+      "source_relpath": "LITERATURE/notes/raw/BHAVANASI-2023-GNNMADRL.md",
+      "removed_blocks": 0,
+      "removed_sentences": 2,
+      "residual_hits": 0,
+      "out_sha256": "7e6a7555047468b297aae1c0dd691d8e98f283d5f8ae80e650f6a3cb1b1dc304"
+    },
+    {
+      "file": "CHEN-2025-TMIX.md",
+      "source_sha256": "67b26687983ddf59aece5ddb5f8f432282af546f65c9e8c95cca780447f8c0d1",
+      "source_relpath": "LITERATURE/notes/raw/CHEN-2025-TMIX.md",
+      "removed_blocks": 0,
+      "removed_sentences": 2,
+      "residual_hits": 0,
+      "out_sha256": "f8ef81a8d0d04ebc62481659070551d2dd45818d707245f229d227e3098aa259"
+    },
+    {
+      "file": "CHOU-2026-STL.md",
+      "source_sha256": "7d9dacaa7296a9a1b069a94b38953285445033981317b76c7b0187358f773bfb",
+      "source_relpath": "LITERATURE/notes/raw/CHOU-2026-STL.md",
+      "removed_blocks": 0,
+      "removed_sentences": 6,
+      "residual_hits": 0,
+      "out_sha256": "930e2de3100c15f62738cf345bc964c735d203c80fd18cc1ccb4581615762f2b"
+    },
+    {
+      "file": "CHU-2023-RRSDRL.md",
+      "source_sha256": "50a05a432ea3dbe589e710a642540031af42eb3d9aadb566e20c812294259bf9",
+      "source_relpath": "LITERATURE/notes/raw/CHU-2023-RRSDRL.md",
+      "removed_blocks": 0,
+      "removed_sentences": 2,
+      "residual_hits": 0,
+      "out_sha256": "d5703092d9a34523444966e4b7569afde3fd729b15e0480f72680801ff235dba"
+    },
+    {
+      "file": "DONG-2023-DQNLLRA.md",
+      "source_sha256": "8ce275983e7141fc005c52976310ec764319893ee6565a216dd29ecf827ef35b",
+      "source_relpath": "LITERATURE/notes/raw/DONG-2023-DQNLLRA.md",
+      "removed_blocks": 1,
+      "removed_sentences": 2,
+      "residual_hits": 0,
+      "out_sha256": "50e30c148849c3942255eaceb360a118c73f58eef3584062ca591ba2de2f6535"
+    },
+    {
+      "file": "GANNON-2024.md",
+      "source_sha256": "1fb71814457ee548b695c36ae5d2f8e571ca5614aaf0ad0eb7512f7700a97dc3",
+      "source_relpath": "LITERATURE/notes/raw/GANNON-2024.md",
+      "removed_blocks": 0,
+      "removed_sentences": 1,
+      "residual_hits": 0,
+      "out_sha256": "4197908e7d27246eccf5f0d3593a24923a6e53959f45dcf5a3f4f206bb4f3cab"
+    },
+    {
+      "file": "GAO-2026-RAOI.md",
+      "source_sha256": "0354d347b468aa11d71d782b2b12fa419a33a19c313888112e95c24e2822d201",
+      "source_relpath": "LITERATURE/notes/raw/GAO-2026-RAOI.md",
+      "removed_blocks": 0,
+      "removed_sentences": 3,
+      "residual_hits": 0,
+      "out_sha256": "91c985e689bfda68418a471fd200cce5ac173b32fc495c04724eb974eb6eb2e0"
+    },
+    {
+      "file": "GILBERT-ELLIOTT.md",
+      "source_sha256": "9cafec007d8271eac151e1658a730e34563bf6a2bdbd885071cd2eca607094b4",
+      "source_relpath": "LITERATURE/notes/raw/GILBERT-ELLIOTT.md",
+      "removed_blocks": 0,
+      "removed_sentences": 2,
+      "residual_hits": 0,
+      "out_sha256": "ce2f1b01f8b9610c883f6aa4e19bb1172ed857bda16878d1c342525874ff1756"
+    },
+    {
+      "file": "GUVEN-2023.md",
+      "source_sha256": "bafc6d2e2fa02b8764b2f539ef41eb644fef6b44d6f8c48fee70d6ef681fcd00",
+      "source_relpath": "LITERATURE/notes/raw/GUVEN-2023.md",
+      "removed_blocks": 0,
+      "removed_sentences": 1,
+      "residual_hits": 0,
+      "out_sha256": "5b9b9601cea92c3283cb30901ca95dbcd3a9391f947d2937b94758be64977687"
+    },
+    {
+      "file": "HAN-2024-DMR.md",
+      "source_sha256": "2f225614f2db0469dfe9bf9bca32f8bee164b81a11ef3ab792d174126d4c94da",
+      "source_relpath": "LITERATURE/notes/raw/HAN-2024-DMR.md",
+      "removed_blocks": 1,
+      "removed_sentences": 2,
+      "residual_hits": 0,
+      "out_sha256": "65d8dec5f5c444dfc7c56ab95188a34e957caf04859d831ae60a54857470b85c"
+    },
+    {
+      "file": "HE-2025-PRIMAL.md",
+      "source_sha256": "37abcfceb0099ddb3acaf53cc855876a2951dbfe97907d398a7a0cef04174661",
+      "source_relpath": "LITERATURE/notes/raw/HE-2025-PRIMAL.md",
+      "removed_blocks": 0,
+      "removed_sentences": 8,
+      "residual_hits": 0,
+      "out_sha256": "a3615bc7d7049f817618529cd178a02731c203ea3b05a4d5409a0b1430d80942"
+    },
+    {
+      "file": "HUANG-2024-GMR.md",
+      "source_sha256": "e11e5be2a118963768c4a56afb0ecc6cd6d36ca2b845eb85e4dec8d0021083fe",
+      "source_relpath": "LITERATURE/notes/raw/HUANG-2024-GMR.md",
+      "removed_blocks": 0,
+      "removed_sentences": 1,
+      "residual_hits": 0,
+      "out_sha256": "04f68a848ddcd47f939832aa31d5e76a518b58f2b915a680aedfaba80d5f107b"
+    },
+    {
+      "file": "IZHIKEVICH-2024.md",
+      "source_sha256": "8570abf40b48d136c722da9ecf1f74fdc6aeff034f572d212c97b868be84feac",
+      "source_relpath": "LITERATURE/notes/raw/IZHIKEVICH-2024.md",
+      "removed_blocks": 1,
+      "removed_sentences": 1,
+      "residual_hits": 0,
+      "out_sha256": "175d18d13021958b4fa0dce86d6e74cfd41d770bd7cbc95cdf70190f5f41f90a"
+    },
+    {
+      "file": "LI-2023-LUR.md",
+      "source_sha256": "f7490815a89f5ceebfa818ef8e9e7d0eea2cecdf4d7705342c0b5a2c3a13a32d",
+      "source_relpath": "LITERATURE/notes/raw/LI-2023-LUR.md",
+      "removed_blocks": 0,
+      "removed_sentences": 4,
+      "residual_hits": 0,
+      "out_sha256": "b7b41a59d0cf7c07ae9fd738c4b9d1dee946d1d410f4a51d88ee728f30d0f752"
+    },
+    {
+      "file": "LI-2025-POMAP.md",
+      "source_sha256": "617d6844a20d8ddfdb3697aefa291bb35e45d8a7b117d94ac7548910ae8a0074",
+      "source_relpath": "LITERATURE/notes/raw/LI-2025-POMAP.md",
+      "removed_blocks": 0,
+      "removed_sentences": 1,
+      "residual_hits": 0,
+      "out_sha256": "6e74cf2a1087da86043abf60252e631597569cedeb6f001091faf82fe592d5ba"
+    },
+    {
+      "file": "LIAQ-2026-QARR.md",
+      "source_sha256": "c28aea515b9ec0820731a9772838f8830d4c33a3fd2dda58f55d9c30395bc623",
+      "source_relpath": "LITERATURE/notes/raw/LIAQ-2026-QARR.md",
+      "removed_blocks": 0,
+      "removed_sentences": 6,
+      "residual_hits": 0,
+      "out_sha256": "6e03db7974ac3eb592642438ea4a2dbd98abfcfc3ef7e711eeb6f904b6f02a91"
+    },
+    {
+      "file": "LOZANO-2025-CONTINUAL.md",
+      "source_sha256": "653539c5adfca419a513b577e04fa6b92fcbc8c554ee64e4487e597ba4ffb08d",
+      "source_relpath": "LITERATURE/notes/raw/LOZANO-2025-CONTINUAL.md",
+      "removed_blocks": 0,
+      "removed_sentences": 9,
+      "residual_hits": 0,
+      "out_sha256": "c8edb4c8878cbe5a7d4c9915201e432aa926368bb3fe25ecd50e934e137e2acb"
+    },
+    {
+      "file": "LYU-2024-CMADR.md",
+      "source_sha256": "bf81b0a766b6fe2ea296b852e419195da6046d8575de0d79838f4198edb439e4",
+      "source_relpath": "LITERATURE/notes/raw/LYU-2024-CMADR.md",
+      "removed_blocks": 0,
+      "removed_sentences": 1,
+      "residual_hits": 0,
+      "out_sha256": "6dd50a25e60ce4b95f4a57a6f87b55ff61e1dea75c41c43aa6a6dfb5627a0a52"
+    },
+    {
+      "file": "MA-2022.md",
+      "source_sha256": "56de4eb649393d1f04f85384d90cf9b0103ec5d9713542c2241dc885276221f3",
+      "source_relpath": "LITERATURE/notes/raw/MA-2022.md",
+      "removed_blocks": 0,
+      "removed_sentences": 1,
+      "residual_hits": 0,
+      "out_sha256": "445413011bb666a1b47d64184f75531e84fb2bd9d38b25e0f44c080a8ad283cb"
+    },
+    {
+      "file": "MANFREDI-2021-RELATIONAL.md",
+      "source_sha256": "633716190f38e59a08ca4036d77500b93dde129d0b757e83435c3eb840412624",
+      "source_relpath": "LITERATURE/notes/raw/MANFREDI-2021-RELATIONAL.md",
+      "removed_blocks": 0,
+      "removed_sentences": 4,
+      "residual_hits": 0,
+      "out_sha256": "1afcd5ea4da157ae3fdd5ebe855b38e428a6f5f918af93de2ad45d2b39b3691f"
+    },
+    {
+      "file": "OPENALEX-SENSORS-DRL-ROUT.md",
+      "source_sha256": "28a8b6162cc6548324d7517b9f4500642ec7429a7a19042032c8411e25fb34fc",
+      "source_relpath": "LITERATURE/notes/raw/OPENALEX-SENSORS-DRL-ROUT.md",
+      "removed_blocks": 1,
+      "removed_sentences": 0,
+      "residual_hits": 0,
+      "out_sha256": "21e3ab1771603b62cfd12ba814e391707b3deb9019dd6b4606415bf9bbf7c8a9"
+    },
+    {
+      "file": "RAN-2025-GRAPHPR.md",
+      "source_sha256": "37ea2de7f12131b2555866734dcca28d637c9eaf37d76f2687d998a7f65ee6d3",
+      "source_relpath": "LITERATURE/notes/raw/RAN-2025-GRAPHPR.md",
+      "removed_blocks": 0,
+      "removed_sentences": 1,
+      "residual_hits": 0,
+      "out_sha256": "c2cfc65602e30b1cde7024e753576d15c2c25c9c90d78e992f52350f0687907d"
+    },
+    {
+      "file": "RAO-2025-DGAT.md",
+      "source_sha256": "1f52cb47a405274d120d86bba4e98569e16b9ca6d30807a23695e8fd21879017",
+      "source_relpath": "LITERATURE/notes/raw/RAO-2025-DGAT.md",
+      "removed_blocks": 0,
+      "removed_sentences": 1,
+      "residual_hits": 0,
+      "out_sha256": "883ec816cdace509615fee459ba710834c0a2689646158c6b3bd7b9e8abb3033"
+    },
+    {
+      "file": "SHI-2024-GNNDQN.md",
+      "source_sha256": "b1d171e3705ec827576c8315b4fbceaa9acbe0784476cd91378ccb425e8d6143",
+      "source_relpath": "LITERATURE/notes/raw/SHI-2024-GNNDQN.md",
+      "removed_blocks": 1,
+      "removed_sentences": 1,
+      "residual_hits": 0,
+      "out_sha256": "a5523379a3ec5c75a710715e1ff24d08ad3c1d6ac9a5b706f6a3003f51059195"
+    },
+    {
+      "file": "SONG-2014-TLR.md",
+      "source_sha256": "bb113b1de048a53966861c3be4bb2d29447128c16b2d7a9067553d9646e14c1a",
+      "source_relpath": "LITERATURE/notes/raw/SONG-2014-TLR.md",
+      "removed_blocks": 0,
+      "removed_sentences": 2,
+      "residual_hits": 0,
+      "out_sha256": "2aa4188a814ca2c94e689f7dec65756dbf9bf94c3e44e4057021bd6e402670c4"
+    },
+    {
+      "file": "SORET-2024-QLEARN.md",
+      "source_sha256": "355698fe519729ea15f9b131842ee9d70bafe981db7c9b07288911a9382fb141",
+      "source_relpath": "LITERATURE/notes/raw/SORET-2024-QLEARN.md",
+      "removed_blocks": 0,
+      "removed_sentences": 2,
+      "residual_hits": 0,
+      "out_sha256": "e3a36a93db833347780e16f72bc817ff093928b9193c9d8e0da8868c62dd49a2"
+    },
+    {
+      "file": "STARTCAP-2024.md",
+      "source_sha256": "0ef12250a783e5d80c5a773e5d82ff78d966b6de380f3ca940baeb109769d8eb",
+      "source_relpath": "LITERATURE/notes/raw/STARTCAP-2024.md",
+      "removed_blocks": 0,
+      "removed_sentences": 1,
+      "residual_hits": 0,
+      "out_sha256": "03be1bbf7ed11f49f8cec964ce11e7e62ea93b643e2238b015d7dfc93634a9d8"
+    },
+    {
+      "file": "TALEB-2009-ELB.md",
+      "source_sha256": "0e646096102aed943140d41b8c57fb43a24248adf341b0cd1a6840714d77356f",
+      "source_relpath": "LITERATURE/notes/raw/TALEB-2009-ELB.md",
+      "removed_blocks": 0,
+      "removed_sentences": 1,
+      "residual_hits": 0,
+      "out_sha256": "d3ee7b2d5c4d2405ee76b50edbc3475949a5d4d9a57ced3303ec04aa5d6b3364"
+    },
+    {
+      "file": "WANG-2021-GROUTING.md",
+      "source_sha256": "bca251fdba046034ec5252f22093796acb68fd852bb132b2a6eb3dd1263825e9",
+      "source_relpath": "LITERATURE/notes/raw/WANG-2021-GROUTING.md",
+      "removed_blocks": 0,
+      "removed_sentences": 2,
+      "residual_hits": 0,
+      "out_sha256": "ad863948e2081cb2092c1989aa80241cabcc3c683744a6e1c8703f289fb780f0"
+    },
+    {
+      "file": "WEIL-2024-RMP.md",
+      "source_sha256": "7dcbc6520df8a7cba8ee2a6d9e6fe022adcdcdda42ba8459edd1e8be37fa0d14",
+      "source_relpath": "LITERATURE/notes/raw/WEIL-2024-RMP.md",
+      "removed_blocks": 0,
+      "removed_sentences": 8,
+      "residual_hits": 0,
+      "out_sha256": "765f86968117f1c921a628a5bd24bb57740b9dfeba21eba6198c6f6084cf2950"
+    },
+    {
+      "file": "WIGMORE-2025-MAGNN.md",
+      "source_sha256": "1ea6e99cbfc60e273bb053026b8644d80d2d172f39a17046ab961c0afe8e4a66",
+      "source_relpath": "LITERATURE/notes/raw/WIGMORE-2025-MAGNN.md",
+      "removed_blocks": 0,
+      "removed_sentences": 2,
+      "residual_hits": 0,
+      "out_sha256": "512b1fd7ce020ea4e1637f03868e49e55dba5e5be2687ac556b36e621449e953"
+    },
+    {
+      "file": "XIANG-2025-MATGCIR.md",
+      "source_sha256": "a630eb6bb887119cfbc1f38f30c48d7f877947b9946a23655909019033cb5cb0",
+      "source_relpath": "LITERATURE/notes/raw/XIANG-2025-MATGCIR.md",
+      "removed_blocks": 0,
+      "removed_sentences": 1,
+      "residual_hits": 0,
+      "out_sha256": "02a558844e75b86031e7877ac09494eb82db00d0a5cb49b6dcbe57335b7f70ac"
+    },
+    {
+      "file": "ZHANG-2024-NGAT.md",
+      "source_sha256": "e536b8ca8cd1248c400d898652d79c8740d73f854fb62865e39156bd9769bc8a",
+      "source_relpath": "LITERATURE/notes/raw/ZHANG-2024-NGAT.md",
+      "removed_blocks": 0,
+      "removed_sentences": 9,
+      "residual_hits": 0,
+      "out_sha256": "3bd9ca01658ce4b8f9ae64ef817332ce7fca15a54dcc49ba14d1741f4ba3cc5c"
+    },
+    {
+      "file": "ZHANG-2025-GRLR.md",
+      "source_sha256": "fe0077750a22e6caf01a07a1796717c930b04a096ffae7fe2c39aadeaf9a0366",
+      "source_relpath": "LITERATURE/notes/raw/ZHANG-2025-GRLR.md",
+      "removed_blocks": 0,
+      "removed_sentences": 1,
+      "residual_hits": 0,
+      "out_sha256": "c0ccd18139b560810a825eb38ce777f0541a9e98e94c2fef9edd2127b78241b1"
+    },
+    {
+      "file": "ZHOU-2026-DTAR.md",
+      "source_sha256": "f9494bfb0192abc14a76f9a734a33b13c7936716e1abaebfa1a85d58e09ed3d4",
+      "source_relpath": "LITERATURE/notes/raw/ZHOU-2026-DTAR.md",
+      "removed_blocks": 0,
+      "removed_sentences": 5,
+      "residual_hits": 0,
+      "out_sha256": "12834756ca3c53483c8c3d6fe85bf5ba9a348514f019b1afc40ffc16014237c5"
+    }
+  ]
+}
