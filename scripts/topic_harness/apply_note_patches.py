@@ -19,10 +19,14 @@ import glob
 import json
 import os
 
-RAW_DIR = ".worktrees/research-ops/LITERATURE/notes/raw/"
-ANNEX = ".worktrees/research-ops/LITERATURE/notes/annex/20260910-debias-annex.md"
-PROP_DIR = ".worktrees/research-ops/out/research-ops/notes-cleanup/proposals/"
-STATE = ".worktrees/research-ops/out/research-ops/notes-cleanup/applied-state.json"
+def _root() -> str:
+    """worktree 内运行用空前缀；主库内运行自动加 worktree 前缀。"""
+    return "" if os.path.exists("LITERATURE/notes/raw") else ".worktrees/research-ops/"
+
+RAW_DIR = _root() + "LITERATURE/notes/raw/"
+ANNEX = _root() + "LITERATURE/notes/annex/20260910-debias-annex.md"
+PROP_DIR = _root() + "out/research-ops/notes-cleanup/proposals/"
+STATE = _root() + "out/research-ops/notes-cleanup/applied-state.json"
 RESIDUE_PAT = r"我们|F0|F1|信息阶梯|AoI-of-state|与课题|与对账|与我们对账|可复用"
 
 PUNCT_FIXES = [("。。", "。"), ("；。", "。"), ("——。", "。"), ("：。", "。"),
