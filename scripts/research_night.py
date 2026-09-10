@@ -186,7 +186,13 @@ def execute(root, stage, plan, deadline, command=None, stop=None):
 
 
 def run(plan, root, command=None):
+    # Production headless launch is retired. Explicit commands are retained only
+    # for local synthetic regression fixtures; CLI cannot supply one.
     check(plan)
+    if not (root / 'SOURCES.md').is_file() or not (root / 'SOURCES.md').read_text().strip():
+        raise ValueError('explicit source-scope file SOURCES.md required before launching models')
+    if command is None:
+        raise ValueError('LIVE_REQUEST_GUARD_UNAVAILABLE: use research_harness.py for visible control; no headless fallback')
     root.mkdir(parents=True, exist_ok=True)
     with (root / '.run.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)

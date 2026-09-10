@@ -57,3 +57,36 @@ flock+expected_revision串行合并，先校验、保留旧快照再原子替换
 worker若有任意shell写权限，就能绕过脚本或伪造session，这些是防误操作机制而非隔离安全系统。用户接受与关键内容审查仍由主控负责。v1未实现跨任务DAG传播、自动唤醒、Zotero写回、全文覆盖语义识别，不宣称完整科研自动化。
 
 真实验收显示，要求 Flash worker 同时阅读、判断并拼装完整事务补丁会产生明显无效推理开销；语义候选接口是默认路径。完整补丁只适用于已有固定模板的机械执行任务。
+
+## 可见运行适配：开发中，尚不可启动真实研究
+
+`scripts/research_harness.py` 通过本机 Harness 的 `/api/session/*` RPC 管理会话，
+不写会话数据库。`probe` 只读列出会话；`prepare --root <目录>` 创建总会话和阶段会话，
+统一 cwd 并逐一检查 list/page 可读；`reconcile` 只读对账；`cancel` 保存停止请求后
+逐会话取消。API 可读不是网页像素验收，取消请求确认不是任务已经停止。
+
+认证由调用方通过 `RESEARCH_HARNESS_COOKIE` 注入内存；禁止将 Cookie 写入日志或提交。
+当前匿名本机接口实测 401，尚未验证认证后的网页链路。不要从数据库复制认证信息。
+`selectModel` 的已装实现同时保存部署默认选择，因此本适配器暂不调用它，避免改变
+用户其他任务的默认模型。总任务与阶段的关系目前只记录在 VISIBLE-RUN.json 中，
+尚未实现网页原生父子层级和总任务停止传播。
+
+授权文件须包含 provider/model/destination/project_cwd、expires_at（含时区）、
+budget_fen（正整数，最大1000）、source_scope_sha256、plan_sha256；PLAN.json 中
+对应值必须一致。旧夜跑授权不自动迁移到新任务。授权与文件指纹仅用于检测变化，
+不宣称不可篡改。SOURCES.md 列表仍是任务合同，不是文件访问沙箱。
+
+预算 SQLite 账本原子预留单请求最大费用（分），并发共享，重试使用新的请求ID。
+未知响应保留全额预留；相同请求ID禁止再次发送；结算幂等，超出预留记录实际费用并冻结。
+这是账本单元，不是已部署的费用熔断。源码存在 `llm/stream` waterfall 接入点，
+但请求级插件、实际目的地绑定、计费上限、重试覆盖均未联调；不得用调用后 usage
+统计代替发送前限制。所有真实 prompt admission 当前明确阻止，旧 research_night.py
+CLI 也禁止自动回退 headless。显式 command 参数仅保留已有模拟回归调用。
+
+故障恢复：先保留 RUN/回执/SQLite 和会话ID，再执行 reconcile。网络结果不明时
+不重发；取消失败记 cancel_unconfirmed 并再次核查；.visible-owner 是崩溃占用标志，
+禁止自动删除。输出写入失败停止流程，不覆盖旧交付。恢复真实研究前必须完成：
+认证接口与网页打开验证、请求级预算/路由插件、停止事件传播及两阶段真实接力验收。
+
+回归：`python3 -m unittest discover -s CODE/tests -p 'test_research*.py' -q`。
+本轮真实模型调用0次；未使用10元联调预算。旧夜跑产物保持原样。
