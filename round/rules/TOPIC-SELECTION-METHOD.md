@@ -36,7 +36,9 @@
 
 ---
 
-## 2. 流水线（十步，含角色与隔离）
+## 2. 流水线（步骤与角色；**权威定义在 EFFECTIVE-RULES-R2 §8**，本节仅为索引）
+
+> R5 修正：本节原写「十步」，与 §8 的段数不一致。**冲突时以 §8 为准**；下表仅列角色与输入输出，编号不代表权威顺序。
 
 见 `ANALYSIS/TOPIC-LOOP-20260910/run2/PIPELINE-MAP.md` 的流程图。文字版：
 
@@ -112,7 +114,12 @@
 | 用途 | 文件 |
 |---|---|
 | **单一入口（本文）** | `round/rules/TOPIC-SELECTION-METHOD.md` |
-| 流水线与隔离矩阵 | `round/rules/EFFECTIVE-RULES-R2.md`（§2 白名单 v4、§8 流水线、§8.1 隔离） |
+| 流水线与隔离矩阵（**权威**） | `round/rules/EFFECTIVE-RULES-R2.md`（§2 白名单 v4、§8 流水线含 §8.0 批内对账/§8.0.1 锚件核验、§8.1 隔离矩阵） |
+| 全框架结构图与体检 | `ANALYSIS/TOPIC-LOOP-20260910/run2/FRAMEWORK-MAP.md`（九个子系统流程图 + 矛盾清单） |
+| 闸门机械判定 | `round/tools/gate_check.py`（PASS/BLOCK/INPUT_INSUFFICIENT） |
+| 轮次硬计数 | `round/tools/gate_rounds.py`（≤3 轮，超限硬拒绝） |
+| 路线与降级链 | `round/rules/ROUTE-POLICY.md` |
+| 断点审计报告 | `round/rules/CHAIN-AUDIT.md`（一次性报告，非活规则） |
 | 质量闸门 | `round/rules/QUALITY-GATE-R2.md` |
 | 失败后怎么办 | `round/rules/EXPLORATION-FALLBACK.md` |
 | Undermind 用法 | `round/rules/UNDERMIND-PLAYBOOK.md` |
@@ -122,6 +129,10 @@
 | 语料覆盖真相 | `round/knowledge/CORPUS-COVERAGE.md` |
 | 语义抽查记录 | `round/knowledge/P0-SEMANTIC-SPOTCHECK.md` |
 | 台账工具 | `round/tools/ledger.py`（add/revise/status/merge/review-register/invalidate） |
+| 输入链净化 | `round/tools/sanitize_notes.py`（raw→notes-neutral 剥离倾向句）+ `gen_neutral_view.py` |
+| 语料构建 | `round/tools/gen_zotero_index.py`、`zotero_pdf_manifest.py`、`stage_zotero_pdfs.py`、`build_citekey_crosswalk.py` |
+| VM 转换 | `round/tools/vm_mineru_one.py`（逐篇串行，唯一活跃转换脚本） |
+| 依赖指纹 | `round/tools/gen_manifest.py`、`deps_check.py` |
 | 查新/检查/审计工具 | `round/tools/patched_novelty.py` / `patched_checks.py` / `patched_audit.py` |
 | 污染审计 | `round/tools/audit_contamination4.py` |
 | 回归测试 | `round/tools/test_rework_regressions.py`（13 项） |
