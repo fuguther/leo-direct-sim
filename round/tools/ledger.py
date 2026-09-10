@@ -425,6 +425,14 @@ def cmd_review_register(args):
     if dup and not completing:
         print("REJECTED: review_id 已存在且绑定完整 %s（意见不可覆盖，登记新 id）" % args.review_id, file=sys.stderr)
         return 2
+    # dryrun-2026-09-10 修复：空/畸形 ledger_content_hash 一律拒绝。
+    # 缺陷复现：不传 --verify-ledger 时，--content-hash "" 会被静默接受，
+    # 该意见此后永远不会被 invalidate 命中（invalidate 比对真实 hash），
+    # 等于一条永不过期的陈旧意见——判断可信度漏洞。
+    if not re.fullmatch(r"h?[0-9a-f]{8,}", (args.content_hash or "").strip()):
+        print("REJECTED: ledger_content_hash 缺失或格式非法（须为台账 content_hash，如 h0cd8adaad737）",
+              file=sys.stderr)
+        return 2
     if args.verify_ledger:
         lrows, lbad = _read_ledger(args.verify_ledger)
         if lbad:

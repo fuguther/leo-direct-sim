@@ -303,6 +303,43 @@ def t12(tmp):
     assert out2["verdict"] == "incomplete" and out2["overall_status"] == "degraded"
 
 
+# T13 审查绑定完整性：空/畸形 ledger_content_hash 必须被拒（dryrun-2026-09-10 发现的缺陷）
+# 缺陷：不传 --verify-ledger 时 --content-hash "" 被静默接受 → 该意见永不被 invalidate 命中，
+#       等于一条永不过期的陈旧意见（判断可信度漏洞）。
+@case(13, "审查登记拒绝空/畸形 content_hash（防永不过期的陈旧意见）")
+def t13(tmp):
+    led = os.path.join(tmp, "l.csv")
+    rev = os.path.join(tmp, "r.csv")
+    cards = os.path.join(tmp, "c.json")
+    with open(cards, "w", encoding="utf-8") as f:
+        json.dump([CARD_A], f, ensure_ascii=False)
+    run_cli("add", "--cards", cards, "--ledger", led)
+    # 取真实 content_hash
+    rows = list(csv.DictReader(open(led, encoding="utf-8")))
+    ch = rows[-1]["content_hash"]
+    cid = rows[-1]["cand_id"]
+    csha = hashlib.sha256(open(cards, "rb").read()).hexdigest()
+    # 绑定文件需存在
+    cardfile = os.path.join(tmp, "card.md")
+    open(cardfile, "w").write("x")
+    for bad in ["", "   ", "h", "zzzz", "0cd8adaad737zz"]:
+        r = run_cli("review-register", "--review-id", "R-bad-" + (bad.strip() or "empty"),
+                    "--cand-id", cid, "--content-hash", bad, "--role", "history",
+                    "--file", "x.md", "--reviews", rev,
+                    "--candidate-file", cardfile, expect=2)
+        assert "REJECTED" in r.stderr, f"空/畸形 hash 未被拒绝: {bad!r} stderr={r.stderr[:200]}"
+    # 正确 hash 仍可通过
+    r = run_cli("review-register", "--review-id", "R-ok", "--cand-id", cid,
+                "--content-hash", ch, "--role", "history", "--file", "x.md",
+                "--reviews", rev, "--candidate-file", cardfile)
+    assert "REGISTERED" in r.stdout
+    # 且该意见可被承重变更正确失效
+    run_cli("revise", "--cand-id", cid, "--set", json.dumps({"conditions": "变更后的承重条件"}),
+            "--reason", "t13", "--ledger", led, "--reviews", rev)
+    rrows = list(csv.DictReader(open(rev, encoding="utf-8")))
+    assert rrows[-1]["status"] == "needs_review", f"承重变更未失效该意见: {rrows[-1]['status']}"
+
+
 def main():
     failures = []
     for n, name, fn in RESULTS:
