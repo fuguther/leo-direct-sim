@@ -101,3 +101,27 @@ REVIEW-REQUEST-FOR-CODEX.md 写入 worktree 根：自包含审查请求（背景
 ### 10.4 收口状态
 - 备份：commit→push→Draft PR（本节完成于收口提交）；未合并，待 Codex 架构返工验收。
 - 明确不做：embedding/S2 key/插件修复/检查器扩容/仪表盘/架构重设计。
+## 11. R3 工作包（2026-09-10 深夜：历史索引+碰撞审查接入+四项修复+判别验收）
+
+### 11.1 历史材料盘点与索引
+- 全量盘点发现 4 条谱系 38 题：A=ONE-PAGE 开题一页纸线（1 题，冻结推荐后被删，38d0b5e，理由=锚定流程违规非证伪）；B=三透镜阶段线（14 候选→9 族→阶段2 演化淘汰族1/6/7+合并→3 族→2.5 压测→A5 四卡，分支 coldstart-clean/coldstart-deepdive 可 git show 检索）；C=冷启动备忘录 4 题（未裁决，自declared ANCHORED）；D=run-test 台账 12 卡（open）。
+- 缺失如实登记：literature-index.csv（旧44条）、RECONCILED-LIBRARY.csv、archived-topic-stages-20260910、历史 run hypotheses/drafts、旧仓库路径（已不存在）。
+- 产物：round/history/HISTORY-INDEX.md（指针式索引：每题五元组/处置/未通过原因+依据/原因货币性/重开条件；§5 货币性总表；§6 处置规则）。
+
+### 11.2 历史碰撞审查接入
+- 流水线位置写入 EFFECTIVE-RULES-R2 §8：独立生成→初筛→**历史碰撞审查**→近邻核查与深化→内容审查→推荐；五类输出；第四类主控核实后停止；第五类弃权不冒充否定；意见绑定版本；深化者只收有限反馈；下一批生成全新上下文。
+- 子代理模板：round/tools/HISTORY-REVIEW-PROMPT.md。
+
+### 11.3 四项修复（复现→修→验）
+1. 审查失效判断：_norm_lb 原来剔除全部符号标点（τ<15s≡τ≤15s 不触发）→改为仅折叠空白；符号/小数点改变即触发。回归：T8 扩展（符号触发+纯空白不触发）PASS。
+2. 身份与相似度分离：cand_id 原按合并键派生（同键不同内容被并成同题新版本）→改为首见内容派生+similar_to 线索字段+显式 merge 子命令（reason 留痕）；创建/显式修订/重试幂等分离。回归：T2 重写+merge 路径 PASS。
+3. CSV 恢复保护：doctor 原按物理行截断（会毁多行字段合法记录）→停用破坏性修复；--backup 备份原件、--repair-out 产出重建候选文件（原件任何情况不动，采纳由人）。回归：T10 重写（多行字段+损坏尾：原件字节不变、重建件保留多行字段）PASS。
+4. 解析失败误记成功无命中：safe_search 中 _normalize_paper 返回 None 未计入 skipped→全部解析失败输出 ok_empty；改为 None 也计数→全败=exec_error。回归：T12（monkeypatch 真路径）PASS。
+- 全量：test_rework_regressions.py **11/11 PASS**；deps_check 21/21（gen_manifest 重指纹）。
+
+### 11.4 判别验收与流程接力
+- 判别样例 S1-S5（合成卡）：历史审查子代理（全新上下文）判 S1=④/S2=②/S3=③/S4=③(旧理由不适用+来源核验硬要求)/S5=⑤ —— 与设计预期 5/5 一致；模型正确性由主控逐项对照索引与原件核实（含亲证 taste-gate.md）。**如实登记**：样例文件含【预期】行、盲化不完美（审查者自查发现并声明，判定仅基于标题+五元组）。
+- **审查者的独立发现**：索引 v1 与原件冲突——A5 四卡实有品味门裁决（taste-gate.md：F-I 收窄存活/F-II、F-III 死亡打捞/N1 通过附交割条件），v1 误记"未裁决"。主控亲证后修订索引至 v1.1（§2/§5，留痕）。
+- 单卡流程接力（card-A1，path-A 卡A 切片）：初筛（主控卡片合同检查）→ 历史审查（后台子代理，全新上下文，唯一历史入口=索引，按需 git show 原件）→ 结论 ③（T-C1 最强匹配/D卡10/T-C3/F-I=②/缺失维度⑤）→ 主控处置（继续+四项前置义务，MASTER-DISPOSITION.md）→ 有限反馈 feedback-cardA1.md（仅卡相关 5 条）→ 深化者接力产出 card-A1-revised-draft.md（对账登记/基线升格 B0-B4/检索义务前置/竞争解释 6 项）。
+- 隔离验证：深化者输入仅卡+有限反馈（无历史索引/台账）；其草案自证"历史前置名称唯一出处=反馈文件"并标未核实。台账：A1 入账 c30b20940a3 + R5-A1-history 意见登记绑定 content_hash。
+- 未验证：S2 检索实际重跑（429 受限，义务已登记未执行——流程验证不含）；age-conditioned 先例是否存在（属下一步深化的检索义务）；台账 lexical 键不触发跨 run 匹配（语义匹配=历史审查者职责，已验证其工作）。
