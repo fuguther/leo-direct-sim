@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""返工包第四组离线回归（10 项）。纯离线、无网络、无模型。
+运行: python3 test_rework_regressions.py   → 全过 exit 0，任一失败 exit 1。
+"""
+from __future__ import annotations
+import csv, importlib.util, json, os, subprocess, sys, tempfile
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import patched_checks as pc
+import patched_audit as pa
+import patched_novelty as pn
+import ledger as ld
+
+RESULTS = []
+
+def case(n, name):
+    def deco(fn):
+        RESULTS.append((n, name, fn))
+        return fn
+    return deco
+
+def run_cli(*argv, expect=0):
+    r = subprocess.run([sys.executable, os.path.join(HERE, "ledger.py"), *argv],
+                       capture_output=True, text=True, timeout=60)
+    assert r.returncode == expect, f"exit {r.returncode} != {expect}: {r.stderr[-400:]}"
+    return r
+
+CARD_A = {"title": "卡A 观测加入链路剩余寿命", "conditions": "星历可预报拓扑", "difficulty": "断链事后才可见",
+          "cause_hypothesis": "寿命不在观测向量", "possible_change": "寿命特征+掩码", "strongest_alternative": "时间展开图规划",
+          "decision_shift": "动作屏蔽", "next_cheap_check": "丢弃原因三分解", "source": "test"}
+CARD_B = {"title": "卡B 陈旧状态驱动振荡", "conditions": "周期状态更新", "difficulty": "羊群式过矫正振荡",
+          "cause_hypothesis": "龄期不入观测", "possible_change": "age-conditioned policy", "strongest_alternative": "滞回阈值",
+          "decision_shift": "观测特征", "next_cheap_check": "两队列小算例", "source": "test"}
+
+# T1 入账与重复识别
+@case(1, "实际 CLI 完成新增与重复识别")
+def t1(tmp):
+    L = os.path.join(tmp, "l.csv")
+    cards = os.path.join(tmp, "c1.json")
+    json.dump([CARD_A, CARD_B], open(cards, "w", encoding="utf-8"), ensure_ascii=False)
+    run_cli("add", "--cards", cards, "--ledger", L)
+    rows, _ = ld._read_ledger(L)
+    assert len(rows) == 2 and all(r["op"] == "add" for r in rows)
+    r = run_cli("add", "--cards", cards, "--ledger", L)
+    assert "added=0 skipped=2" in r.stdout, r.stdout
+    rows2, _ = ld._read_ledger(L)
+    assert len(rows2) == 2  # 幂等：无新行
+
+# T2 同批重复 / 重复执行 / 同证据重试 → 唯一当前候选
+@case(2, "同批重复/重复执行/同证据重试不产生多个当前候选")
+def t2(tmp):
+    L = os.path.join(tmp, "l.csv")
+    k1 = dict(CARD_A); k2 = dict(CARD_A); k2["title"] = "卡A 变体（同键不同标题）"
+    cards = os.path.join(tmp, "c2.json")
+    json.dump([k1, k2], open(cards, "w", encoding="utf-8"), ensure_ascii=False)
+    run_cli("add", "--cards", cards, "--ledger", L)
+    run_cli("add", "--cards", cards, "--ledger", L)  # 重复执行
+    rows, _ = ld._read_ledger(L)
+    proj = ld.current_projection(rows)
+    cids = [r["cand_id"] for r in rows]
+    assert len(set(cids)) == 1, f"同键出现多个 cand_id: {cids}"
+    assert len(proj) == 1, "当前投影必须唯一"
+    cur = list(proj.values())[0]
+    assert cur["version"] == "2" and cur["note"].startswith("同键同候选"), cur
+
+# T3 修订 → 唯一当前版本，旧记录保留
+@case(3, "修订后唯一当前版本正确，旧记录保留")
+def t3(tmp):
+    L = os.path.join(tmp, "l.csv")
+    cards = os.path.join(tmp, "c3.json")
+    json.dump([CARD_A], open(cards, "w", encoding="utf-8"), ensure_ascii=False)
+    run_cli("add", "--cards", cards, "--ledger", L)
+    _rows, _ = ld._read_ledger(L)
+    cid = _rows[0]["cand_id"]
+    run_cli("revise", "--cand-id", cid, "--set", json.dumps({"difficulty": "断链只在状态里事后编码为拥塞=∞"}, ensure_ascii=False),
+            "--reason", "承重字段精化", "--ledger", L)
+    rows, _ = ld._read_ledger(L)
+    assert len(rows) == 2
+    proj = ld.current_projection(rows)
+    assert len(proj[cid : ] if False else proj) == 1
+    cur = proj[cid]
+    assert cur["version"] == "2" and cur["op"] == "revise" and cur["supersedes_row"] == "1"
+    assert cur["difficulty"].startswith("断链只在状态")
+    assert rows[0]["difficulty"] == CARD_A["difficulty"]  # 旧记录保留
+    run_cli("status", "--cand-id", cid, "--status", "needs_revision", "--reason", "流程验证：状态变更", "--ledger", L)
+    rows3, _ = ld._read_ledger(L)
+    proj3 = ld.current_projection(rows3)
+    assert proj3[cid]["status"] == "needs_revision" and proj3[cid]["op"] == "status_change"
+    assert len(rows3) == 3  # 只追加，不覆盖
+    r = run_cli("show", "--ledger", L, "--all")
+    assert "rows=3" in r.stdout
+
+# T4 检索四态：失败/超时/解析/成功无命中 均不产生新颖性结论
+@case(4, "检索 429/超时/解析错误/成功无命中分别报告，均不自动产生新颖性")
+def t4(tmp):
+    card = {"title": "ephemeris aware exploration gating for packet routing", "conditions": "c", "difficulty": "d", "cause_hypothesis": "h", "possible_change": "p"}
+    # 服务失败（429 → keyword_query None）
+    def svc(q): return {"status": pn.ST_SERVICE, "papers": [], "error": "HTTP 429", "channel": "s2"}
+    out = pn.novelty_assess(card, search_fn=svc)
+    assert out["verdict"] == "incomplete" and out["overall_status"] == "degraded"
+    assert len(out["queries_not_executed"]) >= 1  # 断点：后续查询未执行
+    # 执行异常
+    def boom(q): raise TimeoutError("simulated timeout")
+    out2 = pn.novelty_assess(card, search_fn=boom)
+    assert out2["verdict"] == "incomplete"
+    # 成功无命中
+    def empty(q): return {"status": pn.ST_OK_EMPTY, "papers": [], "error": None, "channel": "s2"}
+    out3 = pn.novelty_assess(card, search_fn=empty)
+    assert out3["verdict"] == "no_hit_in_scope" and "限定" in out3["note"]
+    # 成功有命中（低相似）→ 线索
+    def hits(q): return {"status": pn.ST_OK_HITS, "papers": [{"paperId": "x", "title": "totally unrelated paper about cookies", "year": 2020}], "error": None, "channel": "s2"}
+    out4 = pn.novelty_assess(card, search_fn=hits)
+    assert out4["verdict"] in ("leads_only", "no_hit_in_scope")
+    for o in (out, out2, out3, out4):
+        assert o["verdict"] != "novel" and "novel" not in o["verdict"]
+
+# T5 相似标题不同条件 ≠ 同一贡献
+@case(5, "相似标题但不同条件不能被自动判为同一贡献")
+def t5(tmp):
+    t1 = "DQN routing for LEO satellite networks under congestion"
+    t2 = "DQN routing for LEO satellite networks under handover"
+    card = {"title": t1, "conditions": "拥塞工程化合同", "difficulty": "d", "cause_hypothesis": "h", "possible_change": "p"}
+    j, ev = pn.heuristic_lead_judge(card, {"title": t2})
+    assert j == "high_similarity_lead", j  # 相似 → 高相似**线索**
+    assert "same" not in j
+    def hits(q): return {"status": pn.ST_OK_HITS, "papers": [{"paperId": "p1", "title": t2, "year": 2025, "abstract": "handover focused"}], "error": None, "channel": "s2"}
+    out = pn.novelty_assess(card, search_fn=hits, judge_fn=pn.heuristic_lead_judge)
+    assert out["verdict"] == "leads_only", out["verdict"]  # 不自动 collision / 不自动 novel
+    assert "已覆盖" in out["note"]  # 线索注记：相关≠已覆盖
+    # 文档化旧行为（已修复）：原件对 title-only 卡会输出 collision（repro-group2.txt §B）
+
+# T6 检查器异常 + expected=BLOCK → 审计仍失败
+@case(6, "检查器异常且 expected BLOCK 时，审计失败")
+def t6(tmp):
+    d = os.path.join(tmp, "cases"); os.makedirs(d)
+    json.dump({"id": "x1", "check": "queue_divergence", "params": {"mu": "nan", "rhos": {"a": 0.5}, "claimed_W": {"a": 1.0}},
+               "expected_verdict": "BLOCK"}, open(os.path.join(d, "a.json"), "w"))
+    rep = pa.run_audit(d)
+    assert rep["all_ok"] is False and (rep["exec_errors"] + rep["param_errors"]) == 1, rep
+    json.dump({"id": "x2", "check": "no_such_check", "params": {}, "expected_verdict": "BLOCK"},
+              open(os.path.join(d, "a.json"), "w"))
+    rep2 = pa.run_audit(d)
+    assert rep2["unknown_checkers"] == 1 and rep2["all_ok"] is False
+
+# T7 缺参数/空网格/占位文本不能被描述为论证成立
+@case(7, "缺参数、空网格和占位文本 → 输入不足/不适用，不得 PASS")
+def t7(tmp):
+    assert pc.check_queue_divergence({"mu": 1.0, "rhos": {}, "claimed_W": {}})["verdict"] == pc.VERDICT_INSUF
+    assert pc.check_queue_divergence({"mu": 1.0, "rhos": {"a": 0.5}, "claimed_W": {}})["verdict"] == pc.VERDICT_INSUF
+    assert pc.check_correlation_causality({"causal_claim": True, "intervention_design": "TODO"})["verdict"] == pc.VERDICT_INSUF
+    assert pc.check_correlation_causality({"causal_claim": False})["verdict"] == pc.VERDICT_NA
+    assert pc.check_fallback_lossless({"claims_lossless": True, "significance_evidence": "TODO", "dropped_experience_analysis": "待补"})["verdict"] == pc.VERDICT_INSUF
+    assert pc.check_fallback_lossless({"claims_lossless": False})["verdict"] == pc.VERDICT_NA
+    assert pc.check_grid_completeness({"required_arms": [], "provided_arms": []})["verdict"] == pc.VERDICT_INSUF
+    assert pc.check_grid_completeness({"required_arms": ["SP"], "provided_arms": ["TODO"]})["verdict"] == pc.VERDICT_INSUF
+    assert pc.check_bounded_negative({})["verdict"] == pc.VERDICT_NA
+    # 缺必需输入经 run_check → INPUT_INSUFFICIENT（非异常外泄）
+    out = pc.run_check("queue_divergence", {})
+    assert out["verdict"] == pc.VERDICT_INSUF
+
+# T8 承重修订 → 相关审查失效；标点级修订不触发
+@case(8, "候选承重修订后相关审查失效；标点修改不触发")
+def t8(tmp):
+    L = os.path.join(tmp, "l.csv"); RV = os.path.join(tmp, "rv.csv")
+    cards = os.path.join(tmp, "c8.json")
+    json.dump([CARD_A], open(cards, "w", encoding="utf-8"), ensure_ascii=False)
+    run_cli("add", "--cards", cards, "--ledger", L)
+    rows, _ = ld._read_ledger(L)
+    cid, ch = rows[0]["cand_id"], rows[0]["content_hash"]
+    run_cli("review-register", "--review-id", "R1", "--cand-id", cid, "--content-hash", ch,
+            "--role", "evidence", "--file", "op.md", "--reviews", RV)
+    run_cli("revise", "--cand-id", cid, "--set", json.dumps({"cause_hypothesis": "寿命不在观测向量（修订表述）"}, ensure_ascii=False),
+            "--reason", "机制表述承重修订", "--ledger", L, "--reviews", RV)
+    rrows, _ = ld._read_ledger(RV)
+    assert rrows[0]["status"] == "needs_review", rrows
+    # 标点级：加句号
+    run_cli("review-register", "--review-id", "R2", "--cand-id", cid,
+            "--content-hash", ld._read_ledger(L)[0][1]["content_hash"],
+            "--role", "builder", "--file", "op2.md", "--reviews", RV)
+    run_cli("revise", "--cand-id", cid, "--set", json.dumps({"title": CARD_A["title"] + "。"}, ensure_ascii=False),
+            "--reason", "仅标点", "--ledger", L, "--reviews", RV)
+    rrows, _ = ld._read_ledger(RV)
+    st = {r["review_id"]: r["status"] for r in rrows}
+    assert st["R1"] == "needs_review" and st["R2"] == "active", st
+
+# T9 依赖指纹漂移被明确识别
+@case(9, "依赖缺失或指纹变化被明确识别")
+def t9(tmp):
+    spec = importlib.util.spec_from_file_location("deps_check", os.path.join(HERE, "deps_check.py"))
+    dc = importlib.util.module_from_spec(spec); sys.modules["deps_check"] = dc; spec.loader.exec_module(dc)
+    manifest = os.path.join(HERE, "..", "deps", "DEPENDENCIES.md")
+    assert dc.main(["--manifest", manifest]) == 0  # 真实清单应全对
+    bad = os.path.join(tmp, "bad.md")
+    with open(bad, "w", encoding="utf-8") as f:
+        f.write("| t | " + os.path.join(HERE, "ledger.py") + " | x | " + "0" * 64 + " | y |\n")
+    assert dc.main(["--manifest", bad]) == 1  # 指纹不符 → drift
+    with open(bad, "w", encoding="utf-8") as f:
+        f.write("| t | /nonexistent/file.py | x | " + "0" * 64 + " | y |\n")
+    assert dc.main(["--manifest", bad]) == 1  # 文件缺失 → missing
+
+# T10 中断恢复：残尾行识别与修复，不重复入账、不覆盖证据
+@case(10, "中断后恢复不会重复入账或覆盖已有证据")
+def t10(tmp):
+    L = os.path.join(tmp, "l.csv")
+    cards = os.path.join(tmp, "c10.json")
+    json.dump([CARD_A], open(cards, "w", encoding="utf-8"), ensure_ascii=False)
+    run_cli("add", "--cards", cards, "--ledger", L)
+    with open(L, "a", encoding="utf-8") as f:
+        f.write('25,cabc12345,1,add,awaiting_evidence,"残尾行被中')  # 模拟中断的半行
+    r = run_cli("doctor", "--ledger", L, expect=1)
+    assert "PROBLEM" in r.stdout or "BAD_LINE" in r.stdout
+    run_cli("doctor", "--ledger", L, "--repair")
+    rows, bad = ld._read_ledger(L)
+    assert not bad and len(rows) == 1
+    run_cli("add", "--cards", cards, "--ledger", L)  # 修复后重试 → 幂等跳过
+    rows2, _ = ld._read_ledger(L)
+    assert len(rows2) == 1, "恢复后重试不得重复入账"
+
+
+def main():
+    failures = []
+    for n, name, fn in RESULTS:
+        with tempfile.TemporaryDirectory() as tmp:
+            try:
+                fn(tmp)
+                print(f"PASS T{n} {name}")
+            except AssertionError as e:
+                failures.append((n, name, str(e)))
+                print(f"FAIL T{n} {name}: {e}")
+            except Exception as e:
+                failures.append((n, name, repr(e)))
+                print(f"FAIL T{n} {name}: {e!r}")
+    print(f"\nSUMMARY {len(RESULTS) - len(failures)}/{len(RESULTS)} passed")
+    return 1 if failures else 0
+
+if __name__ == "__main__":
+    sys.exit(main())

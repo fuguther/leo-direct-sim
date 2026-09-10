@@ -1,0 +1,44 @@
+
+======== 0 dependency fingerprints ========
+retrieve.py: sha256:d31ab5c282acd6f1
+dedup.py: sha256:8a7b44dacfe9c307
+novelty.py: sha256:16b6ac5e356e6827
+checks.py: sha256:9da8c6282fbcf98a
+audit.py: sha256:926d5f2586067b07
+pool.py: sha256:15989feaeedc497d
+elo.py: sha256:16558a8b527d0ba7
+RESEARCH-ENTRIES.md: sha256:cee3aca9986d8ce7
+KNOWLEDGE-MAP.md: sha256:42453add8e26b47e
+notes/raw count: 41
+
+======== A retrieval-failure-to-novel ========
+ok-empty -> verdict: novel  (期望: 不得输出 novel 认证)
+exec-error -> UNCAUGHT exception escapes novelty_check: RuntimeError('S2 transport error after retries')
+tests codifying empty/none -> novel:
+  test_vendor_adapters.py:129: assert novelty_mod.parse_judgment("Both target LEO routing with MARL. Yes") == "same"
+  test_vendor_adapters.py:130: assert novelty_mod.parse_judgment("Different problem. No.") == "different"   # 容忍尾标点
+  test_vendor_adapters.py:131: assert novelty_mod.parse_judgment("cannot decide") == "unclear"
+  test_vendor_adapters.py:132: assert novelty_mod.parse_judgment("") == "unclear"
+  test_vendor_adapters.py:133: assert novelty_mod.parse_judgment("yes") == "same"
+  test_vendor_adapters.py:141: assert novelty_mod._normalize_paper({"title": "no id"}) is None
+  test_vendor_adapters.py:142: assert novelty_mod._normalize_paper({"paperId": "p"}) is None
+  test_vendor_adapters.py:143: assert novelty_mod._normalize_paper(None) is None
+  test_vendor_adapters.py:156: assert novelty_mod.extract_queries("") == ["LEO satellite routing reinforcement learning"]
+  test_vendor_adapters.py:194: assert out["verdict"] == "novel" and len(out["nearest"]) == 1
+
+======== B title-dice-to-collision ========
+dice = 0.8632  (SAME_TITLE_DICE=0.85)
+heuristic judgment: same  evidence: {'method': 'title-bigram-dice', 'score': 0.8632}
+novelty_check verdict: unclear  (相关词替换被自动判 collision)
+
+======== C checker-exception-counted-as-correct ========
+{"case": "repro-exception-expected-block", "expected": "BLOCK", "verdict": "BLOCK", "ok": true, "kind": "正确", "reason": "checker error: ValueError(\"could not convert string to float: 'not-a-number'\")"}
+false_release=0 false_kill=0 all_ok=True  (异常被计为正确)
+unknown-checker case: kind=正确 all_ok=True
+
+======== D placeholder-pass ========
+empty queue values -> PASS | 队列时延数值复核一致
+intervention_design='TODO' -> PASS | 因果断言有判别设计支撑
+lossless fields='TODO/待补' -> PASS | 损失论证完备
+empty grid -> PASS | 对照网格完备
+rhos without claimed_W -> PASS | 队列时延数值复核一致
