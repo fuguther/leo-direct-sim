@@ -28,6 +28,13 @@
 5. 本地 PDF：`LITERATURE/papers/`、`tao25.pdf`（身份=arXiv 2512.03211，内容为 2001 Olpomdp 经典）
 6. Undermind search_papers（定向补查 ≤3 次；禁 launch_deep_search）、arXiv API、web 搜索
 
+**语料可得性声明（2026-09-10 实测，详见 `round/knowledge/CORPUS-COVERAGE.md`）**：
+- 题录 52 篇 / 笔记 41 篇 / 本地 PDF 仅 14 篇 —— "看得见"与"读得到"分层，无笔记又无 PDF 的论文只能看到一行元数据；
+- **`SOURCES.csv` 的 `local_path` 字段已全部悬空**（指向不存在的 `related-work-notes/papers-txt/`），**禁止依题录取本地文件**；且 `related-work-notes/` 属黑名单，依其取值本身即违规；
+- 取原文一律走 `LITERATURE/papers/*.pdf` 或联网（arXiv/出版社）；
+- **"仅题录"论文（当前 11 篇）不得作为 G1 承重证据**；如需引用其存在性，须标注"仅题录，未核内容"；
+- 关键对手若落在仅题录集合内，深化者必须声明"未能全文核读"，由主控裁决该卡去留。
+
 **黑名单（生成阶段禁止读取）**：`out/**`、其他代理 worktree 产物、`LITERATURE/notes/raw/*.md`（v3 起移出，倾向句未清除）、`LITERATURE/notes/COLDSTART-20260903.md`、`00-READING-QUEUE.md`、`related-work-notes/`、**任何候选台账（旧卡与本线卡）**、**原版 KNOWLEDGE-MAP.md**、`ANALYSIS/**`、`NOTES.md`、`PAPER/**`、历史 run 报告。
 
 **留给生成后比较阶段**：旧候选关系、旧排序、旧"未找到"判断——由主控在合并对账时使用并判定旧判断是否仍然成立、是否适用。
