@@ -67,13 +67,24 @@ def cmd_init(a) -> int:
     if not orch:
         print("REFUSED: 无法确定主控 session_id", file=sys.stderr)
         return 2
-    d, _ = load()
+    d, st = load()
+    prev_orch = d.get("orchestrator_session") or orchestrator_id()
+    # 防锁定保护（实测事故）：清单存在且主控身份将变化时，必须显式 --force。
+    # 背景：曾用临时清单覆盖真实清单，导致运行中的主控失去权限且无自助恢复路径。
+    if st == "ok" and prev_orch and prev_orch != orch and not a.force:
+        print("REFUSED: 当前清单主控为 %s，与本次 %s 不同。" % (prev_orch, orch), file=sys.stderr)
+        print("  直接覆盖会让运行中的主控失去权限且无法自助恢复。", file=sys.stderr)
+        print("  确认交接请加 --force；仅恢复损坏清单请先删除 permissions.json。", file=sys.stderr)
+        return 2
     old = d.get("sessions") or {}
     if old and not a.keep:
         print("CLEARED %d 个旧会话绑定（新 run 不继承旧权限）" % len(old))
+    hist = [h for h in (d.get("orchestrator_history") or []) if h != orch]
+    hist = ([orch] + hist)[:3]
     save({
         "run_id": a.run,
         "orchestrator_session": orch,
+        "orchestrator_history": hist,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "sessions": old if a.keep else {},
         "tickets": (d.get("tickets") or []) if a.keep else [],
@@ -206,6 +217,7 @@ def main() -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     i = sub.add_parser("init"); i.add_argument("--run", required=True)
     i.add_argument("--orchestrator", default=""); i.add_argument("--keep", action="store_true")
+    i.add_argument("--force", action="store_true")
     r = sub.add_parser("reserve"); r.add_argument("--role", required=True); r.add_argument("--count", type=int, default=1)
     r.add_argument("--extra-read", action="append"); r.add_argument("--extra-write", action="append"); r.add_argument("--note", default="")
     b = sub.add_parser("bind"); b.add_argument("--session", required=True); b.add_argument("--role", required=True)
