@@ -51,3 +51,258 @@ L221 也承认："the optimal routing path output by NSR only outputs the estima
 
 **10. 一句话评价**
 把"时间连续的空间离散化（netgrid）"这一建模技巧引入 LEO 路由，用**降低搜索空间规模**（$N \to$ 非空格数）换取可接受的精度损失；属于"拓扑描述模型创新 + 经典最短路"的路线，与全库的 DRL 主流正交，且它自己承认的静态拓扑假设正是高负载/长在网时间下最脆弱的地方。
+
+## BLFJ6CLV — Analysis of Age of Information in Non-terrestrial Networks
+
+**1. 一句话**
+把"地面上一个源节点 ↔ LEO 星座"之间的连接过程抽象成一个 on-off 服务过程，用随机几何推出**时间平均 AoI 的闭式解**，然后看"状态更新速率 μ"和"星座密度 λ"各把 AoI 压到多少。
+
+**2. 问题设定**
+源节点与目的节点都在**地面网覆盖之外**，必须靠 NTN 中继状态更新（L40）。卫星高速运动 → 连接/断开频繁切换 → AoI 被这些切换推高（L21）。既有工作用随机几何算过覆盖概率（BPP on sphere，L23），但**"NTN 里的 AoI"没人算过**（L25）。关键麻烦：更新在**off 期间到达就直接丢掉**（L25 逐字："updates arriving during the off-service period are dropped"）。最近的工作 [23] 分析过 on-off 下的 AoI，但**只限 on/off 都服从指数分布**，而卫星的服务过程不是（L25）——这是本文要补的具体缺口。
+
+**3. 方法骨架**
+**不是 RL，是纯解析（随机几何 + 更新报酬定理）**。
+- 网络模型（第 II 节）：卫星位置在半径 $R_\oplus+h$ 的球面上服从**齐次 PPP**，强度 λ（L40）；地面源节点用 generate-at-will，两个更新之间的间隔 i.i.d. 指数分布、速率 μ（L42）；连接判据是 SNR > 阈值 θ，由此得到最大可解码距离 $r_{max}=(P_{tx}/\sigma^2\theta)^{1/\alpha}$（L82），并在球面上切出一个"穹顶"区域；源节点只连接收功率最大的那一颗（L44）。
+- **关键近似（L96 逐字）**：把穹顶内的所有卫星视为**空间静止**（"similar to stars in the sky that appear static for a short period of time"），而让**源节点以速度 v 做圆周运动**；每转完一圈，卫星位置按同一 PPP **重新生成**（独立再生）。这是全文的核心简化。
+- **Theorem 1**（L100–110）：off 期间服从指数分布，速率 $\lambda_{os}=2\omega\lambda\sin(\varphi_e)(R_\oplus+h)^2$（式 6）；on 期间 W 的 PDF 由式 7 给出，**支撑集是 $[0, 2\varphi_e/\omega]$——有界区间**（这正是相对 [23] 的推广）。
+- **Lemma 1/2**（L138–196）：算两个条件概率 $P_{f|f}=\frac{1-a}{1-ab}$（式 11，$a=\lambda_{os}/(\mu+\lambda_{os})$，$b=\int e^{-\mu s}f_W(s)ds$）与 $P_{o|o}$（式 12），再算 $E[Y_k]$、$E[Y_k^2]$（式 18、19，$\gamma=1/(1-P_{f|f})$）。
+- **Theorem 2**（式 27，L245）：$\bar\Delta = \frac{\gamma^2(1-P_{o|o})}{\mu+\mu\gamma(1-P_{o|o})} + \frac1\mu + D$。用的框架是式 10 的 $\bar\Delta=\frac{E[Y_k^2]}{2E[Y_k]}+D$（L133），即经典 AoI 更新报酬形式。
+
+**4. 它声称的效果**
+- Fig 4（L251、L259）：时间平均 AoI 随**状态更新速率 μ** 上升而下降，且**下降速度逐渐变慢**；星座密度越大，AoI 越接近下界 $1/\mu$。原因是密度↑ → off 期间变短、on 占比变大（L259）。
+- Fig 5（L264）：节点天顶角 $\varphi_s$ 变大 → on 期间变长 → AoI 下降。
+- **精度验证**：解析曲线与仿真"close match"（L259）。
+- 基线：**没有算法基线**，唯一的对照是自身的解析式 vs 数值仿真。
+
+**5. 实验条件**
+$h=800$ km，$\omega=\pi/3600$ rad/s，$\varphi_s=1°$，$D=1$ s（L255）。卫星密度扫描 $\lambda = 2\times10^{-5}$ 到 $5\times10^{-4}$ km⁻²（对应 12 924 与 323 100 颗星，L251），Fig 4 另有"通过穹顶的卫星数 225 到 5 638"这一口径（L259）、Fig 5 用 $5\times10^{-6}$ 到 $1\times10^{-4}$ km⁻²（3 231 与 64 620 颗，L264）。仿真：源节点绕行，每圈重生卫星位置，**每次仿真跑 $10^6$ 个到达**取 AoI 统计均值（L257）。
+**训练/评估**：无训练；解析与仿真在同一套参数下对照，**没有跨场景泛化检验**。
+
+**6. 自述局限（逐字）**
+本文**没有独立"Limitations"章节**。可引的自述近似/假设：
+- L96："We assume that the velocity difference between the satellites and the source node remains constant." 以及把穹顶内卫星"treat all satellites within the dome region as stationary"。
+- L96："we assume that after completing a full cycle, the positions of the satellites are regenerated independently, following a homogeneous PPP with a density of λ."
+- L40：卫星位置用**齐次 PPP** 近似真实星座（Walker 星座并非 PPP）。
+另外它在 L25 明确把 [23] 的局限当成自己的出发点（"was limited to the case of on and off periods being exponentially distributed"）。
+**未见**作者对自己"PPP 近似真实 Walker 星座""单源单目的""恒定传播时延 D"这些假设做过误差量化。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **只算了单调链路、单源单目的**（L40）：**没有路由、没有多跳、没有排队**——AoI 里唯一的时延是常数 $D$（式 27 最后一项）。把 $D$ 换成"随负载变化的排队时延"是这个式子最自然的下一步。
+2. **没有把 AoI 做成优化问题**：μ 和 λ 都是外部给定，论文只是"算出来"，从未问"给定功率/密度预算，μ 取多少使 AoI 最小"。
+3. **off 期间更新直接丢弃**（L25）——没有缓存、没有重传、没有"等下一个窗口"的策略；而 Fig 4 已经显示 off 是 AoI 的主要贡献项（$\gamma$ 项），所以"如何利用 off 期间"是作者自己数据指出的空位。
+4. **式 25 有一个明显的印刷错误**：$E[Y_k^{2,f}] = \frac{2}{\lambda^2}\frac{P_{f|f}^2-3P_{f|f}+3}{(1-P_{f|f})^2}$（L231），分母是 $\lambda^2$ 而 $\lambda$ 在全文是**卫星密度**，此处按上下文应为 $\mu^2$（对照式 19 与式 23）。这个符号冲突读者需自行纠正。
+5. 只给时间平均 AoI，**没有峰值 AoI（PAoI）**，也没有 AoI 的分布——L55 的 Fig 2 明明画了轨迹。
+
+**8. 和同批其他篇的关系**
+与本批其余 10 篇**基本不在一个世界里**：那 10 篇几乎都是"路由/调度算法 + 仿真"，本篇是**纯解析的性能界**，无算法、无基线、无 RL。它与 BBNQ4EAQ 共享"LEO 拓扑时变"这一动机，但处理方式相反（BBNQ4EAQ 用几何离散化建模拓扑，本文用 PPP + 几何概率建模连接性）。它的参考文献里没有本批任何一篇；本批也没有一篇引用它（它引的是 AoI 经典 [14][15][17]、卫星随机几何 [19][21][22]、以及 on-off AoI [23]，L302–326）。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**这是本批里与"到达率"关系最直接的一篇，但方向不同。** 它把**到达率 μ 当作自变量**、把 AoI 当作因变量，给出闭式曲线（Fig 4，L259）：μ↑ → AoI↓，且**收益递减**（"the rate of the time-average AoI descent gradually decreases"），下界是 $1/\mu$。同时它把到达率与**连接可用性**耦合：更新能不能被接收，取决于到达时刻落在 on 还是 off，于是有了式 11/12 那两个条件概率——**这是"到达时刻 × 间歇可用性"的一个可复用形式化**。
+但它**没有时延这一维**：$D$ 是常数（L255 取 1 s），**没有排队、没有拥塞、没有负载对时延的反作用**。它给出的是"负载（更新速率）→ 信息新鲜度"的解析关系，而不是"负载 → 排队时延"的关系。若要把本批多数论文的"负载变化"问题接上 AoI，本式是现成的输入，但需要把常数 $D$ 换成排队模型。
+
+**10. 一句话评价**
+把 AoI 这一度量**首次**搬进 NTN，并把 on-off 服务过程的解析从"双指数"推广到"一指数 + 一有界支撑"（式 7），方法上干净、结论是"到达率越高越新鲜但边际递减、密度只能把 AoI 压向下界 $1/\mu$"；代价是**极度简化**——PPP 代星座、静止卫星代运动、常数时延代排队，因此它更像一个**参照下界**，而不是可部署的路由/调度结论。
+
+## BV4XI6CU — Load Balancing for 5G Integrated Satellite-Terrestrial Networks
+
+**1. 一句话**
+定义了一个跨 RAT 通用的负载指标 RRUR（占用带宽/总带宽），用它做"先地面小区间迁移、还超载就把**容忍时延的业务流**甩给卫星"的两级负载均衡，并在迁移前先估算"搬到目标小区后目标会不会也被压垮"以防乒乓。
+
+**2. 问题设定**
+5G 多 RAT 网络里地面小区 + 卫星小区共存（L44）。UE 移动导致小区间负载不均，超载小区的 UE QoS 下降（L23、L124）。作者指出的两个具体障碍：(a) 既有负载均衡算法**只考虑单一 RAT**（地面↔地面），没考虑 NTN 共存（L27）；(b) 多 RAT 下**各 RAT 的资源分配单位不同**——地面用 PRB，而 **5G 的 PRB 总数 $N_{PRB}$ 随子载波间隔动态变化**，因此 LTE 时代的 RBUR **不能直接用于 5G**（L100），卫星侧根本不按 PRB 分配（L102）。所以需要一个共同负载口径。
+
+**3. 方法骨架**
+**不是 RL，是规则式/阈值式算法 + 5G 标准流程（事件 A3/A4、QoS flow、SMF/UPF）**。
+- **负载度量 RRUR**（第 II.D，式 3、4，L107/L115）：地面小区 $\beta_n = \frac{1}{T\omega_n}\sum_{\tau}\gamma_\tau\varsigma_\tau$（分配的 PRB 数 × 每 RB 带宽 / 小区总带宽）；卫星小区 $\beta_S = \frac{1}{T\omega_{sat}}\sum_\tau \Omega_\tau$，其中 $\Omega_\tau$ 按 **Shannon 公式**由 UE 需求速率换算成带宽（L118）。作者的论点是 RRUR 是"带宽占比"，因此**与物理层信道特性无关**（L120 逐字："the physical layer channel of each RAT does not affect the problem formulation"）。
+- **问题形式**（式 5，L129）：$\min\sum_{n\in\mathcal T}|\bar\beta-\beta_n|^2$，约束卫星不过载 $\beta_S\le Thr_{adp}$、每 UE 分到不少于所需 $\rho_i$。目标值 $\bar\beta$ 用**均方估计**推出等于 $E[\beta_n]$（式 6、7，L155–161）——这一段的数学其实只是"最小化平方距离的解是均值"，属常识推导。
+- **自适应阈值**（式 8，L189）：$Thr_{adp}=\max(\bar\beta, thr_{init})$，跟着网络负载浮动；超载判据 $\beta_n > Thr_{adp}$（式 9）。
+- **两级流程**（Algorithm 1，L166–175）：
+  1. **info_gather**（Algorithm 2）：测各地面 RRUR → 算均值 → 定阈值 → 得超载集合 $\mathcal O$。
+  2. **intRAlb**（Algorithm 3，L228–250）：用 **A4 事件**筛出边缘 UE 集合 $E_o$，按 RSRP 升序、**先时延敏感后时延容忍**排列；对每个 UE 逐个尝试候选邻区（A3 事件给出 $\Gamma_{e_i}$），**先估算** $\hat\beta_{\Gamma_k}^{e_1}=\rho_{e_1}\varsigma/\omega_{\Gamma_k}$（式 10），要求**目标迁入后仍不过载**（式 11）**且迁出比迁入更划算**（式 12：$\beta_o-\hat\beta_o^{e_1} > \beta_{\Gamma_k}+\hat\beta_{\Gamma_k}^{e_1}$），满足才迁，迁完就地更新两侧 RRUR（L255）。
+  3. **intERlb**（Algorithm 4，L274–294）：若地面仍超载且 $\beta_S<Thr_{adp}$（式 13），把**时延容忍流**逐个甩给卫星，前提是 $\beta_S+\hat\beta_S^{\varepsilon_1}<Thr_{adp}$（式 14），由 **UPF 直接改用户面**（L302）。
+- **时延敏感的判定标准（关键）**：流的 PDB **大于**卫星传播时延 → 容忍；**小于** → 敏感（L52）。即用"传播时延本身"当分界线。
+- 复杂度：$O(I|\mathcal T|)$（L314）。
+
+**4. 它声称的效果**
+- **负载均衡**（Fig 6，L332–344）：无 MLB 时同一时刻最大/最小 RRUR 差 **0.28**（cell 4 的 0.99 vs cell 1 的 0.71）；只用 intra-RAT MLB 降到 **0.10**；用提出的 multi-RAT MLB 进一步降到 **0.019**，且所有地面小区 RRUR 都降到阈值以下。
+- **标准差**（Fig 8，L352）：multi-RAT 的 RRUR 标准差**接近 0**，小于 intra-RAT。
+- **吞吐与 QoS**（Fig 9，L356）：multi-RAT 的吞吐与"满足 QoS 的 UE 数"都高于 intra-RAT，且**100% 的 UE 拿到所需速率**（结论 L408）。
+- **UE 数变化**（Fig 10，L376）：UE 越多吞吐越高；标准差随 UE 数增加而升，但 multi-RAT 升得**很少**。Fig 11：卫星资源利用率**不到一半**。
+- **带宽变化**（Fig 12、13，L380）：地面带宽 > 30 MHz 后 intra-RAT 的标准差逐渐追上 multi-RAT。
+- **时延容忍流比例扫描**（Fig 14，L400–404）：容忍流占比 0→30%，multi-RAT 性能随之上升；**容忍流占比为 0 时 multi-RAT 退化为 intra-RAT**；超过某个最小占比后性能**饱和为常数**；**高负载时需要更高的容忍流占比**。
+- 基线：adaptive intra-RAT MLB（即文献 [15] 的自适应移动性负载均衡）与 no MLB（L328）。
+
+**5. 实验条件**
+**注意：这里的"卫星"是 GEO 不是 LEO**——卫星高度 **35 780 km**，C 波段 3.7–4.2 GHz 下行，500 MHz 带宽、12 个转发器、每转发器 36 MHz + 4 MHz 保护带（L320、Table 3 L326）。作者的理由是 GEO 相对静止、无需星间切换、无多普勒（L44）。
+地面：**7 个 5G 小站，六边形部署**，发射功率 46 dBm，带宽 20 MHz，路损 $PL=147.4+43.3\log_{10}(d)$（Table 3）。**110 个 UE**，需求速率 5–15 Mbps，随机分布，**一半静止一半随机移动**（L318）。**70% UE 是时延容忍流**，其余时延敏感；容忍流用 15 kHz 子载波间隔，敏感流用 15 或 30 kHz（L320）。初始阈值 75%（Table 3）。
+**训练/评估**：**无任何学习**，规则算法在同一仿真里评估；论文**没有给出仿真器的名称/来源**（L316–320 只描述场景），也没有说重复次数与置信区间。
+
+**6. 自述局限（逐字）**
+本篇**没有 Limitations 章节**。最接近的自述在结论（L408）：
+"**The proposed algorithm depends on the availability of delay-tolerant flows to achieve better performance.**"
+以及 L404 的展开："**the adaptive multi-RAT MLB depends on the availability of delay-tolerant flows for inter-RAT offloading to achieve better performance**"，并明确指出"当网络负载高时，需要**更高**的容忍流占比才能平衡地面小区"。
+另一条自述性说明在 L310：迁到卫星的 UE "will experience a long delay"，作者的处理方式是"反正它们的流是时延容忍的"。
+**未见**作者讨论：GEO 时延具体多大、卫星链路容量与地面用户数的匹配、UE 移动模型、以及"RRUR 与物理层无关"这一强假设的边界。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **全是 GEO + 静止卫星**（L44），而 LEO 的核心难点恰恰是"卫星会走、覆盖会变、RRUR 会随卫星移动剧烈波动"——这篇的所有结论都建立在"卫星永远在那儿、覆盖全网"上（L302 逐字："all UEs are within the coverage area of the satellite"）。换成 LEO 后，"何时该卸载到卫星"立刻变成一个**时变**问题，本文没有工具。
+2. **时延只在"分类"里出现一次**（PDB vs 传播时延，L52），此后**再也不进入优化目标**。式 5 的目标只有 RRUR 方差。可以自然地把"卸载带来的时延增量"写进代价。
+3. **没有排队模型**：式 3/4 的 RRUR 是**时间窗口平均的带宽占用率**，完全是"资源占用"口径，不含等待时延、不含缓冲区。所以"负载均衡做好了，时延就一定好吗"在这篇里没有被验证。
+4. **阈值 $thr_{init}=75\%$ 是固定常数**（Table 3），$Thr_{adp}=\max(\bar\beta, thr_{init})$ 只做了"取较大值"这一层自适应；$\bar\beta$ 的推导（式 6/7）说明它只是样本均值，**没有用任何反馈/控制理论**（例如 PID、拥塞控制的 AIMD）来自适应，而负载均衡本身就是一个典型的闭环控制问题。
+5. **乒乓规避靠式 11/12 两个静态不等式**（L221/L225），一旦 UE 移动或需求速率变化，这两个不等式的前提就变了；论文**没有报告乒乓率**。
+6. Fig 14 显示"高负载需要更多容忍流"——这是**负载与可行域**的关系曲线，但论文只是描述现象，没有回答"容忍流不够时怎么办"（例如降级、部分卸载、缓存）。
+
+**8. 和同批其他篇的关系**
+与 BBNQ4EAQ、CYMQ2GLA、EG9X569M、CMNCS52M 同属"（星地）网络资源/路由管理"，但**层次不同**：那几篇是**星间路由/拓扑**，本篇是**接入侧小区间负载迁移**，完全不涉及 ISL、不涉及星间多跳。与 CTWVLBCY（调度）相邻但正交：那篇在**时间维**上调度（何时发），本篇在**空间/RAT 维**上迁移（发给谁）。与 BLFJ6CLV 有一处概念交集——两篇都用"时延容忍 vs 敏感"这一分类，但 BLFJ6CLV 用的是 AoI 度量，本篇用的是 3GPP PDB。
+它引用的基础是 LTE/5G 负载均衡文献 [13][14][15][16]（L436–442），其中 [15] 既是它的主要基线也是它的方法来源（L440）。**本批其余 9 篇没有一篇引用它**，它也没引本批任何一篇。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**有直接贡献，但口径是"资源占用"而不是"到达率"。** 它做的是**负载变化下的资源再分配**，而且**负载是被显式扫描的自变量**：
+- Fig 10（L376）扫 UE 数量；
+- Fig 14（L400）**把"网络负载"直接定义成每 UE 的需求速率（低载 5–10 Mbps / 高载 10–15 Mbps）**，再扫容忍流占比，得到"负载越高，越需要容忍流才能平衡"——这是一条**负载 → 可调度性**的关系曲线，是本文对"负载"最实质的贡献。
+- 式 11/12（L221/L225）提供了一条可复用的**准入判据**：迁移前先估"迁入后目标是否超载"，等价于"目标剩余容量 ≥ 新需求"。这套判据可以直接搬到"负载变化下是否接纳新流"的决策上。
+但它**对时延的贡献很弱**：全文唯一涉及时延的地方是"PDB 与卫星传播时延比大小"的分类规则（L52），以及 L310 一句"迁到卫星会经历长时延，但那些业务容忍"。**没有时延的数值结果、没有排队、没有负载→时延的曲线**。所以：它贡献了"负载→资源占用/均衡度/QoS 满足数"的事实链，**没有**贡献"负载→时延"的事实链。
+
+**10. 一句话评价**
+把 LTE 时代的移动性负载均衡（MLB）**扩展到多 RAT（地面 + 卫星）**，核心创新是一个可跨 RAT 比较的负载口径 RRUR（式 3/4）加一条"先租邻居、再租卫星"的两级规则；方法上属于**工程化的启发式 + 标准流程复用**，无学习、无排队、无 LEO，因此它是一个**接入侧负载管理的参照系**，而不是路由或时延研究。
+
+
+## CMNCS52M — Traffic-Aware Multi-Agent Reinforcement Learning-Based Distributed Routing for Low Earth Orbit Satellite Network
+
+**1. 一句话**
+每颗星一个 DDQN agent、只看自己周围 15/16 维局部观测选下一跳，**奖励直接用"实际一跳时延"（传播+发送+下一跳排队）**，并刻意在三个"队列分布模型"（人造分区 / 人口分布 / 真实流量生成）上训练同一个策略，以此换取跨星座规模、跨流量模式、跨链路故障的泛化。
+
+**2. 问题设定**
+LEO 极化星座的分布式路由（L13、L23）。作者点出的既有工作的三个具体病灶（L21 逐字概括）："these methods are often highly tailored to specific network sizes, congestion levels, and packet lengths, which limits their effectiveness when applied to different configurations"；"the reward function is not always well aligned with the ultimate objective"；以及"DRL-based routing strategies have not been leveraged to learn from specific traffic patterns to avoid congestion, and their performance evaluations are typically restricted to idealized scenarios that do not consider link failures"。
+更具体的技术批评：文献 [14][15] 的奖励**只有排队时延和传播时延、漏了发送时延**（L56 逐字："the reward function considers only queuing and propagation delays, neglecting the transmission time of packets"），因此对不同包长是次优的；[16][17] 强加**最大跳数**，与卫星数强耦合（L58）；[17] 的奖励是**基于拥塞的不连续函数**（L58）；[18] 的队列状态是**离散的**（free/busy，L60）。
+
+**3. 方法骨架**
+- **问题形式**（第 IV 节，式 1，L106–125）：$\min_{\mathbf p_k}\sum_i (t_P + t_{TX} + t_Q)$，即路径上**传播 + 发送 + 排队**三项之和。论文明确说明"最优路径会随包长变化"（L125）。
+- **观测**（第 V.A，L141–155）：16 维连续向量 $\mathbf s_i=[\mathbf q_i,\phi_i,\lambda_i,\phi_D,\lambda_D,L,d_i^V,d_i^H,\mathbf h_i,t]$——四邻居队列长度、自身与目的经纬度、包长（50–250 B）、**南北/东西两个星间距离**、**四个方向的访问计数器 $\mathbf h_i$**（防环用）、一天中的小时 $t$（0–24）。注意：$d^V$/$d^H$ 保留的理由是"真实场景中星座参数未必在星上已知"（L149）。
+- **动作**（第 V.B，L159）：$\mathbf A=\{{N,E,S,W}\}$ 四邻居，**禁止朝反向运动的邻居转发**（否则天线指向要突变），因此 cross-seam 上的星只有 3 个邻居；**也禁止转发给拥塞卫星**（L159）。
+- **奖励**（式 6，L166）：到目的 $R$；动作非法 $-R$；否则 $-(t_{HOP}(i,j,L)\times(1+\mathbf h_i(a)))$。其中 $t_{HOP}=t_P(i,j)+t_{TX}(L)+t_Q(j)$（式 7，L172）——**这一项就是本文相对 [14][15] 的核心修正：补上 $t_{TX}$**。惩罚还要乘"该方向已访问次数"，这是在奖励里内嵌防环。$R$ 需按每个队列模型单独标定（L169），所有瞬时奖励绝对值归一化到 0–30k（L169）。
+- **算法**（第 V 节，L131–137）：DDQN，在线网 + 目标网，目标值式 5 写的是 $y_j=r_j+\gamma\max_a Q_t(s_{j+1},a)$——注意这**是普通 DQN 的 max 目标，不是 double**（同 S85KQ4FC 的同类问题）。目标网每 10000 步硬拷贝。论文明确声明转移与奖励都是**确定性**的（L137 逐字："we define both the transition function and the reward function as deterministic"）。
+- 网络：4 隐层 64/32/16/8，输出 4（Table 2，L182）。训练 500 000 episodes、lr 0.005、γ 0.99、replay 10 000、batch 128。
+
+**4. 它声称的效果**（数字以 Table 3（L228）与结论（L283）为准，注意 Table 3 的 OCR 表格列错位，数字需谨慎对应）
+- 摘要（L13）：**在特定条件下 E2E 时延相对三个传统分布式协议降低 72%、66%、48%**；相对 SOTA 的 RL 分布式路由**最高降低 27%**。
+- NMB（式 8，L222）：zone 下 DQN-BL 与 DQN-LSNR 都约 **15%**；population 下从 DQN-BL 的 70% 降到 LSNR 的 **40%**；traffic 下从 55% 降到 **20%**（L230）。结论里改口径说 traffic-based 下 NMB 只有 **17%**（L283）——与正文 20% 口径不一致。
+- 结论（L283）：population 下 E2E 约为 DRP 的**一半**，traffic 下**最高三倍低**；相对 SOTA DQN 降低 **18%**（population）与 **27%**（traffic）。
+- **路径最优性**（Fig 7，L272）：跨越训练用到的 **130 种星座配置**，traffic 与 zone 下最优性**> 80%**，population 下**> 50%**，且**星座越密最优性越高**。
+- **PDR**：DQN-BL 在 population/traffic 下 PDR 只有 **95%/97%**（陷入环路，L232）；DQN-LSNR 100%。链路故障 0→30% 时，GF 与 DQN-BL 的 PDR 掉到 **约 40%**（L238）。
+- 复杂度（第 VI.G，L276）：Dijkstra 用二叉堆 $O((V+E)\log V)$；DQN-LSNR **单次推理约 110 μs**（PyTorch CPU，i7-11800H，batch=1）；超过 **10 000 颗星**时分布式方案在计算时间上占优。
+- 基线：GF、DRP、CA-DRP、DQN-BL（=复现文献[17]的 FDR-MARL）、SP（Dijkstra 集中式上界）、H-DRP（作者新造的防环版 DRP，L238）。
+
+**5. 实验条件**
+- 星座：**极轨均匀星座，高度 780 km、倾角 90°**；轨道面数 **{3,…,12}**、每面卫星数 **{4,…,16}**，即 **12 到 192 颗**（L73）。cross-seam 在 0°。包长 **50–250 B 随机**（L73）。
+- **三个队列分布模型**（第 III.B，L77–97）：(a) zone：8 个经纬分区、占用率 0–1，均值 0.5，队列容量 **10 MB**；(b) population：用 **GPWv4**（2020 年 1° 网格）+ 世界银行互联网使用率换算活跃用户，最高区归一为 1，平均占用率**仅约 0.06**，容量 **100 MB**；(c) traffic：由 **GDP/人 线性回归**得人均需求 IUD，卫星流量随经过区域累积，容量 **150 MB**，并**按队列长度自适应调发送速率**（<25 MB 用 25%、25–50 MB 用 50%、否则 100%）。最大排队出现在北美，**150 MB @ 50 Mbps 对应最大排队时延 24 s**（L97）。
+- **关键简化**（L73 逐字）：星速约 0.07°/s，因此"**we assume that the network topology remains static during the transmission of a packet**"，并把可允许 E2E 时延约束在**几秒**内。
+- 训练/评估：训练 500 000 episodes，每 episode 随机抽轨道面数、每面星数、源/目的、包长、队列状态、轨道位置（L189）；评估 Iridium-like（**6 面 × 11 颗**）下 **10 000 次**传输（L217），路径最优性用 **100 个测试 episode**（L272）。**训练与评估共用同一套仿真器**，但训练覆盖多配置、评估抽其中配置。
+
+**6. 自述局限（逐字）**
+- L73（核心假设）："we assume that the network topology remains static during the transmission of a packet. **This assumption simplifies the routing problem, but it constrains the maximum allowable E2E delay to a few seconds.**"
+- L238（链路故障下的取舍）："Although it solves fewer scenarios than DRP and H-DRP, it consistently maintains lower E2E delays than H-DRP." 并给出一条务实建议：**"the most effective strategy in practical environments with potential link failures would be to primarily rely on DQN-LSNR, switching to H-DRP only when the E2E delay or hop count exceeds a predefined upper threshold."**——即它自己承认单独用 DQN-LSNR 不能保证送达。
+- L287（未来工作）："Future work will focus on further analyzing the generalization capabilities of DQN-LSNR under large-scale mega-constellations. In addition, routing complexity will be increased by incorporating satellites with different orbital altitudes and inclinations."
+- L276：承认推理开销仍需优化（"optimizing inference efficiency... is crucial for scalability"）。
+- 另注 L291：作者声明使用了 AI 语言工具润色。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **"拓扑在一次传输内静止"（L73）与"E2E 时延不能超过几秒"是同一个硬币的两面**——这直接把情景锁死在低时延小包（50–250 B）上。若包变大或拥塞变重，这个假设先崩，"队列 150 MB、排队时延 24 s"的模型（L97）与该假设**互相矛盾**：24 s 的排队早就超过"几秒"。作者没有处理这个内部张力。
+2. **队列模型与训练/评估的关系没有消融**：论文说"the learning process enables agents to infer the underlying traffic patterns"（L127），但**没有报告"只在一个队列模型上训练、到另一个上测"的迁移实验**——而这恰恰是"traffic-aware"这个标题的主张。已有的 cross-model 结果全是"一个策略在三个模型上分别测"（若真如此训练，则是 joint training），论文未明确说明三模型是联合训练还是分别训练。
+3. **奖励里的 $R$ 需要按队列模型逐个标定**（L169）——作者自己也说"each queue model requires a distinct value of R"。这是一个**逐场景手调的超参**，与它"泛化"的主张有张力，但论文没有把 $R$ 也做成自适应。
+4. **访问计数器 $\mathbf h_i$ 的四个额外维度有效但未消融**（L151、L232）：作者说它把观测从 22 降到 16（去掉历史是 12），但**没有给出"有/无 $\mathbf h$"的对照**——防环到底是 $\mathbf h$ 的功劳还是奖励里 $(1+\mathbf h_i(a))$ 的功劳，不可分辨。
+5. **DDQN 名不副实**：式 5（L134）是 $\max_a Q_t$ 的普通 DQN 目标，论文自称 DDQN（L131），但没有 double 的第二张网取动作。与同批 S85KQ4FC 犯同一个错。
+6. **Table 3（L228）的 OCR 严重错位**，列名与数值错配（如 "DRP" 落在 NMB 行），**无法可靠复原每个协议每格的数值**；正文里 NMB 的 15%/40%/20% 与结论的 17% 也不一致（L230 vs L283）。这是一处需要回原文图确认的地方。
+7. **没有到达率这个自变量**：所有负载差异都通过"换一个队列分布模型"体现，**没有扫描流量强度**（如 IUD 从 1 到 100）。"负载变化"在这篇里是**空间模式**的变化，不是**强度**的变化。
+
+**8. 和同批其他篇的关系**
+- **直接引用并复现 CYMQ2GLA**：文献 [18] = C. Wang et al., "A two-hops state-aware routing strategy based on deep reinforcement learning for LEO satellite networks", Electronics 2019（L329）——这正是同批的 CYMQ2GLA。CMNCS52M 在 L60 明确批评它："**its advantages over a simpler one-hop strategy remain unclear given the additional overhead it introduces**"。
+- **同批 S85KQ4FC 的批评对象也在本文里**：文献 [17] = Xu et al. FDR-MARL（L327），正是 S85KQ4FC 点名的"逐包 DRL 代表"之一；本文把 [17] 复现为 DQN-BL 当基线并**赢它 18%/27%**。文献 [20] = DRL-ER（L333）也被 S85KQ4FC 列为逐包对照。
+- 与 BBNQ4EAQ 同属"LEO 路由"，但路线相反：BBNQ4EAQ 用几何离散化 + 确定性最短路，本文用局部观测 DRL；BBNQ4EAQ 引 TLR[14]（其 L449）作为机会式代表，本文 L46 也把 **ELB 与 TLR** 作为距离矢量协议代表——两篇共享同一套经典对照。
+- 它明确站在"分布式 > 集中式"的立场上（L46、L54），与 BBNQ4EAQ 的"减少在轨状态收集开销"是同一动机的不同解法。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**有实质贡献，而且是最贴近本主题的一篇。**
+- **奖励函数里显式含排队项**：$t_{HOP}=t_P+t_{TX}+t_Q(j)$（式 7，L172），且 $t_Q$ 由**下一跳的队列长度**决定。这意味着 agent 学到的策略本身就是"**负载 → 时延 → 下一跳**"的映射。
+- **给了具体的负载–时延换算**：150 MB 队列 @ 50 Mbps = **24 s 排队时延**；10 MB @ 50 Mbps 把平均排队压到约 **1 s**；population 模型平均占用率 0.06，容量 100 MB（L89、L93、L97）。这些是可以直接复用的量级锚点。
+- **给了"负载的性质比负载的大小更重要"这一事实**：traffic-based 模型队列容量最大（150 MB）却**总体几乎不拥塞**，因为大部分区域队列为空、时延只剩传播+发送（L97 逐字："white regions indicate that satellite queues are consistently empty, meaning that the E2E delay is solely influenced by propagation and transmission times"）；反而是人造 zone 模型平均占用率最高（0.5）。GF/DRP 在 traffic 场景下最差（L225），说明**稀疏但极端的负载**对距离型协议杀伤更大。
+- **给了"排队时延让最优路径变长"的直接证据**：Table 3 讨论（L232）指出 SP 在 zone/population 下**平均跳数更大**（6.87、8.34 跳）却时延更优，即"绕远但避堵"确实成立；而 traffic 场景下最优路径接近最小跳。
+- **但缺"到达率"这一维**：完全没有以包到达率/流强度为自变量的扫描。负载只通过"取哪个队列分布图"来变，**负载强度不可调**。所以它贡献的是"**负载的空间分布 → 时延**"，不是"**负载的时间强度（到达率）→ 时延**"。
+
+**10. 一句话评价**
+把 MARL 路由的**奖励函数对齐到真实 E2E 时延**（补上被前人漏掉的发送时延，式 7）并把**队列分布模型**从"人造拥塞"推进到"人口+GDP 驱动的真实流量"，是本批里工程完备度最高的一篇；但它用"包内拓扑静止 + 时延不超几秒"这一条假设把问题锁在小包低时延区间，且把泛化主张建立在一个需逐场景手调的 $R$ 上——**方法谱系位置：把已有的多智能体 DQN 路由 × 更好的状态/奖励设计 × 更真实的流量模型**，属改良而非新范式。
+
+
+## CTWVLBCY — Transmitting, Fast and Slow: Scheduling Satellite Traffic through Space and Time (Umbra, MobiCom'23)
+
+**1. 一句话**
+发现"每个接触窗口都拼命传满"这种贪心做法反而会把某些地面站撑爆、别的站点闲置（作者命名为 UQE），于是定义一个叫 **withhold scheduling** 的新调度范式——**主动少用一部分星地链路、把数据扣下来留给后面更划算的接触**——并把整个"卫星→地面站→云"两跳传输建成**时间扩展网络（TEN）**，用匈牙利匹配 + 最大流 + 二分搜索求出同时优化吞吐和时延的计划。
+
+**2. 问题设定**
+对地观测 LEO 星座（Planet Dove，153 星）每天产生 TB 级影像，要经地面站中转上云（L28–L30）。约束是：单星-单站接触一天只有 4–6 个十分钟窗口（L30），**地面站数量（10 量级）远少于卫星（100 量级）**（L101），且地面站分布不均匀（L46），**地面站到云的 backhaul 带宽在 100s Mbps 到几 Gbps 之间浮动**（L50、L234）。
+具体病灶（UQE，L46–L52）：卫星连续经过地面站 A、B、C，若 A-B 距离 > B-C，则卫星在 A-B 段采集的数据远多于 B-C 段；贪心全速传输会让 B 收到 9 GB 而 C 只收到 1 GB → **B 侧排队爆、C 侧闲置**。作者进一步指出"即使未来 backhaul 带宽提升，UQE 仍会继续堆积队列"（L50 逐字："even if backhaul bandwidths increase in the future, UQE will continue to back up queues"），因为带宽提升也让卫星侧传得更快。
+
+**3. 方法骨架**
+**不是 RL，是组合优化（网络流）**。
+- **TEN 建模**（第 3.1 节，L114–L130）：把"空间"和"时间"放进同一张图。每层（时刻）是一个卫星-地面站二部图；层间用 **holdover edge**（节点指向自己未来时刻）表示"**有带宽也不用、把数据扣住**"的能力，容量设 ∞（依据：Dove 卫星有 2 TB 存储，L120）。变量 $D_{i,j}(t)$ = 卫星 $s_i$ 在时刻 $t$ 下传给地面站 $g_j$ 的数据量，四条约束：单星同时只连一站、单站同时只连一星（可扩展到多天线）、不超过下行带宽 $b_{s_i,g_j}(t)$、累计传出不超过累计采集 $p_i(t)$。地面站上传量 $u_j(t)=\max(\sum_i\sum_\tau D_{i,j}(\tau)-\sum_\tau^{t-1}u_j(\tau),\ b_j(t))$。目标 $D^*=\arg\max\sum_i\sum_t u_i(t)$（式 1）。
+- **三步算法**（第 3.2 节）：
+  1. **Stage 1 匹配**（3.2.1）：逐时刻解二部图最大权匹配，边权 $R_{i,j}(t)=\max(b_{s_i,g_j}(t), cache_i(t))$，用**匈牙利算法** $O(n^3)$。
+  2. **Stage 2 最大流**（3.2.2）：在整张 TEN 上做**推流-重标号（push-relabel）**最大流，复杂度 $O(V^2\sqrt E)$。**流经过 holdover edge 就意味着那颗星在这一时刻选择 withhold**（L172）。
+  3. **Stage 3 时延优化**（3.2.3）：在 $[0,T]$ 上**二分搜索**最小的 $T'$，使 $[0,T']$ 上的吞吐 ≥ 原方案 99%，然后滚动到 $[T', T'+T]$ 执行——**在不牺牲吞吐的前提下压时延**。
+  4. **图简化**（3.2.4）：一天 1 分钟粒度的 TEN 有 **200 万节点**；利用接触稀疏性把"只有一条入边一条出边"的连续节点序列**折叠成一个融合节点**，不改变最大流结果。
+- **UQE 定量分析**（第 3.3 节，Theorem 1，L189–203）：设相邻地面站间距 $x_i=\mu+\delta_i$，则数据被采集的概率正比于 $x_i$，平均额外等待正比于 $x_i/2$，于是平均排队时间 $Y\propto\sum x_i^2/2 = \frac12(\sum\mu^2+\sum\delta_i^2)$——**与间距的方差成正比**（正文 L187 说"二次增长"，推导实际给的是"正比于方差"）。
+- 系统实现（第 4 节）：调度器**跑在云上**，计划经地面站中继给卫星；用 TLE + PyOrbital 算轨道，用 **ITU P.838/839/840 模型**算雨衰、DarkSky API 取天气；每 **5 天**重算一次计划；故障时卫星靠"收不到 ACK"自行判定并扣住数据等下个可用站（L218）。
+
+**4. 它声称的效果**
+- **总收益**（摘要 L7、L75）：吞吐 **+13–31%**，P90 时延 **降低 3–6×**。
+- **吞吐**（Table 2，L307）：1.2 Gbps backhaul 下 Umbra 比 Greedy 高 **13%**、比 Naive withhold 高 **31%**、比 Smart withhold 高 **13%**。backhaul 越高（1.8 Gbps）优势越小（L289）。
+- **时延**（L293）：1.2 Gbps 时 **中位时延 Greedy 8.8 h vs Umbra 6.2 h（Greedy 高 42%）**；Naive 13.7 h；Smart 8.9 h。**P90：Umbra 11.0 h vs Greedy 38.7 h（3.5×）、Naive 66.5 h（6×）、Smart 37.98 h（3.5×）**。1.5 Gbps 下 P90：Greedy 19.3 h、Naive 60.9 h、Smart 20 h、Umbra 8.3 h。
+- **反直觉结果**（L280，Fig 10）：**把卫星下行带宽翻倍，P90 时延反而上升 22%**——因为 UQE 下更快的下行只会把更多数据灌进拥堵的地面站。
+- **异构 backhaul**（Table 4，L305）：随机 50% 地面站给 2 Gbps，Umbra **571.8 TB（标准差 0.10）** vs Greedy 435.99 TB（标准差 8.36），**提升 31%** 且波动极小。
+- **分布式大量小站**（Table 5，L354）：200 个 SatNOGS 业余站、总 backhaul 8× 冗余时，吞吐提升**不显著**（445.01 vs 425.54），但 **P90 时延仍好 2.5×**——作者据此论证"UQE 不是靠堆基础设施能解决的"。
+- **鲁棒性**（L358–L362）：带宽估计噪声 0.05→0.2 使中位时延退化 15%、P90 退化 8.4%；33% 地面站在 t=60h 挂掉时，Umbra(Update) 与 Oracle 持平，Umbra(No Update) 只能撑约 40 小时（**计划不到 2 天就过时**）。
+- **内部观察**（L299–L301）：Umbra 的 withhold 决策**大多是二值的**（要么全扣要么全传）；Greedy 下不同地面站队列"wildly vary"，Umbra 把队列拉平。
+- 基线：**Greedy**（现状）、**Withhold-Naive**（只看当前与下一个地面站队列大小，若下一个更空就全扣）、**Withhold-Smart**（按 $V_0=V\frac{q_2}{q_1+q_2}$ 按比例扣）。
+- 开销：单核调度整个星座 5 天的流量约 **25 分钟**（L251）。
+
+**5. 实验条件**
+**真实 trace 驱动**：Planet Dove 星座 **153 颗星**、**12 个地面站（共 48 副天线）**、**5 993 212 张影像**、平均 **300 MB/张**、总计 **1798 TB**、跨 **15 天**（2021 年 6/7/8 月各前 5 天）（Table 1，L246）。星地链路 **X 波段、最高 2 Gbps**；backhaul 估计多数约 1 Gbps（100 Mbps–几 Gbps），实验中扫描 **1.2 / 1.5 / 1.8 Gbps**。仿真时间粒度 **1 分钟**，离散事件仿真。硬件 SuperMicro SYS-4028GR-TR。
+**关键假设**（L93 逐字三条）：(a) **卫星之间不能直接传数据**（no ISL，"true for all major LEO earth observation satellite constellations today"）；(b) 地面站之间也不能互传（会占用本该给云的带宽）；(c) 地面站不跨应用共享。另假设云始终可用（L214）。
+**训练/评估**：无学习；同一 trace 上对比四种算法，另在 3 个不同月份/年度的 trace 上重复（L287，只取 Day 2 以后衡量稳态）。
+
+**6. 自述局限（逐字）**
+- L378：**没有 ISL** 是评估假设——"Our evaluation assumed the absence of these links because they are not common in today's deployments. However, both these kinds of links can be added to our graph and our TEN-based solution (Section 3) would still generate a solution."
+- **第 8 节"What did not work?"**（L380）：作者主动报告失败尝试——"We experimented with iterating between: (a) identifying the best matching... and (b) computing the max flow... However, we noticed that the scheduling objective (e.g. throughput) showed little improvement beyond more than one iteration, and only increased computation cost."
+- L354：分布式地面站场景下"**The improvement on average throughput by Umbra is not significant**"。
+- L251：调度器 25 分钟的运行时间"could be optimized further by leveraging parallelization... However we do not explore this"。
+- L376：GSaaS 场景下"the measurement of network queue size needs to be indirect, as the queue size at the ground station may not be visible to satellite constellation operators"——即**它依赖的队列信息在真实多租户场景下拿不到**。
+- L382 提出三个未来会加剧 backhaul 需求的因素（含地面站侧预处理带来的计算排队）。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **没有 ISL 是最大口子**，而作者自己在 L378 给了补法（"a satellite could route data through another satellite using an inter-satellite link, especially when the latter satellite is connected to a low-queue station"）——**并明确指出这正好能治 UQE**，但没做。这是现成的下一步，而且和本批其他篇（都在做 ISL 路由）天然衔接。
+2. **队列信息在 GSaaS 场景不可见**（L376），作者只说"需要间接测量"，没给方案——"从卫星侧反推地面站队列"是一个自然课题。
+3. **$T'$ 的 99% 阈值是拍出来的常数**（L174），没有敏感性分析；等价于"吞吐换时延"曲线上的一个固定工作点，**没有刻画吞吐–时延权衡的整条前沿**。
+4. **计划每 5 天重算，但实测不到 2 天就过时**（L362）——重算周期与失效速度不匹配，论文没解释为什么不缩短周期（只说 25 分钟算得动）。
+5. **负载（影像到达）完全是真实 trace，不可调**：没有任何"把数据量放大/缩小 k 倍"的扫描，因此**"负载强度 → 时延"的曲线不存在**。所有负载变化都来自轨道几何与 backhaul 带宽两个维度。
+6. **三项假设（无 ISL / 无站间链路 / 站不共享）**若放松，问题结构会变（作者说算法仍适用），但没有验证。
+
+**8. 和同批其他篇的关系**
+- **与全批 DRL 路由论文（CMNCS52M、CYMQ2GLA、EG9X569X 等）是"同一问题的另一半"**：那些论文优化"卫星到卫星的多跳路径"，**明确假设数据要落到地面**；Umbra 优化"从卫星落到地面站再到云"的**最后一跳 + 回传**，而且**明确假设没有 ISL**（L93）。两者在真实系统里是串联的两段。
+- 与 **BV4XI6CU（5G 星地负载均衡）问题结构高度相似**：两者都在治"某些地面节点过载、另一些闲置"，但 BV4XI6CU 用**在线启发式规则**（RRUR 阈值 + 迁移），Umbra 用**离线全局最优网络流**；BV4XI6CU 的"卫星"是 GEO 静止的，Umbra 的全部难点恰恰来自 LEO 的**时变可见性**。两篇可以互为对照：一个治静态异构、一个治时变几何。
+- 与 **BBNQ4EAQ**共享"用可预测轨道做**离线计划**"这一思路（BBNQ4EAQ 的 netgrid 表、Umbra 的 TLE 预计算），但目标相反：BBNQ4EAQ 求最短**路径**，Umbra 求**时间维上的流量分配**；BBNQ4EAQ 的 contact plan 思路与 Umbra 批评的"计划式路由"同源。
+- 与 **BLFJ6CLV（AoI）**有共同度量直觉：两者都在意"数据等多久"，但 BLFJ6CLV 用 AoI 解析、Umbra 用小时级端到端时延，**时间尺度差 4 个数量级**。
+- 它引用的 DTN 文献 [30][34][35][46]、时变流 [16][17][40]、卫星时段图 [39][45][47] 都是经典对照；**本批没有一篇引用它**（2023 年，晚于多数）。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**这是本批对"排队时延"贡献最直接、最量化的一篇**，但有重要口径差异：
+- **它给了完整的"负载 → 排队 → 时延"因果链和解析式**：Theorem 1（L189–203）把贪心下的平均排队时间写成**与相邻地面站间距的方差成正比**；U_n 的 $\max(\cdot, b_j(t))$ 形式（L135）明确了"到达量 vs 服务速率"的关系。这是可直接复用的结论：**排队的根源是负载的空间不均匀（方差），而不只是负载的大小（均值）**。
+- **它给了量化的负载–时延标定**：接触时长 1–7 分钟（众数 6）、单次接触可下载 **10.37–103.48 GB（中位 74.98 GB）**（L278）；150 MB 级队列→小时级时延（中位 6.2–8.8 h、P90 最高 66.5 h）。
+- **它给了"容量提升反而更差"的反例**（L280，带宽翻倍 P90 +22%）——这是对"负载变化下时延"最反直觉、最有价值的单条事实，直接反驳"扩容即可"的直觉。
+- **但它没有"到达率"这个自变量**：数据生成率由真实影像 trace 决定，**不是可调的到达过程**，也没有 Poisson/自相似等到达模型。它的"负载"是**确定性的、由轨道几何决定的时空分布**。
+- 另外它的时延口径是**小时级端到端（采集→到云）**，且**包含"等下一个可见窗口"这种几何等待**，不是链路排队时延本身——与本批其他论文（毫秒/秒级）不可直接比较。
+
+**10. 一句话评价**
+把互联网与 sneakernet 领域的**时间扩展网络**首次搬到卫星数据下传场景，并用它**证明了一个反直觉命题：主动闲置链路比用满链路更好**；方法谱系上属于"**把经典网络流用到新场景 + 发现新现象（UQE）**"，理论上干净（有定理、有多项式算法）、实验上扎实（真实 153 星 trace、6 M 影像），但由于**假设无 ISL**、且负载不可调，它与本批的路由类论文是**互补而非竞争**关系。
+
+
+<!-- END-OF-CARDS -->
