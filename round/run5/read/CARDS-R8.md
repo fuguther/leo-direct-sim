@@ -564,6 +564,68 @@ DLR + ESA 做的**分布式 SDN 负载均衡路由协议**：把星座切成星�
 **10. 一句话评价**
 **本批工程完成度最高的一篇（DLR + ESA、5G NR QoS 档位 + ITU Y.1541 预算、包级仿真）**：它把"负载加到哪里 QoS 会崩"这件事量化成了一张可比的阈值表（7.6 → 16.2 Gbps，L449），并给出含**排队项**的时延分解（L404）；但它把负载当分母而不是自变量，纵轴永远是合规率而非时延，所以离"到达率 → 时延"仍差一张图。
 
+## TRM2HPFN — A Dynamic Routing Concept for ATM-Based Satellite Personal Communication Networks
+
+**1. 一句话**
+LEO 卫星 ISL 路由的**祖师爷论文**（Werner, 1997, IEEE JSAC）：把周期性时变拓扑切成 K 个快照，**离线**先为每个时隙建好"虚拟拓扑"（每对起止星一组不相交路径），再跨时隙挑选"路径序列"以最小化**路径切换（VPC handover）带来的时延抖动**——这就是 DT-DVTR，后来几乎所有卫星快照路由的源头（L7、L146）。
+
+**2. 问题设定**
+带 ISL 的 LEO/MEO 卫星个人通信网（S-PCN）要跑**面向连接**的业务（ATM），而 ISL 子网拓扑永久在变：既有**离散**的链路通断（极区关掉异轨 ISL），又有**连续**的星间距离变化（L56）。作者指出核心矛盾：**连接建立后若必须在中途换路，新旧路径的传输时延差会带来严重抖动**，他称之为 virtual connection handover（L70 逐字："such connection handovers may introduce severe delay jitter resulting from the difference in transmission delay on the old and new path"）。ATM 是面向连接的、必须保序，所以这个抖动是致命的。缓解的依据是：**LEO/MEO 的"物理"拓扑动态是周期性确定的**，周期即星座轨道周期（Iridium 为 100 min），因此可以离线预制（L72）。
+
+**3. 方法骨架**（**非 RL**：离线图论 + Dijkstra + 序列优化）
+- 网络模型四条假设（L109-121）：节点数恒定；无孤立节点；拓扑因**离散链路通断**与**连续距离变化**而变；整个动态**以 T 为周期**。另有三条业务假设（L125-129）：主业务是时延敏感的（话音/视频）；**同一连接双向走同一路径**；系统应天生具备路径失效应对能力，因此**要求备份路径不相交**。
+- 离散化：$\Delta t=T/K$，快照 $G(k)=(V,E(k))$，链路代价 $c_{ij}(k)$——**"主要是指节点距离，即传播时延"**（L131）。
+- **$\Delta t$ 的有效性条件（两条，L138-142）**：①必须与离散的链路通断行为**同步**，保证 $G(k)$ 在整个区间内正确反映物理拓扑（硬条件）；②必须小到让区间内的连续代价变化可忽略：$(c_{ij}((k+1)\Delta t-0)-c_{ij}(k\Delta t))/c_{ij}(k\Delta t)\ll1$。作者指出这两个条件给出一个权衡：$\Delta t$ 小则区间内变化小，$\Delta t$ 大则相邻区间之间的瞬时偏移少。
+- 两个**全离线**模块：
+  - **DT-VTS（虚拟拓扑建立）**：对每个 OD 对 $w$ 求一组循环无回路路径 $P_w(k)$；用**迭代调用 Dijkstra 并"删掉"已占用链路**来强制得到不相交路径集——作者说这同时"为简单鲁棒的故障恢复打下基础"（L150）。
+  - **DT-PSS（路径序列选择）**：这才是"真正的动态路由"所在——跨连续时隙为每个 OD 对挑路径序列，而不是独立解一串准静态路由再"承受"切换后果。三个优化目标（L157）：①**最小化 HO 时延抖动**；②最小化 HO 次数；③（带限制地）最小化平均时延。
+- **两种优化时间窗**（L162、L167）：(1) 在整个周期 T 上优化 → 从 $m^K$ 种可能中得唯一首选序列 $S_{T,1}$，或 Q 条有序（带优先级）序列；(2) **滑动窗** $\tau$ 个时隙 → 对每个 k 得 $S_{\tau,1}(k)$。
+- ATM 实现（第 V 节）：完全 **VP/VPC 化**——所有共用同一对首末星的端到端 VCC 聚合为一条跨 ISL 子网的公共 VPC；**中转星只做纯 VP 交换**（L177-179）。VPI 字段 12 bit → 单条 ISL 每步最多 **4096 个 VP**（L183）。
+
+**4. 它声称的效果**（基线：周期内最小化 HO 次数的朴素方案）
+- VPI 规模：仿真中单链路 **最多约 400 个 VP**，出现在赤道区、正好在 seam 中段（如 Fig.2 的 22 号与 43 号星），远低于 4096 上限，也低于"终止星对数 = 2145"的理论上界（L188-190）。
+- 抖动对比（Fig 12，L219）：对 Iridium 中固定时长 **2 min** 的通话、$\Delta t=1$ min，**滑动窗（最小化 HO 抖动）明显优于周期级（最小化 HO 次数）**。
+- 真实业务场景（Fig 13，L219）：电话业务、通话时长负指数分布、**均值 3 min**、滑动窗 **5 min** → **只有不到 20% 的通话会遭遇任何一次切换**；且"只有极低比例的通话需要承受大于 **20–30 ms** 的 HO 抖动"。
+- 代价：滑动窗方案用的 VPI 更多——**单链路平均 VPI 数随滑窗尺寸近似线性增长**（L200）。
+
+**5. 它的实验条件**
+- 星座：**Iridium**，66 星 / 6 个准极轨（倾角 86.4°）/ 780 km / 周期 100 min；每星 2 条永久同轨 ISL + 0–4 条动态异轨 ISL；**极区关闭异轨 ISL**、**seam 两侧不建链**，因此同时在用的 ISL 数在 **2–4** 之间变化（L25、L37、L56）。
+- 参照系统对照表（Table I，L25）：ICO / Odyssey / Globalstar / Iridium / Teledesic 的轨道、星数、ISL 配置与业务定位。
+- 仿真工具自研：**ISLSIM**（C 内核 + X/Motif 界面），模块含星座几何、最短路搜索、路径连续性优化、统计评估与可视化（L196）。
+- 业务画像：**只做电话（话音）**；呼叫在时间上均匀分布、覆盖所有可能的首/末星组合；2 min 定长通话用于两方案公平对比，3 min 均值负指数通话用于真实场景（L207、L219）。
+- 无训练环节（全离线计算）。
+
+**6. 它自述的局限**（逐字）
+- **L169（最重要的一条）**："The graph-theoretical framework developed so far... provides a sound basis to extend analytical work and formulate any **minimax target functions** that are related to optimized routing in a wider sense like, e.g., **minimizing worst case link traffic throughout the network by means of traffic adaptive routing**. However, **such an analytical extension is beyond the scope of this paper and is envisaged for further work**; here, we will restrict ourselves to a simulation-based performance evaluation of the presented off-line routing approach."
+- L219："Considering such 2 min fixed-length calls is, of course, **not close to reality**, but it is the only way to make a fair (and at least basic) comparison of both approaches."
+- L234："In future work, we also intend to **refine the traffic modeling** with respect to both, an improved global geographic traffic distribution and realistic PCN user service/traffic profiles."
+- L236："In the medium term, research on **broadband aspects** of the considered systems should also be intensified."
+- L192："Observe, however, that short-term 'overlapping' of successive VPC's during controlled VPC handover... will also **increase the worst case VPI requirements**."
+
+**7. 它没做但看起来能做的地方**（基于内容）
+1. **模型里完全没有负载**：链路代价"主要由节点距离，即传播时延决定"（L131）；没有容量约束、没有拥塞、没有排队。而作者自己在 L169 明确把"**最小化全网最坏链路流量**"这类 minimax 目标**列为未来工作**——也就是说，**这个领域的源头论文一开始就把负载维度排除在外了**，后来论文里的负载均衡是补上去的。
+2. **抖动只算了"几何分量"**：HO 抖动被明确定义为"新旧路径传输时延之差"（L70），即纯传播时延跳变；**排队抖动不在其中**。这给后来做"负载 → 抖动"的人留了一个必须补的缺口。
+3. **$\Delta t$ 的选择只有定性两条条件**（L138-142），没有给出选值的算法或优化；而它自己指出这是"低区间内变化"与"少区间间跳变"之间的权衡。
+4. **VPI 消耗与抖动的联合优化缺失**：L200 观察到滑窗越大 VPI 越多（近似线性），但两条曲线没有被合成一个目标。
+5. 只做电话（L207、L236），宽带被推迟——而正是宽带（大流量、负载敏感）才需要负载均衡。
+
+**8. 和同批其他篇的关系**
+- **它是本批的谱系根**：QSNRQ8PF 的 4.1.3 节"Virtual Topology"整节讲的就是 DV-DVTR（QSNRQ8PF L182），并在参考文献里列为 [44] "Werner, M. A dynamic routing concept for ATM-based satellite personal communication networks"（QSNRQ8PF L526）；T9X6QCLL 的早期进展节把 FSA（1995）与快照路由列为里程碑，其参考文献 [37] 正是本篇（T9X6QCLL L404）；SBCHGBCP 也引 [37] Werner（SBCHGBCP L404）。
+- **快照/时间图范式**由本篇确立，而 QSNRQ8PF（L125 快照序列路由、L180-182 虚拟拓扑）、SBCHGBCP（时隙 50 ms 的时间图）、TQF59BD7（快照式路径重算）**全都在用**这一范式。
+- 与本批 DRL 论文（FDR-MARL 那一支）的关系是"被继承的前提"：DRL 路由通常仍在快照/时间图框架内做决策。
+- 与 **S2QZRBEJ** 形成 25 年的时间对照：1997 年假设"拓扑变化是抖动的唯一来源"，2022 年的实测显示**负载**才是把 RTT 从 50 ms 推到 100 ms 的原因。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**没有直接贡献**——全文没有到达率、没有负载、没有排队；链路代价就是传播时延（L131）。
+**但有两条可复用的事实**：
+- **给出了"路径切换抖动"的量化锚点**：在 Iridium 上、真实电话业务（均值 3 min）下，**不到 20% 的通话会遇到任何一次切换**，且超过 20–30 ms 抖动的比例极低（L219）。这为"把时延抖动分解为**几何分量**（换路）与**排队分量**（负载）"提供了前者的一条具体基线——任何声称"负载导致抖动"的工作都需要先减掉这一项。
+- **给出一条可直接复用的离散化判据**（L140）：快照步长 $\Delta t$ 只有在区间内相对代价变化 $\ll1$ 时才有效。这条判据与"负载状态"的离散化同构——若把负载当作慢变量做快照式仿真，可套用同一条件（即负载在一个时隙内变化不能太大）。**反过来说，这也点明了快照范式的固有盲区：它把一个时隙内的任何动态（包括负载的瞬时波动）都抹平了。**
+- 一句话：它是"负载维度为何在传统卫星路由里缺席"的**历史成因**——源头论文显式地把 minimax 流量目标推给了未来工作（L169）。
+
+**10. 一句话评价**
+**快照/虚拟拓扑范式的开创之作**：把"I SL 拓扑周期性时变"形式化为"离线建虚拟拓扑 + 跨时隙选路径序列"，并正确地把切入点选在**换路抖动**这个 ATM 面连接业务的真痛点上；但它从第一天起就把负载排除在模型外（L131、L169），因此它是"到达率/时延"这条线上游的**前提提供者**，而非贡献者。
+
+
 
 
 

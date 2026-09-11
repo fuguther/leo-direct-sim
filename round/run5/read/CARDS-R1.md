@@ -1,6 +1,6 @@
 # 读卡批次 R1
 
-> 读法：逐字通读 VM MinerU MD 全文（行号即 VM MD 行号）。批次 11 篇：2FBBURX7 2QRYMWBI 2W8BJ7ME 35T2JJRJ 36RZKNW5 39NJWBI7 3MRQRWHU 42E4NAQU 47J2H748 4QG5VYHQ 524XNF29。
+> 读法：逐字通读 VM MinerU MD 全文（行号即 VM MD 行号）。原派发 11 篇，**2QRYMWBI 已于中途由主控移出本批次**（399KB，拆分片处理），故本文件实收 **10 篇**：2FBBURX7 2W8BJ7ME 35T2JJRJ 36RZKNW5 39NJWBI7 3MRQRWHU 42E4NAQU 47J2H748 4QG5VYHQ 524XNF29。
 
 ## 2FBBURX7 — Graph Attention Reinforcement Learning for Multicast Routing and Age-Optimal Scheduling
 
