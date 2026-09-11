@@ -600,3 +600,161 @@ OTOE（离线训练、在线执行）范式下，训练期能访问仿真器内�
 **10. 一句话评价**
 **给非对称 value-based RL 补上第一块理论地基的工作**——方法谱系的位置是"**把 actor-critic 里早已工程化的'非对称 critic'思想，用 Bellman 算子/收缩性/随机逼近这套标准工具严格搬到 value-based 一侧，并证明最优性**"；理论链条完整（API→AAVI→AQL 三级都有最优收敛定理），但**每一级都被作者自己诚实地标注了局限**（API 不比 PI 更好、AQL 残留 $\Pr(s|h)$ 的模型依赖、ADQN 放弃最优性保证）。真正的实用贡献是**那个共用一个目标的双损失设计**（$\mathcal{L}_{\hat{U}}$ 与 $\mathcal{L}_{\hat{Q}}$ 共享 stop-gradient 目标，用"$\hat{U}$ 能以 $s$ 为自变量拟合、$\hat{Q}$ 只能拟合其对 $s$ 的期望"这一不对称来近似强制 $\hat{Q}\approx E\hat{U}$）以及**"用简单的状态表示去 bootstrap 困难的历史表示"这一训练机制**。短板同样明确：**实验只给曲线、不给任何数字**，且**从不报告执行期性能**——而这个框架的全部意义恰恰在执行期。
 
+
+## IEI3BYFF — StarryNet: Empowering Researchers to Evaluate Futuristic Integrated Space and Terrestrial Networks
+
+**1. 一句话**
+做一个 **ISTN（天地一体化网络）实验平台**：用**众包收集的真实星座数据 + 轨道/网络模型推算 + 大规模容器化仿真**在地面机器上构造一个"数字孪生"，每个容器扮演一颗卫星/地面站/终端，用 VLAN 跨机连出与真实星座一致的拓扑，从而**同时拿到"贴近真实"和"可灵活配置"**（L25 摘要，L89–L159 设计）。
+
+**2. 问题设定**
+作者的立论是**"真实性与灵活性难以兼得"**（L53 逐字："it is difficult to simultaneously achieve realism and flexibility in the experimental environment"）。三类现有手段各有硬伤（L47–L51、L77 段）：
+- **实网/平台**（Live Starlink、PlanetLab、Emulab）：真实但**贵、不可控**，监管信息"cannot be flexibly modified for what-if analysis"（L79）；
+- **仿真器**（STK、GMAT、SNS3、Hypatia、StarPerf）：灵活但抽象层级过高，**"can not support the run of system codes/functionalities and interactive network traffic as in real deployments"**（L83），会**掩盖系统级效应**；
+- **仿真器掩盖的具体东西**（L49 逐字）："the abstraction level of simulation might be too high to capture low-level system effects, hiding practical issues such as **the resource competition under heavy workload**, energy drain or software errors"；
+- **模拟器/emulator**（Mininet、DieCast、Etalon）：能跑真代码，但**不具星座一致性**，且**规模不够**——作者给的具体对照是 DieCast 用 10 台物理机撑 250 节点、Etalon 用 4 台服务器模拟 48 台主机，而**仅 Starlink Phase-I 第一壳层就有约 1584 颗卫星**（L87）。
+
+**3. 方法骨架**（平台工程，非算法）
+**四个组件**（L97–L103）：
+- **① Constellation Observer（§4.2）**：众包爬取并维护三个数据库——监管信息、在轨卫星信息、地面站分布、互联网用户统计、终端实测数据（L159）。
+- **② Constellation Synchronizer（§4.3）**：用**混合模型**算星座时空特性并生成与真实 ISTN 同步的虚拟网络表示。模型含（L167）：
+  - **星座模型**：Walker 记号 $N/P/p$ + 轨道粒度参数（倾角、高度、相位偏移）；
+  - **地面站模型**：地理位置、天线数、**仰角**（决定 LoS 与可用时长）；
+  - **网络模型**：可见性 + 可用 ISL/天线数 + **连通性策略**。内置两种 ISL 预制：**+Grid**（同轨两个邻居 + 邻轨两个）与 **Motif**（重复模式，每星连多个可见星）；星地连通可选"距离最短"或"剩余可见时间最长"。**传播时延按两端物理距离算**；**链路容量由用户配置**（作者明确说"network capacity might be too speculative in practice"）；
+  - **计算模型**：可手工配置每颗星 CPU 能力，方法是**缩放下载的 CPU 频率 + 强制每节点最大时间配额**；作者给了现实参照——空间级处理器（BAE-RAD 系列）**每核 110–466 MHz**，而新近有在空间站/LEO 小卫星上用 COTS 处理器（Raspberry Pi、Jetson TX2）以降低成本。
+- **③ Constellation Orchestrator（§4.4）**：多机资源管理。**一台 resource manager + 若干 worker**；每个节点一个容器，容器间用虚拟网桥连成链路。
+  - **跨机拓扑一致性**（§4.4.1，Fig 2）：直接把每个卫星的虚拟网卡桥到物理网卡会导致**隔离缺失、退化成 all-to-all 拓扑**；解法是**为每条跨机 ISL 建一个 VLAN**（vlink）以隔离星间流量。
+  - **跨机拓扑更新**：若连通性变化涉及多机，**用 VLAN 把链路更新操作限制在单台机器内**（Fig 3 以星地切换为例）。
+  - **时间同步与状态更新开销**（§4.4.2）：若集中式管理器每时隙给所有星发命令，规模一大就会过载。解法是**"基于预测的多线程事件记忆"**：定义**会合周期（synodic period）**——星座重新出现在地球表面同一投影所需的时间；在每个会合周期开始时为每颗星**预生成整周期的事件列表**，运行时每颗星用独立线程读本地事件列表并触发本时隙事件；跨机时钟用 **NTP** 同步。
+- **④ Unified Abstraction（§4.5）**：开放 API。**Environment APIs**（加载 trace、创建/控制/运行 ENE、配置离散时隙间隔以调节动态性）；**Self-node APIs**（供用户程序在每颗模拟星上调用，暴露卫星编号/轨道号、日照状态、时变地理位置、当前速度、相邻可达星编号等）。另设**资源阈值 $\Delta$**：至少留 $100\%\!-\!\Delta$ 的 CPU/内存给用户的测试负载（L157）。
+- **实现**（§5）：Scrapy 爬虫 + MySQL；Synchronizer 基于 **SkyField** 天文库；Orchestrator 基于 **Docker** + **OpenvSwitch** + **tc**（并优化了 tc 的链路管理模块以满足轻量状态更新）；共约 **6500 行 Python**。开源在 GitHub（SpaceNetLab/StarryNet）。
+
+**4. 它声称的效果**
+| 维度 | 数字 | 位置 |
+|---|---|---|
+| **可扩展规模** | 从 **约 300 颗**（Telesat T1，27×13@98.98°）到 **4408 颗**（Starlink Phase-I 全量五壳层），另含 Kuiper Full 3236、Telesat Full 1671 | Table 2（L253） |
+| **环境创建耗时** | 小规模约 **3.2 分钟**，Starlink Full（4408 星）**21.2 分钟**（节点 13.3 + 链路 7.9） | Table 2 |
+| **CPU 开销** | 更新间隔 1 s 时：小星座 **1.0%**，Starlink S1/S2（1584 星）**7.2%**，**Starlink Full 39.6%**，Kuiper Full 24.6% | Table 2 |
+| **内存开销** | 同期 Starlink Full **10.4%**、Kuiper Full 6.3% | Table 2 |
+| **所需 worker 数** | 从 1 台到 **7 台**（Starlink Full） | Table 2 |
+| **时延保真度（vs 真实 Starlink）** | StarryNet 在 **均值/50/70/90 分位**上都与 2021 年欧洲真实 Starlink 实测接近，而 **Hypatia 与 StarPerf 系统性低估时延**——因为它们基于高层抽象、**没有考虑包处理等系统开销** | §6.2，Fig 6（L275 附近） |
+| **吞吐保真度** | 用 iPerf 测 TCP 吞吐，**可被调校到准确复现实网带宽**（Hypatia/StarPerf 无法加载 iPerf 真实流量，故只与实网比） | Fig 7 |
+| **ISL 拓扑下时延** | StarryNet 比其它仿真器**略高**（因为它计入了真实系统级开销如包处理） | Fig 8 |
+| **算力可配置性** | 用 **CoreMark** 基准测试验证模拟节点能复现真实硬件（RAD-5545、HPSC、Raspberry Pi、Jetson TX2）的算力档位 | Fig 9 |
+- **三个案例研究**（§7）：
+  1. **§7.1 天地组网设计空间**（Table 3，基于 Starlink 第一壳层 + 真实地面站分布，逐星加载 **BIRD** 并跑 **OSPF**）：四种范式的**平均端到端时延**依次为 **SRLA（弯管中继）183.25 ms、SRGS（地面站组网中继）313.39 ms、GSSN（地面站网关 + ISL）106.91 ms、DASN（用户直连 ISL 网络）86.11 ms**；**可达性**依次为 **97.00% / 51.00% / 57.40% / 97.50%**。结论是**没有全能赢家**——弯管简单但用不上低时延潜力，依赖 ISL 的方案能近最优路由但带来额外 ISL 成本、更高的路由不稳定与连接中断、以及（DASN 独有的）**地址频繁变更**问题。
+  2. **§7.2 ISTN 韧性**（Fig 11/12）：模拟空间失效（如地磁暴）使一部分卫星失活。**路由恢复时间随星座规模与失效率上升**；**低失效率下时延只轻微上升，失效率到 30% 时时延急剧上升**。作者给出三条启示，其中一条值得注意（L296 逐字）：LEO 的高动态性是**双刃剑**——"On one hand, for terrestrial users whose access satellite above them fails, the dynamicity helps because faulty satellites will soon move out of their line-of-sight. On the other hand, the dynamicity hurts, as it **spreads the failure globally**, and could affect the network accessibility of other users."
+  3. **§7.3 硬件在环**（Fig 13，Table 4）：把一台 **3U CubeSat 原型**（低功耗处理器、跑真实路由协议）接入 **1584 颗 Starlink 卫星的仿真环境**，按 [51] 的卫星流量模型注入流量并用功率计测量。功耗（W）：**空闲 2.83 / 路由收敛 3.22 / 数据传输 100 Mbps 4.6 / 250 Mbps 4.99 / 500 Mbps 5.36 / 750 Mbps 5.45 / 1000 Mbps 5.46**。
+
+**5. 它的实验条件**
+- **硬件**：典型企业集群，**8 台 DELL R740**，每台**双 Intel Xeon 5222（各 4 核 3.8 GHz）**、**8×32 GB DDR4**、Ubuntu 20.04 LTS（L181）。
+- **时隙更新间隔**作为实验变量：**1 s / 2 s / 3 s** 三档（Table 2 的 CPU/内存列）。
+- **资源上限**：CPU 使用**限制在 $\Delta=50\%$ 以内**，理由是"底层框架的运行开销不应吃光资源，要给被测负载留足"（L267）。
+- **保真度对标**：与 **2021 年欧洲真实 Starlink 实测**（CUAS 的公开报告 [33]）比；仿真器对标 **Hypatia** 与 **StarPerf**。
+- **驱动数据全部来自公开真实信息**：FCC 监管文件、CelesTrak TLE、SatNOGS 地面站、Internet World Stats 用户分布、终端实测。
+- **负载维度**：**有，但很有限**。全文唯一的"负载"实验是 §7.3 HIL 的**数据传输速率扫描（100/250/500/750/1000 Mbps）**，其**观测量是"功耗"而非时延或可达性**。§7.2 扫的是**失效率**（10/20/30%），观测量是**路由恢复时间与时延**——这是本文里唯一"扰动 → 时延"的曲线，但扰动是**故障**而非负载。
+- **训练与评估**：不涉及学习，无训练/测试划分。
+
+**6. 它自己承认的局限（逐字引用）**
+- L299 逐字（§8）："STARRYNET is essentially a data-driven framework combining constellation-relevant modeling and network emulation. Thus its **fidelity tightly depends on the availability and accuracy of the public information** shared by the satellite ecosystem. For example, in practice, public TLE data may provide inaccurate orbit information, which can have **errors up to 12 km**, and such errors can affect the calculation of network performance (e.g., inter-satellite visibility and propagation delay)."
+- L299 续（逐字）："it is difficult to obtain the real ISL-enabled Starlink performance right now, since Starlink's laser ISLs are still under internal test. Thus, STARRYNET allows researchers to manually configure the ISL parameters (e.g., link capacity) and customize their experiments based on various experimental requirements."——**ISL 参数是"手工配置"而非实测**。
+- L299 续（逐字）："our framework is primarily based on virtualization-based network-level emulation, and thus it has **limited ability to emulate physical layer (PHY) characteristics** that can be observed in a live network experiment, e.g., spectrum adaptation and multiplexing [42], or the time consumed by a real satellite dish to detect PHY connectivity changes."
+- L183 逐字（§6.1）："The scale of the experiment supported by STARRYNET is closely related to the underlying resources provided by physical machines."
+- **未见自述**：实验**只有 8 台机器的集群**，而最大配置（Starlink Full 4408 星）需要 7 台 worker——**几乎没有余量**，作者未讨论更大规模或更复杂用户负载下会发生什么。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **把"负载 → 时延/可达性"补上**。这是最明显的一条：现有实验里，**失效率扫了（§7.2，看时延）**、**数据速率扫了（§7.3，看功耗）**，但**从来没有把"流量负载"当作自变量去看时延/可达性**。平台本身完全支持（§4.5 的 Environment APIs 可配时隙间隔、§7.3 已有流量注入模型），**只差一次实验**。
+2. **给"系统开销"一个定量分解**：作者反复强调仿真器会低估时延因为"没有考虑包处理等系统开销"（§6.2），但**从未把这份开销拆开量化**（每跳多少 μs？随负载如何变化？）。而这恰恰是"仿真 vs 实测"差距的来源，也是"负载→时延"曲线在高负载端翘起的物理机制。
+3. **$\Delta$ 阈值的敏感性完全没测**：资源阈值固定为 50%（L267），但**当用户负载把 CPU 吃满时，模拟星的时延会怎么变**——这正是"资源竞争"（L49 自己点名的、仿真器会掩盖的问题），平台造出来了却没有拿它做实验。
+4. **跨机 VLAN 方案的扩展性论证缺失**：每条跨机 ISL 一个 VLAN（§4.4.1），但 VLAN 数量有实际上限（4094）。Starlink Full 用 7 台机器、每台几百个容器时，跨机 ISL 有多少条、是否逼近上限，**全文未给数字**。
+5. **Synodic period 事件预生成的正确性依赖轨道周期性**：作者用它来摊销状态更新开销，但真实星座有轨道摄动与持续发射补星，**事件列表的失效条件与重生成策略未讨论**。
+
+**8. 和同批其他篇的关系**
+- **与 GGFJ3SEG（HitchHiking）构成本批最尖锐的一处"平台 vs 实测"张力，而且两边都点了对方**：
+  - 本文（StarryNet）在 §6.2 拿自己的时延与真实 Starlink 比，声称 **Hypatia 与 StarPerf 低估时延**，而自己"attains similar latency performance"（L275）；
+  - GGFJ3SEG（HitchHiking）却明确点名 StarryNet：说它"**does not evaluate latency predictions beyond the 90th percentile latency and is 20 times less accurate at predicting 90th percentile latency compared to 70th percentile latency**"，并且"**requires over 2 TB of RAM to simulate Starlink and is not able to run in cloud environments**"。
+  - 两篇的差异在于**评测口径**：StarryNet 说自己能在 8 台机上模拟 4408 星（容器化、~40% CPU），而 HitchHiking 说的是"要把 StarryNet 当作 Starlink 时延预测器来跑"的情形。**这两条 claim 无法同时为真地比较，本批读者必须并列看待，不能只引一边**。
+- **与 GJJQUMQ2（区域时延签名）**：本篇是"造实验床"，GJJQUMQ2 是"用现成实测数据集做分析"——**一个是生产数据的工具，一个是消费数据的分析**。GJJQUMQ2 用的是 LENS 数据集（真实测量），不走仿真路线。
+- **与本批三篇 LEO 路由论文（FLQLU3T4 / GPDPLJNG / GPLEP83L）的关系是"基础设施"**：那三篇全部在自建仿真器上评估，**而 StarryNet 的核心主张正是"高层仿真会掩盖系统级效应"**。若那三篇的结论要在 StarryNet 上复验，其中 GPDPLJNG 的"无丢包"假设（其 L190）会最直接被证伪。
+- **与 I2WH9RRR（ADQN）无关**；参考文献**无一篇来自本批其他 10 篇**。
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**贡献是"方法论层面的"加上一组可复用的常数，不是一条负载-时延曲线。**
+- **最重要的方法论事实（§6.2，L275）**：**纯高层抽象的仿真器会系统性低估时延，因为漏掉了包处理等系统级开销**；只有**能跑真实网络栈的仿真/模拟环境**才可能贴近实测。对"负载变化下的时延"这个选题，这条直接决定**用什么工具做实验才有说服力**——如果负载效应的一部分正是来自协议栈与 CPU 的处理开销（而不仅是排队），那么**纯解析/事件驱动仿真从结构上就测不到它**。
+- **第二条方法论事实（L49 逐字）**：高层仿真会"**hiding practical issues such as the resource competition under heavy workload**"。即**"重负载下的资源竞争"这一类现象，作者认为仿真器天然看不见**。这是本批里唯一一处明确指出"负载效应需要真实系统才能观察到"的表述。
+- **一组可直接引用的常数（Table 3，L290）**：Starlink 第一壳层 + 真实地面站分布 + BIRD/OSPF 下，四种天地组网范式的**平均端到端时延 86.11 / 106.91 / 183.25 / 313.39 ms** 与**可达性 97.0% / 51.0% / 57.4% / 97.5%**。其中 **SRGS 的可达性只有 51%** 是一个很硬的事实：**地面站不足会同时抬高时延并腰斩可达性**。
+- **一条扰动-时延曲线（§7.2）**：失效率 10→20→30%，**时延在 30% 失效率时急剧上升**（Fig 12）。这是**扰动幅度 → 时延**的非线性悬崖，虽然扰动源是故障而非负载，但**"系统在承受多大扰动后会从线性退化转为崩溃"这一问法，与负载研究是同构的**。
+- **一条负载→功耗曲线（§7.3，Table 4）**：数据速率 0→1000 Mbps 时，CubeSat 功耗仅从 2.83 W 升到 5.46 W，且 **500 Mbps 之后基本饱和**（5.36→5.46）。这提示**在小卫星上，转发速率对功耗的边际影响很快衰减**——对"高负载是否值得"的成本判断有用，但它**不是时延数据**。
+- **必须写明的边界**：本文**没有任何"负载 vs 时延"或"负载 vs 可达性"的实验**。它提供的是**一个能做这类实验的平台**，以及**"为什么必须用这个平台而不是仿真器"的论证**。
+
+**10. 一句话评价**
+**把"容器化网络模拟"与"众包真实星座数据"焊接起来，做成 ISTN 领域第一个同时满足星座一致性、真实系统栈、可扩展与低成本的实验平台**——方法谱系的位置是"**在既有的 emulator 谱系（Mininet/DieCast/Etalon）上做星座领域的适配与规模化**"，两项真正吃功夫的工程是**跨机 VLAN 拓扑隔离**（解决 all-to-all 退化）与**基于会合周期的事件预生成 + 每星独立线程**（把状态更新的中心化瓶颈摊掉）。它的价值不在任何一条实验结论，而在**它把"高层仿真会掩盖重负载下的资源竞争"这件事从一个怀疑变成了一件可以用工具去检验的事**——但**本文自己并没有去做这个检验**：负载只被扫过（功耗），没被用来问时延。
+
+
+## IP7RRM3A — From Connectivity to Advanced Internet Services: A Comprehensive Review of Small Satellites Communications and Networks
+
+**1. 一句话**
+一篇 **2019 年发表的综述**（不是研究论文）：梳理小卫星（small sat / micro / nano / pico）在**通信与网络**方向的演进，重点讲四件事——**更高频段与光通信的载荷演进**、**SDR 化**、**新电信架构（DTN "Ring Road"、ICN、SDN/NFV、5G 融合）**、**协议栈各层的进展**，末尾列出六类开放挑战（L11 摘要，L100–L260 正文）。
+
+**2. 问题设定**
+作者要回答的是"小卫星为什么能成功、它的通信能力走到哪一步了"。驱动力来自 **COTS 器件与微电子/微系统**的进步，使卫星可做小（小卫星 ≤1000 kg、微 10–100 kg、纳 1–10 kg、皮 0.1–0.99 kg，L17）。早期小卫星只做科学、对地观测、遥感，**现在开始做电信服务**（L11、L113）。关键成本数字（L45）：**单颗小卫星的生产与发射成本约 10 万–20 万美元**，拼车发射时**单位质量发射成本可低至几千欧元**；2010–2015 年发射了 **551 颗 <400 kg** 的卫星，随后五年预计再发 **1380 颗**；2017 年一年就有 **300 颗纳/微卫星**入轨（L45）。
+作者明确说本文相对已有综述的增量是"**更侧重电信方面**"（L27）：[5] 讲天线、[6] 讲星间链路与协议、[4] 讲历史与能力、[3] 讲 CubeSat 的结构与协议，而本文讲**更高频段、光通信、协议与架构**。
+
+**3. 方法骨架**
+**综述体，无方法论**。文章结构为：§2 小卫星简史 → §3 服务与应用 → §4 载荷演进 → §5 新电信架构 → §6 协议进展 → §7 展望与开放挑战 → §8 结论（L27 的组织说明；实际小节标题见 L39–L260）。
+其中技术内容最实的四块：
+- **§4 载荷演进**：频段从 VHF/UHF（AX.25、binary-FSK）→ S 波段（遥控、100 kbps–1 Mbps 下行）→ X 波段（数据传输）→ **Ku/K/Ka**（2015 年首台 CubeSat Ka 波段发射机在轨运行）；再往上是 **Q/V 与 W 波段**（主要被 HTS 的带宽需求驱动，也可能用于星间链路）。天线从线天线（偶极/单极/螺旋）→ 贴片/缝隙 → **高增益反射面/反射阵**（反射阵是平板结构、可折叠收纳，MarCO 用 8.425 GHz、实测增益 **29.2 dB**）。一个具体的工程约束（L137）：**高于 S 波段时固态高功放效率从 UHF 的 80% 掉到 30%**。
+- **§4.2 激光通信终端**：EDRS 已把星间激光推进到业务化；下行演示有 SOTA、OPALS（ISS）、1.5U CubeSat 光学下行、月地激光链路。规划中的有 NASA **TBIRD**（目标 **100 Gbps** CubeSat 对地）与 DLR 的 **OSIRIS**。当前实用数据（L147）：**小卫星光终端约 10 Gbps、重约 5 kg、功耗约 50 W**；而 **OSIRIS4CubeSat 重约 300 g、功耗 8 W、占 0.3U、速率 100 Mbps**（商品名 CubeL）。明确指出**云导致的可用性受限**可借"全球光学地面站网络 + 星上充足缓存"缓解。
+- **§4.3 SDR 化**：趋势是从 HW 走向 SW 实现；早期可重构代表是 2002 年澳大利亚 FedSat（FPGA 基带 + 在轨代码上传）。SDR 让 **DSA（动态频谱接入）** 成为可能，但**迄今没有任何卫星应用 DSA**。约束仍是**功耗**——所以目前**高数据率（X/Ka）更偏好 FPGA**（可并行、每时钟周期利用更充分），现代 FPGA 还内嵌 ARM 核。
+- **§5 新架构**：两种角色——(i) 作为**现有互联网的支撑基础设施**（给出三个星座规模数字：**OneWeb 初期 882 颗、可增至 2620**；**三星提案 4600 颗、号称月承载 10 亿 TB**；**Starlink 规划最多 12,000 颗、可承载密集城区本地互联网流量的 10%**，L189）；(ii) 作为**新架构的参与者**——重点是 **DTN "Ring Road"**（L155–L185）。
+  **Ring Road 的具体机制**（L153–L185）：三类 DTN 节点——极轨的"信使（courier）"路由卫星、连着互联网的"热点（hot spot）"、完全孤立的"冷点（cold spot）"。冷点把 bundle 排队等信使飞过；信使收到后**依据自己未来的日程接触表**决定路由——若目的地冷点在 TTL 到期前会被自己访问，就留着；否则在飞过下一个热点时卸货。热点收到后再算路由：若目的地可直接经互联网到达就走 BP over TCP/IP 立即发出；否则查接触表找**哪个信使最早接触目的地冷点**、再找**哪个热点最早接触那个信使**，把它转发过去。作者强调的优点是**路由计算发生在地面热点而不在卫星上**，所以小卫星可以只当"信使"。
+  §5.3 另讲**与地面架构的集成**：DTN 网关、**SDN/NFV "软化"**、**ICN（信息中心网络，pub-sub + 具名内容 + 分布式缓存）** 与 DTN 共存，以及与 MEC/云的衔接（Fig 9）。
+- **§6 协议进展**：物理层（更高效调制、VCM/ACM，如 ESA 的 RADIOSAT Ka 波段 + DVB-S2；另提 **VLC 可见光通信**——约 **300 THz 空闲带宽**、可避开 6 GHz 以下频谱紧张、且不需要激光那种精密指向电子学）；链路层（**CCSDS USLP** 的虚拟信道与复用接入点、**SDLS** 链路层安全）；网络层（**BP** 作为 DTN 版的 IP、**LTP** 作为 DTN 版的 TCP；二者关键区别是 LTP 做**逐跳重传**而 TCP 做端到端重传，原因是在深空场景端到端重传会慢到不可用）；另详述**网络编码（NC）**在空间段的适用性、分层 vs 集成实现、应放在协议栈哪一层的争论，以及资源受限带来的复杂度代价。
+
+**4. 它声称的效果**
+**综述无原创实验结果**，其"效果"是给出的现状数字与判断，摘录如下：
+- 市场规模：2010–2015 发射 **551 颗 <400 kg**，后五年预计 **1380 颗**；2017 年 **300 颗**纳/微卫星；通信类纳/微卫星**未来五年约需发射 700 颗**（L45、L129）。
+- 成本：单星 **10 万–20 万美元**；拼车单位发射成本**数千欧元/kg**（L45）。
+- 频段/速率：S 波段下行 **100 kbps–1 Mbps**；CubeSat Ka 波段发射机 2015 年入轨（L137）；MarCO 反射阵 **8.425 GHz / 29.2 dB**（L137）；固态功放效率 **UHF 80% → 高于 S 波段 30%**（L137）。
+- 光通信：小卫星光终端**约 10 Gbps / 5 kg / 50 W**；**OSIRIS4CubeSat 100 Mbps / 300 g / 8 W / 0.3U**；TBIRD 目标 **100 Gbps**（L147）。
+- 星座规模：OneWeb **882→2620**、三星 **4600**、Starlink **最多 12,000**（L189）。
+- 安全：卫星 QKD 在 **1200 km** 距离上实现 **kHz 级密钥率**（比同长光纤（0.2 dB/km 损耗）高出若干数量级）；**4 kg 的 CubeSat 能生成量子安全密钥**，而此前只有 600 kg 级卫星做到过（L246）。
+- VLC 可用带宽 **约 300 THz**（L219）。
+
+**5. 它的实验条件**
+**不存在**——这是综述，没有仿真、没有实测、没有实验台。全部的"条件"都是被引文献的条件与行业统计（SpaceWorks、Euroconsult 的市场预测，Fig 1–5）。
+唯一可算"设定"的是它讨论架构时的默认假设：Ring Road 假设**轨道可精确预知、接触可提前很久排定**（L161 逐字："The courier's orbit is well known, so the contact between the courier and the cold spot can be scheduled far in advance"），这也是该架构能做**接触表驱动路由**的前提。**与负载/到达率/时延相关的实验一概没有。**
+
+**6. 它自己承认的局限（逐字引用）**
+本文是综述，其"局限"以**开放挑战**的形式写在 §7（L220–L258），共六类，其中与本选题最相关的是第 (iv) 条：
+- L236 逐字（§7 (iv) "Routing over Time"）："Due to the frequent topology changes in a CubeSat network, **successful data delivery will require ample long-term storage at intermediate nodes to deal with satellite link disruptions**."
+- L234 逐字（§7 (iii) "Upper Layers"）："Definition is needed for interoperable application-layer protocols to be employed on top of the lower layer satellite protocols, addressing a wide range of application scenarios and **traffic data configurations**."
+- L222 逐字（§7 (i)(a)）：光/高频段链路"the propagation channel can be strongly attenuated"，靠**地面站站点分集**缓解。
+- L226 逐字（§7 (ii)）："the implementation in small satellites of the **scheduled and random-access MAC protocols** adopted in existing satellite networks needs further investigation."
+- L246 附近承认：CubeSat 所用协议**几乎没有安全特性**，而地面网的安全机制因握手长、计算重，"can hardly be directly applied to networks of small satellites"。
+- L260 附近承认：**SDN/NFV 在小卫星网络中的使用"has yet to be investigated"**。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **"存储而非带宽"才是小卫星网络的容量瓶颈**——这条在 Ring Road 一节里其实已经写出来了（L169 逐字）："the carrying capacity of the network as a whole (**the aggregate storage capacity of all the couriers**), so that the number of cold spots supported can increase"，以及增加热点能"enabling earlier drainage of the return-traffic bundles in couriers' onboard storage and thereby making room for more bundles"。**这是一个"容量的度量是存储、负载的度量是支持的冷点数"的完整论证框架，但作者只把它当架构优点一笔带过，没有形式化、没有量化、没有对照。** 把它写成"到达率 vs 存储占用 vs 投递时延"的排队模型，是本文留下的最明确的一个口子——而且它与本批 GV9PPNZT（AoI 的多跳队列框架）可以直接对接。
+2. **§7 (iv) 自己点名"长时间中间存储"**（L236）：这正是 DTN 式 LEO 路由的核心资源约束，也是本批 GPDPLJNG（DTN 存储-转发 + 缓存约束）所建模的东西。**一篇 2019 年的综述已经指出这是关键挑战，而 2024–2025 年的路由论文才刚开始把它当一等约束。**
+3. **接触表驱动的路由**（L163–L167）是一个**确定性调度问题**：既然接触可提前很久排定，那么"何时把哪个 bundle 交给哪个信使"本可以是离线/在线的确定性优化，而**本文完全没有讨论其优化方法**——只描述了启发式规则。
+4. **VLC 星间链路**（L219）被提了一句（约 300 THz 空闲带宽、不需精密指向电子学），但**没有任何后续分析**。对于"小卫星星间链路"这个约束极强的场景，这是一条被作者自己提出又丢掉的路线。
+5. **DSA 至今零卫星应用**（L141 逐字）：作者明确指出 SDR 使 DSA 成为可能，但"To date, no satellite application of DSA is in use"。**这是一个明确标注为空白的频谱维度**。
+
+**8. 和同批其他篇的关系**
+- **与本批所有其他 10 篇的关系是"时间与层次上的上游"**：本文 2019 年 5 月发表，**早于本批全部路由/学习类论文**（FLQLU3T4、GPDPLJNG、GPLEP83L 引用的都是 2024–2026 的工作），也早于 HitchHiking（2024）与 StarryNet（2023）。它提供的是**这个领域在"深度学习路由"成为主流之前的问题清单**。
+- **与 GPDPLJNG（DRL-SR）有直接的建模血脉**：GPDPLJNG 把 LEO 路由建成 **DTN 存储-携带-转发 + 缓存约束**的多商品流问题——**这正是本文 §5.2 Ring Road 与 §7(iv) 所描述的范式**。可以说 GPDPLJNG 是在解本文列出的挑战 (iv)。
+- **与 IEI3BYFF（StarryNet）**：本文在 §5.3 主张需要 **SDN/NFV 软化 + ICN/DTN 共存 + 与 5G/MEC 融合**，并承认"SDN/NFV 在小卫星网络中的使用尚未被研究"（L260）。StarryNet 提供的正是**做这类实验所需的可编程实验床**（其 Self-node APIs 允许在每颗模拟星上跑用户程序）。**两者是"提出需求"与"提供工具"的关系。**
+- **与 GGFJ3SEG（HitchHiking）**：本文提到的光/高频段链路受云影响、需站点分集（L222），与 HitchHiking 实测发现的"时延主要受 POP 距离与 ISL 路由支配"完全不冲突但也不相交——**一个讲链路层可用性，一个讲网络层时延**。
+- **与 GV9PPNZT（AoI）**：本文 §7(iv) 讲的"中间节点需要大量长期存储以应对链路中断"，与 GV9PPNZT 的"每节点无队列、只留每个流的最新包"是**两个极端**——DTN 要全存，AoI 只留最新的。**这个对立本身就是一个可以做的题目**（在什么负载/中断模式下，该留全部还是只留最新的？）。
+- 参考文献（L264–L492）**无一篇来自本批其他 10 篇**（本文发表于 2019，不可能引用它们）。
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**作为综述，它没有贡献任何新的测量或仿真事实；但它贡献了一个被本批其他论文普遍忽略的建模视角。**
+- **最实质的一条**：在 DTN 式小卫星架构里，**网络容量的约束是"全网信使的总存储量"，而不是链路带宽，也不是到达率**（L169 逐字："the carrying capacity of the network as a whole (the aggregate storage capacity of all the couriers), so that the number of cold spots supported can increase"）。相应地，**"负载"的自然度量是"同时支持的冷点数"**，而**"到达"完全由轨道接触日程决定**（L161：接触可提前很久排定）。**这套框架与本批其他论文的"泊松到达 + 队列 + 时延"是根本不同的建模选择**——它提示：在 DTN 式 LEO 网络里，问"到达率变化如何影响时延"可能是个**提错了的问题**，因为到达不是外生的、而是被轨道几何决定的；真正会变化的是"缓存被填满的速度"。
+- **第二条**：§7(iv)（L236）明确指出**频繁拓扑变化下的成功投递需要中间节点的大量长期存储**——即**存储是应对中断的手段，而存储占用会随时间累积**。这与"负载持续高于排空能力 ⇒ 存储单调增长 ⇒ 最终丢包"的机制直接对应，是"负载 → 崩溃"的一条路径。**但本文只有这一句话，没有模型、没有数字。**
+- **第三条（间接）**：光学星地链路**受云遮挡导致可用性受限**，作者给的解法是"全球光学地面站网络 + 星上充足缓存"（L147）。也就是说，**链路可用性的下降要靠缓存来吸收**——再次指向"缓存"而非"带宽"是缓冲负载的关键资源。
+- **必须写明的边界**：本文**没有时延数据、没有到达率、没有队列、没有任何实验**。它对本选题的价值是**提供了另一种"负载—资源"的表述方式（存储 vs 带宽）**，以及**一组 2019 年的行业规模与工程常数**（星座规模、成本、光终端重量/功耗/速率）。
+
+**10. 一句话评价**
+**一篇覆盖面很宽但深度有限的 2019 年小卫星通信综述**——方法谱系里的位置是"**在'小卫星'与'电信'的交叉处做一次现状盘点**"，它的价值不在任何单一结论，而在于**把 2019 年之前的频段演进（UHF→Ka/W）、光终端（EDRS/OSIRIS/TBIRD）、SDR 化、DTN "Ring Road" 架构、以及协议栈各层（USLP/SDLS/BP/LTP/NC）压缩进一篇可检索的文本**。对本批选题最有用的是它在 §5.2 与 §7(iv) 里那个**"容量 = 总存储、负载 = 支持的冷点数、到达 = 轨道接触日程"**的视角——**这与本批其他论文默认的"泊松到达 + 队列 + 时延"范式截然不同，且作者自己没有把它发展下去**。局限同样明确：**它是综述，无实验、无模型、无可复现结论**；且发表于 2019 年，**其星座规模数字（Starlink 12,000 上限等）与工程常数已被现实超越**，引用时须核时。
+

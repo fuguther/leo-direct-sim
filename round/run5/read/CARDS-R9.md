@@ -714,3 +714,69 @@ LEO 时延受限的根因有两个（摘要 L~5 附近）："fast variation of n
 **一篇把"VNF 放置 + 跨时隙路由"用 TEG 严格建模、并以"动态流守恒五分情形"（式 18a–18e）为主要技术贡献的数学规划论文**；方法谱系上它属于"**NP-hard → 线性化 → 分解求最优 → 再给启发式**"这条经典运筹学路线，工程价值在 TEDG 那个"快三个数量级、只差 7%"的折中；但它自称最小化"服务端到端时延"、实则把时延量化成了 **100 秒的整数倍**——**指标口径与其物理场景严重不匹配**，这是读它时最需要警惕的一点。
 
 
+## WT839JP7 — Fine-Grained Library Customization
+
+> 短篇软件工程/安全论文（Workshop 体量）。作者：Linhai Song, Xinyu Xing（Pennsylvania State University）。全文 199 行，逐行读完（一次读完全文；L158–L199 为参考文献）。
+
+**⚠️ 先给结论：这篇与本批主题（LEO 卫星网络 RL 路由 / 负载变化下的到达率与时延）没有关系。** 它是**程序分析与代码瘦身（debloating）**方向的工作。全文没有出现卫星、轨道、星座、路由协议、队列、到达率中的任何概念（唯一出现 "network" 一词是 L15 讨论"软件分发占网络带宽"，与网络路由无关）。这是本批第 2 篇主题外条目（另一篇是 VACUFEHB）。我不做任何强行联系。
+
+**1. 一句话**
+用一个案例说明：**静态链接库里有大量"对上层程序毫无用处"的计算可以裁掉**——因为库函数常常返回一个含几十个字段的结构体，而上层只读其中少数几个字段；作者用 LLVM 做了两个原型工具（删"无用字段赋值"、删"未用包类型"），在 midilib 上把函数 midiReadGetNextMessage 的 LLVM 中间码**删掉了 50.83%**。
+
+**2. 问题设定**
+代码膨胀（code bloat）普遍存在于生产软件中（L11 逐字举例："only around 20% instructions of Firefox are executed under typical workloads"）。静态链接时，库为了通用而提供的接口只被某个程序用到很少一部分，**其余代码被一并链进来**。危害被列了四条（L15）：引入更多 bug 与漏洞（引用研究称协议实现里多数漏洞位于不常使用的模块）、代码体积增大致使内存压力与指令 cache 缺失、**产生无结果或冗余的计算导致效率下降**、以及分发时占用网络带宽。谁遇到麻烦：希望削减攻击面与体积的软件维护者。
+
+**3. 方法骨架（无学习，纯编译期静态分析）**
+- **核心假设**（L~17–L21）：库函数常以 struct 返回结果，而**上层程序只使用其中部分字段**，因此库中必然存在**"无结果计算"（resultless computation）**，可以剪掉。
+- **案例对象**（§2，L23–L27）：开源 C 库 **midilib**，其 midifile.c 被静态链接进 5 个可执行文件（m2rtttl / mididump / mfc120 / mozart / miditest）；分析聚焦 **m2rtttl** 与 midifile.c。
+- **两类证据**：
+  1. **字段级**（§2.1，L60）：MIDI_MSG 结构体定义 **44 个原始字段**，而 m2rtttl 的 while 循环**只访问其中 9 个**。
+  2. **包类型级**（L~75）：库函数 midiReadGetNextMessage **能组装 9 种 MIDI 包类型**，而 while 循环**只处理 3 种**（msgNoteOn / msgNoteOff / msgMetaEvent），其余在 default 分支被忽略。
+- **量化**（L87）：用 **LLVM 插桩** midifile.c、跑 10 组不同输入，共追踪到 **4755 次读、2833 次写**指向 msg 各字段的字段操作。其中 **1133 次写不可删**（其字段被上层读）；余下 **1700 次写**分两类：
+  - **1015 次（约 60%）**：库与上层**都不读**这些字段 → **可安全剪除**；
+  - **685 次（约 40%）**：上层不读，但**在库内部参与数据依赖** → 需带依赖分析地剪。
+- **两个原型工具**（§2.2，L~105–L144），均基于 LLVM：
+  - **工具一：消除无结果字段赋值**。用 LLVM 的 struct layout 信息算出"两边都不读"的字段偏移 → 定位对应的赋值指令 → 再做**简单数据依赖分析**把与赋值相关的指令（算值、算地址）一并剪掉。结果：追踪到 **4 个字段、51 条 LLVM 指令**，约占 **7%（51/722）**。
+  - **工具二：消除未使用的包类型**。⭐ 用**控制依赖不匹配**做判别：库中"先读 msg.iType（Table 3 行 4）→ 判断等于某包类型（行 5）→ 才给字段赋值（行 13–15）"；而上层**没有同样的控制依赖**，故这些计算对上层无影响，可剪。结果：**33 条字段赋值指令**，经依赖分析后共定位 **355 / 722** 条 LLVM 指令可删。
+  - **两工具合并**（L144）：共识别 **36 个**无结果字段赋值，经依赖分析可删 **367 / 722 条 LLVM 指令 = 50.83%**，对应**约 39.63% 的源代码行**。
+
+**4. 它声称的效果**
+- **唯一的量化结果就是上面那组比例**：指令级 **50.83%（367/722）**、源码行级 **约 39.63%**（L144）。
+- 另一个量化观察：MIDI_MSG 的 44 个字段中上层只用 9 个；库支持 9 种包类型而上层只用 3 种（L60、L~75）。
+- **作者明确声明这是 proof-of-concept**（L29 逐字）："we **do not claim** our prototype system is an effective solution for dealing with the library debloating. Rather, it is just a **preliminary proof-of-concept tool**, demonstrating the possibility of reducing the code space for the library."
+- **没有任何运行时性能测量**：没有测执行时间、没有测内存占用、没有测 cache 缺失率、没有测攻击面变化。**"减少攻击面"是动机，不是被验证的结果。**
+- **没有与任何 debloating 工具做对照实验**（相关工作 §3 提到的 LDoctor、Cimplifier、JRed、Hong et al. 等只作背景讨论）。
+
+**5. 实验条件**
+- **对象**：**1 个库**（midilib 的 midifile.c）、**1 个可执行文件**（m2rtttl）、**1 个函数**（midiReadGetNextMessage）。
+- **输入**：**10 组不同输入**（用于插桩计数，L87）。
+- **工具链**：LLVM（struct layout 信息、插桩、中间码级改写）。
+- **度量**：LLVM 指令条数、源代码行数。
+- **无训练/评估划分概念**（非学习）。
+- **规模提示**：分母只有 **722 条 LLVM 指令**——这是一个**极小**的函数级案例。
+
+**6. 自述局限**
+- **明确的方法论边界（L29 逐字）**："we do not claim our prototype system is an effective solution for dealing with the library debloating. Rather, it is just a preliminary proof-of-concept tool."
+- **一个具体的技术缺陷，作者自己指出并解释了原因**（L136 逐字）："many primitive fields are enclosed in the **union** type field MsgData. From the perspective of LLVM, this means that the machine utilizes the same memory location to store different struct fields... our tool distinguishes primitive fields based on their offsets. This means it **lacks the ability to distinguish the primitive fields referred by the union struct**, such as failing to differ msg.MsgData.NoteOn.iNote from msg.MsgData.NoteOff.iNote. Therefore, our current results **miss to pinpoint some primitive fields** that neither the library nor the application reads."（即 union 造成的字段混淆使工具**漏检**——44 个字段里只找出 4 个"两边都不读"的，正是这个原因。）
+- **Future work（L156，三条逐字）**："First, we plan to examine more libraries and conduct an empirical study to understand root causes of resultless field assignments and their impact in the real world. Second, we plan to build a **robust static technique** and explore different design points during technical design. Third, we plan to build an **automated testing platform** combining static and dynamic analysis to test customized libraries."
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **删了 50.83% 的指令，却完全没测运行时效果**——执行时间、体积、内存、cache 缺失一个都没报。既然动机第一条就是"computation inefficiency"，**这是最该测也最容易测的一项**。
+2. **没有正确性验证**：删掉代码后程序行为是否不变？作者只说 "we believe" "could safely trim"，**没有做差分测试或回归测试**（future work 第三条承认了这一点）。
+3. **union 造成的漏检从未被绕开**：作者解释了原因就停手了，**而 union 是 C 里极常见的模式**——不解决它，工具的实际召回率上限就很低（44 → 4）。
+4. **控制依赖匹配（工具二）有一个未讨论的脆弱点**：它靠"上层没有同样的控制依赖"判定无用。**若上层通过其他路径（间接调用、回调、函数指针）访问了这些字段，判定就会误删**——文中没有任何可达性/别名分析来兜底。
+5. **只有一个库、一个函数、722 条指令**，却给出 "50.83%" 这样精度很高的数字——**这个数字的外部有效性无法评估**。
+6. **两层裁剪的真正增量没有分开报**：工具一 7%、工具二 355/722，合并 367/722。**工具二几乎覆盖了工具一，那么工具一独立存在的价值（51 条指令）并未被论证**。
+
+**8. 和同批其他篇的关系**
+**与同批任何一篇都没有关系。** 本批（R9）其余 10 篇全部围绕 LEO 卫星网络（路由、流量工程、标准化、测量）展开，本篇属于**软件工程/程序分析**社区，参考文献 [1]–[21] 全部是 PLDI / FSE / ASPLOS / ICSE / COMPSAC 等体系结构与软件工程会议，**没有一篇涉及网络、通信或卫星**，也不被本批任何论文引用。
+**它在语料中的存在与本批另一篇 VACUFEHB（三阶 Volterra 滤波器）同属"检索或归档误入"**——两篇共同说明：**本批语料存在主题漂移，主控在汇总 111 篇的覆盖率时应把这两篇标记为"主题外"，避免它们稀释"LEO 路由"方向的统计**。（值得注意的是：本篇关键词 "library customization" 与 LEO 领域的 "VNF placement / network function" 在检索层面可能产生混淆——**这或许是误入的机制**，可作为一个检索式的排查线索。）
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**没有直接贡献，也没有间接贡献。** 它处理的对象是**编译后的指令与内存偏移**，不是网络流量；优化的量是**代码体积/指令条数**，不是时延或到达率；它提到的"时延"一词在全文**从未出现于任何性能指标语境**。
+**唯一需要说明我为何不做联想**：本主题里有"到达率""吞吐""带宽"，本篇里有"指令数""网络带宽占用（软件分发）"，词语可以搭桥，但**那是完全不同的物理过程**。按任务纪律，如实写"没有直接贡献"，不硬扯。
+
+**10. 一句话评价**
+**一篇与 LEO 路由主题无关的软件工程短文**——用"上层只读结构体少数字段"这一观察 + LLVM 静态分析做出两个 proof-of-concept 裁剪工具，在单个函数上把中间码砍掉约一半；方法谱系上属于 **debloating / 程序切片**这一支，且**通篇只有编译器中间码级的计数、没有任何运行时或正确性验证**。放入本语料属误入条目。
+
+

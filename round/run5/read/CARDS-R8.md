@@ -488,6 +488,83 @@ Q-learning 的 target 里 max 同时承担**选动作**与**评价值**两个角
 **10. 一句话评价**
 **RL 领域的奠基性方法论文（Double DQN 的出处），在本批语料里的角色是"正确性标尺"**：它解释了为什么 LEO 路由里大量自称 DDQN 的工作需要被逐条核对 target 写法，并给出"高估随动作数增长、且扭曲的正是状态价值的相对排序"这一条与负载感知路由直接相关的警示；但它本身与 LEO 网络毫无交集，对到达率/时延**零贡献**。
 
+## TQF59BD7 — IDLB: An SDN-Based Load-Balancing Routing Protocol for Autonomous Satellite Constellation Networks
+
+**1. 一句话**
+DLR + ESA 做的**分布式 SDN 负载均衡路由协议**：把星座切成星上独立簇、每簇一颗星当 SDN 控制器，簇内用"best-of-k 路径 + 按 QoS 类加权的效用函数"做主动负载均衡，簇间用地理信息选出口节点（NHCN）；核心实验是**把网络负载一路加上去，看 QoS 合规率在哪个负载点跌破 95%**（L17、L123、L430）。
+
+**2. 问题设定**
+带 ISL 的 LEO 星座里，光 ISL 速率虽高，但**瓶颈依然会出现**：地面终端分布不对称会造成流量尖峰/地理热点，导致链路临时饱和（L23）。作者的论证链是：地面集中控制因物理尺度大而无法及时下发路由调整、且信令开销大（L25）；星上算力有限所以方案必须低复杂度（L25）；因此用**星上分布式 SDN** 换取反应速度，用**主动拥塞缓解 + 自适应负载均衡**换取 QoS 合规（L23-27）。需要注意的是，这与 SBCHGBCP 的前提**正好相反**——那篇假设无 ISL 靠地面中继，本篇假设有 ISL。
+
+**3. 方法骨架**（**非 RL**：协议设计 + 启发式路径计算）
+- 参考星座两个（Table 1，L66）：**SCN-288**（288 星、12 面 × 24、780 km、倾角 86.4°、准极轨 Walker star；主战场）与 **SCN-1440**（1440 星、30 面 × 48、600 km）（L59-61）。
+- 链路：每星 4 条 ISL（2 同轨 + 2 异轨），速率 **1 Gbps**，每 ISL 输出缓冲 **0.36 Mbit**（=1500 B 包 ×30）FIFO 尾丢弃；大簇用 1.08 Mbit（L70、L76）。**异轨 ISL 在 ±80° 纬度关闭**（极区轨道面相对位置翻转，天线转不过来）（L72-74）。
+- 地面（Table 2，L88）：**2000 个活跃 UT**（每个 100 Mbps、最低仰角 30°）+ **39 个 GW**（最低仰角 20°、馈电上行 5000 Mbps / 下行 1000 Mbps）；UT 分布**按全球人口密度采样**并封顶 100 个/km²（L82）。
+- **分布式 SDN 架构**：簇是**星座拓扑内固定**的划分（因此相对地面是移动的），簇内居中的一颗星担任控制器（L123）。层次只做一层扁平（但可扩展到多层 SDN）（L127）。
+- **两级路由表**（L147-158）：**地理路由表**（地理 cell → 目的节点或 NHCN）判"是否本簇服务"及"从哪条链路出簇"；**簇内路由表**（MAC → 下一跳）做本地解析。作者强调**不做全局终端-卫星映射**，只有局部解析，以压信令。
+- 地理分片：等距圆柱 3°×3° 网格直到 ±87°，极区合并 → **6962 个区域**，地理标识至少 13 bit（L164）。
+- 簇尺寸：SCN-288 用 12（4×3）/ 24（6×4）/ 48（8×6）；SCN-1440 用 48（6×8）（L170-172）。
+- **簇内优化目标**（式2，L223）：$\min_t\max_{(i,j)\in E}u_t(i,j)$，其中 $u_t=f_t/c_t$（式1）。作者说明真正的动态 MCFP 含**时变性、非线性（含传播/排队时延函数 $\tau$）、随机性与动态拓扑**，被判定为多项式时间不可解（式3-4，L226-238），因此退化到启发式。
+- **动态 best-of-k 算法**（第 5.1.2 节）：按 QoS 类给不同效用函数（式5-7，L251-259）——QoS1 只用路径时延 $(L(p)+\epsilon)^{-1}$；QoS2/QoS3 用跳数与路径利用率的加权 $\psi\cdot(N_{hops}+\epsilon)^{-1}+(1-\psi)\cdot(U(p)+\epsilon)^{-1}$。复杂度：路径计算 $\mathcal{O}(|F|(|E|+|V|\log|V|+k))$、判决 $\mathcal{O}(|F|k)$、空间从 $\mathcal{O}(|V|^2)$ 降到 $\mathcal{O}(|V|k)$（式9-11，L271-283）。
+- **簇间路由**（第 5.2 节 + Algorithm 1）：先在簇级算 SPT，再按 QoS 选 **NHCN**（Next-Hop Cluster Node）；时延敏感走最短路，低优先级**随机化**以打散瓶颈；带 ISL 关闭与负载阈值筛选（L300-339）。
+- 两种粒度：**F-IDLB**（逐流）与 **P-IDLB**（逐包，无流状态、路由逻辑更简单但易失稳，需滞回与阈值防抖）（L288-294）。
+
+**4. 它声称的效果**（基线：动态源路由 SPF 与 GEVR 上界）
+- **核心结果——QoS 合规率跌破 95% 的负载点**（L449）：源路由 **约 7.6 Gbps**；F-IDLB 12 节点簇 **12.5 Gbps（+64.5%）**；24 节点簇 **约 15.0 Gbps（+97.4%）**；48 节点簇 **约 16.2 Gbps（+113.2%）**。
+- 收益递减：48 节点仅比 24 节点多撑 **12%** 负载（L464）。
+- 粒度对比：P-IDLB 在 **约 8.6 Gbps** 跌破阈值（已优于源路由），F-IDLB 相对其提升 **45.3%**（L472）。
+- 更大星座（SCN-1440，同为 48 节点簇）：95% 合规下约 **20.2 Gbps**——同簇尺寸提升约 **25%**，与物理尺寸相当的 12 节点簇比提升约 **61%**（L502）。
+- **路由收敛**（Table 5，L441，负载 13.2 Gbps = 9500 个会话、平均时长 100 s）：12 节点 平均 **56.968 ms** / 最大 104.782 ms；24 节点 平均 **117.338 ms** / 最大 285.276 ms；48 节点 平均 **273.526 ms** / 最大 747.552 ms。**要求是 < 130 ms**（Table 3，L382）——**只有 12 与 24 节点簇满足，48 节点簇平均 273.5 ms 明显超标**，而摘要只引用了 24 节点的 117.338 ms（L17），未提 48 节点的违约。
+- 信令开销：0.062% / 0.112% / 0.208%（12/24/48 节点），远低于 5% 要求（Table 5，L441、L457）。
+- 丢包率（13.2 Gbps，Table 5，L441）：12 节点 QoS1/2/3 = $1.044\times10^{-4}$ / $3.571\times10^{-4}$ / $3.374\times10^{-4}$；24 节点 $2.948\times10^{-6}$ / $7.050\times10^{-5}$ / $1.344\times10^{-4}$；48 节点 $8.942\times10^{-7}$ / $2.557\times10^{-6}$ / $2.285\times10^{-6}$。
+- 时延：QoS1（150 ms）与 QoS2（200 ms）**超预算会话均少于 1%**；QoS3（300 ms）也都在限内（L407）。
+- 抖动（48 节点簇，QoS1）：F-IDLB 平均 **2.91 ms**、最大 **85.15 ms**；GEVR 平均 0.64 ms、最大 15.09 ms（L417）。
+- GEVR 上界表现更从容：QoS3 流量会主动走更长但低拥塞的路径，延迟分布明显"顶格"在各 QoS 类上限处（L407）。
+
+**5. 它的实验条件**
+- 自研 C++/Python **包级系统仿真器**，可快于实时，支持上千星规模（L367）。
+- 流量：以 session 为单位（UT-UT 与 UT-GW），**只用 CBR**（作者说为结果一致性，L371）；起始时刻均匀采样、时长按指数分布（均值 100 s）；QoS 占比 **QoS1 10% / QoS2 34% / QoS3 56%**（Table 4，L385）。
+- QoS 类定义参照 5G NR 配置与 **ITU Y.1541**：QoS1 时延 150 ms、丢包 $10^{-2}$、抖动 <30 ms；QoS2 200 ms、$10^{-4}$、<50 ms；QoS3 300 ms、$10^{-6}$（Table 4，L385、L117）。
+- **网络负载定义**（式16，L435）：单位窗口内进入星座的聚合上行数据量除以窗口时长；包大小一般取 12 kbit。
+- **扫描方式就是负载阶梯**：核心图 Fig 9/10/11/12 都是 "QoS compliance vs 网络负载"（L449、L462、L490、L494、L498），SCN-1440 的横轴从 13.9 到 25.0 Gbps（L500）。
+- 基准：**GEVR**（瞬时完美全局知识、无信令无延迟的不可实现上界）与**动态源路由**（Dijkstra 最快路、不共享链路负载信息）（L393-395）。
+- 无训练环节（协议/启发式）。
+
+**6. 它自述的局限**（逐字）
+- L395（基准选择）："Comparisons with other state-of-the-art approaches **can be difficult, as the routing schemes require significant design and implementation efforts**... Thus, we **focused on source routing**."
+- L94（链路简化）："ESLs are modeled with constant data rates in this investigation, **omitting aspects such as adaptive coding and modulation to isolate in-space routing effects**... This simplification ensures that ESL dynamics do not confound the analysis of intraconstellation load-balancing."
+- L63："In real-world systems, the actual position of a satellite varies slightly... Consequently, **only the theoretical positions of satellites are considered**."
+- L102："As this research primarily focuses on protocol characteristics, **solely the presented set of traffic model parameters has been investigated**."
+- L438："Due to the ramp up and down of the traffic models, **higher peak loads occur in the shorter simulation window**. So, protocol performance **may be even slightly better** when evaluating longer windows."
+- L504："Potential adjustments to the configuration of the algorithms can be made... However, to enable a direct comparison, **the same parameters used for SCN-288 were applied. A more detailed analysis of this larger and varied constellations is left for future work**."
+- L506："**Future work should investigate the performance in operational architectures like Starlink or OneWeb**... adjustments to handover policies and cluster boundaries may be required."
+- L482（自曝一次失败配置）："Figure 11 illustrates this **systematic error** consisting of periodic drops due to peaks in high-priority signaling traffic. Consequently, **this faulty approach rarely achieves more than 97% QoS compliance**."
+
+**7. 它没做但看起来能做的地方**（基于内容）
+1. **排队时延被测量、被写进公式，却从不被优化、也不单独报告**：式14 的端到端时延分解为 $\underbrace{l_s}_{\mu s}+\underbrace{l_r}_{\mu s}+\underbrace{l_q}_{\mu s}+\underbrace{l_p}_{ms}$（L404），作者明确说"Given the chosen buffer sizes, the **queuing delays was observed to be in the domain of milliseconds**"（L401）——但优化目标是 **min-max 链路利用率**（式2），QoS1 的效用函数只用到路径时延、QoS2/3 只用到跳数与利用率（式5-7）。**"负载 → 排队时延"这条曲线完全没画**，而数据显然在手。
+2. **纵轴选的是"合规率"而非"时延"**：所有载荷图（Fig 9-12）的纵轴是 QoS compliance（>95% 阈值），不是端到端时延或丢包率。换成时延/丢包作纵轴就能得到一条真正的负载-时延曲线。
+3. **48 节点簇违反了它自己设定的收敛要求却没被对账**：Table 3 要求路由收敛 **<130 ms**（L382），Table 5 里 48 节点簇平均 **273.526 ms**、最大 747.552 ms（L441），而正文仍把 48 节点当作负载表现最好（+113.2%）来推荐，只在 L464 提了"收敛显著增加"。**性能-反应性之间的取舍没有被合成一个目标函数**。
+4. **只用 CBR 流量**（L371），而全文动机恰恰是**突发尖峰与地理热点**（L23）。用 on-off（仿真器已支持，L371）重跑同一组负载扫描是最直接的补实验。
+5. 结论把"使能 ML 增强的流量工程"列为未来方向（L516），而它自己的 best-of-k 效用函数（式6-7）里的权重 $\psi_2,\psi_3$ **是手工常数**（L262）——这正是可学习的参数。
+
+**8. 和同批其他篇的关系**
+- 与 **SBCHGBCP** 是"同一问题的镜像前提"：那篇假设**无 ISL、靠地面中继**，用 SR 做 min-max 单星负载；本篇假设**有 ISL**，用分布式 SDN 做 min-max 链路利用率。两篇都引 **Handley**（SBCHGBCP 的 [2] 是 HotNets'19 地面中继；本篇的 [2] 是 HotNets'18 "Delay Is Not an Option: Low Latency Routing in Space"，L530），也都在结论里指向 SR/流量工程的思路（本篇 [18] 即 SR-TE 避热点，L51）。
+- 与 **QSNRQ8PF** 综述的 4.2.1 SDN 节和 4.2.2 流量均衡节是同一类工作，但本篇是**带实测式仿真与明确负载阈值**的协议论文，比综述里那些条目扎实得多。
+- 与 **T9X6QCLL** 的关系密切：T9X6QCLL 的 4.3 负载均衡节与 4.8 低时延节正是本篇所在的领域；但 T9X6QCLL 判断"卫星不会带大缓存、拥塞时延优化空间有限"（T9X6QCLL L283），而本篇给出**0.36 Mbit（30 包）的小缓冲**设置（L76）且明确说排队时延在毫秒量级（L401）——**两篇合起来正好量化了那条"常识断言"**。
+- 与本批 DRL 论文（FDR-MARL 那一支）**不像**：无学习、无状态/动作/奖励，纯协议 + 启发式。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**本批最接近"负载 → 性能"这条曲线的一篇**，但方向要看清：
+- **它给的是"负载阈值"而非"时延曲线"**：QoS 合规跌破 95% 的负载点为 源路由 7.6 / F-IDLB-12 12.5 / F-IDLB-24 15.0 / F-IDLB-48 16.2 / SCN-1440-F-IDLB-48 20.2 Gbps（L449、L502）。这是一张可直接引用的"负载容量"表，**但它不是 λ→时延**。
+- **给出显式的时延分解式**（式14，L404）：切换（μs）+ 路由查找（μs）+ **排队（μs，实测在毫秒量级）** + 传播（ms）——**排队项被明确列为负载敏感项并给出量级**（L401）。这对任何要给 LEO 路由仿真标定排队时延的人来说，是全批最具体的一条。
+- **抖动随负载与重路由出现**：QoS1 抖动平均 2.91 ms、最大 85.15 ms；作者归因于"路径改变（例如重路由）导致传播时延跳变"（L415-417）。即**负载引发的路由调整本身会产生抖动**，这是"负载变化 → 时延稳定性"的一条机制性事实。
+- **小缓冲的量化**：0.36 Mbit ≈ 30 个 1500 B 包（L76）。这直接支持 T9X6QCLL L283 的"小缓存"判断，也解释了为什么这里的排队时延只有毫秒级——**在 LEO 上，"负载变化下的时延"这个效应天然被小缓冲压小**。
+- 缺口：无逐包到达率轴（负载是聚合 Gbps 而非 λ）、无排队模型、无时延-负载曲线。
+
+**10. 一句话评价**
+**本批工程完成度最高的一篇（DLR + ESA、5G NR QoS 档位 + ITU Y.1541 预算、包级仿真）**：它把"负载加到哪里 QoS 会崩"这件事量化成了一张可比的阈值表（7.6 → 16.2 Gbps，L449），并给出含**排队项**的时延分解（L404）；但它把负载当分母而不是自变量，纵轴永远是合规率而非时延，所以离"到达率 → 时延"仍差一张图。
+
+
 
 
 

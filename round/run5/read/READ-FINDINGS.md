@@ -265,3 +265,50 @@ R9 读卡：端到端时延 = $\tau \times$ 时隙数，而 $\tau = 100$ 秒 →
 ZIUBKVPZ L137（主控核验）：DQN 在 ε-greedy 探索下**路由环路不可避免**，成因是**四条 ISL 负载完全相同 ⇒ agent 认为所有动作等价** ≈ S85KQ4FC 的"决策队列饱和"。
 → **状态表征的对称性缺陷**（O（观测）分不出动作）+ **决策资源饱和**（动作来不及做）是两条**尚未被合并处理**的线索。
 → 登记为**候选 N4**：把"观测对称性导致的动作等价"作为独立于"资源饱和"的失败原因，二者可分离验证。
+
+## F32【确证·升级 F1】15 秒全局重配置被三方独立测量确认，且**不是负载驱动的**
+
+**三篇独立测量论文，主控逐字核验**：
+
+1. **L63JISQN L57 逐字**（主控核验）：
+   > "major changes in latency characteristics **occur every 15 seconds** — specifically, at the 12th, 27th, 42nd, and 57th second past every minute. **Notably, these changes are observed from all our measured locations for all periods of time.**"
+   且 R7 读卡记录该文明确：**"these effects were noticed even when our terminals were running well under capacity"** → **该台阶与负载无关**。
+
+2. **NPF75WS5 L211 逐字**（主控核验）：
+   > "**Disproving Satellite Handoff Hypothesis.** Previous works have suggested satellite or beam changes at reconfiguration interval boundaries to be the root-cause of network degradation. To investigate this hypothesis, **we deliberately obstructed the field-of-view of our UK terminal**..."
+   → 用遮挡实验**证伪了卫星切换假说**（德国+苏格兰两地独立复现）。
+
+3. **P6XJZNQK L172**（主控核验）：把 15 秒与吞吐**恢复时间**挂钩；Starlink 吞吐恢复中位 ~15 s vs 非 Starlink ~5 s；且明确 Starlink 的丢包**不是拥塞信号**（FQ-CoDel + 链路随机丢包）。
+
+**含义（与 F1 合并，升级为确证）**：
+> 在真实 Starlink 网络里，**时延与吞吐的主要周期性变化来自全局调度/重配置（15 s 台阶），不是负载**；且已有工作用遮挡实验**否定了卫星切换是成因**。
+
+→ **对本项目的硬约束**：任何"负载 → 时延"的实验，**必须把 15 s 调度周期这一来源分离出去**，否则会把调度台阶误记成负载效应。这与 F1（重配周期）、F28（运动性抖动 2.5 倍）合起来，构成**三个必须扣除的非负载来源**。
+
+## F33【干净口径的排队时延实测锚点】NPF75WS5（主控逐字核验）
+
+L144 逐字：
+> "during active downloads, Starlink experiences **≈ 2–4× increased RTTs, reaching almost 400–500 ms**"
+
+**口径为什么干净**（R7 读卡）：基线取 **minRTT**，作者明说它 "not affected by queuing delays" → **这个膨胀量就是排队时延本身**；且上下行不对称（上行 60 分位 ≤100ms，下行 ≈200ms）。
+→ **这是全库目前唯一口径干净、可直接引用的"排队时延"实测量**，可作为本项目实验的对照量级。
+
+## F34【两篇领域外文献的入库机制已定位】（R9）
+
+R9 查明 WT839YP7（库代码瘦身）的入库机制：**"library customization" 与 LEO 领域的 "VNF placement / network function" 在检索层面易混淆**。
+→ 处置：据此排查检索式；汇总时把这两篇标为"主题外"，不稀释 LEO 路由方向的统计。
+
+## F35【"负载不均"的两个独立成因，现有工作各处理一种】（R9）
+
+- **地理成因**：VFS59FHI（信关站只能布在有限区域 → 回传汇聚拥塞）；
+- **算法成因**：W6M3GU7L L147（贪心最短路使全部连接挤同一条路径）+ WFA3CZLP L132（"unbalanced traffic load distribution may lead to network congestion, resulting in a significant increase in average end-to-end delay"）。
+
+→ 与 F26（最短路制造热点）**互为见证**。含义：LEO 负载不均**既有地理成因也有算法成因**，而现有工作**各自只处理一种**。
+
+## F36【"到达率"直接入状态的一篇，但半成品】W5Z39E25（R9 读卡）
+
+把**业务到达率 λ 直接作为状态变量**、三态划分（λ>β 忙 / λ<α 闲 / 中间过渡，L43）；
+**写清了"降排队时延 vs 增跳数"的对冲**（L115：绕行后单星排队时延下降，但跳数与排队次数上升、路径变长，**净效应可能时延不降反升**）；
+90 分位时延在同负载下跨 **98 ms → 790 ms**（近一个数量级，L126）。
+**但**：α、β **从未给定值**（作者自认 L140），且**只测单一负载点**。
+→ 含义：**"到达率入状态"有人试过（一篇，且不完整）**，本项目须与它划界；它给出的"对冲"机制（绕行降单跳排队时延但增跳数）是**可直接复用的机理解释**。

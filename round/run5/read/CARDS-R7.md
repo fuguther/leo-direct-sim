@@ -1,7 +1,12 @@
 # 读卡批次 R7
 
-> 读法：逐字通读 VM MinerU 导出 MD 全文（从第 1 行到最后一行），行号对应 VM MD。禁止用 grep 替代阅读。
-> 批次：L63JISQN LBMABZJ7 LJG6ZW7B LNA28YZY LRSXMWX9 LZKNZA8B MXQVNU3P MYBALQ2D NPF75WS5 P6XJZNQK PIXWFHAC
+> 读法：逐字通读 VM MinerU 导出 MD 全文（从第 1 行到最后一行），行号对应 VM MD。未用 grep 替代阅读；grep 仅用于定位章节起始行。
+> 批次：L63JISQN LBMABZJ7 ~~LJG6ZW7B~~ LNA28YZY LRSXMWX9 LZKNZA8B MXQVNU3P MYBALQ2D NPF75WS5 P6XJZNQK PIXWFHAC（共 11 篇）
+> **LJG6ZW7B 已按主控裁定移出本批**（Sutton & Barto《Reinforcement Learning: An Introduction》教材，9596 行 / 1.68 MB，由主控拆 8 片另行处理）。故本批实际写卡 **10 篇**。
+> **覆盖度声明（逐篇）**：
+> - 9 篇为逐行通读：L63JISQN(200行) / LBMABZJ7(341) / LZKNZA8B(342) / MXQVNU3P(352) / PIXWFHAC(538) / NPF75WS5(463) / P6XJZNQK(466) / MYBALQ2D(640) / LRSXMWX9(986，含全部 117 条参考文献)。
+> - **LNA28YZY 有缺口，如实标注**：正文 L1–L693 逐行读完；**L695–L1398 的约 350 条参考文献列表未逐条读**（仅确认起始行）。该篇正文的其余部分无缺口。
+> - 读取方式说明：bash 单次输出 >约 44 KB 会被截尾，故长文按 150–250 行窗口分段读；`![\](images/...)` 图注行与空行在读取时折叠，正文连续性未受影响。
 
 ## L63JISQN — Making Sense of Constellations: Methodologies for Understanding Starlink's Scheduling Algorithms
 
@@ -149,7 +154,7 @@ L270 承认 Theorem 2 在非零相位偏移下**无法形式化证明**，只能
 
 ## LNA28YZY — Satellite Communications in the New Space Era: A Survey and Future Challenges
 
-> 读法说明（诚实标注）：正文 L1–L693 逐字通读（分 150 行窗口读，含图注行折叠）。L695–L1398 是参考文献列表（约 350 条），本卡写作时尚未逐条读，只确认了起始行 L695 为 `## REFERENCES`。页眉多次出现 "IEEE COMMUNICATIONS SURVEYS & TUTORIALS (SATCOM SURVEY DRAFT)"（L247/L486/L596/L681），判定为预印本/draft。
+> 读法说明（诚实标注）：正文 L1–L693 逐行通读（分 150 行窗口读）。**L695–L1398 是约 350 条参考文献列表，本卡未逐条读完**——本批收尾时未能回收这部分预算，如实标注，不假装读完。页眉多次出现 "IEEE COMMUNICATIONS SURVEYS & TUTORIALS (SATCOM SURVEY DRAFT)"（L247/L486/L596/L681），判定为预印本/draft。
 
 **1. 一句话**
 一篇锁在 2020 年 1 月时间点的卫星通信全栈综述，把 New Space 的动机、5G NTN 用例、空口、MAC、网络与测试床铺成五大轴地图；它是"背景板"而不是"零件"——全篇没有一节讲 LEO 路由。
@@ -502,6 +507,66 @@ LEO 的移动核心网会造成时延、吞吐、可用性的突变（L22），�
 
 **10. 一句话评价**
 把"全球需求时空非均匀"这一物理事实做成星座设计问题的架构论文：算法上是用压缩感知替代 NP-hard 精确解（并赢了 Gurobi 的截断解），工程上是用地理意图 + SRv6 任播把非均匀星座的复杂度藏起来；它是本批中唯一从**供给侧**回应负载变化的论文，与所有从路由侧（学习式）或从测量侧（实测）入手的论文构成互补。
+## LRSXMWX9 — A Survey on Technologies, Standards and Open Challenges in Satellite IoT
+
+> 读法：全文 986 行逐行读完（含 L707–L986 的 117 条参考文献与作者简介）。
+
+**1. 一句话**
+一篇以"标准化与监管"为骨架的卫星物联网综述：把地面远距离 IoT 的四种制式（EC-GSM/Cat-M、NB-IoT、Sigfox、LoRaWAN）摊开，再讲把它们搬到卫星上需要什么（5G 的 O-RAN/PEP/网络切片 + LPWAN 变 LPGAN），最后把工业界玩家和 ITU 审批流程也一并列清；**与 RL 或宽带路由无关**。
+
+**2. 问题设定**
+IoT 要覆盖广阔但无地面网的区域（森林、海洋、矿山、跨境物流），地面 RAT 到不了也不划算，于是卫星成为补覆盖的候选（L15）。作者要解决的是**信息分散**问题：既有文献要么只谈技术、要么只谈标准，很少把"技术 + 标准 + 监管 + 工业落地"放在同一张图里（L25、L41）。另一层动机是商业：卫星 IoT 连接数预计从 2019 年的 270 万涨到 2025 年的 1030 万，25% CAGR（L17）。
+
+**3. 方法骨架**
+非 RL，也非仿真——是"分类学 + 标准对照 + 工业案例 + 开放问题"四段式综述。
+- **第二部分：地面远距离 IoT 分类学（第 II 节，L59–L132）**。共同特征：星型拓扑单跳、双向通信（下行主要走控制面）、有核心网做 RRM（L63–L69）。逐项拆解：蜂窝侧的 **EC-GSM-IoT**（200 kHz GSM 载波、900 MHz 附近、覆盖最多提升 20 dB）与 **LTE Cat-M1/M2**（最小 6 PRB 即 1.4 MHz）（L89）；**NB-IoT**（180 kHz 载波，可替换 GSM 载波或作为 LTE 的 PRB，下行每子帧 1 信道，上行单音 3.75/15 kHz、多音 15 kHz）（L103）；**Sigfox**（192 kHz 宏信道、上行 UNB-DBPSK、下行 GFSK、每天最多 140 条 12 字节上行）（L113）；**LoRa/LoRaWAN**（CSS 调制，125/250/500 kHz，Class A/B/C 三种接收窗口策略，后端含 Network/Join/Application 三服务器）（L122–L124）。表 II 汇总各制式"主要局限"（L128）。
+- **第三部分：卫星 IoT 范式（第 III 节，L134–L273）**。架构（L150–L173）：**间接接入（IoT 回传）** vs **直接接入（星上放网关）**；ISL 做"天上的交换"；再叠加边缘计算。频谱（L181–L183）：5 GHz 以下因雨衰小、天线简单而有优势；mMTC 类业务多用 3 GHz 以下。**KPI 对照（L187–L210）**：覆盖、上下行容量、频谱可得性、最小时延、终端复杂度、基础设施复杂度、漫游、能效——作者明确预判**卫星 IoT 的端到端时延会大于蜂窝或 LPWAN**（L197）。轨道与星座（L214–L238）：GEO/LEO/MEO/HEO 划分，五家传统 MSS 运营商（Inmarsat/Iridium/Eutelsat/Globalstar/Thuraya）。**独立 LEO 小卫星趋势（L240–L273）**：CubeSat（1U = 10 cm 立方、1.33 kg；下行最大 1 W、上行最大 100 W）（L249）；带/不带 ISL 的 RF 星座设计（Rosette 星座用于无 ISL 扩展覆盖；带 ISL 的例子是 5 个轨道面 40 颗星、每星 2 条同面双向 ISL）（L260–L262）；光 ISL（6000 km 量级、10 Gbps+、终端 15 kg / 80 W）（L271）。
+- **第四部分：使能技术（第 IV 节，L275–L349）**。5G 侧：**O-RAN**（RRH/BBU 分离）、**PEP**（性能增强代理，拆 TCP 连接以适配卫星长时延）、**网络切片**（专设 mMTC 切片）、**CoAP**（10–20 字节报文，跑在 UDP 上）；LPWAN 侧升格为 **LPGAN**：LoRaWAN 上星（Doppler 实验、Semtech 新调制 **LoRa-E**）与 NB-IoT 上星（多普勒补偿、上行调度）。表 VI 把各项创新按"短期/长期 × 三种场景"映射（L502）。
+- **第五部分：工业案例（第 V 节，L351–L432）**：独立 LEO（Astrocast 80 星 L 波段、Myriota、Kineis、Kepler、Swarm）、LoRa 系（**Lacuna Space**，单向上行、无 ISL、星上当天线网关）、NB-IoT 系（Sateliot、MediaTek、OQ、Ligado）。
+- **第六部分：开放挑战（第 VI 节，L434–L588）**：PHY 波形（SCS/ACS/Turbo-FSK/LoRa-E/随机交织复用/星座编码）、天线、SDR 实现、MAC（多为 Aloha 变体）、网络与高层（CoAP/QUIC/SCHC/网络编码/SDN/网络切片）、边缘计算；标准化与监管（ITU/CEPT/3GPP/ETSI/CCSDS）；商业机会。
+- **附录**：ITU 授权流程全文（L594–L619）。
+
+**4. 它声称的效果**
+综述无自研实验，但转述了一批可直接引用的量化事实：
+- **GEO 的时延下界**：36 000 km 高度给出 mMTC-UE 到 RAN 的**最小单向时延 238 ms**；改用低轨或几十公里高度的 HAPS/UAV 可把时延压到 **2 ms**（L283）。
+- **mMTC 终端需求（表 V，L291，引自 [46]）**：95% 成功率下的时延——遥测/跟踪 **<60 分钟**、告警 **<1 分钟**、一般流量 **<60 分钟**；每设备每天消息数 **1–96 / 1 / 24–96**；消息长度 **50 / 30–50 / 150–200 字节**；维护周期从 5 年延到 **10–15 年**。
+- **4G 基站的 mMTC 承载极限**：单个 BS 最多容纳"几千"个设备才能保证接入时延低于 100 ms；要做到 10 ms 级接入时延，只能服务"不现实地少"的设备数（L21，引 [7]）。
+- **ITU WRC-19 第 248 号决议的监管口径（L617 逐字）**：相关研究"are to be limited to those systems with space stations that have a maximum EIRP of 27 dBW or less, with a beam-width of no more than 120 degrees, and earth stations that individually communicate **no more than once every 15 minutes, for no more than 4 seconds at a time**, with a maximum EIRP of 7 dBW."
+- **ITU 审批周期**：最短 9 个月、最长 **7 年**（L554）；痛点包括申请者多且不熟悉流程、CubeSat 寿命短需常规补星、全球覆盖牵涉大量国家主管部门（L558–L568）。
+- 其他：LoRa 集群最远节点速率仅 **293 bps**（L269）；LoRa-E 两个码率 **162 / 325 bps**、用 FHSS（L443）；随机线性网络编码（RLNC）相对 RDP 有 **50–65% 的时延降低**（L478）；英国航天局估计卫星连网设备数从 2015 年 316 万增至 2025 年 597 万，且 **93% 的设备使用 3 GHz 以下频段**（L586）。
+- 商业里程碑：Astrocast 宣称 **<15 分钟**的低时延传输（L361）；Myriota 平均每天 4 次过境、每次约 9 分钟可发（L363）；Lacuna 的上下行时差 t₁−t₀"likely to be in the order of minutes"（L395）。
+
+**5. 实验条件**
+不适用（综述，无实验）。需注意时点：全文锁在 **2021 年 5 月前后**（多处 "Accessed: May 5, 2021"），5G NTN 的 Release 17 当时还在进行中（L534 逐字："At the time of writing, the 3GPP is working on the Release 17 of the specifications (which is expected to be rolled out by the end of 2021/beginning of 2022)"）。作者还提醒 5G 的卫星链路会**先用**于多媒体与广播，IoT 用例"may take a while"（L535）。
+
+**6. 它自己承认的局限**
+无独立 Limitations 节（综述体例）。作者自认的知识边界有两处值得记：
+- L25：作者群横跨工业与学术、物理层与网络层，综述是"an effort to provide a holistic view"，即自认是观点整合而非系统综述（未声明检索式/纳排标准）。
+- L403 对 Lacuna 的关键技术承认资料缺失："On these techniques, unfortunately, no public material is available at the time of writing, to the authors' best knowledge."
+- L251 有一处术语澄清：作者认为学界用滥的"Internet of Space Things"只是卫星 IoT 范式的一个子集，防止混淆。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **本篇完全没有提强化学习。** 第 VI 节的"创新方法"逐项覆盖 PHY、天线、SDR、MAC、网络与高层、边缘计算，ML 只在边缘计算段落以"federated approaches"一带而过（L489）。**即在这篇 2021 年的卫星 IoT 综述里，学习式方法不是被讨论的方向**——与同批的学习式路由论文形成鲜明的时间与领域错位。
+2. **时延被当作固定预算而非可变函数**：表 V 给的是"<1 分钟 / <60 分钟"这类阈值，全文没有"负载/到达率上升时延怎么变"的分析。而它引的 [7]（BS 容纳几千设备 vs 10 ms 时延）恰恰就是一个到达率-时延关系的结论（L21），却没有被展开。
+3. **MAC 一节承认"多为 Aloha 变体"**（L460–L461），并提到有工作"按服务卫星当前的流量负载来调整每个 MTD 的发送概率"（[88]，L461）——**这是本篇最接近"负载自适应"的一处**，但只有一句话，没有把它与端到端时延挂钩。
+4. **ITU 第 248 号决议给了一个现成的"稀疏到达率"定义**（≤1 次/15 分钟、≤4 秒），但作者没有用它去反推系统容量或时延预算。
+5. **星间 MAC 的时延有专门文献被提及但未整合**（L464：连接建立、信息年龄随跳数、平均时延，引 [92][93][94]）——这是 IoT 语境下唯一涉及多跳时延的地方。
+
+**8. 和同批其他篇的关系**
+与 **LNA28YZY（SatCom 综述）覆盖面高度重叠**：IoT 空口三件套（NB-IoT/LoRa/Sigfox）、MAC 的固定分配 vs 随机接入、3GPP NTN 标准化、LPWAN——两篇讲的是同一批文献，只是 LNA28YZY 的轴更宽（含波束/预编码/深空），本篇的轴更深（含监管全文与工业案例）。两篇都是"面"。与其余各篇的关系是**层级不同的两个世界**：本批的 L63JISQN / NPF75WS5 / P6XJZNQK 测的是每用户 100 Mbps 的宽带业务，本篇讨论的是每天 1–96 条、每条 30–200 字节的窄带业务——**两者的"负载"概念差 5–6 个数量级**。与 MYBALQ2D（需求非均匀的星座规划）有一处微弱呼应：本篇 L589 也提到可以"故意只覆盖局部区域"来降低部署成本，与 TinyLEO 的区域化思路同源。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**场景完全不同（窄带 IoT 而非宽带路由），但如果要研究"稀疏到达下的时延"，本篇提供了最完整的参数集。** 具体：
+- **它给出了 LEO/GEO 时延的硬下界**：GEO 单向 **238 ms**（L283）；对照 LNA28YZY 的 LEO 传播时延 ~1.5–3 ms（地面到星）。这是任何卫星时延预算的起点。
+- **它给出了 mMTC 的到达率画像**（表 V，L291）：每设备每天 **1–96 条消息**、消息 **30–200 字节**、时延容忍 **<1 分钟到 <60 分钟**。即这类业务的到达率是"每次/天"量级，与宽带业务的"每秒"量级完全不同——**两者需要完全不同的时延模型（排队 vs 机会窗口）**。
+- **它给出了到达率与接入时延的冲突事实**（L21）：4G BS 要保证 <100 ms 接入时延，只能承载几千设备；要 10 ms 则设备数"不现实地少"。这是本篇唯一一条真正的"到达率 → 时延"定量关系，但只是转述。
+- **它给出了监管层面对到达率的硬约束**（L617）：ITU WRC-19 第 248 号决议把窄带移动卫星系统的地球站限制为**每 15 分钟不超过一次、每次不超过 4 秒**。这是一条可引用的、由法规定义的稀疏导则。
+- **它指出时延瓶颈在几何与机会窗口而非排队**：GEO 238 ms 是物理距离决定的；Astrocast 的 "<15 分钟"、Myriota 的"每天 4 次过境、每次 9 分钟"、Lacuna 的"分钟级上下行时差"（L361/L363/L395）都是**过境窗口/存储转发**造成的，不是拥塞造成的。这对"何时该建排队模型、何时不该"是有用的边界提示。
+- **缺口**：全篇没有排队模型、没有负载扫描、没有把时延写成到达率的函数。
+
+**10. 一句话评价**
+一篇以监管与标准化为主轴的卫星 IoT 全景综述，与本批的宽带 LEO 路由主题基本不相交；它的价值在于提供**窄带稀疏业务的完整参数画像**（到达率、消息长度、时延容忍度、监管上限），从而标定了"LEO 时延问题"的另一端——在那一端，时延由过境窗口与物理距离决定，排队几乎不出现。
+
 
 
 
