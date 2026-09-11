@@ -310,7 +310,136 @@ LEO 拓扑随时间剧变（L21 段：卫星"cover an area of around five to twe
   - (13d)–(13h) 转发情形：基础项 $\left(\frac{c}{\Delta_{u,v}}+\frac{r_{u,v}}{w^{i,\delta}}\right)$（**注意这是时延的倒数之和，不是时延**），再按"下一跳是否为目的地"（$+\Gamma$，$\Gamma>2\beta$）、"是否离目的地最近"（$+2\beta$）、"是否越走越远"（$-2\beta$）加减。
 - **掩码（masking）**：缓存满的星不许再接请求、剩余带宽为 0 的链路不许用、请求大小超过星/链路能力的被屏蔽（L188）。
 - **简化假设**：星间信道**无丢包**，请求当拍必达、不会跨时隙留在链路上（L190 逐字："the channels between the two satellites are assumed to be no-loss"）。
-- **算法**：**多步 DQN**，损失式(17) $\left(R_t^{(n)}+\gamma_t^{(n)}\max_{a'}Q_G(s_{t+n},a';\theta_G)-Q(s_t,a_t;\theta)\right)^2$，估计网 + 目标网 + 经验回放（n-step buffer）+ $\epsilon$-greedy，目标网每 $N_F$ 步硬替换（Algorithm 1，L250 起）。
+**算法**：**多步 DQN**，损失式(17) $\left(R_t^{(n)}+\gamma_t^{(n)}\max_{a'}Q_G(s_{t+n},a';\theta_G)-Q(s_t,a_t;\theta)\right)^2$，估计网 + 目标网 + 经验回放（n-step buffer）+ $\epsilon$-greedy，目标网每 $N_F$ 步硬替换（Algorithm 1，L250 起）。
+
+**4. 它声称的效果**
+- **Fig 2（L275 附近）**：时延 vs **卫星数**。卫星越多时延越低；DRL-SR 始终低于最短路（shortest path），但**差距随卫星数增加而缩小**（作者解释为"目的星的选择"所致）。
+- **Fig 3（L277 附近）**：时延 vs **用户数**。用户越多总时延越大；同样的用户数下卫星越多耗时越少。
+- **基线只有一个：最短路径算法**（L275 逐字："we use experiments to verify the proposed DRL-SR approach ... and make a comparison with the shortest path algorithm"）。
+- **关键的是：这两张图都没有给任何具体数字**——正文只给了趋势描述（"less time is needed"、"increases"、"less time is required"），**没有任何毫秒级数值、没有表格、没有误差棒、没有置信区间**。摘要也只说 "yields lower latency than the shortest path approach"（L3）。
+
+**5. 它的实验条件**
+全部写在 §III.B 末尾一段（L273）：
+- **拓扑**：**30 颗卫星，6 个轨道面，每面 5 颗均匀分布**。Fig 3 另外用了 **12 颗和 18 颗**两种规模。
+- 每星**缓存 1 GB**；星间**传输速率 5.625 Gbps**，链路容量在理想信道假设下也取 **5.625 Gbps**。
+- **每个请求 100 MB**。
+- Adam，学习率 0.001，折扣因子 0.99；每 episode **观测时间 250 秒**，**每时隙 5 秒**（⇒ 每 episode 50 个时隙）。
+- 网络结构：三个残差块，通道数 $[64],[64,64],[128,128]$，两个全连接层（隐层 128、输出层），ReLU，$\epsilon$-greedy。
+- **负载设定**：用户数是一个扫描变量（Fig 3），但**用户数只到"12 / 18 星拓扑下的不同用户数"这一层级**，正文没给具体扫了哪些用户数、每个用户的到达过程是什么。请求被描述为 "generated and infused into the network randomly"（L39），**没有给出到达率参数**。
+- **训练与评估**：Algorithm 1 只在训练里循环 $ep_{NUM}$ 个 episode；**正文完全没有说明评估用多少个 episode、是否用与训练相同的拓扑/用户数**。分节上，**§IV 整节缺失**——标题从 "III. PROPOSED..."（L128）直接跳到 "V. CONCLUSIONS"（L281），实验结果被塞在 §III.B 的末尾。**这是全文最明显的结构缺陷**：没有独立的"数值结果"章节。
+
+**6. 它自己承认的局限（逐字引用）**
+- L190 逐字（§III.A）："In order to emphasize learning routing methods, the channels between the two satellites are assumed to be no-loss, which means the request will be forwarded successfully from satellite u to one of its neighbors during each timeslot. In addition, the request will not remain on the link at next timeslot."——**丢包与时延抖动被直接假设掉了**，而这两个恰恰是时延研究的主要对象。
+- L39 逐字（§II.A）："It is assumed that the network topology remains consistent during each timeslot t and changes instantaneously when transiting into a new timeslot."
+- **未见自述**：全文 §V 结论（L281–L283）只有三段总结，**没有任何 limitation 或 future work 段落**。作者没有承认"只有一个基线"、"没有数字"、"集中式调度不可星上部署"、"30 星远谈不上 large-scale"（标题却写 Large-Scale）中的任何一条。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **补上被"无丢包"假设掉的那一项**：现在式(10) 只有传播 + 传输 + 等待三部分，**没有排队时延**。而它明明已有缓存状态 $p_t^i$ 在状态里、也有缓存约束式(3)——把缓存占用映射成排队时延加进式(10)，是这套模型最自然的下一步（且不需要改算法）。
+2. **奖励函数里那条"更靠近目的星"的分段打分 (13b)(13c)(13f)(13g)(13h) 是手工写死的势函数**——把这一项本身交给学习（或用势函数塑形理论重写），是直接的消融对象：现在无法判断性能提升来自"学到了路由"还是来自"势函数本身就在做贪心"。**没有做这个消融**。
+3. **基线只有最短路**：可以加 OSPF/ECMP、纯 DTN 传染路由、以及**同批 FLQLU3T4 的 DeepLaDu**（后者也解 LEO 路由+速率分配）作对照。
+4. **集中式假设与现实的差距没讨论**：智能体在地面运营中心、每一拍要给 $N\times M$ 个请求同时出决策，时隙只有 5 秒。**推理时延有没有算进这 5 秒？** 全文没有提。
+5. **$M$（每用户同时占网的请求数上限）与性能的关系完全没扫**：$M$ 同时决定了动作空间大小（$N\times M$ 组输出），是一个被设定却没被研究的超参。
+6. **符号冲突应澄清**：式(10) 里 $D_{u,v}^{s,d}(t)$ 是**时延**，而 (13d)–(13h) 里 $D^{k}(s_t,a_t)$ 是**"时延的倒数之和"（即速率量纲）**，同一个符号 $D$ 承担了两种相反的量纲，式(14) 又把后者称作 reward。这会让复现者无法确定 (10) 究竟是性能指标还是奖励项。**没读懂：§III.A 中 (10) 与 (13) 的 $D$ 是否同名异义，正文未作任何说明。**
+
+**8. 和同批其他篇的关系**
+- **与 FLQLU3T4（DeepLaDu）构成本批最直接的一对对照**：两篇都解 LEO 路由，都指出问题 NP-hard；但 FLQLU3T4 是**集中式对偶分解 + GNN 出价格 + 经典算法兜底（MWM/Dijkstra/LP）**，本篇是**集中式单智能体 DRL 直接出下一跳**。FLQLU3T4 在 §II 明确批评"逐星分散式选下一跳"（引 [13]–[16]），本篇正属于它批评的"逐跳决策"一类，只是决策者被搬到了地面中心。
+- **与 S85KQ4FC（锚件卡，flow-centric DRL）在问题设定上高度重合**：两者都是 LEO 星上路由 + DRL + 队列/缓存约束 + 多请求同时决策；差别在于 S85KQ4FC 明确区分"决策队列"与"转发队列"并把**推理成本**当一等约束，本篇则假设信道无丢包、完全不计推理成本。
+- 与本批 FGQSH4AI（MADDPG）的关系：本篇是**单智能体**多动作，MADDPG 是**多智能体**各一动作，两者是"集中式"与"分散式"光谱的两端。
+- 参考文献（L285–L304）**无一篇来自本批其他 10 篇**；引的多是 DTN 路由与老式卫星路由（Werner 1997、Jain 2004）。
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**贡献了"存在性"，但没贡献"事实"。**
+- **正面**：Fig 3 是本批里少数几张**真正把"用户数（即负载）"当作自变量、把时延当作因变量**画的图，方向是"用户越多总时延越大"（L277）。这与选题方向直接对口。
+- **但**：正文**没有给出任何具体数值、没有到达率参数、没有说明用户数与请求注入率之间的换算关系**（请求只是 "generated ... randomly"，L39）。因此这条曲线**不可引用、不可复现、不可比较**——只能当作"作者做过这个实验"的定性证据。
+- 另外两点与本选题相关但方向相反：
+  - 式(6) 的 $M$（每用户同时占网请求数上限）实际上是一个**准入控制/背压机制**，它决定了"负载"如何被截断进入网络；**论文只把它当约束写下来，完全没有研究它对时延的影响**。
+  - "无丢包"假设（L190）意味着**拥塞不会表现为丢包**，只可能表现为排队/等待（式(10) 的 $\beta\tau$ 项，即"原地等一个时隙"）。也就是说，在这套模型里**过载的唯一后果是延迟增加而非丢包**——这与真实 LEO 网络的拥塞行为（同批 GGFJ3SEG 实测：尖峰期间无丢包但时延升）在定性上竟然一致，但本篇没有意识到这一点，也没有把等待时延单独统计出来。
+- **没有直接贡献**的部分：全文无丢包率、无吞吐、无队列长度曲线、无到达率扫描。
+
+**10. 一句话评价**
+**"把多商品流路由的 MDP 化 + 多动作输出层"作为唯一技术卖点的工程型工作**——方法谱系的位置是"把标准的多步 DQN 套到 DTN 存储-转发式 LEO 路由上，用 $N\times M$ 组输出神经元实现同时多动作，未改动 DQN 本身"；真正的软肋是**奖励函数 (13a)–(13h) 里塞进了大量"离目的星更近就加分"的手工势函数**（相当于把贪心策略写进了奖励），使得"性能提升来自学习还是来自势函数"无法区分，而全文既没做这个消融，也没有独立的结果章节（§IV 缺失）、没有任何一个具体数值、只有一个最短路基线。
+
+## GPLEP83L — LLM-Driven Automated Reward Design for Reinforcement Learning-Based Routing in LEO Satellite Networks (LARGE)
+
+**1. 一句话**
+提出 **LARGE**：用**三个 LLM 智能体**（Metrics Interpreter / Reward Design / Code Generator）组成一个**嵌套闭环**——外层拿仿真反馈的网络指标反复改写奖励函数、内层校验奖励代码能否用仿真器里真实存在的变量实现——从而**免去人工设计 RL 路由奖励函数**这件事（L39–L61 框架，L3 摘要）。
+
+**2. 问题设定**
+LEO 路由用 RL 已很常见，但**RL 的效果"critically depends on the design of the reward function"**，而奖励设计"remains a complex manual process requiring significant domain expertise and extensive trial-and-error"（L3 摘要逐字；L13 段复述）。作者点名的缺口是：已有 LLM 自动奖励工作（Text2Reward、CARD、AutoReward 等）**主要面向机器人或游戏环境**——"where feedback signals are well defined and closely aligned with task objectives"（L17 逐字）——而**LLM 自动奖励在 LEO 这类高度动态系统上"remains largely unexplored"**（L3）。更具体地（L21 末尾逐字）："no prior work proposes a closed-loop framework in which an LLM autonomously generates and refines reward functions based on structured network metrics for DDQN-based routing in LEO satellite constellations"。
+形式化（§II，L27）：奖励设计问题 = 求 $r^*=\arg\max_{r\in\mathcal{R}} F(\mathcal{T}_M(r))$（式 1），其中 $\mathcal{T}_M(r)$ 是用奖励 $r$ 训练出的策略、$F$ 是在仿真里算出的适应度。
+
+**3. 方法骨架**（核心是 LLM 闭环，不是 RL 算法创新）
+**三个 LLM 智能体**（L39）：
+- **Metrics Interpreter Agent**：分析仿真返回的网络指标，转成结构化 prompt；
+- **Reward Design Agent**：基于内部知识与上下文生成奖励函数定义 + 简短理由；
+- **Code Generator Agent**：把定义实现成可执行代码，并**校验每个变量在仿真环境里是否可直接获得或可由其他变量导出**。
+
+**两阶段**（L39）：
+- **§III.A 冷启动生成**（L46）：Reward Design 收到描述路由问题与优化目标的 prompt，产出奖励定义 → Code Generator 检查变量可得性；**若某变量不可用，就带着"缺失变量清单"打回去要求重写**，如此往复直到能实现，防止奖励只依赖一小撮现成变量。这一阶段**不针对具体环境变量**，即刻意保持"无偏先验"。
+- **§III.B 迭代改进**（L55）：用上一轮的奖励训练 RL 智能体 → 仿真返回 **goodput (Mbps)、path stretch、端到端时延 (ms)** 以及训练指标（累积奖励、loss）→ Metrics Interpreter 判断是否满足收敛准则；**不满足则把指标转成结构化 prompt**（指出改进方向、强化优化目标、并**明确告知上一轮奖励是变好还是变差**）→ Reward Design 提出新奖励 + 理由 → Code Generator 校验并实现 → **用新奖励从零重训**，循环直到满足准则。实现成功后还会生成一份 markdown 文档解释奖励函数及设计理由。
+- **停止准则**：**goodput 一旦超过专家基线就停**（L75 逐字："The LARGE search loop terminates once a candidate reward function achieves a goodput higher than that of the baseline reward"）。
+
+**RL 侧（不是本文贡献，照搬）**：多智能体设定，**每颗卫星是一个独立 agent**、只凭局部信息做下一跳决策；**全部实验统一用 DDQN**；分在线学习与离线部署两阶段（L67）。
+
+**4. 它声称的效果**
+**Table I（L102 附近）——12 秒推理阶段，10 个随机种子的均值 ± 标准差**：
+| 方法 | Goodput (Mbps) | Delay (ms) | Path stretch |
+|---|---|---|---|
+| **Baseline（仿真器自带、专家设计）** | **1451.62 ± 131.67** | 85.65 ± 2.44 | 1.464 ± 0.066 |
+| LARGE-GPT（GPT-5.4） | 1324.03 ± 237.34 | 88.41 ± 2.32 | 1.569 ± 0.088 |
+| **LARGE-Opus（Claude Opus 4.6）** | **1409.56 ± 133.10** | **85.13 ± 3.03** | 1.486 ± 0.034 |
+- 摘要的核心 claim（L3 逐字）："the best-performing configuration reaching goodput within approximately 3% of the baseline and slightly lower end-to-end delay, without manual reward engineering"——**核对 Table I：1409.56 vs 1451.62 差 2.90%，且时延 85.13 < 85.65，确实成立，但这里说的"最优配置"是 LARGE-Opus**。
+- 搜索阶段（Fig 3）：**第 3 次迭代就达到基于 goodput 的停止准则**；第 1 次迭代（冷启动）达不到，说明迭代改进是必需的（L89 附近）。
+- 达到准则后继续迭代**不再有实质增益**——作者归因于后续提案趋于保守，"modifications mainly consist of small changes to the coefficient values"（L89）。
+- **⚠️ 本文内部有一处明确矛盾，且影响到结论的归属**：
+  - §IV.D（L104）说："LARGE-Opus achieves the closest overall performance to the baseline, with comparable goodput, slightly lower delay, and a similar path stretch. **LARGE-GPT obtains lower goodput and a higher path stretch**"——**与 Table I 一致**。
+  - §IV.F（L123）却说："LARGE-Opus produces a more aggressive and structurally richer reward, but ... **it shows lower goodput and higher path stretch than the expert baseline**. In contrast, **LARGE-GPT produces a more conservative reward ... achieving comparable goodput, slightly lower delay, and similar path stretch**."——**按 Table I，LARGE-GPT 的 goodput 最低（1324）、时延最高（88.41），"slightly lower delay" 描述的是 LARGE-Opus 而非 LARGE-GPT。§IV.F 把两个 backbone 的角色写反了。**
+  这不是措辞含糊，而是**同一篇论文的两节给出互相颠倒的归因**；由于 §IV.F 正是"Discussion"，复现者若照它理解会得到相反的结论。**必须由作者澄清。**
+
+**5. 它的实验条件**
+- **仿真器**：文献 [18] 的开源 LEO 路由仿真器（Lozano-Cuadra 等，ESA SPAICE 2024），事件驱动离散时间、动态时变图（节点=卫星与网关，边=ISL 与 GSL），建模流量生成、包转发、排队、传输、传播（L65）。
+- **流量模型**（L65）：地面网关把附近用户的地面流量聚合成**固定大小 $B=64{,}800$ bit 的块**（同一目的地）注入星座，作为包在网络中逐跳转发到目的网关。
+- **星座**：**Kepler，140 颗卫星，7 个轨道面，轨道高度 600 km**（L73）。
+- **关键对照设计**：**用固定星座**，作者自述理由是"to isolate the effect of reward optimization from changes in orbital topology, link dynamics, and path-length distributions"，从而"between reward functions while keeping the routing environment unchanged"（L73）。
+- **DDQN 超参全部固定为仿真器默认值**，跨所有实验不变，确保**唯一变量是奖励函数**（L73）。
+- **基线**：仿真器自带的、由领域专家设计的奖励函数（L73）。
+- **两个 LLM backbone**：**GPT-5.4**（称 LARGE-GPT）与 **Claude Opus 4.6**（称 LARGE-Opus）；每个 backbone 在整条流水线的所有 LLM 智能体中保持一致，并各自独立跑到满足收敛准则（L73）。
+- **三阶段协议**（L75）：
+  1. **搜索期**：每个候选奖励**只训 0.2 秒**，产生约 **70,000 个逐跳奖励事件**与 **35,000 个训练步**；
+  2. **训练期**：用选中的奖励**从头重训 1 秒**，每 0.2 秒记一个 checkpoint；
+  3. **推理期**：不再学习，**部署 12 秒**，期间卫星位置随时间更新——作者称这是"the primary benchmark for assessing generalization under realistic dynamic conditions"。
+  全部结果在 **10 个不同随机种子**上报告均值 ± 标准差。
+- **负载设定：没有。** 流量块大小固定 64,800 bit，星座固定，**没有做任何负载/到达率扫描**。
+- **训练与评估的环境不是同一套**——但差别只在**时长**（0.2 s / 1 s / 12 s）与**是否继续学习**，拓扑与流量条件不变。
+
+**6. 它自己承认的局限（逐字引用）**
+- L129 逐字（§V 结论）："Although this work focuses on a controlled Kepler constellation scenario to isolate reward optimization, **future work will extend the evaluation to additional constellation architectures, traffic loads, gateway deployments, and longer inference horizons**. Further directions include robust multiobjective stopping criteria, prompt sensitivity analysis, and fine-tuned LLMs to improve convergence speed and reward quality."——**"traffic loads"（负载）被明确列为未做、留作未来工作**，这是本文自己承认的最大空白之一。
+- L113 逐字（§IV.E）："However, the inference results also show that a more expressive reward does not necessarily lead to uniformly better generalization."——**更"丰富"的奖励不一定泛化更好**，这是它自己给出的负面结论。
+- **未见自述**：① 搜索期 0.2 秒、训练期 1 秒、推理期 12 秒这些**极端短的时长**是否足以说明问题，全文没有任何讨论；② **停止准则"goodput 一旦严格大于基线就停"在 10 个种子下有 ±131～±237 Mbps 的方差**，这个准则的统计效力问题**完全没被提及**；③ §IV.F 与 §IV.D 的矛盾**未被承认**（作者似乎没察觉）。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **把"负载"从 future work 变成实验**（L129 自己点名）：现在 $B=64{,}800$ bit 固定、星座固定、网关固定，**三个"环境维度"全部冻结**，只动奖励。至少要扫流量强度，才能判断 LLM 生成的奖励**在负载变化时是否还稳定**——而这恰恰是本文没回答、且最容易做的。
+2. **修掉那个停止准则**：现在"严格大于基线就停"在 $\pm 200$ Mbps 量级的方差下几乎必然早停。**改成"连续 k 轮显著优于基线"或直接用置信区间**，是纯方法论改进，不需要动框架。
+3. **消融"迭代反馈"本身**：作者在结论里断言收益来自闭环（L129 逐字："showing that the benefit comes from the closed-loop interaction"），但**没有做"只冷启动、不迭代"的对照**，也没有做"随机扰动系数"的对照。这个消融是验证该 claim 的最低成本实验。
+4. **把 §IV.E 的奖励结构差异变成可复用的先验**：Table II（L121）已经列了 8 条"专家基线 vs LARGE-Opus"的结构差异（邻居排序、速率感知、队列罚项从"绝对排队时间"改成"相对服务时间"、显式逐跳代价、ping-pong 惩罚等）。**这些差异中哪一条真正带来增益，完全没有做逐项消融**——而这正是人工奖励设计最需要的知识。
+5. **澄清 §IV.D 与 §IV.F 的矛盾并给出结论**（见第 4 项）。
+
+**8. 和同批其他篇的关系**
+- **与 GPDPLJNG（DRL-SR）是同一问题的两种做法**：两者都用 DRL 解 LEO 路由、都强调拓扑动态、都以"时延"为核心指标之一。差别在于 GPDPLJNG 把奖励**手工写死成 (13a)–(13h) 的分段打分**，而本篇正是要**自动化掉这个手工过程**——**本篇几乎可以看作对 GPDPLJNG 那类"手工势函数奖励"的直接替代方案**。本篇还多了一个 GPDPLJNG 完全没有的指标：**path stretch**（逐跳数与 Dijkstra 最短路的比值）。
+- **与 FLQLU3T4（DeepLaDu）**：同样做 LEO 路由，但 FLQLU3T4 完全不用 RL（对偶 + GNN），且优化目标从"吞吐"到"绕开拥塞链路"。本篇与 FLQLU3T4 共享"用学习解决组合优化"的框架，但一个学对偶价格、一个学奖励函数。
+- **与本批 FGQSH4AI（MADDPG）**：本篇的多智能体 DDQN 是"独立学习"（每星一个 agent、只凭局部信息、无集中式 critic），**正是 MADDPG 那篇所批评的"环境非平稳 + replay 失效"的设定**。两篇构成"问题"与"另一种解"的对照。
+- 参考文献（L135–L174）**无一篇来自本批其他 10 篇**。
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**几乎没有直接贡献，但提供了一条极有价值的"负空间"。**
+- **没有直接贡献**：全文无负载变量、无到达率、无队列长度曲线。流量是固定大小 64,800 bit 的块，星座固定、网关固定（L65、L73）。作者自己在 L129 把 "traffic loads" 明确列进 future work——**即负载维度是被作者主动排除在实验设计之外的**。
+- **但有一条可用的事实**：**"更丰富/更激进的奖励不一定泛化更好"**（L113）。具体地，Table I 显示 LARGE-GPT 在搜索期与训练期 goodput 更高（§IV.D），到 12 秒推理期却掉到最低（1324 vs 1409），且方差最大（±237）。**这是一个"训练指标更好但部署更差"的实例**——对任何用 RL 做路由的人都适用。
+- **另一个可复用的对照设计**：作者用"固定星座"来"isolate the effect of reward optimization from changes in orbital topology, link dynamics, and path-length distributions"（L73）。**这个"冻结环境、只动一个变量"的设计选择是正确的**，也正是"负载变化"研究应该借鉴的反面——要研究负载，就得把负载当成那个唯一变动的变量，其余全冻结。
+- **一条可直接引用的时延量级**：Kepler 星座（140 星 / 7 面 / 600 km）下，专家基线奖励的端到端时延是 **85.65 ± 2.44 ms**，goodput **1451.62 ± 131.67 Mbps**，path stretch **1.464**（Table I）。这是本批里少见的"给出了具体星座参数 + 具体数值"的实验点。
+
+**10. 一句话评价**
+**把"LLM 自动奖励设计"这个已经在机器人与自动驾驶领域成型的套路，第一次（作者自称）搬进 LEO 卫星路由**——方法谱系的位置是"**引入一个新域，不动任何一环的方法**"：LLM 三智能体分工、双层循环、Code Generator 校验变量可得性，全部照搬已有范式，RL 侧更是直接使用现成仿真器与默认超参。它的真实价值有两个：一是把"奖励函数能不能自动设计"这个问题在 LEO 路由上做了存在性证明（**3 次迭代内达到基线水平**），二是 §IV.E 的 Table II 给出一份**"LLM 生成的奖励比专家奖励多了什么结构"的差异清单**（邻居排序、相对服务时间罚项、显式逐跳代价、ping-pong 惩罚）——后者可能比论文本身的结论更有复用价值。但**实验时长（0.2 s / 1 s / 12 s）短到难以支撑其 generalization 主张，停止准则在 $\pm 200$ Mbps 方差下缺乏统计效力，且 §IV.D 与 §IV.F 对两个 backbone 的归因互相颠倒**——这三点使它的结论目前只能当作"方向可行"的信号，不能当作可复现的性能结论。
+
 
 ## GV9PPNZT — Information Freshness in Multi-Hop Wireless Networks
 
@@ -398,3 +527,76 @@ AoI 的定义（L19）：目的节点在 $t$ 时刻的 AoI = **自最近一次�
 
 **10. 一句话评价**
 **把 AoI 从"单跳调度的指标"提升为"多跳网络的通用优化框架"的系统性工作**——方法谱系的位置是"**用标准工具（Lyapunov 漂移 + 虚队列）把一个新指标（AoI）的优化问题整体转成经典的网络稳定性问题**"，工具是老的、问题是新的；真正的原创在于**年龄债虚队列的构造**（尤其是为每个中间节点增设 $Q_j^{k\to i}$ 来修复单步漂移在多跳下的失效，L381）与**"年龄差策略在单源线网中可达最优、且把最优平稳随机的 $O(N^2)$ 降到 $O(N)$"这一清晰的量级分离**。它对"负载变化下到达率/时延"的最大贡献不是数据，而是**一个立场：到达率不是外生扰动，而是可以也应该被控制的设计变量**——但本文自己**没有任何队列、没有随机到达**，所以这条立场在本篇内尚未被验证。
+
+## I2WH9RRR — Asymmetric DQN for Partially Observable Reinforcement Learning (ADQN)
+
+**1. 一句话**
+给"非对称强化学习"补上缺失的理论地基：从**非对称策略迭代（API）**出发，经**非对称动作值迭代（AAVI）**、**非对称 Q 学习（AQL）**，逐级松弛到**非对称 DQN（ADQN）**——核心构造是额外训练一个**只用于训练、不用于执行**的 history-state 值函数 $\hat{U}(h,s,a)$，用它把"训练时可得的特权状态 $s$"以**有最优性保证**的方式注入 value-based 方法（L3 摘要，L109–L278 主体）。
+
+**2. 问题设定**
+OTOE（离线训练、在线执行）范式下，训练期能访问仿真器内部状态这种"特权信息"。在 actor-critic 里这早已常见（非对称 critic），但**value-based 方法天生不兼容**，作者点出两个原因（L121 逐字）："(a) because an action-value model $\hat{Q}(h,a)$ is eventually used for online control, it is constrained by the control problem and cannot directly employ privileged state information; and (b) typical value-based methods do not feature a separate model for the purpose of offline training which may access privileged information (akin to the critic in actor-critic)."
+更深层的动机是**现有工作多为启发式**（L23 逐字）："a substantial majority of prior work in asymmetric RL has proposed heuristic forms of asymmetry primarily verified through empirical evaluations, but which lack the support of a theoretical framework which guarantees the state information is used in an appropriate fashion"。作者警告错误使用会**反而有害**（L23 逐字）：最优部分可观测智能体的动作可能与最优全观测智能体差别巨大，甚至采取后者「在任何情况下都不会采取」的**信息收集动作**。
+
+**3. 方法骨架**（理论驱动，自底向上四级）
+- **背景（§3）**：POMDP 记号（L37）；history-action 值 $Q^\pi$ 与最优 $Q^*$（式 1–2）；**history-state 值函数** $U^\pi(h,s,a)$（式 4）及其与 $Q^\pi$ 的恒等式（式 5，L75）：$Q^\pi(h,a)=\mathbb{E}_{s|h}[U^\pi(h,s,a)]$。关键警告（L79 逐字）：最优部分可观测策略**不能**通过最大化 $U^*$ 得到——"generally, there is no guarantee that $\pi^*(h)=\arg\max_a U^*(h,s,a)$"。算子记号：$B_\pi$、$B$、$E$（对状态取条件期望把 $U$ 转 $Q$），以及**互一致（Mutual Consistency）**定义 $Q=EU$（Def 3.4，L105）。
+- **① API（§4.1，L125）**：交替做 U-评估（式 6，$U_{k+1}=\lim_n B_{\pi_k}^n U_k$）、Q-评估（式 7，$Q_{k+1}=EU_{k+1}$）、改进（式 8，$\pi_{k+1}=g(Q_{k+1})$）。**Theorem 4.1** 证明收敛到 $U^*,Q^*,\pi^*$。作者自己列出四条**实践局限**（L147），其中第四条最狠（L147 逐字）："API does not offer any significant advantage compared to its non-asymmetric counterpart PI. Ultimately, both API and PI converge to the same optimal value function $Q^*$; if anything, API requires more memory and computation to achieve the same goal"。**API 存在的意义被作者自己限定为"打地基"**（L151）：证明特权信息可以"在保持最优性保证的前提下"进入 value-based 求解过程。
+- **② AAVI（§4.2，L153）**：把改进步折叠进 U-评估，$U_{k+1}=B_{g(Q_k)}U_k$、$Q_{k+1}=EU_{k+1}$（式 9–10）。**Lemma 4.2（非对称 Bellman 等价，L181）**：在 U、Q 互一致时有 $EB_{g(Q)}U=BQ$。**Theorem 4.3** 证 $U_k\to U^*$、$Q_k\to Q^*$。
+- **③ AQL（§4.3，L185）**：用采样转移做增量随机更新（式 11–14），步长 $\alpha_k$ 需满足 $\sum\alpha_k=\infty$、$\sum\alpha_k^2<\infty$（式 15）。**Theorem 4.4**：若 $Q_0,U_0$ 互一致，则 $Q_k\to Q^*$、$U_k\to U^*$ **以概率 1** 成立。注意式(14) 里那个 $\Pr(s_k|h_k)$ 缩放因子——作者坦承这是**残留的模型依赖**（L243 逐字）："While we were able to remove other forms of model-based requirements, $\Pr(s_k|h_k)$ remains, **leaving AQL just shy from reaching both optimal convergence and concrete practicality at the same time**."
+- **④ ADQN（§4.4，L247）**：把表格换成参数化网络 $\hat{U},\hat{Q}$，把增量更新改写成平方误差损失。**两个损失共用同一个目标**（式 16–17）：
+  $\mathcal{L}_{\hat{U}}=\left(r+\gamma\,\mathrm{SG}[\hat{U}(hao,s',\hat{\pi}(hao))]-\hat{U}(h,s,a)\right)^2$，
+  $\mathcal{L}_{\hat{Q}}=\left(r+\gamma\,\mathrm{SG}[\hat{U}(hao,s',\hat{\pi}(hao))]-\hat{Q}(h,a)\right)^2$，
+  **SG 是 stop-gradient**。作者对这两个损失的解读是全篇最核心的一句（L255 逐字）："The crucial difference is that $\hat{U}$ is in able to model the target as a function of $s$, while $\hat{Q}$ is unable to do so, and can at only model the expectation of the target over values of $s$. In a way, these losses approximately enforce a 'loose' form of mutual consistency $\hat{Q}\approx E\hat{U}$." 两者可**一次反向传播联合最小化**。同时引入经验回放去相关（L257）。
+- **为什么比 DQN 好（L259）**：瓶颈在于**历史表示 $\phi(h)$ 极难训**，而**状态表示 $\phi(s)$ 好学得多**（固定输入输出尺寸、可用简单前馈）。ADQN 让历史表示的训练**同时被状态表示 bootstrap**——即使历史表示差，$\hat{U}(\phi(h),\phi(s),\cdot)$ 仍能从状态侧拿到上下文信息，进而反过来带动 $\phi(h)$、$\hat{Q}$ 与策略。
+- **三个变体**：**ADQN-VR**（式 18–19，把 $\hat{Q}$ 的目标换成 $\mathrm{SG}[\hat{U}(h,s,a)]$，降方差但训练早期引入偏差）；**ADQN-State**（式 20–21，$\hat{U}(s,a)$ 抛弃历史——作者引 [Baisero and Amato, 2022] 指出这种"state-only 非对称"有根本性理论缺陷）；**ADQN-State-VR**（式 22–23）。
+
+**4. 它声称的效果**
+- **ADQN 与 ADQN-VR 在全部 5 个环境下，在最终性能、收敛速度、学习稳定性上全面优于所有基线**（L345 逐字："Across the board, ADQN and ADQN-VR outperform all baselines in final performance, convergence speed, and/or overall learning stability."）。
+- 在 **Heaven-Hell-3 与 Heaven-Hell-4** 上对比最悬殊：ADQN/ADQN-VR 是**唯二**取得实质改进的方法，且**能达到最优性能**（L345）。
+- **state-only 变体在多数环境下连 DQN 基线都打不过**（L345 逐字），这**验证了 [Baisero and Amato, 2022] 关于 state-only 非对称的理论缺陷**。
+- **方差缩减变体与默认变体差别不大**（L347 逐字）："the type of asymmetry (history-state or state-only) is a larger contributor to overall performance than the choice of using the standard or the variance-reduced variant of the same method."——**"用哪种非对称"比"用不用方差缩减"重要得多**。
+- **一个例外**：GV-MemoryFourRooms-7x7 上出现反常（ADQN-State 胜过 DQN、ADQN-VR 胜过 ADQN）。作者解释为**这是唯一一个没有任何方法能可靠解决的任务**，可能源于随机生成地图与物体位置的高度动态性（L349）。
+- **⚠️ 必须指出的证据强度问题**：正文**没有给出任何一个具体数值**——全部效果只以 Figure 1 的五张学习曲线呈现（每个子图是"最近 100 个 episode 的平均回报"，阴影是 1 个标准误，20 次独立运行）。**"能达到最优性能""全面优于"这类表述在正文中没有任何数字支撑**。
+
+**5. 它的实验条件**
+- **环境（5 个部分可观测导航任务，刻意挑选需要"信息收集策略 + 记忆"的）**（L327）：
+  1. **Heaven-Hell-3 / Heaven-Hell-4**（Bonet 1998）：走廊环境，须先**折返**去见 priest 才知道哪个出口是天堂、哪个是地狱；
+  2. **Car-Flag**（Nguyen 2021）：Heaven-Hell 的一维连续控制变体；
+  3. **Cleaner**（Jiang and Amato 2021）：两个 agent 必须走遍所有格子清理的迷宫——**实验中两 agent 被当作单个 agent 集中式控制**；
+  4. **GV-MemoryFourRooms-7x7**（Baisero and Katt 2021）：动态生成的 4 连通房间网格世界，须先找到并**记住**信标才知道哪个出口好。
+- **对比方法 5 个**（L323）：DQN（标准非对称 DQN）、ADQN、ADQN-VR、ADQN-State、ADQN-State-VR。
+- **超参搜索**：每个环境×算法做**独立网格搜索**，选"最终性能与学习稳定性最好"的组合（必要时优先最终性能）（L337）。
+- **统计**：每个（环境、算法、超参）组合**跑 20 次独立运行**，曲线为最近 100 episode 的平均回报，阴影为 **1 个标准误**（L337、Fig 1 说明）。
+- **训练与评估**：全部在**仿真环境**中；这正是本文主题——"离线训练、在线执行"（OTOE)。**但正文没有单独报告在线执行阶段的性能**，所有曲线都是训练过程曲线。
+- **完全没有网络/负载维度**：无拓扑、无到达率、无队列、无时延。环境全是机器人与网格世界导航任务。
+
+**6. 它自己承认的局限（逐字引用）**
+- L147 逐字（§4.1，关于 API）："Perhaps most importantly, API does not offer any significant advantage compared to its non-asymmetric counterpart PI. Ultimately, both API and PI converge to the same optimal value function $Q^*$; if anything, API requires more memory and computation to achieve the same goal, resulting in a less practical solution method."
+- L243 逐字（§4.3，关于 AQL）："...$\Pr(s_k|h_k)$ remains, leaving AQL just shy from reaching both optimal convergence and concrete practicality at the same time. While it may be possible to approximate this factor in other model-free ways, AQL remains primarily a conceptual algorithm also due to the requirement of a tabular model over histories."
+- L249 逐字（§4.4）："The use of approximation sacrifices the optimal convergence guarantee established by Theorem 4.4, but is necessary to scale algorithms to significantly more challenging partially observable environments."
+- L367 逐字（§6 结论，future work）："Future work may focus on **extending ADQN to the multi-agent control case**, which poses further learning challenges, on finding applications where state-only ADQN may thrive ..., and on extending the evaluation of ADQN in more complicated partially observable vision-based tasks."
+- **未见自述**：① 实验**只报告学习曲线、一个数字都不给**，作者未提及这一证据强度问题；② Cleaner 环境被"两 agent 当单 agent 集中式控制"（L327），这个简化对结论的影响**未讨论**。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **把 ADQN 推广到多智能体**（L367 自己点名）——而这恰好是本文与 LEO 网络唯一的接口：**LEO 星上路由是典型的"集中训练（地面仿真有全网状态）、分散执行（星上只能看局部观测）"场景**，即本文所说的 OTOE + 特权状态。
+2. **做"非对称程度"的消融**：正文只说"history-state vs state-only"的差别比"是否方差缩减"更大（L347），但**没有做一个介于两者之间的谱**（例如 $\hat{U}$ 只看部分状态、或看延迟的状态信息）。在真实系统里"训练时能看到多少状态"是一个可调的资源约束。
+3. **报告在线执行阶段的性能**：全文所有曲线都是训练曲线，而这个框架的全部卖点在于"训练期用特权信息、执行期不用"。**执行期的性能恰恰是唯一真正重要的指标，却没有单独呈现。**
+4. **把 $\Pr(s_k|h_k)$ 这一残留模型依赖做得更实用**（L243）：作者说"may be possible to approximate this factor in other model-free ways"，但没有尝试。这是 AQL→ADQN 之间唯一没被消掉的模型依赖。
+5. **给出数值表格**：现在只有曲线，无法与后续工作做数值对比。
+
+**8. 和同批其他篇的关系**
+- **与 FGQSH4AI（MADDPG）是直接的"理论 vs 启发式"关系，而且本文引用了它**：参考文献中的 "Lowe et al., 2017. Multi-agent actor-critic for mixed cooperative-competitive environments"（L395 附近）**就是本批的 FGQSH4AI**。本文把 MADDPG 列为"非对称 actor-critic 的先例"之一（L21 处并列引 [Pinto et al. 2018, Foerster et al. 2018, **Lowe et al. 2017**, ...]），同时它的整个立论就是"**大部分已有非对称 RL 是启发式的、缺少理论保证**"（L23）。
+- **本文给 FGQSH4AI 那类工作提供了一个具体的技术判据**：MADDPG 的集中式 critic 用的是**全体 agent 的观测/动作**（属于 history-based，安全）；而本文明确指出 **state-only 形式的非对称有根本缺陷，且在本文实验中大多数情况下连 DQN 都打不过**（L345）。**任何 LEO MARL 路由论文若用"只看网络状态、不看历史"的集中式 critic，本文的结论直接对其构成警告。**
+- **与 FLQLU3T4 / GPDPLJNG / GPLEP83L 的关系是"训练范式上的同构"**：那三篇全都是"在地面/仿真里训练、部署到星上执行"，即本文所说的 OTOE。**但它们在设计 critic 时都没有引用任何非对称学习的理论**——这正是本文指出的那片空白。
+- 与本批 GV9PPNZT（AoI）**无交集**：一个讲 POMDP 值函数理论，一个讲网络年龄优化。
+- 参考文献（L379–L429）除 MADDPG 外**无其他本批论文**。
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**没有直接贡献。**
+- 全文无网络、无拓扑、无队列、无到达率、无时延。环境是 5 个机器人/网格导航 POMDP（L327），性能指标是 episodic return（L337 附近），没有任何一项与"负载"沾边。
+- **但有一条可迁移的方法论事实**（这是本文与本选题唯一真实的连接，且是作者自己的结论，非我引申）：**"非对称的形式选择（history-state vs state-only）对最终性能的影响，大于方差缩减等技术变体的选择"**（L347 逐字）。映射到 LEO 场景：如果在地面集中训练一个 star 上的路由策略，**"critic 能看到多少信息、以什么形式看"这个建模决策，可能比换一个 RL 算法或调参更重要**——而现有 LEO 路由论文普遍只关心后者。
+- 另一条可迁移的负面结论：**state-only 非对称在本文大多数环境下连普通 DQN 都打不过**（L345）。这对"训练时只喂网络快照状态、不喂时序"的做法是一个明确的负面信号——而"负载变化"本质上是一个**时序现象**，用无历史的状态表示来学习负载响应，按本文的结论是理论上站不住的。
+- 除此之外，**与"负载变化下的到达率/时延"没有关系**，不硬扯。
+
+**10. 一句话评价**
+**给非对称 value-based RL 补上第一块理论地基的工作**——方法谱系的位置是"**把 actor-critic 里早已工程化的'非对称 critic'思想，用 Bellman 算子/收缩性/随机逼近这套标准工具严格搬到 value-based 一侧，并证明最优性**"；理论链条完整（API→AAVI→AQL 三级都有最优收敛定理），但**每一级都被作者自己诚实地标注了局限**（API 不比 PI 更好、AQL 残留 $\Pr(s|h)$ 的模型依赖、ADQN 放弃最优性保证）。真正的实用贡献是**那个共用一个目标的双损失设计**（$\mathcal{L}_{\hat{U}}$ 与 $\mathcal{L}_{\hat{Q}}$ 共享 stop-gradient 目标，用"$\hat{U}$ 能以 $s$ 为自变量拟合、$\hat{Q}$ 只能拟合其对 $s$ 的期望"这一不对称来近似强制 $\hat{Q}\approx E\hat{U}$）以及**"用简单的状态表示去 bootstrap 困难的历史表示"这一训练机制**。短板同样明确：**实验只给曲线、不给任何数字**，且**从不报告执行期性能**——而这个框架的全部意义恰恰在执行期。
+

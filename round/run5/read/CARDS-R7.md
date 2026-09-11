@@ -380,6 +380,130 @@ Starlink 已是唯一拥有 200 万+ 用户、4000+ 在轨卫星的商业 LEO �
 
 **10. 一句话评价**
 本批里证据质量最高的测量论文：把 LEO 的"负载→时延"从传闻变成了可引用的数字（满载下载时 RTT 膨胀 2–4 倍、达 400–500 ms），并独立复现了 15 秒全局重构；它不提供模型，但提供了别人建模时必须对齐的靶子。
+## P6XJZNQK — A Global Perspective on the Past, Present, and Future of Video Streaming over Starlink
+
+**1. 一句话**
+站在 Netflix 的 vantage point 上，用 100 万+ 家庭、85 国、两年多的播放与性能数据，把"Starlink 上的视频流"从画质、卡顿、起播延迟到拥塞控制与 ABR 算法的适配全量了一遍；**核心结论是 Starlink 的画质其实不差，差的是抖动的形状——吞吐低、方差大、恢复慢，而根因指向 15 秒重构周期**。
+
+**2. 问题设定**
+LEO 的移动核心网会造成时延、吞吐、可用性的突变（L22），而理解运营中的 LEO 网络门槛极高，需要招募大量卫星用户或部署专用硬件（L24）。结果是：LEO 上的视频流研究一直是"小样本实验"（[34,57,59]），而针对 LEO 的传输算法改进"largely theoretical"（[13,37]）。本篇要补的就是**全局视角**这一层。服务对象是视频服务商与传输算法设计者。
+
+**3. 方法骨架**
+非 RL，是"大规模生产数据 + 仿真 + 真实 A/B 测试"三件套。
+- **识别方式**：用 **ASN 14593** 挑出 Starlink 家庭（L36）。
+- **会话过滤（L72–L80）**：只保留 (1) 订阅与设备支持 ≥720p 的（保证低画质归因于网络）；(2) 时长 ≥5 分钟的；(3) 目标是 TV 的（更可能静止，排除移动伪影）；(4) 2024 年 4 月第一周的。这套过滤覆盖 100 万+ Starlink 家庭、数百万会话。
+- **画质度量（L86–L88）**：用 **VMAF**（Netflix 的感知视频质量模型），并改进成 **Maximum Quality Ratio** = 时间加权 VMAF / 该会话可达的最大 VMAF。作者选 VMAF 而非 PSNR/SSIM 是因为前者与主观感受相关性更好（L86）。同时明确 VMAF 不覆盖起播延迟与卡顿（L90），所以另测吞吐、码率切换、时延、rebuffer。
+- **对照组（L84）**：not-Starlink 网络与 **Top 10 ISP**（后者当"金标准"）。
+- **拥塞控制实验（第 4 节）**：把 New Reno 改成 **New Reno with MulTCP**（模拟 3 条并发连接：每确认 1 字节窗口涨 3 字节，丢包时只按 1 条流退让），在 100 万+ Netflix Starlink 会话上做为期一周的 A/B 测试（L226）。作者明确拒绝换成 LEO 专用 TCP：在 Netflix 这种几亿用户、接入网五花八门的环境里，"dynamically choosing network-specific TCP replacements would introduce significant operational complexity"（L224）。
+- **ABR 实验（第 5 节）**：用 Netflix 自研的 trace-driven 模拟器（吞吐按 500 ms 桶记录），在 50 万 Starlink + 50 万非 Starlink 会话上扫三个 ABR 参数——**throughput smoothing（EWMA 半衰期）、throughput discount、buffer discount**（L251–L264）。基准取值：平滑窗口 ≈100 s、buffer 水线 ≈50 s、吞吐折扣 ≈15%。随后用约 30 万 Starlink 用户做真实 A/B（20 s vs 50 s 平滑），用 Mann-Whitney 检验（L290）。
+
+**4. 它声称的效果**
+- **画质**：Starlink 与非 LEO 网络"nearly identical"；49% 的会话（Starlink 与非 Starlink 都是）全程维持最高可用画质，Top 10 ISP 是 51%；但 **10% 的 Starlink 会话 Maximum Quality Ratio 低于 0.99，非 Starlink 只有 6%，Top 10 ISP 只有 4%**（L107）。
+- **43 个受检国家里 83% 的画质不低于本地替代网络，7 个国家更好**（L109）；马拉维最差 10% 会话画质比非 Starlink 好 **10.6%**，赞比亚好 **18.1%**；墨西哥/卢旺达/巴西最差会话差最多 **8%**（L111–L113）。
+- **抖动（核心）**：Starlink 用户经历码率切换的概率高 **60%**；卡顿（rebuffer）概率 vs Top 10 ISP 高 **216%**，vs 任意非 Starlink 高 **40%**；若已卡顿一次，Starlink 再卡第二次的概率高 **50%**（L168/L192）。
+- **吞吐**：**95% 以上的 Starlink 吞吐低于替代网络**，几乎总是 Top 10 ISP 的 **50%**，且跌到 **20 Mb/s 以下**（4K 所需）；**90% 以上的码率切换（无论哪个网络）发生在吞吐低于 20 Mb/s 时**（L170）。
+- **方差与恢复时间（最关键）**：**80% 的 Starlink 吞吐变化幅度大于 Top 10 ISP**；非 Starlink 网络里 50% 的"跌到 10 Mb/s 以下"事件约 **5 秒**恢复，**Starlink 约 15 秒**——而"15 秒恰好是 Starlink 重配置静态路由的间隔"（L172 逐字："Coincidentally, 15 seconds is the interval that Starlink re-configures static routes for packet forwarding between satellites and/or ground stations [2]."）。
+- **卡顿的区域不平等（表 1，L178）**：相对美国，加拿大 0.66x、亚太 0.9x、美国 1x、欧洲 1.07x、**非洲 2.7x、拉美 3.7x**。
+- **中断**：Starlink 会话经历 ≥8 秒中断的概率是非 Starlink 的 **6 倍**（L198）。
+- **MulTCP A/B（L235–L239）**：吞吐 **+30–40%**；低分位 VMAF **+0.08%–1%**；每小时卡顿 **−7%**、起播延迟 **−2%**、码率切换 **−5%**；但仍比非 Starlink 高 **33%** 的码率切换概率。**代价：重传率平均 +300%，95 分位时延平均 +77%**（L239）。
+- **ABR（L277–L296）**：平滑会高估吞吐，Starlink 上高估概率比非 Starlink 多 **10%**；同配置下 Starlink 卡顿比非 Starlink 高约 **35%**，**且无论怎么调平滑都追不上**；Starlink 需要 **50% 的吞吐折扣**才能达到非 Starlink 零折扣的卡顿率。真实 A/B（20 s vs 50 s 平滑）：卡顿 **−5%**，但最低 10% 的 VMAF **−7%**。
+- **时延**：75% 的 Starlink 最小 RTT 至少是非 Starlink 的 **2 倍**（L213）。
+
+**5. 实验条件**
+- **数据源**：Netflix 生产数据（自有 CDN，80+ IXP、25+ 国家）。含观看时长（不涉及内容）、客户端 QoE 指标、服务器 TCP 栈的网络指标（如 RTT）、元数据（ASN、国家、设备类型）。
+- **规模**：100 万+ Starlink 家庭、85 国、2022 年 1 月至 2024 年 4 月（L34/L26）。
+- **对照网络**：not-Starlink 全体 + Top 10 ISP（按观看秒数）。
+- **实验窗口**：主要统计取 2024 年 4 月第一周；A/B 测试在 2024 年 4 月中为期一周；ABR 仿真抽样取 2024-04-20 至 05-05。
+- **仿真器**：Netflix trace-driven 模拟器，吞吐以 500 ms 桶记录。
+- **伦理**：A/B 只做传输配置微调、影响小比例用户、可随时退出、异常可快速停止（L206）；不使用个人可识别信息（L36）。
+- 训练/评估概念不适用（无学习模型，VMAF 本身是预训练的 ML 模型，但不是本文训练）。
+
+**6. 它自己承认的局限**
+**有独立的第 6 节 LIMITATIONS（L307–L317），写得很实：**
+- L309 逐字："Our understanding of Starlink's growth in delivering video, the quality of experience of its users, and the impact of congestion control and adaptive bitrate streaming on video streaming over Starlink are inherently biased by our vantage point: Netflix."
+- L311：增长趋势"predominantly based on Netflix users and may not accurately represent Starlink's overall user base"；画质结论"relies on Netflix's streaming algorithms and congestion controller and might not hold for other streaming services"；且"the video buffer helps hide many of transient network disruptions typical of LEO access"（即视频缓冲掩盖了 LEO 的瞬时抖动）。
+- L315：过滤掉 <5 分钟的短会话，"such filtering could unintentionally exclude video sessions that are aborted early due to poor video quality"；作者用 ≥1 分钟的会话做了子集复核，趋势一致，但仍建议未来更严格地检验。
+- L129 另承认一个测量学硬限制：RTT"influenced by both terrestrial and satellite paths, and there is currently no methodology to isolate the latency attributed solely to the satellite component"。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **15 秒重构与吞吐恢复时间的关系只是"巧合"式并列，没有做因果实验**。L172 说 50% 的吞吐下跌恢复要 ~15 s，且"Coincidentally"这是重构间隔——这正是 L63JISQN 与 NPF75WS5 都已经独立确认的周期。把"吞吐下跌 → 恢复时长分布"按重构边界对齐，是现成可做的分析。
+2. **它明确点出 ABR 的根本缺陷是"点估计"**（L296 逐字："throughput smoothing, throughput and buffer discount all rely on point estimation that do not explicitly capture or handle high variance in throughput."），并提出"throughput variation should be measured, predicted, and used directly as part of the bitrate selection"（L298）——**但自己没做这个算法**，只做到"扫现成参数"。这是一个被作者亲手指出的空位。
+3. **对网络侧（路由）零干预**。全文只动拥塞控制与 ABR，没有讨论路由选择能否降低吞吐方差。而它测到的吞吐方差恰恰是 LEO 路由研究的直接目标函数——两边没有接上。
+4. **缓冲掩盖效应被承认但没被量化**（L311）：视频缓冲能掩盖 LEO 瞬时抖动，那么对**没有缓冲**的应用（实时控制、云游戏、交互式）结论会差多少？本篇用 Zoom/Luna 是 NPF75WS5 做的，两篇没有交叉。
+5. **MulTCP 的代价（重传 +300%、p95 时延 +77%）只被描述为"undesirable"，没有被纳入任何优化目标**——这是一个现成的多目标权衡问题。
+
+**8. 和同批其他篇的关系**
+与 **NPF75WS5 是同一题材的两条腿**：都测 Starlink 上的实时/流媒体应用，都用 ASN 14593 识别用户，都独立确认了 15 秒重构（NPF75WS5 说"correlate throughput drops with reconfiguration intervals"是它的贡献，本篇则把 15 s 与**恢复时间**挂钩）。两篇直接互引（本篇 [34] = NPF75WS5；NPF75WS5 [79] 引的是 Zhao 的 Starlink 实时多媒体）。与 L63JISQN 的关系是"下游应用"——L63JISQN 揭示 15 秒全局调度器的存在，本篇量化它在应用层的后果。与 LRSXMWX9（Satellite IoT 综述）同属"卫星通信的应用层"，但一个是窄带 IoT、一个是宽带视频。与三篇 RL 路由论文（LZKNZA8B / MXQVNU3P / PIXWFHAC）完全无关：那三篇优化网络的路径，本篇优化的是**跑在路径之上的传输与播放算法**。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**贡献集中在"抖动"而非"负载"，但有一个非常关键的副产品。**
+- **没有做负载→时延**：全文没有扫描到达率，也没有区分"负载高"与"负载低"两种状态。它的自变量是网络/地区/时间。
+- **但它给出了"时延/吞吐变化的恢复时间常数"**：Starlink 从吞吐跌破 10 Mb/s 恢复到 10 Mb/s 以上，中位要 **~15 秒**，而非 Starlink 约 **5 秒**（L172）。**这条对任何时变负载下的路由/调度建模都直接有用**——它是一个可引用的"网络状态恢复时间"。
+- **明确指出丢包的一个非拥塞来源**（L213）：Starlink WiFi 路由器上用了 **FQ-CoDel**（"minimizes latency at the expense of packet loss"），加上卫星链路的随机丢包与潜在的重排序。**即 Starlink 的丢包不能当成拥塞信号来用**——这是把损失当拥塞信号的学习式路由算法必须知道的负事实。
+- **拥塞控制的代价曲线**（L239）：吞吐 +30–40% 换来 p95 时延 +77%——这是**"提升吞吐 vs 拉高时延"的一条真实权衡曲线**，可直接当作负载-时延权衡的实证锚点。
+- **没有到达率 λ，也没有排队模型**。
+
+**10. 一句话评价**
+本批中数据规模最大、最"应用侧"的一篇：它不动路由，只动拥塞控制与 ABR，却给出了 LEO 网络抖动的完整形状（吞吐低 50%、方差大、恢复慢 15 秒、丢包非拥塞）；对路由选题的价值是提供**目标函数的实证形状**，而不是方法。
+## MYBALQ2D — Small-scale LEO Satellite Networking for Global-scale Demands (TinyLEO)
+
+**1. 一句话**
+反问"真的需要上万颗 LEO 卫星吗"，指出均匀星座与**时空非均匀的全球需求**严重错配，于是用压缩感知从 64800 条地球重访轨道（Earth-repeat ground track）里挑出稀疏组合，配合"地理意图 + 轨道 MPC + 地理分段任播"三层设计，把 Starlink 的 6793 颗压缩到 1763 颗（3.9×）而需求不变。
+
+**2. 问题设定**
+巨型星座的制造/发射/运营成本对小 ISP 与国家是门槛，导致全球 LEO 市场被少数巨头垄断，并严重占用轨道资源（L34）。作者的核心洞察是**大多数卫星被浪费了**：星座为了便于组网把卫星近似均匀铺开，但全球需求极不均匀——**70% 以上人口集中在 5% 的陆地上，而占地球表面 70.8% 的海洋几乎没有用户**（L38）。这个物理错配无法靠上层负载均衡消除（L38）。
+
+**3. 方法骨架**
+- **两个难点（L42–L44）**：(1) LEO 相对地球以约 7 km/s 异步移动，供给-需求匹配无法保持；单颗 Starlink 卫星对任一区域的覆盖最长只有 3 分钟（L120）。(2) 非均匀布局会让卫星相对运动复杂化，加剧链路切换、拓扑更新与路由变化。
+- **(1) 稀疏化（第 4.1 节，L199–L228）**：把地球划成 m 个地理格，格 i 在 t 时刻的最大可服务需求 $y_i^t$（单位是"卫星数"）作为输入；维护一个**地球重访轨道"纹理"库**（枚举式 1 的 (p,q) 对，T/T_E = p/q），第 j 条纹理由 (α_j, β_j, T_j) 刻画。优化问题（式 2–4，L208–L216）：
+  **min ||x||₁　s.t.　A_t x ≥ y_t ∀t,　x_i ∈ ℕ**
+  其中 A_t 是 t 时刻覆盖矩阵，**T_max = LCM(T₁,…,T_n)**。这是 NP-hard 的整数线性规划（L224），但 x、y_t、A_t **都是稀疏的**，于是作者用压缩感知里 matching pursuit 的变体（算法 1，L231）贪心求解：反复挑选能覆盖最多残余需求的纹理、确定加几颗星、更新残差，直到残差低于可用性阈值 ε（如 99%）。
+- **(2) 控制面（第 4.2 节，L235–L272）**：拆成"稳定意图 + 轨道 MPC"。**地理流量工程意图**：每个地理格 u 有位置 L_u 与最小可用卫星数 n_u，算子在其上自定义地理拓扑 G(V,E,N)，每条路由编码成一串地理格 u→w₁→…→v（L256）。**轨道 MPC**：三层稳定匹配——先用 **Gale-Shapley** 做格 u 到邻格 v 的 many-to-one 匹配（偏好是期望 ISL 生存期 $\tau_{s,v}=\frac{1}{n_v}\sum_{s'\in v}\tau_{s,s'}$，式 5，L266），再做格间的 one-to-one 匹配，最后在格内把所有匹配上的星连成**环**以保证连通（L270）。
+- **(3) 数据面（第 4.3 节，L278–L294）**：**地理分段任播**。基于 IETF 的 **SRv6**（Linux 5.4 内核原生支持），每个 segment 是一个地理格；任何覆盖该格的卫星都能接包并转给下一格的任意卫星。作者论证：由于高层路由意图是全局拓扑导出的、无环且可达的，只要每一跳可达就能保证投递；而格内环保证包最终能到达负责下一格的网关星（L294）。
+
+**4. 它声称的效果**
+- **压缩比（L363）**：对比 Starlink 的 **6 793 颗**，TinyLEO 分别用 **1 763 颗（3.9×）** 满足 Starlink 用户需求、**3 344 颗（2.0×）** 满足洲际互联网骨干备份需求、**1 066 颗（6.4×）** 满足拉丁美洲区域需求。
+- **放宽可用性可再省（L365）**：若把可用性目标从 100% 略降到 99%，进一步压到 **1 391（4.9×）/ 3 184（2.1×）/ 865（7.9×）**。
+- **求解速度（L363）**：TinyLEO 每个任务 **6.5–7.7 小时**完成；对比 **Gurobi v12.0** 精确解在一台 2×Xeon Gold 6430（32 核 64 线程）、1 TB DDR5 的工作站上**跑了 2 个月仍未完成任何一个**，作者只能截断。
+- **昼夜动态的价值（L367）**：引入 Cloudflare 的 Starlink 用户活动测量（2 天、15 分钟粒度）后，TinyLEO 比静态需求基线**再省 271 颗（18.5%）**；若同时放宽可用性，可省 **333 颗（26%）**。
+- **轨道参数重要性（L377）**：**倾角 β 与升交点赤经 α 贡献最大**（分别匹配纬度与经度上的不均匀需求）；**轨道周期 T 的作用"mixed"**——作者逐字："We have not observed significant satellite savings with them."
+- **控制面（L384–L399）**：相对 Aalyria 开源 TS-SDN，总信令消息省 **1–3 个数量级**；剩余的 ISL 本地更新消息比路由更新少 10×。注入 1000 次随机链路故障，**平均 83.8 ms 修复**（其中 83.5 ms 是故障上报与修复命令的往返时延）。对比 TS-SDN 需 100 ms 到数分钟。
+- **数据面（L429–L433）**：相对 Starlink（同样用轨道 MPC 建拓扑）路由拉伸 **90 分位 1.29、最大 1.63**；用标准 3-ISL 网格拓扑的 Starlink 反而更差。本地重路由只需 **13.6–44.3 ms**。
+
+**5. 实验条件**
+- **需求侧**三种真实需求，铺在 **4 050 个地理格**上：Starlink 全球客户分布（按其官方报告按总接入容量 652 Tbps / 6 793 星缩放，使每用户 100 Mbps）、国际互联网骨干（海底光缆备份场景）、拉丁美洲区域需求（L341）。
+- **供给侧**：**64 800 条候选地球重访轨道**（表 1，L320；高度 423–1873 km、周期 92.8–124.2 min、RAAN ∈ [−π,π]、倾角 ∈ [0,π]）。
+- **卫星参数**：每星 3 条 ISL（各 200 Gbps）+ 1 条用户接入链路（96 Gbps），每用户 100 Mbps → **每星最多服务 960 个并发用户**（L339）。
+- **基线**：Starlink（6 793 星、5 个壳层、2025.01）、MegaReduce（迭代微调均匀星座）、Gurobi（精确解，截断 2 个月）。
+- **测试台（L380）**：基于 StarryNet 变体，在高性能计算集群上**仿真 1 741 颗 TinyLEO 卫星**，每颗是独立轻量 Linux 容器，硬件在环，逐包实验。
+- 训练/评估概念不适用（无学习模型）。
+
+**6. 它自己承认的局限**
+**有，在第 7 节 Discussion 内（L441 逐字）**："As an initial attempt at small LEO networks for global-scale demands, TinyLEO has some inevitable limitations that deserve future work. First, TinyLEO shrinks the satellite network at the cost of more LEO dynamics, hence leading to more challenges for network availability, efficiency, and resiliency. While our current design has significantly mitigated these issues, it currently relies on Earth-repeat ground tracks. It would be nice to unlock ground tracks beyond Earth-repeat ones for more stable and sparser LEO networks. Second, TinyLEO's control plane can be decentralized to facilitate the above multi-party LEO network (akin to BGP). Last but not least, TinyLEO's data plane should be enhanced for future deterministic networking (DetNet)."
+另在 L377 承认轨道周期带来的收益不确定。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **需求函数 y_t 是外部输入，不是被建模的对象**。L201 明确说"如何在这些因素之间权衡超出本文范围"（接入容量、ISL 容量、冗余、故障备份、昼夜动态），把需求当作给定的每格"卫星数"。**即它把负载变化当作规划输入而不是性能问题**——时延与丢包在整个规划阶段没有出现。
+2. **数据面评估只有单一路由意图下的 RTT/拉伸**（L429–L433），**没有做"需求增长/热点迁移时性能如何退化"的实验**。而 TinyLEO 的整个卖点就是"匹配非均匀需求"，那"匹配不上时"的表现恰恰没被测量。
+3. **L441 承认稀疏化会加剧动态性**（"at the cost of more LEO dynamics"），但全文没有量化这个代价：ISL 切换频率增加多少？路由抖动增加多少？只给了拉伸与 RTT 的静态分布。
+4. **瓶颈被明确指认为最后一跳**（L112 逐字："most LEO networks' utilizations are bottlenecked by their last-hop radio access links to users rather than ISLs（e.g., 96 Gbps in Starlink versus its 200-Gbps ISLs）"）——那么排队与拥塞应当发生在接入链路，而 TinyLEO 完全没有接入链路的队列模型。
+5. **MPC 用了 Gale-Shapley 稳定匹配，但"稳定"的目标是 ISL 生存期最长，不是负载最均衡**。把负载均衡作为匹配偏好是现成可改的。
+6. **地球重访轨道依赖被自己点出**（L441），但没给出"非重访轨道能再省多少"的上界估计。
+
+**8. 和同批其他篇的关系**
+在批内是**异类也是补集**：它既不是测量论文（对照 L63JISQN / NPF75WS5 / P6XJZNQK），也不是学习式路由论文（对照 LZKNZA8B / MXQVNU3P / PIXWFHAC）。它做的是**星座设计与网络架构的协同**——把供给（卫星布局）当自变量。与 LBMABZJ7（Walker Delta 最少跳路由）恰好对立：LBMABZJ7 假设均匀 Walker 星座、优化跳数；TinyLEO 恰恰要**打破均匀性**，并必须处理由此带来的拓扑复杂度。与 PIXWFHAC 的"用户数=负载轴"相比，TinyLEO 的"负载轴"是**空间×时间的需求分布**，更接近选题要问的"负载变化"。它引用的 [18]（同组的 Stable Hierarchical Routing）与 [66]（MegaReduce）是同一研究线的前作。未见引用同批其他篇。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**本批中对"负载的时空非均匀性"贡献最系统的一篇，但它把负载当规划输入而非性能变量。**
+- **给出了负载非均匀的定量事实**：70% 以上人口在 5% 陆地、海洋占 70.8%（L38）；Starlink 全球流量呈长尾分布，且**存在跨时区的周期性昼夜波动**（L94，用 Cloudflare 的 DNS 活动测量、2 天、15 分钟粒度）。
+- **给出了"考虑时变负载"的价值量化**：把昼夜动态纳入规划可**少发 271 颗星（18.5%）**，配合放宽可用性可到 **333 颗（26%）**（L367）。这是对"静态按峰值规划"的直接反驳，也是一个可引用的规划收益数字。
+- **明确指认瓶颈在最后一跳接入链路而非 ISL**（L112，96 Gbps 接入 vs 200 Gbps ISL），但**没有队列建模、没有排队时延**——它的时延指标只有传播 RTT 与路由拉伸。
+- **缺口很清楚**：它证明"负载时空变化"值得建模，却没有回答"当实际负载超过规划值（热点突增）时时延/丢包如何变化"。这是本篇留给下游的直接问题。
+
+**10. 一句话评价**
+把"全球需求时空非均匀"这一物理事实做成星座设计问题的架构论文：算法上是用压缩感知替代 NP-hard 精确解（并赢了 Gurobi 的截断解），工程上是用地理意图 + SRv6 任播把非均匀星座的复杂度藏起来；它是本批中唯一从**供给侧**回应负载变化的论文，与所有从路由侧（学习式）或从测量侧（实测）入手的论文构成互补。
+
+
 
 
 

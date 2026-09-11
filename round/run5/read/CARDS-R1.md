@@ -263,74 +263,88 @@ LEO 卫星"资源受限 + 拓扑时变"，且用户请求呈**区域集中**（L
 
 
 
-## 35T2JJRJ — Attention Is All You Need
 
-> 覆盖：逐字读完第 1–324 行（正文 1–233，参考文献 235–315，注意力可视化附录 317–324）。全文 324 行。
-> **重要：本篇不是 LEO 论文**，也不是卫星/网络领域论文，而是序列建模的方法论奠基作（Transformer）。批次里出现它说明语料含方法学地基条目；以下按规范照读照写，不做领域关联的硬扯。
+
+## 47J2H748 — Packet Routing in Dynamically Changing Networks: A Reinforcement Learning Approach
+
+> 覆盖：逐字读完第 1–119 行（正文 1–98，参考文献 100–119）。全文 119 行。**这是 Q-routing 的原始论文（Boyan & Littman, 1993）**，是本批所有 RL 路由工作的共同祖先，也是本批（乃至全部语料）对"负载变化下的到达率/时延"给出**最直接、最干净结论**的一篇。
 
 **1. 一句话**
-提出 **Transformer**——第一个**完全靠注意力机制**、彻底去掉循环与卷积的序列转换模型：编码器/解码器各 6 层，每层是"多头自注意力 + 逐位置前馈"，配上正弦位置编码；它把"序列建模必须递归"这个假设拆掉，换来训练可并行，代价是注意力对序列长度呈二次复杂度。
+在每个交换节点里嵌一个 Q-learning 模块：节点 $x$ 维护一张 $Q_x(d,y)$ 表，记录"经邻居 $y$ 送包到目的地 $d$ 预计要多久（**含在 $x$ 自己队列里排队的时间**）"，每发一个包就用邻居回报的估计值做一次在线更新。不需要预先知道拓扑和流量模式，也不需要任何中心路由控制。作者把它刻画为**Bellman-Ford 最短路算法的一个变体**：路径松弛步骤是异步在线的，而且**路径长度不用跳数、用总投递时间**来衡量（L37）。
 
 **2. 问题设定**
-要解决的是**循环模型的内在串行性**（第 1 节）。RNN/LSTM/GRU 沿符号位置逐步计算：$h_t$ 是 $h_{t-1}$ 与位置 $t$ 输入的函数，这种串行本质**使得训练样本内部的并行化不可能**，而序列一长就致命——显存限制了跨样本批处理（L29 逐字："This inherently sequential nature precludes parallelization within training examples, which becomes critical at longer sequence lengths, as memory constraints limit batching across examples"）。既有的因式分解技巧 [21] 与条件计算 [32] 只是缓解，"**串行计算这一根本约束依然存在**"（L29）。同时，注意力机制虽然已成标配，但"除了少数例外 [27]，都是与循环网络结合使用"（L31）。
+路由策略要回答的是"当前节点该把包交给哪个邻居，才能尽快送到最终目的地"，但策略的好坏只能用包的**总投递时间**来衡量，而**在包最终到达目的地之前根本没有训练信号**（L23 逐字："there is no 'training signal' for directly evaluating or improving the policy until a packet finally reaches its destination"）。强化学习的价值就在于：**只用局部信息就能更快地更新策略**（L23）。作者要证明的是"**穿过通信网络路由数据包**"是一个天然适合 RL 的实际任务（L15）——当时的 RL 除双陆棋外几乎没什么大规模实际应用。
 
 **3. 方法骨架**
-- **整体**（第 3 节）：标准 encoder-decoder，编码器把 $(x_1,\dots,x_n)$ 映射为 $\mathbf z=(z_1,\dots,z_n)$，解码器自回归地逐个生成 $(y_1,\dots,y_m)$。
-- **Encoder/Decoder 栈（第 3.1 节）**：各 **N=6 层**。编码器每层两个子层（多头自注意力 + 逐位置全连接）；解码器每层三个子层（多插一个对编码器输出的多头注意力）。每个子层外包 **残差连接 + LayerNorm**，即 $\mathrm{LayerNorm}(x+\mathrm{Sublayer}(x))$；所有子层与嵌入层输出维度 $d_{model}=512$。**解码器自注意力做掩码**（把非法连接置 $-\infty$），保证位置 $i$ 只能依赖 $<i$ 的输出。
-- **缩放点积注意力（第 3.2.1 节）**：$\mathrm{Attention}(Q,K,V)=\mathrm{softmax}\big(\frac{QK^T}{\sqrt{d_k}}\big)V$（**式 1**）。缩放的理由：$d_k$ 大时点积幅度大，会把 softmax 推入梯度极小的区域（L81）。
-- **多头注意力（第 3.2.2 节）**：把 Q/K/V 用 $h$ 组不同线性投影投到 $d_k,d_k,d_v$，并行做注意力后拼接再投影一次：$\mathrm{MultiHead}=\mathrm{Concat}(\mathrm{head}_1,\dots,\mathrm{head}_h)W^O$，$\mathrm{head}_i=\mathrm{Attention}(QW_i^Q,KW_i^K,VW_i^V)$。本文取 **h=8，$d_k=d_v=d_{model}/h=64$**；因为每头维度降低，总计算量与全维度单头相当。动机是"单头注意力做平均会抑制多子空间的信息"（L87）。
-- **三种注意力用法（第 3.2.3 节）**：编码器-解码器注意力（Q 来自解码器、K/V 来自编码器）；编码器自注意力；解码器自注意力（带掩码）。
-- **逐位置前馈（第 3.3 节）**：$\mathrm{FFN}(x)=\max(0,xW_1+b_1)W_2+b_2$（**式 2**），$d_{ff}=2048$；等价于两个 kernel size 为 1 的卷积。
-- **嵌入与 softmax（第 3.4 节）**：输入/输出嵌入与 pre-softmax 线性层**共享同一个权重矩阵**，嵌入权重乘以 $\sqrt{d_{model}}$。
-- **位置编码（第 3.5 节）**：因为没有循环也没有卷积，必须显式注入位置信息。用不同频率的正余弦：$PE_{(pos,2i)}=\sin(pos/10000^{2i/d_{model}})$、$PE_{(pos,2i+1)}=\cos(\cdot)$。选它的理由是"对任意固定偏移 k，$PE_{pos+k}$ 可以表示为 $PE_{pos}$ 的线性函数"，便于学相对位置，且**可能外推到比训练时更长的序列**（L136）。
-- **为什么用自注意力（第 4 节，Table 1）**：三条判据——每层计算复杂度、最少串行操作数、任意两位置间的最大路径长度。Table 1 给出：自注意力 $O(n^2\cdot d)$ / 串行 $O(1)$ / 路径 $O(1)$；循环 $O(n\cdot d^2)$ / 串行 $O(n)$ / 路径 $O(n)$；卷积 $O(k\cdot n\cdot d^2)$ / 串行 $O(1)$ / 路径 $O(\log_k n)$；受限自注意力 $O(r\cdot n\cdot d)$ / 串行 $O(1)$ / 路径 $O(n/r)$。（**Table 1 是本文除翻译成绩外信息量最大的一张表**。）
+- **Q 值定义（L25）**：$Q_x(d,y)$ ＝ 节点 $x$ 估计的"把去往 $d$ 的包经邻居 $y$ 送出所需的全部时间"，**其中包含包在 $x$ 队列里等待的时间**（"including any time that P would have to spend in node x's queue"）。
+- **更新式（L28-37）**：$x$ 把包发给 $y$ 后**立刻**收到 $y$ 的剩余时间估计
+  $t=\min_{z\in\mathrm{neighbors\ of\ }y} Q_y(d,z)$
+  若包在 $x$ 的队列里呆了 $q$ 个时间单位、在 $x\to y$ 的传输上花了 $s$ 个时间单位，则
+  $\Delta Q_x(d,y)=\eta\big(\underbrace{q+s+t}_{\text{新估计}}-\underbrace{Q_x(d,y)}_{\text{旧估计}}\big)$
+  学习率 $\eta$ **实验里通常取 0.5**（L37）。
+- **与经典算法的关系（L37）**：它是 Bellman-Ford [1,3] 的一个变体，两点不同——(1) 路径松弛**异步且在线**进行；(2) 路径长度**不是跳数而是总投递时间**。
+- **表示**：$Q_x(d,y)$ 用**一张大表**存储。作者也试过用**神经网络近似** $Q_x$，好处是能把"本地队列长度、一天中的时段"等多样化系统参数纳入距离估计；但**"these experiments were inconclusive"（结果不确定）**（L39）。
+- **拓扑实验范围（L46）**：7-超立方、116 节点 LATA 电话网、**不规则 6×6 网格**；详细结果只报 6×6 网格。
+- **探索的两种做法（第 3.2 节）**：
+  - **随机探索**：作者指出它在分布式路由里有两个严重问题（L79）——① 网络持续在变，**初始探索期永远不会结束**；② **随机流量对拥塞有极负面的影响**：发往次优方向的包会增加排队时延，从而拖慢所有经过该队列的包，进一步增加时延……而且**因为节点只依据局部信息决策，这种加剧的拥塞实际上改变了学习器试图解决的那个问题本身**。
+  - **"full echo" Q-routing（L81）**：不发真包，而是每次决策时向**直接邻居发信息请求**，邻居用**独立信道**回一个数（该邻居对到目的地总时间的当前估计），从而不增加网络拥塞；用这些估计去调整 $Q_x(d,y)$。捷径出现或策略低效时，信息在网络里传播得很快。
 
 **4. 它声称的效果**
-- **WMT 2014 EN-DE**（Table 2，L179）：Transformer(base) **27.3** BLEU，Transformer(big) **28.4**；此前最强是 ConvS2S Ensemble 26.36 与 GNMT+RL Ensemble 26.30。作者称 big 模型"**比此前报告的最好模型（含集成）高出 2.0 BLEU 以上**"（L189）。
-- **WMT 2014 EN-FR**：Table 2 记 Transformer(big) = **41.8**；但正文 L191 写的是"**achieves a BLEU score of 41.0**，outperforming all of the previously published single models，训练成本不到此前 SOTA 的 1/4"。——**同一篇里表格（41.8）与正文（41.0）数字不一致**，需注意引用口径。
-- **训练成本**（Table 2）：Transformer base $\mathbf{3.3\times10^{18}}$ FLOPs（远低于 ConvS2S 的 $9.6\times10^{18}$、GNMT+RL 的 $2.3\times10^{19}$）；big $2.3\times10^{19}$。
-- **训练时长**（第 5.2 节）：8 张 P100；base 每步 0.4 s、共 100 000 步 = **12 小时**；big 每步 1.0 s、共 300 000 步 = **3.5 天**。
-- **消融（Table 3，dev=newstest2013）**：base 配置 6 层/512/2048/h=8，PPL 4.92，BLEU 25.8，**65M 参数**，100K 步。
-  - (A) 头数：1 → 24.9（比最佳差 0.9 BLEU）；4 → 25.5；16 → 25.8；32 → 25.4（**头太多也掉**）。
-  - (B) 减小 $d_k$ 到 16/32 → 25.1/25.4，**掉点**，作者据此猜测"兼容性函数比点积更复杂可能有益"（L206）。
-  - (C) 层数 2/4/8 → 23.7/25.3/25.5；$d_{model}$ 256/1024 → 24.5/26.0（**模型越大越好**）。
-  - (D) dropout 0.0 → 26.2（dev 上反而更高？）；0.2 → 24.6；label smoothing 0.0/0.2 → 25.5/25.3。作者结论是"**dropout 对避免过拟合非常有帮助**"（L206）。
-  - (E) **用可学习位置嵌入替代正弦编码 → 25.7，与 base 的 25.8 几乎相同**。
-  - big：$d_{model}=1024,d_{ff}=4096,h=16,P_{drop}=0.3$，300K 步，PPL 4.33，BLEU 26.4，**213M 参数**。
-- **成分句法分析（Table 4，WSJ 第 23 节）**：4 层 Transformer，仅 WSJ 训练 F1 **91.3**，半监督 **92.1**；对比 Berkeley-Parser 92.1、Recurrent Neural Network Grammar 93.3（**未能超过 RNN Grammar**，L219 自述"with the exception of the Recurrent Neural Network Grammar"）。**注：MinerU 对该表的行列对齐有错乱（parser 名与 F1 值发生错位），引用具体配对时需回原文核对。**
+- **总量性结论（L46 逐字）**："The result was that **in all cases, Q-routing is able to sustain a higher level of network load than could shortest paths.**"
+- **低负载（L48）**：经过一段学习拓扑的初始低效期后，Q-routing **表现与最短路路由器相当**——而后者在低负载下是最优的。
+- **高负载（L50）**：最短路路由**不再最优**，因为"**它无视上升的拥塞水平，很快用包淹没整个网络**"；而 Q-routing 学到有效策略。
+- **机制证据（Fig.3 策略摘要图，L50）**：最短路策略下，网络**中心的两个节点（标号 570 与 573）出现在大量最短路上**，高负载时成为拥塞点；Q-routing 在高负载下学到的策略**让一部分流量走比必要更长的路（沿网络顶部绕行）以避开中心拥塞**。
+- **投递时间 vs 负载（Fig.4，L60）**：每个数据点是**学习稳定后平均包投递时间在 19 次试验上的中位数**。**极低负载时 Q-routing 与最短路几乎一样高效；随着负载上升，最短路策略导致"爆炸式的网络拥塞"，而学习算法持续高效；只有在负载再显著提高之后，Q-routing 才也屈服于拥塞。** —— **这是一条完整的"负载→时延"曲线，且给出了两种策略各自的稳定边界。**
+- **动态变化（第 3.1 节，L67-73）**：
+  - **拓扑**：手工断开链路，Q-routing 反应迅速、继续高效路由。
+  - **流量模式**：让请求模式在"上下半区"与"左右半区"之间周期性振荡，每次切换后只需短暂低效期即可适应。
+  - **负载水平（关键）**：**负载升高时 Q-routing 很快调整策略绕开新的瓶颈；但负载再降回去时，适应要慢得多，而且"从未收敛到最优最短路"**（L73 逐字："However, when network traffic levels were then lowered again, adaptation was much slower, and **never converged on the optimal shortest paths**."）
+- **"full echo" 的对照（Fig.5，L83）**：**低负载下 full echo 与最短路无法区分**（所有低效都被清除）；**高负载下 full echo 优于最短路，但基本版 Q-routing 更好**。原因是 full echo 在高负载下**策略不断变化，在上方瓶颈与中心瓶颈之间来回振荡**，行为不稳定。
+- **全文最锋利的一句（L88 逐字）**："**Ironically, the 'drawback' of the basic Q-routing algorithm—that it does no exploration and no fine-tuning after initially learning a viable policy—actually leads to improved performance under high load conditions. We still know of no single algorithm which performs best under all load conditions.**"
 
 **5. 它的实验条件**
-**数据（第 5.1 节）**：WMT 2014 EN-DE，约 450 万句对，BPE 共享词表约 37 000；WMT 2014 EN-FR，**3600 万句对**，32 000 word-piece 词表。按近似句长组批，每批约 25 000 源 token + 25 000 目标 token。
-**优化（第 5.3 节）**：Adam，$\beta_1=0.9,\beta_2=0.98,\epsilon=10^{-9}$；学习率 $\mathrm{lrate}=d_{model}^{-0.5}\cdot\min(\mathrm{step}^{-0.5},\ \mathrm{step}\cdot\mathrm{warmup}^{-1.5})$（式 3），**warmup=4000**（线性升后按步数平方根倒数降）。
-**正则（第 5.4 节）**：残差 dropout 0.1；标签平滑 $\epsilon_{ls}=0.1$（作者自述"**hurts perplexity，但提升准确率与 BLEU**"）。
-**推理（第 6.1 节）**：base 取最后 5 个 checkpoint 平均（每 10 分钟存一次），big 取最后 20 个；beam size **4**，长度惩罚 $\alpha=0.6$；最大输出长度 = 输入长度 + 50。
-**句法分析（第 6.3 节）**：4 层、$d_{model}=1024$；WSJ 部分约 40K 训练句；半监督用约 17M 句；词表 16K/32K；beam size **21**，$\alpha=0.3$。
-**训练与评估**：同一套模型规格；消融只在 dev 集（newstest2013）上做，测试集成绩只用最终配置。**硬件是 8×P100。**
+**仿真器**：离散事件仿真器模拟局域网中的包传输，细节见技术报告 [5]（L19）。
+**拓扑**：7-超立方、116 节点 LATA 电话网、**不规则 6×6 网格（36 节点）**；详细结果只给 6×6 网格（Fig.1）。
+**负载**：**负载水平是被主动扫描的自变量**——Fig.4/Fig.5 的横轴就是"various levels of network load"，并明确给出"最短路爆炸的负载点""Q-routing 也屈服的更高负载点"两个边界（L60）。
+**统计口径**：**每个点 = 学习稳定后的平均包投递时间，在 19 次试验上取中位数**（L60）。**这是本批为数不多明确给出重复次数与统计量的论文。**
+**学习率**：$\eta$ 通常 0.5（L37）。**训练与评估的关系**：学习是**在线持续**的（"The learning is continual and online"，L17），即"训练"与"运行"是同一过程；评估是在学习稳定后测的。
+**流量模式**：含周期性振荡的请求模式（上下半区 ↔ 左右半区，L71）。
 
 **6. 它自己承认的局限**（逐字）
-**未见独立的 Limitations 章节。** 全文零散的自我限定有三处：
-- **注意力平均导致分辨率下降**（L37）："...albeit at **the cost of reduced effective resolution due to averaging attention-weighted positions**, an effect we counteract with Multi-Head Attention as described in section 3.2."
-- **长序列需要受限注意力，本文未做**（L146）："To improve computational performance for tasks involving very long sequences, self-attention could be restricted to considering only a neighborhood of size r... This would increase the maximum path length to $O(n/r)$. **We plan to investigate this approach further in future work.**"
-- **生成仍是串行的、且只验证了文本模态**（L229）："We plan to extend the Transformer to problems involving input and output modalities other than text and to investigate local, restricted attention mechanisms to efficiently handle large inputs and outputs such as images, audio and video. **Making generation less sequential is another research goals of ours.**"
-- **句法任务未超过 RNN Grammar**（L219）："yielding better results than all previously reported models **with the exception of the Recurrent Neural Network Grammar [8]**."
+- **仿真不够真实**（L92）："Although **the simulations described here are not fully realistic from the standpoint of actual telecommunication networks**, we believe this paper has shown that adaptive routing is a natural domain for reinforcement learning."
+- **神经网络近似未能成功**（L39）："We also tried approximating $Q_x$ with a neural network... However, **the results of these experiments were inconclusive.**"
+- **基础 Q-routing 无法发现捷径、无法精调**（L77）："Q-routing **cannot fine-tune a policy to discover shortcuts**, since only the best neighbor's estimate is ever updated."
+- **负载下调时不收敛**（L73）："when network traffic levels were then lowered again, adaptation was much slower, and **never converged on the optimal shortest paths**."
+- **没有单一算法在所有负载下都最优**（L88）："We still know of no single algorithm which performs best under all load conditions."
+- **未来工作**（L94）：用函数近似替代表格表示，以便纳入更多系统变量、跨目的地泛化、减少每节点存储、扩展适用规模。
 
 **7. 它没做但看起来能做的地方**（基于内容）
-1. **$O(n^2)$ 的注意力墙没有被处理**：Table 1 明确写出自注意力每层 $O(n^2\cdot d)$，受限版本能降到 $O(r\cdot n\cdot d)$，但作者把它推到 future work（L146/L229）。**这是本文留给后续工作最大、最明确的一个口子**（后来的 Longformer/Sparse Transformer 一类工作正是在填这个坑）。
-2. **解码仍是自回归、逐步生成**（L229 自述"making generation less sequential"仍是目标）——**训练可并行了，推理没有**。
-3. **位置编码的选择没有被充分论证**：正弦编码 vs 可学习嵌入在 dev 上几乎无差别（25.7 vs 25.8），作者仍选正弦，理由是"**可能**外推到更长序列"（L136），**但这个外推能力从未被实验验证**。
-4. **多头数存在最优点（16）而非单调**（Table 3 (A)：1→24.9，16→25.8，32→25.4），但**为什么 16 最优没有任何解释**。
-5. **注意力可解释性只有附录里的两张图**（L319/L322："following long-distance dependencies"、"anaphora resolution"），属于**轶事级证据**，没有定量分析。
-6. **只在两个翻译任务 + 一个句法任务上验证**，跨任务的广度有限。
-7. **dropout 0.0 在 dev 上 BLEU 反而最高（26.2）**（Table 3 (D)）这条反直觉结果没有被讨论。
+1. **只用了表格表示，函数近似试了但失败**（L39）：作者在结论里把"换成函数近似"列为最重要的未来方向（L94）——**这正是后来 DRL 路由的全部起点**，而本文只走到"inconclusive"。
+2. **探索与拥塞的耦合被指出但未解决**（L79）：作者深刻地指出"随机探索的流量会加剧拥塞，从而**改变学习问题本身**"，但给出的 full echo 方案在高负载下反而不如不探索（L83）。**"如何在有负载的网络里安全探索"这个问题在本文里被明确提出却没有答案。**
+3. **负载不对称**（L73）只被陈述、没被解释：为什么降负载时收敛慢而升负载时快？作者只说"This effect is discussed in the next section"（L73），但第 3.2 节讨论的是探索，**并没有真正解释这个不对称**。
+4. **没有区分"平均时延"与"时延尾部"**：所有指标都是平均包投递时间（L46/L60），没有方差、没有尾部分位数。而拥塞恰恰是尾部现象。
+5. **没有到达率模型**：负载是仿真里的一个总水平参数，未说明是泊松到达还是固定并发数；也没有给出"到达率"与"队列占用"的显式关系。
+6. **只有 36 节点（6×6）的详细结果**：7-超立方与 116 节点 LATA 网只给了一句总结（L46），**大网络的结果没有展示**。
+7. **没有与当时的非学习型自适应路由（如 delta routing [6]）做数值对比**，而 [6] 正是它引用的对照类工作。
 
 **8. 和同批其他篇的关系**
-**它不是同批任何 LEO 论文的同类项，而是它们所依赖的方法族的上游**。具体而言：本批 2FBBURX7 用的 **GATv2**（其参考文献 [66]）正是把"注意力"从序列搬到图上的产物，其思想源头可追到本篇（虽然 2FBBURX7 直接引的是 GAT [24]/[65] 而非本篇）；39NJWBI7 的 actor/critic 用两层 MLP（未用注意力），**不依赖本篇**；4QG5VYHQ 是排队论解析，与深度模型无关。参考文献（L237-315，逐条看完）**全部是 NLP/深度学习文献**（Bahdanau 注意力、LSTM、ByteNet、ConvS2S、LayerNorm、Adam、dropout、label smoothing），**没有任何网络/通信/卫星文献**。因此：**本篇在本次选题的语境里是"工具谱系的祖先"，不是"问题域的同侪"**。
+**它是本批全部 RL 路由论文的共同祖先**，血统关系可以逐条对上：
+- **42E4NAQU**（Queue-Aware MA-DRL）的每跳时延 $D(i,j)=\|ij\|/c+B/R(i,j)+t_q(i)$ 与状态里放"邻居队列水平"，正是本文"$Q_x(d,y)$ 含 $x$ 的排队时间"这一设计的多智能体深度学习版；
+- **39NJWBI7**（PRIMAL）的式 1 $D^h_{p,ij}=D^P+D^T+D^Q$ 与"reward 里含排队时延"同样直接继承本文的时延分解；本文"$Q$ 值就是到目的地的预计时间"也对应 PRIMAL 的"cost-return"；
+- **3MRQRWHU**（多 QoS Q-learning）的状态 $\{\mathrm{delay},\mathrm{loss},\mathrm{band}\}$ 与 Q 表更新（Bellman）几乎是本文 Q-learning 的直接沿用，只是加了优先级权重；
+- **2FBBURX7**（多播 AoI 的 A2C）不做逐包路由，关系较远，但同属"RL 解网络优化"这一族。
+本文引用的 [1] Bellman、[3] Ford（最短路）、[6] Rudin（delta routing）、[8] Tesauro（TD 学习）说明它的根在 **Bellman-Ford 与 TD 学习**两处；**它不引用任何 LEO/卫星文献（1993 年尚无此领域），也不引用本批其他篇目**。
 
 **9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
-**没有直接贡献**——它既没有到达率、没有队列、没有网络时延，实验对象是自然语言句子。**不硬扯。**
-唯一可迁移的是一条**"决策机制自身开销随规模增长"的标度律**，且这条与选题有方法论上的相关性：**Table 1（L122）** 指出——如果需要"关注"的实体数量为 $n$，则自注意力每层代价是 $O(n^2\cdot d)$、受限自注意力是 $O(r\cdot n\cdot d)$、循环是 $O(n\cdot d^2)$。**也就是说：一个基于注意力的策略网络，其推理开销对"被关注的实体数"是二次的。** 如果把 $n$ 理解为"卫星数 / 候选路径数 / 并发流数"（在负载升高时这些量会一起变大），那么**"负载升高 → 策略网络推理开销二次上升"** 是一件可以直接从本篇表格里读出的事实——这与 S85KQ4FC 关心的"决策资源饱和"是同一类担忧，但**本篇只给了复杂度表达式，没有任何网络场景下的实测**。任何把 Transformer 用进 LEO 路由的工作，都应该先回答"$n^2$ 这一项在星上算力下是否可接受"，而本篇不提供这个答案。
+**这是本批最直接、最干净、也最可引用的一篇——而且它发表于 1993 年。** 它贡献了五条硬事实：
+1. **完整的"负载 → 投递时延"曲线与两条稳定边界**（Fig.4，L60）：最短路策略在某个负载点**爆炸**，Q-routing 把可承受负载推高很多，**但 Q-routing 自己也有一个更高的屈服点**。也就是说：**学习型路由不改变"存在拥塞崩溃点"这件事，只是把它往后推。**
+2. **"绕远路避拥塞"在节点级被证据化**（L50，Fig.3）：Q-routing 学到让部分流量走**比必要更长**的路径以避开中心节点 570/573。**这是"最短跳数 ≠ 最低时延"在负载下的最早、最清楚的实验证据。**
+3. **负载变化的不可逆/不对称性**（L73）：**升负载适应快，降负载适应慢且永不收敛回最短路。** 这条对任何"负载是时变的需求"的选题都构成一个必须回应的警告——**策略在负载回落后不会自动回到最优**。
+4. **探索本身会污染被学习的问题**（L79）：随机探索的包**增加排队时延 → 拖慢所有经过的包 → 进一步增加时延**，而且由于决策是局部的，**这种加剧的拥塞改变了学习器要解决的那个问题**。这是"在线学习 × 负载"耦合的最本质陈述。
+5. **不存在全负载域最优的算法**（L88）：探索多的（full echo）低负载好、高负载振荡；探索少的（基础 Q-routing）低负载差一点、高负载最好。**"哪个算法好"这一问在负载变化下没有单一答案。**
+**边界**：它的"负载"是一个仿真总水平，**没有显式的到达率 λ、没有泊松过程、没有队列占用率的闭式关系**；所有指标都是**平均投递时间**（无尾部）；详细结果只在 **36 节点**上。但作为**定性规律的来源**，它的权重高于本批任何一篇 LEO 论文。
 
 **10. 一句话评价**
-**这是本批语料里唯一的一篇方法论地基论文**：它把循环从序列建模里去掉、把并行度和长程依赖路径同时改善，代价是 $O(n^2)$ 的注意力与仍然串行的生成——在方法谱系上它处在**所有注意力系模型的共同祖先位置**，与 LEO 路由选题的关系是"工具的上游"而非"问题的同侪"；对"负载变化下到达率/时延"**无任何直接贡献**，唯一可迁移的是"注意力机制开销随被关注实体数二次增长"这条**标度律**。
+**RL 路由的开山之作**（把 Bellman-Ford 的距离从"跳数"换成"总投递时间"，并在每个节点嵌一个 Q-learning），方法谱系上处在**本批全部学习型路由工作的共同祖先**位置；它对本选题的价值甚至高于任何一篇 LEO 论文——因为它用最少的假设、最清楚的对照（最短路 vs Q-routing vs full-echo，负载扫描 + 19 次试验取中位数）给出了**"负载-时延曲线存在崩溃点""绕远避堵""负载回落不收敛""探索会改变学习问题""无全负载域最优算法"**这五条至今仍然成立的结论。
 
 <!-- END -->

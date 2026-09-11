@@ -542,4 +542,141 @@ LEO 星座承诺给长距离通信**低于地面光纤的时延**（真空光速
 **10. 一句话评价**
 一篇 6 页 LETTER，**方法增量非常明确**——把 Y2H4NPLU 那条"分布式 Q-routing"的骨架（同一套状态/奖励/邻居 Q 更新）搬到**异构双星座 + 跨层链路**上，并把 model-free 的 Q-learning 换成 **Dyna-Q**（用学到的模型生成模拟经验以加速策略改进，实测收敛快 33%），外加一个**"选满足需求的最短接触时长而非最长"**的时间匹配算法（式 6）——后者的动机（不浪费 CLL 资源、更均匀分配）是本文最有原创性的一点。它的实验是本批**对"负载变化下时延/送达率"贡献最直接**的一篇：给出 $\ell$ 从 0.5 到 0.9 的绝对时延与送达率，并第四次独立复现了"低负载区算法无差别"这一现象。**最需要主控注意的是**：它与 Y2H4NPLU 在状态、奖励、Q 更新、负载定义四处几乎逐式相同而参考文献中未引该文，以及 $w_1,w_2,\alpha,\gamma,Q_{max}$、Dyna-Q 规划步数、[13] 条目等**复现所必需的参数大面积缺失**。
 
+## Z74SR656 — Evolution of Non-Terrestrial Networks From 5G to 6G: A Survey（IEEE COMST 2022; Azari, Solanki, Chatzinotas, Kodheli, Sallouha, Colpaert, Mendoza Montoya, Pollin, Haqiqatnejad, Mostaani, Lagunas, Ottersten）
+
+**1. 一句话**
+一篇 1293 行的**综述**（非研究论文）：把 **NTN（非地面网络 = 卫星 + HAP + UAV）** 从 5G 到 6G 的演进按"5G 集成 → mmWave → IoT → MEC → ML → 高层协议 → 外场试验 → 6G 架构/使能技术"九条线全面梳理，**LEO 路由只是其中很小的一块**。
+
+**2. 问题设定**
+地面基础设施在偏远/不可达区域（农村、沙漠、海洋）部署不经济或不可能，导致 UE 无法接入（L29）。NTN 与地面网结合可提供连续泛在覆盖并增强容量、覆盖与时延，同时弥补地面设施在可靠性与广域存在性上的短板（L29）。3GPP 已把卫星接入纳入 5G 研究项（L31）。作者要回答的是：**NTN 在 5G/6G 中扮演什么角色、有哪些架构选项、技术使能与未解挑战**。
+
+**3. 方法骨架**（综述，无算法；以下为它梳理出的分类框架）
+- **NTN 定义与分类**（§II.A1）：空间段 = GEO（35786 km，波束足迹 200–3500 km）、MEO（7000–25000 km）、LEO（**300–1500 km**，足迹 100–1000 km）；空中段 = HAP（20 km）、UAV（数百米）（L67–69）。
+- **四种集成架构**（§II.A2，Fig 1）：① **NT 平台作为用户**（被地面网服务，或高空卫星服务低空平台）；② **NT 平台作为中继**（回传中继 / 终端接入中继，透明载荷即可）；③ **NT 平台作为基站**（再生载荷 + 星上处理）；④ **混合架构**（如上组合）（L76–82）。
+- **TN 与 NTN 的技术对比**（Table III，L107）：覆盖 100 km vs 3500 km；**传播时延 ≤0.67 ms（100 km 小区）vs ≤540 ms（GEO 透明载荷）**；路损 ≈138 dB vs ≈190 dB（均 2 GHz）；多普勒 ≈1 kHz（高铁）vs **≈48 kHz（600 km LEO，2 GHz）**；切换：用户移动触发 vs **NGSO 卫星运动导致的周期性切换**。另：GEO 往返时延可达 **270 ms**（L99）。
+- **九大章节结构**（L57）：II 5G 集成 → III mmWave → IV IoT → V MEC → VI ML → VII 高层进展 → VIII 外场试验与产业 → IX 6G → X 结论。每章末尾都有 **Key Takeaways** 小节（本文最有信息量的部分）。
+- ML 章（§VI）把应用分为**卫星网**（资源分配、波束跳变、IoT、MEC、切换与干扰管理、信道建模）与 **UAV 网**（3D 布放与轨迹、切换与干扰、mmWave、IoT、MEC、信道建模）与**多段网**（L324–375），并有 Table VII 汇总"ML 技术 ↔ 应用 ↔ 文献"（L377）。
+
+**4. 它声称的效果**（综述的"效果"= 它汇总的事实与判断）
+- 对 **ML 中的 RL**：明确指出 RL 应用的**主要顾虑是训练阶段的性能很差**，并预测会出现"限制 RL 智能体在探索阶段的不良表现"这一新研究方向，点名 **safe RL / batch RL / off-policy RL** 三条线（L320 逐字："One of the main concerns is **the poor performance of the RL during the training phase**. Accordingly, it is projected to have a new line of applied research where the focus is limiting the bad performance of the RL agent within the exploration phase [278], [279]. Towards this goal, the available literature on safe RL [280], batch RL [281], [282] and off-policy RL [283], [284] are of enough significance meriting special attention."）。
+- 对 **多智能体 RL 的一条尖锐批评**（L365 逐字）："The benefit of multiagent MEC system presented in [256] is based on an assumption that **all the edge nodes can perfectly communicate to each other during the training phase**. In many practical cases, such assumption rarely occurs due to imperfect communications among the edge nodes and the highly dynamic network topology."
+- 对**卫星 MEC 的量化结论**（L279，转述文献 [161] Kim & Choi）：该分析基于无向图星座模型，**同时考虑传播时延与排队时延、上下行误包率**，考察"平均总时延与抖动"随**收发地面间距、不同卫星高度、卸载率**的变化，结论是 **"latency decreases with the offloading rate while it increases with altitude"**（时延随卸载率下降、随高度上升）。
+- 对**波束跳变（Beam Hopping）**（L330 逐字）："In a conventional satellite network, there might exist **a mismatch between requested traffic and offered capacity through the satellite beams**. Beam hopping technique is a promising solution for this issue to manage **asymmetric and variant traffic demands**." 并指出文献 [209] 把照度规划建成 **POMDP 并用 DRL 求解**，且计入了**波束间干扰与流量的时空特征**。
+- 对**TCP 与时延/拥塞的相互作用**（L397 逐字）："general TCP protocol was not conceived to work on long-propagation links... **TCP may interpret the long-delay of a packet as a loss event and consider that the link is congested**." 对策是 PEP（性能增强代理，做"TCP 分裂"），但 PEP 会因 spoofing/splitting **破坏 TCP 语义**、引起互操作问题。
+- 对 **NGSO 的 NGSO 网关/空中链路路由**（L399 逐字）：主要研究挑战是"the need for **onboard routing and network management mechanisms capable of dealing with the motion of NGSO aerial systems, together with the non-uniformly congested and dynamic network traffic with different QoS classes**"。
+- 对 **6G 高度分布式 RAN**（L510 逐字）："As the latency requirements becomes more critical and **the amount of traffic does not cease to increase**, the cloud-RAN architecture **suffers from congestion caused by the fact that a substantial amount of data has to go through the core**." 并主张"each node is expected to **intelligently route the data packets to the suitable network slice** according to its requirements. The latter is only possible if **each node is aware of the network status**"。
+- 对 NTN 的整体定位（L134）：NTN 的互补作用是"**offloading an important part of the traffic especially in highly congested areas**"。
+
+**5. 它的实验条件**
+**综述无实验**。它汇总的参考文献规模为 **[1]–[385]**（L524–1293）。来源覆盖 3GPP 标准（TR 22.822、TR 38.811、TR 22.829、TR 36.777、TR 38.821、TS 22.125、TS 38.104、TS 24.502 等）、IEEE 期刊/会议、arXiv 预印本、ITU-R WRC-15/19 决议、厂商与项目网页（Viasat、HughesNet、OneWeb、Starlink、Kuiper、Facebook、Google Loon、Nokia、Ericsson、Qualcomm、Vodafone、SES O3b mPOWER、5G-VINNI、5G METEORS、SAT5G、5GENESIS、5G ALLSTAR、5GDrones、SATis5、EdgeSAT、CLOUDSAT、5G-GOA、5GDIVE、SATAI、MLSAT、ATRIA 等）。文献分类表（Table I，L37）列出与既有 8 篇综述/教程的覆盖度对比（√ 覆盖 / ∂ 部分覆盖）。
+
+**6. 它自己承认的局限**
+综述没有"本文方法的局限"一节；它的自述属于**对领域的未解问题的声明**，须区分：
+- L432 逐字（对 NTN-TN 集成）："Despite the benefits of NTN, there are several challenges which are needed to be addressed for the seamless integration of NTN with TN. For instance, **channel modelling incorporating the Doppler effects, admission control by satellites, storage limitations in air and space, flexible addressing and routing, mobility and constellation management, and spectrum co-existence** are some of the crucial design challenges."
+- L200 逐字（mmWave 多段网络）："due to **limited literature in this domain**, additional studies are required to fully understand the behaviour of mmWave links integrated into multi-segment networks."
+- L320 逐字（对 RL 领域）："the poor performance of the RL during the training phase"（见第 4 项）。
+- L365（对既有 MARL 假设的批评，见第 4 项）。
+- L499 逐字（6G 软件定义卫星）："This opens up **new development scenarios for architectures, protocols, traffic routing schemes, etc.**, that meet these new demands."
+
+**7. 它没做但看起来能做的地方**（基于内容）
+1. **L279 那条"时延随卸载率下降、随高度上升"的结论是以单句转述出现的**（文献 [161]），综述**没有给出该结论的数值、拓扑或负载范围**。既然综述的目的就是把分散结论汇总，这条与本选题最相关的量化事实被压缩成了一句话——若要追溯必须去读 [161] 原文。
+2. **"排队时延"在整篇综述里只出现极少数几次**（L279 是主要的一次）。占据大量篇幅的是传播时延、多普勒、波束成形、轨迹优化，**"负载 → 排队 → 时延"这条链在综述层面基本是缺位的**。
+3. **L320 提出的 safe/batch/off-policy RL 三条线是一个现成的研究缺口清单**：作者说"需要专门关注"，但没有进一步指出在 NTN 场景下这三条线各自对应什么问题（例如"训练期性能差"在卫星上意味着什么代价）。这是一个可以直接接续的方向。
+4. **L365 对 MARL 的批评（训练期假设节点间完美通信）与 LEO 多智能体路由直接相关**，但综述只在 MEC 语境下提了一次，**没有把这个批评迁移到星座路由的 MARL 工作中去检查**。
+5. **L397 的 TCP/拥塞误判问题**（长传播时延被 TCP 误判为丢包/拥塞）在 LEO 路由里同样成立，但综述把它放在"高层协议"章，**与路由章的讨论彼此隔离**。
+6. Table III 的对比里 **"Handovers"一行只写了触发原因（周期 vs 用户移动），没有给切换频率或切换中断时长**——而 YD4JUT7G 用"每 GST 每天约 20 次连接—断开事件"给出了这个粒度，两篇可以互补。
+7. 综述**没有覆盖跨域路由/域间路由**这一层（YD4JUT7G 的主题），其路由讨论停留在"必须有星上路由与网络管理机制"这类断言（L399）。
+
+**8. 和同批其他篇的关系**
+- **与 YD4JUT7G 直接衔接**：YD4JUT7G 正是"LEO 星座如何接入地面 Internet 路由体系（跨域）"的架构研究，而本综述在 L399 只把"星上路由与网络管理机制应对 NGSO 运动 + 非均匀拥塞的动态流量"（逐字见第 4 项）列为待解挑战——**本综述提出问题，YD4JUT7G 是一篇具体回答**。
+- **与 YI9G7NR7 的关系**：YI9G7NR7 处理的是"通信星座 + 遥感星座"的跨层链路与分布式路由，属于本综述 §IX.B2 **Multi-Segment 3D Networks** 与 §IX.B4 **Mega LEO Constellation** 两条 6G 架构线（L463、L467）下的具体工作。
+- **与 X5K285MW / XM6NUPM4 的关系**：本综述 §IX.B4「Mega LEO Constellation」与 §VI.B「ML-Empowered Satellite Networks」为这两篇提供了背景框架，但两篇都未引用本综述（X5K285MW 与 XM6NUPM4 的参考文献里没有 COMST 2022 这篇）。**本综述可作为它们的上位背景引用**。
+- **与 X2FCSU4S / X5Z98UPM 的关系**：X2FCSU4S 的多层 GEO/LEO 缓存卸载对应本综述 §II.A2 的"NT 平台作为中继/基站"架构分类；X5Z98UPM 标题里的 SAGIN 对应本综述的 GAS（ground-air-space）术语体系。
+- **本综述引用的、与同批直接相关的文献**：**[190] Sutton & Barto《Reinforcement Learning: An Introduction》**（L902，RL 的教科书根基；本批原分配中被主控裁掉的 LJG6ZW7B 正是该书）；**[192] Mnih et al. Nature 2015（DQN 原始论文）**（L906）——**X5Z98UPM、XLRW7XXN、XM64YRAW 三篇都用 DQN 却没有一篇引它，本综述是这三篇共同的方法祖先索引**；**[193] Lillicrap et al. DDPG**（L908，X5Z98UPM 引其 [40]）；**[194] Feriani & Hossain 单/多智能体 DRL 综述**（L910）；**[210] Wang et al.「Reinforcement learning based congestion control」**（L942）——**这是本综述里与本选题最贴近的一条 RL 工作**；**[304] Chen, Giambene, Yang, Fan, Chen「Analysis of inter-satellite link ...」**（L1130）；**[378] Jiang, Cui, Liu, Wang, Liu, Chen「Cooperative relay assisted ...」**（L1278）——该文与 **X2FCSU4S 的参考文献 [3] 是同一篇**（X2FCSU4S L764："L. Jiang, G. Cui, S. Liu, W. Wang, D. Liu, and Y. Chen, Cooperative relay assisted load balancing scheme based on stackelberg game for hybrid GEO-LEO satellite network"）——**这是本批两篇之间由第三方文献建立的实际连接**。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**贡献稀薄，但有几条可引用的断言**。必须如实说：这是一篇覆盖 NTN 全领域的综述，**负载与排队时延不是它的组织线索**，"arrival rate""queueing"在全文中的出现密度极低。它对该选题的可用事实只有四条：
+1. **唯一一条定量关系**（L279，转述自文献 [161]）：卫星 MEC 场景下，**平均总时延随卸载率（可读作到达/卸载负载）上升而下降、随卫星高度上升而上升**，且该分析**同时计入了传播时延与排队时延**——方向与时延分量的处理都与本选题一致，但它是二阶转述，需回溯原文。
+2. **"请求流量与卫星波束供给容量之间的失配"**（L330）是一个明确的负载—容量失配陈述，并把波束跳变作为对策、把 DRL+POMDP 作为解法——这是与本批 RL 路由工作同构的另一条负载自适应技术线。
+3. **"NTN 的互补角色是在高度拥塞区域卸载相当一部分流量"**（L134）与 **"流量持续增长导致 C-RAN 因大量数据必须穿过核心网而拥塞"**（L510）——两条都是"拥塞驱动架构选择"的动机陈述。
+4. **TCP 把长传播时延误判为丢包/拥塞**（L397）——这提醒：在 LEO 场景中，**时延与"拥塞"信号本身会互相污染**，任何用"时延上升"做拥塞判据的方法（例如 Y2H4NPLU 的 t 检验）都必须处理这个混淆。
+**总结：直接贡献 ≈ 无；间接价值在于它给出了这四条断言 + 一份把 385 篇文献按主题编排的索引，可用于给本选题做上位背景与"哪些子领域已经成熟、哪些还是空白（如排队时延、safe RL、MARL 通信假设）"的定位。**
+
+**10. 一句话评价**
+一篇高质量的**领域地图**而非方法贡献：它把 NTN 从 5G 到 6G 的架构、频谱（mmWave/THz）、垂直行业（IoT/MEC）、使能技术（ML/IRS/QUIC/软件定义卫星/量子）与外场试验铺陈得非常完整，**Table III 的 TN/NTN 技术对比与各章 Key Takeaways 是它最有复用价值的部分**；但对"LEO 路由在负载变化下的到达率/时延"这个问题，它**主要是背景与索引**——唯一的量化关系（时延随卸载率下降、随高度上升）还是转述别人的；不过它对 **RL 训练期性能差**（建议 safe/batch/off-policy RL）与 **MARL 依赖"训练期节点间完美通信"这一不现实假设**的两条批评，恰好命中了本批多篇 LEO MARL/DRL 路由论文共同的软肋。
+
+## ZIUBKVPZ — Routing in Low Earth Orbit Satellite Networks: Constrained DQN-based Approach（Hegde, Roth, Bischl @ DLR）
+
+**1. 一句话**
+把 LEO mesh 路由写成**受约束 MDP（CMDP）**，用 **C-DQN** 通过"只让 agent 在预先生成好的**安全路径集合**（k-最短路 ∪ k-简单路）内探索"来实现安全探索，从而在**跳数与链路负载两个约束**下算出既无环路又避开拥塞的路径，并讨论链路失效下的鲁棒性、复杂度与可扩展性。
+
+**2. 问题设定**
+摘要（L7 逐字）："The complexity of routing in LEO satellite networks is increasing due to **higher traffic loads**, complex network architectures and their integration with the terrestrial networks. The **time varying satellite network topology, intersatellite link failures and the necessity to satisfy diverse quality of service requirements** demands the need to investigate routing algorithms that can fulfill **multiple objectives**." 对既有源路由的具体批评（L15 逐字）：Dijkstra/A* 等**不考虑路径上各条链路的个体负载**（引文献 [2]，即作者自己团队的 Roth et al. 2022），"A major drawback of these algorithms is that they are **particularly susceptible to link congestion arising from hotspots**." 而多约束多目标路由是 **NP-hard**，经典优化方法需要在每次迭代中遍历所有状态，在大规模 SCN 上计算代价高昂（L17）。此外作者指出 DQN 的一个根本问题（L21）：单纯调奖励函数**无法**在所有拓扑与链路失效情形下保证最优结果；而只在动作选择时屏蔽不安全动作（action masking）、**不改 Q 更新**，虽能短期选到更安全的动作，但当出现路由环路时**仍会违反约束**。
+
+**3. 方法骨架**（RL：DQN + 预计算安全集约束；**集中式**）
+- **CMDP**（L27）：$<S,\mathcal{A},\mathcal{P},\mathcal{R},\gamma>$ → 加入约束集 $\mathcal{C}=\{C_k: S\times A\to\mathcal{R}\mid 1\le k\le C_N\}$ 后变为 $<S,\mathcal{A},\mathcal{P},\mathcal{R},\gamma,\mathcal{C}>$。
+- **状态**（L34）：全局状态 $S$ 含**活跃卫星节点总数 V、与邻居的链路连接情况、以及各条链路的个体负载**。数学上表示为双向图 $G=(V,E)$（$E$ 为 ISL），$V$ 个卫星节点以 **$X\times Y$ mesh 网格**分布在特定轨道面内；连通性用**邻接矩阵** $A_{i,j}$ 描述；**个体链路负载表示成二维向量 $U_{e_{i,j}}$**。
+- **动作**（L36）：每个卫星节点一个**有限动作空间**，对应其四条 ISL 的四个方向 **[E, W, N, S]**；某方向链路不存在或不活跃则置 0；最多四条 ISL ⇒ 最多四个动作。作者特别说明这样做的理由是"链路连接状态动态变化，使输出层难以处理**变长动作空间**"（L36）。
+- **安全动作集**（式 1，L41）：$\mathcal{A}_{c_k}=\{a\in\mathcal{A}\mid c_k(s_t,a)\le P_n\}$，其中 $P_n$ 是 n 个顶点之间**所有安全路由路径的集合**。两类安全探索：① 只探索 **k-最短路**上的节点；② 探索**不形成路由环路的一条或多条简单路**上的节点。两者都保证充分探索同时给出**无环的有效路径**（L44）。
+- **后端规则算法**（L46）：在后台跑**规则型源路由 Dijkstra**，周期性计算并更新源-目的对 $(s,d)$ 之间的 **k-最短路集 $P^s_{k,s-d}$** 与 **k-简单路集 $P^{si}_{k,s-d}$**，安全探索集 $P_n=\{P^s_{k,s-d},P^{si}_{k,s-d}\}$。**即 RL 与规则算法是耦合的：规则算法负责给出可行路径的"护栏"，RL 负责在护栏内做逐跳决策以绕开拥塞链路。**
+- **安全状态集**（式 2）：$S_{c_k}=\{a\in A_{c_k}\mid(s_t,a)\}$。
+- **Q 更新**（式 3）：$Q^{c}(s_t,a_t)\gets Q^{c}(s_t,a_t)+\alpha\left(r+\gamma\max_{a\in\mathcal{A}_{c_k}}Q^{c}(s_{t+1},a_{t+1})-Q^{c}(s_t,a_t)\right)$——**注意 $\max$ 是在受限动作集 $\mathcal{A}_{c_k}$ 上取的**，这就是"约束进入 Q 更新"的具体做法。策略式 4：$\pi^{*}(s_t)=\arg\max Q^{c}(s_t,a)$。
+- **奖励**（式 5，L69–96）：分段式，$r_t(a_t|s_t)=$
+  - $B$：走**最短路**且 $U_{e,i,j}<0.5$（最好奖励）；
+  - $B-\psi$：走**简单路**且 $U<0.5$（$\psi$ 是相对最短路的**距离惩罚**）；
+  - $B-\sum_{x=1}^{L}x\,v_i$：形成**路由环路**且 $0.4<U<0.8$（$L$ 是在节点 $v_i$ 上形成的环路数，$x v_i$ 项随环路累积）；
+  - $-(B-\sum_{x=1}^{L}x v_i-c)$：**既有环路又触发约束违反（CV）**且 $U>0.8$（$c$ 表示约束违反）；
+  - $0$：其他一切情形（即在中间节点移动**不给任何奖励**）。
+  链路负载的分档阈值：**舒适 $U<0.5$、拥挤 $U>0.8$、环路场景落在 $0.4<U<0.8$**。作者指出约束违反最典型的场景是"多条链路拥塞（$U>0.8$）迫使 agent 走已走过的路径（四个方向都被探索过）"，以及**卫星经过极区时只有两条同轨 ISL 可用**（L96）。
+- **Algorithm 1**（L74–94）：先**抽取有效动作空间 $\mathcal{A}_{c_k}$ 与安全状态 $S_{c_k}$**；$\varepsilon$-greedy 选动作；**若下一状态等于上一状态，则改选另一个有效动作 $a'_t$ 并存储**；然后按 mini-batch 计算 MSE 损失、更新目标网络。**"如果回到上一状态就换动作"是对环路的一层显式硬拦截。**
+- 参数（Table I，L103）：前馈网络，**2 个隐藏层 × 128 神经元**；学习率 $\alpha$ = **0.001（DQN）/ 0.007（C-DQN）**；折扣 $\gamma$ = **0.99（DQN）/ 0.9（C-DQN）**；$\varepsilon=0.5$；buffer 300；batch 50；目标网络更新频率 100；优化器 **RMSProp**；损失 MSE；**600 episodes、每 episode 10 epochs**；**"Learning and decisions: Centralized"**。
+
+**4. 它声称的效果**
+- **路径计算（Fig 2，L137–142）**：**传统 DQN 在 $\varepsilon$-greedy 探索下"环路不可避免"**，作者给出实例——从节点 0 到节点 11，在节点 1 处**所有可能的动作都形成环路**：$[0,1(N),5,6,2,1]$、$[0,1(E),2,6,5,1]$、$[0,1(S),9,5,6,2,1]$、$[0,1(W),0]$，**原因是节点 1 的四条 ISL 负载完全相同，agent 认为选哪个动作都等价**。修正节点 1 的环路后又在节点 5 等处形成环路，直到节点 1 的动作空间被穷尽、**全部结果都是约束违反**。
+- **C-DQN 的结果**（L142）：选出了两条无环路径 $R_1=[0,1,2,3,7,11]$、$R_2=[0,8,4,5,6,7,11]$ 且均不违反约束；$R_1$ 因更短而在后续 episode 中被优先选。另一条最短路 $[0,8,9,10,11]$ 起初因链路负载高被避开，**当负载在后续 episode 下降后 agent 又能选它**——这是一个"负载回落 → 路径选择变化"的直接观测。
+- **节点探索率**（式 6：$N_e=N_r/N_{s,d}$，L113）：**C-DQN 在两种 mesh 规模下都达到 80–90% 的节点探索率**；Dijkstra 一旦算出就固定给同一组路径；**DQN 的探索比 Dijkstra 好，但由于随机探索导致的约束违反，成功算出路径后的节点探索率只有约 60%**（L144）。
+- **平均奖励（Fig 4，L151–156）**：C-DQN 在两种规模下都取得最高奖励，**每个 episode 都能成功算出端到端路由**；DQN 在早期 episode 因约束违反出现**负奖励**（图中紫色区域）。作者结论：**"Repeated loop corrections result in selection of longer paths whose rewards are not so high and leads to potentially longer propagation delays."**
+- **收敛（Fig 5，L160）**：**12 节点**时 DQN 与 C-DQN **都收敛稳定**；**24 节点**时 **C-DQN 收敛明显优于 DQN**，因为探索被限制在更安全的状态-动作子集内。
+- **复杂度（Table II，L178）**：Dijkstra 时间 $O(|E|+|V|\log V)$、空间 $O(V)$；DQN 时间 $O(\sum_{l=0}^{L-1}n_l n_{l+1})$、空间 $O(|S\times A|+M_B)$；**C-DQN 时间同 DQN，空间降为 $O(|S_{c_k}\times A_{c_k}|+M_B)$**——因为**只存安全动作**，所以 C-DQN 在时间与存储上都比 DQN 更省。
+- **基线**：**传统 DQN（带 reward shaping）**，两者在相同 mesh 规模（12 / 24 节点）与相同参数下对比。
+
+**5. 实验条件**
+Python 自建环境，**定制 gym API** 实现一个 LEO 卫星 mesh 网络的抽象路由环境；考虑**两种 mesh 簇规模：12 个节点与 24 个节点**（L100）。**部署方式（关键）**：由于星上处理能力有限，**算法部署在位于地面的中央控制器上**，由它统筹整个 LEO mesh 的路由路径计算与决策（L100 逐字："Due to limited on-board processing capabilities of satellite nodes, we deploy the routing algorithms on a central controller on ground that orchestrates the routing path computations and decisions across the LEO satellite mesh network in space."）。评估三个维度：**路径计算、收敛、韧性（鲁棒性 + 复杂度）**（L100、L129）。
+**注意**：论文报告的是**抽象 mesh 网格图**上的结果，**没有给出星座参数**（轨道高度/倾角/面数/星数）、**没有给出链路容量或负载的物理量纲**（负载只有归一化的 $U_{e_{i,j}}$）、**没有时延/丢包的实测曲线**，也没有说明负载是如何随 episode 演变的。
+
+**6. 它自己承认的局限**（集中在 §IV.C "Resiliency"，L171，逐字）
+- "In conditions with interrupted ISL and ESL connectivity, it **leads to delays in the dissemination of routing information**. This also requires **extensive efforts in model training as the topology gets larger because several future snapshots need to be trained in advance** for the deployed model to react appropriately in the events of connectivity failures."
+- "**One of the technical limitations is that the satellite nodes are not able to learn anything about their neighboring nodes in the events of ISL failures.**"
+- 关于 GNN："Graph Neural Networks (GNNs) are efficient in extracting topology information and sharing knowledge among both connected and disconnected agents through a message-passing paradigm [11]. **However, they are computationally expensive** and hence their application need to be carefully analyzed by considering the limited computational capabilities of on-board satellite hardware."
+- 关于多智能体："Multi-agent systems with distributed learning architectures can off load the learning task on several distributed nodes instead of a single central entity. **However, it becomes difficult to synchronize the learning outcomes of several spatially distributed agents since each of them can only partially observe the environment. Particularly in dynamic topologies and ISL failure situations, this will result in inconsistent learning behavior.**"
+- 结论段（L184）逐字："Addressing the resiliency aspects of the C-DQN algorithm, **we believe that there needs to be a mechanism where the satellite nodes can implicitly be aware about the link loads and connectivity conditions of all the other nodes** within the satellite mesh topology. The usage of GNNs to design such a knowledge-graph based routing environment can be considered as the future outlook of this work. However, **the computational complexity and scalability of such an environment needs to be carefully analyzed** by means of realistic simulation models."
+
+**7. 它没做但看起来能做的地方**（基于内容）
+1. **论文自称 "Constrained DQN"，但约束的实现方式是"预计算安全路径集 + 在其上取 max"**（式 1–4、Algorithm 1）——**没有 Lagrangian 乘子、没有 CVPO/CPO 之类的约束优化、没有约束违反率的收敛保证**。作者自己承认"只在动作选择时屏蔽不安全动作、不改 Q 更新"是不够的（L21），但其解法本质上仍是**在受限动作集内做标准 DQN**。这个 gap 值得在方法层面追问。
+2. **"多条链路负载完全相同时 agent 认为所有动作等价"**（L137）是一个**状态表征的对称性缺陷**：$U_{e_{i,j}}$ 只编码了本节点四条出链路的负载，**不含邻居节点的队列状态或到目的地的方向信息**——这正是 Y2H4NPLU 用邻居 2-bit 编码、X5Z98UPM/XLRW7XXN 用 $QU_j$/$C_n$ 补上的那块信息。作者没有把这条观察推广成"状态设计原则"。
+3. **Dijkstra 后端的安全路径集需要周期性重算**（L46），但**重算周期、以及拓扑变化时路径集陈旧导致的可行域收缩/失效**完全没有讨论——而 C-DQN 的整个安全探索都建立在"这个集合是对的"之上。
+4. **实验结果全部是抽象 mesh 图上的（12/24 节点）**，节点探索率、奖励、MSE 三个指标都**没有物理量纲**；Fig 2 的路径图例（0→11）在 12 节点网格上，**与 24 节点的结果混在同一套指标里报告**，规模效应只能靠"12 收敛好、24 才显出差距"这一句话判断。
+5. **负载的时变过程完全没有交代**：L142 说"当负载在后续 episode 中回落时 agent 又能选那条最短路"，但**没有说明负载是怎么变、变成多少、变化周期多长**，因此这条最有价值的观测无法复现。
+6. **中央控制器意味着与地面站的持续交互**，作者以"星上算力有限"为理由（L100），但这与它自己引用的文献 [2]（Roth et al. 2022 分布式 SDN 负载均衡）的分布式路线相反；**两种部署方式的端到端时延/信令开销对比没有做**。
+7. 论文**没有报端到端时延或丢包率**——只有"比 DQN 好"的相对指标（节点探索率、奖励、MSE），**"链路负载被均衡到什么程度"没有绝对数字**。
+
+**8. 和同批其他篇的关系**
+- **与 Y2H4NPLU 直接互引（本批最明确的一对）**：ZIUBKVPZ 的参考文献 **[10]** 就是 **B. Soret, I. Leyva-Mayorga, F. Lozano-Cuadra, M. D. Thorsager, "Q-learning for distributed routing in LEO satellite constellations," 2023, arXiv:2306.01346**（L210）——即本批的 Y2H4NPLU。两篇还**共同引用 Boyan & Littman 1993**（ZIUBKVPZ [6]，L202；Y2H4NPLU [8]）。**但两者立场相反**：Y2H4NPLU 主张**全分布式**（每星 2-bit 状态、只交换邻居 Q 值、明确以"不依赖地面段、信令开销最小"为卖点），ZIUBKVPZ 则**明确采用地面中央控制器**（Table I 最后一行 "Learning and decisions: Centralized"），理由是"星上处理能力有限"。**这两篇构成本批里关于"决策放在哪"的最直接正面对立。**
+- **与 Y2H4NPLU 的另一处对照是反馈依赖**：Y2H4NPLU 的 Q 更新用的是**邻居卫星的 Q 表** $Q_j$（依赖邻居反馈），ZIUBKVPZ 用的是**受限动作集内的自身 bootstrap** $\max_{a\in\mathcal{A}_{c_k}}Q^c(s_{t+1},a)$（式 3，不依赖邻居反馈）——而 ZIUBKVPZ 自己在 L171 承认"ISL 失效时卫星学不到邻居的任何东西"，**这恰好指向了 Y2H4NPLU 那条邻居反馈路线在链路失效下的脆弱性**。
+- **与 X5K285MW 通过共同作者与共同参考文献强耦合**：ZIUBKVPZ 的作者含 **Manuel Roth 与 Hermann Bischl**，而 X5K285MW 正是 Roth 的单作者论文；ZIUBKVPZ 的 **[2]** 就是 **Roth, Brandt, Bischl 2022「Distributed SDN-based load-balanced routing」**（L194）——那正是 **X5K285MW 的参考文献 [15]**（X5K285MW L157）。此外 ZIUBKVPZ 的 **[3] Liu, Luo, Huang, Meng「A load balancing routing strategy for LEO satellite network」IEEE Access 2020**（L196）正是 **X5Z98UPM 的参考文献 [26]**（X5Z98UPM L394）；**[4] Gounder, Prakash, Abu-Amara「Routing in LEO-based satellite networks」**（L198）同时是 **X5Z98UPM 的 [13]** 与 **YD4JUT7G 的 [19]**。
+- **与 S85KQ4FC 的对照**：S85KQ4FC 的核心发现是"星上逐包推理跟不上转发"，因此做流级复用；ZIUBKVPZ 恰恰**因为星上算力不足而把学习搬到地面**（L100）——**两篇是从"算力不足"这一前提出发的两条相反工程路线**（一条摊销推理，一条外移推理），而 ZIUBKVPZ 的后端还需要跑 Dijkstra 周期性重算安全路径集（L46），这部分开销它自己也没算。
+- **与 YD4JUT7G 的对照**：YD4JUT7G 论证"跨域层面地面段成本可与空间段相当、且 BGP 无法承载 GSL 抖动"；ZIUBKVPZ 选择"把路由决策放在地面中央控制器"，属于 YD4JUT7G 所批评的**依赖地面基础设施**的一类做法——但 ZIUBKVPZ 讨论的是域内 mesh 路由，层次不同（YD4JUT7G 明确把域内路由划到范围外，其 L272）。
+- **与 XM6NUPM4 的对照**：XM6NUPM4 证明 ISL 容量（20 Gbps）远高于 GSL，因此**ISL 不太可能成为瓶颈**；而 ZIUBKVPZ 的奖励与约束**全部围绕 ISL 链路负载 $U_{e_{i,j}}$** 设计——两篇对"瓶颈在哪一层"给出了**不同层次的假设**，值得并列核验。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**提供的是"负载如何进入决策"的机制性事实，而非负载—时延的定量曲线**：
+1. **给出了负载的三段离散化**（$U<0.5$ 舒适 / $0.4<U<0.8$ 环路区 / $U>0.8$ 拥挤，式 5）并把它们写进奖励分段——这是本批唯一一篇**把链路负载利用率作为分段奖励的判据**的论文（X5Z98UPM 的分段依据是**跳数** $C_i\le C_j$ 与**邻居队列** $QU_j\le0.5$，两者结构相似但变量不同）。
+2. **观测到"负载回落 → 路径选择改变"**（L142 逐字）："Although the path [0, 8, 9, 10, 11] was another shortest path, it managed to avoid it considering the high link loads. **When the link loads subsided in the later episodes, the agent was able to even select this path.**" ——这是本批唯一一条**明确描述"策略随负载状态变化而切换、且可逆"**的记录（其他论文的负载扫描是静态横截面）。
+3. **量化了"高负载导致约束违反"**：作者指出约束违反最突出的场景正是**多条链路拥塞（$U>0.8$）时 agent 被迫走已走过的路径**（L96），且极区只有两条 ISL 时同样如此——即**负载升高会压缩可行动作空间，到某个点后约束无解**。这与它自己 Abstract 的说法一致（L7）："identify conditions where **the constraints cannot be satisfied, necessitating a switch to rule-based source routing algorithms**"（**认清约束无解、必须退回规则型源路由**）。
+4. **给出了"未修正环路会导致时延变差"的因果链**（L156 逐字）："Repeated loop corrections result in selection of longer paths whose rewards are not so high and **leads to potentially longer propagation delays**."——但只有因果陈述，**没有时延数值**。
+**局限**：本文**没有到达率这个自变量**（负载只以归一化利用率 $U$ 出现，且其演化过程未交代），**没有时延/丢包的绝对数值**，因此**无法从中提取"到达率 → 时延"的任何定量关系**。它对本题的价值在于**机制**：负载如何进入状态、如何进入奖励、如何在哪些条件下使约束失效。
+
+**10. 一句话评价**
+本批**唯一一篇把"约束"当一等公民**的论文：用 CMDP 形式化 + "预计算安全路径集作为受限动作空间"实现安全探索，最有价值的两个产物是 ①**对传统 DQN 失败的机理诊断**——"四条 ISL 负载完全相同 ⇒ agent 认为所有动作等价 ⇒ 环路不可避免"（L137），这是一条干净且可复现的状态表征缺陷；②**对"何时应该放弃学习型路由"的明确指认**——约束无解时退回规则型源路由（L7）。但它的"Constrained DQN"实质是**动作掩码 + 受限 max**，没有约束优化的理论保证；实验停留在 12/24 节点的抽象 mesh 图上、无时延无丢包无星座参数、负载时变过程未交代，且**采用地面中央控制器**，与 Y2H4NPLU 的全分布式主张正面相反——两篇互引（ZIUBKVPZ 引 Y2H4NPLU 为 [10]）却给出相反的架构结论，是本批最值得并列阅读的一组对照。
+
 <!-- END -->

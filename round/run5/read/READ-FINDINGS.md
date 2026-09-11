@@ -176,3 +176,50 @@ MXQVNU3P 与 LZKNZA8B 属同族（图算子 + 序列/空间建模），但 **MXQ
 FD-MADRL 学出的路径**跳数更少但把链路用饱和**；把用过的链路加 20% 负载后，**12 节点仍稳、24 节点不稳**。
 另：**全局奖励要等多跳传播延迟 T 后才到达（滞后），局部奖励即时**（L33 逐字）。
 → 与本项目"奖励设计"支直接相关：**全局信号的滞后性是被实测记录的，不是假设**。
+
+## F22【缺口·重量级，2018 年就写明且至今未做】Handley 把"负载相关路由"列为开放问题并给出假设方案
+
+**67CSKFK4（HotNets'18，"Delay is Not an Option"）主控逐字核验**：
+
+L132：
+> "it must be capable of routing with low delay, **even when traffic levels are high enough to saturate the best paths**."
+
+L150（**全文假设星上无排队**）：
+> "**All the simulations above assume that no significant queuing happens in the satellites themselves.** For high-priority traffic, this can be ensured by admission control, so long as it forms a minority of the traffic."
+
+L152（**明确说现有方案太慢**）：
+> "In terrestrial networks, centralized load-dependent routing schemes such as B4[9] and LDR[7] can pro-actively route so as to achieve low latency without causing congestion. These schemes, however, make routing decisions on a **minute-by-minute basis — too slow for routing on dense LEO constellations**. **It is an open question whether such schemes can be extended for this use**, or if the latency between the controller and groundstations will always be too high."
+
+L154（**给出完整假设方案，但未实现**）：高优先级流量走准入控制+显式路由；其余流量由**卫星监测链路负载 → 全球广播 → 地面站感知热点（热点是地理性的而非拓扑性的）→ 在近似路径间处理**。
+
+**三条含义**：
+1. **"负载相关路由在 LEO 上怎么做"被 2018 年就点名为开放问题，至今无人做**；
+2. 该文自己**假设星上无排队**（L150）——即它把本项目的核心机制排除在外了；
+3. 它给出了**完整的候选方案骨架**（监测-广播-地面站决策），可作为对照臂或出发点。
+
+## F23【独立确认·综述背书】7AXASN73 把同一空白列为 "yet unexplored"
+
+R2 读卡记录（其 L377）：负载均衡 + 最短端到端传播时延被列为 "yet unexplored areas in the literature"（2022 年 NGSO 综述）。
+→ 与 F22 指向**同一空白**，但**该综述漏引 Handley**（R2 实测）。这是一条可直接引用的"综述遗漏 + 空白被两次确认"。
+
+## F24【唯一把排队论写进路由代价的工作】6GWNYSTT（主控部分核验）
+
+- 显式用 **M/M/1/N** 与 **M/M/c** 建模决策/转发队列，λ 进入时延式；
+- 负载阈值：每批 2000–10000 包（L242）；**每批 >10000 包时延破 20ms**；
+- 改进算法**跳数最多但时延最低**（绕路降时延的实证）。
+- **但**：排队参数**全部未给数值**、式 (11) 在 MD 中渲染为乱码（R2 读卡）。
+
+→ 含义：**排队进入路由代价这件事在 LEO 文献里有先例（一篇，且是表格式 Q-routing、参数不全）**；本项目若做"排队感知"必须与它划界。
+
+## F25【控制面与数据面抢 ISL 带宽】5HJ8ATR7 定量边界
+
+L149 逐字（R2 读卡）：LEO 移动引发的信令风暴"**可占用最多 15.75% 的总 ISL 带宽**"；
+L359：400 UEs/km² 下寻呼负载**超过 4G/5G 信道容量**。
+→ 与本项目锚件（S85KQ4FC 的决策队列）**同族**：都是"控制/管理开销挤占数据通道"的定量证据。
+
+## F26【失效模式的两种证据】最短路路由特别容易制造热点
+
+- **67CSKFK4 §5 引 [6]** 指出"网状网最短路径路由特别容易制造热点"；
+- **5PYWVRC5 用实验复现了它**（节点 4→8→22→23 反例），且动态负载（上 episode 用过的链路 +20%）下 **12 星稳、24 星不稳**。
+
+→ 与本项目"负载变化下的到达率/时延"直接相关：**这是"负载变化导致退化"的一条独立实测复现**，且机制是"最短路制造热点"而非排队。

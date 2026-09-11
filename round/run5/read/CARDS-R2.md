@@ -680,13 +680,87 @@ NGSO 相比 GSO 的核心卖点是**传播时延更低、体积更小、信号�
 **10. 一句话评价**
 **一份覆盖面极广但深度均匀偏浅的 NGSO 通信全栈地图**——它的价值在于用 Table III 给出了 LEO/GSO 的时延与链路预算基准、并用一句话（L377）确认了"负载均衡 + 最短时延路径"是空白；它的不足在于**通篇不谈负载强度**，且漏引了 Handley 那篇早已提出同一问题的论文。
 
+
+## 7TASFUDR — Available energy routing algorithm considering QoS requirements for LEO satellite network
+
+**1. 一句话**
+把「可用能量」（剩余电量减去固定设备在剩余阴影区内的必然消耗、加上阳光区太阳帆板的净充电）作为路由代价里的能量项，并按低时延/高带宽/一般三类业务各自选不同的决策因子，据称比 QoS-SR 省电 12.53%、降丢包 23.72%。
+
+**2. 问题设定**
+卫星靠太阳帆板 + 有限容量电池供电；**进入阴影区（eclipse）后只能靠电池，且是单调放电**（L23、L49）。地面用户分布不均导致流量需求分布不均，**不当的路由规划会让某些节点迅速耗尽能量进入休眠（sleep mode），造成数据丢失**（L23 逐字："Under a significant imbalance in traffic demand distribution, improper routing planning can easily lead to rapid energy consumption of certain nodes, resulting in their entry into sleep mode and causing the loss of transmitted data"）。作者指出既有方法的三个盲点（L29）：没考虑阴影区的持续放电、没考虑阳光区的可充电性、没考虑不同轨道卫星太阳帆板输出功率的差异。
+
+**3. 方法骨架**
+- **能量消耗模型（式 1–4）**：$P^i_{flow} = \sum[\alpha(f_{ij}+f_{ji}) + \mu(f_{ij}+f_{ji})^\sigma + f_{ij}P_s + f_{ji}P_r]$ —— 即「随流量变化的功率」分为三项：与流量成正比的 I/O 与查表、**与流量呈指数关系的处理器处理能耗**、与收发流量线性相关的收发能耗（L68）。总功耗 $P^i_d = P^i_{norm} + P^i_{flow} + P^i_{dvc}$（式 2）；电池演化 $C^{t+1}_i = C^t_i + \min(P^+_B, P^i_{sun} - P^i_d)$（式 3），并有容量约束（式 4）。**卫星休眠时 $P^i_{flow}$ 与 $P^i_{norm}$ 归零，只剩 $P^i_{dvc}$**（L74）。
+- **可用能量模型（式 5，核心）**：$E^i_{ava} = C^t_i - P_{dvc}\Delta T^i_e - P_{norm}\Delta T_u$（阴影区，$\Delta T^i_e>0$）；$= C^t_i + (P^i_{sun}-P_{dvc}-P_{norm})\Delta T_u$（阳光区）。即把固定开销与剩余阴影时间扣掉，**只留下真正能给转发用的那部分能量**（L94 逐字："The key idea behind available energy is to exclude all fixed energy consumption and focus solely on the energy used by the traffic forwarding power"）。
+- **目标函数（式 10）**：$\min \theta_1 R_{lost} + \theta_2 \sum T_{sd} - \theta_3 \sum E^i_{ava}$，$\theta_1+\theta_2+\theta_3=1$（式 12）。丢包 $R_{lost}$（式 6）定义为「路径上存在可用能量耗尽的节点的流量之和 ÷ 全网总流量」。时延（式 8）= 传播 $d_{ij}/v$ + 排队 $q_i P_{avg}/B_{ij}$。
+- **三类业务各自的路由代价（§3，本文的实际算法）**：
+  - **低时延业务（式 16）**：$W^d_{ij} = T_{ij} + \delta^E_i/E^i_{ava} + \delta^E_j/E^j_{ava}$ —— 正常时只看时延，**只有端节点能量将尽（$\delta^E=1$）才把能量算进去**。
+  - **高带宽业务（式 18）**：剩余带宽与链路能量状态的**归一化值之和**；链路能量状态用「改进可用能量」（式 20–21）。
+  - **一般业务（式 22）**：$1/B^{ij}_{res} + \delta^E_i/E^i_{ava} + \delta^E_j/E^j_{ava}$。
+- **「即将耗尽」的判据（式 17）**：$\delta^E_i = 1$ 当且仅当 $E^i_{ava}/P_{flow}(t^{max}_i) < 2\Delta T_u$ —— 即**按最大流量算，撑不过 2 个时隙**（L176）。
+- **改进可用能量（式 19–20）**：阴影区节点额外扣掉「未来阴影期间的必然消耗」$E^i_{ef} = P_{norm}\Delta T^i_e + \sum_{k\in area_i} P_{flow}(\mu_k)\Delta T_{ik}$，其中 $\mu_k$ 是**区域 k 的流量数学期望**、$\Delta T_{ik}$ 是星-区连接时长（L194）。$E^i_{elps} = E^i_{ava} - E^i_{ef}$（阴影区）。
+- **算法 AER（Algorithm 1，L230–L249）**：计算可用能量 → 依次对三类业务分别赋权并各跑一次 **Dijkstra**，前一类业务的链路利用率反馈进后一类的权重 —— **不是 RL，是三次带业务感知权重的 Dijkstra**。
+- **休眠策略（式 23）**：$\delta^i_{slp}=1$ 当 $E^i_{ava} < P_{flow}(t^{max}_i)\Delta T_u$，即**可用能量不足以在一个时隙内转发最大流量**就休眠（L267）。
+
+**4. 它声称的效果**（单业务模式 / 多业务模式两组）
+- **抽象（L17）**：相比 QoS-SR，能耗降低约 **12.53%**、丢包率降低 **23.72%**。
+- **单业务模式（初始能量 100%）**：最小可用能量提升 **13.74%** 与 **11.42%**（Fig 4，L288）；最小能量提升 **12.53%** 与 **10.75%**（Fig 5，L290）；**循环寿命消耗在 23 分钟后持续最低，最佳情况降低 42.05% 与 18.45%**（Fig 6，L298）。
+- **多业务模式（初始能量 70%）**：
+  - 低时延业务端到端时延**最佳降低 24.2% 与 42.8%**（Fig 7a，L304）；
+  - **高带宽业务时延反而更差**：比 QoS-SR **平均增加 28%**，比 Green-SR 平均只差 1.07%（Fig 7b，L306）；
+  - 一般业务时延**最佳降低 38.9% 与 39.3%**（Fig 7c，L318）；
+  - 丢包率**最大降低 13.07% 与 23.72%**（Fig 8，L320）；
+  - 最小可用能量比 QoS-SR 平均高 12.77%，但**比 Green-SR 平均低 19.92%**（Fig 9，L322）；
+  - 最小能量最多比 QoS-SR 高 4.81%，最多比 Green-SR 低 30.14%（Fig 10，L332）；
+  - **循环寿命消耗比 Green-SR 高 188% 和 221%**，但比 QoS-SR 最多低 37.91%（Fig 11，L340）。
+- 基线两个：**QoS-SR [15]**（Hao，能量感知 + 负载均衡的 QoS 路由）与 **Green-SR [14]**（Yang 等，纯节能路由的经典工作）。
+- **本文的诚实之处**：多处如实报告了「在某个指标上不如某个基线」（见第 6 项）。
+
+**5. 实验条件**
+- 工具：**STK + Python 3.8 + networkX**（L263）。
+- 星座：**Walker，6 轨道 × 5 星 = 30 颗**，高度 **1325 km**、倾角 **70°**、轨道周期 **112 min**（L263）。
+- 地面：**12 个地面站**（纽约、东京、巴黎、开罗、悉尼、圣保罗、上海、伦敦、约翰内斯堡、珀斯、布宜诺斯艾利斯、洛杉矶，Table 1 at L254）。
+- 时间：虚拟拓扑按 **1 分钟**切槽，仿真 **2 小时 = 120 个时隙**（L263）。
+- **能量参数（Table 2，L257）**：电池 **80 Wh**、接收 0.02 W/Mbps、发送 0.05 W/MBps、太阳帆板最大 **800 W**、最大充电功率 **400 W**、处理器 50 W、其他设备 50 W。
+- **负载设置（关键）**：地面只分「普通区域」（流量期望 **0**）与「地面站区域」（流量期望恒为 **512 Mbps**）（L265）。用 **MGM [19,20] 合成 120 分钟流量矩阵**，**每区域上传流量上限 1 Gbps、均值 512 Mbps、小时峰均比 1.5**（L278）。
+- 两组实验：单业务（初始能量 100%）、多业务（初始能量 **70%**，用于模拟恶劣能量状况，L302）。
+- 训练与评估：无训练（非学习方法）；同一套仿真环境。
+
+**6. 它自己承认的局限**
+**没有独立的 Limitations 章节**，但结论段（L346）与结果段有非常明确的自述：
+- **结论段的自述局限（L346 逐字）**："The approach proposed in this paper primarily considers energy and link bandwidth factors when forwarding high-bandwidth class traffic. **It generates a single path for each pair of source and destination satellites, causing a large amount of data to aggregate on a few paths, resulting in significant end-to-end delay for this type of traffic.** Therefore, in our future work, we will jointly consider the data flow size and the available energy status of satellites, and employ **reinforcement learning and multipath routing** techniques to dynamically generate multiple paths for nodes on congested links, thereby reducing congestion levels and network packet loss."
+- 结果段的如实报告：高带宽业务时延比 QoS-SR **平均差 28%**（L306）；最小可用能量比 Green-SR **低 19.92%**（L322）；最小能量比 Green-SR **低最多 30.14%**（L332）；**循环寿命消耗比 Green-SR 高 188%/221%**（L340）。作者对每一条都给了原因（Green-SR 只做节能目标，不做多业务）。
+- 负载模型的自述简化：**"To simplify the calculation to a certain extent, we only divide the ground region into ordinary area and ground station area"**（L265）。
+- 数据可用性："Data will be made available on request"（L358）。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **作者自己在结论里点出的最大缺口就是本选题的入口**（L346）：高带宽业务「只生成单条路径，导致数据大量汇聚到少数路径上」——**这正是负载汇聚导致拥塞的机制**，作者的解法设想是「把数据流大小与可用能量联合考虑，用 RL + 多路径」。这篇把这条路留白了。
+2. **θ₁, θ₂, θ₃ 三个权重（式 10/12）从未给出取值**（L137、L145）：全文通读没有一处报告 θ 的具体数值或敏感性，而这是多目标路由最关键的超参。
+3. **流量模型过度简化**（L265）：普通区域流量期望硬设为 0、地面站区域恒为 512 Mbps —— **地面站以外的用户完全不产生流量**，这与「全球用户分布不均」的动机自相矛盾。
+4. **没有扫负载**：只有均值 512 Mbps 一种设置（L278），虽然做了峰均比 1.5 的时间变化，但**没有扫多个负载水平**。另注：本文的负载是**逐分钟的时变流量矩阵**，这点比本批多数论文都更接近「负载变化」，但没有把它作为实验自变量。
+5. **时隙切分只用 1 分钟一档**（L263）：没有做 ΔT_u 敏感性分析，而 ΔT_u 直接进入「即将耗尽」判据（式 17 的 2ΔT_u）与休眠阈值（式 23）。
+6. **「2 个时隙」这个即将耗尽的判据是硬编码常数**（L176），无敏感性分析。
+7. **30 颗星是全部规模**（L263）：没有做星座规模的扩展实验，而作者引用的前作 [14] 恰恰批评过「网络规模增大时计算时间显著」。
+8. **三类业务的划分是人工给定、静态的**（L164），未验证分类错误或业务混合比例变化时的表现。
+
+**8. 和同批其他篇的关系**
+- **与 6C843JTS（Sutton TD 论文）**：本篇结论（L346）明确把 **reinforcement learning** 列为未来工作 —— 即本篇是 RL 路由的**上游**（尚未跨过去的那一步），而 6C843JTS 是 RL 更新的理论底座。
+- **与 53HEEK33 / 5N5LQPPP / 6GWNYSTT（Q-routing 与 DRL 路由）**：**同一问题的另一条路线**。那三篇都是「用 Q/DRL 取代 Dijkstra」，本篇反之 —— **坚持 Dijkstra，只把代价函数做成「能量 + 带宽 + 时延」的业务感知形式**。本篇没有引用这三篇；相反，53HEEK33 的参考文献 [3] 与 5N5LQPPP 的 [10] 都是 **DRL-ER [7]**（Liu 等），而**本篇也引用了 DRL-ER 并批评它「消耗大量计算资源」**（L27 逐字："However, this method consumes a substantial number of computational resources"）。**DRL-ER 是本批内三篇论文的共同参照点。**
+- **与 5PYWVRC5**：5PYWVRC5 用实验证明「为避开高负载链路而绕路会打饱和下游」；本篇用**能量**而非负载作为绕行理由，且**如实报告了高带宽业务时延变差 28%**（L306）—— **这是同一类代价（绕行换其他目标）的另一种实证**。
+- **与 7AXASN73（NGSO 综述）**：本篇的主线（QoS 分级路由、能量、时延）在本篇里是具体算法，而 7AXASN73 在资源管理一节只泛泛提到「需求非均匀」，**两篇没有互引**。
+- **与 67CSKFK4（Handley）**：Handley 的 Research Agenda 关心的是**负载相关路由**（其 L150–L154）；本篇关心的是**能量相关路由**。两者都把「静态度量最短路」作为起点，但换掉的是代价函数的不同分量。**本篇没有引用 Handley。**
+- **与 5HJ8ATR7 / 5AZHJE7N / 57EB6US5**：无关。
+
+**9. 对「负载变化下到达率/时延」的贡献**
+**本批唯一一篇把「负载—能量—丢包」三者串成因果链的论文**，有五条可用事实：
+1. **明确的「负载 → 节点死亡 → 丢包」链条**：流量需求分布不均 + 路由规划不当 → 某些节点能量快速耗尽 → 进入休眠 → **路径上出现可用能量为 0 的节点即判定该条流全部丢失**（式 6/7，L110–L119）。这是**一个把负载与到达率直接耦合的显式建模**：负重不均就是丢包的因。
+2. **给出了丢包的时间定位**：三种算法都在 **17–20 分钟**与 **109–112 分钟**两个窗口发生丢包，原因是「可用能量快速下降导致节点休眠」；而 **20–25 分钟与 65–80 分钟** QoS-SR 丢包显著高于另两者，因为它的可用能量尚未恢复（L320）。**这是本批少见的「把丢包事件精确对齐到时间段」的报告。**
+3. **能量消耗随流量呈指数关系**：$\mu(f_{ij}+f_{ji})^\sigma$（式 1，L71）—— **流量越大，单比特转发的能耗越高（超线性）**，这是「负载升高 → 能耗加速 → 提前休眠」的数学形式，比其他论文的线性假设更接近饱和效应。
+4. **提供了本批唯一一份完整的负载生成参数**（L265、L278）：MGM 合成 + 均值 512 Mbps + **峰值均值比 1.5** + 每区域上限 1 Gbps + 120 分钟逐分钟。**这是可以直接借来做负载扫描基线的口径。**
+5. **一个可用于对照的时延公式**（式 8，L125）：$T_{sd} = \sum (d_{ij}/v + q_i P_{avg}/B_{ij})$ —— 排队时延显式依赖**队列中的包数 $q_i$**（而不是到达率），与本批 6GWNYSTT 的排队论路线、53HEEK33 的队列长度奖励是同一类建模取向。
+6. **限制**：本篇**没有把负载作为自变量扫描**（只有 512 Mbps 一档），也没有画出「负载 → 时延/丢包」的曲线；它给出的是「负载不均 → 能量枯竭 → 丢包」这条**间接机制**，而不是到达率与时延的直接关系。
+
+**10. 一句话评价**
+**一篇把「能耗」而非「拥塞」当作路由一等原因的 QoS 分级路由论文** —— 它对本选题的价值有两面：正面是它给出了**负载 → 能量枯竭 → 丢包**这条最完整的因果链与一份可直接复用的负载生成参数；反面是它自己在结论里承认单路径导致高带宽业务时延恶化 28%，并把「用 RL + 多路径解决拥塞」留作了未来工作（L346）。
+
 <!-- END-CARDS-R2 -->
-
-
-
-
-
-
-
-
-

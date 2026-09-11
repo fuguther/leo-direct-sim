@@ -370,6 +370,61 @@ Starlink Phase 1 的 1584 颗星（550 km、周期约 90 min）**不支持激光
 **10. 一句话评价**
 **把地面网的 SR + 流量分割工程化地搬到"无 ISL 的 LEO 星座"上**：方法本身是成熟工具的移植（未改 SR、未改 LFA），真正有信息量的是两条实证——**MSL 对延时界 $D$ 非单调、最优在 $D=1.5d_0$**（L246），以及**均衡收益随流量均匀性从 20% 掉到 15%**（L248）；但它的负载没有成为自变量、时延里没有排队，因此离"负载变化下的到达率/时延"仍隔一层。
 
+## T9X6QCLL — LEO Satellite Networking Relaunched: Survey and Current Research Challenges
+
+**1. 一句话**
+Futurewei 三位作者 2023 年的 LEO 卫星网络**综述**：把路由研究拆成 11 个子领域（早期进展/IP/负载均衡/SDN/ML/DTN/地理路由/低时延/多层/杂项/仿真平台）逐条review，再补上 **3GPP 与 IETF 标准化**现状，最后给出四类挑战（L27、L105-107、L343、L462）。
+
+**2. 问题设定**
+领域背景：截至 2023-01-01 在轨 6700 颗、其中 **6000 颗在 LEO**；2030 年前计划再上天约 **50 000 颗**（L15）；中国已向 ITU 申报 12 000 颗（L17）。核心转变是通信模式从"弯管（bent-pipe）"变成"星上接收→多跳星间中继→落回地面"，ISL 用自由空间光连接相距 2000 英里的高速运动体（L21）。**这是综述，不是新算法论文**，它要回答的是"这几年这个领域往哪走了"。
+
+**3. 方法骨架**（无算法，是分类学 + 逐条判断）
+- 路由两分法（L36-38）：**快照路由**（snapshot，拓扑在一个快照内视为静态、路由表可预计算并上传）与**动态路由**（按当前配置转发）。作者指出该假设合理：单包传输时延是毫秒级，而卫星对地面站的可见时间可达数分钟。
+- 第 4 节按 11 个子领域组织（L107），其中与本主题最相关的是：
+  - **4.3 负载均衡**（L159-187）：列出 ELB[69]（邻居间显式交换拥塞信息、临近阈值就请邻居限流，L167）、SIDA+SSLB[70]（L169）、全局-局部混合[71]（L171）、HLBR[72]（L173）、[73]（拥塞等级 + 端到端时延估计，L175）、DBPR[74]（背压路由，距离度量 = 最短路与拥塞的组合，L177）、LBRA-CP[75]（蚁群 + 拥塞预测，L179）、[76]（用 SR，把卫星分成轻载区/重载区分别处理，L181）、LCRA[80]（L183）、[81]（把流量分成时延敏感/吞吐敏感/尽力而为三类，L185）。
+  - **4.5 机器学习**（L227-245）：DRL-THSA[100]（用两跳邻域链路状态——编码成三个等级——喂 DDQN，L233）、ELM-DR[101]（L235）、ELM+MBAS[102]（L237）、QRLSN[105]（L239）、**FDR-MARL[106]**（L241）。
+  - **4.8 低时延**（L271-283）：SpaceRTC[114]（在 LEO 上搭多条近最优路径的 overlay，L275）、LSGI[115]（最小化最大时延同时保持路由稳定，L277）、有向渗流[116]（面向 URLLC：每个包朝更近目的的两个邻居各转一份——一个同轨、一个异轨——中间节点去重，L279）、DQ-GERT[117]（**同时考虑时延与时延抖动**，L281）。
+- 第 5 节标准化：3GPP 从 Rel-15 起的一系列 TR（38.811/38.821/36.763/22.822/23.737/28.808/22.926/24.821，L355-369），三种星上载荷形态（透明转发/再生载荷 gNB 上星/gNB-DU 在星、CU 在地，L383-398）；IETF 侧：TCPSat 历史、LISP、**Time-Variant Routing (TVR) WG**（2022 年 IETF115 成立，定义"随时间调度变化"的信息与数据模型，L448）、source routing + 语义寻址的新路由提案[166,167]（L454）、DTN 系列 RFC（L460）。
+
+**4. 它声称的效果**
+综述**无自设实验**，只有转述。与主题相关的两条转述：
+- **L482（转引 [181]）**："finds a **loss rate of 0.4% in lightly loaded scenarios, and of 1.5 2% in congested scenarios**, as well as a **delay that increases significantly from 50ms median RTT (light load) to roughly 100ms RTT (congested network)**."
+- L466：Starlink 累计发射 3055 颗中 2793 颗仍在轨，**约 10% 损耗率**。
+- L305：某能量高效路由启发式把卫星电池寿命提升 **40%** 而性能损失很小。
+
+**5. 它的实验条件**
+**没有实验**——纯综述。第 4.11 节（L321-341）专门盘点了可用的仿真/建模平台：SaVi[136]、Hypatia[138]（Python + ns-3）、以及若干建模工作（N×N mesh 模型[141]、motif 拓扑设计[142]、容量模型[143]、随机几何[144]、UMCF 建模[148] 等）。
+
+**6. 它自述的局限**（逐字；综述无独立 Limitations 节，以下是它对领域下的判断）
+- **L187（最关键）**："**Without data from satellite network operators, it is difficult to establish the practical need for load balancing mechanisms.** It is obvious that traffic is not distributed uniformly... But **we would need to know the utilization of these links to assess whether shortest-path routing leads to congestion issues.**"
+- **L283（对低时延研究最关键的判断）**："It also seems **common sense that satellites will not carry huge buffers to introduce some congestion delays. The space for optimization, in addition to some basic QoS mechanisms, seems limited.**"
+- L243："This area seems emerging, with applications of a whole range of ML techniques, with **no clear-cut solution that is obviously better than others**."
+- L295："This area of investigation is important to integrate multiple layers, but **seems to have slowed down**."（多层卫星网络）
+- L229（对训练设定的判断）："training a model under conditions that end up being periodic would lead to good results, **as long as the training set comprises at least a multiple of such periods** (the appropriate period varies... as well as the periodicity of the traffic; **one is of the order of hours and the other is of days or weeks**)."
+
+**7. 它没做但看起来能做的地方**（基于内容）
+1. **它自己把最大的口子指出来了却没关**：L187 说没有运营商数据就无法确认"负载均衡到底有没有实际需求"、也无法判断"最短路是否真的导致拥塞"。而它引用的 [181]（本批 S2QZRBEJ）恰好提供了唯一一份公开的负载-时延数据——**把"综述说缺数据"和"唯一那份数据"接起来，就是一条现成的选题**。
+2. **L283 的"卫星不会带大缓存、所以拥塞时延有限"是一句常识性断言，不是证据**。它直接决定了"低时延优化的空间有多大"；而 L482 转引的实测又显示负载下 RTT 从 50 ms 涨到约 100 ms——**断言与它自己转引的数据存在张力**，这个张力可以被实验判定。
+3. **负载的"可预测基线 + 短期波动"分解（[71]，L171）只是被描述，没被验证**：作者说前者可提前全局优化、后者动态局部处理，但没有给出基线与波动的分离方法或比例。
+4. **拓扑周期（小时级）与流量周期（天/周级）不匹配**（L229）被提出来是为了讲训练集要覆盖多个周期，但**没人研究过这个尺度差对训练/评估划分的影响**——对做 RL 路由的人来说这是现成的实验设计缺口。
+5. **[117] 的 DQ-GERT 同时建模时延与时延抖动**（L281），是全节唯一把"抖动"当一等量的工作，但它没有与负载挂钩。
+
+**8. 和同批其他篇的关系**
+**它是本批的"引用中枢"**，直接引了同批两篇：
+- **[9] = QSNRQ8PF**（L520，逐字 "Dynamic Routings in Satellite Networks: An Overview", Sensors 22.12 (2022), p. 4552）——作者把它定位为"**very recent and very thorough survey of dynamic routing**"（L38）。
+- **[181] = S2QZRBEJ**（L876，"A First Look at Starlink Performance", IMC '22）——并且把它的核心数字转述进了"应用支持"挑战（L482）。
+此外它引 **FDR-MARL[106]**（L720）与 **DRL-THSA[100]**（L706），这两个正是锚件卡 S85KQ4FC 里被批评的"逐包 DRL 代表"那一支；也引 **ELB[69]**、**LCRA[80]** 等同批多篇反复出现的经典对照。三篇（T9X6QCLL / QSNRQ8PF / S2QZRBEJ）构成本批内部一条闭合的引用链。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**贡献是"把这条线的现状和一句反命题摆到台面上"**，具体三条：
+- **它明确指出该领域的前提未经证实**（L187 逐字）：负载均衡的必要性、以及"最短路是否导致拥塞"，都需要**运营商链路利用率数据**才能判断——这句话等于官方承认"负载→（拥塞/时延）"在 LEO 路由研究里是**假设而非事实**。
+- **它给出一个反命题**（L283 逐字）："satellites will not carry huge buffers to introduce some congestion delays. The space for optimization... seems limited."——即**星上缓存小 ⇒ 排队时延可忽略 ⇒ 负载对时延的影响天然有限**。这条如果成立，会把"负载变化下的时延"这条选题的价值压得很低；但它**只是常识断言**，且与它自己转引的实测（L482：50 ms → ~100 ms）冲突。
+- **它转述了唯一的实测锚点**（L482）：轻载丢包 0.4% → 拥塞场景 1.5–2%，中位 RTT 从 50 ms → 约 100 ms。这是把 S2QZRBEJ 的结论升格成"领域共识级"引用的一次传播，做选题检索时值得注意（同一组数字在本批两篇里各出现一次）。
+
+**10. 一句话评价**
+**一份偏工业视角（Futurewei）、覆盖到标准化层的 2023 年 LEO 网络地图**：它最有价值的不是罗列，而是两个判断——**负载均衡的实际需求因缺运营商数据而无法确证**（L187），以及**小缓存使拥塞时延优化空间"看起来有限"**（L283）；这两句一正一反正好卡住了"负载变化下的到达率/时延"这条选题的要害，而它自己并未去验证其中任何一句。
+
+
 
 
 

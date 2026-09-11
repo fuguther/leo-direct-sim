@@ -618,4 +618,75 @@ LEO 巨型星座开始用**激光星间链路（LISL）**替代射频 ISL（容�
 **语料里的"工具书"型论文**：方法谱系位置是"**为 off-policy return-based RL 提供一个统一算子框架，并给出 Retrace(λ) 这一安全且高效的折中点 + 三条收敛定理**"，其价值（λ-return 在任意 off-policyness 下的安全性、无 GLIE 收敛、Watkins Q(λ) 收敛的补证）在 RL 领域是奠基性的；但**对"负载变化下的到达率/时延"这一具体问题，它的贡献是零**——本批出现它，只能说明语料在收集 LEO 路由工作的同时把 RL 理论源头一并纳入了，而**这一批 LEO 论文实际上并没有用到 Retrace**（它们停在 DDQN 单步自举）。
 
 
+## EG9X569M — A Robust Routing Strategy based on Deep Reinforcement Learning for Mega Satellite Constellations (RRS-DRL)
+
+**1. 一句话**
+用 DQN 做 LEO 巨型星座的抗干扰路由，**把 AoI（信息年龄）而不是时延写进奖励**，并把"干扰"建模成**链路性能退化（而不仅仅是断链）**，让 agent 通过试错学会避开受扰链路；奖励 = 距离惩罚 + AoI 惩罚 + 队列增长率惩罚的加权和。
+
+**2. 问题设定**
+巨型星座（Starlink/OneWeb/Kuiper）下路由面临两类威胁（L23、L27）：**恶意干扰会让整个网络瘫痪**，以及用户数增长带来的**负载上升与拓扑变化**，路由表规模膨胀浪费星上资源。
+作者对既有工作的三条具体批评（L27）：
+- 文献 [3] 的 RL 路由"**assumes that the network topology is static and free from being jammed, which is clearly unrealistic**"；
+- 文献 [4] 的 DRL 全局路由"**is simply used for the problem of finding path, without considering the load balancing problem arising from the degradation of link performance when subjected to continuous disturbances**"；
+- 文献 [5]（DRL-ER 能效路由）"**Lack of consideration for jamming**"。
+作者自己的定位（L29）：**把干扰的先验信息放进状态**，并**同时考虑链路失效与链路性能退化**，让策略"be aware of jamming through trial and error"。
+
+**3. 方法骨架**
+- **网络模型（L35）**：图 $G=\{\eta,\mathcal{L}\}$，边权 $e_{ij}=\lambda_{ij}^k[b]\cdot\psi_{ij}^k$——$\psi^k_{ij}$ 是第 k 个包到达时链路 $(i,j)$ 的**传播时延**，$\lambda^k_{ij}[b]$ 是**信道 b 上的链路连通性指示**（式 1，取值 0/1）。
+- **干扰约束（式 2，L44）**：同信道上的接收不会同时被非预期发射机干扰。
+- **链路容量（式 3，L54）**：**含干扰项的信干噪比**，分母中除噪声项 $n_0W_B(4\pi/c)$ 外还有**干扰机贡献** $(p_\chi f_\chi^2)/d_{ij}^2$——这是"性能退化"的数学载体：干扰使 SNR 下降 → 容量下降（L57）。
+- **AoI 建模（式 5–7，L68–L80）**：作者推导出
+  **AoI = 生成间隔项 $\frac{1}{2\nu^l}$ + 传输时延项 $\frac{d}{\mu_{s_la}}$ + 传播时延项 $\frac{d_{s_l,to,a}}{c}$**
+  ——**注意：由此目标函数"最小化平均 AoI"在结构上等价于"最小化逐跳传输+传播时延之和"**，因为第一项与路径无关。时间平均 AoI 对全网会话求和得 $A_{ave}$（式 7）。
+- **优化问题（L90）**：$\mathrm{OPT}\ \min(A_{ave})$，约束为干扰约束(2)、传输模型(4)、AoI 函数(7)、以及队列约束 $Pkt_{\Delta_T}\le Pk_{max}^{rev}+Pk_{max}^{send}$。
+- **MDP（第 3.A 节，L101–L114）**：
+  - **状态** $S=(Node_{currpos},Node_{dest},\chi_{t_i})$——**第三个分量是"受到的干扰形式"**，这是它相对前人的主要增量（L105："we add very few priori knowledge of jamming to the state"）。
+  - **动作** $A=Node_{next}$（可达到的邻居）。
+  - **奖励（式 8）**：$r=w_1\cdot Dis_i + w_2\cdot AoI_{s'} + w_3\cdot\vartheta_{s'}$，三项分别是**到目的地的距离惩罚**、**下一跳的 AoI 惩罚**、**队列增长率惩罚**（队列超阈值时按增长率成比例惩罚，L111）。**三项都是惩罚项，公式却用加号连接**——符号约定原文未交代。
+- **算法（第 3.B 节）**：**DQN**（不是 DDQN），在线网 + 目标网，损失式 10 为带目标网的平方误差，梯度式 11，每 C 步同步目标网。**动态 $\varepsilon$-greedy**：$\varepsilon=\varepsilon_0\cdot\varepsilon_f^i$。网络结构：**两层全连接、每层 175 个神经元**，Tanh 激活（L149、L183）。
+- **episode 定义（L149）**：一个 episode 内**所有包都到达目的地**时结束，统计目的节点的 AoI。
+
+**4. 它声称的效果**
+**重要：正文没有任何数值结果**——全部结论只有 lower/higher/better 的定性描述，数据都在 Fig 3、Fig 4 里。
+- **平均 AoI（第 4.A 节，L192）**：在 **500–5000 个包**的负载扫描下，**RRS-DRL 随负载上升仍能维持较低时延且结果稳定**；**SPF 在负载 < 2500 包时表现良好，但负载继续上升后全网 AoI 高于 RRS-DRL**。归因：SPF 对网络适应能力差，"it is more difficult to adjust the impact of jamming when the number of loads increases"。
+- **时延抖动（第 4.B 节，L209）**：箱线图比较下 **RRS-DRL 无数据离群点**，而 **SPF 不仅有时延离群点，抖动也更高**。
+- **抖动的定义（式 12，L206）**：$\tau=\frac{AoI_j-AoI_i}{j-i}$——即**相邻包的 AoI 差除以序号差**，本质是 **AoI 的变化率**，不是通常意义的两包时延差。作者同句还给了另一种口径（相邻包时延差 / 序号差），**两种并列却只用了后者**。
+- **基线：只有 SPF（最短路径优先）一个**（L188、L236）。
+
+**5. 实验条件**
+参数取自 **Starlink 的 FCC 文件**（L177）。**选中 175 颗卫星**做实验。Table 1（L179）给出 **轨道高度 550 km、最小仰角 25°、7 个轨道面、每面 25 颗、倾角 53°**（该表 OCR 严重错位，7 / 25 / 53° 与字段的对应需按 7×25=175 反推）。
+用 **Python + networkx** 建网（L183）。超参：**γ=0.6、$\varepsilon_0$=0.7、$\varepsilon_f$=0.975、学习率 0.005、batch=16、replay pool N=1000、目标网更新步长 10、激活函数 Tanh**（L183）。
+**流量模型（L188）**：环境中存在**扫频干扰（sweeping jamming）**使链路性能退化；网络产生大量包，**每个包的源和目的随机**；**每传一次就隔一定时间步初始化一个新包**；产生并传输到一定数量后仿真结束。
+**负载扫描**：**500 / 1000 / 1500 / 2000 / 2500 / 3000 / 3500 / 4000 / 4500 / 5000 个包**，每个负载下**跑多轮**（L192）。
+**训练/评估**：**未说明训练与评估是否分离**，也未给 episode 数或收敛判据；伪码写的是 "for episode = 1 to 无穷"。
+
+**6. 自述局限（逐字）**
+本篇**没有 Limitations 章节**，且**未见任何对自身方法的保留性陈述**。唯一的"不足"痕迹是引言里对**他人**工作的批评（L27），以及结论（L218）里的纯正面总结："According to the simulation results, the method obtains a lower average information age of the whole network and a lower delay jitter rate compared to SPF, which increases the robustness of the constellation."
+**未见**作者讨论：权重 $w_1,w_2,w_3$ 如何选取、单基线是否足够、175 颗星能否代表 mega constellation、AoI 公式的推导边界、$\varepsilon$ 衰减与收敛的关系。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **加权系数 $w_1,w_2,w_3$ 全文从未给出数值**（式 8），也无敏感性分析——而这三项的相对大小**完全决定**策略偏向"趋近目的地"还是"避堵"还是"保新鲜"。**这是最大的不可复现缺口**。
+2. **只有一个基线（SPF）**：文献 [6]（FRA 抗干扰路由）、[5]（DRL-ER）、[3]（RL 路由）都在它引言里出现过，**却一个都没做对比**——尤其 [6] 是直接的抗干扰对手。
+3. **"退化的链路"与"断掉的链路"没有被分开评估**：作者在 L29 强调同时考虑两者，但实验里**没有给出这两种情形各自的贡献**。
+4. **正文无任何数值**：AoI 具体值、抖动分位数、收敛所需 episode 数都只在图里；在一篇两页 letter 里，这使结论几乎不可核验。
+5. **AoI 公式（式 5）的推导需检查**：从 $\frac{1}{T}\sum_{k=1}^{K}(\cdot)$ 到 $\frac{K}{T}\cdot\frac1K\sum(\cdot)$ 再到 $\nu^l(\cdot)$，这一步**隐含 $K/T=\nu^l$**，即"包生成率等于到达率"，而这**只在无丢包时成立**，文中未作说明。另外式 7 中 $\frac{d}{\mu_{s_la}}$ 与 $\frac{d}{\mu_{ij}}$ 的下标不一致（L80），原文或转写存在笔误。
+6. **"175 颗星"与标题里的 mega constellation 不符**：Starlink Phase I 就有 1584 颗，本文只取 175 颗，且**没有做星座规模的扩展实验**。
+7. **状态里的 $\chi_{t_i}$（干扰形式）缺少定义**（L101 仅写 "the form of jamming received"），既无维度也无取值空间——**这是它相对前人最核心的增量，却是全文最模糊的一处**。
+8. 拼写与转写错误密集（标题 "Mege"、伪码 "Sence env and abtain s"、正文 "FRRSt" 应为 "First"、$Pk_{max}$ 与 $Pkt$ 混用），且作者列表在摘要页（Chu, Cheng, Zhu Lidong）与正文页（Chu, Cheng, Ying Yang）**不一致**——提示该稿校对质量较低。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**有直接贡献，而且是本批里少数把"负载"当作显式自变量扫描的论文之一。**
+- **显式的负载扫描**：**500→5000 个包、10 个负载点**（L192），比 CMNCS52M 的"换队列分布图"、CTWVLBCY 的"不可调 trace"更接近真正的负载实验。
+- **给出了一条清晰的负载拐点**（L192）：**SPF 在 < 2500 包时优于 RRS-DRL，超过 2500 包后被反超**——这是一条可检验的定量交叉现象（虽数值只在图里），说明"**最短路的优势只存在于低负载区**"，与 CMNCS52M 中"traffic 场景下最优路径≈最小跳路径"的观察方向一致。
+- **给了 AoI 的可计算分解**（式 5）：**AoI = 生成间隔 + 传输时延 + 传播时延**。其中**传输时延项 $\frac{d}{\mu}$ 直接是负载的函数**（$\mu$ 受式 3/4 的容量约束，而容量受干扰影响），因此这条公式**在结构上把"干扰/负载"与"AoI"连了起来**。
+- **用了抖动而不只是均值**（式 12、Fig 4），还报告了离群点，比本批其他只报均值的论文多一个维度（但口径是 AoI 变化率，不是两包时延差）。
+- **缺口**：
+  - **"负载"在这里是"生成的包总数"，不是到达率（包/秒）**：文中只说 "a new packet is initialised after a certain time step"（L188），**没有给出到达过程的分布**，也没说明"时间步"的时长，因此**这条负载轴不可换算成 pps**。
+  - **排队与目标函数脱节**：虽然有"队列增长率 $\vartheta_{s'}$"作为奖励项（L111），但**队列本身没有进入 AoI 公式（式 5）**——奖励里惩罚队列，目标里却没有队列。
+  - 只有 SPF 一个基线，因此"负载上升后 RRS-DRL 更好"**无法排除是"任何非最短路算法都更好"**。
+
+**10. 一句话评价**
+**把 AoI 作为 LEO 抗干扰路由的优化目标、并把"链路性能退化"（而非只有断链）纳入建模**，问题设定有新意，且难得地做了**跨 500–5000 包的负载扫描**并给出 2500 包的交叉点；但作为一篇两页 letter，它的**实证薄弱**（单一基线、正文无数字、权重未给、干扰状态未定义），且**AoI 目标函数在数学上退化为"最小化逐跳时延和"**（式 5 第一项与路径无关），因此它更像一个**有价值的动机与设定**，而不是可复现的结论——方法论谱系上是"**DQN + 多目标奖励工程**"，与 CMNCS52M 同源但成熟度低一档。
+
+
 <!-- END-OF-CARDS -->
