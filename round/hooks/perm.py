@@ -71,7 +71,14 @@ def cmd_init(a) -> int:
         print("REFUSED: 无法确定主控 session_id", file=sys.stderr)
         return 2
     d, st = load()
-    prev_orch = d.get("orchestrator_session") or orchestrator_id()
+    def _anchor():
+        """读取独立锚点（清单缺失/损坏时仍可识别主控）。"""
+        try:
+            return ORCH_FILE.read_text(encoding="utf-8").strip()
+        except Exception:
+            return ""
+
+    prev_orch = d.get("orchestrator_session") or _anchor()
     # 防锁定保护（实测事故）：清单存在且主控身份将变化时，必须显式 --force。
     # 背景：曾用临时清单覆盖真实清单，导致运行中的主控失去权限且无自助恢复路径。
     if st == "ok" and prev_orch and prev_orch != orch and not a.force:

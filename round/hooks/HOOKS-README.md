@@ -54,7 +54,7 @@
 | `permissions.json` | 运行时状态 | run-scoped 清单（含临时 session id，**已 gitignore**） |
 | `lib_hook.py` | 库 | realpath 归一化、glob 匹配、角色解析、协议封装 |
 | `hook_access_guard.py` | **门禁** | 角色化访问守卫（PreToolUse）；解析失败→保守阻塞 |
-| `hook_prompt_scope.py` | **门禁** | 派发提示词不得夹带历史全集；解析失败→保守阻塞 |
+| `hook_prompt_scope.py` | **诊断（非门禁）** | 提示词携带历史全集字样 → **仅 stderr 提示，不阻塞**；载荷无角色字段，故**不提供角色隔离保证**（Codex 收口 #3） |
 | `hook_dispatch_register.py` | 门禁（事后） | 派发后未登记角色 → 立即报错要求补 bind |
 | `hook_ledger_diagnostic.py` | **诊断** | 台账操作事后提示（不阻断） |
 | `selftest.py` | 测试 | 离线自测（Python 版，无 shell 重定向，不产生中间文件） |
@@ -106,13 +106,20 @@
 # ① 初始化（每轮一次）
 python3 round/hooks/perm.py init --run run2-20260911
 
-# ② 每次派发后立即绑定（id 取 dispatch 返回值；未绑定则该子代理不受约束）
-python3 round/hooks/perm.py bind --session <subagentId> --role generator \
-    --extra-write round/run2/staging/path-A-intensity.md
-python3 round/hooks/perm.py bind --session <subagentId> --role deepener \
-    --extra-read round/run2/cards.json --extra-write round/run2/drafts/A3.md
-python3 round/hooks/perm.py bind --session <subagentId> --role history_reviewer
+# ② 先创建待命会话取得真实 ID，再**精确授权**（未授权 = 保持未授权，不会自动获得权限）
+#    顺序很重要：授权必须在"启动材料读取"之前完成
+grant() { python3 round/hooks/perm.py grant --session "$1" --role "$2" \
+    ${3:+--extra-read "$3"} ${4:+--extra-write "$4"}; }
+grant <subagentId> generator   ""                                  round/run2/staging/path-A-intensity.md
+grant <subagentId> deepener    round/run2/feedback/A3-feedback.md  round/run2/drafts/A3.md
+grant <subagentId> history_reviewer ""                            round/run2/op-history-review.md
 
 # ③ 轮末审计未登记访问
 python3 round/hooks/perm.py audit
 ```
+
+> **语义（2026-09-11 更正）**：
+> - **未授权子会话不会"不受约束"**——它会**保持未授权**：任何对研究区的读/写都被拦并提示补授权；
+>   仅"区外路径"的操作放行并记入 `unregistered.log`。
+> - 空 target 票据**已禁止创建**（`reserve` 必须带 `--session`）。
+> - `bind` 为兼容保留；日常请用 `grant`（显式绑定会话 + 角色 + 任务文件）。

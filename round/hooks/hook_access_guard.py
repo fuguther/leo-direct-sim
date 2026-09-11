@@ -124,16 +124,29 @@ def main():
         for sub in EXTERNAL_DENY_SUBSTR:
             if sub in val:
                 block("访问工作区外的高危目标（%s）" % sub, "跨会话/跨代理读取等同绕过隔离；需要该信息请由主控转述")
+    def allowed(val, keys):
+        """授权匹配。
+
+        修复（真实接力实测，2026-09-11）：shell 通道常解析出**裸文件名**
+        （如 `cd round/zotero && cat X.md` → 候选串 "X.md"），与授权路径
+        "round/zotero/X.md" 不匹配 → 合法访问被误拦。
+        因此 shell 派生目标额外按**文件名**匹配授权（授权本身仍是"具体文件"，未放宽范围）。
+        """
+        for g in grants[keys]:
+            if glob_match(g, val):
+                return True
+            if val and "/" not in val and g.rsplit("/", 1)[-1] == val:
+                return True   # 裸文件名 ↔ 授权文件同名
+        return False
+
     for kind, val, src in research_touch:
-        # 修复（实测）：collect 现在产出 shell-file / shell-dir / param 三类来源，
-        # 此前只判 "shell-literal" 导致 shell 派生目标**完全不校验**（漏拦）。
         shell_derived = src.startswith("shell-")
         if tool in READ_TOOLS or shell_derived:
-            if not any(glob_match(g, val) for g in grants["read"]) and not any(glob_match(g, val) for g in grants["write"]):
+            if not allowed(val, "read") and not allowed(val, "write"):
                 block("角色 %s 不允许访问：%s（%s）" % (role, val, src),
                       "可读范围见 perm.py grants；需要更多材料请让主控用 --extra-read 授予具体文件")
         if tool in WRITE_TOOLS:
-            if not any(glob_match(g, val) for g in grants["write"]):
+            if not allowed(val, "write"):
                 block("角色 %s 不允许写入：%s" % (role, val),
                       "只允许写派发端授予的具体文件；需要时用 --extra-write 追加")
     sys.exit(0)
