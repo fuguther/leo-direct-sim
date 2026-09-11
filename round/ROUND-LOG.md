@@ -147,3 +147,13 @@ REVIEW-REQUEST-FOR-CODEX.md 写入 worktree 根：自包含审查请求（背景
 - 每条路径均含：八节卡 + 诚实放弃线（A 6 条 / B 5 条 / C 6 条）+ 防火墙声明 + 【原文事实/笔记/推演/待证】四档标注。
 **下一步**：历史碰撞审查（独立子代理 0c226ffe）→ 深化（三问）→ 三角色审查 → G1–G5 闸门 → 推荐。
 **VM 转换**：111 篇 MinerU（pipeline 后端，A100），修正输出路径探测后 v3 重启（已完成者跳过），监听作业 bash-3。
+
+## 15. run3 续作收口（2026-09-11，新主控 session-100ff665）
+
+- **交接**：旧主控冻结于 334fe9c（HANDOFF-FREEZE）；续作分支 agent/20260911-topic-loop-r2（PR #200，supersedes #199）；perm 主控切换完成（run topic-loop-r3-20260911）。
+- **B3 补稿**：重派深化者 35 分钟产出 B3-v2.md（196 行）；HE/LIAQ/CMNCS52M 回 VM 逐字核验（新增 HE 训练=评估同 10,000 pps 第二实例）；纠正旧稿两处口径（-72.7% 改推演、WEIL 数字弃用）；miniflow-r3 A1 授权错位已披露，真 A1（c77e62eb00f）由主控回 path-A-intensity.md L68–101 核验，转引相符、回炉条件不触发。
+- **A3 对抗检查**（ADVERSARIAL-A3）：四点补丁拆解——双通道记账够格、前兆信号半够格（挂提前量实测）、滞回/准入/地板降为实现细节；E4/E5 逐字核验通过。
+- **C2 强化**：审计 14→19 篇（AUDIT-EXT-C2，TQF59BD7"有 ON-OFF 却聚焦 CBR"逐字）；Wan25f 摘要级划界（NEIGHBOR-WAN25F：不覆盖，状态件新颖性降为迁移）。
+- **裁决**（VERDICT-3CARDS + gate_verdict 绑定）：**主线 C2**（recommended_pending_review v2）、**独立备选 A3**、**B3 退出**（awaiting_evidence v4，资产并入 C2 强度轴，T-C2 回写通道保留）。
+- **交付五件套**：MAP-UPDATE / VERDICT-3CARDS / MAIN-RECOMMENDATION（含机制图与备选节）/ READING-GUIDE / 备选判定（A3），均在 round/run3/。
+- 技术遗留：orchestrator.id 被误跟踪（deb5305）致 DIRTY，选择式暂存规避；根治（git rm --cached + gitignore）待用户批准。
