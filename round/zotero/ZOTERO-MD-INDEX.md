@@ -24,11 +24,11 @@
 | 13 | QGAREQUM | 2024 | 130,884 | 37 | 8 | 694 | Boosting Reinforcement Learning with Strongly Delayed Feedback Through Auxilia |
 | 14 | T9X6QCLL | 2023 | 119,555 | 22 | 0 | 0 | LEO satellite networking relaunched: Survey and current research challenges |
 | 15 | UMKF328H | 2022 | 119,522 | 33 | 7 | 4 | LEO Satellites in 5G and Beyond Networks: A Review From a Standardization Pers |
-| 16 | 6C843JTS | 1988 | 113,880 | 27 | 0 | 332 | Learning to predict by the methods of temporal differences |
+| 16 | 6C843JTS | 1988 | 113,880 | 27 | 0 | 332 | Learning to predict by the methods of temporal differences **[无关·已移出]** |
 | 17 | R5QTFKD2 | 2025 | 113,052 | 43 | 3 | 561 | Age Optimal Sampling and Routing under Intermittent Links and Energy Constrain |
 | 18 | FLQLU3T4 | 2026 | 111,053 | 32 | 1 | 304 | Duality-Guided Graph Learning for Real-Time Joint Connectivity and Routing in  |
 | 19 | JLF7IEBQ | 2025 | 110,578 | 41 | 5 | 82 | SaTE: Low-Latency Traffic Engineering for Satellite Networks |
-| 20 | ETTA3DIV | 2023 | 106,750 | 40 | 0 | 452 | Required toroidal confinement for fusion and omnigeneity |
+| 20 | ETTA3DIV | 2023 | 106,750 | 40 | 0 | 452 | Required toroidal confinement for fusion and omnigeneity **[无关·已移出]** |
 | 21 | KPUZIMU5 | 2022 | 104,741 | 33 | 18 | 94 | The Surprising Effectiveness of PPO in Cooperative, Multi-Agent Games |
 | 22 | S85KQ4FC | 2024 | 101,711 | 26 | 3 | 229 | Enabling High-Throughput Routing for LEO Satellite Broadband Networks: A Flow- |
 | 23 | IXVSNEE3 | 2024 | 100,643 | 19 | 2 | 378 | Distributed Satellite-Terrestrial Cooperative Routing Strategy Based on Minimu |
@@ -53,7 +53,7 @@
 | 42 | K7U4TYJN | 2026 | 81,645 | 22 | 2 | 159 | SkyLink: Scalable and Resilient Link Management in LEO Satellite Networks |
 | 43 | P6XJZNQK | 2024 | 80,348 | 25 | 1 | 2 | A Global Perspective on the Past, Present, and Future of Video Streaming over  |
 | 44 | K93SCUF2 | 2019 | 79,162 | 36 | 1 | 112 | Network topology design at 27,000 km/hour |
-| 45 | A7QNRKML | 2022 | 78,820 | 22 | 7 | 80 | LOTR: Face Landmark Localization Using Localization Transformer |
+| 45 | A7QNRKML | 2022 | 78,820 | 22 | 7 | 80 | LOTR: Face Landmark Localization Using Localization Transformer **[无关·已移出]** |
 | 46 | R37BNQQ8 | 2019 | 78,635 | 31 | 2 | 193 | SDN-Based End-to-End Fragment-Aware Routing for Elastic Data Flows in LEO Sate |
 | 47 | 36RZKNW5 | 2025 | 78,246 | 21 | 3 | 91 | An integrated routing and data fragmentation strategy for optimizing end-to-en |
 | 48 | BBNQ4EAQ | 2019 | 75,478 | 20 | 2 | 331 | Temporal Netgrid Model-Based Dynamic Routing in Large-Scale Small Satellite Ne |
@@ -93,7 +93,7 @@
 | 82 | LBMABZJ7 | 2022 | 45,087 | 24 | 0 | 98 | Distributed On-Demand Routing for LEO Mega-Constellations: A Starlink Case Stu |
 | 83 | S2QZRBEJ | 2022 | 44,884 | 18 | 2 | 19 | A first look at starlink performance |
 | 84 | 9KZDXPKC |  | 43,032 | 19 | 1 | 38 | How to Route CUBIC and BBR Packets in Space |
-| 85 | 35T2JJRJ | 2023 | 42,665 | 25 | 4 | 83 | Attention Is All You Need |
+| 85 | 35T2JJRJ | 2023 | 42,665 | 25 | 4 | 83 | Attention Is All You Need **[无关·已移出]** |
 | 86 | GPDPLJNG | 2022 | 40,432 | 10 | 0 | 134 | Multi-Commodity Flow Routing for Large-Scale LEO Satellite Networks Using Deep |
 | 87 | 2W8BJ7ME | 2020 | 39,893 | 20 | 0 | 29 | A Load Balancing Routing Strategy for LEO Satellite Network |
 | 88 | AZ72LM9Z | 2025 | 38,748 | 20 | 0 | 3 | Towards Global Outage Detection for LEO Networks |
@@ -114,9 +114,9 @@
 | 103 | EG9X569M | 2023 | 29,222 | 6 | 1 | 61 | A robust routing strategy based on deep reinforcement learning for mega satell |
 | 104 | X5K285MW | 2023 | 28,248 | 16 | 2 | 3 | Analyzing Source-Routed Approaches for Low Earth Orbit Satellite Constellation |
 | 105 | W5Z39E25 | 2015 | 27,682 | 8 | 1 | 6 | A wised routing protocols for LEO satellite networks |
-| 106 | VACUFEHB | 1998 | 26,658 | 8 | 0 | 62 | Computationally efficient algorithms for third order adaptive Volterra filters |
+| 106 | VACUFEHB | 1998 | 26,658 | 8 | 0 | 62 | Computationally efficient algorithms for third order adaptive Volterra filters **[无关·已移出]** |
 | 107 | YI9G7NR7 | 2026 | 25,670 | 14 | 1 | 95 | DQDRA: A Dyna-Q-Enhanced Distributed Routing Algorithm for Heterogeneous LEO C |
-| 108 | WT839JP7 | 2018 | 21,519 | 9 | 0 | 0 | Fine-Grained Library Customization |
+| 108 | WT839JP7 | 2018 | 21,519 | 9 | 0 | 0 | Fine-Grained Library Customization **[无关·已移出]** |
 | 109 | 5PYWVRC5 |  | 20,399 | 13 | 0 | 14 | Shaping Rewards, Shaping Routes: On Multi-Agent Deep Q-Networks for Routing in |
 | 110 | L2VKYTAV |  | 20,399 | 13 | 0 | 14 | Shaping Rewards, Shaping Routes: On Multi-Agent Deep Q-Networks for Routing in |
 | 111 | 47J2H748 |  | 15,504 | 10 | 0 | 10 | Packet Routing in Dynamically Changing Networks: A Reinforcement Learning Appr |
