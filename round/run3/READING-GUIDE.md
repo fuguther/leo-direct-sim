@@ -38,6 +38,13 @@
 - L371 逐字：仿真器同时具备 ON-OFF 与 CBR 会话，"we focus on the latter for more coherent results"。
 - L341：自知 "bursty traffic spikes may result in saturated links"。
 
+## B0. 全库审计后的新增必读（AUDIT-FULL-111 产出）
+
+- **JP79GMZS（ELB 2009）的负载模型**：L215 逐字——600 条 ON-OFF 流、Pareto shape 1.2、平均突发/空闲 200ms——**前 RL 时代 LEO 路由评估就用过突发模型**（形状固定，扫描轴是速率 0.8–1.5 Mbps）。讲方案时用它承认"突发不新"，再钉死"RL 时代 + 同均值参数化"的精确空白。
+- **CYMQ2GLA（DRL-THSA）**：L65–67——状态含 EWMA 平均输入/输出速率，但**设计意图是滤掉短期波动**（"The short-term light traffic load needs to be filtered"）；是主线状态件的**反意图近邻**：它平滑瞬态，主线暴露瞬态。
+- **TSV3IE8S L309（引用级）**：Gragopoulos 等 2000《…LEO under Self-Similar and Poisson traffic》——自相似 vs 泊松对照在 2000 年已存在（全文未取，引用级登记）。
+- **S2QZRBEJ（A first look at Starlink performance）**：L129–133——Starlink 实测丢包突发分布——真实网突发存在的测量级支持。
+
 ## B. 第二优先：条件轴对照（按轴选读）
 
 | 轴 | 文献 | 读什么 |

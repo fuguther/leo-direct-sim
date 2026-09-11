@@ -1,5 +1,7 @@
 # C2 负载模型审计扩展（AUDIT-EXT-C2，主控执行，2026-09-11）
 
+> **状态：已被 AUDIT-FULL-111.md 取代**（全库 111 篇审计，2026-09-11 晚些）。本文件保留作中间记录；其发现（TQF59BD7 等）已全部并入全库版。
+
 > 对应 C2-v2 §4 M0 先行步①「审计表 14→20 篇」的文献侧部分（实验侧部分本轮不执行）。
 > 方法：对 VM MinerU 全库（111 篇）做过程关键词扫描（poisson/burst/ON-OFF/CBR/self-similar/heavy-tail/MMPP/traffic model/arrival rate 等），
 > 取命中最高且未入 C2 14 篇的前 6 篇，回 MD 取上下文行。检索词与 C2 原审计一致，口径相同（"未命中"仅指本次检索）。
