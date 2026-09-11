@@ -355,3 +355,53 @@ R1 报告：用 `read` 取文件 → 拼接 → `write` 回写的方式追加读
 1. **禁止用 read→write 回写大文件**，一律用 `edit` 锚点插入；
 2. 每次写入后立即用 `wc -l` + `grep -c '^## '` 校验；
 3. 该事故此前在 B7 批次也发生过一次（文件被截断）——**同一坑两次，列入必检项**。
+
+## F41【最硬的一类证据：实测证伪同批仿真假设】（AZ72LM9Z vs AF674CSF/AIH4GK37，主控逐字核验）
+
+**实测方（AZ72LM9Z，LEO-Net'25，Roman/HitchHiking）L141 逐字**：
+> "Large-scale **clustered outage events occur on a daily basis**. On May 27, **597 outages occurred simultaneously**, each lasting between 70 and 75 seconds—**accounting for 73.5% of all outages that day**. On May 29, we observe two similar clusters... These events suggest **centralized failures**, likely at the satellite link level, that **affect many users at once**."
+
+**被证伪的仿真假设方**：
+- **AIH4GK37 L298 逐字（主控核验）**："ISL instability is modeled as discrete link down/up events, **with at most one ISL down at a time** to isolate individual disruptions... we use a **single Pareto distribution** for both down-interval and up-interval durations (shape k=2.5, scale xm=7.2 s, mean 12 s)."
+- **AF674CSF（LPIH）L305**：ISL 失效"randomly and independently"，用 Poisson。
+
+**证伪内容（三条）**：
+1. **独立性被证伪**：真实是**成簇同时发生**（597 次同时），不是独立随机；
+2. **"至多一条失效"被证伪**：真实是**大规模同时失效**；
+3. **分布形状被证伪**：真实中断时长有**明确众数区间（50–75 s）**，而 Pareto(k=2.5) 是重尾——**形状假设方向错了**。
+
+**含义（对本项目极重要）**：
+> 把链路失效建成独立随机过程，会**系统性低估"同时多链路失效"的概率 → 低估拥塞与丢包的尾部**。
+> 而 **"成簇失效在同一时刻把流量挤向剩余链路"，正是负载突变的物理来源**——这是一个**由实测支撑的负载变化机制**，不是我推的。
+
+→ 与 F38（尾部非均值）**独立呼应**：一个从指标角度、一个从事件模型角度，都指向"尾部被系统性低估"。
+
+## F42【作者自己把"负载依赖建模"列为缺口】（AIH4GK37 Future Work，主控核验）
+
+L435 逐字：
+> "**Congestion with mixed control/data traffic requires load-dependent costs and transient end-to-end evaluation**... Delay-triggered updates and concurrent events require a richer event model for λ."
+
+→ 该文成本模型**全是常数**，作者自己承认需要"负载依赖成本 + **瞬态端到端评估**"。
+→ 与本项目"瞬态窗条件指标"的设计方向**直接一致**，且这是**作者自认**的缺口（不是我推的）。
+
+## F43【三条"测量行为污染被测对象"的证据，构成第二条前置约束】
+
+1. **AZ72LM9Z L73/L98**：**测量强度本身触发被测网络的 ICMP 限速**（朴素方法丢包 50%→79.7%）→ 做负载-时延实验前必须先排除这个混杂；
+2. **AF674CSF L437**（主控核验）只统计成功送达的包 → **系统性偏袒丢包率高的协议**（与 F8/F18 同族，此处由作者自曝）；
+3. **47J2H748（F37）**：探索行为改变被测网络的拥塞状态。
+
+→ 三条合起来：**"测量/学习行为会改变被测状态"是本项目必须正面处理的第二类前置约束**（第一类是 F1/F28/F32 的非负载来源）。
+
+## F44【反面事实·噪声底】负载完全不变时时延照样剧烈波动（8AYW2Y78 Hypatia）
+
+R3 读卡：换路导致 96→111 ms 的时延变化，**而负载完全没变**。
+→ **delay 作为拥塞信号被结构性污染**——这与 F1/F32 的实测证据同向，但这条是在**仿真平台**（Hypatia）里也成立，说明**不是真实网络独有的问题**。
+
+## F45【引用网络已确证：Hypatia 从"论点来源"变成"标准基础设施"】（R3）
+
+- Hypatia(8AYW2Y78) 被本批 4 篇引用：LiR[2]、DB-R[4]、PBAR[10]、Roman-HitchHiking[24]；
+- **PBAR 直接把它当仿真基座**（"Our constellation topological state is generated using Hypatia"）；
+- 两个课题组主导：**北航组**（LiR/DB-R/LPIH，改造但保留 IP/OSPF 栈）、**UCLA 组**（PBAR + Roman-HitchHiking，设计+测量姊妹篇）；
+- 谱系链完整：**Hypatia → ASER → {LPIH, PBAR}**；AJJI57M9(Ekici 2001) 是 ASER 祖先被双引。
+
+→ 意义：**做本项目实验设计时，Hypatia 是既成的基础设施标准**；且北航组的"保留 IP/OSPF 栈"路线与本项目"RL 路由"路线形成明确对照。

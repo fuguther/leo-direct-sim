@@ -625,6 +625,75 @@ LEO 卫星 ISL 路由的**祖师爷论文**（Werner, 1997, IEEE JSAC）：把�
 **10. 一句话评价**
 **快照/虚拟拓扑范式的开创之作**：把"I SL 拓扑周期性时变"形式化为"离线建虚拟拓扑 + 跨时隙选路径序列"，并正确地把切入点选在**换路抖动**这个 ATM 面连接业务的真痛点上；但它从第一天起就把负载排除在模型外（L131、L169），因此它是"到达率/时延"这条线上游的**前提提供者**，而非贡献者。
 
+## TSV3IE8S — An Adaptive Routing Algorithm for Inter-Satellite Networks Based on the Combination of Multipath Transmission and Q-Learning
+
+**1. 一句话**
+两个算法拼在一起：先用**改进 BFS** 一次性找出源到目的的全部最短路径，再按邻居节点的带宽权重与连接数之比挑一条（多路径分流）；当拿不到全局拓扑时，改用 **SDN 控制器做 agent 的表格型 Q-learning**（Q-routing），奖励函数把链路剩余带宽、时延、丢包率加权进去（L11、L36、L196）。
+
+**2. 问题设定**
+LEO 星间网络拓扑复杂且快变，作者认为**传统单条最短路已无法满足最优路径要求**，且单路径在流量上升时会拥塞（L11）；又因为低轨高度动态、**全局拓扑常常拿不到**，所以需要一种不依赖全局信息的自适应算法（L11、L89）。目标函数写得很明确（式2a，L134）：$\lambda\max_{(i,j)\in E}load_{ij}+(1-\lambda)\sum_k\sum_{(i,j)}x^k_{ij}d_{ij}$，即在**保证 QoS 的前提下平衡链路负载并尽量压低传输时延**，$load_{ij}$ 定义为链路上所有业务流带宽之和占链路带宽的百分比（L137）。
+
+**3. 方法骨架**（前半是图算法，后半是**表格型** Q-learning，**不是深度 RL**）
+- **多路径部分（第 2 节）**：基于邻接矩阵 $AdjMatr[i][j]$（式1，L50）做改进 BFS，逐层记录每个节点的最短跳数 $HopCount$、前向节点 $FrontPoint$ 与前向节点计数 $FrontCount$；四步流程覆盖"未入队/已入队但跳数更小/已出队"三种情形（L61-69）。再按前向节点**逐层回溯**得到源到所有节点的全部最短路（L76）。**选路准则**：若只有一条最短路就用它；若有多条，则优先取"邻居节点带宽容量最大"的路径，并用 $c(s)/w(s)$（连接数 / 带宽权重）衡量链路状态，选比值最小者——作者特意解释：只看"整条路径总占用率最低"可能会选中一条总负载低、但其中某个节点已接近阈值的路径，因此要**单独盯住源节点的邻居**（L83-85）。节点故障或拥塞时权重置 0、不再使用（L85）。
+- **Q-learning 部分（第 3 节）**：
+  - 架构：**SDN 控制器 = agent**，掌握全局网络状态并下发流表（L114、L202）。
+  - **状态**：节点与链路的流量矩阵，代表当前链路负载；**动作**：把包转到哪个节点；**奖励**：式(2i) $R_{ij}=-cost+\alpha_1 BW_{ij}-\alpha_2 delay_{ij}-\alpha_3 loss_{ij}$（L196、L202）。
+  - $BW_{ij}$ 用 **sigmoid 曲线**按剩余带宽给分：利用率 >80% 时奖励趋近 0，<30% 时趋近 100，中间平滑过渡（L191-193）；$delay_{ij}$ 与 $loss_{ij}$ 是相对全局最大值的归一化比例，取值 (0,100]（L193）。
+  - **更新规则就是原版 Q-learning 的 max 目标**（式2g，L178）：$Q(s_t,a_t)\leftarrow(1-\alpha)Q+\alpha[R+\gamma\max Q]$——**没有用 Double DQN**。
+  - 探索：ε-decreasing，$\varepsilon_\tau=\sqrt{1-[\tau/(4|\Lambda|)]^2}$（L173）。
+  - MDP 设定：业务请求独立到达、业务类型概率服从**预设的泊松分布**；控制器在每个离散时隙决定**接受或拒绝**新请求，接受则分配最佳路径（L165）。
+  - 终止条件：设最大执行时间 $t_{max}$，超时即终止路径分配；作者把它归入"无效策略集 $\Pi_{useless}$"但仍作为 agent 的一个选项（L213）。
+  - 收敛性：援引 [21] 的有限样本收敛率与 [20] 的最优性来论证可收敛（L204）。
+
+**4. 它声称的效果**（基线：传统单路径 BFS、Dijkstra、以及 [22] 的拥塞预防 Q-learning）
+- 拓扑 16 节点（Fig 7），从 V7 到 V0/V9/V11/V3/V12/V13：**本算法共找到 16 条路径，BFS 只有 6 条**（每个目的节点仅一条）（L248-250）。
+- 等待时延：**发送速率越大等待时延越长**；本算法在速率升到某阈值后会把业务分散到其他最短路上，从而减轻等待冲突（L256）。
+- 丢包：**发送速率 <40 packets/s 时两者丢包率都极低**（数据量未达带宽容量）；速率上升后两者都升，但多路径算法显著低于单路径（L263）。
+- 吞吐：随发送速率上升两者都升，本算法明显更好（L270）。
+- Q-routing vs Dijkstra vs [22]（Fig 14/15）：**业务量小时 Q-routing 的路径最大负载最低**，Dijkstra 因反复用最短路而负载最高，[22] 在负载达 80% 阈值前与 Dijkstra 一致、之后绕行（L306）；对时延敏感业务（$\alpha_1=0,\alpha_2=1$），Q-routing 的平均传输时延低于 Dijkstra，且 80% 阈值前 [22] 与 Dijkstra 相同（L317）。
+- 收敛：$\alpha=0.6,\gamma=0.3$ 时约 **30 步**收敛；$\gamma$ 增到 0.6/0.9 更快但仍有振荡；$\alpha$ 提到 **0.9** 收敛显著加快且波动更小（L290）；进一步改为**动态学习因子**（初值大、随迭代衰减）后收敛速度再提升（L297）。
+- **必须说明的取证限制**：上述所有定量结果都只存在于 **Fig 8/9/10/14/15** 中，正文只给趋势描述、**没有给任何具体数值**；MinerU 的 MD 里图是图片引用，我读不到曲线取值。所以我能确认的是**方向**（多路径优于单路径、Q-routing 优于 Dijkstra），**不能确认幅度**。
+
+**5. 它的实验条件**
+- 拓扑：**16 节点的星间网络**（Fig 7），源节点取 V7（L243、L248）。
+- **负载扫描（本批少见的到达率轴）**：业务数据包发送速率从 **10 packets/s 加到 100 packets/s**，仿真时长 **1 小时**（L243）。
+- 两种业务分布：Fig 14a 源/目的节点固定；Fig 14b 源/目的节点随机（L306）。
+- 奖励权重按实验切换：Fig 14 用 $\alpha_1=0.8,\alpha_2=0.2,\alpha_3=0$（偏重负载均衡）；Fig 15 用 $\alpha_1=0,\alpha_2=1,\alpha_3=0$（偏重时延）（L306、L317）。
+- 基线：Dijkstra 最短路；[22]（Kim et al., 在 80% 负载时从最短路切换到 Q-learning 的拥塞预防机制，奖励函数简单：到目标给 30、到目标邻居给 20）（L302）。
+- **未见**训练集/评估集划分的说明，也未见跨场景测试。
+
+**6. 它自述的局限**（逐字）
+**未见独立的 Limitations 章节**；以下是我读到的自认边界：
+- L292："However, **speeding up the convergence rate of Q-routing routing needs further study.** At the beginning of training, a larger learning factor can improve the convergence speed of Q matrix. However, as the training level increases, **a larger learning factor causes the Q-matrix to move back and forth on both sides of the optimal point.**"
+- L213（把"放弃"当成一个合法动作）："the SDN controller is required to plan an optimal path for the service flow within a time interval $t_{max}$, otherwise the path allocation is terminated. Although the termination search strategy **belongs to the invalid strategy set** $\Pi_{useless}$, it is still used as an option for the agent."
+- L336（可复现性）："The data that support the findings are available **on request** from the corresponding authors. **The data are not publicly available due to privacy.**"
+- L330："This research received **no external funding**."
+
+**7. 它没做但看起来能做的地方**（基于内容）
+1. **"卫星"只是名义上的**：全文只有一个 **16 节点抽象图**（L243、Fig 7），没有轨道高度、倾角、周期、ISL 构型，也没有跨缝或极区关链。所谓"星间网络"实际是一个静态 16 节点 mesh——**拓扑动态性在实验里完全没有体现**，尽管它正是论文的立项理由（L11、L89）。换成真实星座是最直接的补实验。
+2. **表格型 Q-learning 无法扩展**：状态是流量矩阵（L202）、Q 表按状态-动作对存储（L99），星数上千时状态空间爆炸；文中未讨论任何函数逼近或泛化。
+3. **"等待时延"被测量但没有排队模型**：图 8 的等待时延随速率上升（L256），但奖励里只有归一化的 $delay_{ij}$（L193），没有缓冲区/排队项——**"速率 → 排队时延"这条因果链没有被建模**，只是被观测。
+4. **QoS 行为靠人工切权重实现**：所谓"对时延敏感业务更优"，是通过在 Fig 15 的实验里把 $\alpha_1,\alpha_2,\alpha_3$ 手动改成 0/1/0 达成的（L317），而 $BW_{ij}$ 的 sigmoid 形状也是手工设计（L193）。**agent 自己并不学习"该重时延还是重负载"**。
+5. **它是 Double DQN 论文点名的那类算法**：式(2g) 用的是原版 max 目标（L178），没有做选择/评估解耦；在"以时延与负载为代价信号"的场景下，这正是 TAUEF8PF 警告会被高估扭曲的方向（TAUEF8PF L96）。
+
+**8. 和同批其他篇的关系**
+- 谱系上接**最古老的一支**：参考文献 [2] 是 **FSA（Chang et al. 1998）**（L346）——这一篇同时出现在 TRM2HPFN 的语境里（快照/FSA 谱系），也是 QSNRQ8PF 的 [45]（QSNRQ8PF L528）与 T9X6QCLL 的 [38]（T9X6QCLL L528，T9X6QCLL 的早期进展节把 FSA 与快照路由列为里程碑）。也就是说本批四篇（TRM2HPFN / QSNRQ8PF / T9X6QCLL / 本篇）通过 **FSA 与快照范式**这条线连着。
+- 与 **TQF59BD7** 都属于"SDN 控制器集中决策"的一支，但 TQF59BD7 是真的分布式星上控制器 + 明确负载阈值实验，本篇是单控制器 + 16 节点玩具拓扑，**完成度差距明显**。
+- 与 **TAUEF8PF** 是"被警告方"与"警告方"的关系（见第 7 条第 5 点）。
+- 与 **S2QZRBEJ** 形成"仿真 vs 实测"的对照：本篇连排队模型都没有，而 S2QZRBEJ 直接测出负载把 RTT 从 50 ms 推到 100 ms。
+- 参考文献 [3] 是 "Performance study of adaptive routing algorithms for LEO satellite constellations under **Self-Similar and Poisson traffic**"（L348）——**这是本批唯一一条指向"业务到达过程建模"的引用**，说明作者知道这条线存在但没有走进去。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**本批唯一给出明确"包到达率"扫描轴的一篇**（10 → 100 packets/s，L243），因此方向上最贴题，但**证据强度最弱**：
+- **方向性事实（可引用）**：①**等待时延随发送速率单调上升**（L256）；②**丢包存在一个明显的拐点：速率 <40 packets/s 时两种算法丢包都极低，超过后都上升**，多路径显著更低（L263）；③吞吐随速率上升，多路径更高（L270）；④Q-routing 的平均传输时延随业务数上升而上升，且低于 Dijkstra（L317）。
+- **"负载换收益"的机制**：Q-routing 在业务量小时路径最大负载最低，Dijkstra 因反复使用最短路而负载最高（L306）——这与 R37BNQQ8、SBCHGBCP 的结论方向一致。
+- **但它对"到达率/时延"的可引用性很低**：所有数字都在图里、正文零数值；拓扑是 16 节点抽象图、无星座参数；没有排队模型；奖励权重人工切换。**那条 40 packets/s 的丢包拐点也无法换算成任何真实系统量纲。**
+- 一条元信息：它引用的 [3] 说明"LEO 星座在自相似与泊松业务下的路由性能"这条线早在 2000 年就有人做（L348），但本篇并未承接。
+
+**10. 一句话评价**
+**BFS 多路径 + 表格型 Q-learning 的工程拼装（MDPI Processes）**：它有本批唯一一条真正的"包到达率"扫描轴（10→100 packets/s，L243），方向对得上"负载变化下的到达率/时延"，但**16 节点抽象拓扑、无排队模型、无星座参数、正文零数值**使它的证据强度停在"趋势正确、幅度不可用"；在方法谱系上，它是"把已有的多路径与 Q-learning 各取一半拼起来，两者都没改"。
+
+
 
 
 
