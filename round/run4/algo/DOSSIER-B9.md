@@ -795,3 +795,82 @@ grep -r -a -c -i -E "<pat>" --include=*.md /data/liguang13/topic-loop-r2/md/
 5. **G-A 的教材级背书**：L6809 逐字提出 `structural credit assignment problem: which team members, or groups of team members, deserve credit for a favorable reward signal, or blame for an unfavorable reward signal?`，而 L6421 列出的**两条机制全部是时间维度的**。**教材在"按来源/成员分解功劳与责任"这一维度上停在提问——这是 G-A 的权威立足点。**
 
 ---
+
+## 5. 横切综合（四轴对照表）
+
+> 只做**登记**，不重复正文；每一格的行号见对应小节。「实测 0」表示该轴在原文中按 §2.1 的精确模式检索为 0 命中。
+
+| itemKey | 短名 | 网络级 vs 逐包 | 非平稳 | 部分可观测 | 信用分配机制 | 对 G-A 的态度 |
+|---|---|---|---|---|---|---|
+| 57EB6US5 | DQN | 固定动作集（L159），无掩码 | 回放只除样本相关（L189）；**非平稳实测 0** | 历史当状态（L161） | **单步 TD**（L180），无迹 | 反面：单标量奖励丢失幅度区分度（L145） |
+| TAUEF8PF | Double DQN | 动作数越多越乐观 | **非平稳被列为偏置来源**（L75） | **实测 0** | 单步 TD | 反面：估计误差"任何来源"都致偏（L75） |
+| JSX5XG88 | GAE | on-policy 批式 | λ<1 仅在 $V$ 不准时有偏（L176） | $V(s_t)$ 需状态 | **λ 控回溯 + 响应函数 $\chi$**（L230/233） | **正面工具**：$\chi(l;s,a)$ 可量化信用跨度 |
+| 9FLZ88LZ | QMIX | 需同步联合动作（L62） | 中心化可解但 $U^n$ 爆炸（L48） | DRQN（L86）+ Dec-POMDP 表示崩溃（L333） | **单调分解 + 混合网络**（L105/113/134） | 反面：单调性被"拥塞转移"破坏（L143） |
+| I2WH9RRR | ADQN | 训练用特权 $s$、执行用 $h$ | **实测 0** | **唯一系统处理的一篇**（L37–L79） | 单标量 $r$；**信用分配实测 0** | 中立：结构化最贴合 LEO，但不涉及原因分解 |
+| FGQSH4AI | MADDPG | critic 输入随 $N$ 线性增长（L240） | 条件化所有动作即平稳（L130） | critic 需全网观测（L115） | **每 agent 独立 critic + 任意奖励**（L113） | **反面设计**：把全局失败拆成 N 个局部标量 |
+| KPUZIMU5 | MAPPO | on-policy 批式 | clip 压制，**自述 we hypothesize**（L172/192） | **CTDE，非对称 critic**（L45） | **共享 $V_\phi(s)$ + 共享 $R$ + per-agent advantage**（L267） | **最强反例**：共享标量回报也能做 MARL |
+| 6C843JTS | TD(λ) | 预测而非控制 | 只对吸收马尔可夫链（L200） | **实测 0**（纯 MDP） | **资格迹 $e_{t+1}=\nabla P_{t+1}+\lambda e_t$**（L133） | **正面工具 + 反面**：信用 solely on temporal succession（L500），无因果 |
+| E4NYGLGX | Retrace(λ) | off-policy 安全回溯 | **对任意行为策略序列收敛，不需 GLIE**（L259） | **实测 0**（纯 MDP，L31） | **$c_s=\lambda\min(1,\pi/\mu)$**（L83） | 中立：解决"策略变了"的信用分配，不解决"原因" |
+| QGAREQUM | AD-RL | 延迟 = 跳数，可直接映射 | 定常 $\Delta$，未覆盖随机延迟（L78） | 需完整轨迹（L133） | **短延迟辅助任务 bootstrap 长延迟**（L157 eq3） | 中立：处理"延迟"，不处理"多原因" |
+| LJG6ZW7B | Sutton&Barto | MDP 框架 | **致命三元组**（L4588） | 信念状态（L7431）+ 明示不推荐（§17.3） | 资格迹 + TD 值函数（L6421），**均只针对时间** | **教材级背书**：structural credit assignment 只提问不给法（L6809） |
+
+**三句总结：**
+
+1. **信用分配维度**：11 篇里只有 3 篇真正在解决"把长延迟回报归到动作"（JSX5XG88 的 λ、E4NYGLGX 的 Retrace 迹截断、QGAREQUM 的辅助延迟 bootstrap），**全部沿"时间"轴**；只有 9FLZ88LZ / KPUZIMU5 / FGQSH4AI 处理"把团队回报归到成员"，**沿"成员"轴**。**没有任何一篇沿"原因"轴做分解。**
+2. **部分可观测维度**：只有 I2WH9RRR 系统处理；LJG6ZW7B 给出信念状态方案但明示不推荐；**其余 9 篇要么实测 0 命中，要么只做"历史拼接"或"非对称 critic"。**
+3. **非平稳维度**：只有 E4NYGLGX 的 Theorem 2/3 给出**对任意行为策略序列**的收敛保证。**其余全部是启发式（clip / 少 epoch / 回放）或明确否证（LJG6ZW7B L4588 致命三元组、FGQSH4AI L61）。**
+
+---
+
+## 6. 反例库（汇总：这 11 篇能反驳我们什么主张）
+
+> 每条格式：**我方候选主张** → **反驳者（行号）** → **原文依据** → **强度**。
+> 强度判据：**直接否证**（原文有定理或实测）/ **结构性障碍**（原文有自述局限或表示能力边界）/ **需要额外论证**（原文只给条件）。
+
+| # | 我方候选主张 | 反驳者（行号） | 原文依据 | 强度 |
+|---|---|---|---|---|
+| R1 | 「三要素齐上（函数近似+TD+回放）没问题，调参就行」 | LJG6ZW7B L4588 | the danger of instability and divergence arises whenever we combine all of the following three elements | **结构性障碍（教材级）** |
+| R2 | 「单步 TD 够用，奖励取自下一跳即可」 | JSX5XG88 A.2（L396） | the bias is prohibitively large when using a one-step estimate of the returns | **直接否证（原文实测）** |
+| R3 | 「Q 值偏高可以直接当策略质量的证据」 | TAUEF8PF L160 | Overoptimism does not always adversely affect the quality of the learned policy | **需要额外论证** |
+| R4 | 「用 Double DQN 就能治好 Q 值高估」 | TAUEF8PF L75 | estimation errors of any kind can induce an upward bias, regardless of whether these errors are due to environmental noise, function approximation, non-stationarity, or any other source | **结构性障碍** |
+| R5 | 「用经验回放能应对 LEO 拓扑非平稳」 | 57EB6US5 L189；FGQSH4AI L61 | 回放的三条理由全在样本相关性；MADDPG 给出回放失效的精确条件 $P(s'\|s,a,\pi) \neq P(s'\|s,a,\pi')$ | **直接否证** |
+| R6 | 「用 QMIX 做多星协同逐跳路由」 | 9FLZ88LZ L143 + L333 | 单调分解表示不了"agent 最优动作依赖他人同时间步动作"；Dec-POMDP 下连表示前提都可能不成立 | **直接否证** |
+| R7 | 「集中式 critic 能扩展到整个星座」 | FGQSH4AI L240 | the input space of Q grows linearly ... with the number of agents N | **结构性障碍（作者自述）** |
+| R8 | 「训练看全局、执行看局部，这个非对称近似没问题」 | I2WH9RRR L296 + L352 | state-only 变体 associated with fundamental theoretical issues，且 fail to outperform even the DQN baseline in most environments | **直接否证（原文实测）** |
+| R9 | 「非对称方法有最优性保证」 | I2WH9RRR L254 | The use of approximation sacrifices the optimal convergence guarantee | **直接否证** |
+| R10 | 「off-policy 修正用重要性采样就行」 | E4NYGLGX L241 | $\mathbb{V}(c) < 1/\gamma^2$ 是数值稳定必要条件，且 This rules out importance sampling | **直接否证（定量）** |
+| R11 | 「λ 是次要超参，随便设」 | E4NYGLGX §5 + LJG6ZW7B §12.13 | highly sensitive to the choice of λ；if the traces are so long ... performance degrades sharply | **直接否证（原文实测）** |
+| R12 | 「LEO 用仿真跑，所以资格迹值得上」 | LJG6ZW7B §12.13 | in o↵-line applications in which data can be generated cheaply, perhaps from an inexpensive simulation, then it often does not pay to use eligibility traces | **需要额外论证（反向压力）** |
+| R13 | 「长延迟只能靠大 λ / 长资格迹」 | QGAREQUM L157 eq3 + L192 | 用短延迟辅助任务 bootstrap 长延迟，样本效率提升 $\bar{\mathcal{O}}(\vert\mathcal{A}\vert^{\Delta-\Delta_\tau})$ | **提供替代方案** |
+| R14 | 「辅助延迟越小越好」 | QGAREQUM L194 / L341 / L345 | the relation between $\Delta _ { b e s t } ^ { \tau }$ and $\Delta$ is not linear or parabolic；且存在双向代价 | **直接否证** |
+| R15 | 「确定性环境的结论可外推到随机环境」 | QGAREQUM Remark 5.5 / 5.6 | 确定性下差为 0，随机下 the performance gap might become larger as the difference between $\Delta$ and $\Delta ^ { \tau }$ increases | **直接否证（条件分界）** |
+| R16 | 「LEO 目标全局，所以该用能表达冲突奖励的 MADDPG」 | FGQSH4AI L113 | MADDPG 的每 agent 独立 critic 允许 conflicting rewards，**与"共享失败原因"的目标相反** | **设计方向上的反例** |
+| R17 | 「标量奖励里加惩罚项来引导路由」 | LJG6ZW7B L1010 | the reward signal is not the place to impart to the agent prior knowledge about how to achieve what we want it to do ... the agent might find a way to achieve them without achieving the real goal | **需要额外论证（对 G-A 本身的反诘）** |
+| R18 | 「TD(λ) 能自动学会因果归因」 | 6C843JTS L500 | T D methods assign credit based solely on temporal succession | **直接否证** |
+| R19 | 「TD 类方法已被证明稳定收敛」 | 6C843JTS L198 | hitherto no TD method has ever been proved stable or convergent to the correct predictions（1988 年原文） | **历史性否证（条件必须补齐）** |
+| R20 | 「用更大 λ / 更长迹能解决 LEO 的信用分配」 | JSX5XG88 L176 | γ<1 **无条件**引入偏置；λ<1 仅在 $V$ 不准时有偏 —— 两者性质不同，不能混谈 | **需要额外论证** |
+
+**R17 需要特别标注**：它是**唯一一条直接对着 G-A 本身的反诘**。教材逐字警告「把 subgoal 写进奖励会让 agent 绕过真正的目标」。**G-A 若把"缓存溢出"与"队列溢出"各开一条惩罚通道，就等于往奖励信号里塞了两个 subgoal。** 这是 G-A 必须正面回答的质疑；本批 11 篇中**没有任何一篇提供了"分通道惩罚不会被钻空子"的保证**。最接近的是 39NJWBI7 的 primal-dual（**约束式而非惩罚式**，见 §3.2-C），但那是 T1 档，**且分解轴仍是 QoS 约束类型**。
+
+---
+
+## 7. 未完成项与后续动作（fail-loud）
+
+**本批未完成，逐条列出：**
+
+1. **6C843JTS §4（L241–487）未读** —— 这是 **TD(λ) 的收敛定理主体与最优学习率定理**。本报告对该篇「理论保证」的描述**只能基于 L196–240 的引论段与 L608–648 的附录定理陈述**，**不能支撑**：TD(λ) 的收敛速度结论；最优学习率 / 最优 λ 的定量结论；TD(λ) 与监督学习方法收敛速度的比较结论。**需要补读后才能写这类结论。**
+2. **JSX5XG88 §6（L272–361）未读** —— 本报告的 GAE「适用条件」**只有理论侧**，**没有实验侧**（哪个 λ 在什么任务上最好、样本量）。
+3. **9FLZ88LZ §6–§7（L162–246）未读** —— QMIX 的实验胜负数据本报告未登记。
+4. **KPUZIMU5 §4（L56–127）与 §B–§E 未读** —— MAPPO 在各 testbed 的胜负数据本报告未登记。
+5. **FGQSH4AI §5（L163–237）未读** —— MADDPG 的实验数据本报告未登记。
+6. **QGAREQUM §5.3（L246–294，收敛分析）与附录 A–D（L465–884）未读** —— AD-RL 的**收敛性定理本报告未验证**；$\Delta_{best}^\tau$ 的选取规律（附录 C）未读。
+7. **E4NYGLGX L293–691（References + 附录 A–F）未读** —— Retrace 的三个定理**只引用陈述，未复现证明**。
+8. **57EB6US5 L1–134 / TAUEF8PF L1–18 / I2WH9RRR L1–32, L373–429 未读**（标题/摘要/参考文献区）。
+9. **LJG6ZW7B 未读章节一律未下结论**；本报告只覆盖 §1、§3.2/3.3、§11.3、§12.1/12.2/12.13、§14.4、§15.10、§17.3 与 L3392 片段。
+
+**另有 2 处行号未 pin（已在正文标注，引用前须复核）：** TAUEF8PF 定理 2 的精确行号；6C843JTS 定理 2 与 eq (5) 的精确行号。
+
+**后续动作（建议次序）：**
+1. 补读 6C843JTS §4（L241–487）—— 这是本批唯一因未读而**无法下结论**的承重章节；补读后须更新 §4.8 第 2 项与 R19。
+2. 用 GAE 的响应函数 $\chi(l;s,a)$（JSX5XG88 L230/233）设计 LEO 仿真的**信用分配跨度实测** —— 这是本批最直接可复用的实验设计。
+3. 就 R17（LJG6ZW7B L1010 对"奖励里塞 subgoal"的警告）设计**证伪实验**：分通道惩罚是否诱发"为了满足通道而牺牲端到端目标"的行为。

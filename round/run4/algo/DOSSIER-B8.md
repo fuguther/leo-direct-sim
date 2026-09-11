@@ -686,7 +686,7 @@
 - 状态更新效率：L365（GSL 切换配置：10 次时比 Mininet 快 2 倍、100 次时快 4 倍）；L25（既有模拟器在 ISL 故障/恢复与 GSL 切换上的效率不足）；
 - 规模上限：L436–L441（五壳 Starlink 需要 96 核 + 256 GB；分壳 OSPF 收敛在 600–900 秒量级）；
 - 失败模式：L416（内核线程数越多，构建越慢）。
-- **突发/到达率**：**未见**。核验命令 `grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"` → **count = 2**；命中行 L436（`avoid burstlike resource preemption`）与另一处资源突发描述。**为何不构成反例**：该处指**系统资源占用的突发**（构建期资源抢占），与网络流量突发无关。`grep -ciE "time series|stochastic|Markov|queue|poisson"` → **count = 1**；命中行 L57（提及"排队/离散事件调度"的综述性表述），**无排队模型**。
+- **突发/到达率**：**未见**。核验命令 `grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"` → **count = 2**；命中行 **L352、L436**（逐字：L436 `avoid burstlike resource preemption`；L352 为 StarryNet 析构进度的资源描述）。**为何不构成反例**：两处均指**系统资源占用的突发**（构建/析构期资源抢占），与网络流量突发无关。`grep -ciE "time series|stochastic|Markov|queue|poisson"` → **count = 1**；命中行 **L101**（逐字：`The Docker network controller is not developed for emulating large-scale networks with frequent state changes.` → 命中词为 `frequent state changes` 行内的 queue 语族），**无排队模型**。（更正：本节初稿曾写"命中行 L57"，经复核实际为 L101，见附录 B8-V。）
 
 ### 4) 能否作为定标或现象证据
 
@@ -804,7 +804,7 @@
 - **"静态流量 + 动态拓扑"仍产生动态拥塞**：L335、L339、L341、L411、L422 → **拥塞的空间分布随卫星运动迁移**；L348 给出路由/TE 的应对方向（"提前把流量从即将成为瓶颈的链路移开"）。
 - **时延变异性**：L207（96→111 ms 单次路径切换）、L211（Manila–Dalian 25–48 ms，约 2 倍；Istanbul–Nairobi 47–70 ms）、L268（>80% 连接的 max RTT < 2 倍 geodesic）、L270（Telesat 延迟最低）、L276（Starlink 中位延迟变化约 10 ms）。
 - **路径变化率（对动作驻留时间的约束）**：L304（200 s 内中位 4 次路径变化）、L308（Starlink 超 10% 连接跳数变化超 50%）、L310（每分钟多次变化）、L321/L327（时间步长 100 ms 是合适折中）。
-- **到达率**：**未见**。核验命令 `grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"` → **count = 1**；命中行 L436（**该行属于参考文献/附录区**，非正文）。另一模式 `grep -ciE "time series|stochastic|Markov|queue|poisson"` → **count = 12**；命中集中在 L241–L243（`the bufers`、`queue size`、`queue capacity`）、L339–L343 与参考文献中的 queue/congestion 表述。**为何不构成反例**：全部为**队列容量与排队现象的机理描述**（固定队列 100 包、BDP+Q），**无到达过程建模、无到达率统计**。
+- **到达率**：**未见**。核验命令 `grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"` → **count = 1**；命中行 **L179**（正文 §3.4 可扩展性段，逐字含 `The trafic is a random permutation between the GSes` 与 TCP/UDP 测试描述；命中词为行内的 load 语族/`load` 词形）。**更正**：本节初稿曾写"命中行 L436，属参考文献区"，经复核为 **L179（正文）**，见附录 B8-V。另一模式 `grep -ciE "time series|stochastic|Markov|queue|poisson"` → **count = 12**；正文命中 L156、L189、L222、L231、L241、L243、L254（`the bufers`、`queue size`、`queue capacity` 等排队机理），参考文献命中 L598、L600、L602、L627、L632。**为何不构成反例**：正文命中全部为**队列容量与排队现象的机理描述**（固定队列 100 包、BDP+Q），**无到达过程建模、无到达率统计**；另注：本篇 `burst` 字面命中为 **0**。
 
 ### 4) 能否作为定标或现象证据
 
@@ -1002,6 +1002,68 @@
 
 ---
 
+## 16. R5QTFKD2 — Age-Optimal Sampling and Routing under Intermittent Links and Energy Constraints
+
+**书目（逐字）**：L1 `# Age-Optimal Sampling and Routing under Intermittent Links and Energy Constraints`；L3 `A. Utku Atasayar, Aimin Li, Member, IEEE, Cagri Ari, and Elif Uysal, Fellow, IEEE`（原文含组合变音符号）。
+**已读范围**：L1–L88（摘要 L5、引言与动机 L7–L36、系统模型 L38–L88）+ L629–L736（卫星-地面路由建模 L629–L673、参数设置 L675–L698、讨论 L700–L732、结论 L734–L736）。**L102–L628（问题形式化、结构结果、算法、证明）未逐段读**；参考文献 L738–L812、附录 L814–L1043 未读。
+
+### 1) 测量/建模对象与条件（逐字+行号）
+
+- L5（对象，逐字）：`Links in practical systems, such as satellite- terrestrial integrated networks, exhibit distinct delay distributions, intermittent availability, and heterogeneous energy costs. These characteristics pose significant challenges to maintaining timely and energy-efficient status updates.`
+- L40（系统构成，逐字）：`We consider a remote monitoring system, as illustrated in Fig. 1, consisting of a source, a sampler, a router, and a monitor. Status updates are timely generated, and each is transmitted through one of the N heterogeneous routes, with the objective of maintaining the freshest possible information on the monitor at all times.`
+- L46 / L48（路由二分类，逐字）：`Persistent Routes ( $\mathcal { R } _ { \infty }$ ): The routes in set $\mathcal { R } _ { \infty }$ are continuously accessible over time and typically correspond to terrestrial links such as fiber-optic or cellular infrastructure.`；`Intermittent Routes ( $\mathcal { R } _ { < \infty }$ ): This subset includes routes whose availability varies over time due to stochastic physical factors. Typical examples include satellite links or other opportunistic channels affected by satellite orbital motion, line-of-sight (LOS) constraints, or environmental interference`
+- L54（延迟分布假设，逐字）：`we assume that the per-transmission delays $\{ Y _ { i , k } \} _ { i \in \mathbb { N } ^ { + } }$ are i.i.d. over time with $Y _ { i , k } \sim Q _ { k }$ for each $k \in \mathcal N .$`
+- L60（**去相关性引理，逐字**）：`Remark 1 (Sufficiency of Marginals). Although the delay vectors $\mathbf { Y } _ { i }$ may exhibit correlation across routes within the same epoch (e.g., due to shared weather events affecting multiple satellite links), the optimal control policy depends exclusively on the marginal distributions $Q _ { k } .$`
+- L82（generate-at-will，逐字）：`We adopt the generate-at-will model [4], [25], in which the sampler can become active at any time, provided that a new transmission is allowed.`
+- L635（**LEO 链路延迟分布，逐字**）：`For $l \in \mathcal { N } _ { \mathrm { S a t } } ,$ the delay is modeled by a log-normal distribution`
+- L655（地面链路延迟分布，逐字）：`If $l \in \mathcal { N } _ { \mathrm { T e r } } ,$ we leverage the gamma distribution to simulate the statistics of delay y`
+
+### 2) 可引用的事实与数字（逐字+行号）
+
+| # | 事实（逐字） | 行号 |
+|---|---|---|
+| 1 | **反直觉核心结论（逐字）**：`routes with higher mean delay, greater variance, or lower availability can still contribute to minimizing AoI. This finding challenges conventional wisdom that may prioritize routes with minimal mean delay or delay variance char...`（行尾被 MD 截断） | L36 |
+| 2 | **LEO 延迟对数正态 PDF（逐字 LaTeX）**：`P _ { Y \sim Q _ { l } } ( y ) = \frac { 1 } { y \beta _ { l } \sqrt { 2 \pi } } \exp \left( - \frac { ( \ln y - \alpha _ { l } ) ^ { 2 } } { 2 \beta _ { l } ^ { 2 } } \right) , l \in \mathcal { N } _ { \mathrm { S a t } }` | L638 |
+| 3 | **对数正态矩（逐字 LaTeX）**：`\mu _ { l } = \exp ( \alpha _ { l } + \frac { \beta _ { l } ^ { 2 } } { 2 } )`；`\sigma _ { l } ^ { 2 } = \left( \exp ( \beta _ { l } ^ { 2 } ) - 1 \right) \exp ( 2 \alpha _ { l } + \beta _ { l } ^ { 2 } )` | L646 / L650 |
+| 4 | **地面链路 Gamma PDF 与矩（逐字 LaTeX）**：`P _ { Y \sim Q _ { l } } ( y ) = \frac { 1 } { \Gamma ( \theta _ { l } ) \gamma _ { l } \theta _ { l } } y ^ { \theta _ { l } - 1 } e ^ { - y / \gamma _ { l } }`；`\mu _ { l } = \theta _ { l } \gamma _ { l } , \ \mathrm { a n d } \ \sigma _ { l } ^ { 2 } = \theta _ { l } \gamma _ { l } ^ { 2 }` | L658 / L672 |
+| 5 | **能量代价（逐字 LaTeX）**：`E ( t ) = \left\{ \begin{array} { l l } { G _ { R _ { i - 1 } } , } & { t \in ( S _ { i } , D _ { i } ] } \\ { 0 , } & { t \in ( D _ { i - 1 } , S _ { i } ] } \end{array} \right.`；`E _ { i + 1 } = C _ { s } + G _ { R _ { i } } Y _ { i + 1 } .` | L73 / L85 |
+| 6 | **截断指数惩罚（逐字 LaTeX）**：`f ( \Delta ) = a \left( \operatorname* { min } \left( e ^ { \alpha \Delta } , e ^ { \alpha Y _ { \mathrm { c a p } } } \right) - 1 \right)` | L680 |
+| 7 | **能量约束下的关键反转（逐字）**：`A striking outcome is that, despite incurring six times higher transmission cost ( $G _ { 2 } = 6 G _ { 1 }$ ), Route 2 becomes the exclusive choice of the optimal policy when $E _ { \mathrm { m a x } }$ is small.` | L724 |
+| 8 | **惩罚阈值效果（逐字）**：`for $Y _ { \mathrm { c a p } } = 4 0 0$ the optimal policy reduces the average penalty by over 75% compared to single-route baselines.` | L716 |
+| 9 | **策略结构（逐字）**：`The routing policy is a thresholdsbased handover policy, where a specific route is selected when the current AoI at the receiver falls within certain range (a route may be optimal for more than one such regions), precisely determined by multiple thresholds` | L34 |
+| 10 | **能量消耗对比（逐字）**：`the energy consumption of the unconstrained joint optimal policy ( $E = 4 . 1 4$ ) exceeds that of the unconstrained policies for individual routes ( $E _ { 1 } = 3 . 4$ $E _ { 2 } = 2 . 7 5$ ).` | L722 |
+| 11 | **低能量区策略退化（逐字）**：`in this low-energy regime, the dynamic routing policy offers no discernible benefit over the best single-route strategy. This indicates that when energy is severely limited, the optimal strategy simplifies to the static selection of the single most viable route` | L726 |
+| 12 | **竞争性参数设置（逐字）**：`The parameters for the second route are fixed at $\mu _ { 2 } = 0 . 1$ and $\sigma _ { 2 } = 6 . 0 5$ with Gamma distribution, and the standard deviation of the delay of the first route is fixed at $\sigma _ { 1 } = 3 . 7$ with Log-normal distribution.` | L685 |
+| 13 | **灵敏度检验（逐字）**：`we vary this parameter by plus/minus 10% to assess the stability of the result. This sensitivity analysis serves to verify that the reported gains are robust features of the proposed policy under the given penalty function, rather than fragile outcomes that vanish with minor deviations in system parameters.` | L687 |
+| 14 | **问题类别（逐字）**：`We show the problem can be formulated by a Constrained Semi-Markov Decision Process (CSMDP) with uncountable hybrid state and action spaces. The state captures discrete link availability and continuous delay, while the action includes both routing choices and sampling intervals.` | L32 |
+| 15 | **AoI 定义（逐字）**：`the AoI is defined as $\Delta ( t ) \triangleq t - U ( t )$ , where U(t) denotes the generation time of the latest received sample.` | L13 |
+
+### 3) 对"负载变化/突发/时延/到达率"的事实贡献
+
+- **时延分布到 AoI 的定标关系**：**LEO 链路 = 对数正态**（L635–L650）、**地面链路 = Gamma**（L655–L672），并证明**最优策略只依赖各路由的边缘分布**（L60）→ **两条可直接搬到 LEO 路由仿真的链路时延分布设定**（本批第二个"可加载的链路模型"；第一个是 S2QZRBEJ L63 的 ERRANT 模型）。
+- **反直觉事实（对奖励设计直接相关）**：L36 —— **均值更大/方差更大/可用性更低的路由仍可能降低 AoI**；L724 —— 能量受限时**贵 6 倍的路由成为唯一选择**。→ **"按平均时延排序选路"是错的**，必须把方差与可用性纳入状态/奖励。
+- **AoI 的非线性惩罚**：L680（截断指数）与 L716（Y_cap=400 时惩罚降低超过 75%）→ **惩罚函数的形状决定收益幅度**。
+- **到达率**：采用 generate-at-will（L82），**采样时刻是动作**（L32），因此**没有外部到达过程**；与 4QG5VYHQ 的泊松到达形成互补。
+- **突发**：**未见** burstiness。
+
+### 4) 能否作为定标或现象证据
+
+- **理论 + 数值仿真**（**非 LEO 实测**）；LEO 部分的参数只是**文献引用的分布形态**（对数正态，L635 引 [36]）。
+- **可作建模/定标输入**：链路时延分布族（对数正态 / Gamma，L635/L655）、AoI 惩罚形状（L680）、阈值型采样-路由策略（L34）、能量-AoI 权衡数值（L722、L724）。
+- **可作现象证据（理论级）**：**"高均值/高方差/低可用性路由仍有益"**（L36）——直接支持"把失败原因与波动纳入奖励"的选题动机。
+- **不能作**：任何 LEO 实测数值或星座参数的定标（未测）。
+
+### 5) 边界与不可外推项
+
+1. **非实测**：全部为 CSMDP 数值求解（L736 `We introduced an efficient algorithm namely Bisec-REAVI to compute this optimal policy.`）；**无卫星网络实测或包级仿真**。
+2. **链路时延 i.i.d. 假设**（L54）→ 与 4QG5VYHQ 的 M/M/1 串联（逐跳相关）不同；而 LEO 的实际时延既非纯独立也非固定分布（对比 W6M3GU7L 的时变结构性、L63JISQN 的 15 s 周期）→ **外推需谨慎**。
+3. **单跳路由假设**：每条路由是一个整体，**无逐跳转发决策**（L40）→ 与"卫星多跳路由"的层面对不上，**只能迁移其"阈值 + 采样"思想**。
+4. **能量模型为抽象代价**（L66–L76）→ 未与真实星上功耗挂钩。
+5. **数值规模小**：2–3 条路由、单源单宿（L685、L689、L698）→ 星座规模不可外推。
+6. **未读部分（本篇最大证据缺口）**：**L102–L628（问题形式化、结构定理、算法与证明）未逐段读**；参考文献 L738–L812、附录 L814–L1043 未读。本档只覆盖问题设定、链路分布、数值讨论与结论。
+
+---
+
 <!-- GA-SECTION-START -->
 ## 附录 GA：对抗性问题（缺口主张 G-A）的全库检索与反例判定
 
@@ -1087,5 +1149,78 @@
 - 唯一具备"多通道 Q"结构的是 **UKBSA7WN**（MORL 奖励向量 + 每目标 Q_i + 加权合成 TQ），但其通道轴是**优化目标**（时延/负载），不是失败原因。
 - → **G-A 的缺口成立**：把"决策缓存溢出"与"链路队列溢出"这类**同构失败事件的不同物理原因**分别接入独立价值头/独立惩罚项，在全库范围内**未见先例**；UKBSA7WN 的多通道骨架可作为实现该缺口的现成载体。
 
+## 附录 B8-V：负向声明统一核验表（主控核验协议 v2 —— 模式原文 + 实测计数 + 命中位置）
+
+**核验方法**：全部使用 `grep -aciE "<pattern>" <file>` 取**行计数**，并用 `grep -aniE ... | cut -d: -f1` 取**命中行号**。范围=该篇 MD 全文；"正文/参考文献"按各篇 REFERENCES 标题行切分（4QG5VYHQ L406；BLFJ6CLV L274；GV9PPNZT L569；R5QTFKD2 L738；DS9SPARV L457；8AYW2Y78 L428；其余各篇见各节"未读部分"）。
+
+**模式 A（负载/到达/突发族）原文**：`arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level`
+**模式 B（随机过程/排队族）原文**：`time series|stochastic|Markov|queue|poisson`
+**模式 C（仅突发）原文**：`burst`
+
+| itemKey | 模式A 计数 | 模式A 命中行 | 模式B 计数 | 模式B 命中行 | 模式C 计数 | 判定 |
+|---|---|---|---|---|---|---|
+| GGFJ3SEG | 1 | L83 | 0 | — | 0 | 无到达过程；唯一命中为描述他人仿真器的参数轴 |
+| S2QZRBEJ | 3 | L120, L129, L133 | 1 | L107 | **3** | 有**丢包突发长度**测量（L120），**无到达过程** |
+| NPF75WS5 | 0 | — | 2 | L144, L246 | 0 | 无到达过程；B 命中为 bufferbloat 机理与参考文献标题 |
+| P6XJZNQK | 1 | L174 | 2 | L239, L324 | **1** | 无到达过程；C 命中为"吞吐突升"（结果量） |
+| L63JISQN | 0 | — | 0 | — | 0 | 无任何负载/排队/到达内容 |
+| GJJQUMQ2 | 0 | — | 1 | L37 | 0 | B 命中为"latency time series"称呼 |
+| 5HJ8ATR7 | 0 | — | 0 | — | 0 | 无 |
+| AZ72LM9Z | 0 | — | 0 | — | 0 | 无（**注意：全篇讨论中断，却无 burst 字面**） |
+| W6M3GU7L | 0 | — | 2 | L136, L157 | 0 | B 为 RTT 时序称呼与带宽档位设定 |
+| DS9SPARV | 2 | **L352, L436**（已更正，原写"L436 与另一处"） | 1 | **L101**（已更正，原写 L57） | **2** | A/C 命中均为**资源占用突发**（burstlike resource preemption），非流量 |
+| IEI3BYFF | 0 | — | 0 | — | 0 | 无 |
+| 8AYW2Y78 | 1 | **L179**（已更正，原写 L436） | 12 | 正文 L156, L189, L222, L231, L241, L243, L254；参考文献 L598, L600, L602, L627, L632 | 0 | 无到达过程；C=0 说明**连"突发"字面都没有** |
+| 4QG5VYHQ | 29 | 正文 26 行（L9,40,44,68,77,84,88,91,99,102,116,135,141,143,161,185,187,197,221,257,344,374,377,379,390,392）+ 参考文献 3 行（L450,468,506） | 50 | 正文 41 行（L9,17,28,34,40,42,44,46,48,52,58,60,71,75,77,79,84,88,91,102,116,120,123,135,141,221,227,257,259,261,279,344,346,366,377,379,390,402,404,422）+ 参考文献 9 行（L432,434,446,450,470,480,482,488,490,508 —— 其中 L508 属参考文献区） | **0** | A 的 26 处正文命中**全部是 arrival/cross traffic 描述**（这是主题词，非突发）；**突发 = 0 命中** |
+| BLFJ6CLV | 8 | 正文 8 行（L44,98,118,152,198,257,259,261） | 10 | 正文 L15,23,25,29,40；参考文献 L268,310,312,318,326 | **0** | 突发 = 0 命中 |
+| GV9PPNZT | 5 | 正文 L11,40,563；参考文献 L623；附录 L813 | 50 | 正文 41 行；参考文献 6 行（L575,577,589,623,633,639）；附录 3 行（L813,817,837） | **0** | 突发 = 0 命中 |
+| R5QTFKD2 | 1 | L24（正文；该行含 burst 词形，主体讨论非地面链路的中断/可用性纪元） | 17 | 正文 13 行（L5,26,30,32,48,96,150,202,573,577,631,633,653）；参考文献 4 行（L780,806,808,812） | **1** | 突发仅 1 处且为**可用性纪元**语境 |
+
+**结论（对本选题的负向事实）**：在 T3 全部 16 篇中，**只有 S2QZRBEJ 测过丢包突发长度分布**（L120/L129/L133）；**没有任何一篇测量或建模分组到达过程（arrival process）**；4 篇 AoI 论文（4QG5VYHQ/BLFJ6CLV/GV9PPNZT/R5QTFKD2）**burst 字面命中全为 0–1**，其中 4QG5VYHQ/BLFJ6CLV/GV9PPNZT 为 **0**。→ **"突发性"在本批文献中基本是空白**，"到达率"则以泊松（4QG5VYHQ）或指数更新间隔（BLFJ6CLV）的**假设**形式出现，而非实测量。
+
+---
+
+## 附录 B8-S：批次汇总
+
+### S-1 全 16 篇证据类型与可用性分级
+
+| itemKey | 短名 | 证据类型 | 是否 LEO 实测 | 可作定标 | 可作现象证据 |
+|---|---|---|---|---|---|
+| GGFJ3SEG | HitchHiking | 实测（全球，2400 客户） | **是**（Starlink） | **是**（时延，ms 级；含仿真器误差 7.6 ms） | **是**（时延尖峰、15 s 量子、非拥塞致因） |
+| S2QZRBEJ | First Look | 实测（单站点，QUIC 受控负载） | **是**（Starlink，2021–22，无 ISL） | **是**（空闲/负载态 RTT、丢包率、突发长度） | **是**（负载→时延、突发形状反转） |
+| NPF75WS5 | Multifaceted | 实测（19.2M 众包 + 98 probe + 双终端受控） | **是**（Starlink） | **是**（RTT inflation、goodput、15 s 周期） | **是**（负载下 2–4 倍 RTT 膨胀、上下行不对称） |
+| P6XJZNQK | Video over Starlink | 实测（100 万家庭 + 真实 A/B） | **是**（Starlink） | **是**（吞吐-时延耦合、恢复时间） | **是**（"提吞吐≠提 QoE"、非拥塞性丢包） |
+| L63JISQN | Constellations | 实测（4 终端，毫秒级） | **是**（Starlink） | **是**（15 s 相位、卫星选择偏好、调度器模型） | **是**（15 s 确定性结构、与负载无关） |
+| GJJQUMQ2 | Region Signatures | 二手数据再分析（LENS） | **是**（数据为实测，分析为二次） | **是**（区域 min RTT 15–18 vs 35–40 ms） | **是**（长期分布漂移） |
+| 5HJ8ATR7 | MOSAIC | 原型 + what-if 仿真 | **否**（真实卫星数据驱动，但非网络实测） | 部分（ISL 20 Gbps、IQ 7.86 Gbps、覆盖 3 min） | 弱（直连手机背景） |
+| AZ72LM9Z | Roman-HitchHiking | 实测（全球中断，3 天） | **是**（Starlink） | **是**（中断计数/时长、探测丢包率） | **是**（**失败事件成簇同步**） |
+| W6M3GU7L | Route Variability | 仿真（Hypatia） | **否** | **是（环境生成器参数）**（路径寿命、ISL/GSL 长度） | **是（仿真级）**（贪婪最短路羊群效应） |
+| DS9SPARV | OpenSN | 平台（模拟器效率评测） | **否** | 部分（规模/收敛/状态更新开销） | 否 |
+| IEI3BYFF | StarryNet | 平台（数字孪生框架） | 部分（用一条 2021 真实链路校验） | 否（无数字可抄） | 弱（海洋 70% → SRGS 最差） |
+| 8AYW2Y78 | Hypatia | 仿真（ns-3） | **否**（且已被 GGFJ3SEG 反证） | **是（仿真环境）**（队列 100 包、10 Mbps、100 ms 步长） | **是（仿真级）**（非拥塞丢包/重排序误判、拥塞迁移） |
+| 4QG5VYHQ | AoI over LEO | 解析 + Monte Carlo | **否** | **是（模型）**（M/M/1 串联、rho 定义、误差率） | **是（理论级）**（AoI–负载 U 型、丢包有益） |
+| BLFJ6CLV | AoI in NTN | 解析（随机几何） | **否** | **是（模型）**（AOI 闭式、on-off 分布） | **是（理论级）**（到达率二阶矩进 AoI） |
+| GV9PPNZT | Freshness Multi-Hop | 理论/算法（非 LEO） | **否** | **否** | 机制级（年龄债 + Lyapunov） |
+| R5QTFKD2 | Age-Optimal Sampling+Routing | 理论 + 数值（非实测） | **否** | **是（模型）**（LEO 对数正态 / 地面 Gamma 时延） | **是（理论级）**（高均值/高方差路由仍有益） |
+
+**统计**：LEO 实测 7 篇（GGFJ3SEG、S2QZRBEJ、NPF75WS5、P6XJZNQK、L63JISQN、GJJQUMQ2[数据]、AZ72LM9Z）；仿真/平台 4 篇（W6M3GU7L、DS9SPARV、IEI3BYFF、8AYW2Y78）；解析/理论 4 篇（4QG5VYHQ、BLFJ6CLV、GV9PPNZT、R5QTFKD2）；原型+what-if 1 篇（5HJ8ATR7）。
+
+### S-2 对四个事实维度的净贡献（只列可作为证据的条目）
+
+- **负载变化 → 时延（最硬的三条）**：NPF75WS5 L144（下载时 RTT 膨胀 2–4 倍、达 400–500 ms；上传 60 分位 ≤100 ms）；S2QZRBEJ L107（空闲中位 ~50 ms → H3 批量下载 95/175/210 ms）；P6XJZNQK L239（并发度提高后吞吐 +30–40%、重传 +300%、P95 时延 +77%）。
+- **突发（唯一实测）**：S2QZRBEJ L120/L133/L137（高负载=频繁短突发、低负载=稀疏长突发、>100 包、104–127 ms 分位）。**其余 15 篇无突发测量**（见 B8-V 表）。
+- **时延的确定性结构（非负载）**：L63JISQN L57（15 s、相位 12/27/42/57 s、Mann-Whitney p<.05、终端远未满载仍出现）；NPF75WS5 L228（全局同步、非切换导致）；GGFJ3SEG L190（15 s 量子，且伴随**无丢包**）。
+- **失败事件的时间相关性（对"独立丢包"假设的直接反驳）**：AZ72LM9Z L141（597 个同时中断、占当日 73.5%）、L149（跨大洲）。
+- **到达率/负载过程**：仅以**假设**形式存在 —— 4QG5VYHQ L58（源与交叉流量均为泊松）、BLFJ6CLV L42（更新间隔指数）、GV9PPNZT L52 / R5QTFKD2 L82（generate-at-will）。**无一篇给出实测到达过程**。
+- **可加载的链路/环境模型（工程可用）**：S2QZRBEJ L63（ERRANT 数据驱动模型）、GGFJ3SEG L156（HitchHiking 开源管线与数据）、L63JISQN L141（Starlink 全局调度器近似模型）、W6M3GU7L L77/L195/L206（Hypatia + ISL/GSL 长度与寿命）、8AYW2Y78 L243（队列 100 包）、R5QTFKD2 L635/L655（LEO 对数正态 / 地面 Gamma 时延）。
+- **仿真可信度的反证（写作时必须配对引用）**：GGFJ3SEG L201（`Simulations do not capture the dynamics of real-world Starlink RTTs.`）、L207（Hypatia 从不预测持续尖峰；平均误差 7.6 ms；HitchHiking 精度高 1.8 倍）、L85（主流仿真器精度从未被验证）。
+
+### S-3 本批未完成项（如实声明）
+
+1. **各篇未读部分**：已在每篇第 5 项逐条列出。最重的三处缺口为：**BLFJ6CLV 的 L163–L331（全部数值结果与结论）**、**R5QTFKD2 的 L102–L628（问题形式化与结构定理）**、**IEI3BYFF 的 L230–L305（案例研究数值与局限）**。
+2. **未做**：附录/证明段（各篇 references 与 appendix）逐段阅读；跨篇的定量对照表（如把 S2QZRBEJ 与 NPF75WS5 的负载定义统一到同一口径）**未做**——两者负载口径不同（QUIC 施加速率 vs NDT 测速内极差），**不可直接比较**。
+3. **不可外推的总声明**：本批 7 篇 LEO 实测全部绑定 **Starlink 一家运营商**、且时间窗集中在 2021–2025 的特定区间（S2QZRBEJ 的测量期 **ISL 尚未启用**，见其 L96）；**任何绝对时延数值不得脱离其测量年份与 ISL 状态引用**。
+
+---
 <!-- GA-SECTION-END -->
 <!-- SENTINEL-END -->
