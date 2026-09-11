@@ -534,3 +534,264 @@ grep -r -a -c -i -E "<pat>" --include=*.md /data/liguang13/topic-loop-r2/md/
 4. **正面反例（借力）**：L61 给出**经验回放在多智能体下失效的精确条件**：$P(s'|s,a,\pi_1..\pi_N) \neq P(s'|s,a,\pi_1'..\pi_N')$。**这个不等式在 LEO 里逐字成立** → **直接移植 MADDPG 的回放池会踩这个坑**。
 
 ---
+
+### 4.7 KPUZIMU5 — MAPPO（Yu et al., NeurIPS 2022）
+
+**1) 机制（公式逐字 + 行号）**
+
+- **问题设定（L41 逐字）**：`We study decentralized partially observable Markov decision processes (DEC-POMDP) with shared rewards. A DEC-POMDP is defined by $\langle \mathcal { S } , \mathcal { A } , O , R , \bar { P } , n , \gamma \rangle$ .`
+- **共享回报目标（L43 逐字）**：`Agents use a policy $\pi _ { \boldsymbol { \theta } } ( a _ { i } | \boldsymbol { o } _ { i } )$ parameterized by θ to produce an action $a _ { i }$ from the local observation $o _ { i }$ and jointly optimize the discounted accumulated reward $J ( \theta ) = \mathbb { E } _ { A ^ { t } , s ^ { t } } \left[ \sum _ { t } \gamma ^ { t } R ( s ^ { t } , A ^ { t } ) \right]$`
+- **MAPPO vs IPPO（L45 逐字）**：`$V _ { \phi } ( s )$ is used for variance reduction and is only utilized during training; hence, it can take as input extra global information not present in the agent's local observation, allowing PPO in multi-agent domains to follow the CTDE structure. For clarity, we refer to PPO with centralized value function inputs as MAPPO (Multi-Agent PPO), and PPO with local inputs for both the policy and value function as IPPO (Independent PPO).`
+- **actor 目标（L267 逐字）**：`The actor network is trained to maximize the objective`
+  `$$L ( \theta ) { = } [ \frac { 1 } { B n } \sum _ { i = 1 } ^ { B } \sum _ { k = 1 } ^ { n } \operatorname* { m i n } ( r _ { \theta , i } ^ { ( k ) } A _ { i } ^ { ( k ) } , \mathrm { c l i p } ( r _ { \theta , i } ^ { ( k ) } , 1 - \epsilon , 1 + \epsilon ) A _ { i } ^ { ( k ) } ) ] + \sigma \frac { 1 } { B n } \sum _ { i = 1 } ^ { B } \sum _ { k = 1 } ^ { n } S [ \pi _ { \theta } ( o _ { i } ^ { ( k ) } ) ) ]$$`
+  其中 `$\begin{array} { r } { r _ { \theta , i } ^ { ( k ) } = \frac { \pi _ { \theta } ( a _ { i } ^ { ( k ) } | o _ { i } ^ { ( k ) } ) } { \pi _ { \theta _ { o l d } } ( a _ { i } ^ { ( k ) } | o _ { i } ^ { ( k ) } ) } . ~ A _ { i } ^ { ( k ) } } \end{array}$ is computed using the GAE method, S is the policy entropy, and σ is the entropy coefficient hyperparameter.`
+- **critic 损失（L289 逐字）**：`The critic network is trained to minimize the loss function`
+  `$$L ( \phi ) = \frac { 1 } { B n } \sum _ { i = 1 } ^ { B } \sum _ { k = 1 } ^ { n } ( \operatorname* { m a x } [ ( V _ { \phi } ( s _ { i } ^ { ( k ) } ) - \hat { R } _ { i } ) ^ { 2 } , ( \operatorname { c l i p } ( V _ { \phi } ( s _ { i } ^ { ( k ) } ) , V _ { \phi _ { o u l } } ( s _ { i } ^ { ( k ) } ) - \varepsilon , V _ { \phi _ { o u l } } ( s _ { i } ^ { ( k ) } ) + \varepsilon ) - \hat { R } _ { i } ) ^ { 2 } ] ,$$`
+  `[OCR: "V_{\phi_{oul}}" 应为 "V_{\phi_{old}}"]`；`where $\hat { R } _ { i }$ is the discounted reward-to-go.`
+- **参数共享（L51 逐字）**：`In benchmark environments with homogeneous agents (i.e. agents have identical observation and action spaces), we utilize parameter sharing`
+- **GAE（L53 逐字）**：`We also adopt common practices in implementing PPO, including Generalized Advantage Estimation (GAE) [29] with advantage normalization and valueclipping.`
+- **死亡掩码（L337 逐字，C.3 标题）**：`Death Masking`；L344：`Justification of Death Masking Let $\mathbf { 0 } _ { a }$ be a zero vector with agent a's agent ID...` —— **把"该 agent 已死"这一状态在输入/损失中显式屏蔽**，是本批与本项目最接近"结构化屏蔽"的机制。
+
+**2) 适用条件与理论保证**
+
+- **无新定理**：本篇是**经验性再评估**，非新算法。原文自述（L216 逐字）：`This work demonstrates that PPO, an on-policy policy gradient RL algorithm, achieves strong results in both final returns and sample efficiency that are comparable to the state-of-the-art methods on a variety of cooperative multi-agent challenges, which suggests that properly configured PPO can be a competitive baseline for cooperative MARL tasks.`
+- **五条超参发现（原文自加粗的 Suggestion）**：
+  - L133 逐字：`We find that using value normalization never hurts training and often improves the final performance of MAPPO significantly.` → `Suggestion 1: Utilize value normalization to stabilize value learning.`
+  - L159 逐字：`Suggestion 2: When available, include both local, agent-specific features and global features in the value function input. Also check that these features do not unnecessarily increase the input dimension.`
+  - L172 逐字：`in multi-agent domains, MAPPO's performance degrades when samples are re-used too often. Thus, we use 15 epochs for easy tasks, and 10 or 5 epochs for difficult tasks. We hypothesize that this pattern could be a consequence of non-stationarity in MARL` → `Suggestion 3: Use at most 10 training epochs on difficult environments and 15 training epochs on easy environments. Additionally, avoid splitting data into mini-batches.`
+  - L192 逐字：`we hypothesize that policy and value clipping can limit the non-stationarity which is a result of the agents' policies changing during training` → `Suggestion 4: For the best PPO performance, maintain a clipping ratio under 0.2`
+  - L214 逐字：`Suggestion 5: Utilize a large batch size to achieve best task performance with MAPPO. Then, tune the batch size to optimize for sample-efficiency.`
+- **非平稳的处理方式（关键）**：本篇**不解析非平稳，而是用"限制每次更新策略变化幅度"来压制它**（L172、L192）。**这是启发式的，原文自己用的是 "we hypothesize"。**
+
+**3) 迁移到 LEO 逐跳路由的条件与障碍** `[外推]`
+
+| 轴 | 条件 | 障碍 |
+|---|---|---|
+| 网络级 vs 逐包决策 | MAPPO 是 **on-policy 批式**：采一批轨迹→更新→丢掉 | L168 逐字：`PPO samples a batch of on-policy trajectories ... the accumulation of the batch is constrained by the amount of available compute and memory`。**LEO 逐包仿真里"一批轨迹"= 一批包的完整路径；包连续到达，没有天然的 episode 边界** |
+| 非平稳 | 用 clip（ε<0.2）+ 少 epoch 压制 | **原文自己的假设（L172/L192）是 "we hypothesize"**，不是定理。且 L192 明说 clip 只能**限制**（`limit`），不能消除 |
+| 部分可观测 | **MAPPO 的核心设计就是非对称 critic**（L45） | **条件良好**。但 L147 逐字指出取值风险：`using the CL state, which is much higher dimensional than the other global states, is ineffective, particularly in maps with many agents` —— **LEO 星座规模下，把全局状态直接拼接进 critic 会重蹈 CL state 的覆辙** |
+| 信用分配 | actor 更新用 $A_i^{(k)}$（per-agent 优势） | **条件成立且是原文做法**（L267 的损失对 $i=1..B$、$k=1..n$ 双层求和）。**但每 agent 的优势来自同一个共享 $V_\phi(s)$ 与同一个共享 $R$**，**没有按失败原因分通道**（`grep -a -c -i -E "credit assignment|reward decompos"` 实测 **0**） |
+
+**4) 作为反例的价值**
+
+1. **反驳「必须用 off-policy 才能省样本」**：L216 逐字 `properly configured PPO can be a competitive baseline`。
+2. **反驳「超参是次要的」**：整篇结论就是**同一算法在五组超参下的表现差异巨大**（L172 逐字：`when using 4 mini-batches, MAPPO fails to solve any of the selected maps while using 1 mini-batch produces the best performance on 22/23 maps`）。**任何 LEO 路由算法报告若不做同等的超参敏感性分析，其"效果好"的证据强度不足。**
+3. **反驳「多智能体就是给每个 agent 一个独立优势就行」**：本篇用**共享** $V_\phi(s)$ + **共享** $R$ + per-agent advantage。**这是"共享一个标量回报"路线的最强版本**。**若我们的主张是"必须按失败原因分通道才能做信用分配"，MAPPO 就是最好的反驳者——我们必须证明在 LEO 里共享标量回报确实不够。** 这是本篇对我们最硬的挑战。
+4. **正面机制（可复用）**：**Death Masking（L337）**。LEO 里卫星/链路失效时，"某些动作不可用"与"某些 agent 不参与"可以直接照搬这套屏蔽做法。
+
+---
+
+### 4.8 6C843JTS — Learning to Predict by the Methods of Temporal Differences（Sutton, 1988）
+
+> **完成度警告**：本篇是本批完成度最低的一篇，**§4 理论主体（L241–487）未读**。以下理论保证部分**只基于 L196–240 的引论段与 L608–648 的附录定理陈述**，**不足以支撑收敛速度、学习率最优性等细节结论**。
+
+**1) 机制（公式逐字 + 行号）**
+
+- **TD(λ) 更新（L121 逐字，eq 4）**：
+  ```latex
+  \Delta \boldsymbol { w } _ { t } = \alpha ( P _ { t + 1 } - P _ { t } ) \sum _ { k = 1 } ^ { t } \lambda ^ { t - k } \nabla _ { \boldsymbol { w } } P _ { k } .
+  ```
+- **λ=1 的等价性（L125 逐字）**：`Note t h a t for λ = 1 tills is equivalent to (3), the TD implementation of the prototypical supervised-learning method. Accordingly, we call this new procedure TD(λ) and we will refer to the procedure given by (3) as TD(1).` `[OCR: "tills" 应为 "this"]`
+- **资格迹的增量递推（L127–L133 逐字）**：
+  ```latex
+  \begin{array} { r c l } { \displaystyle e _ { t + 1 } } & { = } & { \displaystyle \sum _ { k = 1 } ^ { t + 1 } \lambda ^ { t + 1 - k } \nabla _ { w } P _ { k } } \\ & & { = } & { \displaystyle \nabla _ { w } P _ { t + 1 } + \sum _ { k = 1 } ^ { t } \lambda ^ { t + 1 - k } \nabla _ { w } P _ { k } } \\ & { = } & { \displaystyle \nabla _ { w } P _ { t + 1 } + \lambda e _ { t } . } \end{array}
+  ```
+- **TD(0) 特例（L133 逐字）**：
+  ```latex
+  \Delta \boldsymbol { w } _ { t } = \alpha ( P _ { t + 1 } - P _ { t } ) \nabla _ { \boldsymbol { w } } P _ { t } .
+  ```
+- **与监督学习的唯一差别（L133 逐字）**：`The two equations are identical except that the actual outcome z in (2) is replaced by the next prediction $P _ { t + 1 }$ in the equation above.`
+- **结构化 vs 时序化信用分配的划分（L488 逐字）**：`The purt)ose of bolh backprot)agation and TD methods is accurate credit assignment. ... Backpropagation addresses a ,slr\~u:tural ('re(iil-assignment issue whereas TD metho(ts ad(lr(,ss a temporal cr,;dit-asslgnuient issue.` `[OCR 严重损坏，语义可辨：structural credit-assignment vs temporal credit-assignment]`
+- **与 bucket brigade 的对照（L500 逐字）**：`The most important of these is that the bucket brigade assigns credit based on the rules that cau,sed other rules to become active, whereas T D methods assign credit based solely on temporal succession.` —— **TD 只用"时间先后"分配信用，不用"因果关系"。**
+
+**2) 适用条件与理论保证**
+
+- **保证的对象（L200 逐字）**：`The theory presented here is for data sequences generated by absorbing Markov procea\~e8 such as the random-walk process`——**只对吸收马尔可夫过程**。
+- **保证的范围（L196 逐字）**：`Tile theory developed here concerns the linear TD(0) procedure and a class of tasks typified by the random walk example` —— **只对线性 TD(0)**；**TD(λ) 在本文中没有收敛定理**。
+- **原文自述的理论空白（L198 逐字，极重要）**：`"Bootstrapping" in this way may be what makes TD methods efficient, but it can also make them difficult to analyze and to have confidence in. In fact, hitherto no TD method has ever been proved stable or convergent to the correct predictions.` —— **1988 年写作时，TD 方法一个稳定性证明都没有。**
+- **Theorem 2（L608–L648 附录区块内的定理陈述）**：`T h e o r e m 2 For any absorbing Markov chain, for any distribution of starting probabilities $\mu _ { i }$ for any outcome distributions with finite expected values $\bar { z } _ { j { \mathrm { : } } }$ and for any linearly independent set of observation vectors $\{ \mathbf { x } _ { i } \ \} \ i \in N \}$ there exists an $\epsilon > 0$ such that, for all positive $\alpha \ < \ \epsilon$ and for any initial weight vector, the predictions of linear $T \bar { D ( \theta ) }$ (with weight updates after each sequence) converge in expected value to the ideal predictions (5).` `[Theorem 2 的精确行号本批未 pin，引用需复核]`
+- **原文自述的收益定位（L532 逐字）**：`Overall, TD methods appear to be computationally cheaper and to learn faster than conventional approaches to prediction learning.`
+
+**3) 迁移到 LEO 逐跳路由的条件与障碍** `[外推]`
+
+| 轴 | 条件 | 障碍 |
+|---|---|---|
+| 网络级 vs 逐包决策 | TD(λ) 是**预测**方法，不是控制方法 | 原文标题即 `Learning to Predict`；**它预测的是"从状态 i 出发到终止的期望结果"，不是选下一跳**。要用在 LEO 路由上，必须先把它嵌进 actor-critic 或 Q-learning 的值估计里 |
+| 非平稳 | 需要吸收马尔可夫过程 | L200 逐字：理论只对 `absorbing Markov procea\~e8` 成立。**LEO 的会话有终止（包到达），这一点勉强满足；但拓扑动态使转移概率本身随时间变**，原文未覆盖 |
+| 部分可观测 | **本篇完全不涉及** | `grep -a -c -i -E "partial(ly)? observ|POMDP"` 实测 **0**。观测向量 $\mathbf{x}_i$ 直接对应**非终止状态 i** —— **状态是完全可观测的** |
+| 信用分配 | **这是本篇的历史贡献**：资格迹 $e_{t+1} = \nabla_w P_{t+1} + \lambda e_t$ 把"多久以前的预测要改"参数化 | **条件成立**：这一条递推式**可直接搬到 LEO 逐跳**。$\lambda$ 控制回溯多少跳；$e_t$ 只需常数内存增量更新，适合逐包在线运行 |
+
+**4) 作为反例的价值**
+
+1. **反驳「TD 类方法有收敛保证」**：L198 逐字 `hitherto no TD method has ever been proved stable or convergent to the correct predictions`。**TD 的收敛性是被后来补上的，且依赖线性 + 独立特征 + 吸收马尔可夫链三条件**。**深度网络 + 非线性 + LEO 非平稳，三条件一个都不满足。**
+2. **反驳「TD 会因果归因」**：L500 逐字 `T D methods assign credit based solely on temporal succession` —— **TD 的信用分配是纯时间先后的，与"物理因果"无关**。**这直接支撑 G-A 的动机**：要区分"缓存溢出"和"队列溢出"，**TD(λ) 本身不提供任何因果信息**，必须从外部注入。
+3. **反驳「λ 越大越好」**：L125 表明 λ=1 退化为监督学习式的 MC。**本报告未读 §4，不能给出"最优 λ"的定量结论，需要补读。**
+4. **正面机制（可复用且本批最实在）**：**资格迹增量式（L133）**：$e_{t+1} = \nabla_w P_{t+1} + \lambda e_t$。**LEO 逐包在线场景下，这是唯一一个"常数内存 + 常数时间 + 显式控制回溯深度"的机制。**
+
+---
+
+### 4.9 E4NYGLGX — Safe and efficient off-policy RL（Retrace(λ)，Munos et al., NeurIPS 2016）
+
+**1) 机制（公式逐字 + 行号）**
+
+- **一般算子（L74 逐字，eq 3）**：
+  ```latex
+  \mathcal { R } Q ( x , a ) : = Q ( x , a ) + \mathbb { E } _ { \mu } \Big [ \sum _ { t \geq 0 } \gamma ^ { t } \Big ( \prod _ { s = 1 } ^ { t } c _ { s } \Big ) \big ( r _ { t } + \gamma \mathbb { E } _ { \pi } Q ( x _ { t + 1 } , \cdot ) - Q ( x _ { t } , a _ { t } ) \big ) \Big ] ,
+  ```
+- **四种迹系数的定义（L79 / L81 / L83 / L85 逐字）**：
+  - `Importance sampling (IS): $\begin{array} { r } { c _ { s } = \frac { \pi ( a _ { s } | x _ { s } ) } { \mu ( a _ { s } | x _ { s } ) } } \end{array}$`
+  - `Off-policy $\mathbf { Q } ^ { \pi } ( \lambda )$ and $\mathbf { Q } ^ { * } ( \lambda ) \colon c _ { s } = \lambda .$`
+  - `Tree-backup, TB(λ): $c _ { s } = \lambda \pi ( a _ { s } | x _ { s } )$`
+  - **Retrace(λ)（L83 逐字）**：`Retrace(λ): ${ c _ { s } = \lambda }$ min $\left( 1 , \frac { \pi ( a _ { s } | x _ { s } ) } { \mu ( a _ { s } | x _ { s } ) } \right)$`
+- **Retrace 的动机（L85 逐字）**：`Our contribution is an algorithm – Retrace(λ) – that takes the best of the three previous algorithms. Retrace(λ) uses an importance sampling ratio truncated at 1. Compared to IS, it does not suffer from the variance explosion of the product of IS ratios. Now, similarly to $Q ^ { \pi } ( \lambda )$ and unlike TB(λ), it does not cut the traces in the on-policy case, making it possible to benefit from the full returns. In the off-policy case, the traces are safely cut, similarly to TB(λ).`
+- **在线更新（L219 逐字，eq 7）**：
+  ```latex
+  Q _ { k + 1 } ( x , a ) \gets Q _ { k } ( x , a ) + \alpha _ { k } \sum _ { t \geq s } \delta _ { t } ^ { \pi _ { k } } \sum _ { j = s } ^ { t } \gamma ^ { t - j } \Big ( \prod _ { i = j + 1 } ^ { t } c _ { i } \Big ) \mathbb { I } \{ x _ { j } , a _ { j } = x , a \} ,
+  ```
+  其中 `$\delta _ { t } ^ { \pi _ { k } } : = r _ { t } + \gamma \mathbb { E } _ { \pi _ { k } } Q _ { k } ( x _ { t + 1 } , \cdot ) - Q _ { k } ( x _ { t } , a _ { t } ) , \alpha _ { k } = \alpha _ { k } ( x _ { s } , a _ { s } )$`
+- **Replay 下的目标（§5 区块逐字）**：
+  `$$\Delta Q ( x _ { t } , a _ { t } ) = \sum _ { s = t } ^ { t + k - 1 } \gamma ^ { s - t } \Big ( \prod _ { i = t + 1 } ^ { s } c _ { i } \Big ) \big [ r ( x _ { s } , a _ { s } ) + \gamma \mathbb { E } _ { \pi } Q ( x _ { s + 1 } , \cdot ) - Q ( x _ { s } , a _ { s } ) \big ] .$$`
+
+**2) 适用条件与理论保证**
+
+- **Theorem 1（L107 逐字）**：`The operator R defined by (3) has a unique fixed point $Q ^ { \pi }$ . Furthermore, if for each $a _ { s } \in { \mathcal { A } }$ and each history $\mathcal { F } _ { s }$ we have $c _ { s } = c _ { s } ( a _ { s } , \mathcal { F } _ { s } ) \in \left[ 0 , \frac { \pi \left( a _ { s } \left| x _ { s } \right. \right) } { \mu \left( a _ { s } \left| x _ { s } \right. \right) } \right]$, thenfor any Q-function Q` `$$\lVert { \mathcal { R } } Q - Q ^ { \pi } \rVert \leq \gamma \lVert Q - Q ^ { \pi } \rVert .$$` —— **对任意 $\pi,\mu$ 都是 γ-压缩。**
+- **Theorem 2（L165 逐字）**：`Consider an arbitrary sequence of behaviour policies $\left( \mu _ { k } \right)$ (which may depend on $( Q _ { k } ) )$ and a sequence of target policies $\left( \pi _ { k } \right)$ that are increasingly greedy w.r.t. the sequence $( Q _ { k } ) .$` `$$Q _ { k + 1 } = \mathcal { R } _ { k } Q _ { k } ,$$` `... Then for any $k \geq 0 ,$` `$$\lVert Q _ { k + 1 } - Q ^ { * } \rVert \leq \gamma \lVert Q _ { k } - Q ^ { * } \rVert + \varepsilon _ { k } \lVert Q _ { k } \rVert .$$` `In consequence, i $i f \varepsilon _ { k } \to 0$ then $Q _ { k } \to Q ^ { * }$`
+- **Theorem 3（L217 逐字）**：`Consider a sequence of sample trajectories, with the $k ^ { t h }$ trajectory $x _ { 0 } , a _ { 0 } , r _ { 0 } , x _ { 1 } , a _ { 1 } , r _ { 1 } , . . .$ generated by following $\mu _ { k }$ ... Assume that $\left( \pi _ { k } \right)$ are increasingly greedy w.r.t. $\left( Q _ { k } \right)$ and are each ε<sub>k</sub>-awayfrom the greedy policies ... with $\varepsilon _ { k } \to 0$ ... Then $\dot { Q } _ { k } \to Q ^ { * }$ a.s.`
+- **不需要 GLIE（L259 逐字）**：`The crucial point of Theorem 2 is that convergence to $Q ^ { * }$ occurs for arbitrary behaviour policies. Thus the online result in Theorem 3 does not require the behaviour policies to become greedy in the limit with infinite exploration (i.e. GLIE assumption, Singh et al., 2000). We believe Theorem 3 provides the first convergence result to $Q ^ { * }$ for a λ-return (with $\lambda > 0 )$ algorithm that does not require this (hard to satisfy) assumption.`
+- **方差约束（L241 逐字）**：`assuming independence and stationarity of $\left( c _ { s } \right)$ , we have that $\mathbb { V } \big ( \sum _ { t } \gamma ^ { t } c _ { 1 } \dots c _ { t } \big )$ is at least $\sum _ { t } \gamma ^ { 2 t } \mathbb { V } ( c ) ^ { t }$ , which is finite only if $\mathbb { V } ( c ) < 1 / \gamma ^ { 2 }$ . Thus, an important requirement for a numerically stable algorithm is for $\mathbb { V } ( c )$ to be as small as possible, and certainly no more than $1 / \gamma ^ { 2 }$ This rules out importance sampling` —— **这是"为什么必须截断到 min(1, π/μ)"的定量理由。**
+- **原文自述的开放问题（L269 逐字）**：`Open questions include: (1) Removing the technical assumption that $P ^ { \pi _ { k } }$ and $P ^ { \pi _ { k } \wedge \mu _ { k } }$ asymptotically commute, (2) Relaxing the Markov assumption in the control case`
+- **一句话定位（L288 逐字）**：`Conclusion. Retrace(λ) can be seen as an algorithm that automatically adjusts – efficiently and safely – the length of the return to the degree of "off-policyness" of any available data.`
+
+**3) 迁移到 LEO 逐跳路由的条件与障碍** `[外推]`
+
+| 轴 | 条件 | 障碍 |
+|---|---|---|
+| 网络级 vs 逐包决策 | 需要 $\mu(a\|x)$ 已知（对所选动作） | L263 逐字：`Retrace(λ) uses its knowledge of $\mu$ (for the chosen actions) to cut the traces and safely handle arbitrary policies π and $\mu$`。**在 LEO 里 $\mu$ 就是路由器自己的行为策略**（ε-greedy），可知；**但如果多个卫星同时探索、互相作为对方的"环境"，则 $\mu$ 不再是单一策略** |
+| 非平稳 | **本篇的强项**：Theorem 2 对**任意行为策略序列** $\left( \mu _ { k } \right)$ 成立，且**不需要 GLIE** | **条件良好**：这是本批 11 篇中**唯一一个显式允许行为策略任意变化**的收敛结果 |
+| 部分可观测 | **完全不涉及** | `grep -a -c -i -E "partial(ly)? observ|POMDP"` 实测 **0**。全部定理在 $(\mathcal X, \mathcal A, \gamma, P, r)$ 的 **MDP** 上（L31 逐字：`We consider an agent interacting with a Markov Decision Process $( \mathcal { X } , \mathcal { A } , \gamma , P , r )$`） |
+| 信用分配 | **这正是 Retrace 的核心机制** | **条件成立**：L85 逐字 `in the off-policy case, the traces are safely cut, similarly to TB(λ)`。**这是把"资格迹回溯"从 on-policy 推广到 off-policy 的关键补丁**，直接对应 LEO 逐跳 + 经验回放的组合 |
+
+**4) 作为反例的价值**
+
+1. **反驳「off-policy + 资格迹不安全」**：Theorem 1 给出**对任意 $\pi,\mu$ 的 γ-压缩**，Theorem 3 给出 **a.s. 收敛到 $Q^*$ 且不需要 GLIE**。
+2. **反驳「用重要性采样做 off-policy 修正就行」**：L241 逐字给出**定量否证**：$\mathbb { V } ( c ) < 1 / \gamma ^ { 2 }$ 是数值稳定的必要条件，而 `This rules out importance sampling`。
+3. **反驳「λ 越接近 1 越好」**：§5 逐字 `Across values of $\lambda , \lambda = 1$ performs best, save for $Q ^ { * } ( \lambda )$ where $\lambda = 0 . 5$ obtains slightly superior performance. However, is highly sensitive to the choice of λ` `[OCR: 该句主语缺失，疑为 "Q*(λ) is highly sensitive"]` —— **原文自己承认对 λ 高度敏感**。
+4. **打我们自己的点**：L269 逐字列出**两个未解决的技术假设**。**LEO 的拓扑动态正好会破坏这些交换性假设**——**引用 Retrace 的收敛性时，必须声明这些假设在 LEO 下未经检验。**
+
+---
+
+### 4.10 QGAREQUM — Boosting RL with Strongly Delayed Feedback Through Auxiliary Short Delays（AD-RL）
+
+**1) 机制（公式逐字 + 行号）**
+
+- **延迟建模（L78 逐字）**：`We assume that delay-free MDP is endowed with a constant delay variable $\Delta \in \mathbb { N }$ . In this setting, the state of environment $s _ { t }$ is only observed by the agent at a later timestep $t + \Delta$ . In other words, the real state of the environment is $s _ { t } ,$ but the agent's observation is $s _ { t - \Delta }$ . To retrieve the Markov property in this Delayed MDP (DMDP) ... we need to augment the state space $\mathcal { X } = \mathcal { S } \times \mathcal { A } ^ { \Delta }$ ... An augmented state $x _ { t } = ( s _ { t - \Delta } , a _ { t - \Delta } , \dotsc , a _ { t - 1 } ) \in \mathcal { X }$`
+- **延迟信念（L128 逐字，eq 2）**：
+  ```latex
+  \begin{array} { l } { \displaystyle b _ { \Delta } ( \boldsymbol { x } _ { t } ^ { \tau } | \boldsymbol { x } _ { t } ) = } \\ { \displaystyle \int _ { S ^ { \Delta } } \Pi _ { i = 0 } ^ { \Delta - \Delta ^ { \tau } - 1 } \mathcal { P } ( s _ { t - \Delta + i + 1 } | s _ { t - \Delta + i } , a _ { t - \Delta + i } ) \mathrm { d } s _ { t - \Delta + i + 1 } } \end{array}
+  ```
+- **辅助延迟 Bellman 算子（L157 逐字，eq 3）**：
+  ```latex
+  \begin{array} { r l } & { \mathcal { T } Q ( x _ { t } , a _ { t } ) \triangleq \mathcal { R } _ { \Delta } ( x _ { t } , a _ { t } ) } \\ & { + \gamma \underset { x _ { t + 1 } ^ { \tau } \sim b _ { \Delta } ( \cdot \vert x _ { t + 1 } ) } { \mathbb { E } } \left[ Q ^ { \tau } ( x _ { t + 1 } ^ { \tau } , \underset { a _ { t + 1 } } { \mathrm { a r g m a x } } Q ( x _ { t + 1 } , a _ { t + 1 } ) ) \right] } \\ & { \quad \quad \quad \quad \quad \quad \quad x _ { t + 1 } \sim \mathcal { P } _ { \Delta } ( \cdot \vert x _ { t } , a _ { t } ) } \end{array}
+  ```
+  `[OCR: 该式在 MD 中排版错位，"argmax" 的角色需回原文核对]`
+- **辅助延迟软 Bellman 算子（§4.3 区块逐字，eq 4）**：
+  `$$\begin{array} { r l } & { \mathcal { T } ^ { \pi } Q ( x _ { t } , a _ { t } ) \triangleq \mathcal { R } _ { \Delta } ( x _ { t } , a _ { t } ) } \\ & { + \gamma \underset { \stackrel { a _ { t + 1 } \sim \pi ( \cdot | x _ { t + 1 } ) } { x _ { t + 1 } ^ { \tau } \sim b _ { \Delta } ( \cdot | x _ { t + 1 } ) } } { \mathbb { E } } \left[ Q ^ { \tau } ( x _ { t + 1 } ^ { \tau } , a _ { t + 1 } ) - \log \pi ( a _ { t + 1 } | x _ { t + 1 } ) \right] } \end{array}$$`
+- **策略改进（L175 逐字，eq 5）**：
+  ```latex
+  \begin{array} { r } { \arg \operatorname* { m i n } _ { \pi ^ { \prime } \in \Pi } \mathbf { K L } ( \pi ^ { \prime } ( \cdot | x _ { t } ) \middle| | \frac { \exp ( \mathbb { E } _ { x _ { t } ^ { \tau } \sim b _ { \Delta } ( \cdot | x _ { t } ) } [ Q ^ { \tau } ( x _ { t } ^ { \tau } , \cdot ) ] ) } { Z ( x _ { t } ^ { \tau } , \cdot ) } ) } \end{array}
+  ```
+- **AD-SAC 策略梯度（L181 逐字，eq 6）**：
+  ```latex
+  \begin{array} { r } { \nabla _ { \psi } \underset { \hat { a } \sim \pi _ { \psi } ( \cdot | x _ { t } ) } { \mathbb { E } } \ [ \log \pi _ { \psi } ( \hat { a } | x _ { t } ) - Q ^ { \tau } ( x _ { t } ^ { \tau } , \hat { a } ) ] } \\ { x _ { t } ^ { \tau } { \sim } b _ { \Delta } ( \cdot | x _ { t } ) \ } \end{array}
+  ```
+- **算法框架（L139 起）**：`Algorithm 1 Auxiliary-Delayed RL Framework`，步骤为 `# Learning ∆τ-delayed task` → `# Learning ∆-delayed task based on Q^τ` → `Bootstrapping Q based on $Q ^ { \tau }$ via Eq. (3) # discrete` / `Improving π based on $Q ^ { \tau }$ via Eq. (5)# continuous`
+- **关键实用注记（L133 逐字，Remark 4.1）**：`Practically, we do not need to learn the delayed belief $b _ { \Delta }$ explicitly. As in the CDMDP, every state will be observed by the agent eventually. In other words, given an entire trajectory collected by the agent, we can create the synthetic augmented state for any required delay.`
+
+**2) 适用条件与理论保证**
+
+- **Lipschitz 假设（L98 逐字）**：`In this work, we assume the MDPs, policies and Q-functions satisfy the following Lipschitz Continuity (LC) property, where Euclidean distance is adopted in a deterministic space ... and L1-Wasserstein distance (Villan et al., 2009), denoted as $W _ { 1 }$ , is used in a probabilistic space`；Definition 3.1（L100）给 $\left( L _ { \mathcal { P } } , L _ { \mathcal { R } } \right) - \mathrm { L C }$ 定义；Definition 3.3 给 $L _ { Q } = \frac { L _ { R } } { 1 - \gamma L _ { P } \left( 1 + L _ { \pi } \right) }$ 并要求 `$\gamma L _ { P } ( 1 + L _ { \pi } ) < 1$`。
+- **样本效率（L192 逐字）**：`We can conclude that the sample complexity of augmented Q-learning in the augmented state space with delay $\Delta$ is $\mathcal { O } \left( \frac { \log ( | \mathcal { S } | | \mathcal { A } | ^ { \tilde { \Delta } + 1 } ) } { \epsilon ^ { 2 . 5 } ( 1 - \gamma ) ^ { 5 } } \right)$ . Then our AD-RL makes bootstrapping in the auxiliary $\Delta ^ { \prime }$ -augmented statespace instead of the original ∆-augmented state-space, the sample efficiency is improved by $\bar { \mathcal { O } } ( \vert \mathcal { A } \vert ^ { \Delta - \Delta _ { \tau } } )$`
+- **样本效率的自述代价（L194 逐字，Remark 5.1）**：`in the stochastic environment with longer delays $\Delta ,$ we need to set relatively longer auxiliary delays $\Delta ^ { \tau }$ to achieve better performance while somewhat compromising the sample efficiency.`
+- **性能差的界（§5.2 区块逐字，Theorem 5.3）**：`the performance difference between policies can be bounded asfollow` `$$\underset { x _ { t } ^ { \tau } \sim b _ { \Delta } ( \cdot \vert x _ { t } ) } { \mathbb { E } } \left[ V ^ { \tau } ( x _ { t } ^ { \tau } ) - Q ^ { \tau } ( x _ { t } ^ { \tau } , a _ { t } ) \right] \leq L _ { Q } \underset { x _ { t } ^ { \tau } \sim b _ { \Delta } ( \cdot \vert x _ { t } ) } { \mathbb { E } } \left[ \mathcal { W } _ { 1 } ( \pi ^ { \tau } ( \cdot \vert x _ { t } ^ { \tau } ) \vert \vert \pi ( \cdot \vert x _ { t } ) ) \right]$$`
+- **确定性 MDP 无代价（§5.2 区块逐字，Remark 5.5）**：`For deterministic MDP, $b _ { \Delta }$ is also deterministic and becomes injection function meaning that given the $x ,$ the $x ^ { \tau }$ is determined` ... `$\mathbb { E } _ { \boldsymbol { x } _ { t } ^ { \tau } \sim b _ { \Delta } ( \cdot | \boldsymbol { x } _ { t } ) } \left[ Q _ { ( * ) } ^ { \tau } ( \boldsymbol { x } _ { t } ^ { \tau } , \boldsymbol { a } _ { t } ) \right] = Q _ { ( * ) } ( \boldsymbol { x } _ { t } , \boldsymbol { a } _ { t } )$`
+- **随机 MDP 有代价（§5.2 区块逐字，Remark 5.6）**：`In the case of stochastic MDP, the performance gap might become larger as the difference between $\Delta$ and $\Delta ^ { \tau }$ increases. Using a moderate auxiliary delays $\Delta ^ { \tau }$ could trade-off the sample efficiency (closer to 0) and performance consistency (closer to $\Delta )$ .`
+- **三条自述局限（L341 / L343 / L345 逐字）**：
+  - L341：`It is worth noting that the performance of AD-RL is subject to the selection of the auxiliary delays $\Delta _ { b e s t } ^ { \tau }$ . Such selection is deeply related to the specific tasks and even the delay $\Delta ,$ and is highly challenging: Fig. 3(c) demonstrates that the relation between $\Delta _ { b e s t } ^ { \tau }$ and $\Delta$ is not linear or parabolic.`
+  - L343：`Learning delayed belief, especially in stochastic environments, proves to be challenging. AD-RL implicitly represents the belief function by sampling in two augmented state spaces ... leading to additional memory cost compared to conventional augmentation-based approaches.`
+  - L345：`Sample efficiency remains a critical challenge, especially in environments characterized by long delays or stochasticity. In both cases, AD-RL needs to set relatively longer auxiliary delays $\Delta ^ { \tau }$ to carry more information ... While a longer auxiliary delay achieves better performance, it brings back the sample inefficiency issue`
+
+**3) 迁移到 LEO 逐跳路由的条件与障碍** `[外推]`
+
+| 轴 | 条件 | 障碍 |
+|---|---|---|
+| 网络级 vs 逐包决策 | 需要"状态观测延迟 Δ"这一结构 | **LEO 逐包路由里这个结构天然存在**：包在时刻 $t$ 于卫星 i 被转发，其效果（到达/丢失/排队）在若干跳之后才被 i 观测到。**"延迟 = 跳数"是可直接映射的** |
+| 非平稳 | 需要 DMDP 的结构稳定 | 原文是**定常延迟** $\Delta \in \mathbb { N }$（L78 逐字 `a constant delay variable`）。**LEO 的延迟本身随路径长度和拥塞波动 → 延迟是随机的，落在原文未覆盖的区间**（原文只在实验里测了 `stochastic delays`，理论是定常的） |
+| 部分可观测 | 需要信念 $b(s_t\|x_t)$ 可算 | L133 逐字：`given an entire trajectory collected by the agent, we can create the synthetic augmented state for any required delay.` —— **这要求能回看完整轨迹**。**LEO 逐包仿真可以（记录轨迹），在线真实网络不行** |
+| 信用分配 | **这正是本篇的核心**：用短延迟辅助任务 bootstrap 长延迟任务 | **条件成立且高度相关**：LEO 端到端时延是**长延迟**信号；每一跳的本地排队/链路时延是**短延迟**信号。**AD-RL 的 eq (3) 恰好是"用短延迟的 $Q^\tau$ 去 bootstrap 长延迟的 $Q$"** —— 这是本批 11 篇中与本项目信用分配问题**结构最同构**的一篇 |
+
+**4) 作为反例的价值**
+
+1. **反驳「长延迟必须靠加长回溯或加资格迹解决」**：本篇给出**第三条路**——**用一个人造的短延迟辅助任务去 bootstrap**（eq 3），并把样本效率提升量化到 $\bar { \mathcal { O } } ( \vert \mathcal { A } \vert ^ { \Delta - \Delta _ { \tau } } )$（L192）。
+2. **反驳「辅助延迟越小越好」**：L194 + L345 逐字给出**双向代价**；L341 更进一步说 **$\Delta_{best}^\tau$ 与 $\Delta$ 的关系 "not linear or parabolic"**。**任何"我们设了个小辅助延迟就好了"的说法都是过度简化。**
+3. **反驳「确定性环境下的结论可以外推到随机环境」**：Remark 5.5 与 Remark 5.6 给出**明确的条件分界**：确定性 MDP 下最优值**完全相等**（差为 0），随机 MDP 下**差距随 $\Delta - \Delta^\tau$ 增大而增大**。**LEO 路由的排队过程是随机的 → 落在 Remark 5.6 的坏情形。**
+4. **打我们自己的点**：**本篇不解决"失败原因"问题**——`grep -a -c -i -E "credit assignment"` 实测 **2**，但均为泛述；`grep -a -c -i -E "reward decompos"` 实测 **1**，来自 §1 背景综述，**不是本篇方法**。**AD-RL 处理的是"延迟"，不是"多原因"。如果我们要主张 G-A，本篇是"最接近但确实没做"的标杆。**
+
+---
+
+### 4.11 LJG6ZW7B — Sutton & Barto, *Reinforcement Learning: An Introduction* (2nd ed.)
+
+> **任务书限定**：只取与**信用分配 / 延迟奖励 / 部分可观测**直接相关的章节。以下条目全部来自定向阅读区间。
+
+**1) 机制（公式逐字 + 行号）**
+
+- **延迟奖励是 RL 的定义性特征（L352 逐字）**：`Reinforcement learning is learning what to do—how to map situations to actions—so as to maximize a numerical reward signal. The learner is not told which actions to take, but instead must discover which actions yield the most reward by trying them. In the most interesting and challenging cases, actions may a↵ect not only the immediate reward but also the next situation and, through that, all subsequent rewards. These two characteristics—trial-and-error search and delayed reward—are the two most important distinguishing features of reinforcement learning.`
+- **信用分配的必要性（L911 逐字）**：`MDPs involve delayed reward and the need to trade o↵ immediate and delayed reward. Whereas in bandit problems we estimated the value $q _ { * } ( a )$ of each action $^ { a , }$ in MDPs we estimate the value $q _ { * } ( s , a )$ of each action a in each state s ... These state-dependent quantities are essential to accurately assigning credit for long-term consequences to individual action selections.`
+- **奖励假设（L1004 逐字）**：`That all of what we mean by goals and purposes can be well thought of as the maximization of the expected value of the cumulative sum of a received scalar signal (called reward).` —— **注意：假设的是"单个标量信号"（a received scalar signal）。**
+- **奖励信号的正确定位（L1010 逐字）**：`It is thus critical that the rewards we set up truly indicate what we want accomplished. In particular, the reward signal is not the place to impart to the agent prior knowledge about how to achieve what we want it to do. For example, a chess-playing agent should be rewarded only for actually winning, not for achieving subgoals such as taking its opponent's pieces or aining control of the center of the board. If achieving these sorts of subgoals were rewarded, then the agent might find a way to achieve them without achieving the real goal.`
+- **λ-回报（L5067 逐字，eq 12.2）**：
+  ```latex
+  G _ { t } ^ { \lambda } \doteq ( 1 - \lambda ) \sum _ { n = 1 } ^ { \infty } \lambda ^ { n - 1 } G _ { t : t + n } .
+  ```
+  其 n 步回报（L5054 逐字，eq 12.1）：
+  ```latex
+  G _ { t : t + n } \doteq R _ { t + 1 } + \gamma R _ { t + 2 } + \cdot \cdot \cdot + \gamma ^ { n - 1 } R _ { t + n } + \gamma ^ { n } \hat { v } ( S _ { t + n } , { \mathbf w } _ { t + n - 1 } ) , ~ 0 \le t \le T - n ,
+  ```
+  离线 λ-回报的更新（§12.1 区块逐字，eq 12.4）：`$$\mathbf { w } _ { t + 1 } \doteq \mathbf { w } _ { t } + \alpha \Bigl [ G _ { t } ^ { \lambda } - \hat { v } ( S _ { t } , \mathbf { w } _ { t } ) \Bigr ] \nabla \hat { v } ( S _ { t } , \mathbf { w } _ { t } ) , t = 0 , \ldots , T - 1 .$$`
+- **资格迹是对延迟奖励的"第一道防线"（L5686 逐字）**：`Because eligibility traces make TD methods more like Monte Carlo methods, they also can have advantages in these cases. If one wants to use TD methods because of their other advantages, but the task is at least partially non-Markov, then the use of an eligibility trace method is indicated. Eligibility traces are the first line of defense against both long-delayed rewards and non-Markov tasks.`
+- **信用分配问题的经典表述（L6421 逐字）**：`The Law of E↵ect requires a backward e↵ect on connections ... We call this the problem of delayed reinforcement, which is related to what Minsky (1961) called the "credit-assignment problem for learning systems": how do you distribute credit for success among the many decisions that may have been involved in producing it? The reinforcement learning algorithms presented in this book include two basic mechanisms for addressing this problem. The first is the use of eligibility traces, and the second is the use of TD methods to learn value functions that provide nearly immediate evaluations of actions.`
+- **集体 RL 的结构性信用分配（L6809 逐字）**：`What makes a team problem interesting and challenging is that the common reward signal sent to each agent evaluates the pattern of activity produced by the entire population ... This means that any individual agent has only limited ability to a↵ect the reward signal because any single agent contributes just one component of the collective action evaluated by the common reward signal. E↵ective learning in this scenario requires addressing a structural credit assignment problem: which team members, or groups of team members, deserve credit for a favorable reward signal, or blame for an unfavorable reward signal?`
+- **POMDP 信念状态（L7431 逐字）**：`The natural Markov state, $S _ { t }$ , for a POMDP is the distribution over the latent states given the history, called the belief state. ... Then the belief state is the vector $S _ { t } \doteq \mathbf { s } _ { t } \in [ 0 , 1 ] ^ { d }$ with components` `$$\mathbf { s } _ { t } [ i ] \doteq \operatorname* { P r } \{ X _ { t } = i \mid H _ { t } \} , \quad \text{for all possible latent states } i$$`
+- **信念更新（L7440 逐字，eq 17.10）**：
+  ```latex
+  u ( \mathbf { s } , a , o ) [ i ] \doteq \frac { \sum _ { x = 1 } ^ { d } \mathbf { s } [ x ] p ( i , o | x , a ) } { \sum _ { x = 1 } ^ { d } \sum _ { x ^ { \prime } = 1 } ^ { d } \mathbf { s } [ x ] p ( x ^ { \prime } , o | x , a ) } , \quad \mathrm { f o r ~ a l l ~ } a \in \mathcal { A } , o \in \mathcal { O } ,
+  ```
+- **状态-更新函数（§17.3 区块逐字，eq 17.7）**：`$S _ { t + 1 } \doteq u ( S _ { t } , A _ { t } , O _ { t + 1 } ) , \mathrm { ~ f o r ~ a l l ~ } t \ge 0 ,$`
+- **"致命三元组"（L4588 区块逐字）**：`the danger of instability and divergence arises whenever we combine all of the following three elements, making up what we call the deadly triad:` `Function approximation` / `Bootstrapping` / `O↵-policy training` —— 并逐字：`If any two elements of the deadly triad are present, but not all three, then instability can be avoided.`
+
+**2) 适用条件与理论保证（教材版）**
+
+- **教材对"信用分配"给的两条基本机制（L6421 逐字）**：`The first is the use of eligibility traces, and the second is the use of TD methods to learn value functions that provide nearly immediate evaluations of actions.` —— **注意：两条机制都是关于"时间"的，没有一条是关于"原因"的。**
+- **结构 vs 时序信用分配的划分（L6809 逐字）**：团队问题是 `structural credit assignment problem`；时序问题由 eligibility trace 处理。**教材自己把两者分开。**
+- **λ 的经验结论（§12.13 区块逐字）**：`On tasks with many steps per episode, or many steps within the half-life of discounting, it appears significantly better to use eligibility traces than not to ... On the other hand, if the traces are so long as to produce a pure Monte Carlo method, or nearly so, then performance degrades sharply. An intermediate mixture appears to be the best choice. Eligibility traces should be used to bring us toward Monte Carlo methods, but not all the way there.`
+- **何时不该用资格迹（§12.13 区块逐字）**：`in o↵-line applications in which data can be generated cheaply, perhaps from an inexpensive simulation, then it often does not pay to use eligibility traces. In these cases the objective is not to get more out of a limited amount of data, but simply to process as much data as possible as quickly as possible.`
+- **部分可观测下函数近似的覆盖范围（L3392 逐字）**：`extending reinforcement learning to function approximation also makes it applicable to partially observable problems ... If the parameterized function form for vˆ does not allow the estimated value to depend on certain aspects of the state, then it is just as if those aspects are unobservable. In fact, all the theoretical results for methods using function approximation presented in this part of the book apply equally well to cases of partial observability. What function approximation can't do, however, is augment the state representation with memories of past observations.`
+- **对 POMDP 信念法的评价（§17.3 逐字）**：`This approach is popular in theoretical work and has many significant applications, but its assumptions and computational complexity scale poorly, and we do not recommend it as an approach to artificial intelligence.`
+
+**3) 迁移到 LEO 逐跳路由的条件与障碍** `[外推]`
+
+| 轴 | 教材原话 | 对 LEO 的直接影响 |
+|---|---|---|
+| 网络级 vs 逐包决策 | L911 逐字：`we estimate the value $q _ { * } ( s , a )$ of each action a in each state s` | **教材的 MDP 框架要求"状态-动作对"可枚举或可泛化**。LEO 逐包路由的"状态"含全网队列 → 必须靠函数近似，落入 L4588 的**致命三元组** |
+| 非平稳 | L4588 逐字：`If any two elements of the deadly triad are present, but not all three, then instability can be avoided.` | **LEO 逐跳路由几乎必然同时具备三要素**：函数近似（Q 网络）+ bootstrapping（TD）+ off-policy（经验回放）。**教材把这三者同时出现直接判定为"不稳定与发散的危险"。这是对我们方案最硬的教材级反驳。** |
+| 部分可观测 | 信念状态（L7431）+ 明示不推荐（§17.3）；L3392 说函数近似"自动覆盖"部分可观测 | **两条路都不能直接用**：信念状态 $\in [0,1]^d$ 在 LEO（$d$ = 全网队列维）下不可算；函数近似的"自动覆盖"**只是说结果仍然成立，不是说结果好** |
+| 信用分配 | L6421 逐字：两条机制**都只针对时间**；L6809 逐字：团队问题需要 `structural credit assignment` | **教材在结构层面只提出问题，不给方法**。**这为 G-A 提供了教材级的空白背书** |
+
+**4) 作为反例的价值**
+
+1. **教材级反驳「三要素齐上没关系」**：L4588 把"函数近似 + bootstrapping + off-policy"命名为 **deadly triad**，并说三者同时出现**就会**不稳定/发散。**LEO 逐跳 RL 路由方案若三者齐备，必须显式处理**，不能只靠实验调参。
+2. **反驳「奖励写成一个标量就够了」**：L1004 的**奖励假设**原文限定为 `a received scalar signal`；L1010 紧接着逐字说 `the reward signal is not the place to impart to the agent prior knowledge about how to achieve what we want it to do`，并警告 `the agent might find a way to achieve them without achieving the real goal`。**这是对朴素惩罚塑形的直接反驳，也是 G-A 必须回答的诘问**：分通道惩罚若被当作"subgoal 奖励"，同样有被钻空子的风险。
+3. **反驳「资格迹越长越好」**：逐字 `if the traces are so long as to produce a pure Monte Carlo method, or nearly so, then performance degrades sharply`。**LEO 端到端回报很长，很容易把 λ 设到接近 1，正好落进教材说的"急剧退化"区间。**
+4. **反驳「用仿真所以可以用资格迹」**：逐字 `in o↵-line applications in which data can be generated cheaply, perhaps from an inexpensive simulation, then it often does not pay to use eligibility traces`。**LEO 逐跳仿真正是 "cheap simulation"。**
+5. **G-A 的教材级背书**：L6809 逐字提出 `structural credit assignment problem: which team members, or groups of team members, deserve credit for a favorable reward signal, or blame for an unfavorable reward signal?`，而 L6421 列出的**两条机制全部是时间维度的**。**教材在"按来源/成员分解功劳与责任"这一维度上停在提问——这是 G-A 的权威立足点。**
+
+---

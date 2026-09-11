@@ -946,6 +946,62 @@
 
 ---
 
+## 15. GV9PPNZT — Information Freshness in Multi-Hop Wireless Networks
+
+**书目（逐字）**：L1 `# Information Freshness in Multi-Hop Wireless Networks`；L3 `Vishrant Tripathi, Rajat Talak, and Eytan Modiano`。
+**已读范围**：L1–L46（摘要/引言/贡献）+ L48–L92（系统模型）+ L513–L563（数值结果与结论）。**L96–L512（三类策略的推导与证明）与 L645–L842（附录证明）未逐段读**；参考文献 L569–L644 未读。
+
+### 1) 测量/建模对象与条件（逐字+行号）
+
+- L5（对象，逐字）：`We consider the problem of minimizing age of information in multihop wireless networks and propose three classes of policies to solve the problem - stationary randomized, age difference, and age debt.`
+- L50（**时隙模型，逐字**）：`Consider a network with N nodes connected by a fixed undirected graph G(V, E). An edge (i, j) means that nodes i and j can send packets to one another directly. We assume that at most one update can be sent over an edge in any given time-slot and takes exactly one time-slot to get delivered. We normalize the time-slot duration to unity.`
+- L52（流模型，逐字）：`The network consists of $K \left( \leq N \right)$ source nodes that generate information updates. All the sources are active, i.e. they generate fresh updates on demand.`
+- L56（链路与干扰，逐字；原文中的集合符号为 $ 花括号 A 花括号，为避免模板转义此处写作 $ { A }）：`We consider unreliable links as well as general interference constraints, i.e., transmission on all the links cannot happen simultaneously. We enumerate the set of all possible interference free choices of links and corresponding flow transmissions in the set $ { A }.`
+- L58（链路状态，逐字）：`we use $U _ { i j } ^ { k } ( \mathfrak { t } )$ and $S _ { i j } ( \mathrm { t } )$ (both $\in \{ 0 , 1 \} )$ to denote the transmission decision and link state of the link $( i , j )$ at time $t .`
+- L88（控制假设，逐字）：`A control policy needs to specify not only which links should be scheduled in each time-slot but also which flows should be transmitted along each link. We assume a centralized controller.`
+- L515/L519/L536/L548（数值设置）：`we consider the weighted-sum AoI problem in singlehop broadcast networks with unreliable channels. There are N nodes in the network and the weight of the ith node $w _ { i }$ is set to i/N. Link connection probabilities are chosen uniformly from the set [0.6, 1].`；`There are N nodes in the network and the cost of AoI for each node is chosen from the set of functions $\{ 1 5 A ( t ) , e ^ { A ( t ) } , ( A ( t ) ) ^ { 2 } \mathrm { ~ a n d ~ } ( A ( t ) ) ^ { 3 } \}$`；`Consider N nodes arranged in a line network from 1 to N. Node 1 wants to sent packets to node N, however not all nodes can transmit simultaneously. We consider a simple interference constraint - in any given time-slot either all even numbered nodes or all odd numbered nodes can forward packets.`；`We consider all possible connected network topologies with 5 or 6 nodes (a total of 133 graphs).`
+
+### 2) 可引用的事实与数字（逐字+行号）
+
+| # | 事实（逐字） | 行号 |
+|---|---|---|
+| 1 | **年龄演化式（逐字 LaTeX）**：`A _ { j } ^ { k } ( t + 1 ) = \left\{ \begin{array} { l l } { \operatorname* { m i n } ( A _ { j } ^ { k } ( t ) , A _ { i } ^ { k } ( t ) ) + 1 } & { \mathrm { i f ~ } U _ { i j } ^ { k } ( t ) S _ { i j } ( t ) = 1 } \\ { A _ { j } ^ { k } ( t ) + 1 , } & { \mathrm { i f ~ } U _ { i j } ^ { k } ( t ) S _ { i j } ( t ) = 0 } \end{array} \right. }` | L63 |
+| 2 | **加权和 AoI 目标（逐字 LaTeX）**：`A _ { \mathrm { a v e } } = \operatorname* { l i m } _ { T \to \infty } \mathbb { E } [ \frac { 1 } { T } \sum _ { t = 1 } ^ { T } \sum _ { k = 1 } ^ { K } \sum _ { j \in D _ { k } } w _ { j } ^ { k } A _ { j } ^ { k } ( t ) ]` | L71 |
+| 3 | **非线性年龄代价（逐字 LaTeX）**：`B _ { j } ^ { k } ( t ) \triangleq g _ { j } ^ { k } ( A _ { j } ^ { k } ( t ) )`；`B _ { \mathrm { a v e } } = \operatorname* { l i m } _ { T \to \infty } \mathbb { E } [ \frac { 1 } { T } \sum _ { t = 1 } ^ { T } \sum _ { k = 1 } ^ { K } \sum _ { j \in D _ { k } } B _ { j } ^ { k } ( t ) ]` | L77 / L83 |
+| 4 | **三类策略的排序结果（逐字）**：`the optimal stationary randomized policy performs much worse than the other classes of policies. Age difference performs better than the randomized policy but not as well as the Whittle-index or max-weight policies.` | L517 |
+| 5 | **年龄债策略近最优（逐字）**：`when the age debt policy is provided the max-weight average cost as the target vector, it replicates near optimal performance.` | L517 |
+| 6 | **收敛/稳定性（逐字）**：`We observe that the age debt policy indeed stabilizes the debt queues since queue lengths don't grow with time. As a corollary, it also achieves age cost optimality in this setting. On the other hand, the Whittle index policy from [29] achieves a total sum cost of 88.34, a fixed but small distance away from the optimal cost` | L534 |
+| 7 | **复杂度（逐字）**：`Note that the complexity of implementing the flow-control scheme is polynomial in the network size per time-slot. This suggests that age-debt and its variants are a good candidate for low complexity near optimal age scheduling in general networks.` | L557 |
+| 8 | **参数可配置性（逐字）**：`the gradient descent variant has parameters that are hard to configure for networks of different sizes and takes a long time to converge. The flowcontrol method has just two parameters V and $\alpha _ { \mathrm { m a x } }$ that are relatively easy to configure` | L559 |
+| 9 | **Broadcast 对照结果（逐字）**：`age-debt achieves the same performance as the MCDS scheme when provided its average cost as the target vector. Further, age-debt with flow control achieves performance that is very close to that of the MCDS scheme without requiring knowledge of \alpha.` | L550 |
+| 10 | **三种流类型（逐字）**：`(1) unicast: the flow has a single destination node. (2) multicast: the flow has multiple destination nodes, which are a strict subset of the remaining nodes. (3) broadcast: every node other than the source itself is a destination node.` | L54 |
+| 11 | **干扰模型（逐字）**：`in any given time-slot either all even numbered nodes or all odd numbered nodes can forward packets`；`Now, all nodes interfere with one another, and only one node can transmit successfully in any given time-slot.` | L536 / L538 |
+
+### 3) 对"负载变化/突发/时延/到达率"的事实贡献
+
+- **本篇不测负载，但把"年龄"变成一个可调度的网络资源**：L28 `we develop a unifying framework for making routing and scheduling decisions that minimize AoI cost in general multihop networks`；L34 `we consider the multihop problem in full generality - 1) with non-linear AoI cost functions; 2) unicast, multicast and broadcast flows and 3) considering both scheduling and routing decisions for optimization. We provide a recipe to transform AoI optimization problems into network stability problems.`
+- **对本选题最直接的价值（信用分配/虚拟队列）**：L36 `we introduce the notion of Age Debt and set up a virtual queuing network that is stable if and only if there exists a feasible network control policy that can achieve the specified target costs. We use Lyapunov drift based methods to stabilize this system of virtual queues` → **"把目标代价转成虚拟队列，再用漂移法驱动调度/路由"**是一套成熟且可移植到 LEO RL 路由的**代价塑形骨架**。
+- **到达率**：本篇的更新是"源节点按需产生"（L52 `they generate fresh updates on demand`），即 generate-at-will，**无到达过程统计**；L11 亦逐字说明 `the generation of update packets, such as sensor data, can be controlled. It has been shown [1] that generating update packets at the right rate can improve freshness`。
+- **突发**：**未见**（核验见文末统一表）。
+
+### 4) 能否作为定标或现象证据
+
+- **理论/算法论文（多跳无线网，非 LEO）**：数值结果仅为策略对比（L515–L559），**与卫星无关**。
+- **可作定标**：**否**（不含任何 LEO 或网络实测数值）。
+- **可作机制证据（迁移价值高）**：三类策略（stationary randomized / age difference / age debt）的**性能排序与复杂度**（L517、L557、L559）；**年龄债 + Lyapunov 漂移**的构造（L36）；**支持 unicast/multicast/broadcast 与非线性代价**（L34）。
+- **不可作**：LEO 相关任何现象或定标证据（**非 LEO 场景**）。
+
+### 5) 边界与不可外推项
+
+1. **非 LEO**：网络模型是通用无线多跳图（L50），**无卫星、无轨道、无 ISL/GSL**；迁移到 LEO 需自行补上时变拓扑。
+2. **时隙同步、单包/时隙**：L50（每时隙每边至多一个更新、恰好一个时隙送达）→ 与真实 LEO 的连续时延/可变速率不符。
+3. **集中式控制器**：L88 `We assume a centralized controller.` → 与 LEO 分布式星上路由的前提相反；**迁移时需重新论证分布式的可行性**。
+4. **源假设**：L52 `All the sources are active, i.e. they generate fresh updates on demand.`（generate-at-will）→ **不含外部泊松到达**，与 4QG5VYHQ 互补。
+5. **数值规模很小**：5–6 节点、133 个图（L548）→ **不能外推到星座规模**。
+6. **未读部分**：L96–L512（策略推导与证明主体）、L645–L842（附录证明）、参考文献 L569–L644 —— 本篇按"机制迁移"强度阅读，**未全文精读**。
+
+---
+
 <!-- GA-SECTION-START -->
 ## 附录 GA：对抗性问题（缺口主张 G-A）的全库检索与反例判定
 

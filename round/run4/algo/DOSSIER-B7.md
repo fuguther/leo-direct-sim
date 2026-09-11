@@ -502,3 +502,188 @@
 - **无动作掩码**：仅用权重惩罚（式 16/18/22）软性避让。
 
 ---
+
+## 6. AIH4GK37 — How Area Geometry Shapes Link-State Routing Scalability in LEO Networks（PBAR）
+
+> **特别说明（任务点名）**：本篇主轴是**控制面开销**（不是数据面负载），且**显式排除数据面流量**。其机制是链路状态路由的区域几何，与 RL 路由的接口在「事件率 → 状态更新频率」这一环，如实写。
+
+### 6.1 机制公式（逐字）
+
+- L136（式 1）：N = W _ { 0 } H _ { 0 }\tag{1}
+- L144（式 2，区域数）：K ( w , h ) = \frac { W _ { 0 } } { w } \frac { H _ { 0 } } { h } = \frac { N } { w h }\tag{2}
+- L154（**区内 ISL 数**，逐字含指示函数）：
+  { \cal E } _ { \mathrm { i n } } ( w , h ) = ( w - 1 ) h + w ( h - 1 ) + \mathbf { 1 } _ { \{ w = W _ { 0 } \} } h + \mathbf { 1 } _ { \{ h = H _ { 0 } \} } w ,
+- L160（式 4，**区内洪泛开销**）：C _ { \mathrm { l o c } } ( w , h ) = \gamma _ { \mathrm { l o c } } E _ { \mathrm { i n } } ( w , h ) ,\tag{4}
+- L168（式 5，**跨区 ISL 数**）：
+  E _ { \mathrm { c u t } } ( w , h ) = \mathbf { 1 } _ { \{ w < W _ { 0 } \} } \frac { W _ { 0 } } { w } H _ { 0 } + \mathbf { 1 } _ { \{ h < H _ { 0 } \} } \frac { H _ { 0 } } { h } W _ { 0 } ,\tag{5}
+- L174（式 6，**归一化边界暴露度**）：\beta ( w , h ) = \frac { E _ { \mathrm { c u t } } ( w , h ) } { 2 N } .\tag{6}
+- L180（式 7，**全局传播概率**）：q ( w , h ) = \operatorname* { min } \{ 1 , \alpha \beta ( w , h ) \} ,\tag{7}
+- L188（式 8，**形状项**）：\beta ( w , h ) = \frac { 1 } { 2 } \left( \frac { 1 } { w } + \frac { 1 } { h } \right) .\tag{8}
+- L196（式 9）：C _ { \mathrm { g l o b } } = 2 \gamma _ { \mathrm { g l o b } } N ,\tag{9}
+- L202（式 10，**期望控制开销率——主目标**）：R ( w , h ) = \lambda \left[ C _ { \mathrm { l o c } } ( w , h ) + q ( w , h ) C _ { \mathrm { g l o b } } \right] .\tag{10}
+- L214（式 11，区内直径）：D _ { \mathrm { l o c } } ( w , h ) = ( w - 1 ) + ( h - 1 ) .\tag{11}
+- L222（式 12）：T _ { \mathrm { l o c } } ( w , h ) = \delta _ { \mathrm { l o c } } D _ { \mathrm { l o c } } ( w , h ) ,\tag{12}
+- L228（式 13，**收敛时间一阶分解**）：T ( w , h ) \approx { \cal T } _ { \mathrm { l o c } } ( w , h ) + q ( w , h ) { \cal T } _ { \mathrm { g l o b } } ,\tag{13}
+- L400（路径拉伸定义）：We measure path stretch as the ratio of area-routing path cost to flat-routing path cost, using both hop count and delay: S _ { \mathrm { h o p } } \triangleq H _ { \mathrm { a r e a } } / H _ { \mathrm { f l a t } } and S _ { \mathrm { d e l a y } } \overset { \bar { \Delta } } { = } D _ { \mathrm { a r e a } } / \bar { D _ { \mathrm { f l a t } } } .
+- 三条预测（L237/L239/L241 逐字）：
+  - **(P1)** Intermediate optimum PBAR overhead and convergence time are minimized at an intermediate area size, not at either extreme of one large area or many tiny ones.
+  - **(P2)** Balanced shapes For a given area size, balanced (squarelike) divisions outperform elongated ones because they minimize both boundary exposure and local flood diameter.
+  - **(P3)** Wrap-around alignment Path stretch is governed primarily by whether area boundaries preserve the shorter toroidal direction, not by the total number of areas; stretch can therefore be non-monotonic in area granularity.
+
+### 6.2 决策粒度
+
+**配置级（区域划分 w×h）——这是一篇「设计规则」论文，不是「运行时决策」论文。**
+
+- L280：To study PBAR sensitivity to area division geometry, we evaluate only rectangular exact-divisor area layouts on the baseline 72×22 shell, so every reported partition tiles the shell exactly with no partial edge areas. The evaluated widths and heights are w ∈ { 72 , 36 , 18 , 9 , 4 , 2 } and h ∈ { 22 , 11 , 2 }, yielding 18 area divisions.
+- 运行时决策外包给 OSPF + Dijkstra：L257 Routers outside the area run Dijkstra on Area-Link LSAs to compute inter-area shortest paths, then forward toward the nearest border router of the next-hop area; once a packet enters the destination area, intra-area Local-Link LSA-based routing takes over.
+- 固定度量，禁止时延触发：L270 We assign a fixed per-hop metric of 1 to all ISLs, as in ASER [3], so that delay variations do not trigger routing updates.
+- 运行时有硬选择但由协议决定、不被优化：L259 Each area elects its area leader deterministically as the router with the highest Router ID in that area.
+
+### 6.3 是否含学习成分
+
+**否。**
+
+- 检索 X2_anylearning_all，实测 **AIH4GK37 = 0**。
+- 检索 T2_discount_clean，实测 **AIH4GK37 = 0**（噪声模式 T_discount_trace 曾命中 3 次，逐条核验为 \gamma_{\mathrm{loc}} / \gamma_{\mathrm{glob}} 协议常数，见 L160/L163/L196）。
+- 机制为解析建模 + ns-3 包级仿真验证（L249 We evaluate flat link-state routing and PBAR using ns-3 [9].）。
+
+### 6.4 可迁移点（含公式）
+
+1. **「同一事件按影响范围分成本不同的两级」的代价结构（式 10）**——本批最接近「按事件性质分通道计代价」的设计。
+   - 结构：R(w,h) = λ[ C_loc(w,h) + q(w,h)·C_glob ]（式 10），其中 q 是该事件升级为全局的概率（式 7）。
+   - L205 逐字：Increasing w and h raises C_loc because a local flood covers more of the shell, but lowers q because fewer events affect exported state.
+   - **迁移到 RL**：把「动作代价」拆成**局部代价 + 概率×全局代价**两项——与「按失败原因分通道」是**不同轴但同形**的结构（轴 = **事件影响范围**）。可作 G-A 的结构模板。
+2. **局部/全局事件的判据 = 「是否改变对外导出的状态」**——一个协议无关、可操作的事件分类准则。
+   - L97：Under PBAR, an event is local if it does not change the exported area summary and global if it does.
+   - L113：A global event changes the information the area must export. The triggering LSA is flooded within the area; once the area leader detects a change in exported state, it generates an updated area summary and floods it constellation-wide.
+3. **前缀复制吸收事件（机制层面的「事件吸收」）**：
+   - L325：a gateway advertises the same prefix through all of its attached satellites, so when C_g > 1 multiple satellites in the same area concurrently carry the same prefix. A handover that transfers the prefix between two such satellites leaves the exported set unchanged; the event is absorbed locally without any global flooding. We refer to this as prefix replication.
+   - **迁移**：我们方案中「同源多路径」可同理把「拓扑抖动」吸收为「无状态变化」，从而下降事件率。
+4. **形状项闭式解（式 8）**：固定面积 wh 时 β = (1/2)(1/w + 1/h)，给出「方正优于狭长」的可计算判据。L209：Equation (8) therefore predicts that more balanced shapes such as 4 × 11 should outperform more elongated ones such as 2 × 22 when area size is held fixed.
+5. **绕环歧义导致拉伸非单调（P3）**——对任何环形拓扑（含 LEO 星座）的路由抽象都有直接反例价值：
+   - L402：Area routing abstracts destination location to the area level. On a torus, this can obscure which wrap-around direction is shorter, causing inter-area routing to select a longer path. … Stretch can therefore be non-monotonic in area granularity.
+   - L404：The largest observed values occur for the 36×11 division, with hop-count stretch peaking at 1.073 and delay stretch at 1.079.
+
+### 6.5 是否已被 RL 论文采用
+
+**全库检索未见。** 模式 area geometry shapes link-state，实测命中文件 = AIH4GK37 自身（1 个）。
+
+（该文为 2026 新稿；其引用的 RFC 9717 / RFC 9666 / ASER 均未被本库 111 篇中的学习型路由论文引用。）
+
+### 6.6 实验合同里与「负载」相关的设置（**本篇最特殊，必须逐字登记**）
+
+- **显式排除数据面流量（本批 10 篇中唯一）**，L272 逐字：
+  b) No data-plane traffic: No user or data traffic is injected, avoiding congestion effects that could obscure control-plane behavior.
+- **显式排除检测时延（只测分发）**，L274：c) Detection latency excluded: We exclude detection latency: the event generator determines when changes become visible to the routing process, and convergence is measured from the first advertisement transmission to the last processing anywhere in the network. Periodic Hellos are also excluded from all overhead accounting.
+- **显式声明排除原因**（L276）：Although our simulator can represent richer scenarios, including multi-shell or polar-shell constellations, concurrent ISL failures, data-plane traffic, and protocol detection timers, we intentionally exclude those factors here because they introduce additional mechanisms that would confound the paper's target question: how area geometry affects event-driven linkstate dissemination overhead, convergence, and path stretch.
+- 链路参数（L266 Table I 逐字）：ISL bandwidth 10 Gbps / MTU 8192 bytes / Queue discipline FIFO / Max queue size 100,000 packets / Propagation delay dist(t)/c at send time / Failure behavior Drop packet during link down
+- 拓扑：L280 Our baseline shell is Starlink Phase 1 Shell 1 at 53° inclination with 72 orbital planes and 22 satellites per plane, i.e., a 72×22 shell.
+- **「负载」= 控制面事件率**：
+  - GSL 事件：L288 Gateway locations are derived from a publicly compiled Starlink gateway dataset [11], which provides 129 gateways.；三种挂接策略 L290–L294（Closest-C_g / Keep-C_g / Keep-C_g with margin）。
+  - ISL 事件：L298 ISL instability is modeled as discrete link down/up events, with at most one ISL down at a time to isolate individual disruptions. Because public measurements of ISL outage and restoration times are limited, we use a single Pareto distribution for both down-interval and up-interval durations (shape k=2.5, scale x_m = 7.2 s, mean 12 s)
+- 事件率结果：L320 Closest-C_g generates roughly 1.3× more routing events than Keep-C_g , with the margin variants in between.
+- 开销量级：L327 In the no-area 72×22 baseline, every gateway handover floods Local-Prefix LSAs across all 1584 satellites, generating approximately 600k packets/s at the observed handover rate.
+- **负载=事件率（不是比特率）**；无流量矩阵、无到达过程、无突发。
+
+### 6.7 该文自述的局限（逐字）
+
+- L431（结论中的边界声明）：The 18 × 22 and 18 × 11 layouts reflect our workload, not universal choices. The model can evaluate other divisions, including non-exactdivisor layouts. These results do not establish superiority over centralized, precomputed, or geographic routing.
+- L435（未来工作，**含明确的机制缺口**）：PBAR can complement time-variant routing (TVR). Preinstalling predictable GSL prefix relocations avoids reactive flooding; link state handles unexpected failures, as our ISL scenarios evaluate. Richer non-toroidal topologies require scheduled adjacency changes and spatial event rates. Delaytriggered updates and concurrent events require a richer event model for λ. Nonuniform gateway or failure distributions require weighted boundary exposure. Congestion with mixed control/data traffic requires load-dependent costs and transient end-to-end evaluation. Empirical traces should calibrate ISL disruption, recovery, and correlated failures such as localized space weather.
+- L183（模型定位自述）：The model is intended as an explanatory tool rather than a quantitative fit to simulation output: it predicts qualitative trends—such as the existence of an intermediate optimum and the advantage of balanced shapes—that we then verify experimentally.
+
+### 6.8 该文没有考察的算法选择（基于 6.1–6.6 判定）
+
+- **无学习成分**（§6.3 实测）。
+- **无拥塞/负载相关代价**：L272 显式排除数据面流量；L435 自述 Congestion with mixed control/data traffic requires load-dependent costs——即**作者自己承认没有负载相关代价**。
+- **无失败成因区分**：ISL 故障被建模为单一 Pareto 分布的 down/up 过程（L298），**不区分故障物理成因**；检索 Y_dropcause，实测 **AIH4GK37 = 0**。
+- **无逐包路由决策**：路由由 OSPF Dijkstra 决定（L257），论文不优化它。
+
+---
+
+## 7. 67CSKFK4 — Delay is not an Option（Handley）
+
+### 7.1 机制公式（逐字）
+
+**本文无形式化公式**（全文检索 \`\\tag{\` 与 \`\\begin{array}\` 均为 0 命中）。其「机制」是拓扑构造规则 + 最短时延路由。核心机制陈述逐字：
+
+- L76（路由机制）：The simplest way to route is for each groundstation to connect to the satellite that is most directly overhead. This has the advantage of providing the best RF signal strength for uplinks and downlinks. We can then run Dijkstra's algorithm[5] over the satellite network using link latencies as metrics to provide the lowest latency paths.
+- L78（**预计算 + 源路由**，逐字）：Of course, the network is not static; the satellite most directly overhead changes frequently, the laser links between NE- and SE-bound satellites change frequently, and link latencies for links that are up change constantly. We can, however, run Dijkstra on this topology for all traffic sourced by a groundstation to all destinations, and do so every 10 ms with no difficulty, even on laptop-grade CPUs. In addition, all the link changes are completely predictable. If we run Dijkstra every 50 ms, for the network as it will be 200 ms in the future, and cache the results, we can then see whether packets we send will traverse a link that will no longer be there when the packets arrive. In this way, each sending groundstation can source-route traffic that will always find links up by the time the packet arrives at the relevant satellite.
+- L95（**把 RF 上下行也纳入图**）：To achieve the lowest delay, we need to include all possible RF up and down links into the network map that we run Dijkstra over. In this way, we always choose the best matched satellite pair for the uplink and downlink, and we use satellites that are in the correct direction.
+- L68（**用第 5 条激光连通两个子网**）：The network resulting from this use of each satellite's first four laser links provides a good mesh network, but in any one region their are two distinct meshes - one moving generally northeast and the other moving southeast, with no local connectivity between the two without going the long way round the planet.
+- L126（多路径：迭代删边 Dijkstra）：This is calculated iteratively; first we run Dijkstra to calculate the best path, then we remove all the RF uplinks and laser links used by that path from the network graph. We then re-run Dijkstra to find the next best path, eliminate those links, and iterate.
+- L142（**乱序修复判据，含时间判据**）：Suppose the known difference in path delays is t _ { d i f f } . If any preceding packets are missing, the receiving groundstation queues all packets arriving on the new path until either all predicing packets have arrived, or time equal to t _ { d i f f } - t _ { l a s t } has elapsed.
+- L114（相位偏置）：If phase shifted uniformly, 30 orbital planes would have a separation of 12° between successive planes.
+- L37（**相位偏置选择**）：With all even multiples of 1/32 as phase offset, satellites collide. … To minimize the probability of collision if station-keeping is not perfect, we conclude that the phase offset should be 5/32.
+- L41（第二阶段相位偏置）：We conclude that 17/32 is the best phase offset, though a few other values also appear to be viable.
+
+### 7.2 决策粒度
+
+**源端源路由（source routing），决策由地面站做，按「未来 N ms 的图」预计算。**
+
+- L78（见上）：\`each sending groundstation can source-route traffic\`，预计算窗口 \`200 ms\`，重算周期 \`every 50 ms\`。
+- **决策粒度 = 地面站 + 卫星对**（不是逐卫星转发决策，也不是逐包）：
+  - L95：we always choose the best matched satellite pair for the uplink and downlink
+  - L93：Lower latency can be achieved by using a satellite lower in the sky in the direction of the destination. This is, of course, at the expense of 3dB lower RF signal strength[12], likely resulting in lower achievable bitrate.
+- 多路径：L126 迭代求出互不相交的前 20 条路径（L124 …with Starlink there may be 60 satellites within coverage range for latitudes close to 50°N）。
+- **动作无时间结构（无驻留、无延迟）**：路径即时生效，且强调「避免排队」——L134：So long as queues are not allowed to build in satellites, reordering is completely predictable, as all routes are known several hundred milliseconds in advance.
+
+### 7.3 是否含学习成分
+
+**否。纯最短时延路由 + 预计算源路由。**
+
+- 检索 X2_anylearning_all，实测 **67CSKFK4 = 0**。
+- 检索 T2_discount_clean，实测 **67CSKFK4 = 0**。
+
+### 7.4 可迁移点（含公式）
+
+1. **「把未来图算出来再发」——预测式路由的时间边界**：L78 \`If we run Dijkstra every 50 ms, for the network as it will be 200 ms in the future, and cache the results, we can then see whether packets we send will traverse a link that will no longer be there when the packets arrive.\` **迁移**：我们方案的「动作时间结构」可借用此「前视窗口 vs 重算周期」的比率设计。
+2. **把最后一跳 RF 也纳入优化图（co-routing）**：L95。**迁移**：端到端优化不应把接入段当常量。
+3. **多路径用「迭代删边最短路」生成，且给出隐式容量假设的诚实边界**：L126 \`With this formulation, no satellite overhead either city can provide more than one up or downlink, and no intermediate satellite can be used by more than two paths. This implicitly assumes that laser links and RF links have the same capacity - this is unlikely in reality; whichever turns out to be the bottleneck, a real network will allow more paths than this, so the figure effectively shows an upper bound on path latency.\`
+4. **乱序修复的时间判据**：L142 \`t _ { d i f f } - t _ { l a s t }\` 的等待窗口——**与我们方案「动作带时间结构」时的跨路径时序处理直接相关**。
+5. **反例价值：加负载控制不等于排队可控**。
+   - L150（**明确的无排队假设**）：All the simulations above assume that no significant queuing happens in the satellites themselves. For high-priority (likely high cost) traffic, this can be ensured by admission control, so long as it forms a minority of the traffic.
+   - L152：In terrestrial networks, centralized load-dependent routing schemes such as B4[9] and LDR[7] can pro-actively route so as to achieve low latency without causing congestion. These schemes, however, make routing decisions on a minute-byminute basis - too slow for routing on dense LEO constellations. It is an open question whether such schemes can be extended for this use, or if the latency between the controller and groundstations will always be too high.
+   - L154（**混合方案提案**，逐字）：We postulate that a hybrid solution may work well. High priority low-latency traffic always gets priority, admission control limits its volume, preventing it causing congestion and it gets explicit routing ensuring minimum latency. For the remaining traffic, satellites monitor link load; this is broadcast to all groundstations globally, so everyone is aware of hotspots. Because of the nature of a LEO constellation, these hotspots tend to be geographic rather than topological. Groundstations then randomize their path choice across slightly less favorable paths to load-balance traffic away from hotspots. … This allows groundstations to be much more conservative about when they move traffic back to the lowest delay path, using timescales much longer than the latency of the broad cast load reports, so avoiding instability.
+
+### 7.5 是否已被 RL 论文采用
+
+**被大量 T1 学习型论文引用（本批被引最广的一篇）。**
+
+全库检索模式 delay is not an option，命中文件（23 个）= 42E4NAQU 4QG5VYHQ 5HJ8ATR7 67CSKFK4 7AXASN73 8AYW2Y78 9GPFG5U3 AF674CSF DS9SPARV DVS8C3CC GPDPLJNG IEI3BYFF IXVSNEE3 JLF7IEBQ K7U4TYJN K93SCUF2 L63JISQN MYBALQ2D S85KQ4FC T9X6QCLL TQF59BD7 W6M3GU7L X5K285MW YD4JUT7G。
+
+其中 T1（路由+学习）确认引用：
+
+| 引用方 | 性质 | 行号 | 逐字 |
+|---|---|---|---|
+| 42E4NAQU | T1（MA-DRL 队列感知路由） | L168 | [1] M. Handley, "Delay is not an option: Low latency routing in space," in Proceedings of the 17th ACM Workshop on Hot Topics in Networks, Nov. 2018, pp. 85–91. |
+| GPDPLJNG | T1（多商品流 + 深度学习） | L289 | [2] M. Handley, "Delay is not an option: Low latency routing in space," in Proceedings of the 17th ACM Workshop on Hot Topics in Networks, ser. HotNets, New York, NY, Nov. 2018, p. 85–91. |
+| S85KQ4FC | T1（锚件：流级 DRL） | L603 | [54] M. Handley, "Delay is not an option: Low latency routing in space," in Proc. 17th ACM Workshop Hot Topics Netw., 2018, pp. 85–91. |
+
+**采用方式**：均为引用其**低时延/动态拓扑动机**（如 42E4NAQU L13 \`low Earth orbit (LEO) satellite networks are increasingly being utilized to provide global internet coverage [1]\`），**未见把其预计算源路由机制吸收为学习方法的一环**。
+
+### 7.6 实验合同里与「负载」相关的设置（仅作实验条件登记，不作贡献）
+
+- **本文明确不做容量建模**，L25 逐字：It seems probable that free-space laser link speeds of 100 Gb/s or higher will be possible. However, in this paper we will refrain from modelling network capacity, as this is too speculative, and focus instead on latency, which is constrained only by topology and the speed of light.
+- **明确假设无排队**，L150（见 §7.4）。
+- 星座（L31 表，逐字）：\`Orbital Planes 32 / 32 8 / 5 / 6\`；\`Sats per plane 50 / 50 50 / 75 / 75\`；\`Altitude (km) 1,150 / 1,110 1,130 / 1,275 / 1,325\`；\`Inclination 53° / 53.8° 74° / 81° / 70°\`
+- L19：Starlink's initial phase, 1,600 satellites in 1,150 km altitude orbits
+- 覆盖判据（L21）：The main restriction is that satellites are considered reachable if, from the ground, they are within 40 degrees from the vertical.
+- 激光链路数（L23）：A good working assumption is that each satellite will have five free-space laser links to connect to other Starlink satellites.
+- 负载相关结果（**仅有乱序/TCP 层面的定性讨论**）：L128 \`There are five paths that have lower latency than the greatcircle fiber path, and all 20 paths have lower latency than the current Internet path. However, latency variability increases as the path gets worse: path 20 has much more variable latency than path 1, as it has fewer options available. In figure 12 we see the one-way latency of path 20 in more detail. 10% variability is likely insufficient to trigger spurious TCP timeouts, and increases in RTT are also unlikely to impact TCP. However, when latency decreases rapidly, reordering will occur, causing TCP to incorrectly assume a loss has occurred and triggering a fast retransmit.\`
+- **负载=无流量模型、无到达过程、无突发**；唯一的「负载」讨论是定性提及 admission control 与 hotspot（L150/L154）。
+
+### 7.7 该文自述的局限（逐字）
+
+- L150：All the simulations above assume that no significant queuing happens in the satellites themselves.（**核心局限，自述**）
+- L152：It is an open question whether such schemes can be extended for this use, or if the latency between the controller and groundstations will always be too high.
+- L132（研究议程段，逐字，多项自认未解）：A network such as Starlink raises many research questions, both for the network itself, and for traffic traversing it. For legacy Internet traffic, reordering must be avoided. Delaybased congestion control such as BBR[3] may not perform well over such a network. The network must be resilient to failures. And it must be capable of routing with low delay, even when traffic levels are high enough to saturate the best paths. We briefly discuss some of these questions.
+- L25：However, in this paper we will refrain from modelling network capacity, as this is too speculative
+
+### 7.8 该文没有考察的算法选择（基于 7.1–7.6 判定）
+
+- **无学习成分**（§7.3 实测）。
+- **无排队/拥塞建模**（L150 自述；L25 自述不做容量）。
+- **无失败成因区分**：故障只在 L146 定性讨论，且未区分原因——L146 逐字 \`Such a network is inherently resilient to failures. If an RF transceiver fails, that satellite can still relay through traffic; there are many other satellites within range of a groundstation, so the impact on coverage is minimal. However, all groundstations need to be informed of any failure, so they can factor it in to their routing considerations.\` 检索 Y_dropcause，实测 **67CSKFK4 = 0**。
+- **无动作时间结构（无延迟/驻留动作）**：唯一的时间机制是预计算窗口（L78），不是「主动不发」。
+
+---
