@@ -689,4 +689,81 @@ LEO 巨型星座开始用**激光星间链路（LISL）**替代射频 ISL（容�
 **把 AoI 作为 LEO 抗干扰路由的优化目标、并把"链路性能退化"（而非只有断链）纳入建模**，问题设定有新意，且难得地做了**跨 500–5000 包的负载扫描**并给出 2500 包的交叉点；但作为一篇两页 letter，它的**实证薄弱**（单一基线、正文无数字、权重未给、干扰状态未定义），且**AoI 目标函数在数学上退化为"最小化逐跳时延和"**（式 5 第一项与路径无关），因此它更像一个**有价值的动机与设定**，而不是可复现的结论——方法论谱系上是"**DQN + 多目标奖励工程**"，与 CMNCS52M 同源但成熟度低一档。
 
 
+## ETTA3DIV — Required toroidal confinement for fusion and omnigeneity (A. H. Boozer)
+
+**1. 一句话**
+一篇**磁约束聚变等离子体物理的理论论文**：论证自持氘氚（DT）燃烧要求离子/电子分布函数极接近局域麦克斯韦分布，而托卡马克/仿星器中无碰撞粒子轨迹若混沌会指数放大熵产生与输运，因此约束磁场必须满足**全向性（omnigeneity）**这一"最弱的一般条件"；论文用**纵向作用量 $J$（Northrop-Teller）**把这些约束化成可计算的积分形式，并给出构造全向平衡与量化偏离全向性的度量。
+
+**2. 问题设定**
+**与 LEO 卫星网络、路由、负载、到达率完全无关。** 具体问题（L15–L19）：DT 聚变的反应截面远小于库仑截面，要求**约束时间比碰撞时间长约数百倍（离子）/上万倍（电子）**，且功率密度正比于 $(nT)^2$ 的上限要求数密度足够低，使**平均自由程约为等离子体尺寸的 1000 倍**——于是等离子体处在一个"**既必须足够碰撞（保持近麦克斯韦）又必须足够无碰撞（轨迹问题）**"的悖论区间（L15、L165）。
+矛盾的两面：一方面近麦克斯韦使非平衡态热力学可用（式 4、5 关联输运、熵产生、碰撞频率与偏离量）；另一方面 Fokker-Planck 方程是**对流-扩散型**，其**对流项（Vlasov 算子）以粒子轨迹为特征线**，若轨迹混沌则扩散效应被**指数放大**（L93），产生远超自持燃烧所能承受的输运。**全向性**就是保证"无碰撞俘获粒子的相继反弹点落在同一磁面上、且最大偏离正比于回旋半径"的最弱条件（L29、L305）。
+
+**3. 方法骨架**
+**纯理论解析（Boozer 坐标 + 作用量-角变量 + 漂移哈密顿量），无仿真、无数据集、无机器学习。**
+- **约束在磁面上**：$2\pi\vec B=\vec\nabla\psi\times\vec\nabla\theta_0$（式 1），$\theta=\theta_0+\iota(\psi)\varphi$，$\iota$ 为旋转变换。
+- **全向性的定义（式 2、3）**：基于 Northrop-Teller 的**纵向作用量** $J(\psi,\theta_0,u)\equiv m\int v_{||}d\ell$，全向性即 $\partial J/\partial\theta_0=0$；偏离程度用无量纲量 $(\partial J/\partial\theta_0)/J$ 度量（L41、式 37）。
+- **粒子漂移（第 III 节）**：$\rho\to0$ 时回旋中心漂移 $\vec v_d=\frac{v_{||}}{B}\vec H$，$\vec H\equiv\vec B+\vec\nabla\times(\rho_{||}\vec B)$（式 12、13）；守恒量是磁矩 $\mu$ 与能量 $u$（式 14、15）。$\vec H$ 在 $v_{||}=0$（俘获粒子折返点）奇异，这正是俘获粒子会被推离磁面的根源（L207）。
+- **三个层次的约束强度**（第 III.B–III.E 节）：
+  1. **轴对称（最强）**：环向正则动量 $p_\varphi$ 守恒；
+  2. **准对称（quasi-symmetry）**：$B=B(\psi,\zeta)$，$\zeta=N\varphi-M\theta$（式 19），漂移哈密顿量有守恒量 $P_h=NP_\theta+MP_\varphi$（式 20、21）；
+  3. **全向性（最弱）**：只要求 $\partial J/\partial\theta_0=0$，允许 $B$ 不是准对称的。**全向性严格弱于准对称**。
+- **全向性的两个几何条件（L309–L311）**：① 等 $B$ 线必须**在至少一个角度上无界**（不能在 θ 和 φ 上都闭合）；② 俘获粒子在相继折返点之间**净径向漂移为零**。
+- **可计算的判据（第 IV 节）**：
+  - $J=\sqrt{2mu}\frac{\mu_0(G+\iota I)}{2\pi}\int\sqrt{1-\frac{B}{B_t}}\frac{d\varphi}{B}$（式 34）；
+  - 偏离度量 $\frac1J\frac{\partial J}{\partial\theta_0}$ 写成两个积分的比（式 37）；
+  - 优化中常用的 $\gamma_c\equiv\frac2\pi\arctan\big(\frac{\partial J/\partial\theta_0}{\partial J/\partial\psi}\big)$（式 38）；
+  - **充分条件（式 45、46）**：$S=0$ 对所有 $B_t,\theta_0$ 成立，等价于两个方向的 $\partial\varphi/\partial\theta_0$ 处处相等；**准对称下此式自动满足**（L485）。
+  - 反弹时间 $\tau_b=\partial J/\partial u$（式 31、48），深俘获近似 $\tau_b=\frac{L_p}{\sqrt{2\epsilon}v}$（式 57）；进动频率见式 61。
+- **构造全向平衡（第 V 节）**：用 Cary-Shasharina 函数 $g(\theta,\eta)$，$\eta=\zeta-g(\theta,\eta)$（式 62），把全向性条件化为式 63；展开到 $\eta^2$ 阶得式 72、73——**$g$ 的偶次幂系数任意，奇次幂系数必须被选定以消掉奇次项**（L653）。
+- **主结论之一（第 VI.B 节）**：**全向但非准对称的仿星器，其自举电流等于等效准对称场下的值**（L773），即偏离准对称不改变自举电流。
+- **输运估计（式 96）**：$D\approx\big(\frac{d\psi}{dt}\big)^2\frac{\nu_{eff}}{\nu_{eff}^2+\omega_{pr}^2}$，且作者**明确声明该式高度简化、只有定性正确**（L845）。
+
+**4. 它声称的效果**
+**没有实验、没有仿真、没有数值结果表**。作者在 L895 的数据可用性声明中逐字写道："Data sharing is not applicable to this article as **no new data were created or analyzed in this study**."
+可称为"结论"的是若干解析命题与定性判断：
+- 自持 DT 燃烧**在约 10 keV 最容易**，温度升到 35 keV 时难度**增加一个数量级**（Fig 1，L123、L865）。
+- **精确全向性与解析性不相容**（除非是准对称）：Cary-Shasharina (1997) 的结果被本文重申与展开——场强极大值附近要求磁场精确呈准对称形式 $B_{max}(\psi,M\theta-N\varphi)$，否则场强必须**非解析**（L669、L873）。
+- 因此现实做法是**近似全向**；第 VI.D 节讨论"在尽量少影响约束的前提下破坏全向性"，特别是**短波长波纹（ripple）**：当波纹强度超过约 $(\iota/N_c)\epsilon_t$ 时出现不可接受的波纹俘获粒子损失；而在约为 $(\iota/N_c)^2\epsilon_t$ 的**弱波纹区间**，破坏作用量守恒的影响**似乎很小**（L357–L359）。
+- 给出定量标度：$\omega_{pr}/\nu_d\approx200\,T^{5/2}/(Bna^2)$（式 99）、$\omega_{pr}/\nu_e\approx2.5\,T^{5/2}/(Bna^2)$（式 100）。
+- 提及**实验侧旁证**：W7-X 的设计与运行（L101、L313），以及 Jorge、Plunk、Drevlak 等近期演示了能精确满足全向性的仿星器位形（L881）。
+
+**5. 实验条件**
+**没有实验条件可言**——无仿真设置、无参数扫描、无可复现的数值实验。全文是解析推导 + 文献综合；坐标系设定为 **Boozer 坐标**（附录 A 给出完整定义与对偶关系，式 A1–A12），并在多处**假设 $M=0$、只保留 $g$ 的线性项或 $\eta^2$ 阶**以简化（L605、L619、L659）。
+文中出现的等离子体参数只是**数量级锚点**（如平均自由程约 10 km、$\rho v_{th}\approx10^4(T/B)$），并非本文测量或仿真所得。
+
+**6. 自述局限（逐字）**
+- **L845（最重要的自述）**："The derivation of Equation (96) is **highly simplified, and this equation is only qualitatively correct.** A much more complete and accurate calculation of the transport with small departures from omnigeneity was given [27] by Vincent d'Herbemont, Parra, et al in 2022."
+- **L671**："the extent of the implied deviations from omnigeneity **are unclear** as are the effects on transport at low collisionality."
+- **L119**："**Relatively little work has been done on field-line breaking microturbulence.**"
+- **L359**：弱波纹区间的结论带保留——该破坏"**appears to** have minimal effects"，且该区间"**is not discussed** in the review of ripple losses [20]"。
+- **L363**："The design of coils that have minimal ripple transport while having the largest possible space between the coils for access is important but **relatively unexplored**."
+- **L87**：关于同种粒子碰撞是否引起粒子输运这一"subtle question"，作者写道"The details **require too much space for this paper**."
+- **L885（致谢中的自我修正）**：感谢 Per Helander、Matt Landreman 等人"**pointing out misconceptions that I made in earlier versions**"——即本工作是在他人纠正作者先前误解的基础上完成的。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+**在它自己的领域内**（以下仅限等离子体物理，与 LEO 无关）：
+1. **式 96 的输运系数被作者自评为"只有定性正确"**（L845），并指向 d'Herbemont 等 2022 的更完整计算——**用更准确的输运模型替换式 96、重算偏离全向性的容忍阈值**是最直接的下一步。
+2. **弱波纹区间被既有综述忽略**（L359）而作者认为其影响很小——这是一个被明确指出的认识空白，值得专门研究。
+3. **线圈设计与波纹输运的联合优化"相对未被探索"**（L363）。
+4. **"全向性能否为准对称设计提供额外自由度"**（L877）被列为待研究问题——即全向性相对准对称到底多给了多少设计空间。
+5. **非解析性的性能代价未被量化**（L671 逐字承认 unclear），尽管"精确全向性 ⇒ 非解析"在数学上已明确（L669、L873）。
+
+**8. 和同批其他篇的关系**
+**没有实质关系。** 这篇与批内其他 10 篇（LEO 路由 / 负载均衡 / 调度 / 仿真平台 / AoI / RL 理论）**分属完全不同的学科**：
+- **研究对象的层次不同**：本篇是带电粒子在磁场中的**连续哈密顿动力学**（回旋半径趋于 0 的导心近似）；其他篇是**离散数据包在离散图上的转发决策**。
+- **术语表面重合、语义完全不同**：本篇的 trajectory / chaotic / action / confinement / transport / drift / bottleneck 指的是粒子轨道、哈密顿混沌、作用量-角变量、等离子体约束、输运系数、漂移速度——**与"路由轨迹/混沌/动作空间/流量约束/传输/漂移/瓶颈"只是英文词形相同**。我通读后确认**不存在可迁移的数学结论**：它的核心对象（相空间作用量积分 $J=\oint v_{||}d\ell$）与 LEO 网络的任何量（时延、队列、到达率、跳数）之间**没有映射关系**。
+- **引用关系**：参考文献 [1]–[28]（L959–L1022）全部是等离子体物理/磁约束聚变文献（Boozer 本人系列工作、Northrop & Teller 1960、Cary & Shasharina 1997、Helander & Nührenberg 2009、W7-X 实验等），**与 LEO 网络文献零交集**；本批其他篇也不可能引用它。
+- **一个值得报告的语料事实**：它与 **E4NYGLGX（Retrace）** 一样属于"**非 LEO 文献被一并纳入**"的情形，但两者性质不同——Retrace 至少是批内多篇 DRL 路由论文所用算法家族的理论出处，**本篇连这种间接关系都没有**：批内没有一篇使用等离子体物理的方法或结果。因此它更像**检索/归档环节的误纳**（例如按 trajectory / routing / confinement 之类关键词被召回），而非刻意的周边文献。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**没有直接贡献。明确地没有。** 依据：
+- 全文**不含任何**"到达率"、"排队"、"端到端时延"、"流量负载"语义的概念。本文的 transport 指**粒子/能量在磁面之间的输运**（式 4、5、96），是扩散过程而非网络传输。
+- 它的因变量是**粒子径向偏离 $\Delta\psi$ 与熵产生率**，自变量是**磁场位形 $B(\psi,\theta,\varphi)$、粒子能量与磁矩、碰撞频率**——没有时间维度上的到达过程，也没有服务速率。
+- 它确实有"时间尺度"（反弹时间 $\tau_b$、进动频率 $\omega_{pr}$、碰撞频率 $\nu$），但比较的是**三种物理过程的相对快慢**（式 99、100），**不是请求到达与服务速率的关系**。
+- **不做硬扯的说明**：我不会因为"两者都存在多个时间尺度的竞争"就声称相关。那是**隐喻层面的相似**，不产生任何针对"负载变化下到达率/时延"的可检验事实或工具；强行转述只会污染读卡的结论层。
+
+**10. 一句话评价**
+**一篇与本研究主题完全无关的等离子体物理理论论文**（Boozer 关于仿星器全向约束的作用量表述，2023 年预印本）：在其本领域内，它把"约束磁场必须满足什么条件"还原成可计算的解析判据（式 2、37、45、96），并明确指出**精确全向性与解析性不相容**这一结构性障碍；但对"LEO 卫星网络 RL 路由选题"这一目标，它的贡献是**零**——它出现在本批语料中，本身是一条关于**语料构成与召回质量**的证据，值得主控在汇总时单列。
+
+
 <!-- END-OF-CARDS -->

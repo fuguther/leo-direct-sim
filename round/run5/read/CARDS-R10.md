@@ -679,4 +679,22 @@ Python 自建环境，**定制 gym API** 实现一个 LEO 卫星 mesh 网络的�
 **10. 一句话评价**
 本批**唯一一篇把"约束"当一等公民**的论文：用 CMDP 形式化 + "预计算安全路径集作为受限动作空间"实现安全探索，最有价值的两个产物是 ①**对传统 DQN 失败的机理诊断**——"四条 ISL 负载完全相同 ⇒ agent 认为所有动作等价 ⇒ 环路不可避免"（L137），这是一条干净且可复现的状态表征缺陷；②**对"何时应该放弃学习型路由"的明确指认**——约束无解时退回规则型源路由（L7）。但它的"Constrained DQN"实质是**动作掩码 + 受限 max**，没有约束优化的理论保证；实验停留在 12/24 节点的抽象 mesh 图上、无时延无丢包无星座参数、负载时变过程未交代，且**采用地面中央控制器**，与 Y2H4NPLU 的全分布式主张正面相反——两篇互引（ZIUBKVPZ 引 Y2H4NPLU 为 [10]）却给出相反的架构结论，是本批最值得并列阅读的一组对照。
 
+## 批次交叉索引（R10 汇总，供主控使用）
+
+**引用关系（本批内部实测）**
+- **ZIUBKVPZ → Y2H4NPLU**：ZIUBKVPZ 参考文献 [10] 即 Soret, Leyva-Mayorga, Lozano-Cuadra, Thorsager, "Q-learning for distributed routing in LEO satellite constellations," arXiv:2306.01346（ZIUBKVPZ L210）。**两篇立场相反**：Y2H4NPLU 全分布式、以"不依赖地面段"为卖点；ZIUBKVPZ 明确 "Learning and decisions: Centralized"（地面中央控制器）。共同祖先：Boyan & Littman 1993（Y2H4NPLU [8]；ZIUBKVPZ [6]）。
+- **YI9G7NR7 与 Y2H4NPLU 高度同源但未互引**：状态 $S_i=\{L_i,N_i\}$（邻居 2 bit）、奖励三段式（$r_{queue}+r_{dist}$，$r_{dist}=w_2\frac{\|id\|-\|jd\|+\|sd\|}{\|sd\|}$ 逐字符相同）、Q 更新取**邻居 Q 表** $Q_j$、负载定义 $\ell=\sum\lambda/\lambda^{*}$ 四处几乎逐式相同；**YI9G7NR7 参考文献 [1]–[12] 中无该文**。**需主控核验**（可能为同脉络延续或引注遗漏），我未下判断。
+- **YD4JUT7G 被同批两篇引用**：X5K285MW 的 [8] 与 XM6NUPM4 的 [17] 都是 "Internet backbones in space"。
+- **X5K285MW / XM6NUPM4 / YD4JUT7G 构成引用三角**：共享 Handley 2018「Delay is Not an Option」（X5K285MW [10]、YD4JUT7G [20]）、Bhattacherjee 团队（X5K285MW [2] CoNEXT'19、YD4JUT7G [3] HotNets'18）、Gvozdiev 的"额外跳数—传播时延"分析线（X5K285MW [9]、YD4JUT7G [41]）、Walker 1984（X5K285MW [16]、YD4JUT7G [42]）、del Portillo 成本线（YD4JUT7G [7][8][9]、XM6NUPM4 [4]）。
+- **Roth 一脉**：ZIUBKVPZ 作者含 Roth & Bischl，其 [2] = Roth et al. 2022 分布式 SDN 负载均衡 = X5K285MW 的 [15]。
+- **共享基线文献**：DRL-ER（S85KQ4FC、XLRW7XXN、Y2H4NPLU 三篇共同引用）；Liu et al. 2020「A load balancing routing strategy for LEO satellite network」（X5Z98UPM [26] = ZIUBKVPZ [3]）；Gounder et al. 1999（X5Z98UPM [13] = YD4JUT7G [19] = ZIUBKVPZ [4]）；ELB / TLR（X2FCSU4S 与 X5Z98UPM 共同引用）；HGL（X5Z98UPM [14] = XLRW7XXN [2]）；Papa et al. 2020（X5K285MW [14] = XLRW7XXN [5]）；Mnih et al. 2015 DQN 原始论文（Z74SR656 [192]——**本批三篇 DQN 论文无一篇引它**）。
+
+**"低负载区算法无差别"这一现象在本批出现 4 次（独立观测）**
+XLRW7XXN L174（网络空闲时三种算法差别不大）｜XM64YRAW L236（低负载时 GQN 相对 SP 无明显优势）｜X5K285MW L92 语境（闲置网络下差异不显著）｜YI9G7NR7 L160（$\ell<0.6$ 时三者都是低时延 + 100% 送达率）。**可作为"负载感知路由收益是负载的函数"的多源证据。**
+
+**本批唯一给出"到达率/负载 → 时延 + 送达率"绝对值的是 YI9G7NR7**（$\ell=0.5$–0.9；$\ell=0.8$ 时 241 ms / 98.6%；$\ell=0.9$ 时时延优势 27.6%/18.6%），其次是 XM64YRAW（只有趋势，无绝对数）。**Y2H4NPLU 给出唯一的归一化负载定义 $\ell=\sum\lambda/\lambda^{*}$ 与唯一的拥塞形式化判据（回归斜率 t 检验，$H_0:\beta_1\le0$，$\alpha=0.05$，末 200 包）**。**X5K285MW 给出唯一的"合规悬崖 + 实际 bps 锚点"**（70000 会话 ≈ 9.72 Gbps、120000 ≈ 16.67 Gbps；随机选路多承载 73%）。
+
+**与"负载/时延"无直接关系（如实标注）**：X2FCSU4S（缓存定价博弈，无到达率扫描）、XM6NUPM4（容量规划，时延=跳数约束、容量需求=静态均值）、YD4JUT7G（跨域架构，动态轴是连通性与降雨，无排队项）、Z74SR656（综述，唯一量化关系为转述：时延随卸载率下降、随高度上升）。
+
 <!-- END -->
+
