@@ -30,4 +30,4 @@
 ## 口径更正（Codex 第 2 条）
 
 - 此前「2.0 GB Markdown」是**目录体积（含 MinerU 抽取的图片）**；
-- **正文合计 10,411,191 字符 ≈ 10.4 MB**（见 `CONVERSION-SUMMARY.json` 的 `total_md_bytes`）。
+- **正文合计 10,411,191 字节 ≈ 10.4 MB**（见 `CONVERSION-SUMMARY.json` 的 `total_md_bytes`）。

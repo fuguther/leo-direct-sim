@@ -159,20 +159,17 @@ def resolve_role(session_id: str, wt, allow_claim: bool = True):
     entry = (d.get("sessions") or {}).get(session_id or "")
     if entry:
         return entry.get("role") or "unknown", entry, ""
-    # 修复（Codex 要求 #3）：取消"按访问顺序领取" —— 授权必须**绑定具体子会话 ID**。
-    # 预授权（perm.py grant --session <id> --role ...）在派发前写入 sessions；
-    # 若派发时恰好未知 id，可用一次性票据，但领取必须**同时匹配** parentSession（附加校验）。
+    # Codex 收口 #1/#2（2026-09-11）：未登记会话一律保持未授权。
+    #  - 取消自动领票：父子关系合法不足以授予权限（原事故场景即为此）；
+    #  - 票据只有在显式绑定本会话 ID 时才生效，且目标匹配由 claim_ticket 内部再校验一次；
+    #  - 正确流程：派发 → 取得会话 ID → grant/reserve --session <id> → 子代理再读材料。
     if allow_claim and wt is not None and session_id:
         parent, origin = session_origin(session_id)
         allowed = {d.get("orchestrator_session") or ""} | set(d.get("orchestrator_history") or [])
         allowed.discard("")
         pend = d.get("tickets") or []
-        if pend and parent and origin == "subagent" and parent in allowed:
-            t = pend[0]
-            # 若票据已指定目标会话，则只有该会话能领（这是"绑定具体 ID"的强形式）
-            target = t.get("session") or ""
-            if target and target != session_id:
-                return "unknown", {}, "票据已绑定其他会话（%s），本会话不可领取" % target[:12]
+        bound = next((x for x in pend if (x.get("session") or "").strip() == session_id), None)
+        if bound is not None:
             try:
                 sys.path.insert(0, str(HOOK_DIR))
                 import perm as _perm
@@ -181,10 +178,12 @@ def resolve_role(session_id: str, wt, allow_claim: bool = True):
                     return got["role"], got, why
             except Exception:
                 pass
+            return "unknown", {}, "票据领取失败（绑定存在但未生效）"
         if parent and origin == "subagent" and parent in allowed:
-            return "unknown", {}, "本主控派发的子会话，但无对应票据（请先 grant/reserve）"
+            return "unknown", {}, ("本主控派发的子会话，但未授权——需主控执行 perm.py grant "
+                                   "--session %s --role <角色> --extra-read/write <文件>" % session_id[:16])
         tag = "非本主控派发的会话" if parent else "无法验证会话来源"
-        return "unknown", {}, "%s（parent=%s origin=%s）" % (tag, parent or "-", origin or "-")
+        return "unknown", {}, "%s（parent=%s origin=%s）——保持未授权" % (tag, parent or "-", origin or "-")
     return "unknown", {}, "未登记且无可用票据"
 
 

@@ -113,7 +113,7 @@ PASS bash 普通命令(放行)                  exit=0
 
 ### 6.1 正文体积口径
 - 此前「2.0 GB Markdown」= **目录体积（含 MinerU 抽取的图片）**；
-- **正文合计 10,411,191 字符 ≈ 10.4 MB**（`CONVERSION-SUMMARY.json` 的 `total_md_bytes`）。
+- **正文合计 10,411,191 字节 ≈ 10.4 MB**（`CONVERSION-SUMMARY.json` 的 `total_md_bytes`）。
 
 ### 6.2 相关性分层（`round/knowledge/RELEVANCE-SCREEN.md`）
 
@@ -152,3 +152,64 @@ MD 索引已对 C 层标注 `[无关·已移出]`（6 处标注含此前误判�
 - **真实网页工具拦截未在本轮重新派发验证**（继承上一轮证据：探针被真实拦截）；
 - **闸门仍未对真实候选卡判过**——下一步即用两张测试卡走完整接力；
 - `bash`/`run_code` 内任意代码**仍是尽力检测**，不构成硬隔离。
+---
+
+# 附：Codex 第二轮复验的四项收口（2026-09-11 晚）
+
+> Codex 独立复跑确认：**测试隔离与推荐门禁通过**。剩余四项已全部处理。核实结论：**四条均成立**。
+
+## 收口 1：禁止空 target 票据（确认属实并已修）
+
+**核实**：`reserve --session` 默认空串 → 可创建空 target 票据；`claim_ticket` **自身不验证**目标（只在调用方 lib_hook 判）。
+
+**修复**：
+- `perm.py reserve` **拒绝**未指定 `--session`（空 target 票据无法创建）；
+- `claim_ticket` **内部**按 `t["session"] == session_id` 精确匹配后 pop（不能只依赖调用方）；
+- `lib_hook.resolve_role` **取消自动领票**：未登记会话**一律保持未授权**，父子关系合法**不足以**授予权限。
+
+**正确流程（写入文档）**：派发 → 取得会话 ID → `grant/reserve --session <id>` → 子代理才开始读材料。
+
+## 收口 2：新增覆盖原事故的测试（已加，实测通过）
+
+场景 = **未登记子会话 + 与主控父子关系合法 + 存在历史角色票据** → 仍不得取得不属于自己的权限，且票据保持不变。
+
+用**真实主控 ID** 与**真实子会话**（实测 `parent=session-53942861-…`、`origin=subagent`）构造：
+
+```
+PASS reserve 无 --session exit=2 (期望2)              ← 空 target 票据无法创建
+PASS 未登记+合法父子+有空票据 exit=2 (期望2)           ← 原事故场景被拦
+PASS 票据剩余=1 且仍为空target（未被消费）
+PASS 未越权写入 sessions=[]                           ← 未产生越权绑定
+PASS 票据绑定他人时本会话 exit=2 (期望2)
+PASS grant exit=0 读历史 exit=0 (期望0/0)             ← 精确授权后合法路径畅通
+PASS 生成器读历史索引 exit=2 (期望2)                  ← 角色最小授权
+```
+
+## 收口 3：提示词角色词不得作为授权依据（确认属实，已降级）
+
+**核实**：`PreToolUse` 载荷**不含角色字段**（实测 grep=0：只有 session_id/cwd/tool_name/tool_input）→ 用"提示词里出现历史审查者字样"作豁免**可被任意提示词绕过**。
+
+**修复**：`hook_prompt_scope.py` **降级为诊断件**（stderr 提示，**不阻塞、不冒充授权判定**），文件头明确声明：
+
+> **诚实声明：本 hook 不提供角色隔离保证。**
+
+真正的隔离由 `hook_access_guard`（按角色 + 具体文件授权）承担。
+
+## 收口 4：单位更正（确认属实）
+
+**核实**：`total_md_bytes` = `st_size` 求和 = **字节数**（实测字节/字符差 0.1–0.3%，因正文以英文为主）。
+
+**更正**：报告中「10,411,191 字符」→「**10,411,191 字节 ≈ 10.4 MB**」（两处：ACCEPTANCE-R3、RELEVANCE-SCREEN）。
+
+---
+
+## 本轮测试总览（隔离运行）
+
+| 套件 | 结果 |
+|---|---|
+| `round/hooks/selftest.py`（25 项） | **25 passed / 0 failed | 隔离 OK** |
+| `round/hooks/verify_bypasses.py`（17 项，含事故场景） | **17 passed / 0 failed | 隔离 OK** |
+| `round/tools/test_rework_regressions.py` | **12/12** |
+| `round/tools/deps_check.py` | **20/20 一致** |
+
+隔离证明：真实 `permissions.json` (absent) / `orchestrator.id` / `unregistered.log` 哈希**前后不变**。

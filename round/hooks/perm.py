@@ -115,11 +115,17 @@ def cmd_reserve(a) -> int:
         print("REFUSED: 已有未消费票据属其他角色（%s）——同批票据必须同角色以免错配"
               % ", ".join(sorted(roles)), file=sys.stderr)
         return 2
-    target = getattr(a, "session", "") or ""
+    # Codex 收口 #1（2026-09-11）：**禁止创建 target 为空的票据**。
+    # 空 target 等于"谁先访问谁得权限"——正是原事故的成因。
+    target = (getattr(a, "session", "") or "").strip()
+    if not target:
+        print("REFUSED: reserve 必须指定 --session（票据必须绑定具体子会话 ID；", file=sys.stderr)
+        print("         会话 ID 未取得时保持未授权，取得后精确 grant/reserve 再读材料）。", file=sys.stderr)
+        return 2
     for _ in range(a.count):
         pend.append({"role": a.role, "extra_read": a.extra_read or [],
                      "extra_write": a.extra_write or [], "note": a.note or "",
-                     "session": target,          # 绑定具体子会话 ID（空=不绑定，仅父会话校验）
+                     "session": target,
                      "reserved_at": time.strftime("%H:%M:%S")})
     d["tickets"] = pend
     save(d)
@@ -135,7 +141,11 @@ def claim_ticket(session_id: str):
     pend = d.get("tickets") or []
     if not pend:
         return None, "无预留票据"
-    t = pend.pop(0)
+    # Codex 收口 #1：领取函数**自身**必须验证目标匹配（不能只依赖调用方）。
+    idx = next((i for i, t in enumerate(pend) if (t.get("session") or "").strip() == session_id), None)
+    if idx is None:
+        return None, "无绑定该会话的票据（票据必须用 --session 精确绑定）"
+    t = pend.pop(idx)
     entry = {"role": t["role"], "extra_read": t.get("extra_read") or [],
              "extra_write": t.get("extra_write") or [],
              "note": (t.get("note") or "") + " | 票据领取",

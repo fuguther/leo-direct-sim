@@ -86,6 +86,9 @@ def main() -> int:
         chk("同主控生成器读历史(拦)", run(G, "gen-2", "read", {"file_path": A("round/history/HISTORY-INDEX.md")}), 2)
         write_manifest(tickets=[{"role": "history_reviewer", "extra_read": [], "extra_write": [], "session": "hist-target-1"}])
         chk("票据绑定他人(拦)", run(G, "hist-other-9", "read", {"file_path": A("round/history/HISTORY-INDEX.md")}), 2)
+        # 票据精确绑定本会话 → 可领取（合法路径）
+        write_manifest(tickets=[{"role": "history_reviewer", "extra_read": [], "extra_write": [], "session": "hist-bound-1"}])
+        chk("票据精确绑定可领", run(G, "hist-bound-1", "read", {"file_path": A("round/history/HISTORY-INDEX.md")}), 0)
 
         # 4. shell 尽力检测
         write_manifest(sessions={"gen-3": {"role": "generator", "extra_read": [], "extra_write": ["round/run2/staging/p.md"]}})
@@ -112,8 +115,9 @@ def main() -> int:
                        "tool_input": {"prompt": prompt}, "cwd": MAIN}
             return subprocess.run([sys.executable, str(H / P)], input=json.dumps(payload),
                                   capture_output=True, text=True, env=env, timeout=30).returncode
+        # Codex 收口 #3：载荷无角色字段 → prompt_scope 已降级为**诊断**（不阻塞、不冒充授权）
         chk("历史审查任务可派发", runp("你是历史碰撞审查者（role: history_reviewer），请读 round/history/HISTORY-INDEX.md"), 0)
-        chk("非历史角色带历史全集(拦)", runp("你是生成器，请先读 round/history/HISTORY-INDEX.md"), 2)
+        chk("非历史角色带历史全集(诊断不阻塞)", runp("你是生成器，请先读 round/history/HISTORY-INDEX.md"), 0)
 
     after = real_state()
     passed = sum(1 for _, _, _, ok in results if ok)

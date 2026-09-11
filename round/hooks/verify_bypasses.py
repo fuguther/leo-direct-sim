@@ -104,30 +104,74 @@ def main() -> int:
         print("  %s 旧判定再置推荐 exit=%d" % ("PASS" if r.returncode == 2 else "FAIL", r.returncode))
 
         print()
-        print("=== C. 角色绑定：同主控生成器不能领取历史审查者权限 ===")
+        print("=== C. 授权绑定（含**原事故场景**：未登记 + 合法父子 + 有票据）===")
         iso_perm = tdp / "iso-perm.json"
         iso_orch = tdp / "iso-orch.id"
         iso_log = tdp / "iso.log"
-        ORCH = "session-orch-acc"
-        iso_orch.write_text(ORCH, encoding="utf-8")
-        iso_perm.write_text(json.dumps({"run_id": "acc", "orchestrator_session": ORCH,
-            "orchestrator_history": [ORCH],
-            "sessions": {"gen-X": {"role": "generator", "extra_read": [], "extra_write": ["round/run2/staging/p.md"]}},
-            "tickets": [{"role": "history_reviewer", "extra_read": [], "extra_write": [], "session": ""}]},
-            ensure_ascii=False), encoding="utf-8")
+        # 用**真实主控 ID** 作为清单主控，以便构造"合法父子关系"（真实子会话的 parent 就是它）
+        REAL_ORCH = "session-53942861-f905-4823-8adf-6a751e3c4085"
+        REAL_CHILD = "c58a0f90-caa4-44de-9290-19e4f5618e3f"   # 实测 parent=REAL_ORCH, origin=subagent
+        iso_orch.write_text(REAL_ORCH, encoding="utf-8")
         env = dict(os.environ)
         env.update({"DSH_PERM_FILE": str(iso_perm), "DSH_ORCH_FILE": str(iso_orch), "DSH_HOOK_LOG": str(iso_log)})
-        payload = {"hook_event_name": "PreToolUse", "session_id": "gen-X", "tool_name": "read",
-                   "tool_input": {"file_path": str(WT / "round/history/HISTORY-INDEX.md")}, "cwd": "/Users/lge/Desktop/leo-direct-sim"}
-        rc = subprocess.run([sys.executable, str(H / "hook_access_guard.py")], input=json.dumps(payload),
-                            capture_output=True, text=True, env=env).returncode
-        res.append(("C 生成器读历史被拦", rc == 2))
-        print("  %s 生成器读历史索引 exit=%d (期望2)" % ("PASS" if rc == 2 else "FAIL", rc))
-        left = json.loads(iso_perm.read_text(encoding="utf-8")).get("tickets") or []
-        ok2 = len(left) == 1
-        res.append(("C 票据未被消费", ok2))
-        print("  %s 票据剩余=%d (期望1，未被消费)" % ("PASS" if ok2 else "FAIL", len(left)))
+        guard = str(H / "hook_access_guard.py")
+        HIST_FILE = str(WT / "round/history/HISTORY-INDEX.md")
 
+        def guard_rc(sid, path=HIST_FILE):
+            p = {"hook_event_name": "PreToolUse", "session_id": sid, "tool_name": "read",
+                 "tool_input": {"file_path": path}, "cwd": "/Users/lge/Desktop/leo-direct-sim"}
+            return subprocess.run([sys.executable, guard], input=json.dumps(p),
+                                  capture_output=True, text=True, env=env).returncode
+
+        # C1: 空 target 票据**无法创建**（Codex #1）
+        r = subprocess.run([sys.executable, "round/hooks/perm.py", "reserve", "--role", "history_reviewer",
+                            "--count", "1"], capture_output=True, text=True, cwd=WT, env=env)
+        res.append(("C1 空 target 票据被拒", r.returncode == 2))
+        print("  %s reserve 无 --session exit=%d (期望2)" % ("PASS" if r.returncode == 2 else "FAIL", r.returncode))
+
+        # C2: **原事故场景** —— 未登记子会话 + 合法父子关系 + 存在历史角色票据 → 仍不得取得权限
+        iso_perm.write_text(json.dumps({"run_id": "acc", "orchestrator_session": REAL_ORCH,
+            "orchestrator_history": [REAL_ORCH], "sessions": {},
+            "tickets": [{"role": "history_reviewer", "extra_read": [], "extra_write": [], "session": ""}]},
+            ensure_ascii=False), encoding="utf-8")   # 手工构造空 target 票据，模拟修复前的漏洞状态
+        rc = guard_rc(REAL_CHILD)
+        res.append(("C2 事故场景被拦", rc == 2))
+        print("  %s 未登记+合法父子+有空票据 exit=%d (期望2)" % ("PASS" if rc == 2 else "FAIL", rc))
+        left = json.loads(iso_perm.read_text(encoding="utf-8")).get("tickets") or []
+        ok2 = len(left) == 1 and not (left[0].get("session") or "").strip()
+        res.append(("C2 票据保持不变", ok2))
+        print("  %s 票据剩余=%d 且仍为空target（未被消费）" % ("PASS" if ok2 else "FAIL", len(left)))
+        granted = json.loads(iso_perm.read_text(encoding="utf-8")).get("sessions") or {}
+        ok3 = REAL_CHILD not in granted
+        res.append(("C2 未产生越权绑定", ok3))
+        print("  %s 未越权写入 sessions=%s" % ("PASS" if ok3 else "FAIL", list(granted.keys())))
+
+        # C3: 票据显式绑定到**其他**会话 → 本会话仍不得读
+        iso_perm.write_text(json.dumps({"run_id": "acc", "orchestrator_session": REAL_ORCH,
+            "orchestrator_history": [REAL_ORCH], "sessions": {},
+            "tickets": [{"role": "history_reviewer", "extra_read": [], "extra_write": [],
+                         "session": "some-other-session-id"}]}, ensure_ascii=False), encoding="utf-8")
+        rc = guard_rc(REAL_CHILD)
+        res.append(("C3 票据绑定他人被拦", rc == 2))
+        print("  %s 票据绑定他人时本会话 exit=%d (期望2)" % ("PASS" if rc == 2 else "FAIL", rc))
+
+        # C4: 精确 grant 后，该会话可读历史（合法路径必须走得通）
+        r = subprocess.run([sys.executable, "round/hooks/perm.py", "grant", "--session", REAL_CHILD,
+                            "--role", "history_reviewer", "--extra-write", "round/run2/op-history-review.md"],
+                           capture_output=True, text=True, cwd=WT, env=env)
+        rc = guard_rc(REAL_CHILD)
+        ok4 = (r.returncode == 0 and rc == 0)
+        res.append(("C4 精确 grant 后可读", ok4))
+        print("  %s grant exit=%d 读历史 exit=%d (期望0/0)" % ("PASS" if ok4 else "FAIL", r.returncode, rc))
+
+        # C5: 同主控生成器**不能**读历史（角色最小授权）
+        iso_perm.write_text(json.dumps({"run_id": "acc", "orchestrator_session": REAL_ORCH,
+            "orchestrator_history": [REAL_ORCH],
+            "sessions": {"gen-X": {"role": "generator", "extra_read": [], "extra_write": ["round/run2/staging/p.md"]}},
+            "tickets": []}, ensure_ascii=False), encoding="utf-8")
+        rc = guard_rc("gen-X")
+        res.append(("C5 生成器读历史被拦", rc == 2))
+        print("  %s 生成器读历史索引 exit=%d (期望2)" % ("PASS" if rc == 2 else "FAIL", rc))
     after = {str(p): sha(p) for p in REAL}
     print()
     print("=== 隔离校验（真实文件必须不变）===")
