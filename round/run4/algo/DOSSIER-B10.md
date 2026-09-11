@@ -844,32 +844,32 @@
 | 行号 | 逐字原文 | 归类 |
 |---|---|---|
 | 94 | "Proper load measurement of cells is crucial for optimizing the performance of a network through load balancing. For that purpose, a common load measurement metric is needed to measure the load of each RAT in a multi-RAT network." | **负载度量的前置性** |
-| 97 | `$overline { { R B } } _ { n } = rac { 1 } { T cdot N _ { P R B } } sum _ { 	au in ( t - T , t ) } R B _ { n }$`（式 2） | **负载＝时间窗 T 内的资源块占用均值**（公式逐字抄录） |
+| 97 | `$\overline { { R B } } _ { n } = \frac { 1 } { T \cdot N _ { P R B } } \sum _ { \tau \in ( t - T , t ) } R B _ { n }$`（式 2） | **负载＝时间窗 T 内的资源块占用均值**（公式逐字抄录） |
 | 100 | "where `$R B _ { n }$` and `$N _ { P R B }$` are the number of allocated resource blocks and the total number of resource blocks in the cell, respectively." | 式 2 符号定义（逐字） |
 | 104 | "In this paper, we introduce the radio resource usage ratio (RRUR) as a load measurement metric for the multi-RAT network. We defined RRUR as the ratio of bandwidth used by RAT to the total RAT bandwidth." | RRUR 定义 |
-| 107 | `$eta _ { n } = rac { 1 } { T cdot omega _ { n } } sum _ { 	au in ( t - T , t ) } gamma _ { 	au } cdot arsigma _ { 	au }$`（式 3） | 5G RAT 的 RRUR（公式逐字抄录） |
-| 110 | "where `$omega _ { n }$` is the total bandwidth of 5G cell `$n ,$` and `$gamma _ { 	au }$` and `$arsigma _ { 	au }$` are the allocated PRBs and resource block bandwidth at time τ, respectively. The resource block bandwidth depends on the numerologies." | 式 3 符号定义（逐字） |
-| 115 | `$eta _ { S } = rac { 1 } { T cdot omega _ { s a t } } sum _ { 	au in ( t - T , t ) } Omega _ { 	au }$`（式 4） | 卫星 RAT 的 RRUR（公式逐字抄录） |
-| 118 | "where `$Omega _ { 	au }$` is the bandwidth allocated to UEs based on the Shannon formula and `$omega _ { s a t }$` is the total bandwidth of the satellite at time τ ." | 式 4 符号定义（逐字） |
+| 107 | `$\beta _ { n } = \frac { 1 } { T \cdot \omega _ { n } } \sum _ { \tau \in ( t - T , t ) } \gamma _ { \tau } \cdot \varsigma _ { \tau }$`（式 3） | 5G RAT 的 RRUR（公式逐字抄录） |
+| 110 | "where `$\omega _ { n }$` is the total bandwidth of 5G cell `$n ,$` and `$\gamma _ { \tau }$` and `$\varsigma _ { \tau }$` are the allocated PRBs and resource block bandwidth at time τ, respectively. The resource block bandwidth depends on the numerologies." | 式 3 符号定义（逐字） |
+| 115 | `$\beta _ { S } = \frac { 1 } { T \cdot \omega _ { s a t } } \sum _ { \tau \in ( t - T , t ) } \Omega _ { \tau }$`（式 4） | 卫星 RAT 的 RRUR（公式逐字抄录） |
+| 118 | "where `$\Omega _ { \tau }$` is the bandwidth allocated to UEs based on the Shannon formula and `$\omega _ { s a t }$` is the total bandwidth of the satellite at time τ ." | 式 4 符号定义（逐字） |
 | 120 | "Based on the common load measure metric, i.e., RRUR, load distribution among cells of different RATs is determined. A higher RRUR of a cell indicates that the cell has a higher load to serve and fewer available resources." | 负载→资源可得性 |
 | 124 | "In a network, if the RRUR of a RAT cell is close to 1, a user that moves into the cell will either be dropped or will experience a low data rate." | **负载水平→用户被丢弃** |
-| 129 | `$operatorname* { m i n } quad sum _ { orall n in mathcal { T } } | overline { { eta } } - eta _ { n } | ^ { 2 }$` + `$mathrm { s u b j e c t ~ t o : ~ } eta _ { S } leq T h r _ { a d p } ,$` + `$eta _ { kappa } ^ { i } geq ho _ { i } , quad kappa in mathcal { N }$`（式 5） | **优化目标：最小化各小区 RRUR 与目标值的平方距离**；约束含自适应阈值与每用户资源下限（公式逐字抄录） |
-| 132 | "where `$eta _ { n }$` is the RRUR of terrestrial cell n, `$eta _ { S }$` is the RRUR of a satellite cell S, `$T h r _ { a d p }$` is the adaptive threshold, `$eta _ { kappa } ^ { i }$` is the resource allocated to user i by cell κ, and `$ho _ { i }$` is the resources required by user i, from which `$ho _ { i }$` is calculated based on the minimum data rate required by UE i." | 式 5 符号定义（逐字） |
-| 161 | `$overline { { eta } } = E [ eta _ { n } ]$`（式 7） | 目标负载＝RRUR 的期望（公式逐字抄录） |
-| 189 | `$T h r _ { a d p t } = m a x ( overline { { eta } } , t h r _ { i n i t } )$`（式 8） | **自适应阈值＝均值与初始阈值的较大者**（公式逐字抄录） |
+| 129 | `$\operatorname* { m i n } \quad \sum _ { \forall n \in \mathcal { T } } \| \overline { { \beta } } - \beta _ { n } \| ^ { 2 }$` + `$\mathrm { s u b j e c t ~ t o : ~ } \beta _ { S } \leq T h r _ { a d p } ,$` + `$\beta _ { \kappa } ^ { i } \geq \rho _ { i } , \quad \kappa \in \mathcal { N }$`（式 5） | **优化目标：最小化各小区 RRUR 与目标值的平方距离**；约束含自适应阈值与每用户资源下限（公式逐字抄录；表格中的竖线为 Markdown 转义，原文为单竖线绝对值符号） |
+| 132 | "where `$\beta _ { n }$` is the RRUR of terrestrial cell n, `$\beta _ { S }$` is the RRUR of a satellite cell S, `$T h r _ { a d p }$` is the adaptive threshold, `$\beta _ { \kappa } ^ { i }$` is the resource allocated to user i by cell κ, and `$\rho _ { i }$` is the resources required by user i, from which `$\rho _ { i }$` is calculated based on the minimum data rate required by UE i." | 式 5 符号定义（逐字） |
+| 161 | `$\overline { { \beta } } = E [ \beta _ { n } ]$`（式 7） | 目标负载＝RRUR 的期望（公式逐字抄录） |
+| 189 | `$T h r _ { a d p t } = m a x ( \overline { { \beta } } , t h r _ { i n i t } )$`（式 8） | **自适应阈值＝均值与初始阈值的较大者**（公式逐字抄录） |
 | 192 | "where `$t h r _ { i n i t }$` is the fixed initial threshold used to determine whether there is a need for load balancing in the network. The adaptive threshold, `$T h r _ { a d p t }$`, is used to adopt the network load. **The network load can vary over time because of user mobility and variances in required data rates of the UEs.**" | **负载随时间变化的两大成因**（用户移动 + 需求速率方差）——本批对"负载过程"成因最明确的表述之一 |
-| 203 | `$eta _ { n } > T h r _ { a d p t } , n in mathcal { T }$`（式 9） | **过载判定：RRUR 超过自适应阈值**（公式逐字抄录） |
-| 215 | `$hat { eta } _ { Gamma _ { k } } ^ { e _ { 1 } } = rac { ho _ { e _ { 1 } } arsigma } { omega _ { Gamma _ { k } } }$`（式 10） | **目标小区负载增量的预估**（公式逐字抄录） |
-| 221 | `$eta _ { Gamma _ { k } } + hat { eta } _ { Gamma _ { k } } ^ { e _ { 1 } } < T h r _ { a d p t }$`（式 11） | 目标小区不过载约束（公式逐字抄录） |
-| 225 | `$eta _ { o } - hat { eta } _ { o } ^ { e _ { 1 } } > eta _ { Gamma _ { k } } + hat { eta } _ { Gamma _ { k } } ^ { e _ { 1 } } .$`（式 12） | **源小区减载后仍高于目标小区**——防乒乓（公式逐字抄录） |
-| 218 | "Before offloading UE `$e _ { 1 }$` to cell `$Gamma _ { k }$`, the algorithm checks the following conditions in order to restrict the target cell load to below overload status and to avoid unnecessary offloading of UEs to neighboring cells, i.e., to avoid ping-pongs:" | **乒乓（ping-pong）规避** |
+| 203 | `$\beta _ { n } > T h r _ { a d p t } , n \in \mathcal { T }$`（式 9） | **过载判定：RRUR 超过自适应阈值**（公式逐字抄录） |
+| 215 | `$\hat { \beta } _ { \Gamma _ { k } } ^ { e _ { 1 } } = \frac { \rho _ { e _ { 1 } } \varsigma } { \omega _ { \Gamma _ { k } } }$`（式 10） | **目标小区负载增量的预估**（公式逐字抄录） |
+| 221 | `$\beta _ { \Gamma _ { k } } + \hat { \beta } _ { \Gamma _ { k } } ^ { e _ { 1 } } < T h r _ { a d p t }$`（式 11） | 目标小区不过载约束（公式逐字抄录） |
+| 225 | `$\beta _ { o } - \hat { \beta } _ { o } ^ { e _ { 1 } } > \beta _ { \Gamma _ { k } } + \hat { \beta } _ { \Gamma _ { k } } ^ { e _ { 1 } } .$`（式 12） | **源小区减载后仍高于目标小区**——防乒乓（公式逐字抄录） |
+| 218 | "Before offloading UE `$e _ { 1 }$` to cell `$\Gamma _ { k }$`, the algorithm checks the following conditions in order to restrict the target cell load to below overload status and to avoid unnecessary offloading of UEs to neighboring cells, i.e., to avoid ping-pongs:" | **乒乓（ping-pong）规避** |
 | 210 | "For intra-RAT load balancing, first the UEs of `$E _ { o }$` with delay-sensitive flows, and then UEs with delay-tolerant flows, move to underloaded neighboring cells one by one based on the load status of cell `$o .$`" | **按业务时延敏感度排序迁移**（决策次序） |
 | 210 | "The UEs in `$E _ { o } = \{ e _ { 1 } , . . , e _ { n } \}$` are then sorted in ascending order of serving cell RSRPs and the UEs are arranged according to data flow type." | 按 RSRP 升序 + 按流类型排序（迁移候选的排序规则） |
-| 262 | "After intra-RAT load balancing, the algorithm again checks the load status of the cell o. If the cell is still overloaded, i.e., `$eta _ { o } ~ > ~ T h r _ { a d p }$`, the algorithm performs inter-RAT load balancing by transferring the load of cell o to satellite cell S by offloading the delay-tolerant flows of UEs if" | **两级负载均衡（先 intra-RAT 后 inter-RAT）** |
-| 265 | `$eta _ { S } < T h r _ { a d p }$`（式 13） | 卫星未过载条件（公式逐字抄录） |
-| 299 | `$eta _ { S } + hat { eta } _ { S } ^ { arepsilon _ { 1 } } < T h r _ { a d p t }$`（式 14） | 卫星不过载约束（公式逐字抄录） |
-| 302 | "The above condition prevents the satellite from being overloaded. For the offloading of data flows, the UPF directs the flow of UE `$arepsilon _ { 1 }$` to NTN gNB as we considered the separate user plane for each RAT." | 用户面按 RAT 分离 |
-| 305 | `$eta _ { S } = eta _ { S } + hat { eta } _ { S } ^ { arepsilon _ { 1 } } ,  mathrm { a n d } $` + `$eta _ { o } = eta _ { o } - hat { eta } _ { o } ^ { arepsilon _ { 1 } } .$`（式 15） | **负载状态的增量更新式**（公式逐字抄录） |
+| 262 | "After intra-RAT load balancing, the algorithm again checks the load status of the cell o. If the cell is still overloaded, i.e., `$\beta _ { o } ~ > ~ T h r _ { a d p }$`, the algorithm performs inter-RAT load balancing by transferring the load of cell o to satellite cell S by offloading the delay-tolerant flows of UEs if" | **两级负载均衡（先 intra-RAT 后 inter-RAT）** |
+| 265 | `$\beta _ { S } < T h r _ { a d p }$`（式 13） | 卫星未过载条件（公式逐字抄录） |
+| 299 | `$\beta _ { S } + \hat { \beta } _ { S } ^ { \varepsilon _ { 1 } } < T h r _ { a d p t }$`（式 14） | 卫星不过载约束（公式逐字抄录） |
+| 302 | "The above condition prevents the satellite from being overloaded. For the offloading of data flows, the UPF directs the flow of UE `$\varepsilon _ { 1 }$` to NTN gNB as we considered the separate user plane for each RAT." | 用户面按 RAT 分离 |
+| 305 | `$\beta _ { S } = \beta _ { S } + \hat { \beta } _ { S } ^ { \varepsilon _ { 1 } } , \ \mathrm { a n d } $` + `$\beta _ { o } = \beta _ { o } - \hat { \beta } _ { o } ^ { \varepsilon _ { 1 } } .$`（式 15） | **负载状态的增量更新式**（公式逐字抄录） |
 | 310 | "When UEs moves to a satellite, they will experience a long delay. However, offloading UEs with delay-tolerant data flows will not affect the QoS of the UEs, whereas UEs with delay-sensitive data are served by the 5G RAT." | **时延承受度作为分流依据** |
 | 312 | "We analyzed the computational complexity of the proposed algorithm using big O notation." | **决策成本（复杂度）显式分析**——本批唯一做此分析的篇目 |
 | 314 | "the overall computational complexity of the proposed load balancing algorithm becomes `$O ( \| T \| ^ { 2 } ) + O (  { mathcal { T } } \| T \| )$`. Generally, `$mathcal { T } gg \| mathcal { T } \|$` so we can say that the computational complexity for the proposed load balancing algorithm is O(I\|T\|)." | **算法复杂度结果：O(I·\|T\|)**（公式逐字抄录；表格中的竖线为 Markdown 转义，原文为 `|`） |
@@ -1194,6 +1194,7 @@
 3. 文件写入过程中曾发生一次**整文件覆盖事故**（误用全量写覆盖了已完成的部分），已全文重写恢复；内容以当前版本为准。
 4. 访问 JP79GMZS（非本批文件）时遇到一次 `[HOOK-BLOCK]`；按规程等待 20 秒后重试成功，已取得所需原文（14.2 反例 C）。
 5. 一次跨文件检索因误纳入 JSON 中间产物导致命中数虚增（例如 `credit assignment` 由 5 虚增至 76）；已改用只搜正文 MD 的口径重算，第 14.1 节的计数为**修正后口径**。
+6. **§11.2（BV4XI6CU）的 LaTeX 曾发生转义损坏**：写入时模板字符串把 `\b`/`\f`/`\t`/`\v`/`\r` 当作控制字符转义消费，导致 `\beta`→`eta`、`\frac`→`rac`、`\tau`→`au`、`\varsigma`→`arsigma`、`\rho`→`ho` 等共 26 行公式损坏。已用 `perl -ne 'print $. if /[\x08\x09\x0b]/'` 全文扫描定位，逐行按原文重抄修复；修复后全文控制字符扫描为 **0 行**，§14 的公式（写入时已用双反斜杠）未受影响。
 
 
 

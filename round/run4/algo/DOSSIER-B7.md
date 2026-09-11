@@ -893,7 +893,7 @@
 1. **「重复模式」把设计空间降维到单个局部视图**——这是本批最强的降维思想。
    - L39：As a first attempt at addressing this problem, we propose a novel approach exploiting repetitive patterns: if the topology is restricted such that each satellite's local view is the same as that of any other, then one can limit topology design to the space of all possible local views at just one satellite. We refer to each such local view as a motif.
    - L40：Even for the densest proposed constellations, the space of possible motifs, while nontrivial, is small enough to search exhaustively and identify the optimal motif for a target traffic matrix.
-   - 量化：L252 \`we find that 1029 unique motifs exist\`（40² 星座）。**迁移**：我们方案的策略空间若具平移不变性，可只在「单节点局部视图」上搜索。
+   - 量化：L252 `we find that 1029 unique motifs exist`（40² 星座）。**迁移**：我们方案的策略空间若具平移不变性，可只在「单节点局部视图」上搜索。
 2. **用「赤道处最小可达集」做安全枚举（offline 可行性保证）**：
    - L223：Note however, that satellites are farther apart at the Equator and closer to each other at higher latitudes, implying that a near-Equator satellites have the fewest in-range satellites. Thus, for enumerating motifs, we use a satellite at the Equator, ensuring that for any other satellite, the considered motifs will only contain feasible links.
    - **迁移**：策略空间的可行性可由「最不利点」保证，而非逐点验证。
@@ -907,8 +907,8 @@
    - L368：For each of 5,000 randomly selected city pairs, we compute lowest-latency paths between them, and count the frequency of appearance of each ISL in such paths. (This is referred to as “edge betweenness centrality” in graph theory.)
    - L370（结果，逐字）：The 75th and 90th percentile link-use frequency for +Grid is 4× and 5× that of mm_1 respectively.
    - **迁移**：hop count 作为容量的廉价代理，可作我们方案 reward 的 shaping 项。
-5. **多目标用 Pareto 前沿而非加权和**：L256 \`Motifs expose a trade-off between stretch and hop count, with several motifs at the Pareto frontier. Random graphs provide only one point in the design space.\`；L359 \`the 20% improvement in \Phi _ { 10 } with mm_10 is composed of 53% reduction in hop count, while increasing stretch by only 9%, compared to +Grid.\`
-6. **自述「什么方法不管用」的完整清单（对我们是负结果库）**：ILP（L185 \`Even for just 25 cities, the ILP does not finish within 2 days on a machine with 64 cores and ∼500 GB of memory.\`）、随机正则图（L202/L207）、蚁群（L209 \`This approach performs well for small problem sizes (few tens of city pairs) but does not converge for larger cases, while also causing high link churn.\`）。
+5. **多目标用 Pareto 前沿而非加权和**：L256 `Motifs expose a trade-off between stretch and hop count, with several motifs at the Pareto frontier. Random graphs provide only one point in the design space.`；L359 `the 20% improvement in \Phi _ { 10 } with mm_10 is composed of 53% reduction in hop count, while increasing stretch by only 9%, compared to +Grid.`
+6. **自述「什么方法不管用」的完整清单（对我们是负结果库）**：ILP（L185 `Even for just 25 cities, the ILP does not finish within 2 days on a machine with 64 cores and ∼500 GB of memory.`）、随机正则图（L202/L207）、蚁群（L209 `This approach performs well for small problem sizes (few tens of city pairs) but does not converge for larger cases, while also causing high link churn.`）。
 
 ### 10.5 是否已被 RL 论文采用
 
@@ -921,28 +921,28 @@
 | FLQLU3T4 | T1（对偶引导图学习） | L685 | [7] D. Bhattacherjee and A. Singla, "Network topology design at 27,000 km/hour," in Proceedings of the 15th International Conference on Emerging Networking Experiments and Technologies. Orlando Florida: ACM, Dec. 2019, pp. 341–354. |
 | S85KQ4FC | T1（锚件：流级 DRL） | L563 | [34] D. Bhattacherjee and A. Singla, "Network topology design at 27,000 km/hour," in Proc. 15th Int. Conf. Emerg. Netw. Exp. Technol., 2019, pp. 341–354. |
 
-**采用方式**：FLQLU3T4 L44 在正文中引用其 motif 思想（\`Beyond the grid pattern, optimizing motif-based patterns, small and repeatable graph structures, can improve robustness and efficiency [7].\`）；S85KQ4FC 的（[34]）在正文中出现在 L17/L79/L89 一带的 ISL 拓扑讨论语境。**未见把 motif 搜索直接作为学习动作空间的用法。**
+**采用方式**：FLQLU3T4 L44 在正文中引用其 motif 思想（`Beyond the grid pattern, optimizing motif-based patterns, small and repeatable graph structures, can improve robustness and efficiency [7].`）；S85KQ4FC 的（[34]）在正文中出现在 L17/L79/L89 一带的 ISL 拓扑讨论语境。**未见把 motif 搜索直接作为学习动作空间的用法。**
 
 ### 10.6 实验合同里与「负载」相关的设置（仅作实验条件登记，不作贡献）
 
-- 星座：L183 \`We use a 40^2 LEO constellation (53°, 550 km) with a maximum ISL length of 5,014 km.\`；L84 \`The first phase will use p = 24 orbits, each with n = 66 satellites, for a total of N = 1,584 satellites. Orbit inclination will be 53° and the altitude ∼550 km.\`；L86 \`Kuiper (Amazon) aims to deploy 3,236 LEO satellites … phase A will be a 34^2 constellation with an inclination of 51.9° and an altitude of 630 km\`
+- 星座：L183 `We use a 40^2 LEO constellation (53°, 550 km) with a maximum ISL length of 5,014 km.`；L84 `The first phase will use p = 24 orbits, each with n = 66 satellites, for a total of N = 1,584 satellites. Orbit inclination will be 53° and the altitude ∼550 km.`；L86 `Kuiper (Amazon) aims to deploy 3,236 LEO satellites … phase A will be a 34^2 constellation with an inclination of 51.9° and an altitude of 630 km`
 - **负载模型（关键的两种流量矩阵，逐字）**：
-  - 人口积模型：L156 \`H specifies traffic distribution between the 1,000 most populous cities (2025 population estimates [27]) as ground sites, with city-city traffic volume scaled ∈ [0,1] in proportion to the population products of the city pairs.\`
-  - GDP 模型：L308 \`we consider economic activity, in terms of Gross Domestic Product (GDP), as a proxy for Internet traffic … we use the top 100 cities ordered by their GDP [78] as ground sites, with city-city traffic volume scaled ∈ [0,1] in proportion to the GDP products of the city pairs.\`
-- **负载为静态矩阵，时变流量明确留待未来**：L310 逐字 \`Considering time-varying traffic is left to future work, we note that one could evaluate the potential motifs against snapshots of traffic over a desired time period, picking the one that provides the highest performance over time.\`
-- ISL 距离约束：L300 \`For the 40^2 constellation, the longest links in +Grid are 1,467 km, giving us a lower bound on range. We thus evaluated ranges between this bound and the maximum of 5,014 km.\`；L376 \`(b) the minimum range necessitated by +Grid, 2,006 km. The latter represents worstcase power-limited ISLs.\`
-- 未建模项：L266 \`They are also easier to evaluate efficiently, and incorporate into optimization, than, e.g., network throughput as measured with some routing scheme.\`（用 hop count 代理吞吐，不跑真实路由）
+  - 人口积模型：L156 `H specifies traffic distribution between the 1,000 most populous cities (2025 population estimates [27]) as ground sites, with city-city traffic volume scaled ∈ [0,1] in proportion to the population products of the city pairs.`
+  - GDP 模型：L308 `we consider economic activity, in terms of Gross Domestic Product (GDP), as a proxy for Internet traffic … we use the top 100 cities ordered by their GDP [78] as ground sites, with city-city traffic volume scaled ∈ [0,1] in proportion to the GDP products of the city pairs.`
+- **负载为静态矩阵，时变流量明确留待未来**：L310 逐字 `Considering time-varying traffic is left to future work, we note that one could evaluate the potential motifs against snapshots of traffic over a desired time period, picking the one that provides the highest performance over time.`
+- ISL 距离约束：L300 `For the 40^2 constellation, the longest links in +Grid are 1,467 km, giving us a lower bound on range. We thus evaluated ranges between this bound and the maximum of 5,014 km.`；L376 `(b) the minimum range necessitated by +Grid, 2,006 km. The latter represents worstcase power-limited ISLs.`
+- 未建模项：L266 `They are also easier to evaluate efficiently, and incorporate into optimization, than, e.g., network throughput as measured with some routing scheme.`（用 hop count 代理吞吐，不跑真实路由）
 - **负载=静态城市对流量矩阵（人口积 / GDP 积两种），无到达过程、无突发、无时变**。
 
 ### 10.7 该文自述的局限（逐字）
 
 - L390–L394（不确定性清单，逐字）：
-  - \`The satellites' ISL range and speed of link setup depend on a complex calculus involving non-networking factors like satellite weight and launch cost, making it hard to zero in on the inputs for topology design.\`
-  - \`Market conditions, regulator oversight, and terrestrial connectivity, will together drive workloads, making it impossible to evaluate for the right traffic matrix.\`
-  - \`Space endeavors are prone to setbacks and changes, so the setting we are studying is evolving. For instance, over the course of our work, SpaceX updated its Starlink plans to use lower and different orbits to address concerns about space debris. The plans we use were up to date as ofJuly 2019.\`
-- L396（自辩，逐字）：\`However, these uncertainties are poor arguments for not addressing the technical challenges. … At the very least, even with the most conservative assumptions (i.e., worstcase ISLs, single motifs with no link changes), our work shows significant promise beyond the +Grid strategy widely assumed to be the default.\`
-- L398（未来工作，逐字）：\`We would, of course, like to extend this effort in several ways, including accounting for temporal variations in the traffic matrix, inter-linking of different phases of the large constellations, analyzing settings with larger numbers of inter-satellite links, interplay with ground-satellite connectivity, and co-design with satellite trajectories and routing.\`
-- L264（**诚实的对照劣势自述**）：\`At the largest scale we could run the ILP (20 cities), it achieves 54% lower (better) \Phi _ { 1 } than +Grid. The motif's Φ_1 is 45% better than +Grid, but 18% worse than the ILP. We remind the reader that the ILP is not a practical approach for the reasons discussed earlier (§3.1).\`
+  - `The satellites' ISL range and speed of link setup depend on a complex calculus involving non-networking factors like satellite weight and launch cost, making it hard to zero in on the inputs for topology design.`
+  - `Market conditions, regulator oversight, and terrestrial connectivity, will together drive workloads, making it impossible to evaluate for the right traffic matrix.`
+  - `Space endeavors are prone to setbacks and changes, so the setting we are studying is evolving. For instance, over the course of our work, SpaceX updated its Starlink plans to use lower and different orbits to address concerns about space debris. The plans we use were up to date as ofJuly 2019.`
+- L396（自辩，逐字）：`However, these uncertainties are poor arguments for not addressing the technical challenges. … At the very least, even with the most conservative assumptions (i.e., worstcase ISLs, single motifs with no link changes), our work shows significant promise beyond the +Grid strategy widely assumed to be the default.`
+- L398（未来工作，逐字）：`We would, of course, like to extend this effort in several ways, including accounting for temporal variations in the traffic matrix, inter-linking of different phases of the large constellations, analyzing settings with larger numbers of inter-satellite links, interplay with ground-satellite connectivity, and co-design with satellite trajectories and routing.`
+- L264（**诚实的对照劣势自述**）：`At the largest scale we could run the ILP (20 cities), it achieves 54% lower (better) \Phi _ { 1 } than +Grid. The motif's Φ_1 is 45% better than +Grid, but 18% worse than the ILP. We remind the reader that the ILP is not a practical approach for the reasons discussed earlier (§3.1).`
 
 ### 10.8 该文没有考察的算法选择（基于 10.1–10.6 判定）
 
@@ -953,4 +953,244 @@
 - **无动态流量**：L310 自述把时变流量留待未来。
 
 ---
+
+## 11. 负向声明取证总表（模式原文 + 实测计数 + 命中位置）
+
+> 协议要求：每条「未见/没有 X」必须给三项。下表为本批 10 篇的全部负向声明所用模式与实测结果。所有命令形如 `ssh vm "grep -ciE '<pattern>' <绝对路径>"`（逐行取证用 `grep -aniE`）。
+> 计数为 **0** 的格子代表该篇该模式**实测零命中**，因此「未见」成立。
+
+### 11.1 学习成分相关（核心：判定各篇是否含学习）
+
+模式 **X2_anylearning_all** = `neural network|training|learning rate|gradient descent|backpropagat|reinforcement learning|q-learning`
+
+| 篇 | 计数 | 命中位置与判读 |
+|---|---|---|
+| FLQLU3T4 | **31** | 命中即正文主体（L5/L24/L26 等）；本篇**含学习**（对偶引导训练，非 RL），见 §1.3 |
+| CTWVLBCY | **0** | 未见 |
+| R37BNQQ8 | **0** | 未见 |
+| 2W8BJ7ME | **0** | 未见 |
+| 7TASFUDR | **4** | L27（引用 DRL-ER）/ L346（未来工作）/ L382、L404（参考文献）；**0 次属于本文方法**，见 §5.3 |
+| AIH4GK37 | **0** | 未见 |
+| 67CSKFK4 | **0** | 未见 |
+| YD4JUT7G | **0** | 未见 |
+| W5Z39E25 | **0** | 未见 |
+| K93SCUF2 | **0** | 未见 |
+
+模式 **T2_discount_clean** = `discount|eligibility trace|n-step|bootstrapp`
+
+| 篇 | 计数 | 命中位置与判读 |
+|---|---|---|
+| FLQLU3T4 / CTWVLBCY / R37BNQQ8 / 2W8BJ7ME / 7TASFUDR / AIH4GK37 / 67CSKFK4 / W5Z39E25 / K93SCUF2 | **0** | 未见 |
+| YD4JUT7G | **1** | L102 `recurring and non-recurring costs` —— **成本会计用语，非 RL 折扣** |
+
+**噪声模式登记（T_discount_trace）**：我最初用了含裸 `gamma` 与 Unicode `\bγ\b` 的模式 `discount|eligibility trace|n-step|bootstrapp|\bgamma\b|\bγ\b`，实测在 FLQLU3T4 报 13、R37BNQQ8 报 3、2W8BJ7ME 报 2、AIH4GK37 报 3、YD4JUT7G 报 1。**逐条核验后全部为 LaTeX 希腊字母或 "Gamma distribution"**：
+- FLQLU3T4 L324/L388/L394 等 = `\mathbb{E}`、`\Gamma`（分布记号）、`\mathcal{G}`
+- R37BNQQ8 L238/L244/L250 = `\rho`/`\theta` 与启发因子指数 `\gamma`
+- 2W8BJ7ME L197/L202 = 业务流的 **Gamma 分布**
+- AIH4GK37 L160/L163/L196 = 协议常数 `\gamma_{\mathrm{loc}}` / `\gamma_{\mathrm{glob}}`
+- YD4JUT7G L102 = `recurring`
+
+**该模式不可用于判负**，已弃用（见 §0.2 坑 2）。
+
+### 11.2 RL 算法族相关（判定是否有人用 double/dueling/PER/DQN）
+
+| 模式原文 | 10 篇实测 | 判读 |
+|---|---|---|
+| `double (q|dqn)` | **全 0** | 无 Double Q-learning |
+| `dueling` | **全 0** | 无 Dueling 结构 |
+| `prioritized (experience )?replay` | **全 0** | 无优先经验回放 |
+| `deep q|dqn|q-learning` | **全 0** | 无 DQN/Q-learning |
+| `actor-critic|policy gradient|\bppo\b|\ba3c\b|\bsac\b|\bddpg\b|\btd3\b` | FLQLU3T4 = **4**，其余全 0 | FLQLU3T4 命中 L484（PG/DDPG **仅作 baseline**）、L522、L524、L763（参考文献 [46]） |
+
+**对照：裸模式 `prioritiz` 的实测（B3 教训的复现）**
+- FLQLU3T4 = **4** → L26 `links should be prioritized in connection establishment`、L218 `the link should be prioritized to be connected`、L242 `the connection matching prioritizes connecting that link`、L488 `prioritizes the LCT pairs that are more aligned` —— **全部为散文词**。
+- 7TASFUDR = **3** → L168 `should be prioritized`、L286 `prioritize energy efficiency`、L306 `It prioritizes paths with lower delay` —— **全部为散文词**。
+- K93SCUF2 = **2** → L355 `An operator may prioritize stretch (S) or capacity`、L370 `as we prioritize stretch more` —— **全部为散文词**。
+- **结论**：裸 `prioritiz` 在 10 篇报 9 命中、**0 个是 PER**；细粒度模式 `prioritized (experience )?replay` 报 0。B3 的教训在本批得到独立复现：**模式必须细粒度化**。
+
+### 11.3 动作掩码（U_mask）
+
+模式 **U_mask** = `action mask|masking|invalid action`
+
+| 篇 | 计数 |
+|---|---|
+| 全部 10 篇 | **0** |
+
+→ 本批 10 篇**均无动作掩码机制**。（本批 8 篇非学习，2 篇含学习但为「连续价格回归」与「无」，均不涉及离散动作合法性约束。）
+
+### 11.4 状态中的时间信息（V_timeinfo）
+
+模式 **V_timeinfo** = `EWMA|exponentially weighted|moving average|sliding window|historical|history of|trend`
+
+| 篇 | 计数 | 命中位置与判读 |
+|---|---|---|
+| FLQLU3T4 | 1 | L689 参考文献 [9] 标题 `potentials and trends` —— **非状态构造** |
+| CTWVLBCY | 0 | 未见 |
+| R37BNQQ8 | 0 | 未见 |
+| 2W8BJ7ME | 0 | 未见 |
+| 7TASFUDR | **8** | L192（daily traffic trends）、L288/L290（图中 `trend of`）等 —— **L192 是真正的机制**（统计日流量趋势的数学期望，见 §5.4 第 2 点）；L288/L290 为图表描述 |
+| AIH4GK37 | 3 | L183（`predicts qualitative trends`）、L318、L356 —— **均为「趋势」的散文用法，非状态构造** |
+| 67CSKFK4 | 0 | 未见 |
+| YD4JUT7G | 3 | L45、L236、L408 —— **均为 historical weather data（输入数据），非状态构造** |
+| W5Z39E25 | 0 | 未见 |
+| K93SCUF2 | 1 | L321 `with minor temporal variations around this broader trend` —— **散文用法** |
+
+→ **唯一样本**：7TASFUDR 通过式 (19) 把「未来流量数学期望 × 未来连接时长」折进节点状态量，是本批唯一把负载时间规律性写进状态的工作。
+
+### 11.5 失败成因/溢出相关（Y_dropcause）
+
+模式 **Y_dropcause** = `drop reason|drop cause|loss reason|cause of (the )?(loss|drop)|reason for (the )?(loss|drop)|overflow`
+
+| 篇 | 计数 | 命中位置与判读 |
+|---|---|---|
+| R37BNQQ8 | **2** | L198 与 L238 —— 均为 **MSB overflow factor `η(t)`**（式 8 的第五分量）。**逐字**：L209 `η(t) is the MSB overflow factor`。判读：它是加权代价 Θ 中的一个**代价类型项**（轴 = 代价类型），且属**启发式而非学习梯度** → **不构成 G-A** |
+| 其余 9 篇 | **0** | 未见 |
+
+### 11.6 奖励向量/多目标（Z_rewardvec）
+
+模式 **Z_rewardvec** = `reward vector|vector reward|multi-objective|multiobjective|separate (reward|penalt)|weighted sum of (the )?(reward|cost)|penalty term`
+
+| 篇 | 计数 | 命中位置与判读 |
+|---|---|---|
+| 7TASFUDR | **1** | 式 (10)（L137）`m i n : \theta_1 \cdot R_{lost} + \theta_2 \cdot \sum T_{sd} - \theta_3 \cdot \sum E_{ava}^i` —— **含显式 R_lost 项的加权标量和**；轴 = **目标类型**（丢包率/时延/可用能量），非失败成因；交给 Dijkstra 作**单一标量路径代价** → **不构成 G-A** |
+| 其余 9 篇 | **0** | 未见 |
+
+### 11.7 多智能体（W_multiagent）
+
+模式 **W_multiagent** = `multi-agent|multiagent|independent learner|centralized training|decentralized execution`
+
+| 篇 | 计数 | 命中位置与判读 |
+|---|---|---|
+| FLQLU3T4 | 1 | L701 **参考文献 [15] 标题**（`A GNN-enhanced multiagent reinforcement learning approach`）—— 非本文设定 |
+| W5Z39E25 | 1 | L152 **参考文献 [3] 标题**（`LEO satellite network routing algorithm based on Multi-Agent Systems`）—— 非本文设定 |
+| 其余 8 篇 | **0** | 未见 |
+
+---
+
+## 12. G-A 对抗性检索专章（同一失败事件按物理原因分通道？）
+
+### 12.0 问题复述
+
+> 全库（111 篇）是否有任何工作，把**同一个失败事件**（丢包/超时/溢出）按**物理原因**拆成**不同的学习通道或惩罚项**（例如区分「决策缓存溢出」与「链路队列溢出」）？
+
+### 12.1 检索模式与全库实测（逐条）
+
+| # | 模式原文 | 命中文件数 | 命中文件（itemKey） |
+|---|---|---|---|
+| GA1 | `credit assignment` | 5 | 6C843JTS 9FLZ88LZ JSX5XG88 LJG6ZW7B QGAREQUM |
+| GA2 | `counterfactual` | 5 | 9FLZ88LZ FGQSH4AI I2WH9RRR KPUZIMU5 LJG6ZW7B |
+| GA3 | `reward decompos|decompos(ition|e|ing)? of (the )?reward|decomposed reward` | **0** | — |
+| GA4 | `multi-objective|multiobjective|\bMORL\b|Pareto reward|reward vector|vector reward` | 16 | 2QRYMWBI 3MRQRWHU GPLEP83L JS857IYN K7U4TYJN L5F3DK68 LJG6ZW7B LNA28YZY QSNRQ8PF S85KQ4FC T9X6QCLL UKBSA7WN Y2H4NPLU YI9G7NR7 Z74SR656 ZIUBKVPZ |
+| GA5 | `separate (reward|penalt|loss)|distinct (reward|penalt)|per-cause|per cause|separate channel` | 2 | 47J2H748 LJG6ZW7B |
+| GA6 | `drop (reason|cause)|loss reason|cause of (the )?(loss|drop)|reason for (the )?(loss|drop)|why (a )?packet (was|is) (dropped|lost)` | 1 | 9KZDXPKC |
+| GA7 | `overflow` | 10 | 42E4NAQU 9C6HB6AF GPDPLJNG J68GU76W JP79GMZS LJG6ZW7B R37BNQQ8 TQF59BD7 X2FCSU4S YI9G7NR7 |
+| GA8 | `distinguish(ing)? between .{0,60}(loss|drop|congestion|overflow|failure)` | 3 | 7AXASN73 8N9QJHC2 S2QZRBEJ |
+| GA9 | `two (types|kinds|causes|classes) of (loss|drop|failure|congestion)|types of packet loss|different causes` | 2 | 2QRYMWBI 8N9QJHC2 |
+| GA10 | `root cause|failure cause|cause of the failure|failure reason` | 4 | 8N9QJHC2 LJG6ZW7B UF8IQTA2 WT839JP7 |
+| GA11 | `loss due to|dropped due to|packet loss (is )?caused` | 12 | 7TASFUDR 9KZDXPKC A7QNRKML AZ72LM9Z EG9X569M FLQLU3T4 IXVSNEE3 K7U4TYJN QSNRQ8PF UKEKU5ZG X2FCSU4S Z74SR656 |
+| GA12 | `per-?cause|by cause|separate (queue|buffer) |distinct (queue|buffer) ` | **0** | — |
+
+### 12.2 命中逐条判读
+
+**GA1/GA2/GA10（credit assignment / counterfactual / root cause）**
+- 6C843JTS（Sutton TD）：L488 `The purt)ose of bolh backprot)agation and TD methods is accurate credit assignment. … Backpropagation addresses a ,slr\~u:tural ('re(iil-assignment issue whereas TD metho(ts ad(lr(,ss a temporal cr(,dit-asslgnuient issue.` → **轴 = 结构性 / 时间性**。
+- JSX5XG88（GAE）：L17 `this issue is called the credit assignment problem in the reinforcement learning literature`；L233 `The response function lets us quantify the temporal credit assignment problem` → **轴 = 时间性**。
+- 9FLZ88LZ（QMIX）：L52 `COMA (Foerster et al., 2018) uses a centralised critic to train decentralised actors, estimating a counterfactual advantage function for each agent in order to address multi-agent credit assignment.` → **轴 = 智能体间**。
+- QGAREQUM：L329 `the well-studied reward delay problem which raises the credit assignment issue` → **轴 = 时间性**。
+- LJG6ZW7B（Sutton & Barto 教材）：`credit assignment` 命中 7 处，含索引行 `credit assignment, 11, 17, 19, 47, 294, 401 in psychology, 346, 361 structural, 385, 405, 407` → **轴 = 时间性/结构性/心理学**。
+- **判读：全部与「失败事件的物理成因」无关，不构成 G-A。**
+
+**GA5（separate reward/penalty/channel）——含一个必须点名的假阳性**
+- **47J2H748（Q-routing 原始论文）L81 逐字**：`Each neighbor returns a single number-using a separate channel so as to not contribute to network congestion in our model-giving that node's current estimate of the total time to the destination.`
+  - **判读：这里的 "separate channel" 是「不占数据带宽的控制信息信道」，不是「奖励/惩罚通道」。属假阳性，明确排除。**
+- LJG6ZW7B：教材正文的 general 讨论，非机制。
+- **判读：不构成 G-A。**
+
+**GA6/GA7（drop reason / overflow）**
+- 9KZDXPKC L246/L248：讲的是 GSL handover / ISL failure 发生时吞吐 `suddenly drops` —— **「drops」是吞吐下降，不是丢包归因**。假阳性。
+- 42E4NAQU L145：`the queue capacity in the simulation is set to 1 Gb/s, effectively preventing queue overflow` —— **实验条件设置**。
+- GPDPLJNG L82：`all the flows passing through the node will not provoke buffer overflow` —— **流量守恒约束**。
+- J68GU76W L198：`Queues for the satellites are assumed unbounded, so buffer overflow is not explicitly modeled, though reducing queue length inherently lowers overflow risk.` —— **显式声明不建模**。
+- 9C6HB6AF L435：`AMBRLB [38]: In order to overcome the issues of traffic overflow and overhead` —— **related work 描述**。
+- X2FCSU4S L15：`the queue length becomes larger and a cache overflow appears. In this paper, the abundant storage resources of the multilayered satellite network (MLSN) are used to avoid the packet loss caused by a cache overflow of the Low Earth Orbit (LEO) satellites.` —— **这是全库最接近「溢出作为独立失败类型」的表述**，但它把「缓存溢出」当作**唯一**失败原因来处理（用 GEO 层缓存吸收），**没有与另一种溢出原因分通道**。
+- R37BNQQ8 L209：`η(t) is the MSB overflow factor` —— **弹性带宽溢出**，是代价类型项。
+- JP79GMZS / TQF59BD7 / YI9G7NR7 / LJG6ZW7B：均为散文或配置描述。
+- **判读：不构成 G-A。**
+
+**GA8/GA9/GA10 —— 发现真实反例（见 §12.3）**
+
+**GA11（loss due to）**：12 篇命中，抽查 EG9X569M L63 `in order to avoid packet loss due to an infinite number of backlogged messages at any relay node, the transmission time for each message on the link should not be greater than the time interval between messages generated by the session`、UKEKU5ZG L262（MARL-JR 方法描述）—— **均为单一原因的散文表述，未见分通道**。
+
+**GA12**：全库 **0** 命中。
+
+### 12.3 发现的反例（明确写出分解轴与覆盖判断）
+
+#### 反例 1（最强）：8N9QJHC2 — Recovery Routing Based on Q-Learning for Satellite Network
+
+**分解轴 = 故障的物理成因（临时链路干扰 vs 永久端口硬件故障）**。逐字证据：
+
+- **L27**：`Differentiated route recovery in the face of different fault types. On the one hand, the traditional satellite network route restoration technology does not consider the difference between the causes of the two types of failures, which may lead to the situation of abandoning a completely normal node in route restoration. On the other hand, the nodes involved in the failure are treated as a whole rather than by ports.`
+- **L99**：`The two types of failures are temporary link failures caused by transmission medium interference and permanent link failures caused by problems with node port hardware equipment. According to the existing satellite network failure information, we can get the former a priori probability p_∥ and the a priori probability of the satellite port failure P_d_x .`
+- **L358**：`It solved the problem that currently it is impossible to distinguish between temporary and permanent failures. This mechanism introduces two factors of a priori probability of link failure, permanent node port failure and temporary link failure, due to transmission medium interference. Two types of failure a posteriori probability indexes are obtained through Bayes decision theory. Combining the threshold with the further detection in the second stage, it realizes the distinguished detection`
+- **L31（学习方法被成因条件化，逐字）**：`For different types of faults, update the Q-value of the local state space and action space of different related nodes to achieve the purpose of distinguishing route recovery for different types of faults. At the same time, because the reward function consists of queuing time, transmission time, and link lifetime, the discount factor is also related to the link lifetime, which effectively reduces the impact of network dynamics on the stability of routing results and ensures the stability of path connections.`
+- **L243 / L253（两阶段检测分别触发 Q 表更新）**：`(4) Update the Q-value table according to the detection result of the first stage of the fault detection mechanism.` / `(5) Update the Q-value table according to the detection results in the second stage of fault detection mechanism.`
+- **L248（Q 更新式，逐字）**：
+  Q_F^odd(d_i, F') = −∞，
+  Q_{F'}^odd(d_i, F) = −∞，
+  Q_Y^new(d_i, F) = Q_Y^odd(d_i, F) + α ΔQ_Y(d_i, F)，
+  ΔQ_Y(d_i, F) = t_q + γ max Q_F^odd(d_i, Y) − Q_Y^odd(d_i, F)，
+  Q_{Y'}^new(d_i, F') = Q_{Y'}^odd(d_i, F') …
+
+**覆盖判断：部分覆盖 G-A。**
+- **覆盖的部分**：它确实**按物理成因区分故障**，并让成因**决定 Q 表更新的作用对象**：故障链路两端节点的对应 Q 项被置 **−∞**（硬失效），其邻居按 ΔQ 更新；两个成因对应两阶段检测，各自触发一次更新。
+- **未覆盖的部分（关键）**：它的**奖励仍是单一标量**（L31 明示 `the reward function consists of queuing time, transmission time, and link lifetime`），**没有按成因分设奖励/惩罚通道**；成因的作用是**选择更新哪张 Q 表、哪些条目**，而不是**产生不同的学习信号**。ΔQ 的即时项只有 `t_q`（排队时延），两个成因共用同一更新式。
+- 另有两点使其与 G-A 更远：① 其区分对象是**链路故障**，不是 G-A 问的**丢包/超时/溢出事件**；② 区分手段是 **Bayes 后验概率 + 阈值 + 两阶段检测**，属检测器设计，不是学习结构设计。
+
+#### 反例 2（弱）：UKBSA7WN — QRLSN
+
+**分解轴 = 优化目标类型（端到端时延 vs 网络流量开销负载）**。逐字证据：
+
+- **L139**：`we adopt a Multi-Objective Reinforcement Learning (MORL) algorithm to balance endto-end delay and network traffic overhead load.`
+- **L141**：`MORL differs from typical RL, which considers several optimization objectives simultaneously in the learning process, where a reward vector is provided for the agent at each update step`
+- **L144（逐目标 Q 表，逐字）**：`Q _ { i } ( s , a ) \gets ( 1 - \alpha ) Q _ { i } ( s , a ) + \alpha \biggl [ r _ { i } + \gamma \operatorname* { m a x } _ { a ^ { \prime } \in A } Q _ { i } ( s ^ { \prime } , a ^ { \prime } ) \biggr ]`
+- **L147**：`where i \in [ 1 , n ] and n represents the number of objectives; r _ { i } is the i th feedback signal of the agent's reward vector obtained from the interaction with the environment.`
+- **L155（合成式，逐字）**：`\mathrm { T Q } ( s , a ) = \sum _ { i = 1 } ^ { n } w _ { i } Q _ { i } ( s , a )`
+- **L158**：`In the proposed QRLSN, two optimization targets are obtained by a reward vector f _ { r } = [ f _ { r _ { 1 } } , f _ { r _ { 2 } } ]`
+- **L161 / L165（两个分量，逐字）**：
+  f _ { r _ { 1 } } = \left\{ \begin{array} { c c } { r _ { \mathrm { m a x } } } & { N _ { t + 1 } \mathrm { i s \ d e s t i n a t i o n } } \\ { r _ { \mathrm { m i n } } + \left( \frac { e } { 2 } \right) ^ { - d _ { i j } } } & { \mathrm { O t h e r w i s e } } \end{array} \right.
+  f _ { r _ { 2 } } = \left\{ \begin{array} { c c } { r _ { \mathrm { m a x } } } & { N _ { t + 1 } \mathrm { i s \ d e s t i n a t i o n } } \\ { r _ { \mathrm { m i n } } + \left( \frac { e } { 2 } \right) ^ { - n _ { q } } } & { \mathrm { O t h e r w i s e } } \end{array} \right.
+- **L168**：`where f _ { r _ { 1 } } and f _ { r _ { 2 } } denote the reward function to optimize the end-to-end delay and network traffic overhead load respectively`
+
+**覆盖判断：不覆盖 G-A。**
+- **轴是目标类型**（时延 / 流量开销），不是失败的物理原因。两个分量中，**到达目的给 r_max，否则给不同的 shaping 项**——**两个分量里都没有任何丢包/溢出/超时通道**。
+- UKBSA7WN 全文检索 `drop|lost|loss|overflow|penalt` 的命中（L28/L191/L204/L210/L215/L217）**全部是评估指标或现象描述**（L204 `data packets are considered to be lost if they are not received within 2000 ms`），**无一处进入奖励函数**。
+- 因此它是**奖励向量化**的真实样本，但**不是「按失败原因分通道」**的样本。
+
+#### 反例 3（弱，本批内）：R37BNQQ8 的 η(t)；反例 4（弱，本批内）：7TASFUDR 的式 (10)
+见 §11.5 / §11.6。两者都是**代价/目标类型**的分解，且都是**启发式标量加权和**，非学习通道。
+
+#### 反例 5（最近邻，本批内）：W5Z39E25 — 按业务类别归因丢包
+**分解轴 = 业务类别（class A / B2 / B1 / B0）**，不是失败物理成因。逐字 L91：`traffic class A has the priority right of preemption for satellite resources, its packet loss rate has remained 0, traffic class B suffers packet loss during the on-board resource shortage`。
+**覆盖判断：不覆盖 G-A**（轴不同），但它证明了一个相邻事实：**「同一拥塞事件下，不同流量获得不同的丢包对待」在 LEO 领域已被实现过**，只是轴是优先级而非成因。
+
+### 12.4 G-A 结论
+
+**在 111 篇语料范围内，没有任何工作把同一个失败事件按物理原因拆成不同的学习通道或惩罚项。**
+
+- 支持该结论的三条硬证据：GA3（`reward decompos…`）**0 命中**；GA12（`per-cause|separate queue|distinct queue`）**0 命中**；GA1/GA2 的全部 credit-assignment 命中，其轴均为**时间性 / 结构性 / 智能体间**，无一条为失败成因。
+- 最接近的是 **8N9QJHC2**：它做到了「按故障物理成因区分并差异化更新 Q 表」（成因决定哪些 Q 条目置 −∞、哪些邻居被更新），**但其奖励仍是单一标量（排队时延 + 传输时延 + 链路寿命），成因不产生独立的学习信号**。故判定为 **部分覆盖**。
+- 另一类接近者是**奖励向量化**（UKBSA7WN 的 MORL，轴=目标类型）与**代价项分解**（R37BNQQ8 的 η、7TASFUDR 的 R_lost，轴=代价/目标类型），**均不同轴**。
+- **因此 G-A 缺口成立**，且其可辩护的表述是：*现有工作已把「多目标」做成奖励向量（目标类型轴），也已把「故障类型」做成差异化恢复动作（成因轴，但非学习通道）；尚无人把二者合起来——即把同一失败事件的物理成因做成学习信号的分通道结构。*
+
+---
+
+## 13. 本批完成度声明
+
+- **T2 机制级定读 10 篇全部通读完成**：FLQLU3T4、CTWVLBCY、R37BNQQ8、2W8BJ7ME、7TASFUDR、AIH4GK37、67CSKFK4、YD4JUT7G、W5Z39E25、K93SCUF2，逐篇给出 6 项产出（机制公式逐字 / 决策粒度 / 是否含学习成分 / 可迁移点 / 是否已被 RL 论文采用 / 负载设置登记），另加「自述局限」与「未考察的算法选择」两节。
+- **未完成项：无。** 本批 10 篇均为全文（含参考文献列表）通读，无跳读、无关键词扫描替代通读。
+- **已知的取证边界（如实登记）**：
+  1. §3.5 中 CYMQ2GLA 引用 R37BNQQ8 一条**不作承重声明**（模式命中但定位行不含命中片段，疑超长行合并）。
+  2. §10.1 中 K93SCUF2 的 M_α 定义在 L162 与 L355 **两处写法不一致**（`αS + B_β` vs `Sα + B`），已并列逐字登记，**未做融合**。
+  3. §0.2 记录的三个工具坑（binary 静默、Unicode 转义噪声、hook 拦截）已逐条复现并给出处置。
+- **本文件在生成过程中曾因一次 read+write 往返被截断（§4.4 之后内容丢失），已按原文重新补齐并经章节完整性核验**（§0–§13 全部在位）。
 
