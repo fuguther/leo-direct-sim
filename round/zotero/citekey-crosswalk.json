@@ -1,0 +1,733 @@
+{
+ "confident": [
+  {
+   "cite_key": "Din23",
+   "um_title": "Fast-Convergence Reinforcement Learning for Routing in LEO Satellite Networks",
+   "um_year": "2023",
+   "itemKey": "53HEEK33",
+   "zot_title": "Fast-Convergence Reinforcement Learning for Routing in LEO Satellite Networks",
+   "score": 1.0,
+   "runner_up": [
+    {
+     "itemKey": "53HEEK33",
+     "title": "Fast-Convergence Reinforcement Learning for Routing in LEO Satellite Networks",
+     "score": 1.0
+    },
+    {
+     "itemKey": "3MRQRWHU",
+     "title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+     "score": 0.5
+    },
+    {
+     "itemKey": "PIXWFHAC",
+     "title": "Reinforcement Learning‐Based Routing Algorithm in Satellite‐Terrestrial Integrated Networks",
+     "score": 0.45
+    }
+   ]
+  },
+  {
+   "cite_key": "Fer26",
+   "um_title": "Traffic-Aware Multi-Agent Reinforcement Learning-Based Distributed Routing for Low Earth Orbit Satellite Network",
+   "um_year": "2026",
+   "itemKey": "CMNCS52M",
+   "zot_title": "Traffic-Aware Multi-Agent Reinforcement Learning-Based Distributed Routing for Low Earth Orbit Satellite Network",
+   "score": 1.0,
+   "runner_up": [
+    {
+     "itemKey": "CMNCS52M",
+     "title": "Traffic-Aware Multi-Agent Reinforcement Learning-Based Distributed Routing for Low Earth Orbit Satellite Network",
+     "score": 1.0
+    },
+    {
+     "itemKey": "UKEKU5ZG",
+     "title": "A Centralized–Distributed Joint Routing Algorithm for LEO Satellite Constellations Based on Multi-Agent Reinforcement Learning",
+     "score": 0.47
+    },
+    {
+     "itemKey": "42E4NAQU",
+     "title": "Queue-Aware and Resilient Routing in LEO Satellite Networks Using Multi-Agent Reinforcement Learning",
+     "score": 0.41
+    }
+   ]
+  },
+  {
+   "cite_key": "Kri26",
+   "um_title": "Reinforcement Learning for Opportunistic Routing in Software-Defined LEO—Terrestrial Systems",
+   "um_year": "2026",
+   "itemKey": "J68GU76W",
+   "zot_title": "Reinforcement Learning for Opportunistic Routing in Software-Defined LEO-Terrestrial Systems",
+   "score": 1.0,
+   "runner_up": [
+    {
+     "itemKey": "J68GU76W",
+     "title": "Reinforcement Learning for Opportunistic Routing in Software-Defined LEO-Terrestrial Systems",
+     "score": 1.0
+    },
+    {
+     "itemKey": "PIXWFHAC",
+     "title": "Reinforcement Learning‐Based Routing Algorithm in Satellite‐Terrestrial Integrated Networks",
+     "score": 0.31
+    },
+    {
+     "itemKey": "53HEEK33",
+     "title": "Fast-Convergence Reinforcement Learning for Routing in LEO Satellite Networks",
+     "score": 0.25
+    }
+   ]
+  },
+  {
+   "cite_key": "Heg25",
+   "um_title": "Routing in Low Earth Orbit Satellite Networks: Constrained DQN-Based Approach",
+   "um_year": "2025",
+   "itemKey": "ZIUBKVPZ",
+   "zot_title": "Routing in Low Earth Orbit Satellite Networks: Constrained DQN-Based Approach",
+   "score": 1.0,
+   "runner_up": [
+    {
+     "itemKey": "ZIUBKVPZ",
+     "title": "Routing in Low Earth Orbit Satellite Networks: Constrained DQN-Based Approach",
+     "score": 1.0
+    },
+    {
+     "itemKey": "MXQVNU3P",
+     "title": "Low Earth Orbit Satellite Network Routing Algorithm Based on Graph Neural Networks and Deep Q-Network",
+     "score": 0.46
+    },
+    {
+     "itemKey": "XM64YRAW",
+     "title": "Inter-Satellite Routing for LEO Satellite Networks: A GNN and DRL Integrated Approach",
+     "score": 0.4
+    }
+   ]
+  },
+  {
+   "cite_key": "Rot24",
+   "um_title": "Shaping Rewards, Shaping Routes: On Multi-Agent Deep Q-Networks for Routing in Satellite Constellation Networks",
+   "um_year": "2024",
+   "itemKey": "5PYWVRC5",
+   "zot_title": "Shaping Rewards, Shaping Routes: On Multi-Agent Deep Q-Networks for Routing in Satellite Constellation Networks",
+   "score": 1.0,
+   "runner_up": [
+    {
+     "itemKey": "5PYWVRC5",
+     "title": "Shaping Rewards, Shaping Routes: On Multi-Agent Deep Q-Networks for Routing in Satellite Constellation Networks",
+     "score": 1.0
+    },
+    {
+     "itemKey": "L2VKYTAV",
+     "title": "Shaping Rewards, Shaping Routes: On Multi-Agent Deep Q-Networks for Routing in Satellite Constellation Networks",
+     "score": 1.0
+    },
+    {
+     "itemKey": "42E4NAQU",
+     "title": "Queue-Aware and Resilient Routing in LEO Satellite Networks Using Multi-Agent Reinforcement Learning",
+     "score": 0.31
+    }
+   ]
+  },
+  {
+   "cite_key": "Cho26",
+   "um_title": "Spatial-Temporal Learning-Based Distributed Routing for Dynamic LEO Satellite Networks",
+   "um_year": "2026",
+   "itemKey": "LZKNZA8B",
+   "zot_title": "Spatial-Temporal Learning-Based Distributed Routing for Dynamic LEO Satellite Networks",
+   "score": 1.0,
+   "runner_up": [
+    {
+     "itemKey": "LZKNZA8B",
+     "title": "Spatial-Temporal Learning-Based Distributed Routing for Dynamic LEO Satellite Networks",
+     "score": 1.0
+    },
+    {
+     "itemKey": "UKBSA7WN",
+     "title": "Reinforcement learning based dynamic distributed routing scheme for mega LEO satellite networks",
+     "score": 0.58
+    },
+    {
+     "itemKey": "BBNQ4EAQ",
+     "title": "Temporal Netgrid Model-Based Dynamic Routing in Large-Scale Small Satellite Networks",
+     "score": 0.43
+    }
+   ]
+  },
+  {
+   "cite_key": "Sor23",
+   "um_title": "Q-learning for distributed routing in LEO satellite constellations",
+   "um_year": "2023",
+   "itemKey": "Y2H4NPLU",
+   "zot_title": "Q-learning for distributed routing in LEO satellite constellations",
+   "score": 1.0,
+   "runner_up": [
+    {
+     "itemKey": "Y2H4NPLU",
+     "title": "Q-learning for distributed routing in LEO satellite constellations",
+     "score": 1.0
+    },
+    {
+     "itemKey": "UKEKU5ZG",
+     "title": "A Centralized–Distributed Joint Routing Algorithm for LEO Satellite Constellations Based on Multi-Agent Reinforcement Learning",
+     "score": 0.42
+    },
+    {
+     "itemKey": "LZKNZA8B",
+     "title": "Spatial-Temporal Learning-Based Distributed Routing for Dynamic LEO Satellite Networks",
+     "score": 0.4
+    }
+   ]
+  }
+ ],
+ "review": [
+  {
+   "cite_key": "Fu23",
+   "um_title": "Reinforcement Learning Based Intelligent Routing for Software Defined LEO Satellite Networks",
+   "um_year": "2023",
+   "itemKey": "3MRQRWHU",
+   "zot_title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+   "score": 0.55,
+   "runner_up": [
+    {
+     "itemKey": "3MRQRWHU",
+     "title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+     "score": 0.55
+    },
+    {
+     "itemKey": "PIXWFHAC",
+     "title": "Reinforcement Learning‐Based Routing Algorithm in Satellite‐Terrestrial Integrated Networks",
+     "score": 0.5
+    },
+    {
+     "itemKey": "GPLEP83L",
+     "title": "LLM-Driven Automated Reward Design for Reinforcement Learning-Based Routing in LEO Satellite Networks",
+     "score": 0.46
+    }
+   ]
+  },
+  {
+   "cite_key": "Tan24",
+   "um_title": "Congestion Control and Routing Optimization for LEO Satellite Networks Based on Deep Reinforcement Learning",
+   "um_year": "2024",
+   "itemKey": "3MRQRWHU",
+   "zot_title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+   "score": 0.5,
+   "runner_up": [
+    {
+     "itemKey": "3MRQRWHU",
+     "title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+     "score": 0.5
+    },
+    {
+     "itemKey": "CYMQ2GLA",
+     "title": "A Two-Hops State-Aware Routing Strategy Based on Deep Reinforcement Learning for LEO Satellite Networks",
+     "score": 0.5
+    },
+    {
+     "itemKey": "9C6HB6AF",
+     "title": "Deep Reinforcement Learning-Based Multipath Routing for LEO Megaconstellation Networks",
+     "score": 0.5
+    }
+   ]
+  },
+  {
+   "cite_key": "Loz24",
+   "um_title": "Multi-Agent Deep Reinforcement Learning for Distributed Satellite Routing",
+   "um_year": "2024",
+   "itemKey": "UKEKU5ZG",
+   "zot_title": "A Centralized–Distributed Joint Routing Algorithm for LEO Satellite Constellations Based on Multi-Agent Reinforcement Learning",
+   "score": 0.54,
+   "runner_up": [
+    {
+     "itemKey": "UKEKU5ZG",
+     "title": "A Centralized–Distributed Joint Routing Algorithm for LEO Satellite Constellations Based on Multi-Agent Reinforcement Learning",
+     "score": 0.54
+    },
+    {
+     "itemKey": "CMNCS52M",
+     "title": "Traffic-Aware Multi-Agent Reinforcement Learning-Based Distributed Routing for Low Earth Orbit Satellite Network",
+     "score": 0.5
+    },
+    {
+     "itemKey": "42E4NAQU",
+     "title": "Queue-Aware and Resilient Routing in LEO Satellite Networks Using Multi-Agent Reinforcement Learning",
+     "score": 0.46
+    }
+   ]
+  },
+  {
+   "cite_key": "Li26",
+   "um_title": "Load-Balanced and Congestion-Aware Routing for LEO Laser Satellite Networks Based on Deep Reinforcement Learning",
+   "um_year": "2026",
+   "itemKey": "CYMQ2GLA",
+   "zot_title": "A Two-Hops State-Aware Routing Strategy Based on Deep Reinforcement Learning for LEO Satellite Networks",
+   "score": 0.53,
+   "runner_up": [
+    {
+     "itemKey": "CYMQ2GLA",
+     "title": "A Two-Hops State-Aware Routing Strategy Based on Deep Reinforcement Learning for LEO Satellite Networks",
+     "score": 0.53
+    },
+    {
+     "itemKey": "3MRQRWHU",
+     "title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+     "score": 0.43
+    },
+    {
+     "itemKey": "9C6HB6AF",
+     "title": "Deep Reinforcement Learning-Based Multipath Routing for LEO Megaconstellation Networks",
+     "score": 0.43
+    }
+   ]
+  },
+  {
+   "cite_key": "He25",
+   "um_title": "SRv6-Enabled Routing Optimization in LEO Satellite Networks: A Reinforcement Learning Approach",
+   "um_year": "2025",
+   "itemKey": "53HEEK33",
+   "zot_title": "Fast-Convergence Reinforcement Learning for Routing in LEO Satellite Networks",
+   "score": 0.5,
+   "runner_up": [
+    {
+     "itemKey": "53HEEK33",
+     "title": "Fast-Convergence Reinforcement Learning for Routing in LEO Satellite Networks",
+     "score": 0.5
+    },
+    {
+     "itemKey": "3MRQRWHU",
+     "title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+     "score": 0.45
+    },
+    {
+     "itemKey": "47J2H748",
+     "title": "Packet Routing in Dynamically Changing Networks: A Reinforcement Learning Approach",
+     "score": 0.45
+    }
+   ]
+  },
+  {
+   "cite_key": "Li25",
+   "um_title": "Reinforcement Learning Based Minimum Hop Routing Strategy for LEO Satellite Networks",
+   "um_year": "2025",
+   "itemKey": "3MRQRWHU",
+   "zot_title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+   "score": 0.6,
+   "runner_up": [
+    {
+     "itemKey": "3MRQRWHU",
+     "title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+     "score": 0.6
+    },
+    {
+     "itemKey": "CYMQ2GLA",
+     "title": "A Two-Hops State-Aware Routing Strategy Based on Deep Reinforcement Learning for LEO Satellite Networks",
+     "score": 0.58
+    },
+    {
+     "itemKey": "PIXWFHAC",
+     "title": "Reinforcement Learning‐Based Routing Algorithm in Satellite‐Terrestrial Integrated Networks",
+     "score": 0.55
+    }
+   ]
+  },
+  {
+   "cite_key": "Sun26",
+   "um_title": "Hybrid SRv6 and Reinforcement Learning Routing for Dynamic LEO Satellite Networks",
+   "um_year": "2026",
+   "itemKey": "53HEEK33",
+   "zot_title": "Fast-Convergence Reinforcement Learning for Routing in LEO Satellite Networks",
+   "score": 0.56,
+   "runner_up": [
+    {
+     "itemKey": "53HEEK33",
+     "title": "Fast-Convergence Reinforcement Learning for Routing in LEO Satellite Networks",
+     "score": 0.56
+    },
+    {
+     "itemKey": "UKBSA7WN",
+     "title": "Reinforcement learning based dynamic distributed routing scheme for mega LEO satellite networks",
+     "score": 0.55
+    },
+    {
+     "itemKey": "3MRQRWHU",
+     "title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+     "score": 0.5
+    }
+   ]
+  },
+  {
+   "cite_key": "Wei26",
+   "um_title": "STG-SR: Spatio-Temporal Graph based Load Balancing Routing for Satellite Networks",
+   "um_year": "2026",
+   "itemKey": "XLRW7XXN",
+   "zot_title": "A DQN-Based Routing Algorithm for Load Balancing in LEO Satellite Networks",
+   "score": 0.6,
+   "runner_up": [
+    {
+     "itemKey": "XLRW7XXN",
+     "title": "A DQN-Based Routing Algorithm for Load Balancing in LEO Satellite Networks",
+     "score": 0.6
+    },
+    {
+     "itemKey": "VFS59FHI",
+     "title": "Load-Balancing Routing Algorithm Based on Segment Routing for Traffic Return in LEO Satellite Networks",
+     "score": 0.46
+    },
+    {
+     "itemKey": "TQF59BD7",
+     "title": "IDLB: An SDN‐Based Load‐Balancing Routing Protocol for Autonomous Satellite Constellation Networks",
+     "score": 0.46
+    }
+   ]
+  }
+ ],
+ "none": [
+  {
+   "cite_key": "Zha21",
+   "um_title": "ASER: Scalable Distributed Routing Protocol for LEO Satellite Networks",
+   "um_year": "2021",
+   "itemKey": "AJJI57M9",
+   "zot_title": "A distributed routing algorithm for datagram traffic in LEO satellite networks",
+   "score": 0.4,
+   "runner_up": [
+    {
+     "itemKey": "AJJI57M9",
+     "title": "A distributed routing algorithm for datagram traffic in LEO satellite networks",
+     "score": 0.4
+    },
+    {
+     "itemKey": "W5Z39E25",
+     "title": "A wised routing protocols for LEO satellite networks",
+     "score": 0.33
+    },
+    {
+     "itemKey": "LZKNZA8B",
+     "title": "Spatial-Temporal Learning-Based Distributed Routing for Dynamic LEO Satellite Networks",
+     "score": 0.33
+    }
+   ]
+  },
+  {
+   "cite_key": "Yan25",
+   "um_title": "Secure and Scalable Rerouting in LEO Satellite Networks",
+   "um_year": "2025",
+   "itemKey": "K7U4TYJN",
+   "zot_title": "SkyLink: Scalable and Resilient Link Management in LEO Satellite Networks",
+   "score": 0.33,
+   "runner_up": [
+    {
+     "itemKey": "K7U4TYJN",
+     "title": "SkyLink: Scalable and Resilient Link Management in LEO Satellite Networks",
+     "score": 0.33
+    },
+    {
+     "itemKey": "W5Z39E25",
+     "title": "A wised routing protocols for LEO satellite networks",
+     "score": 0.25
+    },
+    {
+     "itemKey": "W6M3GU7L",
+     "title": "A Characterization of Route Variability in LEO Satellite Networks",
+     "score": 0.25
+    }
+   ]
+  },
+  {
+   "cite_key": "Kim26b",
+   "um_title": "Toward Wide-Area LEO Backbones: Distributed End-to-End Routing for Mega-Constellations",
+   "um_year": "2026",
+   "itemKey": "LBMABZJ7",
+   "zot_title": "Distributed On-Demand Routing for LEO Mega-Constellations: A Starlink Case Study",
+   "score": 0.33,
+   "runner_up": [
+    {
+     "itemKey": "LBMABZJ7",
+     "title": "Distributed On-Demand Routing for LEO Mega-Constellations: A Starlink Case Study",
+     "score": 0.33
+    },
+    {
+     "itemKey": "Y2H4NPLU",
+     "title": "Q-learning for distributed routing in LEO satellite constellations",
+     "score": 0.3
+    },
+    {
+     "itemKey": "YI9G7NR7",
+     "title": "DQDRA: A Dyna-Q-Enhanced Distributed Routing Algorithm for Heterogeneous LEO Constellations",
+     "score": 0.23
+    }
+   ]
+  },
+  {
+   "cite_key": "Kim26",
+   "um_title": "Learning-Based Resilient Dynamic Routing for Fault-Tolerant Robust LEO Satellite Networks",
+   "um_year": "2026",
+   "itemKey": "LZKNZA8B",
+   "zot_title": "Spatial-Temporal Learning-Based Distributed Routing for Dynamic LEO Satellite Networks",
+   "score": 0.46,
+   "runner_up": [
+    {
+     "itemKey": "LZKNZA8B",
+     "title": "Spatial-Temporal Learning-Based Distributed Routing for Dynamic LEO Satellite Networks",
+     "score": 0.46
+    },
+    {
+     "itemKey": "UKBSA7WN",
+     "title": "Reinforcement learning based dynamic distributed routing scheme for mega LEO satellite networks",
+     "score": 0.43
+    },
+    {
+     "itemKey": "3MRQRWHU",
+     "title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+     "score": 0.38
+    }
+   ]
+  },
+  {
+   "cite_key": "Gre26",
+   "um_title": "Dynamic Predictive Routing for Satellite Megaconstellations",
+   "um_year": "2026",
+   "itemKey": "UF8IQTA2",
+   "zot_title": "Traffic-Predictive Routing Strategy for Satellite Networks",
+   "score": 0.38,
+   "runner_up": [
+    {
+     "itemKey": "UF8IQTA2",
+     "title": "Traffic-Predictive Routing Strategy for Satellite Networks",
+     "score": 0.38
+    },
+    {
+     "itemKey": "TRM2HPFN",
+     "title": "A dynamic routing concept for ATM-based satellite personal communication networks",
+     "score": 0.3
+    },
+    {
+     "itemKey": "LZKNZA8B",
+     "title": "Spatial-Temporal Learning-Based Distributed Routing for Dynamic LEO Satellite Networks",
+     "score": 0.27
+    }
+   ]
+  },
+  {
+   "cite_key": "Zha26b",
+   "um_title": "Reinforcement learning-based robust routing strategies against cascading failures in LEO satellite networks.",
+   "um_year": "2026",
+   "itemKey": "3MRQRWHU",
+   "zot_title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+   "score": 0.46,
+   "runner_up": [
+    {
+     "itemKey": "3MRQRWHU",
+     "title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+     "score": 0.46
+    },
+    {
+     "itemKey": "PIXWFHAC",
+     "title": "Reinforcement Learning‐Based Routing Algorithm in Satellite‐Terrestrial Integrated Networks",
+     "score": 0.43
+    },
+    {
+     "itemKey": "EG9X569M",
+     "title": "A robust routing strategy based on deep reinforcement learning for mega satellite constellations",
+     "score": 0.4
+    }
+   ]
+  },
+  {
+   "cite_key": "K23",
+   "um_title": "Enhancing Network Performance in LEO Satellite Networks through DRL-Based Routing Optimization",
+   "um_year": "2023",
+   "itemKey": "8N9QJHC2",
+   "zot_title": "Recovery Routing Based on Q-Learning for Satellite Network Faults",
+   "score": 0.33,
+   "runner_up": [
+    {
+     "itemKey": "8N9QJHC2",
+     "title": "Recovery Routing Based on Q-Learning for Satellite Network Faults",
+     "score": 0.33
+    },
+    {
+     "itemKey": "MXQVNU3P",
+     "title": "Low Earth Orbit Satellite Network Routing Algorithm Based on Graph Neural Networks and Deep Q-Network",
+     "score": 0.33
+    },
+    {
+     "itemKey": "XLRW7XXN",
+     "title": "A DQN-Based Routing Algorithm for Load Balancing in LEO Satellite Networks",
+     "score": 0.33
+    }
+   ]
+  },
+  {
+   "cite_key": "Zha26",
+   "um_title": "Dynamic routing optimization and management in low Earth orbit satellite networks: a machine learning approach",
+   "um_year": "2026",
+   "itemKey": "ZIUBKVPZ",
+   "zot_title": "Routing in Low Earth Orbit Satellite Networks: Constrained DQN-Based Approach",
+   "score": 0.46,
+   "runner_up": [
+    {
+     "itemKey": "ZIUBKVPZ",
+     "title": "Routing in Low Earth Orbit Satellite Networks: Constrained DQN-Based Approach",
+     "score": 0.46
+    },
+    {
+     "itemKey": "LZKNZA8B",
+     "title": "Spatial-Temporal Learning-Based Distributed Routing for Dynamic LEO Satellite Networks",
+     "score": 0.33
+    },
+    {
+     "itemKey": "UKBSA7WN",
+     "title": "Reinforcement learning based dynamic distributed routing scheme for mega LEO satellite networks",
+     "score": 0.31
+    }
+   ]
+  },
+  {
+   "cite_key": "Che26",
+   "um_title": "A Double Deep Q-Network Reinforcement Learning Method for Load-Balancing Inter-Satellite Routing in LEO Satellite Constellations",
+   "um_year": "2026",
+   "itemKey": "2W8BJ7ME",
+   "zot_title": "A Load Balancing Routing Strategy for LEO Satellite Network",
+   "score": 0.38,
+   "runner_up": [
+    {
+     "itemKey": "2W8BJ7ME",
+     "title": "A Load Balancing Routing Strategy for LEO Satellite Network",
+     "score": 0.38
+    },
+    {
+     "itemKey": "EG9X569M",
+     "title": "A robust routing strategy based on deep reinforcement learning for mega satellite constellations",
+     "score": 0.38
+    },
+    {
+     "itemKey": "TAUEF8PF",
+     "title": "Deep Reinforcement Learning with Double Q-learning",
+     "score": 0.31
+    }
+   ]
+  },
+  {
+   "cite_key": "Yin25",
+   "um_title": "A Hybrid Routing Strategy for Congestion Mitigation in LEO Mega-Constellation Networks With Constrained Gateway Placement",
+   "um_year": "2025",
+   "itemKey": "UF8IQTA2",
+   "zot_title": "Traffic-Predictive Routing Strategy for Satellite Networks",
+   "score": 0.2,
+   "runner_up": [
+    {
+     "itemKey": "UF8IQTA2",
+     "title": "Traffic-Predictive Routing Strategy for Satellite Networks",
+     "score": 0.2
+    },
+    {
+     "itemKey": "IXVSNEE3",
+     "title": "Distributed Satellite-Terrestrial Cooperative Routing Strategy Based on Minimum Hop-Count Analysis in Mega LEO Satellite Constellation",
+     "score": 0.2
+    },
+    {
+     "itemKey": "ZIUBKVPZ",
+     "title": "Routing in Low Earth Orbit Satellite Networks: Constrained DQN-Based Approach",
+     "score": 0.18
+    }
+   ]
+  },
+  {
+   "cite_key": "Cao19",
+   "um_title": "Congestion Control Based on OSPF in LEO Satellite Constellation",
+   "um_year": "2019",
+   "itemKey": "TQF59BD7",
+   "zot_title": "IDLB: An SDN‐Based Load‐Balancing Routing Protocol for Autonomous Satellite Constellation Networks",
+   "score": 0.23,
+   "runner_up": [
+    {
+     "itemKey": "TQF59BD7",
+     "title": "IDLB: An SDN‐Based Load‐Balancing Routing Protocol for Autonomous Satellite Constellation Networks",
+     "score": 0.23
+    },
+    {
+     "itemKey": "IXVSNEE3",
+     "title": "Distributed Satellite-Terrestrial Cooperative Routing Strategy Based on Minimum Hop-Count Analysis in Mega LEO Satellite Constellation",
+     "score": 0.2
+    },
+    {
+     "itemKey": "8N9QJHC2",
+     "title": "Recovery Routing Based on Q-Learning for Satellite Network Faults",
+     "score": 0.18
+    }
+   ]
+  },
+  {
+   "cite_key": "Gri22",
+   "um_title": "Rethinking LEO Constellations Routing with the Unsplittable Multi-Commodity Flows Problem",
+   "um_year": "2022",
+   "itemKey": "DVS8C3CC",
+   "zot_title": "On-Demand Routing in LEO Mega-Constellations With Dynamic Laser Inter-Satellite Links",
+   "score": 0.19,
+   "runner_up": [
+    {
+     "itemKey": "DVS8C3CC",
+     "title": "On-Demand Routing in LEO Mega-Constellations With Dynamic Laser Inter-Satellite Links",
+     "score": 0.19
+    },
+    {
+     "itemKey": "UKEKU5ZG",
+     "title": "A Centralized–Distributed Joint Routing Algorithm for LEO Satellite Constellations Based on Multi-Agent Reinforcement Learning",
+     "score": 0.17
+    },
+    {
+     "itemKey": "GPDPLJNG",
+     "title": "Multi-Commodity Flow Routing for Large-Scale LEO Satellite Networks Using Deep Reinforcement Learning",
+     "score": 0.17
+    }
+   ]
+  },
+  {
+   "cite_key": "Wan23",
+   "um_title": "An Intelligent Area-segmentation Enabled Hybrid Routing Method in Mega-constellations",
+   "um_year": "2023",
+   "itemKey": "LBMABZJ7",
+   "zot_title": "Distributed On-Demand Routing for LEO Mega-Constellations: A Starlink Case Study",
+   "score": 0.21,
+   "runner_up": [
+    {
+     "itemKey": "LBMABZJ7",
+     "title": "Distributed On-Demand Routing for LEO Mega-Constellations: A Starlink Case Study",
+     "score": 0.21
+    },
+    {
+     "itemKey": "EG9X569M",
+     "title": "A robust routing strategy based on deep reinforcement learning for mega satellite constellations",
+     "score": 0.19
+    },
+    {
+     "itemKey": "DVS8C3CC",
+     "title": "On-Demand Routing in LEO Mega-Constellations With Dynamic Laser Inter-Satellite Links",
+     "score": 0.19
+    }
+   ]
+  },
+  {
+   "cite_key": "Bar26",
+   "um_title": "Unlocking Resilience and Load Balancing: Toward Hop-By-Hop Routing for LEO Mega-Constellations",
+   "um_year": "2026",
+   "itemKey": "2W8BJ7ME",
+   "zot_title": "A Load Balancing Routing Strategy for LEO Satellite Network",
+   "score": 0.27,
+   "runner_up": [
+    {
+     "itemKey": "2W8BJ7ME",
+     "title": "A Load Balancing Routing Strategy for LEO Satellite Network",
+     "score": 0.27
+    },
+    {
+     "itemKey": "XLRW7XXN",
+     "title": "A DQN-Based Routing Algorithm for Load Balancing in LEO Satellite Networks",
+     "score": 0.25
+    },
+    {
+     "itemKey": "LBMABZJ7",
+     "title": "Distributed On-Demand Routing for LEO Mega-Constellations: A Starlink Case Study",
+     "score": 0.23
+    }
+   ]
+  }
+ ]
+}

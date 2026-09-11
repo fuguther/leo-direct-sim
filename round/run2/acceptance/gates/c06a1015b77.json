@@ -1,0 +1,10 @@
+{
+ "cand_id": "c06a1015b77",
+ "ledger_content_hash": "h06a1015b773f",
+ "ledger_version": "1",
+ "card": "round/run2/acceptance/CARD-T1-draft.md",
+ "card_sha256": "79233e3d866de214f70c07de6be553f6aab1154c508187429566ab625c217ce4",
+ "verdict": "PASS",
+ "note": "T1 短链审查通过",
+ "recorded_at": "2026-09-11T16:24:23"
+}

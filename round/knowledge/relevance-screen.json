@@ -1,0 +1,890 @@
+[
+ {
+  "k": "7AXASN73",
+  "t": "A Survey on Nongeostationary Satellite Systems: The Communication Perspective",
+  "core": 1230,
+  "rt": 137,
+  "rl": 56,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "QSNRQ8PF",
+  "t": "Review",
+  "core": 1006,
+  "rt": 1469,
+  "rl": 54,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "MYBALQ2D",
+  "t": "Small-scale LEO Satellite Networking for Global-scale Demands",
+  "core": 925,
+  "rt": 147,
+  "rl": 21,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "2QRYMWBI",
+  "t": "Artificial Intelligence for Satellite Communication and Non-Terrestrial Networks: A Survey",
+  "core": 915,
+  "rt": 264,
+  "rl": 253,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "LNA28YZY",
+  "t": "Satellite Communications in the New Space Era: A Survey and Future Challenges",
+  "core": 897,
+  "rt": 208,
+  "rl": 37,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "T9X6QCLL",
+  "t": "LEO SATELLITE NETWORKING RELAUNCHED: SURVEY AND CURRENT RESEARCH CHALLENGES",
+  "core": 798,
+  "rt": 354,
+  "rl": 45,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "5AZHJE7N",
+  "t": "Date of publication xxxx 00, 0000, date of current version xxxx 00, 0000. Digital Object Identifier 10.1109/ACCESS.2017.",
+  "core": 695,
+  "rt": 112,
+  "rl": 89,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "LRSXMWX9",
+  "t": "A Survey on Technologies, Standards and Open Challenges in Satellite IoT",
+  "core": 641,
+  "rt": 97,
+  "rl": 111,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "AF674CSF",
+  "t": "Logic Path Identified Hierarchical Routing for Large-Scale LEO Satellite Networks",
+  "core": 638,
+  "rt": 577,
+  "rl": 12,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "5HJ8ATR7",
+  "t": "Democratizing Direct-to-Cell Low Earth Orbit Satellite Networks",
+  "core": 596,
+  "rt": 41,
+  "rl": 29,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "GGFJ3SEG",
+  "t": "Democratizing LEO Satellite Network Measurement",
+  "core": 596,
+  "rt": 374,
+  "rl": 5,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "K93SCUF2",
+  "t": "![](images/9b83ed0779d9b85875d11e191822918570a1e06de069f49c44a14b0389c6b4fe.jpg)",
+  "core": 582,
+  "rt": 62,
+  "rl": 3,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "W6M3GU7L",
+  "t": "A Characterization of Route Variability in LEO Satellite Networks",
+  "core": 581,
+  "rt": 202,
+  "rl": 5,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "Z74SR656",
+  "t": "Evolution of Non-Terrestrial Networks From 5G to 6G: A Survey",
+  "core": 567,
+  "rt": 183,
+  "rl": 177,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "UMKF328H",
+  "t": "Received February 23, 2022, accepted March 16, 2022, date of publication March 25, 2022, date of current version April 5",
+  "core": 548,
+  "rt": 91,
+  "rl": 59,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "IXVSNEE3",
+  "t": "Distributed Satellite-Terrestrial Cooperative Routing Strategy Based on Minimum Hop-Count Analysis in Mega LEO Satellite",
+  "core": 542,
+  "rt": 457,
+  "rl": 1,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "8AYW2Y78",
+  "t": "E<sub>xp</sub>l<sub>or</sub>i<sub>ng</sub> th<sub>e</sub> “I<sub>n</sub>t<sub>erne</sub>t f<sub>rom</sub> <sub>space</su",
+  "core": 537,
+  "rt": 211,
+  "rl": 20,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "JLF7IEBQ",
+  "t": "SaTE: Low-Latency Trafic Engineering for Satellite Networks",
+  "core": 500,
+  "rt": 152,
+  "rl": 31,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "9GPFG5U3",
+  "t": "Link-Identified Routing Architecture in Space",
+  "core": 497,
+  "rt": 523,
+  "rl": 44,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "IEI3BYFF",
+  "t": "![](images/da98d3b4764b16e12533580e513ede2f5f8bb4001c0be31f89b135d898d3faa0.jpg)",
+  "core": 482,
+  "rt": 120,
+  "rl": 33,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "524XNF29",
+  "t": "Received August 2, 2020, accepted August 19, 2020, date of publication September 10, 2020, date of current version Septe",
+  "core": 477,
+  "rt": 85,
+  "rl": 57,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "JS857IYN",
+  "t": "Time-Dependent Network Topology Optimization for LEO Satellite Constellations",
+  "core": 456,
+  "rt": 86,
+  "rl": 6,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "P6XJZNQK",
+  "t": "A Global Perspective on the Past, Present, and Future of Video Streaming over Starlink",
+  "core": 426,
+  "rt": 277,
+  "rl": 8,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "XM6NUPM4",
+  "t": "Your Mega-Constellations Can Be Slim: A Cost-Effective Approach for Constructing Survivable and Performant LEO Satellite",
+  "core": 413,
+  "rt": 62,
+  "rl": 3,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "NPF75WS5",
+  "t": "Edinburgh Research Explorer",
+  "core": 401,
+  "rt": 90,
+  "rl": 12,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "FLQLU3T4",
+  "t": "Duality-Guided Graph Learning for Real-Time Joint Connectivity and Routing in LEO Mega-Constellations",
+  "core": 397,
+  "rt": 244,
+  "rl": 23,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "X2FCSU4S",
+  "t": "Received April 4, 2019, accepted April 23, 2019, date of publication April 30, 2019, date of current version May 13, 201",
+  "core": 342,
+  "rt": 115,
+  "rl": 5,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "UKEKU5ZG",
+  "t": "Article",
+  "core": 341,
+  "rt": 275,
+  "rl": 73,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "L5F3DK68",
+  "t": "Satellite-based communications security",
+  "core": 337,
+  "rt": 21,
+  "rl": 29,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "X5Z98UPM",
+  "t": "Article",
+  "core": 325,
+  "rt": 263,
+  "rl": 156,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "K7U4TYJN",
+  "t": "©2025 IEEE. Personal use of this material is permitted. Permission from IEEE must be obtained for all other uses, in any",
+  "core": 318,
+  "rt": 184,
+  "rl": 18,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "9KZDXPKC",
+  "t": "How to Route CUBIC and BBR Packets in Space",
+  "core": 312,
+  "rt": 232,
+  "rl": 1,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "DS9SPARV",
+  "t": "OpenSN: An Open Source Library for Emulating LEO Satellite Networks",
+  "core": 297,
+  "rt": 149,
+  "rl": 20,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "S85KQ4FC",
+  "t": "Enabling High-Throughput Routing for LEO Satellite Broadband Networks: A Flow-Centric Deep Reinforcement Learning Approa",
+  "core": 297,
+  "rt": 696,
+  "rl": 73,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "IP7RRM3A",
+  "t": "Review Article",
+  "core": 289,
+  "rt": 49,
+  "rl": 26,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "DVS8C3CC",
+  "t": "NRC Publications Archive Archives des publications du CNRC",
+  "core": 282,
+  "rt": 563,
+  "rl": 4,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "JP79GMZS",
+  "t": "Explicit Load Balancing Technique for NGEO Satellite IP Networks With On-Board Processing Capabilities",
+  "core": 282,
+  "rt": 568,
+  "rl": 10,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "CMNCS52M",
+  "t": "Received 9 April 2026; accepted 24 April 2026. Date of publication 29 April 2026; date of current version 26 May 2026. T",
+  "core": 281,
+  "rt": 474,
+  "rl": 170,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "AJJI57M9",
+  "t": "A Distributed Routing Algorithm for Datagram Traffic in LEO Satellite Networks",
+  "core": 280,
+  "rt": 232,
+  "rl": 5,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "PIXWFHAC",
+  "t": "Research Article",
+  "core": 263,
+  "rt": 168,
+  "rl": 88,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "6GWNYSTT",
+  "t": "RESEARCH",
+  "core": 262,
+  "rt": 239,
+  "rl": 13,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "TRM2HPFN",
+  "t": "A Dynamic Routing Concept for ATM-Based Satellite Personal Communication Networks",
+  "core": 253,
+  "rt": 104,
+  "rl": 1,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "L63JISQN",
+  "t": "Making Sense of Constellations",
+  "core": 252,
+  "rt": 30,
+  "rl": 1,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "67CSKFK4",
+  "t": "Delay is Not an Option: Low Latency Routing in Space",
+  "core": 250,
+  "rt": 167,
+  "rl": 2,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "53HEEK33",
+  "t": "Article",
+  "core": 244,
+  "rt": 266,
+  "rl": 95,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "AIH4GK37",
+  "t": "How Area Geometry Shapes Link-State Routing Scalability in LEO Networks",
+  "core": 244,
+  "rt": 165,
+  "rl": 12,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "CYMQ2GLA",
+  "t": "Article",
+  "core": 234,
+  "rt": 327,
+  "rl": 86,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "36RZKNW5",
+  "t": "An integrated routing and data fragmentation strategy for optimizing end-to-end delay in LEO satellite networks",
+  "core": 229,
+  "rt": 645,
+  "rl": 37,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "R37BNQQ8",
+  "t": "Received October 29, 2018, accepted November 29, 2018, date of publication December 7, 2018, date of current version Jan",
+  "core": 227,
+  "rt": 177,
+  "rl": 18,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "SBCHGBCP",
+  "t": "Segment routing for traf<sup>fi</sup>c engineering and effective recovery in low-earth orbit satellite constellations",
+  "core": 225,
+  "rt": 251,
+  "rl": 12,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "JZA5SEQA",
+  "t": "Fast Reroute Algorithms for Satellite Network with Segment Routing",
+  "core": 217,
+  "rt": 233,
+  "rl": 4,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "TQF59BD7",
+  "t": "IDLB: An SDN-Based Load-Balancing Routing Protocol for Autonomous Satellite Constellation Networks",
+  "core": 216,
+  "rt": 492,
+  "rl": 20,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "CTWVLBCY",
+  "t": "Transmiting, Fast and Slow: Scheduling Satellite Trafic through Space and Time",
+  "core": 204,
+  "rt": 39,
+  "rl": 4,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "YD4JUT7G",
+  "t": "Internet Backbones in Space",
+  "core": 204,
+  "rt": 221,
+  "rl": 8,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "BBNQ4EAQ",
+  "t": "Temporal Netgrid Model-Based Dynamic Routing in Large-Scale Small Satellite Networks",
+  "core": 203,
+  "rt": 246,
+  "rl": 10,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "LBMABZJ7",
+  "t": "Distributed On-Demand Routing for LEO Mega-Constellations: A Starlink Case Study",
+  "core": 203,
+  "rt": 130,
+  "rl": 9,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "7TASFUDR",
+  "t": "Available energy routing algorithm considering QoS requirements for LEO satellite network",
+  "core": 199,
+  "rt": 311,
+  "rl": 9,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "9C6HB6AF",
+  "t": "Article",
+  "core": 198,
+  "rt": 312,
+  "rl": 63,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "3MRQRWHU",
+  "t": "Multi-QoS routing algorithm based on reinforcement learning for LEO satellite networks",
+  "core": 188,
+  "rt": 225,
+  "rl": 30,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "2W8BJ7ME",
+  "t": "Received July 12, 2020, accepted August 4, 2020, date of publication August 18, 2020, date of current version September ",
+  "core": 186,
+  "rt": 255,
+  "rl": 4,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "42E4NAQU",
+  "t": "Queue-Aware and Resilient Routing in LEO Satellite Networks Using Multi-Agent Reinforcement Learning",
+  "core": 185,
+  "rt": 170,
+  "rl": 31,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "J68GU76W",
+  "t": "Reinforcement Learning for Opportunistic Routing in Software-Defined LEO–Terrestrial Systems",
+  "core": 169,
+  "rt": 88,
+  "rl": 59,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "GPDPLJNG",
+  "t": "Multi-Commodity Flow Routing for Large-Scale LEO Satellite Networks Using Deep Reinforcement Learning",
+  "core": 164,
+  "rt": 88,
+  "rl": 41,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "VFS59FHI",
+  "t": "Received July 25, 2019, accepted August 7, 2019, date of publication August 12, 2019, date of current version August 26,",
+  "core": 162,
+  "rt": 277,
+  "rl": 3,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "XM64YRAW",
+  "t": "![](images/cf6a86f4e14d86b997e76208b68401c8861fc1acabcda42017e6a55e9b0030f1.jpg)",
+  "core": 162,
+  "rt": 134,
+  "rl": 42,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "AZ72LM9Z",
+  "t": "Towards Global Outage Detection for LEO Networks",
+  "core": 156,
+  "rt": 70,
+  "rl": 4,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "5N5LQPPP",
+  "t": "SDDRL-SR: A High-Reliability Satellite Routing Algorithm based on Deep Reinforcement Learning",
+  "core": 150,
+  "rt": 165,
+  "rl": 56,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "TSV3IE8S",
+  "t": "Article",
+  "core": 150,
+  "rt": 295,
+  "rl": 111,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "XLRW7XXN",
+  "t": "A DQN-Based Routing Algorithm for Load Balancing in LEO Satellite Networks",
+  "core": 137,
+  "rt": 189,
+  "rl": 56,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "WFA3CZLP",
+  "t": "FlexSATE: Flexible and Distributed Traffic Engineering with Supervised Learning in Ultra-Dense Low-Earth-Orbit Satellite",
+  "core": 135,
+  "rt": 156,
+  "rl": 11,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "YI9G7NR7",
+  "t": "on Fundamentals of Electronics, Communications and Computer Sciences",
+  "core": 132,
+  "rt": 72,
+  "rl": 16,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "Y2H4NPLU",
+  "t": "Q-learning for distributed routing in LEO satellite constellations",
+  "core": 125,
+  "rt": 200,
+  "rl": 40,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "BLFJ6CLV",
+  "t": "Analysis of Age of Information in Non-terrestrial Networks",
+  "core": 124,
+  "rt": 10,
+  "rl": 8,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "UF8IQTA2",
+  "t": "Article",
+  "core": 124,
+  "rt": 657,
+  "rl": 20,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "WHS8Z44C",
+  "t": "Joint Network Function Placement and Routing Optimization in Dynamic Software-defined Satellite-Terrestrial Integrated N",
+  "core": 122,
+  "rt": 92,
+  "rl": 4,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "4QG5VYHQ",
+  "t": "Information Freshness of Updates Sent over LEO Satellite Multi-Hop Networks",
+  "core": 119,
+  "rt": 294,
+  "rl": 24,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "MXQVNU3P",
+  "t": "Article",
+  "core": 115,
+  "rt": 188,
+  "rl": 141,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "S2QZRBEJ",
+  "t": "POLITECNICO DI TORINO Repository ISTITUZIONALE",
+  "core": 114,
+  "rt": 139,
+  "rl": 2,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "UKBSA7WN",
+  "t": "Reinforcement learning based dynamic distributed routing scheme for mega LEO satellite networks",
+  "core": 113,
+  "rt": 244,
+  "rl": 41,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "LZKNZA8B",
+  "t": "Spatial-Temporal Learning-Based Distributed Routing for Dynamic LEO Satellite Networks",
+  "core": 108,
+  "rt": 222,
+  "rl": 61,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "39NJWBI7",
+  "t": "Asynchronous Risk-Aware Multi-Agent Packet Routing for Ultra-Dense LEO Satellite Networks",
+  "core": 105,
+  "rt": 228,
+  "rl": 115,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "W5Z39E25",
+  "t": "A Wised Routing Protocols for Leo Satellite Networks",
+  "core": 101,
+  "rt": 315,
+  "rl": 14,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "X5K285MW",
+  "t": "Analyzing Source-Routed Approaches for Low Earth Orbit Satellite Constellation Networks",
+  "core": 92,
+  "rt": 122,
+  "rl": 5,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "8N9QJHC2",
+  "t": "Research Article",
+  "core": 84,
+  "rt": 87,
+  "rl": 13,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "EG9X569M",
+  "t": "A Robust Routing Strategy based on Deep Reinforcement Learning for Mege Satellite Constellations",
+  "core": 80,
+  "rt": 122,
+  "rl": 39,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "GJJQUMQ2",
+  "t": "Deciphering Region-Level Signatures from Latency Measurements in LEO Satellite Internet",
+  "core": 78,
+  "rt": 56,
+  "rl": 6,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "BV4XI6CU",
+  "t": "Received June 15, 2020, accepted July 10, 2020, date of publication July 17, 2020, date of current version July 29, 2020",
+  "core": 77,
+  "rt": 231,
+  "rl": 14,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "GPLEP83L",
+  "t": "LLM-Driven Automated Reward Design for Reinforcement Learning-Based Routing in LEO Satellite Networks",
+  "core": 73,
+  "rt": 78,
+  "rl": 176,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "ZIUBKVPZ",
+  "t": "R<sub>ou</sub>ti<sub>ng</sub> i<sub>n</sub> L<sub>ow</sub> E<sub>ar</sub>th O<sub>r</sub>bit S<sub>a</sub>t<sub>e</sub>l",
+  "core": 46,
+  "rt": 23,
+  "rl": 101,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "5PYWVRC5",
+  "t": "Shaping Rewards, Shaping Routes: On Multi-Agent Deep Q-Networks for Routing in Satellite Constellation Networks",
+  "core": 34,
+  "rt": 49,
+  "rl": 58,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "L2VKYTAV",
+  "t": "Shaping Rewards, Shaping Routes: On Multi-Agent Deep Q-Networks for Routing in Satellite Constellation Networks",
+  "core": 34,
+  "rt": 49,
+  "rl": 58,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "R5QTFKD2",
+  "t": "Age-Optimal Sampling and Routing under Intermittent Links and Energy Constraints",
+  "core": 23,
+  "rt": 348,
+  "rl": 94,
+  "tier": "A-核心域"
+ },
+ {
+  "k": "LJG6ZW7B",
+  "t": "Reinforcement Learning",
+  "core": 9,
+  "rt": 91,
+  "rl": 3828,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "6C843JTS",
+  "t": "Learning to Predict by the Methods of Temporal Differences",
+  "core": 2,
+  "rt": 3,
+  "rl": 16,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "35T2JJRJ",
+  "t": "Attention Is All You Need",
+  "core": 1,
+  "rt": 0,
+  "rl": 11,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "9FLZ88LZ",
+  "t": "QMIX: Monotonic Value Function Factorisation for Deep Multi-Agent Reinforcement Learning",
+  "core": 1,
+  "rt": 1,
+  "rl": 111,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "KPUZIMU5",
+  "t": "The Surprising Effectiveness of PPO in Cooperative Multi-Agent Games",
+  "core": 1,
+  "rt": 0,
+  "rl": 414,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "2FBBURX7",
+  "t": "Graph Attention Reinforcement Learning for Multicast Routing and",
+  "core": 0,
+  "rt": 136,
+  "rl": 53,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "47J2H748",
+  "t": "Packet Routing in Dynamically Changing Networks: A Reinforcement Learning Approach",
+  "core": 0,
+  "rt": 135,
+  "rl": 41,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "57EB6US5",
+  "t": "Human-level control through deep reinforcement learning",
+  "core": 0,
+  "rt": 1,
+  "rl": 166,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "E4NYGLGX",
+  "t": "Safe and efficient off-policy reinforcement learning",
+  "core": 0,
+  "rt": 1,
+  "rl": 120,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "FGQSH4AI",
+  "t": "Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments",
+  "core": 0,
+  "rt": 1,
+  "rl": 205,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "GV9PPNZT",
+  "t": "Information Freshness in Multi-Hop Wireless Networks",
+  "core": 0,
+  "rt": 153,
+  "rl": 118,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "I2WH9RRR",
+  "t": "Asymmetric DQN for Partially Observable Reinforcement Learning",
+  "core": 0,
+  "rt": 2,
+  "rl": 171,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "JSX5XG88",
+  "t": "HIGH-DIMENSIONAL CONTINUOUS CONTROL USING GENERALIZED ADVANTAGE ESTIMATION",
+  "core": 0,
+  "rt": 4,
+  "rl": 160,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "QGAREQUM",
+  "t": "Boosting Reinforcement Learning with Strongly Delayed Feedback Through Auxiliary Short Delays",
+  "core": 0,
+  "rt": 209,
+  "rl": 160,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "TAUEF8PF",
+  "t": "Deep Reinforcement Learning with Double Q-learning",
+  "core": 0,
+  "rt": 1,
+  "rl": 186,
+  "tier": "B-方法基础"
+ },
+ {
+  "k": "ETTA3DIV",
+  "t": "Required toroidal confinement for fusion and omnigeneity",
+  "core": 4,
+  "rt": 0,
+  "rl": 5,
+  "tier": "C-无关"
+ },
+ {
+  "k": "A7QNRKML",
+  "t": "LOTR: Face Landmark Localization Using Localization Transformer",
+  "core": 0,
+  "rt": 0,
+  "rl": 8,
+  "tier": "C-无关"
+ },
+ {
+  "k": "VACUFEHB",
+  "t": "COMPUTATIONALLY EFFICIENT ALGORITHMS FOR THIRD ORDER ADAPTIVE VOLTERRA FILTERS",
+  "core": 0,
+  "rt": 0,
+  "rl": 1,
+  "tier": "C-无关"
+ },
+ {
+  "k": "WT839JP7",
+  "t": "Fine-Grained Library Customization",
+  "core": 0,
+  "rt": 13,
+  "rl": 0,
+  "tier": "C-无关"
+ }
+]
