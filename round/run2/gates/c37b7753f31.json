@@ -1,0 +1,10 @@
+{
+ "cand_id": "c37b7753f31",
+ "ledger_content_hash": "h37b7753f3192",
+ "ledger_version": "2",
+ "card": "round/run2/drafts/A3-v2.md",
+ "card_sha256": "c2fafc76a6b6eed1d5122dcf046c5b0509fe22fd0af02281a3a5589aa96b34b1",
+ "verdict": "PASS",
+ "note": "三问四层: 现象✅(锚件逐字+E4/E5核验) 原因✅ 改动✅(收缩为双核:通道归因奖励+前兆信号) 简单替代⚠️待实验判决(两条淘汰线写死); ADVERSARIAL-A3",
+ "recorded_at": "2026-09-11T17:50:25"
+}
