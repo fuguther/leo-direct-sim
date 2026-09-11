@@ -1119,3 +1119,96 @@ $$
 - **已被本库采用？** 本批内未见引用关系。T1 批次是否采用，本会话无读权限（见 §13）。
 
 
+## 12. 对抗性问题（针对缺口主张 G-A）的答复
+
+**问题（主控原文）**：全库是否有任何工作，把**同一个失败事件**（丢包/超时/溢出）按**物理原因**拆成**不同的学习通道或惩罚项**（例如区分"决策缓存溢出"与"链路队列溢出"）？
+
+### 12.1 检索记录（模式 + 计数 + 命中处置）
+
+检索范围：本批 11 篇全文（5286 行）；命令形态 grep -ciE '<模式>' <11 个文件路径>，命中行再用 grep -inE 逐条复核。
+
+| 模式（逐字） | 命中计数 | 命中处置 |
+|---|---|---|
+| credit assignment | 11 篇全 0 | — |
+| counterfactual | 11 篇全 0 | — |
+| reward | **11 篇全 0** | — |
+| multi-objective\|multiobjective\|MORL\|reward vector\|multiple objectives\|Pareto | JP79GMZS=1，其余 0 | **假阳性**：JP79GMZS **L215** "The On/Off periods of the connections are derived from a Pareto distribution with a shape equal to 1.2." —— 指流量分布，非多目标。**不构成反例** |
+| separate (reward\|penalty)\|distinct (reward\|penalty)\|different (reward\|penalty)\|per-cause\|penalty term\|penal | X5K285MW=1，其余 0 | **假阳性**：X5K285MW **L106** "While we applied the processing penalty on each hop, its effect on the average end-to-end latency was not significant." —— 指逐跳处理开销，非惩罚项。**不构成反例** |
+| drop (reason\|cause)\|reason for (the )?(drop\|loss)\|cause of (the )?(drop\|loss)\|root cause\|discard reason | 9KZDXPKC=2，其余 0 | **假阳性**：9KZDXPKC **L246** "...the throughput drop caused by GSL handover..." 与 **L248** "...the throughput drop caused by ISL failure..." —— 命中原因是子串 "drop cause**d** by"。语义上确实在区分两类失败，但**不是** per-cause 学习通道。**不构成反例（但见 §12.2 先例 1）** |
+| overflow\|saturat\|full buffer | JP79GMZS=2、TQF59BD7=4、IXVSNEE3=6，其余 0 | 逐条见 §12.2 末段；**均无学习通道含义** |
+
+### 12.2 结论：本批 11 篇中**未发现**满足 G-A 的工作
+
+**判定为"未发现"的依据**：本批 11 篇**全部无学习成分**（§0.1：reinforcement=0、\blearn=0、\btrain=0、supervised=0、reward=0、credit assignment=0、counterfactual=0）。既然不存在学习通道，**原则上不可能存在"把失败按原因拆成不同学习通道或惩罚项"的工作**。这是**结构性排除**，而非抽样遗漏。
+
+但检索发现 **3 个必须登记的机制层部分先例**（分解轴各不同）：
+
+#### 先例 1（最强，分解轴 = 失败原因）：9KZDXPKC / DB-R
+
+- **分解轴**：**失败原因**（GSL 切换 vs ISL 失效）。同一个失败事件 = **丢包**。
+- **逐字证据**：**L55** "DB-R mechanism leverages default routing to address the packet loss caused by GSL handover. Moreover, DB-R mechanism configures backup routing to address the packet loss caused by ISL failure."；**L180** "When a GSL is disconnected, the satellite's routing entries that correspond to the interface of the disconnected GSL will immediately disappear."；**L220** "When an ISL becomes disconnected due to antenna misalignment, the corresponding interface of the faulty ISL become unavailable."；**L188**（时间尺度差异）"such a period lasts for about tens of milliseconds."
+- **是否覆盖 G-A**：**否**。它拆的是**路由处理通路**（default route vs backup route），不是**学习通道/惩罚项**；两条通路的目标都是"消灭丢包"，没有把两条通路变成两个独立的学习信号。
+- **但它对 G-A 的价值**：它是本批中**唯一提供"失败原因可在线标注"机制的论文**（L198-204 的前缀命中判据 + L230 的接口失效判据）。RL 若要实现 G-A，这台标注器是现成可复用的起点。**建议主控把它登记为 G-A 的"机制模板"而非"反例"。**
+
+#### 先例 2（分解轴 = 代价来源）：9GPFG5U3 / LiR
+
+- **分解轴**：**代价来源**（BF 假阳性导致的错误转发 vs BF 位宽导致的正确路径开销）。
+- **逐字证据**：**L121** "Hence false positives will lead to incorrect forwardings towards unspecified ISLs. We let $f _ { I F O } ( \cdot )$ denote the incorrect forwarding overhead, which measures the data volume (in KB) delivered on the incorrect ISLs."；**L123** "The BF-based forwarding utilizes the M-bit vector to record the ISL identifiers, which also increases the forward overhead along the correct path. We let $f _ { C F O } ( \cdot )$ denote the correct forwarding overhead..."；**公式 (7)**（L179-181）"f_FO(N,M,K) = f_IFO(N,M,K) + f_CFO(N,M)"。
+- **是否覆盖 G-A**：**部分**。分解**存在**（两项物理来源不同），但公式 (7) 立刻把两者**加和为单一标量**，没有形成两个独立学习通道/两个惩罚项。**是最接近 G-A 的"分解但未分通道"形态。**
+- **G-A 的切口**：把公式 (7) 的加法拆成两路（例如两条 reward 通道或双头 critic），在 LiR 架构上即为可实施的最小反例构造。**建议主控把它登记为 G-A 的"最近邻工作"**——若审查者质问"分解代价不是新鲜事"，必须先承认 LiR 已做分解、再指出其未分通道。
+
+#### 先例 3（分解轴 = 逻辑域/层次/动作维度，均非失败原因）
+
+- **AF674CSF**：分解轴 = **组内 / 组间**（L87-89、L153-157）。
+- **TQF59BD7**：分解轴 = **簇内 / 簇间 + QoS 类**（L302、L385 的四类 QoS）。
+- **JP79GMZS**：分解轴 = **业务类 A/B/C**（L148-154、L164 的绕行优先级）。
+- **IXVSNEE3**：分解轴 = **动作方向**（水平/垂直两套队列 Q^h/Q^v，L293、公式 (24) L297-299）——按**动作维度**分离，而非按失败原因。
+- **是否覆盖 G-A**：**均否**。分解轴都不是"同一失败事件的物理原因"。
+
+#### 假阳性与"看似相关但不同"的条目（必须登记）
+
+- **JP79GMZS L213**："The rationale beneath this assumption is to avoid any possible confusion between throughput degradation due to packet drops (due in turn to buffer overflows at satellites) and that due to satellite channel errors." → 这是**实验设计**上刻意区分"缓冲溢出丢包"与"信道错误丢包"，语义上与 G-A 最接近，但**它是为了排除混淆变量，不是为了分通道学习**。**不构成反例**，但**是 G-A 的动机类证据**（连非学习论文都认为这两类丢包必须分开对待）。
+- **TQF59BD7 L482**："Using the same small buffer size of 360 kbit caused issues for signaling in larger clusters. ... Signaling traffic is prioritized by the scheduler, so packets of other QoS classes may be dropped. Figure 11 illustrates this systematic error consisting of periodic drops due to peaks in high-priority signaling traffic." → 归因了"**信令突发导致其他类丢包**"的因果链，但用于**缓冲尺寸调参**，非学习通道。**不构成反例**。
+- **IXVSNEE3 L301 / L539-541**：队列饱和与系统饱和是**控制判据**（切换方向 / 定义 B_s^th、R_pac^th），不是失败原因分解。**不构成反例**。
+- **VFS59FHI L165**：把"无可行路径"显式建模为**拒绝**而非丢包 → 是"区分决策导致的拒绝与资源导致的丢失"的先例，但**无学习成分**。**不构成反例**。
+
+### 12.3 一句话结论
+
+> **本批 11 篇中没有任何工作把同一失败事件按物理原因拆成不同的学习通道或惩罚项——因为本批 11 篇全部不含学习成分（结构性排除，非抽样遗漏）。最接近的是 9KZDXPKC（按失败原因拆成两条路由通路）与 9GPFG5U3（把总转发开销按物理来源拆成两项后再加和为单一标量）；两者都不覆盖 G-A，但分别提供了"失败原因在线标注器"与"最近邻分解先例"两件可直接使用的素材。**
+
+---
+
+## 13. 本批完成度与受限声明
+
+### 13.1 完成度
+
+- **11/11 篇全文逐行通读完毕**，无遗留：JP79GMZS(412)、TQF59BD7(605)、SBCHGBCP(419)、X5K285MW(166)、AJJI57M9(431)、9GPFG5U3(712)、AF674CSF(619)、IXVSNEE3(726)、9KZDXPKC(336)、BBNQ4EAQ(495)、VFS59FHI(365)，合计 5286 行。
+- 每篇均产出规定的 6 项；公式逐字抄录（编号式计数：AJJI57M9 11 个、9GPFG5U3 17 个、IXVSNEE3 45 个、SBCHGBCP 10 个、JP79GMZS 12 个、TQF59BD7 16 个、VFS59FHI 12 个、BBNQ4EAQ 5 个、9KZDXPKC 4 个）。
+- **如实说明（非未读完）**：**X5K285MW（166 行）与 AF674CSF（619 行）通读全文后确认"无编号公式、无展示式"** —— 这两篇本身以散文 + 表格 + 伪码承载机制。已在各自 §2 明确写出，并逐字登记其唯一的定量陈述与代价定义（X5K285MW：L70/L92/L106；AF674CSF：L173/L189）。
+- **AJJI57M9 的 §5 特别标注"本篇没有流量/负载设置"**：其实验是全源目的对的拓扑/时延实验，无业务流与到达率。这是如实登记，不是漏读。
+
+### 13.2 受限声明（必须由主控处置）
+
+1. **"是否已被本库 RL 论文采用"无法完整回答**。本会话读权限只覆盖：本人分配的 11 个 VM MD、TIER-ASSIGNMENT.md，以及要写出的 DOSSIER-B5.md。
+   - 尝试读取 ANCHOR-DISSECT-S85KQ4FC.md 与 EXTRACTION-TEMPLATE.md：**两次均被 [HOOK-BLOCK]**（"角色 deepener 不允许访问：ANCHOR-DISSECT-S85KQ4FC.md（shell-file）"）。已按协议等待 20 秒重试一次，仍被拦，随即停止。
+   - 尝试 glob 检索 round/run4/ 下其它产出文件：**被 [HOOK-BLOCK]**（"角色 deepener 不允许访问：.（param）"）。
+   - 因此 T1 批次（B1-B4）与 T2 其它批次（B6/B7）是否采用本批机制作为基线，**我无法核验**。本文件中所有"已被本库采用"的表述**一律限定为我能在本批内直接读到引用关系的条目**（§0.2 已逐条给出参考文献行号），其余一律标注"未验证（见 §13）"。**请主控在 B1-B4 产出后做一次交叉核验**。
+2. **X5K285MW Table 1 的 OCR 损坏**：L54 表格行列错位（数值被合并为 "28841224760"，地面段字段名与数值分行），我**未能可靠还原该表**。已在该篇 §5 标注"表格 OCR 混排"。若该表数值承重，请主控从原始 PDF 复核。
+3. **SBCHGBCP 表格 OCR 损坏**：L270 的 19x19 非均匀流量矩阵在 MD 中被压缩为单行 HTML 表，数值可读但行列对应关系不可靠；L297-299 Table 2 亦存在列错位。已如实标注，未据此下结论。
+4. **公式编号 OCR 断行**：SBCHGBCP 公式 (3) 的编号独占 L149（正文在 L144）；9KZDXPKC 全文无编号公式。已在引用时同时给出行号区间便于复核。
+5. **未做**：本批未对任何一篇做外部检索（未用 web_search / Undermind），未核验引用数或后续影响；所有结论**仅基于 VM MD 全文**。
+
+---
+
+## 14. 交给主控的三条行动项
+
+1. **G-A 的"最近邻工作"必须先承认**：9GPFG5U3 公式 (7) 已把转发开销按物理来源拆成 f_IFO 与 f_CFO（L121/L123/L179-181）。若 G-A 主张"首次按失败原因分解"，措辞必须避开"首次分解代价"，改为"分解后**未分通道学习**"。建议把 9GPFG5U3 与 9KZDXPKC 一并列入 G-A 的对抗性审查清单。
+2. **可直接复用的两件素材**：
+   - **失败原因在线标注器** <- 9KZDXPKC L198-204（前缀命中 GSL Array 判定 GSL 切换）+ L230（接口失效判定 ISL 故障）。
+   - **动作安全门 / 动作屏蔽** <- IXVSNEE3 公式 (25) L303-305 的 Gamma 阈值（用剩余队列空间归一化两条候选动作的代价差）。
+3. **RL 路由必须超越的对照基线（本批给出三个可引用数字）**：
+   - 零状态随机最小跳选路：比时延优先 SPF 多支持约 **73%** 负载（X5K285MW L96）；
+   - 逐包 vs 逐流：per-flow 比 per-packet 多支持 **45.3%** 负载（TQF59BD7 L472）；
+   - 源路由 vs 负载感知：7.6 Gbps vs 15.0 Gbps（TQF59BD7 L17/L449）。
+   任何 RL 路由选题若不在这三条基线上给出增量，贡献不成立。
+

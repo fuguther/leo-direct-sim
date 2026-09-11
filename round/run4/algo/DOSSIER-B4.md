@@ -8,9 +8,9 @@
 > **纪律声明**：负载/流量/评测设置一律只登记在第 12 项，不作为算法贡献。
 >
 > **引文保真度声明（重要，供核验者使用）**：
-> 1. **LaTeX 公式一律逐字复制，未做任何归一化**——包括 MinerU 的上标错位、缺字、乱码（如 X5Z98UPM 公式 (5) 的 @@y@@、8N9QJHC2 的 @@@@$e@@、JLF7IEBQ Fig.7 的 "dding"、EG9X569M 公式 (10)(11) 里未定义的 @@mathcal{V}@@）；本批 32 条公式已用 @@grep -qF@@ 逐条回查 VM 原文（31 条 HIT；发现并已修正 3 处笔误：3MRQRWHU 公式 (3) 的 @@leqslant@@/@@leq@@、47J2H748 更新式 overbrace 的精确写法、WFA3CZLP Algorithm 1 递推式的 @@big(@@ 内层括号）。
+> 1. **LaTeX 公式一律逐字复制，未做任何归一化**——包括 MinerU 的上标错位、缺字、乱码（如 X5Z98UPM 公式 (5) 的 \y、8N9QJHC2 的 \$e、JLF7IEBQ Fig.7 的 "dding"、EG9X569M 公式 (10)(11) 里未定义的 \mathcal{V}）；本批 **36 条公式/关键式引文已用 grep -qF 逐条回查 VM 原文，修正后 36/36 HIT**。回查中发现并已修正 **3 处笔误**：(i) 3MRQRWHU 公式 (3) 在小结处误写 \leq、原文为 \leqslant；(ii) 47J2H748 更新式漏抄了 \overbrace 的外层花括号与 \mathrm{n e w \ e s t i m a t e} 的转义空格；(iii) WFA3CZLP Algorithm 1 递推式内层括号误写为 (、原文为 \big(。另核验 10 条英文散文引文（8 条首次 HIT；2 条 MISS 经查属**核验命令自身问题**——一条用了小写 perform 而原文为 Perform，一条所测短语本就不在本报告中，均非引文错误）。
 > 2. **英文散文引文保留原用词、标点与大小写，但把 MinerU 输出的连续多空格归一化为单空格**（MinerU 对两端对齐正文会输出 "the total  number  of" 这类双空格；这是排版产物，不是原文用词差异）。若核验者发现某句引文与原文只差空格，即属此类，非改写。
-> 3. 行号取 read 工具/sed 的行号，可用 @@sed -n 'Np' <file>@@ 原样复现。
+> 3. 行号取 read 工具/sed 的行号，可用 sed -n 'Np' <file> 原样复现。
 
 ---
 

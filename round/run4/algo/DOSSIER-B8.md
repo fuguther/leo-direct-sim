@@ -589,6 +589,363 @@
 
 ---
 
+## 9. W6M3GU7L — A Characterization of Route Variability in LEO Satellite Networks
+
+**书目（逐字）**：L1 `# A Characterization of Route Variability in LEO Satellite Networks`；L3 `Vaibhav Bhosale, Ahmed Saeed, Ketan Bhardwaj, and Ada Gavrilovska`；L5 `Georgia Institute of Technology`。
+**已读范围**：L1–L334（摘要 L9、引言 L11–L21、背景 L23–L73、研究设置 L75–L80、路由抖动 L81–L165、RTT 变异性 L167–L311、讨论 L313–L322、相关工作 L323–L330、结论起始 L331–L334）。参考文献 L339–L510 未读（仅确认标题 L339）。
+
+### 1) 测量/建模对象与条件（逐字+行号）
+
+- L9（对象）：`In this paper, we provide a thorough characterization of route variability in LEO satellite networks, focusing on route churn and RTT variability.`
+- L77（仿真工具，逐字）：`Our study relies on simulations performed using the Hypatia framework [46] as the starting point, augmenting it with additional emulators as needed for the purposes of our study. We leverage Hypatia to generate the Two Line Element (TLE) information for satellites`
+- L79（星座与时长，逐字）：`We predominantly use the first shell of the Starlink constellation, as it is the main fully-deployed constellation in practice. We also use the first shells from the Kuiper and Telesat constellations to show that our conclusions hold across constellations. We report our simulation results for a simulated period of 100 minutes for the Starlink and Kuiper constellations and 110 minutes for the Telesat constellation.`
+- L97（样本口径）：`We look at paths used by all the source-destination pairs from the top 100 cities in the first shells of the Starlink, Kuiper and Telesat constellations.`
+- L152/L157（拥塞控制实验条件，逐字）：`We consider the link utilization, the 95th percentile delay, and the power defined as the ratio of utilization to the 95th percentile delay exhibited by different congestion control protocols. We look at the route between Pune, India and Lahore, Pakistan.` … `Figure 10 shows the delays for the 60 seconds time interval we use for this experiment. Instead of assigning a different bandwidth value for every path, we select two bandwidth levels that we alternate between with every path change`
+
+### 2) 可引用的事实与数字（逐字+行号）
+
+| # | 事实（逐字） | 行号 |
+|---|---|---|
+| 1 | **`we find that 15% of paths selected by the routing algorithm are used for less than 10 seconds. Further, we show that more than 50% of paths selected by the routing algorithm are used for less than half of their lifetime.`** | L17 |
+| 2 | `we observe that the smallest achievable RTT between a pair of ground stations can grow by up to 2.5x as satellites move in their orbits. Further, we found that this RTT variability is predictable – it correlates with the location of ground stations, exhibiting a spatial structure (§5). In particular, we find the variability to be high only when the communicating ground stations are within 1500-3000km of each other and the travel direction between them isn't along any of the orbital planes.`（原文为乘号字符） | L19 |
+| 3 | **`we measure RTT variability in a constellation as we add orbital shells. Simply adding orbital shells doesn't reduce RTT variability, with variability depending on the exact configuration of each shell (i.e., the number of satellites and orbits and the inclination of orbits).`** | L21 |
+| 4 | `we observe that 15% and 20% of paths are used for less than 10 seconds in Starlink and Kuiper, respectively. This percentage is lower at around 8% in Telesat because it operates at a higher altitude` | L99 |
+| 5 | `for the three constellations, at least 50% of the paths are used for less than half of their lifetime.` | L111 |
+| 6 | **`highlighting that for 70% of them abandoning a path yields a maximum of 25% reduction in latency.`**；`highlighting that 70% of them are abandoned for more than than half of their lifetime.` | L123–L124 |
+| 7 | `Figure 6b shows that 70% of longest shortest paths are used for less than half of their lifetime (while 70% of them are only 25% longer than the best possible RTT as shown in Figure 6a). This implies that even if longest shortest path were to be abandoned for the maximum possible gain, that gain in most cases will be modest.` | L131 |
+| 8 | **`The purple path is abandoned by all connections for the yellow path for about half a millisecond lower latency`**；图题 `All pairs take the same path.` | L147/L150 |
+| 9 | `BBR [23] achieves high bandwidth utilization, while introducing a significant delay. On the other hand, Vegas [21] consistently achieves the lowest utilization with fairly low delays. PCC-Allegro [27] and PCC-Vivace [28] generally show utilization in the range 60−85%, while incurring fairly lower delays.` | L159 |
+| 10 | `The figure shows that the lifetime of a GSL can be as low as 6 seconds, with a maximum of 4.5 minutes.` | L206 |
+| 11 | `there are two types of inter-orbit ISLs: one with a median length of about 760 km and the other at 1384 km.` … `intra-orbit ISLs are uniform with all their lengths at about 1970 km, which is about 150% more than the first cluster of the inter-orbit ISLs` | L195 |
+| 12 | `The length of the other 50% of inter-orbit ISLs can change by up to 21% due to the varying distances between different orbital planes across latitudes` | L197 |
+| 13 | `The lengths of GSLs are uniformly distributed between a minimum of 550 km to a maximum of 1254 km` | L208 |
+| 14 | `we find that a path change ... can further increase the length of the path by up to 2600 km, which could potentially double the length of the path.` | L250 |
+| 15 | **`we can infer that simply increasing the number of satellites doesn't help solve this problem. With approximately the same number of satellites, Starlink V1 can provide improved performance over Starlink V2 due to higher altitudes and a greater diversity in the inclination angles.`** | L300 |
+| 16 | `a satellite is visible for a maximum of 10-12 minutes from any point on earth`；`A LEO satellite travels at about 27,000 km/hr` | L50 |
+| 17 | `Increasing the number of shells`（Fig. 22a 图题）与 L311 `increasing the number of shells while varying the inclination angles can reduce RTT variability by 3x`（原文为乘号字符） | L305/L311 |
+
+### 3) 对"负载变化/突发/时延/到达率"的事实贡献
+
+- **本篇不含任何负载/到达率测量**（仿真只产生拓扑与 RTT），但给出**时延变异性的结构**：
+  - **RTT 可变性有空间结构**（L19、L173、L178），不是随机噪声；**比例上限 2.5 倍**。
+  - **路径使用时长分布**（L99、L111、L123/L124）→ 直接决定"**一条路径能用多久**"，这是任何路由策略**动作驻留时间**的物理上界。
+- **对"负载"的唯一贡献是间接的**：L145–L150 的羊群效应——**贪婪最短时延把所有连接挤到同一条路径**（`All pairs take the same path.`），而差异只有 0.5 ms（L147）。→ **"逐流最优化导致拥塞崩溃"的机理证据**，可作负载均衡动机引用。
+- **拥塞控制的 tradeoff（可引）**：L159、L163（Table 2：利用率、P95 单向时延、power 比值）→ 无单一算法同时最优化时延与利用率；L163 图题 `No single algorithm optimizes both delay and utilization.`
+- **突发/到达率**：**未见**。核验命令 `grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"` → **count = 0**；`grep -ciE "time series|stochastic|Markov|queue|poisson"` → **count = 2**；命中行 L136（`Figure 7 shows a time series of RTT values`）与 L157（`we select two bandwidth levels that we alternate between with every path change`）。**为何不构成反例**：L136 是 RTT 时序的描述性用语；L157 是带宽档位交替的实验设定，**均无随机过程/排队模型**。
+
+### 4) 能否作为定标或现象证据
+
+- **纯仿真（Hypatia / ns-3）**，非 LEO 实测；但它是本批唯一对"路由抖动"给出定量刻画的仿真工作。
+- **可作定标输入（用于环境设计）**：路径使用时长分布（L99/L111）、GSL 生存期 6 s–4.5 min（L206）、ISL 长度三档 760/1384/1970 km（L195）、GSL 长度 550–1254 km（L208）、RTT 变异上限 2.5 倍与其地理条件（1500–3000 km 且非沿轨道面，L19）。
+- **可作现象证据**：**"短时最优点会引发全局拥挤"**（L147）与 **"加卫星不必然降变异"**（L21、L300）两条反直觉结论。
+- **不可作**：任何实测时延/负载定标（全为仿真）；**也不覆盖 ISL 故障/中断**（无故障注入，L157 只做带宽档位切换）。
+
+### 5) 边界与不可外推项
+
+1. **纯仿真，且本篇未见独立实测校验章节**（检索范围=该篇 MD 全文，检索词 `grep -niE "testbed|real-world measurement|ground truth|we measure from"` → 未出现作为独立校验的实验节；L77 明示仅用 Hypatia + TLE）。
+2. **拓扑假设单一**：L315 `our simulations use a specific variant of the +Grid topology`；L296 `Since each satellite currently has only 4 lasers to support 4 ISLs, we assume that they are utilized to setup a +Grid leading to individual shells operating independently.` → **跨壳 ISL 被假设为不连接**。
+3. **仿真时长 100–110 分钟**（L79）→ 只覆盖约一个轨道周期；**无昼夜/长期行为**。
+4. **地面站选取受限**：L97（top 100 城市）；L294 `we use the global 100 most populous cities as the ground s...` → 对**地面站稀疏区域外推需谨慎**。
+5. **拥塞控制实验是人为构造**：L157 `we select two bandwidth levels that we alternate between with every path change` → 带宽变化为**人为注入**。
+6. **未读部分**：结论 L331–L334 的末尾与参考文献 L339–L510。
+
+---
+
+## 10. DS9SPARV — OpenSN: An Open Source Library for Emulating LEO Satellite Networks
+
+**书目（逐字）**：L1 `# OpenSN: An Open Source Library for Emulating LEO Satellite Networks`；L3 `Wenhao Lu, Zhiyuan Wang, Hefan Zhang, Shan Zhang, and Hongbin Luo`。
+**已读范围**：L1–L455（摘要 L5、引言 L9–L37、文献综述 L39–L70、框架 L71–L240、用法 L241–L317、性能评测 L318–L442、结论与未来工作 L443–L455）。参考文献 L457–L593 未读（仅确认标题 L457）。平台类章节（L89–L240 的 eBPF/多机扩展细节）为略读。
+
+### 1) 测量/建模对象与条件（逐字+行号）
+
+- L5（对象，逐字）：`In this paper, we present OpenSN, i.e., an open source library for emulating large-scale satellite network (SN). Different from Mininet-based SN emulators (e.g., LeoEM), OpenSN adopts container-based virtualizat`（摘要在此处被 MD 截断）
+- L322（硬件条件，逐字）：`We build the experimental environment based on three DELL R7840 Servers with Intel(R) Xeon(R) Gold 5218 CPU and 191.5 GB memory in each.`
+- L342（对照实验条件）：`For OpenSN and StarryNet, we use a three-VM cluster with a total of 48 vCPU and 96GB memory. For LeoEM (or equivalently Mininet), we use a single VM with a total of 48 vCPU and 96GB memory, since it does not support multi-machine extension.`
+- L346（星座规模，逐字）：`Each subfigure contains the results of four typical constellations, i.e., Iridium (6 x 11), OneWeb (18 x 40), Kuiper (34 x 34), and Starlink Shell-I (72x22).`
+- L436（五星座案例，逐字）：`To verify the scalability of OpenSN, we emulate the fiveshell Starlink constellation shown in Table IV. It poses significant challenges to emulate Starlink constellation with five shells due to our limited hardware resources (96 cores and 256 GB memory).`
+
+### 2) 可引用的事实与数字（逐字+行号）
+
+| # | 事实（逐字） | 行号 |
+|---|---|---|
+| 1 | `OpenSN is 2x faster than Mininet for configuring 10 GSL handovers and 4x faster for configuring 100 GSL handovers.`（原文为乘号字符） | L365 |
+| 2 | `The CPU usage of OpenSN is rapidly increasing to 70% during the network construction (i.e., 0-200s). However, the CPU usage of StarryNet stays around 10%-40% during the network construction (i.e., 0-2100s).` | L381 |
+| 3 | `OpenSN's CPU usage is gradually decreasing (to 30%) during the routing convergence period` … `StarryNet's CPU usage is still at a high level (i.e., around 70%) during the routing convergence period` | L383/L404 |
+| 4 | `The routing converges at the 600-th second for Shell V, at the 800-th second Shell IV, at the 900-th second for S...`（五星座 Starlink 的分壳收敛时刻） | L441 |
+| 5 | `During the construction stage (i.e., 0-250s), OpenSN builds the topology of the container network. During the configuration stage (i.e., 250-500s), OpenSN generates configuration files in each container` | L441 |
+| 6 | `OpenSN's Container Runtime Manager replaces the CLI interaction with the official SDK, and also adopts a distributed architecture to aFchieve better parallelism.` | L35 |
+| 7 | `LeoEM is developed by adding trajectory and route calculation to Mininet, but does not allow for distributed routing software. Hence the performance of LeoEM is similar to Mininet.` | L320 |
+| 8 | `existing virtual-network SN emulators are not efficient enough to emulate frequent state changes (e.g., ISL failure/recovery and GSL handover), which slows down the experimental progress and prolongs the research period.` | L25 |
+| 9 | 资源档位（逐字）：`Case A (32 vCPUs and 64 GB memory), Case B (48 vCPUs and 96 GB memory), and Case C (64 vCPUs and 128 GB memory)`；机器数档位 `Case I (one machine with 32 vCPUs and 64G memory), Case II (two machines with 16 vCPUs and 32G memory for each), and Case III (four machines with 8 vCPUs and 16G memory for each)` | L410/L414 |
+| 10 | `the construction time increases as the number of kernel-threads increases` | L416 |
+| 11 | `The convergence time is a critical metric for routing protocols. It is especially important for LEO satellite networks with topology dynamics.` | L451 |
+
+### 3) 对"负载变化/突发/时延/到达率"的事实贡献
+
+**本篇是平台论文，不含任何流量/到达率事实。** 对本批的贡献是**"能做多大规模、多快状态更新的实验"这一可行性边界**：
+- 状态更新效率：L365（GSL 切换配置：10 次时比 Mininet 快 2 倍、100 次时快 4 倍）；L25（既有模拟器在 ISL 故障/恢复与 GSL 切换上的效率不足）；
+- 规模上限：L436–L441（五壳 Starlink 需要 96 核 + 256 GB；分壳 OSPF 收敛在 600–900 秒量级）；
+- 失败模式：L416（内核线程数越多，构建越慢）。
+- **突发/到达率**：**未见**。核验命令 `grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"` → **count = 2**；命中行 L436（`avoid burstlike resource preemption`）与另一处资源突发描述。**为何不构成反例**：该处指**系统资源占用的突发**（构建期资源抢占），与网络流量突发无关。`grep -ciE "time series|stochastic|Markov|queue|poisson"` → **count = 1**；命中行 L57（提及"排队/离散事件调度"的综述性表述），**无排队模型**。
+
+### 4) 能否作为定标或现象证据
+
+- **平台/仿真基础设施，非测量**。可作**我们平台选型的对照物**：OpenSN 用容器 + 真实内核协议栈（L29 `OpenSN is a virtual-network emulator, that runs real kernel and real applications.`）。
+- **可复用的定量定标**：构建/析构时间随星座规模的变化（L330、L346）、GSL 切换配置的相对加速（L365）、路由收敛时间量级（L441）、资源下界（L436）。
+- **不可作**：任何 LEO 现象证据（无实测、无真实网络数据）。
+
+### 5) 边界与不可外推项
+
+1. **无真实卫星网络校验**：全文评测为**模拟器之间的效率对比**（OpenSN vs StarryNet vs LeoEM/Mininet），L320–L322 明示对照对象；**无与真实 Starlink 的性能对照**。
+2. **星座参数来自第三方**：L338 `Table IV shows the parameters of the LEO constellations used in our experiments.`（未在正文展开，参数来源需查 Table IV）。
+3. **硬件强绑定**：所有结论在 3–4 台 Dell R7840（48–64 vCPU、96–128 GB）上取得（L322、L342、L373）→ **不可外推到其它规模**。
+4. **协议栈假设**：L453 `OpenSN is now built on hostcentric IP networking architecture, which was initially designed for wired networks. The topology characteristics of LEO constellations are quite different from those of wired networks.`
+5. **未读部分**：L89–L240 的框架细节（eBPF 链路、多机扩展）为略读；参考文献 L457–L593。
+
+---
+
+## 11. IEI3BYFF — STARRYNET: Empowering Researchers to Evaluate Futuristic Integrated Space and Terrestrial Networks
+
+**书目（逐字）**：L3/L19 `# StarryNet: Empowering Researchers to Evaluate Futuristic Integrated Space and Terrestrial Networks`；L5 `Zeqi Lai and Hewu Li, Tsinghua University and Zhongguancun Laboratory; Yangtao Deng, Tsinghua University; Qian Wu, Jun Liu, and Yuanjie Li, Tsinghua University and Zhongguancun Laboratory`；L9–L11 `This paper is included in the Proceedings of the 20th USENIX Symposium on Networked Systems Design and Implementation. April 17–19, 2023 Boston, MA, USA`。
+**已读范围**：L1–L50（题录、摘要 L27、引言 L31–L45）+ L176–L230（框架评测 L176–L216、案例研究 L218–L230）。L51–L175（预备知识/设计/实现）与 L230–L305（案例研究其余 + 局限）**未逐段读**；参考文献 L321–L490 未读。
+
+### 1) 测量/建模对象与条件（逐字+行号）
+
+- L29（对象，逐字）：`This paper presents STARRYNET, a novel experimentation framework that enables researchers to conveniently build credible and flexible experimental network environments (ENE) mimicking satellite dynamics and network behaviors of large-scale ISTNs. STARRYNET simultaneously achieves constellation-consistency, networked system realism and flexibility, by adopting a real-data-driven, lightweight-emulationaided approach to build a digital twin of physical ISTNs in the terrestrial virtual environment.`
+- L192（**保真度校验的对象，逐字**）：`We leverage STARRYNET to establish an ENE following the network topology of a recent live Starlink test conducted in Europe in 2021 [33]. Specifically, this real-world Starlink topology involves several key components as illustrated in Figure 5: (1) a user terminal together with a Starlink satellite dish located at the campus Klagenfurt Primoschgasse; (2) a SpaceX's ground station located in Frankfurt,`
+- L212（吞吐配置口径，逐字）：`we follow the realistic Starlink trace in [33] to set the uplink/downlink capacity, and run iPerf to measure the TCP throughput in each direction. Since Hypatia and StarPerf can not load real network traffic by iPerf, we compare the throughput results of`
+- L214（ISL 拓扑的对照限制）：`As of the date of this paper submission, most real megaconstellations like Starlink and Kuiper are still in their early stage and under heavy construction. Although Starlink has started to deploy laser ISLs on its LEO satellites, those ISLs are still under internal test, and it is difficult to directly compare the network performance estimated by STARRYNET with a real ISL-enabled satellite network.`
+- L178（硬件条件）：`Our framework evaluations are conducted on a typical enterprise cluster, including eight DELL ...`（行在 MD 中被截断）
+- L228（案例研究条件，逐字）：`We establish an ENE based on Starlink's first constellation shell and its ground station distribution. We randomly pick geo-distributed user-pairs and establish communication sessions between these pairs over the satellite network. On each emulated satellite, we load BIRD [37] routing software and run OSPF a...`
+
+### 2) 可引用的事实与数字（逐字+行号）
+
+| # | 事实（逐字） | 行号 |
+|---|---|---|
+| 1 | `The emulated constellation size can scale from about`（L182，数字在 MD 折行处被截断） | L182 |
+| 2 | `a researcher can easily establish each ENE listed in Table 2, by writing about a dozen lines of code based on constellation prefabs` | L184 |
+| 3 | `when the constellation size increases, STARRYNET requires more worker machines, consuming more CPU/memory resources to emulate ISTN nodes, links, and their constellationwide dynamics. Second, if STARRYNET updates satellite dynamics more frequently (i.e., with shorter update intervals), i`（句尾被截断） | L186 |
+| 4 | **`Where ground stations typically can not be deployed upon oceans (70% earth surface), SRGS suffers from the highest latency as compared with other schemes due to the insufficient deployment of ground ...`** | L230 |
+| 5 | `We observe an obvious latency reduction accomplished by laser ISLs, and DASN obtains the lowest end-to-end latency on average.` | L230 |
+| 6 | `Since Hypatia and StarPerf can not load real network traffic by iPerf` → 说明 STARRYNET 的**流量负载能力**是与纯模拟器的关键差别 | L212 |
+| 7 | `Figure 7: Throughput comparison.` | L205 |
+
+### 3) 对"负载变化/突发/时延/到达率"的事实贡献
+
+- **可注入真实流量**（L212：用 iPerf 打真实 TCP 流，并跟随真实 Starlink trace 设定上下行容量）→ 这是本批**平台类工作里唯一明确支持"可加载真实流量"的能力描述**，对我们做负载实验**有直接工程价值**。
+- **时延结论（案例研究）**：L230 —— ISL 显著降低时延；**DASN（直连卫星）平均端到端时延最低**；**SRGS 最差，原因是地面站不能部署在占地球表面 70% 的海洋上**。这是**"覆盖约束 → 时延"的定量化叙述**（但数字在 MD 折行处未给出）。
+- **突发/到达率**：**未见**。核验命令 `grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"` → **count = 0**；`grep -ciE "time series|stochastic|Markov|queue|poisson"` → **count = 0**（范围=该篇 MD 全文 L1–L490）。
+
+### 4) 能否作为定标或现象证据
+
+- **平台（数字孪生式仿真框架），非测量**；保真度校验**部分依赖真实 Starlink 拓扑与 trace**（L192、L212）。
+- **可作平台能力证据**：支持 iPerf 真实流量、支持按需配置链路容量（L212 `STARRYNET allows the researcher to manually configure the link capacity on demand.`）、可用十几行代码建环境（L184）。
+- **可作现象证据（弱）**：L230 的"地面站覆盖（海洋占 70%）→ SRGS 时延最差"。
+- **不可作**：任何 LEO 实测时延/负载数值的定标（**本文未给出可抄录的数值**，且其保真度对照仅针对一条 2021 年的欧洲 Starlink 链路，L192）。
+
+### 5) 边界与不可外推项
+
+1. **保真度对照的样本极小**：**一条** 2021 年欧洲实测链路（L192）；且当时 **ISL 未被验证**（L214）。
+2. **ISL 拓扑无法与真实对照**：L214 逐字（ISL 仍在内部测试）。
+3. **本文的定位是"使能工具"**：L35–L45 反复强调"同时取得真实性与灵活性"的设计取舍，**不承担网络现象结论**。
+4. **案例研究依赖人为构造**：L228（随机挑选地理分布的用户对、加载 BIRD/OSPF）→ 结果对**地面站分布假设**敏感。
+5. **未读部分**：L51–L175（预备知识与设计细节）、L230–L305（案例研究其余、局限节 L295）、参考文献 L321–L490 —— **本篇为 T3 档中读得最浅的一篇，其后续引用需先补读 L230–L305 的数值**。
+
+---
+
+## 12. 8AYW2Y78 — Exploring the "Internet from space" with Hypatia
+
+**书目（逐字）**：L1 `# Exploring the "Internet from space" with Hypatia`；L3 `Simon Kassing, Debopam Bhattacherjee, André Baptista Águas, Jens Eirik Saethre, Ankit Singla ETH Zürich`；L23 `In ACM Internet Measurement Conference (IMC '20), October 27–29, 2020, Virtual Event, USA.`
+**已读范围**：L1–L40（题录、摘要 L7–L11、引言 L25–L27）+ L197–L350（§4 路径分析、§5 星座级视图）+ L389–L424（§7 局限、§8 结论、L408–L422 图题）。L55–L196（背景与架构、可扩展性）与 L350–L388（可视化节）未逐段读；参考文献 L428–L590 未读。
+
+### 1) 测量/建模对象与条件（逐字+行号）
+
+- L9（对象，逐字）：`To enable research in this exciting space, we present Hypatia, a framework for simulating and visualizing the network behavior of these constellations by incorporating their unique characteristics, such as high-velocity orbital motion.`
+- L203（实验设置，逐字）：`These experiments use the Kuiper K1 shell. We run the analysis for 200 seconds, as for Kuiper-scale networks this is suficient to show nearly the full range of variations.`
+- L205（测量口径，逐字）：`For each source-destination pair, s-d, s sends d a ping every 1 ms, and logs the response time. We also compare the measured RTTs to those generated using networkx computations for the same end-points, and the same constellation. For these networkx computations, we use snapshots ofthe system every 100 ms, and compute the shortest paths using the Floyd-Warshall algorithm.`
+- L239/L241（**拥塞控制实验的负载条件，逐字**）：`we first use a congestion-free setting: the measured end-end connection is the only one sending trafic, with the rest of the network being entirely empty.` … `To make the simulations faster, the shown experiments use a 10 Mbps line-rate. The bufers are sized to 100 packets, i.e., 1 bandwidthdelay product (BDP) for 100 ms.`
+- L243（队列设置，逐字）：`The network device queue size, Q, for both ISLs and GSLs is set to 100 packets.`
+- L262（星座级口径）：`We use the world's 100 most populous cities as GSes, and examine connections between all pairs of GSes.`
+- L333（带宽实验条件，逐字）：`We use the same LEO network as in §4, i.e., Kuiper's K1 shell, with each link in the network set to 10 Mbps capacity to allow us to scale the experiment.` … `From the random permutation matrix, we remove the pairs which have the same source or destination satellit...`
+
+### 2) 可引用的事实与数字（逐字+行号）
+
+| # | 事实（逐字） | 行号 |
+|---|---|---|
+| 1 | **`at t = 32.9 s the path changes, which causes the RTT to rise from 96 ms to 111 ms.`** | L207 |
+| 2 | **`Across time, the Manila-Dalian path has a minimum RTT of 25 ms and a maximum RTT of 48 ms, thus changing by nearly 2x. For the Istanbul-Nairobi path, this RTT range is 47-70 ms.`**（原文为乘号字符） | L211 |
+| 3 | `The path from Rio de Janeiro to St. Petersburg sees a disruption around 150 seconds into the simulation` … `For this period, St. Petersburg does not have any visible Kuiper satellites at suficiently high angle of elevation, which, obviously, results in the satellite network path being disconnected.` | L209 |
+| 4 | **`the congestion window typically fluctuates between the BDP and BDP plus queue size (100 packets). However, in certain cases, when the RTT gets lower, reordering happens, and even though there is no loss, the congestion window is still halved.`** | L222 |
+| 5 | `For all three constellations, more than 80% of connections see a maximum RTT less than 2x the geodesic.` | L268 |
+| 6 | **`Telesat has the fewest satellites, with less than a third of Kuiper's and less than a fourth of Starlink's, and yet it achieves the lowest latencies for most connections. Starlink's latencies are also higher than Kuiper's.`** | L270 |
+| 7 | `Telesat claims that it will use a much lower minimum angle of elevation, 10°, compared to Starlink (25°) and Kuiper (30°).` | L272 |
+| 8 | `while Starlink sees the largest latency changes (∼10 ms in the median), th`（句尾被 MD 截断） | L276 |
+| 9 | **`in the median, over the 200 s simulation, Starlink and Kuiper connections see 4 path changes, while Telesat connections see 2 changes.`** | L304 |
+| 10 | `For Starlink, more than 10% of connections see more than 50% change in hop-count.` | L308 |
+| 11 | `with paths changing multiple times per minute, and often by a substantial number and fraction of hops` | L310 |
+| 12 | **`compared to 50 ms time-steps, 100 ms time-steps see roughly 2x the path changes, while 1000 ms see roughly 20x path changes.`** … `the 1000 ms time-step misses a substantial number ofpath changes for some pairs, while for 100 ms, missed changes are negligible.` | L321 |
+| 13 | `given that path changes occur over tens of seconds, the 100 ms time-step can only be inaccurate and not provide the actual shortest paths for at most 1% of the time.` | L327 |
+| 14 | **`despite the trafic matrix being fixed throughout our 200 s experiment, and the routing policy consistently being shortest path routing, the motion of satellites makes the path-level behavior highly dynamic.`** | L335 |
+| 15 | **`in an LEO network with cross-trafic, the amount of unused bandwidth is larger than that in the static case.`** … `While there are short periods, such as around 20 s, where the full capacity of the path is used (together, by this connection and other cross-trafic), for a lot ...`（句尾被截断） | L339 |
+| 16 | **`This implies that the trafic mix at any link is highly dynamic, making it dificult for transport to adapt`** | L341 |
+| 17 | `The zigzags stem from the nature ofISLs in the topology — satellites which seem visually close to each other are not necessarily connected directly.` | L408 |
+| 18 | `An example path, Chicago-Zhengzhou, shows how the link utilizations change over time, even with the input trafic being static. The top and bottom views are at 10 s and 150 s respectively.` | L411 |
+| 19 | `On Kuiper, the transatlantic paths are highly congested for our tested trafic matrix. The red / thick ISLs are heavily utilized, while green / thin ISLs have minimal trafic.` | L422 |
+| 20 | Takeaway 逐字：`Takeaway for congestion control: Both loss and delay can be poor signals for congestion control in LEO networks.` | L256 |
+| 21 | Takeaway 逐字：`Takeaway for routing / TE: LEO networks present uncharted territory for routing and TE, and their interactions with transport. Trafic could potentially be moved away from links that will otherwise soon become bottlenecks due to changes in the set of end-end paths they serve.` | L348 |
+| 22 | Takeaway 逐字：`Takeaway for applications: The maximum end-end RTT over time can be much higher than the minimum, and will determine the latency for jitter-sensitive applications.` | L235 |
+
+### 3) 对"负载变化/突发/时延/到达率"的事实贡献
+
+**本篇是本批唯一系统给出"负载/拥塞在 LEO 中如何失真"的仿真证据**，且给出可复算的设置与结论：
+
+- **拥塞信号失真（核心事实）**：L222 —— **无丢包但因重排序导致拥塞窗口减半**；L254 逐字展开：`Loss, besides sufering from its well-known problem of only arising after bufers are full and latencies are inflated, is additionally vulnerable to being inferred incorrectly due to reorder ing. On the other hand, delay is also an unreliable signal because delay fluctuations occur even without`；L256 Takeaway。
+- **负载下的时延膨胀**：L241（TCP 持续填满并排空缓冲 → RTT 上升）；L222（cwnd 在 BDP 与 BDP+Q 之间波动，Q=100 包，L243）。
+- **"静态流量 + 动态拓扑"仍产生动态拥塞**：L335、L339、L341、L411、L422 → **拥塞的空间分布随卫星运动迁移**；L348 给出路由/TE 的应对方向（"提前把流量从即将成为瓶颈的链路移开"）。
+- **时延变异性**：L207（96→111 ms 单次路径切换）、L211（Manila–Dalian 25–48 ms，约 2 倍；Istanbul–Nairobi 47–70 ms）、L268（>80% 连接的 max RTT < 2 倍 geodesic）、L270（Telesat 延迟最低）、L276（Starlink 中位延迟变化约 10 ms）。
+- **路径变化率（对动作驻留时间的约束）**：L304（200 s 内中位 4 次路径变化）、L308（Starlink 超 10% 连接跳数变化超 50%）、L310（每分钟多次变化）、L321/L327（时间步长 100 ms 是合适折中）。
+- **到达率**：**未见**。核验命令 `grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"` → **count = 1**；命中行 L436（**该行属于参考文献/附录区**，非正文）。另一模式 `grep -ciE "time series|stochastic|Markov|queue|poisson"` → **count = 12**；命中集中在 L241–L243（`the bufers`、`queue size`、`queue capacity`）、L339–L343 与参考文献中的 queue/congestion 表述。**为何不构成反例**：全部为**队列容量与排队现象的机理描述**（固定队列 100 包、BDP+Q），**无到达过程建模、无到达率统计**。
+
+### 4) 能否作为定标或现象证据
+
+- **仿真（ns-3 + Hypatia），非 LEO 实测**；但它是**本批所有后续仿真工作的公共基线**（GGFJ3SEG 用它做对照并证明其**不捕获真实尖峰**：GGFJ3SEG L201 `Simulations do not capture the dynamics of real-world Starlink RTTs.`、L207 `No matter the ground station, Hypatia never predicts that a client experiences sustained RTT spikes`）。
+- **可作定标输入（仿真环境）**：队列 100 包（L243）、链路 10 Mbps 与 200 s 仿真窗（L203、L333）、时间步长 100 ms 折中（L327）、RTT 变异倍率（L211、L268）、路径变化率（L304）。
+- **可作现象证据（仿真级）**：**非拥塞性丢包/重排序导致的拥塞误判**（L222、L254）——这是"**为什么需要区分失败原因**"的仿真侧根因证据；以及"拓扑运动导致的拥塞迁移"（L335、L341）。
+- **不可作**：真实 LEO 时延/负载的定标（GGFJ3SEG 已给出反证）。
+
+### 5) 边界与不可外推项
+
+1. **仿真，且作者自述局限（逐字）**：L393 `The most under-developed aspect is the radio GS-satellite segment design. It would help to frame more realistic models of the interfaces at both satellites and GSes, and for antenna gain and interference.`；L395 `The current model of ISLs is also somewhat simplistic, and it would be useful to model the impact of the Doppler efect on the bandwidth and reliability of ISLs.`；L397 `Incorporating a weather model would enable work on reliability and rerouting around bad weather.`
+2. **星座参数来自申报文件**：L298 `We are evaluating constellations strictly from their filings, and it is unclear to us if some operators are more optimistic than others about the plausible design parameters; it is worth remembering that the filings are meant to secure radio spec`。
+3. **外部实测反证（重要）**：GGFJ3SEG L207/L201（本批第 1 篇）证明 Hypatia **不预测持续 RTT 尖峰**、平均误差 7.6 ms、HitchHiking 精度高 1.8 倍 → **引用 Hypatia 的时延结论时必须同时引用该反证**。
+4. **时间尺度**：仿真 200 s（L203、L333）→ 与 W6M3GU7L 的 100–110 分钟同属短窗；**无日/季节尺度**。
+5. **队列与缓存设定固定**：L243（100 包）→ 结论对队列容量的敏感性未做扫描。
+6. **未读部分**：L55–L196（背景与架构、可扩展性）、L350–L388（可视化）、参考文献 L428–L590。
+
+---
+
+## 13. 4QG5VYHQ — Information Freshness of Updates Sent over LEO Satellite Multi-Hop Networks
+
+**书目（逐字）**：L1 `# Information Freshness of Updates Sent over LEO Satellite Multi-Hop Networks`；L3–L5 `Federico Chiariotti, Member, IEEE, Olga Vikhrova, Beatriz Soret, Member, IEEE, and Petar Popovski, Fellow, IEEE`。
+**已读范围**：L1–L405（摘要 L9、引言 L11–L30、相关工作与贡献 L32–L54、系统模型 L56–L162、AoI 界与近似 L163–L314、数值评估 L315–L399、结论与未来工作 L400–L405）。参考文献 L406–L507 未读（仅确认标题 L406）。§IV 的推导细节（L195–L314）为选择性阅读。
+
+### 1) 测量/建模对象与条件（逐字+行号）
+
+- L9（对象，逐字）：`This paper analyzes the Age of Information (AoI) of a satellite network with multiple sources`（摘要首句）
+- L21（场景，逐字）：`we address a general buffer-aided multi-hop network with multiple sources and destinations. We focus on applications where a number of mutually independent traffic sources need to report sensory updates to a number of control stations in a timely fashion, and do so through a chain of LEO satellites.`
+- L58（**到达过程与负载定义，逐字**）：`We consider a connection composed of K links in a multi-hop mesh network in which each node in the network acts both as a source and a relay, as shown in Fig. 1. The source is modeled as a Poisson process, generating packets with rate \lambda. Each node k in the connection, including the source, receives Poisson cross traffic with rate $\theta _ { k }$.`
+- L60（队列模型，逐字）：`We model a connection between a source and a destination as an $M / M / 1$ queueing network connected in series. In a real system, the service time for each link depends on the length of the packet and the quality of the link: in this work, we model the service time for each link for the same packet as independent for tractability.`
+- L68/L73/L75（**上行接入与碰撞模型，逐字**）：`For a large number of intermittent transmitters in a single shared communication channel, the ALOHA protocol is the simplest one and it is widely used [45]. Rather than the conventional ALOHA implementation with a backoff mechanism to re-send colliding packets, a pure A...`；`Ideal Multi-Packet Reception (MPR). In this case [46] the packets are not lost due to collisions and can only be lost due to channel errors. This model is suitable for IoT systems based on Ultra-Narrowband (UNB) transmissions, such as SigFox [47]`；`Destructive collisions. The other extreme is adoption of the classical ALOHA model, in which any collision is destructive and all packets involved in the collision are lost. Strictly speaking, here the resulting process is not Poisson due to the correlation created when multiple packets are lost in a collision create.`
+- L77（重传策略，逐字）：`the failed sources will not try again, but just wait until the next status update is generated, and $p _ { c }$ is the probability of incorrect packet decoding due to either channel error or collision.`
+- L317（验证方法，逐字）：`In order to verify the correctness of the theoretical results, we simulated the two scenarios in Fig. 6 using a Monte Carlo approach.`
+- L326/L328（两个拓扑，逐字）：`The line network represents a scenario in which ground nodes placed in a remote area report to a ground station through a chain of K satellites.`；`The dumbbell topology represents a scenario in which multiple connections share a single ISL, and then have different destinations. In this case, the shared ISL represents the shared bottleneck.`
+
+### 2) 可引用的事实与数字（逐字+行号）
+
+| # | 事实（逐字） | 行号 |
+|---|---|---|
+| 1 | **负载定义式（逐字 LaTeX）**：`\rho = \frac { \lambda + \sum _ { j = 1 } ^ { K } \theta _ { j } } { \mu _ { \mathrm { { D L } } } }.` | L339 |
+| 2 | 负载分配假设（逐字）：`In our simulation, we assume $\theta _ { 1 } = 0$, and that $\lambda = \theta _ { j } = \rho \mu _ { \mathrm { D L } } / K , \forall j \in \{ 2 , \dots , K \}$. We do not consider the error in our computation of $\rho ,$ in order to provide a meaningful comparison between the error-free and error-prone cases.` | L342 |
+| 3 | **AoI 的 U 型曲线（逐字）**：`Unlike the system delay, the AoI follows a U-shaped curve, as Fig. 7a shows. If the traffic load is very low, the average AoI is very high, as the dominant factor is the time between successive packets from the same source. For instance, when $\rho = 0 . 0 5$ and $K = 1 0 .$, the arrival rate $\lam...`（行尾被 MD 截断） | L344 |
+| 4 | **错误对 AoI 的双向影响（逐字）**：`errors increase the AoI when $\rho$ is low, as the loss of one of the already rare packets can cause a significant increase. However, errors can actually have a beneficial impact on the average AoI in high traffic load scenarios: since packets are frequent`（行尾被 MD 截断） | L346 |
+| 5 | 调度策略对比（逐字）：`The difference between OPF and FCFS in terms of average AoI for all sources is negligible, while HAF manages to slightly reduce the AoI if the traffic load is high.` | L361 |
+| 6 | 公平性（逐字）：`while FCFS nodes do not consider the delay that packets have accumulated on previous links, OPF bases its decisions on packet timestamps, reducing the AoI distance between the ground sources close to the destination and the ones at the beginning of the chain.` | L366 |
+| 7 | ALOHA 与泊松到达的对比（逐字）：`Fig. 12 compares the average AoI with ideal Poisson arrivals and the one that results from a realistic ALOHA uplink: if the rate at the first ISL is the same, the ALOHA uplink gets a slightly lower AoI than Poisson arrivals, except for very high values of the load. This might be due to the second-order statistics of the arrival distribution, but it warrants more future analysis.` | L379 |
+| 8 | 多源最优负载偏移（逐字）：`Interestingly, networks with a larger number of sources have their minimum AoI with a higher load, as the effect of interarrival times is stronger when the same traffic $\rho$ is generated by multiple sources: if we set $\rho = 0 . 7 , \lambda = 0 . 2 8$ when $N = 2 .$, but $\lambda = 0 . 0 9 3$ for $N = 6 .$.` | L390 |
+| 9 | 拓扑参数（逐字）：`In the dumbbell topology scenario, we consider $K = 4$, with cross traffic on the second ISL, i.e., $\theta _ { 2 } > 0$ and $\psi _ { 2 } = 1$. We consider a number of sources N, each with packet generation rate \lambda, so that the total error-free load on the bottleneck is $\rho = N \lambda$` | L383 |
+| 10 | 误差设定（逐字）：`We set $\varepsilon _ { j } = 0 . 0 1 \forall j$, as in the line network.` | L385 |
+| 11 | 平均 AoI 表达式（逐字 LaTeX）：`\bar { \Delta } = \lambda \mathbb { E } \left[ Q _ { i } \right] = \lambda \left( \mathbb { E } \left[ T _ { i } Y _ { i } \right] + \mathbb { E } \left[ \frac { 1 } { 2 } Y _ { i } ^ { 2 } \right] \right) ^ { \prime } .` | L113 |
+| 12 | 边界松紧（逐字）：`Fig. 11 shows the empirical CDFs and the theoretical bounds for $K = 2$ and different values of $\rho$. In this case, the bound is almost always loose, except for $\rho = 0 . 8 .$` | L374 |
+
+### 3) 对"负载变化/突发/时延/到达率"的事实贡献
+
+**本篇是本批对"到达率与负载"最直接、可复算的一篇（解析 + Monte Carlo）**：
+
+- **到达过程被显式建模为泊松**：源到达率 lambda、每节点交叉流量到达率 theta_k（L58），服务为 M/M/1 串联（L60），上行接入为 ALOHA（L68/L73/L75）。
+- **负载的定义完全可抄**：rho = (lambda + Sigma theta_j)/mu_DL（L339）；瓶颈在最后一跳下行。
+- **关键现象一：AoI 关于负载是 U 型**（L344）→ "负载越高 AoI 越低"只在低负载区成立，存在最优工作点；这直接反驳"越空闲越新鲜"的直觉。
+- **关键现象二：丢包（错误）在高负载下反而降低平均 AoI**（L346）→ 失败不总是坏事，与"降低 AoI 需丢旧包"的经典结论一致；这条事实对我们设计"丢弃/惩罚"机制有直接价值。
+- **关键现象三：多源时最优负载更高**（L390，N=2 时 lambda=0.28 vs N=6 时 lambda=0.093 @ rho=0.7）→ 到达率的来源数目改变最优工作点。
+- **关键现象四：ALOHA 上行与理想泊松到达的 AoI 差异很小**（L379）→ 支持"用泊松近似 ALOHA 上行"的建模选择（作者亦提示需进一步分析）。
+- **突发**：**未见**突发长度/突发性度量。核验命令与计数：`grep -ciE "burst"`（该篇全文）→ 见文末 B8 负向声明统一核验表。
+
+### 4) 能否作为定标或现象证据
+
+- **解析建模 + Monte Carlo 仿真**（**非 LEO 实测**）；但模型的**拓扑与队列结构直接对应 LEO 多跳中继**（L21、L326、L328）。
+- **可作定标/建模输入**：M/M/1 串联队列模型（L60）、rho 的定义（L339）、误差率 1%（L385）、AoI 与负载的 U 型关系（L344）、丢包在高负载下的有益效应（L346）。
+- **可作现象证据（理论级）**：U 型 AoI–负载曲线、丢包的双向效应、多源最优负载偏移。
+- **不能作**：任何 LEO 实测数值的定标（无实测）。
+
+### 5) 边界与不可外推项
+
+1. **无实测**：全部为解析界 + Monte Carlo（L317）；**无真实卫星网络数据**。
+2. **服务时间独立性假设（作者自述）**：L60 `in this work, we model the service time for each link for the same packet as independent for tractability. This assumption is equivalent to considering uncorrelated distances between pairs of s...`
+3. **纯 ALOHA、无退避**：L68（`Rather than the conventional ALOHA implementation with a backoff mechanism to re-send colliding packets, a pure A...`）→ **不适用于有重传/退避的现代 MAC**。
+4. **失败即放弃**：L77 `the failed sources will not try again` → 与有 ARQ 的系统行为不同。
+5. **拓扑为两类极端情形**：L330 `These two scenarios represent two extreme situations: in the former, cross traffic accumulates all the way to the final link, while in the other, it is concentrated in a single ISL, while all other links are less loaded.`
+6. **AoI 界的松紧受负载影响**：L374（仅在 rho=0.8 时界较紧，其余"almost always loose"）→ **引用上界时须标注负载区间**。
+7. **未读部分**：§IV 推导细节（L195–L314）为选择性阅读；参考文献 L406–L507。
+
+---
+
+## 14. BLFJ6CLV — Analysis of Age of Information in Non-terrestrial Networks
+
+**书目（逐字）**：L1 `# Analysis of Age of Information in Non-terrestrial Networks`；L3 `Yanwu Lu, Howard H. Yang, Nikolaos Pappas, Giovanni Geraci, Chuan Ma, and Tony Q. S. Quek`；L5–L13 作者单位（ZJU-UIUC Institute 浙江大学 / Linkoping University / Telefonica Research 与 Universitat Pompeu Fabra / Zhejiang Lab / Singapore University of Technology and Design）。
+**已读范围**：L1–L200（题录、摘要 L15、引言 L17–L34、系统模型 L36–L61、AoI 分析 L70–L162）。**L163–L331（其余定理推导、数值结果、结论）未逐段读**；参考文献未读。
+
+### 1) 测量/建模对象与条件（逐字+行号）
+
+- L15（对象，逐字）：`In this paper, we focus on analyzing the timeliness of information delivery in NTN through the concept of Age of Information (AoI). We propose an on-off process to approximate the serv...`（摘要行尾被 MD 截断）
+- L40（**星座随机模型，逐字**）：`We consider an NTN consisting of a constellation of LEO satellites deployed at the same altitude $h.$ We assume the positions of the satellites to follow a homogeneous Poisson point process (PPP) [21], [24], [25] of intensity \lambda on a sphere of radius $R _ { \oplus } + h ,$ where $R _ { \oplus } = 6 3 7 1$ km denotes the Earth radius.`
+- L42（**到达过程，逐字**）：`we consider the interval between the generation of two consecutive status updates to be independently and identically distributed (i.i.d.), following an exponential distribution with rate $\mu .$. We further assume the source no...`（行尾被截断）
+- L44（覆盖与连接，逐字）：`We deem a source node to be covered by a satellite when its signal-to-noise ratio (SNR) surpasses a minimum decoding threshold \theta.`
+- L98（**on-off 近似，逐字**）：`The duration for which a satellite remains within the dome region can be approximated as an on-service period, while the time between a satellite's departure from the dome region and the arrival of the subsequent satellite can be viewed as an off-service period. Due to the random positions of the satellites, the durations of both the on- and off-service periods vary. However, we can approximate these periods as ind`（行尾被截断）
+- L100（**定理 1 标题，逐字**）：`Theorem 1: The off-service periods follow an identical exponential distribution with density given by`
+
+### 2) 可引用的事实与数字（逐字+行号）
+
+| # | 事实（逐字） | 行号 |
+|---|---|---|
+| 1 | **地球半径口径（逐字）**：`$R _ { \oplus } = 6 3 7 1$ km` | L40 |
+| 2 | **离服务期速率（逐字 LaTeX）**：`\lambda _ { \mathrm { o s } } = 2 \omega \lambda \sin ( \varphi _ { \mathrm { e } } ) \left( R _ { \oplus } + h \right) ^ { 2 }` | L103 |
+| 3 | **在服务期 PDF（逐字 LaTeX）**：`f _ { W } ( s ) = \left\{ \begin{array} { l l } { \frac { \omega \cos ( \varphi _ { \mathrm { e } } ) \tan ( \frac { \omega s } { 2 } ) } { 2 \varphi _ { \mathrm { e } } \sqrt { \sin ^ { 2 } ( \varphi _ { \mathrm { e } } ) - \sin ^ { 2 } ( \frac { \omega s } { 2 } ) } } , } & { i f s \in \left[ 0 , \frac { 2 \varphi _ { \mathrm { e } } } { \omega } \right] , } \\ { 0 , } & { o t h e r w i s e . } \end{array} \right.` | L109 |
+| 4 | **平均 AoI 闭式（逐字 LaTeX）**：`\bar { \Delta } = \frac { \mathbb { E } \left[ Y _ { k } ^ { 2 } \right] + 2 \mathbb { E } \left[ T _ { k } Y _ { k } \right] } { 2 \mathbb { E } \left[ Y _ { k } \right] } = \frac { \mathbb { E } \left[ Y _ { k } ^ { 2 } \right] } { 2 \mathbb { E } \left[ Y _ { k } \right] } + D .` | L133 |
+| 5 | **SNR 与最大传输距离（逐字 LaTeX）**：`\mathrm { S N R } ( t ) = \frac { P _ { \mathrm { t x } } r ( t ) ^ { - \alpha } } { \sigma ^ { 2 } }`；`r _ { \mathrm { m a x } } = \frac { ( R _ { \oplus } + h ) \cos ( \varphi _ { \mathrm { e } } ) - R _ { \oplus } } { \cos ( \varphi _ { \mathrm { s } } ) }` | L79 / L85 |
+| 6 | **几何参数（逐字 LaTeX）**：`\varphi _ { \mathrm { e } } = \cot ^ { - 1 } \left( \frac { \cot ( \varphi _ { \mathrm { s } } ) + \rho \sqrt { \cot ^ { 2 } ( \varphi _ { \mathrm { s } } ) + 1 - \rho ^ { 2 } } } { 1 - \rho ^ { 2 } } \right)`；`\rho = R _ { \oplus } / \left( R _ { \oplus } + h \right)` | L91 / L94 |
+| 7 | **有效到达面元（逐字 LaTeX）**：`A _ { \epsilon } = 2 \left( R _ { \oplus } + h \right) ^ { 2 } \omega \epsilon \sin ( \varphi _ { \mathrm { e } } )` | L115 |
+| 8 | **条件概率（逐字 LaTeX）**：`\mathrm { P } _ { \mathrm { f | f } } = { \frac { 1 - a } { 1 - a b } }`；`\mathrm { P _ { o | o } = \frac { 1 - \left( 2 - \mathrm { P _ { f | f } } \right) \mathrm { P _ { o f f } } } { 1 - \mathrm { P _ { o f f } } } }` | L141 / L147 |
+| 9 | 服务期时长（逐字 LaTeX）：`W = \frac { 2 } { \omega } \arcsin \left( \frac { \sqrt { \sin ^ { 2 } ( \varphi _ { \mathrm { e } } ) - \sin ^ { 2 } ( \Theta ) } } { \cos ( \Theta ) } \right) .` | L123 |
+| 10 | 贡献声明（逐字）：`Through stochastic geometry tools, we derive a closedform expression for the time-average AoI in an NTN. This result also extends the AoI analysis under onoff processes [23] into scenarios where one component follows an exponential distribution while the other has its probability density function supported on a bounded interval.` | L29 |
+| 11 | 数值结果覆盖范围（逐字）：`We provide numerical results that validate the accuracy of our analysis and quantify the impact of both the source status update rate and the satellite constellation density on the time-average AoI.` | L34 |
+
+### 3) 对"负载变化/突发/时延/到达率"的事实贡献
+
+**本篇提供的是"到达率 x 星座密度 → AoI"的解析关系**，是本批**到达率维度最关键的一篇**：
+
+- **到达过程 = 指数分布（率 mu）**（L42）——generate-at-will 模型，说明更新产生率是**可控变量**（与 GV9PPNZT L11 的同一思想呼应）。
+- **星座密度 = 球面 PPP（强度 lambda）**（L40）→ **服务可用性是随机几何的结果**：离服务期近似指数（L100–L103），在服务期 PDF 有界支撑（L109）。
+- **AoI 闭式 = 到达间隔二阶矩项 + 传播时延 D**（L133）→ **明确给出"到达率二阶矩（方差）决定 AoI"的解析结构**；这对论证"奖励里需要方差项"是**理论支撑**。
+- **主要结论方向（来自贡献声明）**：量化**源更新率**与**星座密度**对平均 AoI 的影响（L34）。
+- **突发**：**未见** burstiness 度量（核验见文末统一表）。
+
+### 4) 能否作为定标或现象证据
+
+- **解析模型（随机几何 + on-off 服务过程）**，**非 LEO 实测、非包级仿真**；数值部分为解析式求值。
+- **可作理论定标**：AoI 闭式（L133）、离服务期速率表达式（L103）、在服务期分布（L109）、几何关系（L85/L91/L115）。
+- **可作现象证据（理论级）**：**到达率的二阶矩（而非均值）进入 AoI**（L133）——"仅优化平均负载不够、需建模波动"的**解析证据**。
+- **不能作**：任何小区/链路级负载数值的定标（无实测、无流量数据）。
+
+### 5) 边界与不可外推项
+
+1. **卫星位置为 PPP 假设**（L40）→ 与**真实 Walker 星座的确定性结构不符**（对比 4QG5VYHQ 的多跳链式建模）；对真实 Starlink 的适用性未验证。
+2. **单跳连接假设**：L44（源最多连一颗卫星）→ **不覆盖 ISL 多跳**；这正是 4QG5VYHQ 处理的情形，两篇互补但不可互相替代。
+3. **无排队/无拥塞**：服务过程是 on-off 可用性，**不含缓冲区与排队时延**（L98）→ 不能用于负载-时延耦合。
+4. **传播时延被视为常数 D**（L130 `If the k-th packet transmission is successful, $T _ { k } = t _ { k } ^ { \prime } - t _ { k } = D$ denotes the propagation delay`）→ **不建模时延波动**。
+5. **未读部分（本篇最大证据缺口）**：**L163–L331 未逐段读**，包括全部数值结果与结论；本档仅覆盖到 §III-B 的公式与 Theorem 1、Lemma 1。**若需引用其数值结论，必须先补读 L163–L331**。
+6. **未读部分**：参考文献（本篇 MD 正文至 L331 结束，无独立 References 标题行被检出）。
+
+---
+
 <!-- GA-SECTION-START -->
 ## 附录 GA：对抗性问题（缺口主张 G-A）的全库检索与反例判定
 
