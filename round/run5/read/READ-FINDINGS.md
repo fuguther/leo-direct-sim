@@ -405,3 +405,44 @@ R3 读卡：换路导致 96→111 ms 的时延变化，**而负载完全没变**
 - 谱系链完整：**Hypatia → ASER → {LPIH, PBAR}**；AJJI57M9(Ekici 2001) 是 ASER 祖先被双引。
 
 → 意义：**做本项目实验设计时，Hypatia 是既成的基础设施标准**；且北航组的"保留 IP/OSPF 栈"路线与本项目"RL 路由"路线形成明确对照。
+
+## F46【反命题·可判定，直接决定本选题价值】（T9X6QCLL vs S2QZRBEJ/TQF59BD7，主控逐字核验）
+
+**反命题方（T9X6QCLL L283 逐字，主控核验）**：
+> "It also **seems common sense that satellites will not carry huge buffers to introduce some congestion delays**. The **space for optimization**, in addition to some basic QoS mechanisms, **seems limited**."
+
+**另一条同源质疑（T9X6QCLL L187 逐字）**：
+> "**Without data from satellite network operators, it is difficult to establish the practical need for load balancing mechanisms.**... we would need to know the utilization of these links to assess whether shortest-path routing leads to congestion issues."
+
+**与该反命题冲突的三条证据**：
+1. **TQF59BD7 L76 逐字（主控核验）**：ISL 1 Gbps，**输出缓冲仅 0.36 Mbit ≈ 30 包**（FIFO tail-drop）——**恰恰证明缓存很小**；
+2. **但同篇 L401 测得排队时延在毫秒量级**（R8 读卡）——**缓存小不等于排队时延可忽略**：30 包 @1Gbps = 0.36 ms 排空时间，但队列一旦持续占用，时延持续存在；
+3. **S2QZRBEJ 实测**：空载中位 RTT ~50 ms → 批量负载下 95/104 ms（99 分位 210/310 ms）；**T9X6QCLL 自己转述该文（L482）**：50 ms → ~100 ms。
+
+**为什么这条最重要**：
+- 它是**对选题价值的直接质疑**，且出自 2023 年的 LEO 综述（有分量）；
+- 但它**只是常识断言**（"seems common sense"），**与它自己转引的实测数字冲突**；
+- **而它给出的正是可判定的判据**：若"卫星不带大缓存"⇒ 排队时延可忽略 ⇒ **那 50→100 ms 的抬升就不是排队造成的** ⇒ 必须有别的机制解释。
+- **这三条合起来构成一个可判定实验**：测"负载升高时，时延抬升中有多少来自排队、多少来自路径结构/重配/其他"。这正是 F15（两条通路）要分离的东西。
+
+→ **登记为候选 N5（并可能与 N2 合并）**：把"负载→时延的归因分解"作为研究对象——**直接回应一篇综述的公开质疑**。
+
+## F47【领域自认·需求未被证实】T9X6QCLL L187
+
+> "**Without data from satellite network operators, it is difficult to establish the practical need for load balancing mechanisms.**"
+
+→ 含义：连"负载均衡有没有实际需求"这件事，**领域自己承认没有数据**。这对本项目是**双刃**：
+- 负面：说明选题的"需求侧"缺乏实测支撑；
+- 正面：**这是一个被明确指认的空白**（需要运营商数据才能定论），且与本项目"用仿真核查可行性"的定位不冲突。
+
+## F48【可引用的负载容量表】TQF59BD7（R8 读卡，主控未逐条核验）
+
+QoS 合规跌破 95% 的负载阈值：源路由 **7.6** / F-IDLB-12 **12.5** / F-IDLB-24 **15.0** / F-IDLB-48 **16.2** / SCN-1440 **20.2 Gbps**（L449/L502）。
+- 该文**显式时延分解含排队项**（式 14：切换 μs + 路由查找 μs + **排队 μs，实测毫秒量级** + 传播 ms）；
+- 抖动归因：QoS1 平均 2.91 ms / 最大 85.15 ms，**归因于路径切换导致的传播时延跳变**（与 F15/F44 同向）。
+- **但**：纵轴永远是合规率而非时延；**排队时延被测量却从不单独报告、也非优化目标**——这是"测了但没用"的又一实例（与 F42 同族）。
+
+## F49【本批真空确认】既有 λ 轴、又把排队显式建进代价的工作：无（R8 结论）
+
+R8 在其 11 篇内核查：TSV3IE8S 有 λ 轴但无排队模型；TQF59BD7 有排队测量但无 λ 轴；R37BNQQ8 有负载扫描但无排队项。
+→ 与本项目此前结论（F39/F24/F36）**一致**：**"可调到达率 + 排队时延 + 多跳路由"三者未在同一篇同时出现**。这是**跨多个批次、由不同通读者独立得出**的同一结论。
