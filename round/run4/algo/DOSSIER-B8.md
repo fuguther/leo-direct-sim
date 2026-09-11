@@ -475,6 +475,120 @@
 
 ---
 
+## 7. 5HJ8ATR7 — Democratizing Direct-to-Cell Low Earth Orbit Satellite Networks
+
+**书目（逐字）**：L1/L17 `# Democratizing Direct-to-Cell Low Earth Orbit Satellite Networks`；L3–L5 Lixin Liu / Yuanjie Li / Hewu Li 等（Tsinghua University；Zhongguancun Laboratory）；L7–L9 `This paper is included in the Proceedings of the 21st USENIX Symposium on Networked Systems Design and Implementation. April 16–18, 2024 Santa Clara, CA, USA`。
+**已读范围**：L1–L395（摘要 L25、引言 L27–L42、多租户动因 L44–L73、挑战（实测）L92–L170、系统概述 L171–L189、MOSAIC 设计 L190–L292、部署 L271–L293、评测 L294–L371、局限 L372–L375、相关工作 L376–L395）。附录 A/B（L633–L650）与参考文献 L397–L632 未读。
+
+### 1) 测量/建模对象与条件（逐字+行号）
+
+- L25（对象）：`Multi-tenant Low Earth Orbit (LEO) satellites emerge as a cost-effective win-win solution for direct 4G/5G access to our regular phones/IoTs anywhere on Earth.` … `Our empirical study with real satellite data shows that, it restricts LEO satellites' serviceable areas, limits the use of available (possibly competitive) satellites, and suffers from signaling storms and dynamic many-to-many relationships in extreme LEO mobility.`
+- L84（实测装置，图题）：`(a) Direct-to-cell UEs (b) Open probes [54] (c) Real satellite dataset`；L296 `large-scale what-if emulations driven by satellite data in Figure 3`
+- L111/L114（实测 RTT 图题，逐字）：`(d) Starlink terminal's RTT w/o ISLs`；`(e) Starlink terminal's RTT w/ ISLs`；`(f) RTT between the user and its nearest ground station (w/ ISLs)`
+- L296（评测方法，逐字）：`We evaluate MOSAIC using a combination of qualitative analysis, quantitative micro-benchmark test with our prototype in Figure 13, and large-scale what-if emulations driven by satellite data in Figure 3.`
+
+### 2) 可引用的事实与数字（逐字+行号）
+
+| # | 事实（逐字） | 行号 |
+|---|---|---|
+| 1 | `LEOs are highly crowded, with about 8,300 satellites [29] and 27,000 space junks [28], leading to 3,500–60,000 conjunction events per month [45, 46] and 24,410 collision avoidance maneuvers per year [47].` | L67 |
+| 2 | `Traditional direct-to-cell satellites, such as Inmarsat [42], Thuraya [43], and Tiantong [44], operate in the geostationary orbit (GEO) at an altitude of 35,786 km.`；`modern satellites like Starlink [1, 2], Iridium [3, 4], Globalstar [5], AST [6, 7], and Lynk [8] operate in LEOs at the altitude of 340–2,000 km` | L52 |
+| 3 | **`each 4G/5G IQ sample should be delivered to the ground station within 250 microseconds, which accounts for 80 km distance between the satellite and ground station [56]. This stringent deadline is unsatisfiable for LEO satellites, whose distance to ground stations is at least 340 km.`**（原文为微秒符号） | L128 |
+| 4 | **`Each transparent LEO satellite relays all serving UEs' IQ samples to ground stations for processing, which requires 7.86 Gbps for a typical 5 MHz radio channel [58].`** … `all these satellites' IQ samples to remote ground stations will accumulate and congest ISLs (typically with 20 Gbps capacity [59, 60])` | L130 |
+| 5 | **`Each LEO satellite has a short-lived coverage for each area due to its fast mobility (e.g., 3 minutes for a Starlink satellite at 7.6km/s).`** | L149 |
+| 6 | `compared to NTN, MOSAIC's localized service setup reduces signaling latency by up to 5.19 , 1.33 , and 2.33 in Starlink, Globalstar, and Iridium, respectively.`（原文倍数字符缺失，见第 5 项边界第 3 条） | L332 |
+| 7 | `MOSAIC reduces CPU cycles by 100 , 63 , and 73 in Starlink, Globalstar, and Iridium, respectively.` | L336 |
+| 8 | `each token's consumption latency is 16.4 ms, 41.9 ms, and 34.8 ms in Starlink, Globalstar, and Iridium, respectively.` | L340 |
+| 9 | `Each SIM card can store 3,279-19,661 tokens' 160-bit metadata o2.` … `each MNO in this setup can generate 1,175 tokens/s (Figure 11a) and verify 1,401 tokens/s (Figure 11c) on average.` | L349–L351 |
+| 10 | `Figure 16 compares the paging load assuming 5MHz 4G/5G radio bands for each satellite and 400 UEs/km2 by following [91]. Compared to NTN and SpaceCore, MOSAIC reduces paging channel load by 23 , 4 , 8 in Starlink, Globalstar, and Iridium, respectively.` | L359 |
+| 11 | `we define each LEO constellation's cellular service ratio as h = Areas with functional satellite 4G/5G over Total areas covered by all satellites` | L334 |
+| 12 | `Figure 21 quantifies these costs assuming two SNOs (Starlink and Iridium) with ISLs. Compared to the state-of-the-art, MOSAIC saves 850–7,640 signaling costs and 4.71–14.25 latencies due to its local in-band control.` | L370 |
+| 13 | `the LEO satellites that each MNO and UE can employ change over time due to their transient coverage, some of which can be untrusted.` | L169 |
+
+### 3) 对"负载变化/突发/时延/到达率"的事实贡献
+
+- **负载相关的唯一定量事实是"带宽需求"而非"到达过程"**：L130 —— 单颗透明管道 LEO 卫星需 **7.86 Gbps**（5 MHz 信道）而 ISL 容量约 **20 Gbps**，即"IQ 汇聚会拥塞 ISL"。这是**容量/负载比**的工程事实，可作**拓扑容量定标**，但它不是测得的流量过程。
+- **时延事实**：L128（250 微秒处理截止时间 vs 340 km 最小星地距离，物理不可满足）、L332（服务建立时延降低倍数）、L340（token 消耗时延 16.4 / 41.9 / 34.8 ms）。
+- **时间尺度事实（对 LEO 动态建模有用）**：L149 —— 单颗 Starlink 卫星对某区域覆盖约 **3 分钟**（速度 7.6 km/s）；L165/L167 描述 MNO–SNO–UE 多对多关系的动态性。
+- **突发/到达率**：**未见**。核验命令 `grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"` → **count = 0**；`grep -ciE "time series|stochastic|Markov|queue|poisson"` → **count = 0**（范围=该篇 MD 全文 L1–L681）。
+
+### 4) 能否作为定标或现象证据
+
+- **不是流量测量论文**：证据为 `real satellite data`（L25/L296）驱动的 **what-if 仿真** + 原型微基准；**无真实用户流量统计**。
+- **可作定标输入**：ISL 容量 20 Gbps 与 IQ 需求 7.86 Gbps（L130）、星地距离至少 340 km 与 250 微秒截止（L128）、卫星覆盖 3 分钟（L149）、LEO 高度 340–2,000 km（L52）。
+- **可作现象/背景证据**：直连手机（direct-to-cell）是 LEO 的新增长方向（L29、L73），并且**现有多租户方案尚不支持**（L94 `The ongoing direct-to-cell satellite solutions under development, such as Starlink [34–36] and 3GPP NTN [16–27], have not started to support multi-tenancy.`）。
+- **对本选题的价值**：提供"星上处理 vs 透明管道"的约束边界（L128、L130），说明 **LEO 星上处理能力是硬约束**——建模队列时不能忽略的物理上限。
+
+### 5) 边界与不可外推项
+
+1. **评测主体是设计而非网络测量**：L296 明示三类手段（定性比较、原型微基准、数据驱动 what-if 仿真），**无端到端流量实验**。
+2. **平台对象不是路由**：本篇是**接入与多租户**（token/信令/寻呼），与路由/负载均衡无直接关系；**不得**据此推断任何路由结论。
+3. **数字口径为"相对倍数"**：L332、L336、L359、L370 多数为**相对 SOTA 的改进倍数**（原文乘号字符在 MD 中缺失，表现为数字后空格），**不是绝对时延**，引用时不得写成绝对 ms。
+4. **卫星数据集为第三方公开数据**：L296 的 `satellite data in Figure 3` 来自公开探测数据（L81–L84），精度受该数据源限制。
+5. **作者自述局限**：L374 `(1) For SNOs, while MOSAIC's pay-as-you-go token grants service access, it does not guarantee verifiable carrier-grade service. Selfish SNOs may not offer carrier-grade services after gaining tokens, thus causing overbilling.`
+6. **未读部分**：附录 A（安全性分析 L633–L643）、附录 B（缩写 L645–L650）、参考文献 L397–L632。
+
+---
+
+## 8. AZ72LM9Z — Towards Global Outage Detection for LEO Networks
+
+**书目（逐字）**：L1 `# Towards Global Outage Detection for LEO Networks`；L3–L17 Manda Tran / Dylan Truong / Khiet Huynh / Sirapop Theeranantachai / Dravya Jain / Beichuan Zhang / Lixia Zhang / Liz Izhikevich（UCLA / University of Arizona）；L33 `In 3rd Workshop on LEO Networking and Communication (LEO-Net '25), September 8–11, 2025, Coimbra, Portugal.`
+**已读范围**：L1–L266（全文：摘要 L21、引言 L35–L52、背景 L57–L65、同时测量 L67–L128、全球中断分析 L130–L153、相关工作 L155–L163、结论 L165–L167、附录 A L229–L266）。参考文献 L169–L227 未读（仅确认标题 L169）。
+
+### 1) 测量/建模对象与条件（逐字+行号）
+
+- L21（对象）：`We present Roman-HitchHiking, a system for measuring LEO satellite outages globally and in near-real time.`
+- L61（**中断定义，逐字**）：`We define an outage as a period of time in which the Starlink client is unresponsive to the Starlink pre-satellite hop router.`；并对照官方定义：`Starlink's Service Level Agreement defines an "outage" as ". . . a period where the Starlink is unable to send/receive pings to/from servers at a Starlink Point of Presence" [27]. In this paper, we employ a narrower definition`
+- L63（方法，逐字）：`HitchHiking first identifies the pre-satellite hop using ICMP Paris traceroute.` … `A TTL-limited ping is then used to isolate latency at specific hops: one ping targets the pre-satellite hop, and another the client dish. The diference in latency estimates the satellite link delay.`
+- L96（采集工具，逐字）：`we use Censys [5, 8] to find exposed Starlink services. We filter exposed services for customer endpoints and exclude endpoints using performance enhancing proxies (PEP) [13]. We use Scamper [4, 18] to run Paris traceroutes to determine the pre-satellite hop.`
+- L134（数据窗口，逐字）：`we collect data using Roman-HitchHiking with 8 source IPs for a 5 minute sample, probing at a one-second interval on three diferent days (May 27-29, 2025). We geolocate the customer endpoints using Starlink's published IP Geolocation feed [25].`
+- L109（中断时长口径，逐字）：`we focus on sustained outages over 5 seconds and over 15 seconds long. We choose durations over 5 seconds because it is the maximum outage length Starlink's mobile app categorizes (0.1s+, 2s+, and 5s+). We also eval uate outages over 15 seconds because prior work has shown that Starlink has a 15 second reconfiguration period [20]. If an outage persists for more than 15 seconds, it suggests that even satellite handovers failed to resolve the issue.`
+
+### 2) 可引用的事实与数字（逐字+行号）
+
+| # | 事实（逐字） | 行号 |
+|---|---|---|
+| 1 | **`Roman-HitchHiking reduces measurement-induced packet loss from 73.4%—as seen in prior methods—to under 0.01%, enabling over four orders of magnitude greater coverage`** | L52 |
+| 2 | `Figure 4 shows that packet loss rates in the naive setup can reach 79.7%. By removing redundant probes to the same pre-satellite hop and distributing probes across multiple source IPs, Roman-HitchHiking reduces packet loss to just 0.01%—a four-order-of-magnitude improvement.` | L98 |
+| 3 | `while eliminating redundant probes reduces loss by a factor of 1.93, Roman-HitchHiking still experiences a packet loss rate of 37.9% when using a single source IP` | L100 |
+| 4 | **`Many exposed customer services converge on the same pre-satellite hop router—in the worst case, up to 288 customers share a router in our experiment`** | L86 |
+| 5 | `Figure 3 shows that packet loss significantly increases when probing more than 4 customers per /24` | L82 |
+| 6 | `among the 1,092 overlapping customers between experimental configurations, the Jaccard Similarity between the Naive and Roman Large configurations is 0.85 for 5-second outages and 0.88 for 15-second outages`；跨 vantage point 对照 `With 1,265 overlapping customers, we again observe a Jaccard Similarity of 0.88 for both 5 and 15-second outages` | L115 |
+| 7 | **`Across our datasets, we observe 812 outage events longer than 5 seconds on May 27, 344 on May 28, and 574 on May 29. Most outages last under 60 seconds, but many fall in the 50–75 second range—long enough to afect applications like video calls or gaming.`** | L136 |
+| 8 | **`On May 27, 597 outages occurred simultaneously, each lasting between 70 and 75 seconds—accounting for 73.5% of all outages that day. On May 29, we observe two similar clusters of outages lasting 50–55 seconds and 70–75 seconds, respectively, with both groups overlapping in time. These events suggest centralized failures, likely at the satellite link level, that afect many users at once.`** | L141 |
+| 9 | `the May 27 event impacted 64% of afected users in Chile, 10% in Argentina, and 18% in Australia. On May 29, the 50–55 second outages afected 38% of users in Mexico, while 34% of the 70–75 second outages occurred in Virginia, United States.` | L149 |
+| 10 | `Australia experiences more frequent and longer outages than any other region in our dataset. In every measurement sample, Australia ranks among the most afected countries, both in number and duration of outages.` | L151 |
+| 11 | `the majority of the measurements have <1ms standard deviation from the mean RTT` | L239 |
+| 12 | `Our analysis reveals large clusters of simultaneous outages account for most disruptions, with Australia consistently among the most impacted areas.` | L52 |
+| 13 | 中断类型四分类（逐字，附录 A.3）：`Success: The endpoint and its corresponding pre-satellite hop are both reachable` / `Outage: The pre-satellite hop are reachable, but the endpoint is not. This indicates a potential disruption in the satellite segment` / `Loss: Neither the pre-satellite hop nor the endpoint is reachable. This represents a complete failure in the measurement path.` / `Pre-satellite failure: The endpoint is reachable, but the presatellite hop is not.` | L257–L263 |
+
+### 3) 对"负载变化/突发/时延/到达率"的事实贡献
+
+- **本篇的核心贡献不是负载，而是"中断的时间结构"**，但对本选题**极为关键**：
+  - **中断是"同时性簇"**：L141（597 个中断同时发生、持续 70–75 s、占当日 73.5%）；L149（跨大洲同时受影响）→ **失败事件在时间上强相关，不是独立泊松**。这直接反驳"每包独立失败"的建模假设。
+  - **中断时长分布**：L136（大多数 < 60 s，很多落在 50–75 s）；L109（口径：>5 s 与 >15 s 阈值）。
+  - **与 15 s 重配置周期的关系**：L109 逐字把 15 s 作为"若中断超过 15 s 则说明连切换都救不回来"的判据。
+- **测量本身对网络的负载影响（罕见但重要的自省）**：L52/L98/L100 —— 朴素探测方案自身造成 **73.4%–79.7%** 的探测性丢包；**同一前置路由器最多被 288 个客户共享**（L86）；每 /24 超过 4 个客户就开始丢包（L82）。→ **"测量即干扰"在本篇被量化**，对设计负载实验有直接警示意义。
+- **到达率**：**未见**。核验命令 `grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"` → **count = 0**；`grep -ciE "time series|stochastic|Markov|queue|poisson"` → **count = 0**（范围=该篇 MD 全文 L1–L266）。
+
+### 4) 能否作为定标或现象证据
+
+- **LEO 实测**：真实 Starlink 客户端点、3 天（2025-05-27–29）、1 秒间隔探测（L134）、8 个源 IP。
+- **可作定标输入**：中断事件计数与时长（L136、L141）；探测丢包率与采样密度关系（L82、L98、L100）；前置路由器共享度（L86：最坏 288 客户/路由器）。
+- **可作现象证据**：**"失败事件成簇且跨地域同步"**是本批最重要的负面事实之一——任何"独立同分布丢包/超时"的建模都需要正面处理它。
+- **不能作**：任何负载/到达率定标。
+
+### 5) 边界与不可外推项
+
+1. **无地面真值（作者自述，逐字）**：L119 `Obtaining ground truth for Starlink outages is challenging due to the scarcity ofpublic measurement data, limited access to communityoperated vantage points, and the absence of our own hardware deployment.` … `we examined RIPE Atlas [1], but found that its measurement granularity was too coarse to capture the transient, sub-minute outages that Roman-HitchHiking targets. Second, we considered using LEOScope [17] nodes; however, at the time of our measurements, only three nodes were active, none of which exposed public IPs`
+2. **单向测量，无法区分方向**：L65 `since we are only conducting one-way measurements from the "outside-in," an unresponsive client can indicate that they are unable to send or receive pings from our server, but we cannot distinguish between the two.`
+3. **中断定义比官方窄**：L61。
+4. **时间窗口极短**：3 天、每日 5 分钟采样（L134）→ **不可外推为长期中断率**；作者也只做"日级簇"描述。
+5. **采样本身有过滤风险**：L100 `such losses suggest filtering behavior at the source IP level`，已用 8 源 IP 缓解（L105）。
+6. **未读部分**：参考文献 L169–L227。
+
+---
+
 <!-- GA-SECTION-START -->
 ## 附录 GA：对抗性问题（缺口主张 G-A）的全库检索与反例判定
 

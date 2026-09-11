@@ -873,3 +873,249 @@ $$
 - **已被本库采用？** 本批内：该篇引用 JP79GMZS[23]（L663）与 TLR[25]（L667）；未验证 T1 批次是否采用其 Γ 阈值。
 
 
+## 9. 9KZDXPKC — How to Route CUBIC and BBR Packets in Space（DB-R），336 行
+
+### 1) 决策机制：谁在何时决定什么
+
+- **谁/何时（默认路由）L190**："By definition, default routing is a node's default choice when it is going to forward packets but finds no routing entry matched. We leverage default routing to address the temporarily missing routing entry caused by GSL handover. Specifically, when a satellite is going to disconnect the old GSL, it will add a default routing entry to its routing table. After the old GSL disconnects, this default routing entry is used to guide the packets to the new GSL."
+- **何时（切换检测）L196**："To achieve seamless GSL handover, the GS usually establishes a new GSL with a latter satellite before disconnecting the old GSL with the former satellite [23]. The establishment of a new GSL is actually a signal of the upcoming GSL handover. It could be viewed as the trigger event of configuring default routing for the former satellite."
+- **检测判据 L202**："Given the above preparations, if a new routing entry appears in a satellite's routing table, then the satellite will check whether the destination address of the new routing entry has the same prefix as any IP address in its GSL Array."；**L204** "If yes, then this means that the satellite has detected the trigger event of configuring default routing. It would immediately add a default routing entry in its routing table"。
+- **出接口选择 L216**："Upon detecting the trigger event of configuring default routing, the satellite needs to determine the outgoing interface of the default routing entry. Specifically, the satellite associated with the old GSL will calculate the shortest path towards the satellite associated with the new GSL. ... Then a new routing entry with the outgoing interface of eth will be loaded into the routing table of satellite $S _ { a } .$ When satellite $S _ { a }$ detects the newly added routing entry meets the condition specified in Section IV-A3, it would configure a default routing entry with the same outgoing interface as the new routing entry, i.e., eth2."
+- **备份路由 L230**："Backup routing can significantly improve the availability of LEO satellite networks. Specifically, each satellite has four interfaces (i.e., four ISLs) that reach the destination with different costs. The interface of the smallest cost has the highest preference, and is also the main route. All the others are backup routes for this satellite. Moreover, the four entries are sorted according to their costs so that the routing entry with the minimal cost has the highest priority."
+- **故障时实际动作 L232**："When the ISL between satellite $S _ { a }$ and satellite $S _ { d }$ becomes faulty (i.e., the interface eth2 of satellite $S _ { a }$ becomes unavailable), all the routing entries associated with the interface eth2 immediately disappear from the routing table of satellite $S _ { a } .$ Before routing convergence, satellite $S _ { a }$ will forward the packets with destination 173.18.0.26 via the interface eth1."
+
+### 2) 代价/阈值/更新函数（公式逐字）
+
+注：本篇的公式全部属于**被保护的 TCP 拥塞控制**（CUBIC/BBR），DB-R 本身不含代价函数公式 —— 这一点对判断其"是否学习"很关键。
+
+公式 (1)(2) CUBIC，L96-104：
+$$
+\mathrm { c w n d } _ { n e w } = \mathrm { c w n d } _ { o l d } \cdot \beta ,\tag{1}
+$$
+$$
+W ( t ) = C \cdot ( t - K ) ^ { 3 } + W _ { \mathrm { m a x } } ,\tag{2}
+$$
+
+公式 (3)(4) BBR，L138-148：
+$$
+\mathbf { B W } = \frac { D e l i \nu e r e d - p a c k e t . d e l i \nu e r e d } { N o w - p a c k e t . d e l i \nu e r e d \_ t i m e } .\tag{3}
+$$
+$$
+P a c i n g \_ r a t e = B W \_ m a x \cdot p a c i n g \_ g a i n ,\tag{4}
+$$
+（**L150**："where pacing gain is periodically changing and takes values in {1.25, 0.75, 1, 1, 1, 1, 1, 1, ...}."）
+
+**DB-R 的一切实质性判据都是定性的**，逐字：
+- **L188（时间尺度阈值）**："Despite the packet loss, the time period when the routing entry is missing will not be long. According to our experiments on virtual network emulation environment, such a period lasts for about tens of milliseconds."
+- **L198（前缀判据）**："The IP addresses of all GSLs associated to the same GS have the same IP address prefix."
+- **L200（GSL 数组）**："Each satellite maintains a GSL Array that records the IP addresses of all the GSLs in use for this satellite."
+- **L208（实例）**："the IP addresses of GSLs connected with GS have the same prefix of 172.18.10.64/26 and the IP address of the GSL_new is 172.18.10.80."
+
+### 3) 决策粒度与动作空间
+
+- 粒度：**每路由表项（前缀级）与每接口**；触发是事件驱动（新路由项出现 / 接口失效）。
+- 动作空间：(a) 是否插入 default routing entry（二值）；(b) default entry 的出接口（从最短路径算出，非枚举）；(c) 四个备份项的优先级顺序（由 cost 排序，L230）。**动作空间极小且无需搜索**。
+- 实现载体：Linux kernel 5.19.0 + FRR（**L57** "We implement DB-R mechanism in Linux kernel 5.19.0. Specifically, we add the default routing entry to the routing table when an upcoming GSL handover is detected. We also improve the process for calculating the shortest path in OSPF, which generates backup routing entries in the routing table."）。
+
+### 4) 是否含学习成分
+
+**无。** §0.1 证据：本篇 reinforcement=0、\blearn=0、\btrain=0、supervised=0、reward=0、credit assignment=0。CUBIC 是丢包驱动、BBR 是带宽估计驱动，**两者都不是学习算法**；DB-R 是纯路由机制，无任何参数拟合。
+
+> **但本篇是 §12 对抗性问题的头号候选**：它把"同一失败事件（丢包）"按**物理原因**拆成两条互不相同的处理通路（GSL handover -> default routing；ISL failure -> backup routing）。详见 §12。
+
+### 5) 负载与流量设置（仅作条件登记）
+
+- **L238**："Our experiments are based on Iridium constellation. It is a walker-star constellation that consists of 66 satellites on 6 orbital planes. The orbital altitude is 780 km. We set the bandwidth of GSL to 200 Mbps, the bandwidth of ISL to 1000 Mbps. We consider two GSes located in Shanghai and Los Angeles, respectively."
+- **L88**：Starlink 典型参数用于 pass duration 说明（h=550 km，beta=25 度）；Sydney 到 London 的会话时长分布（Fig. 3）。
+- **L130**："ISL failure also causes packet loss. CUBIC takes packet loss as the congestion signal, thus reducing CWND as shown by the red curve in Fig. 6(b)."；RTT 从 130 ms 增至 170 ms。
+- **L170**：BBR 的 BW 由 80 Mbps 跌至再升至 180 Mbps（GSL 切换）；由 50 Mbps 再升至 150 Mbps（ISL 故障）。
+- **L246**："When GSL handover occurs at the 95-th second, the blue curve suddenly drops to 120 Mbps, and then gradually increases to 160 Mbps. However, the red curve directly drops to 160 Mbps due to the increment in end-to-end propagation delay."
+- **L248**："When ISL failure occurs at the 50-th second, the blue curve suddenly drops to 46 Mbps, then gradually increases to 150 Mbps. However, the red curve directly drops to 150 Mbps because of the increment in end-to-end propagation delay."（ISL 故障持续 5 秒）
+- **L252**："We randomly generate flows of different sizes according to Poisson process. We focus on the average throughput, average FCT, and average slowdown during 1 second after GSL handover or ISL failure."
+- **L53（影响量级）**："Experiments show that GSL handover and ISL failure can reduce the average throughput of CUBIC (and BBR, respectively) up to 67% (and 41%, respectively)."；**L59**（DB-R 增益）"DB-R reduces the average flow completion time of CUBIC (and BBR, respectively) by up to 52% (and 42%, respectively) compared to OSPF."；**L262**（吞吐增益）"up to 37% (and 18%, respectively)"。
+- **L132**："Note that GSL handover enlarges the FCT and slowdown up to 5x."；**L172** "Fig. 7 indicates that GSL handover increases the FCT and slowdown up to 4.9x. Fig. 8 shows that ISL failure enlarges the FCT and slowdown up to 5x."
+
+### 6) 可迁移点（能否搬进 RL 路由）
+
+- **可搬（对 G-A 最关键，见 §12）**：DB-R 提供了一台**"失败原因标注器"**：GSL 切换可由"新路由项的前缀命中 GSL Array"检测（L198-204），ISL 失效可由"接口不可用"检测（L220/L230）。RL 若要把失败按原因分通道，可以直接复用这套标签来源，而不必自己发明检测逻辑。
+- **可搬**：default routing 的"无匹配表项时的兜底动作"= RL 的 **fallback / 安全动作**，可避免策略在未知状态下的空动作；备份项按 cost 排序 = 天然的**动作优先级先验**。
+- **障碍**：① 依赖 Linux kernel 与 FRR 的具体实现（L57），迁移到仿真平台需重写；② DB-R 的目标是"不丢包"，而 RL 路由的目标通常是吞吐/时延，奖励构造不同；③ 论文只测两个 GS（上海/洛杉矶）与 66 星 Iridium（L238），规模与 RL 常用 mega-constellation 场景不匹配。
+- **已被本库采用？** 本批内：9KZDXPKC 引用 AF674CSF[9]（L305）与 LiR 线[10]（L307），并引用 OpenSN[20]（L329）作为仿真平台。未验证 T1 批次是否采用 DB-R。
+
+---
+
+## 10. BBNQ4EAQ — Temporal Netgrid Model / NSR，495 行
+
+### 1) 决策机制：谁在何时决定什么
+
+- **谁/何时（状态收集）L207**："The beacon protocol is proposed by taking into account two factors. One is to adapt the dynamic environments in satellite networks, such as unpredictable link interruption and node failure. The other is to diminish the influence of the accuracy sacrifice in TNM. In short, the basic idea of the beacon protocol is to collect status (e.g., queuing delay, transmission rate and so on) of neighbor satellites periodically for routing decision."
+- **存活判定 L209**："In order to detect link interruption and node failure, alive neighbor v will be deleted after three broadcast periods (i.e, 3T^b) unless a new beacon packet broadcasted by v is received."
+- **谁/何时（路由计算）L221**："Let time $t _ { s }$ denote route start time, which is decided by the packet arrival time. NSR focuses on non-empty netgrids where satellite nodes locate and NSR only considers the network topology at time $t _ { s }$ when the algorithm executes. Since the beacon protocol can only collect neighbor nodes information, the transmission rate $R$ in line 8 of Algorithm 3 is estimated. That is to say, the optimal routing path output by NSR only outputs the estimated shortest path, thus each intermediate node could adjust routing path according to the real-time status of neighbor satellites."
+- **决定什么 L223**："Here, we use greedy approach to find the shortest path from source netgrid $\mathcal { C } _ { s }$ ... to destination netgrid $\mathcal { C } _ { d }$ ... Note that the shortest path found by NSR is composed by netgrids."
+- **未走通时的重算 L365**："NSR will be firstly executed at the source node to find the optimal routing path. If multi-choice satellites in the path are unreachable, NSR will be executed at intermediate node to find another routing path."
+- **Algorithm 1（逐字，L235-265）** 关键行：L256-258 "12 Neighbor($\mathcal { C } ^ { \prime }$) <- Find all non-empty neighbor netgrids of $\mathcal { C } ^ { \prime }$ within effective netgrids at $t _ { s } ;$ 13 Update $Q$ and $\mu$ by executing Algorithm 3"；L260-263 "15 Extract netgrid $\mathcal { C } _ { m i n }$ which has minimum time($\mathcal { C } _ { m i n }$) from $Q$; 16 Add $\mathcal { C } _ { m i n }$ into $S ^ { * } ;$ 17 Add {time($\mathcal { C } _ { m i n }$), $p(\mathcal { C } _ { m i n }$)} into $\mathcal { R }$"。
+
+### 2) 代价/阈值/更新函数（公式逐字）
+
+公式 (1)(2) 网格表定义，L77-85：
+$$
+\mathcal { P } _ { v , i } = \{ v , \mathcal { T } _ { v } , ( t _ { v , i } ^ { e } , t _ { v , i } ^ { l } ) \} , v \in V , t _ { v , i } ^ { e } , t _ { v , i } ^ { l } \in [ 0 , \mathcal { T } _ { v } ] .\tag{1}
+$$
+$$
+\begin{array} { r } { \mathcal { C } _ { i } = \{ \mathcal { P } _ { v , i } | v \in V _ { i } \} , i \in [ 1 , K ] , } \end{array}\tag{2}
+$$
+
+公式 (3) 分层网格边长，L118-120：
+$$
+L _ { l } = 2 L _ { l + 1 } = \frac { \sqrt { 3 } } { 3 \cdot 2 ^ { l } } R _ { a } , l \in \mathbb { Z } ,\tag{3}
+$$
+
+Definition 2（描述精度），L134：
+$$
+\eta _ { l } = \frac { V _ { l } ^ { c u b e s } } { \frac { 4 } { 3 } \pi R _ { a } ^ { 3 } }
+$$
+
+公式 (4)(5)（最大层与最大格数），L180-186：
+$$
+m _ { n } ^ { * } = a r g m i n [ f _ { l } ( n , m _ { n } ) ] , f _ { l } ( n , m _ { n } ) > 0 ,\tag{4}
+$$
+$$
+n ^ { * } = a r g m i n [ f _ { l } ( n , 0 ) ] , f _ { l } ( n , m _ { n } ) > 0 ,\tag{5}
+$$
+（辅助式 **L175**："$f _ { l } ( n , m _ { n } ) = \sqrt { R _ { a } ^ { 2 } - \sqrt { ( m _ { n } + 1 ) \cdot L _ { l } ^ { 2 } } } - \left( 2 ^ { l } + n - \frac 1 2 \right) \cdot L _ { l }$"）
+
+**代价函数（逐字，Algorithm 3 第 8 行）L326**：
+$$
+\mathrm{time}( e ( \mathcal { C } ^ { \prime } , \mathcal { C } _ { n } ) ) = \frac { | D | } { R ( \mathcal { C } ^ { \prime } , \mathcal { C } _ { n } ) } + T _ { p } ( e ( \mathcal { C } ^ { \prime } , \mathcal { C } _ { n } ) ) ;
+$$
+**沿用状态（L327）**："9 $t i m e ( \mathcal { C } _ { n } ) = t i m e ( \mathcal { C } ^ { \prime } ) + t i m e ( e ( \mathcal { C } ^ { \prime } , \mathcal { C } _ { n } ) ) ;$"
+**含等待的扩展式（讨论节）L342**："the transmission time calculation in line 8 of Algorithm 3 will be changed to time$( e ( \mathcal { C } ^ { \prime } , \mathcal { C } _ { n } ) ) = T _ { w } ( C _ { n } ) + \frac { | D | } { R ( \mathcal { C } ^ { \prime } , \mathcal { C } _ { n } ) } + T _ { p } ( e ( \mathcal { C } ^ { \prime } , \mathcal { C } _ { n } ) )$"。
+**直连情形（Algorithm 2 第 4 行）L287**："Put $time ( \mathcal { C } _ { i } ) = \frac { | D | } { R ^ { b } ( \mathcal { C } _ { s } , \mathcal { C } ^ { \prime } ) }$ and $p ( \mathcal { C } ^ { \prime } ) = e ( \mathcal { C } _ { s } , \mathcal { C } ^ { \prime } )$ into $\mathcal { R }$"。
+**复杂度（对比）L309/L311**："the computation complexity of NSR is $\mathcal { O } ( \overline { { { N } } } _ { n } ^ { \ 2 } + \overline { { E } } _ { n } )$"；"There are two main operations in the algorithm, 'Extract-min' and 'Relaxation', and the typical computation complexity is $\mathcal { O } ( N ^ { 2 } + E )$ [29]."；**L309 降维关键式**："We assume that $\overline { { N } } _ { n } = \frac { N } { W _ { l } } , \overline { { E } } _ { n } = \frac { E } { W _ { l } ^ { \prime } }$"。
+
+### 3) 决策粒度与动作空间
+
+- 粒度：**逐跳**（每个中间节点可重算，L221），但每个 hop 的候选是"**邻居网格集合**"而非单个卫星。
+- **L273（动作空间的多选性质，逐字）**："It should be emphasized that the shortest path $p *$ found by NSR from $\mathcal { C } _ { s }$ to ${ \mathcal { C } } _ { d } ,$ is composed by netgrids. Therefore, if ${ \mathcal { C } } _ { m }$ is an intermediate netgrid of $p *$ , then all satellite nodes contained in $\mathcal { C } _ { m }$ can be selected as an intermediate node during the transmission, which makes each hop in the routing path contain multi-choice."
+- 动作集合大小：由网格内卫星数决定（**L103**："If we assume $F$ as the average number of effective netgrids, then the complexity of neighbor nodes searching operation will be $\mathcal { O } ( F l o g ( \overline { { N } } ) _ { . } )$"）。
+
+### 4) 是否含学习成分
+
+**无。** §0.1 证据：reinforcement=0、\blearn=0、\btrain=0、supervised=0、reward=0、credit assignment=0、penal*=0、counterfactual=0。本批 11 篇中该篇同样**零散文干扰**。全部为图搜索 + 精度分析。
+
+### 5) 负载与流量设置（仅作条件登记）
+
+- **L353** Table II 逐字："Type of Satellites LEO / Altitude 780km / Number of Planes 6 / Eccentricity 0 / Inclination 86.4 degrees / TTL of Packet 10min / Transmission Rate 100kbps / Total Generated Packets 1000 / Communication Range 5000km / Simulator Update Interval 0.1s"
+- **L363**："Iridium-like constellation is adopted to construct satellite networks and the software and hardware configurations of simulation platform are: Core i3-4150 CPU, 3.50 GHz, 12G RAM, O.S. Windows 10 Professional 64 bits. The orbit calculation model is two-body model. Since we consider random traffic transmission situation, users' requests in the simulation are generated randomly. We also assume that all satellites have one omni-directional antenna, and each satellite can only connect to one satellite at the same time."
+- **L375**："we repeat the same simulation 10 times with different 1000 generated packets for each point in routing performance comparisons, and we plot the average value with 95% confidence interval in Fig. 6 and Fig. 7."
+- **L379**："When the packet size is exceeded 300 KB, the performance of NSR in partition layer 2 degrades compared with NSR in partition layer 3, this is due to the fact that TNM sacrifices more topology information with the lower number of partition layers."
+- **L390**："We depict the performance of all routing schemes under random ISL interruption situation as shown in Fig. 7."；**L397**："Fig. 7. Performance comparison versus different interruption probability among five routing schemes (Packet Size = 150 KB)."
+- 基线登记（L365-373）：NSR / TSR / CGR / TBR / EASR 五种。
+
+### 6) 可迁移点（能否搬进 RL 路由）
+
+- **可搬（状态表示降维）**：网格抽象把状态空间从 N 个卫星压缩到 N/W_l 个格子（L309），复杂度由 O(N^2+E) 降到 O((N/W_l)^2 + E/W_l')。这对 RL 的**状态表示/图神经网络节点数**直接有用，且论文给出了精度-代价权衡的解析式（公式 (3) + Definition 2 + Proposition 1，L140）。
+- **可搬（POMDP 证据）**：L221 明说"**only estimated shortest path can be obtained since each satellite only collects status of neighbor satellites**"——这是**局部可观测**的直接文本证据，可作为"LEO 路由是 POMDP"的引文。
+- **障碍**：① **L340 自陈局限**："In the proposed NSR algorithm, the optimal path is only considered in static topology. ... However, when route time becomes long enough, the shortest path obtained from NSR might be non-optimal."；② beacon 只能收集邻居状态，RL 的观测构造必须与此一致，否则状态假设失真；③ 每跳多选（L273）意味着动作空间是**集合**，RL 需要一个额外的"选哪颗卫星"子策略。
+- **已被本库采用？** 本批内：BBNQ4EAQ 引用 JP79GMZS[24]（L469）与 TLR[14]（L449）；**IXVSNEE3 L655 引用本篇**（ref [19]："J. Li, H. Lu, K. Xue et al., 'Temporal netgrid model-based dynamic routing in large-scale small satellite networks,' IEEE Trans. Veh. Technol., vol. 68, no. 6, pp. 6009-6021, Apr. 2019."）→ 即本批内部的**双向引用**（IXVSNEE3 引用 BBNQ4EAQ，且 IXVSNEE3 的 RTPG 思路明显承袭 TNM）。
+
+---
+
+## 11. VFS59FHI — Load-Balancing Routing Based on Segment Routing（回传），365 行
+
+### 1) 决策机制：谁在何时决定什么
+
+- **谁/何时**：集中算路 + 分区规则。**L23**："Light and heavy load zones are dynamically divided according to the relative position relationship between gateways and the reverse slot, and different routing rules are adopted in different zones to improve network throughput and avoid congestion. The pre-balancing shortest path algorithm is used in the light load zone, and the minimum weight routing is based on congestion index when the traffic is converged to the heavy load zone."
+- **决定什么（轻载区）L136**："In the light load zone, routing paths of satellite nodes will pass through the heavy load zone, and must include one of outermost circle satellite nodes inside the heavy load zone, recorded as outermost nodes. Then, outermost nodes are responsible for subsequent routing. The shortest path algorithm is used to generate minimum spanning tree (MST) because the traffic of light load zone is at a low level, which can improve the delay performance and reduce SR overhead. A pre-equalization is adopted in the light load zone to avoid excessive traffic selecting the same outermost node that causes unexpected congestion."
+- **权重预均衡（更新函数）L136**："The number of outermost node i occupied is assumed to $x _ { i } ,$ and the weight of links is adjusted to $( 0 . 5 + 0 . 1 \times x _ { i } )$ where 0.5 is the initial link weight in the network, and 0.1 is used to reduce the order of magnitude for $x _ { i }$ avoiding over-adjustment."
+- **决定什么（重载区）L138**："In order to save resources and maximize throughput, the priority of each satellite node in the heavy load is sorted from high to low with traffic from large to small considering the difference in traffic carried by each satellite. Satellite nodes route in order of priority from high to low, so that the larger the traffic, the shorter the path, which can reduce the resource occupation."
+- **拒绝（动作空间的一部分）L165**："If the satellite node has no path to the central station, the traffic carried by the node is rejected and lost."
+- **分区边界 L134**："The size $( y _ { \mathrm { n } } , \ y _ { \mathrm { m } } )$ of heavy load zone is defined as $y _ { \mathrm { n } }$ orbits and $y _ { \mathrm { m } }$ satellite nodes on each orbit within heavy load zone, while the light load zone has $( N \ - \ y _ { \mathrm { n } } \times y _ { \mathrm { m } } )$ satellite nodes."
+
+### 2) 代价/阈值/更新函数（公式逐字）
+
+公式 (1)，L66-68：
+$$
+\lambda ( e , P ) = { \left\{ \begin{array} { l l } { 1 , } & { e \in P } \\ { 0 , } & { e \not \in P } \end{array} \right. }\tag{1}
+$$
+
+公式 (2)(3) 链路承载流量，L81-89：
+$$
+F [ e _ { i j } ^ { ( \mathrm { I S L } ) } ] = u \times [ \sum _ { k = 0 } ^ { N - 1 } f ^ { ( k ) } \times \lambda ( e _ { i j } ^ { ( \mathrm { I S L } ) } , { \pmb { P } } _ { \mathrm { I S L } } ^ { ( k ) } ) ]\tag{2}
+$$
+$$
+F [ e _ { i j } ^ { ( \mathrm { { F } } ) } ] = u \times [ \sum _ { k = 0 } ^ { N - 1 } f ^ { ( k ) } \times \lambda ( e _ { i j } ^ { ( \mathrm { { F } } ) } , { \pmb { P } } _ { \mathrm { { F } } } ^ { ( k ) } ) ]\tag{3}
+$$
+
+问题定义的约束，L111-117：
+$$
+F [ e _ { i j } ^ { \mathrm { ( I S L ) } } ] \le B _ { \mathrm { I S L } } , i \neq j , i , j \in [ 0 , N - 1 ]
+$$
+$$
+F [ e _ { i j } ^ { \mathrm { ( F ) } } ] \leq B _ { \mathrm { F } } , , i \in [ 0 , N - 1 ] , j \in [ 0 , X - 1 ]
+$$
+
+**公式 (4)(5)(6)(7) —— 本篇的核心代价函数**，L142-163：
+$$
+c ( e ) = { \cal F } ^ { ( e ) } \big / _ { r ( e ) } , r ( e ) = b ( e ) - { \cal F } ( e )\tag{4}
+$$
+$$
+w ( e ) = 0 . 0 1 + c ( e ) = 0 . 0 1 + { } ^ { F ( e ) } \big / { r ( e ) }\tag{5}
+$$
+$$
+w ( P ) = \sum _ { e \in P } w ( e )\tag{6}
+$$
+$$
+r ( P ) = { \underset { e \in P } { m i n } } r ( e )\tag{7}
+$$
+
+**拥堵指数的语义（逐字）L140**："The larger c(e) is, the more congested the link is. c(e) = 无穷 when r(e) = 0 and $b ( e ) ~ = ~ { \cal F } ( e )$ which presents that link e has no available bandwidth and is open. On the other hand, c(e) = 0 when r(e) = b(e) and $F ( e ) = 0$ , which presents that the full bandwidth of link e is available. Compared with link utilization F(e)/b(e), c(e) is more monotonously incremental to F(e) and more sensitive to load change. c(e) would increases sharply if the traffic is too larger which is good to balance the network load."
+
+指标定义 (8)-(12)，L203-277：
+$$
+R = { \frac { \displaystyle \sum _ { a \in R _ { S } } f ^ { ( a ) } \times u } { \displaystyle \sum _ { k = 0 } f ^ { ( k ) } \times u } } = { \frac { \displaystyle \sum _ { a \in R _ { S } } f ^ { ( a ) } } { \displaystyle \sum _ { k = 0 } f ^ { ( k ) } } } \times 1 0 0 \%\tag{8}
+$$
+$$
+T = \sum _ { b \in S _ { \mathrm { S } } } f ^ { ( b ) } \times u\tag{9}
+$$
+$$
+U _ { \mathrm { e } } = ( { m a x \frac { F ( e ) } { e \in E } } ) \times 1 0 0 \%\tag{10}
+$$
+$$
+D _ { T } = \frac { \displaystyle { \sum _ { b \in S _ { S } } d ^ { ( b ) } } } { | S _ { S } | }\tag{11}
+$$
+$$
+J _ { T } = \frac { { \displaystyle \sum _ { b \in { \cal S } _ { S } } j _ { T } ^ { ( b ) } } } { | { \cal S } _ { S } | }\tag{12}
+$$
+
+复杂度（无编号，L169 逐字）："The complexity of routing in the light load zone is $O ( ( N + X + 1 ) ^ { 2 } ) = O ( N ^ { 2 } )$ , while the complexity of routing in the heavy load zone is $O ( ( y _ { \mathrm { n } } \times y _ { \mathrm { m } } ) \times ( y _ { \mathrm { n } } \times y _ { \mathrm { m } } + X + 1 ) ^ { 2 } ) = O ( ( y _ { \mathrm { n } } \times y _ { \mathrm { m } } ) ^ { 3 } ) . \mathrm { S o }$ , the time complexity of the proposed algorithm is $O ( N ^ { 2 } + ( y _ { \mathrm { n } } \times y _ { \mathrm { m } } ) ^ { 3 } )$"
+
+### 3) 决策粒度与动作空间
+
+- 粒度：**每地面业务小区（traffic cell）+ 每流**；按优先级逐节点串行算路（L138）。
+- 动作空间：**三条分支** —— (a) 轻载区：走 MST 到某个 outermost node（预均衡后的权重决定选哪个）；(b) 重载区：Dijkstra 求最小权重路径到中心站；(c) **显式拒绝**（无可达路径时丢弃，L165）。**注意"拒绝"是显式动作，不是失败**。
+- 转发一致性由 SR 保证（L125："paths in the light or the heavy load zone would generate a series of segments to ensure forwarding coherence based on SR."）。
+
+### 4) 是否含学习成分
+
+**无。** §0.1 证据：本篇 reinforcement=0、\blearn=0、\btrain=0、supervised=0、reward=0、credit assignment=0、penal*=0、counterfactual=0。全部为 MST + Dijkstra + 人工权重 (0.5+0.1x_i)。
+
+### 5) 负载与流量设置（仅作条件登记）
+
+- **L174** Table 1 逐字："The number of orbits 6 / The number of satellites per orbit 12 / The inclination of orbits 90 度 (polar orbit) / The angle between adjacent orbits 30 度 / The number of gateways 4 / The bandwidth of satellite links 25 / The bandwidth of feedback links 100"
+- **L191**："Traffic cells are divided in Fig. 6 which gives gateways location. The value in each cell is the traffic density obtained by prediction. Two traffic density distributions are considered in simulation, uniform distribution where all traffic density is 1 and prediction distribution as Fig. 6. The unit service value u is assumed to be 1, 2, and 3 for uniform distribution. The unit service value u is considered to be 4 and 5 for prediction distribution"。
+- **L62**（流量模型）"The ground surface is divided into rectangular traffic cells according to location and constellation. Each traffic cell should be bind to one satellite anytime which is responsible for communication and traffic in that cell. ... At the same time, the traffic density of each traffic cell is predicted and marked referring to the geographical location, population, et al."
+- **L181** Table 2 重载区尺寸枚举：(3,2)(3,3)(3,4)(4,4)(3,5)(4,5)(5,5)(3,6)(4,6)；(4,2)(4,3)；(5,2)(5,3)(5,4)；(6,2)(6,3)(6,4)(6,5)(6,6)；(6,12) 即全网。
+- **L195**："Programming language C++ is used for simulation to simulate network scenario and implement algorithms. ... The results of size (6,12) are used as thresholds for five indicators."
+- **L283**："The uniform traffic distribution is adopted and the unit service value is assumed to be 2. The size of the proposed algorithm selects (6,5) in this scenario because of benefit, cost and time complexity."；对比算法为 Dijkstra、HRA、JDDA（L294）。
+- **L298**："The average rejection ratio decreases, the average relative throughput increases, and the maximum link utilization decreases as the size extends ... For another, the average delay also increases with the extension of size that contributes to the increase of cost and resources occupied."
+
+### 6) 可迁移点（能否搬进 RL 路由）
+
+- **可搬（状态特征）**：公式 (4)(5) 的拥塞指数 c(e) = F(e)/r(e) 是一个对负载**单调且高敏感**的连续特征，作者明确论证其优于 F(e)/b(e)（L140）。可直接作为 RL 的 state feature 或奖励中的拥塞惩罚项，无需学习。
+- **可搬（动作空间设计）**：把"无可行路径"**显式建模为拒绝动作**（L165），而不是当作失败——这对 RL 的动作空间设计直接有用（避免 reward 把"主动拒绝"与"被动丢包"混为一谈）。**这一点与 §12 的 G-A 同源**：它区分的是"决策导致的拒绝"与"资源导致的丢失"。
+- **可搬**：区域划分（轻/重载）是**状态空间分区 + 分策略**的现成模板，可映射为 RL 的 context/meta-policy 切换。
+- **障碍**：① 论文假设流量密度**可离线"预测并标记"**（L62），RL 需要在线观测替代先验；② 参数 0.5/0.1（L136）与区域尺寸 (6,5)（L283）均为人工选择，正是 RL 应当搜索的对象；③ 论文场景是"网关集中在一个有限区域"的**回传**流量，与一般任意源-目的流量不同构，迁移需重新论证。
+- **已被本库采用？** 本批内未见引用关系。T1 批次是否采用，本会话无读权限（见 §13）。
+
+

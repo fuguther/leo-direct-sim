@@ -738,5 +738,173 @@ Table II（L121）给出基线 vs 生成奖励的八项结构对照。惩罚按"
 
 ---
 
+## 6GWNYSTT LEO laser microwave hybrid inter-satellite routing strategy based on modified Q-routing algorithm
+
+标题原文（L5）：`LEO laser microwave hybrid inter‑satellite routing strategy based on modified Q‑routing algorithm`。全文 384 行。
+**短名说明**：这是本批唯一**表格式 RL（tabular Q-routing）**，不是深度 RL——全篇无神经网络、无状态向量、无奖励函数；"状态"退化成 Q 表下标，"奖励"退化成延迟代价，"折扣"退化成 $\gamma=1$。
+
+**1. MDP 定义**
+- **状态：没有状态向量，只有 Q 表索引。** 原文只定义 Q 值下标（eq 12，L195）：
+$$Q _ { u _ { i } } \big ( u _ { N _ { P } } , u _ { i + 1 } \big )\tag{12}$$
+> "This value represents the estimated cost for the satellite to send the packet from the neighbor satellite $u _ { i + 1 } \tan u _ { N _ { P } } .$" (L198)
+  即状态 ≈ (目的卫星 $u_{N_P}$, 候选邻居 $u_{i+1}$)，**不存在特征向量、维度、归一化这些概念**。检索：`grep -niE 'state|observ|feature|input'` 命中全部为 `"Link State aware"` 类语义（L42/L343）与 `"monitor the satellite status"`（L46），**无任何状态向量定义**。
+  **"下一跳队列长度"与"路径长度"都不进入状态，而是被压进即时代价**（L29）：
+> "According to the next hop queue length and path length continuously iterating in real time, the reinforcement learning algorithm Q-routing can obtain the shortest delay path in dynamic networks." (L29)
+  队列长度 → 经排队论变成处理延迟 $W_S$（式 4-6，L99/L105/L115），再进 (13)；路径长度 → 经逐跳传输延迟 $T_l = d_{AS}/c$（式 3，L87）每跳叠加。**无显式队列长度特征、无剩余跳数特征、无拥塞等级特征。**
+- **动作：选下一个邻居，纯贪心 argmin**（L200）：
+> "The satellite $u _ { i }$ sends the packet to the neighbor with the lowest Q-value" (L200)
+  动作空间 = 邻居集合。**负向声明**：`grep -ciE "mask"` = **0** → 无动作掩码；可行性靠路径级硬约束 (8)-(10) 事后施加（L162-183）。
+- **奖励：本文没有奖励函数。** **负向声明**：`grep -ciE "reward"` = **0**（范围 = 全文 384 行）。Q 值直接以**时延**为代价（"最短时延函数"），目标项（式 11 的目标部分，L183）：
+$$\sum _ { i = 1 } ^ { N _ { \oplus } - 1 } T _ { l } ( u _ { i } , u _ { i + 1 } ) + \sum _ { i = 1 } ^ { N _ { \oplus } } W _ { S } ( u _ { i } )$$
+  **重要提示**：式 (11) 在 L183 处的 MinerU Markdown 转换**排版噪声严重**（含重复嵌套的 \sum 与乱码下标），**无法逐字还原完整 LaTeX**，故此处只抄其中可确认的目标项，**其余字符以 L183 原文为准**。
+  **负向声明**：`grep -ciE "discount"` = **0**、`grep -ciE "gamma"` = **0** → 式 (13) 迭代形式上等价于 $\gamma=1$；**无终端奖励、无失败惩罚**。
+- **转移/终止**：拓扑被切片离散成静态图（L158）：
+> "The academic method to cope with this dynamic characteristic is called "topology slicing," which slices the continuously changing topology into n discrete topologies with little change between neighboring slices... Above all, the topology used for routing calculations is static." (L158)
+  故**切片内转移静态**，**不存在 episode/终止概念**；**负向声明**：`grep -ciE "n-step|multi-step|eligibility|trace"` = **0** → 无资格迹/多步回报（更新是单步 bootstrapping）。
+
+**2. 学习算法与更新式**
+- 算法名 `"a modified Q-routing algorithm [27]"`（L190，[27] 即 Boyan & Littman 的 Q-routing）；`"this algorithm uses Dijkstra algorithms to accelerate the convergence"`（L190）。
+- **核心更新式逐字抄录**（(13)，L202-204）：
+$$\begin{array} { r l r } {  { \mathbf { N e w } Q _ { u _ { i } } ( u _ { N _ { p } } , u _ { i + 1 } ) } } \\ & { = ( 1 - \alpha ) Q _ { u _ { i } } ( u _ { N _ { p } } , u _ { i + 1 } ) } \\ & { } & { + \alpha ( T _ { l } ( u _ { i } , u _ { i + 1 } ) + W _ { S } ( u _ { i } ) + \operatorname* { m i n } _ { u _ { i + 2 } \in \mathrm { n e i g h b o r s ~ o f ~ } u _ { i + 1 } } Q _ { u _ { i + 1 } } ( u _ { N _ { p } } , u _ { i + 2 } ) ) } \end{array}\tag{13}$$
+  逐项含义（L200）：
+> "the neighbor satellite $u _ { i + 1 }$ immediately reports its minimum sending cost $Q _ { u _ { i + 1 } } \left( u _ { N _ { P } } , u _ { i + 1 } \right)$ , path delay $T _ { l } \big ( u _ { N _ { P } } , u _ { i + 1 } \big )$ , receive delay $W _ { S 1 } ( u _ { i + 1 } )$ to the satellite $u _ { i } ,$ then $u _ { i }$ iterates over these value." (L200)
+  **原文内部不一致（照实登记，复现时必须二选一）**：L200 说上报的是**邻居**的接收延迟 $W _ { S 1 } ( u _ { i + 1 } )$，而式 (13) 用的是**当前节点**的处理延迟 $W _ { S } ( u _ { i } )$。
+  该更新 = **一步 bootstrap 的 Q-learning（TD(0)）**，$\alpha$ 直接乘在 TD 误差上，$\gamma$ 隐含为 1。
+- **无神经网络**：**负向声明** `grep -ciE "neural"` = **1**，且该唯一命中处**无任何层数/宽度/激活描述** → 表格法，**无 target net、无 replay、无 double**。
+- Dijkstra 的作用是**预热初值 + 给出方向**（L206、L208）：
+> "Since the transmission delay is constant for each topology, Dijkstra algorithm can provide an approximate direction to the destination." (L206)
+> "paths find by Dijkstra algorithm only use transmission delay, so they can be pre-calculated before the arrival of packets and do not take up the routing delay" (L208)
+  复杂度（L210、Table 1）：Dijkstra 全网空间 $O(N^2)$ / 时间 $O(N^3)$；Q-routing 全网空间 $O(NAH)$ / 时间 $O(NKH)$。
+
+**3. 信用分配**
+**逐包、逐跳即时代价，并按"延迟成因"做了三段分解**——这是本文唯一的信用分配结构（eq 7，L148）：
+$$W _ { S } = W _ { S 1 } + W _ { S 2 } + W _ { S 3 }\tag{7}$$
+> "a satellite includes three queuing models and generates three processing delay: $W _ { S 1 }$ when reception, ${ \cal W } _ { S 2 }$ when on-board processing, and ${ \mathbb Y } _ { S 3 }$ when transmission." (L146)
+> "Laser receivers follow $M / M / 1 / N / \infty ,$ and microwave receivers follow $M / M / 1 / { \infty } / { \infty }$" (L139)
+  即处理延迟拆成**接收（光电转换）/ 在轨处理（CPU 资源池）/ 发送（电光转换）**三段，**"延迟来自哪个环节"可直接读到**。
+**路径级终局奖励：无。** **是否区分损失原因：部分**——延迟成因可分，但丢包/不可达**无独立惩罚项**；**负向声明** `grep -ciE "packet loss"` = **1**，唯一命中 L27 为泛述（`"lead to new packet loss rate and processing delay"`），非惩罚项；且 (8)-(10) 是**硬约束而非软惩罚**。
+
+**4. 状态里有没有时间信息**
+**特征层面没有；价值层面有——本文用"运行平均"代替状态记忆。** **负向声明**：`grep -ciE "ewma|history|window|trend|differential|momentum|memory|recurrent"` = **0**（范围 = 全文 384 行）。依据：
+- 特征层面：无状态向量（第 1 项），无任何历史/趋势/差分项。
+- 价值层面：式 (13) 的 $(1-\alpha)Q+\alpha(\cdot)$ **就是对历史代价估计的指数滑动平均，有效窗口由 $\alpha$ 控制**（$\alpha\in\{1,0.8,0.5\}$，L269）——全篇唯一的时间聚合机制，且作用于**代价估计**而非状态输入。
+- 拓扑时间：由 topology slicing 处理（L158），切片内静态，路由表只在切片边界重算（L210 `"this calculation happens only one time in each time slice"`）。
+
+**5. 动作有没有时间结构**
+**每包独立决策、无动作驻留、无流级缓存**（L160）：
+> "The packet enters the starting satellite from the ground, passes through starting receiver, through the CPU resource pool, through the transmitter, and then reaches the next satellite. The packet repeats these steps until reaches destination satellite, which then transmits it to the aiming ground station." (L160)
+**切换代价：无显式项**（Q 值里只有 $T_l + W_S$，式 13）。**触发式更新：部分有**——邻居收到包后 `"immediately reports"` 其最小代价（L200），更新由**包到达事件**驱动而非定时轮询。
+
+**6. 多智能体设定**
+**完全去中心化的独立学习（每星一个 Q 表），无参数共享、无集中式 critic、无通信协商协议**（L29）：
+> "The algorithm also has the advantages of decentralized computation, small space cost, and short single iteration time." (L29)
+每星维护自己的 Q 表（L210 `"each satellite have a Q-table of size Num(d) ∗ Num y"`），靠邻居的**局部标量上报**更新（L200）：通信**有**，但是最轻量的三点标量（$Q_{\min}$、$T_l$、$W_{S1}$），**报文本篇未量化**。
+**负向声明**：`grep -niE "non-stationar|multi-agent"` 全文 384 行**无本文设定命中** → **非平稳处理未见自述**；**动作同步：无**——每包独立走自己的路。
+
+**7. 训练协议**
+**没有训练/评估划分——全部结果是同一批在线仿真的收敛曲线**（L221-269）。路由 200 万包，每批 20,000 包，随机起讫，$18\times40$ 网络（L221）；对比 Dijkstra / Q-routing / modified Q-routing 三算法（L217）；轨道 1200 km / 18 面 / 每面 40 颗 / 倾角 87.9°（Table 2，L228）。收敛判据 = 延迟收敛（约 20 ms）：
+> "the delay converges to the minimum for all batches when the number of network iteration rounds near 30" (L242)
+**学习率取值**：$\alpha=1,0.8,0.5$（L269）：
+> "As presented in the picture, with large learning rates, the network takes 20 to 40 batches to converge; the smaller the learning rate, the slower the convergence rate." (L261)
+负载与拓扑在仿真中同时变化（批次 2000–10,000+，L242；拓扑 $5\times5$ 到 $25\times25$，L248），但**无 held-out 评估分布**。
+
+**8. 该文的算法贡献（一句话）**
+把 Q-routing 的即时代价从"队列延迟"换成"**逐跳传输延迟 + 三段式排队处理延迟**"（式 13 的 $T_l + W_S$，L203；$W_S$ 由式 7 给出，L148），并用 Dijkstra 预计算路由表做初值/方向引导加速收敛（L206/L208）——对应第 1 项代价定义与第 2 项 eq(13)。
+
+**9. 该文自述的局限**
+**未见自述。** **负向声明**：`grep -niE "limitation|future work|not consider|drawback|shortcom"` = **0**（范围 = 全文 384 行）；第 6 节 Results and discussion（L271）只复述结果，无局限段。最接近的只有一句复杂度权衡：`"Therefore for diferent system configurations, diferent algorithms are available."`（L210 末）。
+
+**10. 该文没有考察的算法选择（重点，均基于 1-7 实见内容）**
+- (a) **从未使用函数逼近**：`grep -ciE "neural"` = 1 且无网络描述；Q 为表格（L195）。**从未比较线性/神经网络逼近**——而 $O(NAH)$ 空间复杂度正是表格法的直接后果（L210）。
+- (b) **从未做时间聚合**：`grep -ciE "ewma|history|window|trend|differential|momentum|memory|recurrent"` = 0；唯一时间效应是式 (13) 的 $\alpha$ 平滑（L203），且作用于价值而非状态。
+- (c) **从未讨论折扣因子**：`discount` = 0、`gamma` = 0；式 (13) 等价 $\gamma=1$。
+- (d) **从未使用探索机制**：`grep -ciE "epsilon"` = **0**；L200 固定为纯贪心，**从未比较 ε-greedy / softmax / 乐观初始化**。
+- (e) **从未设计状态特征**：全文无状态向量，"状态该含什么（下一跳队列长度？历史拥塞？链路质量？）"这一整类选择**根本不在讨论范围**。
+- (f) **从未有奖励函数，因而无从讨论奖励塑形**：`reward` = 0；信用分配 = 延迟三段分解，无终端奖励、无失败惩罚、**无多目标加权**。
+- (g) **从未使用动作掩码/可行性屏蔽**：`mask` = 0；可行性靠 (8)-(10) 路径级硬约束事后处理。
+- (h) **多智能体只做了"独立 Q 表 + 邻居标量上报"**（L200/L210）；**从未比较参数共享、集中式学习、通信频率或非平稳处理**。
+- (i) **从未做训练/评估分布划分**：全部结果是同一在线过程的收敛曲线（L221-269）。
+
+**11. 可复用的具体机制**
+- **(a) "预计算静态路由表 + 在线 Q 学习"的双层结构**（L206/L208）：Dijkstra 用只含传输延迟的静态代价预热并约束搜索方向，Q 学习只补偿动态排队/处理延迟。对我们等于"**拓扑快照给骨架、RL 只学拥塞残差**"。
+- **(b) 三段式处理延迟分解**（式 7，L148）：接收 / 在轨处理 / 发送分别用 $M/M/1/N$、$M/M/c$、$M/M/1$ 建模（L139/L141/L143），使"延迟来自哪个环节"可直接读到；配套排队式（eq 4/5/6，L99/L105/L115）：
+$$W _ { s } = { \frac { 1 } { \mu - \lambda } }\tag{4} \qquad W _ { s } = \frac { L _ { s } } { \mu ( 1 - P _ { 0 } ) }\tag{5} \qquad W _ { S } = \frac { L _ { S } } { \lambda }\tag{6}$$
+  其中 $L _ { s } = \frac { \rho } { 1 - \rho } - \frac { ( N + 1 ) \rho ^ { N + 1 } } { 1 - \rho ^ { N + 1 } } , P _ { 0 } = \frac { 1 - \rho } { 1 - \rho ^ { N + 1 } } , \rho = \frac { \lambda } { c \mu }$（L109）。
+- **(c) 邻居上报的最小信息接口**（L200）：只传三个标量（$Q_{\min}$、$T_l$、$W_{S1}$）——可作我们 DRL 方案里"状态通信"的最小带宽版本。
+- **(d) 事件触发的价值更新**（L200 `"immediately reports"`）：更新由包到达驱动而非时钟驱动，天然适配稀疏流量。
+- **(e) 学习率作为唯一稳定-速度旋钮**（L269）：
+> "Note that in the same network, the smaller the learning rate α, the smaller the convergence delay, indicating a large learning rate in a small network makes trafic slow." (L269)
+
+**12. 实验合同里与"负载"相关的设置（仅登记，不作贡献）**
+每包到达服从泊松分布（L137），各接收机到达率 $\lambda_{1j}$ / 离去率 $\mu_{1j}$，$j\in\{1,\dots,5\}$（L139）；资源池总到达率 $\lambda_2=\sum_{i=1}^{5}\lambda_{1i}$（L141），CPU 单元平均处理速度 $\mu_2$（L141）。每星 5 个收发信机：2 路激光（同轨）+ 3 路微波（异轨与地面）（L128）；CPU 资源池 5 个计算单元，占满后新包进缓存（L132）。单星总处理延迟 $W_S=W_{S1}+W_{S2}+W_{S3}$（式 7，L148）。路径约束：$\sum T_l\le T_{l_{\max}}$（式 8，L164）、$\sum W_S\le W_{S_{max}}$（式 9，L168）、总延迟 $\le T_{max}$（式 10，L172）。负载扫描：每批 2000–20,000 包（L221 说每批 20,000 包、共 200 万包；L242 报告 `"each batch of 2000 to 10,000 packets"`）；`"As the load increases, the convergence delay also increases"`（L242）。拓扑扫描：$5\times5$ / $10\times10$ / $15\times15$ / $20\times20$ / $25\times25$（L248）与 $18\times40$（L221）。轨道参数：1200 km / 18 面 / 每面 40 颗 / 倾角 87.9°（Table 2，L228）。复杂度对照表（Table 3，L236）；收敛延迟约 20 ms（L242）。
+
+---
+
+# 本批小结（Batch 3：风险/奖励设计/图算子/多径族）
+
+## 一、本批共同采用的算法范式
+
+1. **价值型/actor-critic 的"标准件拼装"占绝对主导**，且几乎都是**把已有 RL 算法接到路由 MDP 上**，而非新算法：DQN（XM64YRAW L142、MXQVNU3P L209、GPDPLJNG L29）、Double DQN（GPLEP83L L69）、DQN+优先回放（9C6HB6AF L412/L375-L387）、SAC 的 primal-dual 扩展（39NJWBI7 L226）、A2C（2FBBURX7 L418）；**唯一的非深度 RL 是 6GWNYSTT 的表格式 Q-routing**（L190/L195）。
+2. **决策粒度集中在"下一跳"或"路径/比例"两档**：下一跳（MXQVNU3P L117、GPLEP83L L69、6GWNYSTT L200、GPDPLJNG L186）；候选路径（XM64YRAW L175）；每路径流量比例（9C6HB6AF L292）；组播树逐节点加边（2FBBURX7 L316）。
+3. **图算子是本批的主题轴**，但披露质量差异极大：MPNN（XM64YRAW eq 9-11）、GraphSAGE（MXQVNU3P eq 6-7）、自创 NGAT（2FBBURX7 eq 27c）；**9C6HB6AF 声称 GNN 却未披露任何结构**（唯一句 L412）。
+4. **多智能体绝大多数是"参数共享的独立学习"或"单智能体集中式"**：独立+共享（39NJWBI7 L176、GPLEP83L L69）、分布式执行+集中训练+参数广播（MXQVNU3P L209/L213）、单智能体集中式（9C6HB6AF L410、XM64YRAW、GPDPLJNG L214、2FBBURX7 L418）。
+
+## 二、本批共同没考察什么
+
+1. **状态里没有任何时间聚合——8/8 全批为零**（精确模式 `ewma|history|window|trend|differential|momentum|memory|recurrent`，逐篇实测：39NJWBI7 0 / 9C6HB6AF 0（作状态特征）/ XM64YRAW 0 / MXQVNU3P 0 / 2FBBURX7 0（作状态特征）/ GPDPLJNG 0 / 6GWNYSTT 0；GPLEP83L 的 7 命中全为 "training/search window"）。**唯一的时间聚合出现在价值层而非状态层**：6GWNYSTT 式 (13) 的 $(1-\alpha)Q+\alpha(\cdot)$ 指数滑动平均（L203）。
+2. **奖励几乎全是标量、且大多不分解到链路/节点**：39NJWBI7 (35)(36) 是逐跳标量+结局分叉；XM64YRAW (15)、MXQVNU3P (2)、9C6HB6AF (26)、GPDPLJNG (14)、GPLEP83L 均为单一标量；**只有 2FBBURX7 做了严格的逐构建步分解**（势差 (23)）。**全批没有一篇把奖励分解到链路级并做消融**。
+3. **动作掩码基本缺席**：仅 GPDPLJNG（三规则掩码 L202）与 2FBBURX7 的 M2（L500）有掩码；其余 6 篇 `mask` 命中 0。
+4. **几乎没有论文做过"训练分布 ≠ 评估分布"的系统对照**：只有 MXQVNU3P（NSFNet 训练、LEO 评估，L259）与 2FBBURX7（I080 训练、AS-733/ER/BA 测试，L667）存在分布差异，但**都没有把"训练分布如何影响性能"当作实验变量**；其余 6 篇训练与评估同分布。
+5. **全批只有 1 篇处理风险/尾部**（39NJWBI7 的 CVaR）；**只有 1 篇做多目标**（9C6HB6AF 的对数效用 (6)，但仍压成标量）；**没有任何一篇做奖励的分项消融**。
+6. **切换/重路由代价几乎全批缺席**（2FBBURX7 精确模式 `switch|dwell|handover|oscillat|chatter` = 0；其余篇亦无显式切换惩罚项），只有 2FBBURX7 用"在途包沿旧树走完"的包级复用（L130）间接收敛了稳定性。
+
+## 三、本批最接近"可直接复用机制"的 3 条（含公式）
+
+**① 把尾部风险做成约束而不是奖励项——39NJWBI7（本批唯一，且是最有价值的一条）**
+逐跳归一化 cost 化 $c _ { h } = D _ { h } ^ { Q } / D _ { n o r m }$（L397，$D_{norm}=100$ ms），再用 IQN 分布 critic + CVaR 近似把约束落到 actor 与乘子上：
+$$\Gamma _ { \epsilon _ { k } } ( o , a ) \approx \frac { 1 } { N ^ { k } } \sum _ { m = 1 } ^ { N ^ { k } } Q _ { \psi _ { k } } ^ { c } ( o , a , \zeta _ { m } ) .\tag{32}$$
+$$\mathcal { L } _ { \lambda _ { k } } = \underset { o \sim \mathcal { D } } { \mathbb { E } } \left[ \lambda _ { k } \left( \pi _ { \theta } ^ { \top } ( o ) Q _ { \psi _ { k } } ^ { c } ( o ) - D _ { k } \right) \right] ,\tag{27}$$
+**搬用价值**：可在**不动奖励函数**的前提下单独加一条"队列时延 CVaR"约束通道，风险水平 $\varepsilon_k$ 与阈值 $D_k$ 是两个可扫超参——这正是本批其他 7 篇都没做的维度。
+
+**② 势函数差分奖励：把路径级目标转成逐跳稠密信号——2FBBURX7**
+$$q _ { 2 } ( s _ { \tau } ) = \sum _ { u \in \mathcal { U } _ { t } ^ { \prime } \cap \mathcal { V } _ { \tau } ^ { \mathcal { P } } } \omega _ { u } \left( 1 - \frac { h _ { \mathcal { P } _ { \tau } } ( u ) } { \hat { h } _ { \mathcal { G } _ { t } } } \right) A _ { u } ( t ) , \qquad r _ { 2 } ( s _ { \tau } , a _ { \tau } ) = q _ { 2 } ( s _ { \tau + 1 } ) - q _ { 2 } ( s _ { \tau } ) .\tag{22,23}$$
+原文给出等价性（eq 25，L362）：$\gamma=1$ 时 $\sum_\tau r_2$ 精确 telescope 回整树目标。**搬用价值**：本批唯一"**终局目标 ≡ 逐跳奖励之和**"的严谨构造；只要能把评估目标写成"当前已覆盖/已推进集合的势函数"且**可增量计算**，就能同时拿到稠密信用分配与无偏目标，且跳数用图直径 $\hat{h}_{\mathcal{G}_t}$ 归一化后天然落在 $[0,1)$。
+
+**③ 比值型相对奖励：把"优于基准"直接写进奖励——XM64YRAW**
+$$\mathrm { R e w a r d } = \alpha \frac { L _ { \mathrm { s t a n d a r d } } } { L _ { \mathrm { a c t i o n } } } + \beta \frac { R _ { \mathrm { a c t i o n } } } { R _ { \mathrm { s t a n d a r d } } } ,\tag{15}$$
+配套残余容量（eq 3，L71）：$R _ { p , o , d } ^ { \mathrm { r e s } } = \operatorname* { m i n } _ { ( i , j ) \in p } \left\{ R _ { i , j } ^ { \mathrm { t o t a l } } - \lambda _ { i , j } \right\}$。
+**搬用价值**：两个分量都是无量纲比值、以参考路径为分母，**跨拓扑/负载尺度天然可比**，避免"延迟倒数与常数混量纲"的问题；把 standard 换成"当前策略/上一策略"即可构成自博弈基线。**配套可搬**：MXQVNU3P 的"边特征折叠进节点的图重构"（L81/L88-L93/L97）与等变动作定义原则（L115）。
+
+---
+
+# 核验记录
+
+**核验方法**：所有逐字引文（含公式行）用归一化子串比对脚本对 VM 上 MD 原文回核，归一化 = 转小写 + 非字母数字字符折叠为单空格 + 压缩连续空格。脚本在 VM 侧执行（base64 传入后 python3），对每篇全文建缓存后逐条匹配，并额外校验行号锚点（引文须落在所标行号 ±8 行窗口内）。本批共回核 **约 150 条**引文/公式。
+
+**已修正的问题（原稿 → 修正后）**：
+1. **39NJWBI7 L164**：初稿引文 "a snapshot of the network's physical status and packet-specific information at the h-th hop" 与原文不符（原文为 "$s_h$ is a snapshot of the network's physical status and **packetspecific** information"，MinerU 把 "packet-specific" 连写成 "packetspecific"）。→ 改为逐字原文。
+2. **39NJWBI7 L145**：初稿把约束 (C4) 写成了转述式。→ 改为逐字 LaTeX 原文 $D _ { p } ^ { Q } = \sum _ { h , ( i , j ) } x _ { p , i j } ^ { h } \cdot D _ { i j } ^ { Q } ( \tau _ { p } ^ { h } ) \leq D _ { m a x } ^ { Q } , \quad \forall p \in \mathcal { P }$（L145）+ L148 原句。
+3. **39NJWBI7 行锚**："每包独立决策（L158）"→ 实际该句在 **L176**，已改。
+4. **39NJWBI7 CVaR 式**：初稿 tag 留空且省略了 $\psi_k^c$ 下标 → 补全为原文 tag{32} 逐字形式。
+5. **负向声明的模式收紧（主控核验反馈，全批通用）**：初稿使用裸模式 `double|dueling|priorit`，在 39NJWBI7 有 1 处误命中（L403 `"to prioritize successful packet delivery"`），**模式与计数不符事实**。→ 全批负向声明一律改为**精确模式 + 实测计数 + 命中位置**：
+   - `double (q|dqn)` / `dueling` / `prioritized (experience )?replay`（39NJWBI7 = 0/0/0；9C6HB6AF = 0/0/—；XM64YRAW = 0/0/0；MXQVNU3P = 1 命中 L329 **参考文献标题**；GPDPLJNG 非 double + 无优先回放；6GWNYSTT 无网络/无 replay）
+   - `per` 单词边界模式（39NJWBI7 = 6，命中 L23/L264/L354/L379/L393/L397，**全为 "per-action/per-sample/per-hop/per run" 散文**，不构成优先回放反例）
+   - `mask`（39NJWBI7=0、9C6HB6AF=0、XM64YRAW=0、MXQVNU3P=0、6GWNYSTT=0；仅 GPDPLJNG L202 与 2FBBURX7 L500 有掩码）
+   - `softmax|normaliz|project`（9C6HB6AF = 2，命中 L482/L484 的 CRediT 投稿声明 `"Project administration"`/`"Fund Project"`；softmax 与 normaliz 各 0）
+   - `CVaR|risk|variance|tail`（9C6HB6AF = 0）
+6. **MXQVNU3P L158 整句引文**：子代理给出的 "If the number of neighbors of a particular node is less than q, a resampling method with a put-back action is used." 在 MD 原文中**被 MinerU 的 sup 标签碎片化打断**（该行被两遍重复文本与上标标记交错穿插），**归一化后无法整句匹配**。→ 本稿**撤回整句引文**，只保留可验证的连续片段 `"a resampling method with a put-back action is"`（已单独验证连续），并注明碎片化原因。
+7. **2FBBURX7 两处措辞**：子代理的 "In our case, M1 is the root MDP, and M2 is a sub-MDP"（L355）与 "will be a terminal state and"（L310）经归一化匹配失败——原文中 $\mathcal{M}_1$ 等符号混在句中。→ 本稿按**可验证的连续子串**引用，并保留行号。
+8. **2FBBURX7 decompos 命中数**：子代理报 6，**实测 9**（L9/L45/L53/L207/L209/L355/L709/L907/L1183）。→ 按实测 9 记录，结论（全为"问题分解"语境）不变。
+9. **2FBBURX7 式 (27b)**：注意力权重式在 MD 中 **OCR 残损**（含 \Psi 与乱码分母）→ **不引为逐字原文**，仅保留可确认的 (27a)/(27c)，并注明残损。
+10. **6GWNYSTT 式 (11)**：L183 处 Markdown 转换**排版噪声严重**（重复嵌套求和符号与乱码下标）→ **不整式引用**，只抄可确认的目标项并指向 L183 原文。
+11. **6GWNYSTT 原文内部不一致**：L200 说邻居上报 $W_{S1}(u_{i+1})$，式 (13) 用当前节点 $W_S(u_i)$。→ **照实登记，不做融合**，并标注"复现时必须二选一"。
+12. **9C6HB6AF 原文内部矛盾**：L266 称 PPO，L478/L480 称 DQN，更新式 (32)-(39) 却是 DQN+PER。→ 照实并列，不融合。
+13. **MXQVNU3P 原文口径冲突**：L117/L209 动作 = 邻居下一跳，L211 却称输出 "multiple candidate paths"。→ 照实并列。
+14. **GPDPLJNG 局限检索**：子代理称 limitation 仅命中 L126；实测该模式全文命中 **1** 处，确为 L126，但语境是约束枚举（`"...limitation of one action per request..."`）→ "未见自述局限"成立，已注明命中原文。
+
+**访问受限说明**：本会话角色（deepener）**无权限读取**同批次的一篇姊妹锚点稿（ANCHOR-DISSECT-*），首次访问被 HOOK-BLOCK（理由：角色 deepener 不允许访问 shell-file）。按协议等待 20 秒重试后**仍被拦**，故**本稿未参考该锚点稿的体例**，格式完全依 `EXTRACTION-TEMPLATE.md`。`EXTRACTION-TEMPLATE.md` 首次访问亦被 HOOK-BLOCK，等待 20 秒重试后**成功读取**。
+
+**覆盖度**：本批 8 篇 **全部完成 12 项拆解**（39NJWBI7、9C6HB6AF、XM64YRAW、MXQVNU3P、2FBBURX7、GPDPLJNG、GPLEP83L、6GWNYSTT）。全部论文全文分块读完（543 / 587 / 306 / 352 / 1204 / 304 / 174 / 384 行），文献读取阶段均无 HOOK-BLOCK 阻断。
+
 
 

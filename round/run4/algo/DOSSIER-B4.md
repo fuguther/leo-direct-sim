@@ -6,6 +6,11 @@
 > 行号基准：VM `/data/liguang13/topic-loop-r2/md/<key>/<key>/txt/<key>.md`，与本地副本 `/tmp/b4md/<key>.md` 字节一致（scp）。
 > "未见"判定的检索范围统一为：该篇 Markdown 全文（行号区间在条目内注明），方式 `grep -c -i -E "<pattern>" <file>`，命中数 0 方判"未见"。
 > **纪律声明**：负载/流量/评测设置一律只登记在第 12 项，不作为算法贡献。
+>
+> **引文保真度声明（重要，供核验者使用）**：
+> 1. **LaTeX 公式一律逐字复制，未做任何归一化**——包括 MinerU 的上标错位、缺字、乱码（如 X5Z98UPM 公式 (5) 的 @@y@@、8N9QJHC2 的 @@@@$e@@、JLF7IEBQ Fig.7 的 "dding"、EG9X569M 公式 (10)(11) 里未定义的 @@mathcal{V}@@）；本批 32 条公式已用 @@grep -qF@@ 逐条回查 VM 原文（31 条 HIT；发现并已修正 3 处笔误：3MRQRWHU 公式 (3) 的 @@leqslant@@/@@leq@@、47J2H748 更新式 overbrace 的精确写法、WFA3CZLP Algorithm 1 递推式的 @@big(@@ 内层括号）。
+> 2. **英文散文引文保留原用词、标点与大小写，但把 MinerU 输出的连续多空格归一化为单空格**（MinerU 对两端对齐正文会输出 "the total  number  of" 这类双空格；这是排版产物，不是原文用词差异）。若核验者发现某句引文与原文只差空格，即属此类，非改写。
+> 3. 行号取 read 工具/sed 的行号，可用 @@sed -n 'Np' <file>@@ 原样复现。
 
 ---
 
@@ -545,7 +550,7 @@ L361（Conclusions 末段）逐字："In future research, we will consider makin
 ### 2) 学习算法与更新式
 - 算法名 **Q-routing**：L39 — "We call our algorithm "Q-routing" and represent the Q-function \Q _ { x } ( d , y )\ by a large table."
 - **更新式（L34 逐字，含原文的 overbrace 标注）**：
-  `\Delta Q _ { x } ( d , y ) = \eta ( \overbrace { q + s + t } ^ { \mathrm { n e w ~ e s t i m a t e } } - \overbrace { Q _ { x } ( d , y ) } ^ { \mathrm { o l d ~ e s t i m a t e } } )\
+  `\Delta Q _ { x } ( d , y ) = \eta ( { \overbrace { q + s + t } ^ { \mathrm { n e w \ e s t i m a t e } } } - { \overbrace { Q _ { x } ( d , y ) } ^ { \mathrm { o l d \ e s t i m a t e } } } )\
   其中 \t\ 由邻居的估计给出（L28 逐字）：`t = \operatorname* { m i n } _ { z \in { \mathrm { n e i g h b o r s ~ o f ~ } } y } Q _ { y } ( d , z )\
   L37 — "where 17 is a "learning \mathrm{rate}^{\mathrm{5}}\ parameter (usually 0.5 in our experiments)."（**MinerU 把 \eta\ 转成了 "17"；学习率通常取 0.5**）
 - **TD 目标 = \q+s+t\（实际排队+传输+邻居估计）**；**无损失函数、无 target net、无 replay、无 double**（第 10 项计数；本文 1994 年，早于 DQN）。
@@ -859,7 +864,7 @@ L361（Conclusions 末段）逐字："In future research, we will consider makin
 7. **状态的时间编码**：未考察。
 
 ### 11) 可复用的具体机制
-1. **MHBT 枚举 + 候选路径过滤三准则**（低时延/高多样性/负载均衡）。L68 — "the minimum-hop path can guarantee the low-latency property. Diversity requirements can be achieved by choosing as many paths as disjoint as possible. The cumulative usage of that edge contained in the selected path is factored into the path cost, ensuring good load balancing."；构造细节 L61 — "there exists a unique root node that represents the source satellite, along with several leaf nodes that represent the destinations satellites. The leaf node number is equivalent to the number of paths connecting the source to the destination… each node's left branch corresponds to movement along the x-axis… the right branch indicates the right child-node can be reached after a single hop along the y-axis. Moreover, the level \H _ { T }\ of destination node can be obtained by \H _ { T } = H _ { M H } + 1\"（Algorithm 1 全文见 L70–L103 代码块，含递推 \v _ { h , j } = \Big ( ( x _ { v _ { h - 1 , i } } + M + \vec { H } _ { x } / | \vec { H } _ { x } | ) \% M , y _ { v _ { h - 1 , i } } \Big )\ L81）。
+1. **MHBT 枚举 + 候选路径过滤三准则**（低时延/高多样性/负载均衡）。L68 — "the minimum-hop path can guarantee the low-latency property. Diversity requirements can be achieved by choosing as many paths as disjoint as possible. The cumulative usage of that edge contained in the selected path is factored into the path cost, ensuring good load balancing."；构造细节 L61 — "there exists a unique root node that represents the source satellite, along with several leaf nodes that represent the destinations satellites. The leaf node number is equivalent to the number of paths connecting the source to the destination… each node's left branch corresponds to movement along the x-axis… the right branch indicates the right child-node can be reached after a single hop along the y-axis. Moreover, the level \H _ { T }\ of destination node can be obtained by \H _ { T } = H _ { M H } + 1\"（Algorithm 1 全文见 L70–L103 代码块，含递推 \v _ { h , j } = \Big ( \big ( x _ { v _ { h - 1 , i } } + M + \vec { H } _ { x } / | \vec { H } _ { x } | \big ) \% M , y _ { v _ { h - 1 , i } } \Big )\ L81）。
 2. **曼哈顿街网跳数闭式**（L50）：\H _ { x } = \operatorname* { m i n } \{ \left| s _ { x } - d _ { x } \right| , M - \left| s _ { x } - d _ { x } \right| \}\、\H _ { y } = \left\{ \left| s _ { y } - d _ { y } \right| , N - \left| s _ { y } - d _ { y } \right| \right\}\——**可直接搬到我们平台的网格星座最短跳数与方向判定**。
 3. **"卫星同构 ⇒ 以本星为标签 0 做坐标规范化"的输入构造**（L120）：把"全网 TM+邻接矩阵"降为"以本星视角的规范型"，从而只需要一个共享模型。**这是解决"分布式部署 + 全局信息"矛盾的实用手法。**
 4. **两级控制节拍**：慢（拓扑变化才重算路径）+ 快（速率自适应持续）——L21/L40。**与本批 JLF7IEBQ 的 1 s/15 s 节拍一起，构成我们平台"控制周期"设计的可引用基线。**
@@ -1025,7 +1030,7 @@ L304 逐字 — "After simulation verification, this method has greatly improved
 ## 三、最可复用的 2–3 条机制（含公式原文）
 
 ### 机制 A：邻居回传式一跳 TD 目标（本批 3 篇共用的内核）
-- 47J2H748 L28 逐字：`t = \operatorname* { m i n } _ { z \in { \mathrm { n e i g h b o r s ~ o f ~ } } y } Q _ { y } ( d , z )\；L34 逐字：`\Delta Q _ { x } ( d , y ) = \eta ( \overbrace { q + s + t } ^ { \mathrm { n e w ~ e s t i m a t e } } - \overbrace { Q _ { x } ( d , y ) } ^ { \mathrm { o l d ~ e s t i m a t e } } )\
+- 47J2H748 L28 逐字：`t = \operatorname* { m i n } _ { z \in { \mathrm { n e i g h b o r s ~ o f ~ } } y } Q _ { y } ( d , z )\；L34 逐字：`\Delta Q _ { x } ( d , y ) = \eta ( { \overbrace { q + s + t } ^ { \mathrm { n e w \ e s t i m a t e } } } - { \overbrace { Q _ { x } ( d , y ) } ^ { \mathrm { o l d \ e s t i m a t e } } } )\
 - 后代：YI9G7NRY 公式 (10) 的 \mathcal{Q}_j(s'_{t+1},a'_t)\；8N9QJHC2 公式 (15) 的 \Q_{y_z}(d_k,y_m)\。
 - **可搬点**：一跳信令即可把"下游的最优剩余时间"带回本节点；47J2H748 同时给出**两个反面证据**——只更新最优邻居导致"系统性高估无法修正"（L77），以及随机探索在路由中"extremely negative effect on congestion"（L79），并明确"basic Q-routing（不探索）在高负载下反而更好"（L88）。**这组结论直接约束我们方案里 \varepsilon\-greedy 的使用方式。**
 
@@ -1039,7 +1044,7 @@ L304 逐字 — "After simulation verification, this method has greatly improved
 - 分项归一化 L227 公式 (15) 逐字（min-max 分母有显式闭式定义）：
   `r ^ { \mathrm { d e l a y } } ( a ) = \frac { \operatorname* { m a x } ( \mathrm { d e l a y } ( e _ { q , p } ) ) - \mathrm { d e l a y } ( a ) } { \operatorname* { m a x } ( \mathrm { d e l a y } ( e _ { q , p } ) ) - \operatorname* { m i n } ( \mathrm { d e l a y } ( e _ { m , n } ) ) } }\
 - 负载均衡项 L251 公式 (18) + L245 公式 (17) 逐字：`r ^ { \mathrm { v a r } } ( a ) = \frac { \mathrm { V a r } ^ { \mathrm { m a x } } - \mathrm { V a r } ( E ) } { \mathrm { V a r } ^ { \mathrm { m a x } } }\、`\mathrm { V a r } ^ { \operatorname* { m a x } } = \left( \frac { \mathrm { B a n d } ( e _ { i , j } ) } { 2 } \right) ^ { 2 } ,\
-- 防饿死等级 L83 公式 (3) 逐字：`\phi \left( u \right) = \phi _ { \mathrm { t i m e } } \left( u \right) + \phi \left( u \right) , \ \phi _ { \mathrm { t i m e } } \left( u \right) \leq \phi _ { \mathrm { t i m e } } ^ { \mathrm { m a x } } .\
+- 防饿死等级 L83 公式 (3) 逐字：`\phi \left( u \right) = \phi _ { \mathrm { t i m e } } \left( u \right) + \phi \left( u \right) , \ \phi _ { \mathrm { t i m e } } \left( u \right) \leqslant \phi _ { \mathrm { t i m e } } ^ { \mathrm { m a x } } .\
 - **可搬点**：把 reward 塑形建立在一套**有闭式归一化分母**的相对量上（而不是手调系数），并用"每跨一个时间片 +1、封顶"的等待等级做**防饿死**——这两点直接对应我们平台里"多业务优先级 + 负载均衡"的双目标。
 
 （次选可搬项：**YI9G7NRY 的 2-bit 队列占用档** \s_t=00,01,10,11\ 同时编码"拥塞程度 + 链路可用性"（L111）——信令开销最低的状态设计；**JLF7IEBQ 的 trim 后处理 + 剪枝等价性论证模板**（L199/L558）——任何"软约束网络输出必须投影回可行域"的场景通用。）
