@@ -295,3 +295,196 @@ MCN 里想用多径提升吞吐/容错，但两个卡点（L38, L40）：
 
 **10. 一句话评价**
 CTDE 范式的**里程碑式方法论文**（单调值分解 + hypernetwork 条件状态），在 MARL 方法谱系里是 VDN 与 IQL/COMA 之间的关键一环；**但它是一篇纯 RL 算法论文，与 LEO 网络、与负载/时延问题没有任何交集**——它在 111 篇语料里的价值是"可被引用的方法组件"，不是"领域事实"。
+
+## 9GPFG5U3 — Link-Identified Routing Architecture in Space (IEEE JSAC, Beihang University)
+
+**1. 一句话**
+**不给卫星/接口命名，改给每条 ISL 一个全局唯一标识**；源卫星把一串 ISL 标识塞进**包头里的 Bloom Filter** 做源路由转发——代价是 BF 假阳性会造成"多余转发"，于是论文用 LEO 的规则网格拓扑**解析地推出多余转发的闭式期望**，并解出"源与中间星分段编码"的最优策略。
+
+**2. 问题设定**
+LEO 星座有**确定性邻居关系**（L17 逐字："the LEO satellite constellation exhibits a deterministic neighbor relation"，每星固定 4 个邻居：同轨 2 + 异轨 2）。而地面 IP 架构假设邻居关系**先验未知**、要靠报文交换建立——**直接把 IP 搬到 LEO 会把这一拓扑特性"埋掉"**（L17 逐字："If IP architecture is directly adopted in LEO constellation, then the aforementioned topology characteristics will be 'buried'"）。三个关键问题（L19/L23/L27）：
+- Q1 怎么利用这个拓扑特性做高效转发？→ 用 ISL 标识 + 源路由。
+- Q2 怎么基于拓扑特性**优化** BF 转发的开销？→ 因为 BF 有假阳性，编进去的 ISL 越多、多余转发越多。
+- Q3 怎么在源路由风格下处理拓扑动态（ISL 间歇、GSL 频繁切换）？
+
+**3. 方法骨架**
+
+**(A) LiR 架构（第 III 节）**
+- **每条单向 ISL 分配全局唯一标识**（L71），每星关联 4 个 ISL 标识。
+- **BF 形式化（L84）**：M 位向量 + K 个哈希函数表示 N 个元素。假阳性率式 (1)：$p(M,N,K) = [1-(1-1/M)^{KN}]^K$。**关键性质（L82）：BF 只会假阳性、不会假阴性**——所以 LiR **不会丢包**，只会多转发（Fig 4 标题就是"No packet loss"）。
+- **转发规则（L113）**：中间星收到包后，检查**除入端口外的另外 3 条出向 ISL** 是否被编码在包头 BF 里，是则转发。
+
+**(B) 开销解析（§III-C，全文最硬核的部分）**
+- **Theorem 1（L133）**：错误转发开销 $f_{IFO}(N,M,K) = \dfrac{(2N+1)(M+C)\,p(N,M,K)}{1-3p(N,M,K)}$。推导（L138-L159）：每条 N 跳路径有 $2N+1$ 个潜在错误方向，每跳错误转发成本 $M+C$；定义 $E(p)$ = 沿单一错误方向的期望转发跳数，递归 $E(p) = (1-p)\cdot 0 + p\cdot[1+3E(p)]$ → $E(p) = p/(1-3p)$。**注意分母 $1-3p$ 在 $p \to 1/3$ 时发散**。
+- **Theorem 2（L174）**：正确转发开销 $f_{CFO}(N,M) = MN$（BF 本身占的带宽）。
+- 总开销式 (7)：$f_{FO} = f_{IFO} + f_{CFO}$。最优 BF 长度式 (8)：$f(N) = \min_{M\geq 0} f_{FO}(N,M,K)$。
+- **关键结构性发现（L189）**：$f(N)$ **关于 N 凸增**（"f(N) is convexly increasing ... the marginal forwarding overhead is increasing"）——**边际开销递增**，所以一次编太多 ISL 不划算。**这正是分段编码的动机**。
+
+**(C) 分段编码设计（第 IV 节）**
+- **权衡（L243）**：源星与中间星**分段编码**，每段编少量 ISL → 降低假阳性/多余转发；代价是中间编码星要**重算路由或查表**，**牺牲转发速度（编码时延 τ）**。
+- **策略模型（L255-L269）**：$(N+1)$ 维二值向量 $\mathbf x$，$x_n=1$ 表示第 n 颗星清空 BF 重新编码（付 τ），$x_n=0$ 表示直接转发。约束 $x_1 = x_{N+1} = 1$。
+- **目标函数（式 13, L302）**：总"时间开销" $\sum_{n=1}^{N}\left[\dfrac{f(r_n(\mathbf x)-n)}{B} + \tau\right]x_n$，其中 $r_n(\mathbf x)$（式 11）是 n 之后**下一个编码星的索引**，B 是 ISL 带宽。**第二项 τ 是编码时延，第一项是多余转发造成的排队时延**。
+- **Problem 1（式 14, L310）**：$\mathbf x^\star = \arg\min \sum_n [\cdot]x_n$。**作者明确说：这是二值非线性规划，一般 NP-hard，且"not monotonic or sub-modular, thus the greedy algorithm has no performance guarantee"（L313）**。
+- **解法（§IV-C）**：利用**可分解结构**做 DP。子问题 $H(i)$（式 15）定义"第 i+1 颗星必为编码星"时的最小开销；**引理 1（式 17, L369）**：$H(i) = \min_{0\leq q<i}\{H(q) + [f(i-q)/B + \tau]\}$。**Algorithm 1** 是标准 $O(N^2)$ DP + 回溯构造 $\mathbf x^\star$。
+- **运行时行为（L382-L384）**：卫星若发现自己的出向 ISL 在 BF 里 → 直接转发；若一个都没有 → 自己是"重编码卫星"，查路由表算新段、清空并重编 BF。**作者注：这个计算可以预先做好以减少处理时间**。
+
+**(D) ISL 失效管理（第 V 节）**：三种方案
+- **LSA**（L392）：传统链路状态通告，hello 包周期广播（OSPF 是 5 s）。
+- **ODR**（L394）：**不扩散链路状态**，每星实时监控自己的 ISL；收到包发现该走的那条 ISL 挂了 → **重算到目的地的路由并更新 BF**。
+- **ODD**（L396）：同样不扩散，但**激活一条预先算好的等价路径**绕开。等价路径 = **绕开某条失效 ISL 的最少跳数路径**，网格拓扑下分**顺时针/逆时针**两种（L421）。用一个**单独的等价路径 BF**（equivalent-path BF）承载（L425），每星维护**等价路径转发表**映射到出接口（L427）。
+
+**(E) GSL 切换（第 VI 节）**：用**多播**做到无缝切换——把包同时送到多颗覆盖该地面用户的卫星，让它们**缓存**以备切换（L444）。LiR 天然支持多播（**不需要像 IP 那样重配多播组地址**，L448）。两种多播：
+- **SPF 多播（L461）**：源到每个目的地各算最短路，**取并集**编码进 BF。
+- **PNB 多播（L469）**：选一个目的地为**主节点**，编码"源→主节点"+"主节点→其他目的地"的并集，**减少冗余**。
+
+**4. 它声称的效果**（全部给定条件）
+- **路径表示效率（§III-E, L232）**：对比 **Starlink 2027 年预期星座（4408 颗星）**。基线 **ELR**（显式链路表示，SRv6/MicroSID/GSRv6 的下界）：头部长度 $N\lceil\log_2 L\rceil$ 位、总转发开销 $N^2\lceil\log_2 L\rceil$。**LiR 在包头长度和转发开销上都更优**。
+- **vs SRv6（§III-D / §VII-E）**：LiR 载荷比更高；转发开销更低。包级实验（Fig 17, L550）：**跳数 <8 时 SRv6 端到端时延略大于 LiR；跳数 >8 时 SRv6 时延显著上升**（作者归因于包头变长引发拥塞）。
+- **Theorem 1 验证（§VII-B）**：(b) Matlab 随机假阳性事件（500 次运行）与理论曲线**几乎重合**；(c) OMNeT++ 上假阳性率 **< 0.27 时两曲线几乎重合，> 0.27 时实测低于理论**——作者归因于 Matlab 与 OMNeT 对**环路（loop）的处理不同**（L513，**主动承认的不一致**）。
+- **单流（§VII-C, Fig 15）**：hops $N \in \{3,...,12\}$。**最优分段编码 vs 源编码的时间开销差距随源-目的距离增大而增大**（L526）→ 论证分段编码的必要性。Matlab 数值与 OMNeT++ 包级结果一致。
+- **多流（§VII-D, Fig 16）**：4 对双向源-目的对、**有重叠 ISL**，每源**发送率 1250 pps**。BF 长度 $M \in \{30,40,...,70\}$。**BF 小的时候最优编码显著优于源编码；BF 大时两曲线收敛到"无错误转发时的排队时延"**（L532）。**作者还观察到一条反直觉现象：源编码曲线（蓝菱形）随 BF 增大而轻微上升，因为"the increment of traffic load due to the BF size"（L532）**——即**包头开销本身增加了负载**。
+- **ISL 失效管理（§VII-F, Fig 18）**：失效率 $\{0\%,5\%,10\%,15\%,20\%\}$，源发送率 **100 pps**。三条观察：
+  1. **LiR-ODR 与 LiR-ODD 的投递率几乎相同**（都接近 100%），但 **LiR-ODR 的端到端时延更优**——因为 ODD 的等价路径"may not be the delay-minimizing one"（L573）。
+  2. **同样 1 s 的 LSA，OSPF-LSA(1s) 投递率更高但时延更大**：OSPF 由中间节点逐跳决策，LSA 不及时只会绕路（时延大）；LiR-LSA 由源星定好整条路径，LSA 不及时**直接投递失败**（L575-L586）。**这是一个非对称的失效模式对比，写得很好。**
+  3. **LiR-ODR/ODD 在投递率上优于 LiR-LSA(1s)**，因为它们利用确定性邻居关系，而 LSA 是为地面互联网设计的（L588）。
+- **多播（§VII-G, Fig 19）**：one-to-N，$N\in\{2,...,6\}$，发送率 **1.6 Mbps**。三条观察：(1) Multicast-PNB/SPF 的时延与投递率都优于单播两种；(2) **PNB 略优于 SPF**（PNB 编码的标识更少、错误转发更少，L608）；(3) Unicast-Optimal 优于 Unicast-Source。
+
+**5. 实验条件**
+- **仿真平台（L485-L493）**：**OMNeT++ + INET 4.2.2** 自建三大模块——星座模块（用 **OsgEarth 库获取实时卫星位置**来算 ISL 传播时延）、网络模块（协议栈/排队/路由）、流量生成模块。运行在 VMware ESXi 6.5.0 + Ubuntu 20.04。
+- **星座**：**Iridium，66 颗 LEO 卫星，高度 780 km**（L481），典型极轨星座。
+- **链路与参数**：每条 ISL **10 Mbps**；BF 替换耗时 $\tau$ = **10 微秒**；每包有效数据 $C$ = **1 KB**；哈希函数数 **K = 5**（Fig 6, L169）。
+- **拓扑动态**：**ISL 失效与恢复事件按 Poisson 过程随机生成**，给定失效率（L487）。
+- **负载设定**：**每个实验固定一个发送率**——多流 1250 pps（L530）、SRv6 对比 1000 pps（L550）、失效管理 100 pps（L554）、多播 1.6 Mbps（L592）。**没有对发送率做扫描**。
+- **扫描的变量是**：跳数 N（3–12）、BF 长度 M（20–50 位 / 30–70 位）、ISL 失效率（0–20%）、多播组大小 N（2–6）。
+- **训练与评估**：**无训练**（纯解析 + 协议设计 + 仿真验证），解析结果与仿真结果做了交叉验证（Theorem 1 的 (b)(c) 两条曲线）。
+
+**6. 它自己承认的局限**（逐字引用）
+- L313："Problem 1 is a binary non-linear programming, which is **NP-hard in general**. Moreover, it is **not monotonic or sub-modular, thus the greedy algorithm has no performance guarantee**."
+- L513（Theorem 1 验证的不一致）："When the false positive rate is greater than 0.27, however, the number of incorrect forwarding hops under OMNeT++ simulation is smaller than that of the theoretical result. **This inconsistency can be attributed to different handling of loops between the Matlab and OMNeT implementation.**"
+- L616（未来工作）："In the future, it would be interesting to investigate how to implement the LiR architecture in the Linux kernel. ... A proper implementation should be incremental."（**即：本文只做了仿真，没有任何真实实现**）
+- L550 的时延对比只在跳数 <8 时有利——作者没有把这条当作局限写出来，是结果里隐含的边界。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **$\tau$（BF 替换耗时）被设成常数 10 微秒**（L481），但 ODR/ODD 场景下卫星要**重算路由**——重算时间远大于 10 μs 且随星座规模增长。**"编码时延"这个代价项在最需要它的失效场景里恰恰没被建模**。
+2. **没有对发送率/到达率做任何扫描**。四个实验各用了一个固定发送率（1250 / 1000 / 100 pps / 1.6 Mbps），而**多流实验里作者自己观察到"BF 变大导致负载增加、排队时延上升"**（L532）——说明这条轴是敏感的，却没扫。
+3. **最优性只在"单流、给定 N"下证明**。多流场景下各流的编码策略会互相影响（共享 ISL），**论文的 DP 是逐流独立做的**，没有联合优化。
+4. **等价路径（ODD）是预先算好的静态表**（L427），但 LEO 拓扑在变，**表什么时候失效、如何更新**没说。
+5. **ISL 失效用 Poisson 过程随机生成**（L487），**与 LEO 真实的"缝区/极区几何性失效"无关**——而极轨星座的 ISL 失效恰恰是**周期可预测**的（作者自己在 L17 强调"deterministic neighbor relation"），却用了一个**无记忆的随机模型**。**这是论文内在的一个不自洽**。
+6. **只测了 Iridium（66 星）**，而路径表示效率分析用的是 Starlink 4408 星（L232）——**解析与仿真在不同星座上**，规模差 66 倍。
+7. **$1-3p$ 分母在 $p\to1/3$ 时发散**（式 2），论文没有讨论这个奇点的物理含义或安全边界。
+
+**8. 和同批其他篇的关系**
+- **明确引用了 8AYW2Y78 (Hypatia)**：参考文献 [2]（L635）就是 Kassing et al. 的 Hypatia。**这是本批内已确认的第一条引用链。** 它还引了 Handley 的 "Delay is not an option" [5]（L641）和 Giuliari 的 "Internet backbones in space" [4]（L639）——后者正是 Hypatia 的参考文献 [26]。
+- **和 8AYW2Y78 的关系是"互补而非竞争"**：Hypatia 是**测量基础设施**（发现时变拓扑的挑战），LiR 是**协议设计**（提出一套新架构去应对）。两者都基于"确定性邻居关系 + 网格拓扑"这个前提。
+- **和 8N9QJHC2 的对照很尖锐**：8N9QJHC2 用**贝叶斯推断**去判"链路是临时故障还是永久故障"，再做差异化路由；**LiR 完全不做故障分型，ODR/ODD 都是"发现挂了就绕"**。两者对同一问题（ISL 间歇）给出了**完全不同哲学的解**：一个是"先诊断再决策"，一个是"不诊断、本地反应"。
+- **和 S85KQ4FC 的关系**：S85KQ4FC 关心星上 DNN 推理的算力瓶颈；LiR 关心星上 **BF 查表 + 可能的 BF 重编码**。**两者都在往包头/星上处理能力上加负担**，但都只把"处理时延"当作一个参数（S85KQ4FC 是 $C_k/f_{i,k}$，LiR 是常数 τ），没当成一等约束去优化。
+- **跟 9C6HB6AF 完全不同的路线**：9C6HB6AF 是集中式 NCC 算分流比例（控制面集中），LiR 是**源路由把路径写进包头**（控制面分散到源星），两者是 LEO 路由架构的两极。
+- *[回填位：本批剩余篇目引用核实]*
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**有间接但真实的两条贡献**，不过它**没有做负载扫描**（四个实验各固定一个发送率：1250/1000/100 pps、1.6 Mbps）：
+1. **包开销本身会改变负载，进而改变排队时延**（L532 逐字："The blue diamond curve is slightly increasing. This is because of the increment of traffic load due to the BF size."）——**这是"协议开销 → 有效到达率 → 排队时延"链条的一条直接证据**，而且是反直觉的：BF 变大降低了错误转发，却因为包头变大而抬高了负载，两者相互抵消。
+2. **时延上升的两个来源被明确区分开**：式 (12) 把每跳开销写成 $f(\cdot)/B + \tau$，前者是**多余转发挤占带宽造成的排队时延**，后者是**编码处理时延**。全篇的时延论证都建立在这个区分上。
+3. **失效率扫描（0–20%）间接给出了"有效到达率下降"下的时延/投递率曲线**：失效率升高 → 有效可用链路减少 → 投递率与端到端时延变化（Fig 18）。**但这是链路可用性维度，不是负载维度**。
+4. 值得记的一条边界：**LiR-LSA 在链路状态不及时会直接丢包，而 OSPF-LSA 只会绕路**（L575-L586）——即**源路由架构对"信息陈旧"的惩罚是丢包而非时延**，这个失效模式的不对称性对"负载突变下谁先崩"有参考价值。
+
+**10. 一句话评价**
+**把 Bloom Filter 源路由这一数据中心/发布订阅领域的技术，第一次系统地按 LEO 拓扑特性重新推导了开销闭式解并做了最优分段编码**（Theorem 1 的 $E(p)=p/(1-3p)$ 递归与 $f(N)$ 凸性是好工作），是 LEO 路由谱系里**非学习路线的代表**；但它**用无记忆 Poisson 过程模拟一个自己反复强调"确定性、可预测"的拓扑**，且把最需要建模的"星上重算时延"简化成常数 10 μs——这两点削弱了它在真实动态场景下的说服力。
+
+## 9KZDXPKC — How to Route CUBIC and BBR Packets in Space (IEEE INFOCOM, Beihang University)
+
+**1. 一句话**
+不改终端上的 CUBIC/BBR，而是**改路由**：给 GSL 切换配一条**默认路由**、给 ISL 失效配一组**备份路由**，让链路事件期间到达的包"有表可查"而不是被丢掉——从而**不让拓扑动态伪装成拥塞信号**去骗 CUBIC 砍窗、骗 BBR 低估带宽。
+
+**2. 问题设定**
+CUBIC 是**丢包驱动**、BBR 是**带宽估计驱动**，两者都假设"丢包/时延上升 = 拥塞"——这个假设在地面光纤网成立，在 LEO 不成立（L23）。LEO 有两种拓扑动态（L32, L34）：
+- **GSL 切换**：卫星只能服务覆盖范围内的地面站，轨道周期短 → GSL 频繁切换。
+- **ISL 失效**：每星 4 条 ISL（2 异轨 + 2 同轨），**相邻卫星相对速度高时，天线跟踪瞄准能力受限导致 ISL 不稳定**。
+
+两者都会造成**丢包或 RTT 突变**（L36）：GSL 切换时路由表还没来得及更新，包被丢；ISL 失效时同理；即使路由更新及时，**星座内路径变了，RTT 也会突变**。
+**关键洞察**：路由收敛前的窗口里，丢包**不是拥塞造成的**，但 CUBIC/BBR 分不出来。
+作者明确说"individually revise CUBIC or BBR for LEO"不实际（L43），所以从路由侧下手。
+**已有工作的缺口（Table I, L39 + L78）**：Cao et al. [19] 的 SatCP 用**链路层通知**，但 (a) 开销大、且**要求地面终端改写拥塞控制**；(b) 其 Mininet 测试床**不支持分布式路由软件，用集中式路由计算代替**——"Such a simplification hides the impact of link-state changes in terms of routing reachability"（L78）。
+
+**3. 方法骨架**
+
+**(A) 两个先导实验（第 III 节，都是"先证明问题存在"）**
+- **CUBIC 原理**（L94-L126）：三个重复 ACK 触发快重传并砍窗 $\mathrm{cwnd}_{new} = \mathrm{cwnd}_{old}\cdot\beta$，$\beta = 0.7$（式 1）；然后按三次函数增长 $W(t) = C(t-K)^3 + W_{max}$（式 2）。
+- **BBR 原理**（L136-L150）：带宽估计 $\mathrm{BW} = \frac{\mathrm{Delivered} - \mathrm{packet.delivered}}{\mathrm{Now} - \mathrm{packet.delivered\_time}}$（式 3）；取最近 **10 轮**的最大值为 $BW_{max}$；$\mathrm{Pacing\_rate} = BW_{max}\cdot\mathrm{pacing\_gain}$（式 4），**pacing gain 在 {1.25, 0.75, 1, 1, 1, 1, 1, 1, ...} 间周期变化**。
+
+**(B) DB-R 机制（第 IV 节）——两个独立子机制**
+
+**① 默认路由对付 GSL 切换（§IV-A）**
+- **丢包机理（L180）**：GSL 断开 → 对应接口的路由表项**立即消失** → 卫星重算路由。但 LSA 传播要时间，期间仍有包沿旧路径到达该星 → **没有匹配的表项 → 丢包**。
+- **关键量化（L188）**：作者实测这个"表项缺失窗口"**只有几十毫秒**（"such a period lasts for about tens of milliseconds"）——**这是用低成本的默认路由就能补上的依据**。
+- **默认路由定义（L190）**：节点转发时找不到匹配表项时的兜底选择。
+- **触发条件（§IV-A3）**：需要两个前提（L198, L200）——(a) 同一 GS 的所有 GSL 的 IP 地址**共享同一前缀**；(b) 每星维护一个 **GSL Array** 记录在用的 GSL IP。**检测逻辑**：路由表出现新表项时，检查其目的地址前缀是否与 GSL Array 中任一 IP 相同 → 是则说明**即将发生切换**，立即加默认路由项。
+- **接口选择（§IV-A4, L216）**：旧 GSL 所属卫星**算到新 GSL 所属卫星的最短路**，把**该新表项的出口接口**用作默认路由的出口。
+- **设计巧妙处**：**无需额外的信令**——"新 GSL 建立"本身就是切换的先行信号（L196），默认路由的触发完全搭在 OSPF 已有的 LSA 上。
+
+**② 备份路由对付 ISL 失效（§IV-B）**
+- **丢包机理（L220）**：ISL 因天线失准断开 → 该接口不可用 → 涉及该接口的路由表项被删 → 卫星更新 LSDB、重算、扩散 LSA。**更新完成前到达的包因无匹配表项被丢**。
+- **机制（L230）**：每星有 4 个接口通向目的地、代价各异。**代价最小的为主路由，其余三个按代价排序全部保留为备份路由**。某个接口不可用，就自动落到下一个。
+- **关键前提（L228）**："The topology of LEO constellations yields multiple equivalent path"——**LEO 的网格拓扑天然存在多条等价路径**，这是备份路由可行的原因（与 LiR 论文依赖的是同一个拓扑事实）。
+
+**4. 它声称的效果**（全部给定条件）
+**先导实验（问题有多严重）**：
+- **GSL 切换**：CUBIC 的 RTT 突变 + 丢包 → CWND 立即下降再慢慢爬回（Fig 5, L130）；**BBR 的 BW 从 180 Mbps 暴跌到 80 Mbps 再爬回**（L170）。**FCT 与 slowdown 放大到 5×**（L132）。
+- **ISL 失效**（配置了 **5 秒**的失效事件）：RTT **从 130 ms 突增到 170 ms**（L130, L170）；**BBR 的 BW 从 150 Mbps 跌到 50 Mbps 再爬回**（L170）。FCT/slowdown **放大到 5×**（L172）；BBR 在 GSL 切换下是 **4.9×**（L172）。
+- **总体（L53）**：GSL 切换与 ISL 失效会让 CUBIC 平均吞吐下降**最多 67%**、BBR 最多 **41%**。
+
+**DB-R 的效果**：
+- **长流验证（§V-A）**：CUBIC 在 **第 95 秒**发生 GSL 切换时，OSPF 曲线**跌到 120 Mbps 再缓慢升回 160 Mbps**，而 **DB-R 曲线只跌到 160 Mbps**（即只体现传播时延增加导致的合理下降，**没有多余的拥塞误判**）（L246）。ISL 失效（**第 50 秒**，持续 5 s）：OSPF 跌到 **46 Mbps** 再升回 150 Mbps，DB-R 直接落在 **150 Mbps**（L248）。
+- **经验流分布评估（§V-B）**：按 **Poisson 过程**随机生成不同大小的流，统计**事件发生后 1 秒内**的平均吞吐/FCT/slowdown（L252）。
+  - **吞吐**：DB-R 对 CUBIC 与 BBR 都有提升。**关键观察（L254）：OSPF 下 BBR 优于 CUBIC，但 DB-R 下两者几乎一样**——"This means that packet loss caused by link dynamics plays an even worse role on CUBIC than BBR."
+  - **FCT**：同样，**OSPF 下 BBR 的 FCT 更低，DB-R 下两者持平**（L256）。
+  - **Slowdown**：DB-R 显著降低两者的 slowdown（L258）。
+- **总改进（摘要 L13 / 结论 L262）**：平均吞吐 CUBIC 提升**最多 37%**、BBR **最多 18%**（对比经典 OSPF）。**FCT 最多降低 52%（CUBIC）/ 42%（BBR）**（L59）。
+- **注意**：摘要与结论都**只报了吞吐数字**，FCT 的 52%/42% 只出现在贡献列表（L59），**结论段没有重复**。
+
+**5. 实验条件**
+- **平台**：**OpenSN**（作者自己组的开源 LEO 仿真库，参考文献 [20]，L329）——基于容器，且**跑真实的分布式路由软件 FRR**（L80, L331）。作者选 OpenSN 的理由是"efficiency on constructing mega-constellations and updating concurrent network states"（L238）。
+- **对比的既有测试床（L238）**：LeoEM [19]、StarryNet [24]、OpenSN [20]。
+- **星座**：**Iridium，walker-star，66 颗星，6 个轨道面，高度 780 km**（L238）。
+- **链路带宽**：**GSL 200 Mbps，ISL 1000 Mbps**（L238）。
+- **地面站**：**上海与洛杉矶**两个（L238），可建立多条 TCP 连接。
+- **先导实验的另一组条件**：Starlink Shell-I（h=550 km, β=25°）用于算会话时长分布与传播时延分布（L88，Fig 3/Fig 4）；CUBIC/BBR 影响的例子里用 **上海–洛杉矶 via Iridium**（L128, L152）。
+- **负载设定**：长流（long-lived flow）验证 + **经验流长分布 [22]**（L252, L333）。**没有做负载/到达率扫描**；实验的"触发变量"是**链路事件的时刻与持续时间**（GSL 切换、5 秒 ISL 失效）。
+- **实现**：**Linux kernel 5.19.0**（L57），真实内核改动，不是纯仿真。
+- **训练与评估**：无训练。评估是同一测试床上的对照实验（OSPF vs DB-R），未做跨星座泛化。
+
+**6. 它自己承认的局限**（逐字引用）
+论文**没有 Limitations 节**，只在相关工作里批评别人时**间接暴露了自己的边界**：
+- L78（批评 Cao et al. [19]，但这段也定义了本文的参照标准）："First, the link-layer notification incurs additional overhead, and requires the terrestrial end hosts to modify the congestion control mechanisms... Second, the testbed in [19] does not support distributed routing software, but relies on centralized routing calculation as the alternative. **Such a simplification hides the impact of link-state changes in terms of routing reachability.**"
+- L43（对可行解的自我限定）："**It is not practically feasible to revise CUBIC or BBR individually for LEO constellations.** Thus, this paper aims to address the above drawbacks from another direction."
+- L188 里那个"几十毫秒"是**本文机制成立的隐含前提**，但作者只说"According to our experiments on virtual network emulation environment"，**没有给这个窗口的分布或上界**。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **"表项缺失窗口只有几十毫秒"是 DB-R 全部合理性的支点**（L188），但论文只给了一个粗略说法，**没给统计分布**。如果某类事件的窗口达到几百毫秒，默认路由是否还够用？没答。
+2. **默认路由只有一个出口**（L216）。若切换期间同时发生 ISL 失效，默认路由指向的接口恰好也挂了怎么办？**两个子机制之间没有任何交互设计**——GSL 切换用默认路由、ISL 失效用备份路由，**但论文没有讨论二者同时发生**。
+3. **没有负载/到达率扫描**。所有实验固定流长分布与链路带宽，扫的是"事件时刻"。而 DB-R 要解决的恰恰是**事件期间瞬时到达率被拥塞控制误砍**的问题——**把背景负载从 0 加到接近饱和，DB-R 的收益是否还在？这是最直接的缺口。**
+4. **只测了 Iridium（66 星）+ 上海–洛杉矶单对 GS**（L238）。星上默认路由/备份路由机制在几百上千颗星的星座里是否还成立（表项数量、收敛时间），未验证。
+5. **BBR 版本未说明**（是 BBRv1 还是 v2？），而 BBR 的 pacing gain 序列 {1.25, 0.75, 1, ...}（L150）是 v1 的特征。BBRv2 对丢包的敏感度不同，结论未必迁移。
+6. **没有与 Cao et al. [19] 的 SatCP 做直接实验对比**（只在 Table I 和文字上比），而那是本文最接近的对手。
+7. **pacing gain 的周期变化本身就是一个"内生到达率振荡"**（L150），论文把它当背景交代，**没有分析它与链路事件叠加时的相位效应**。
+
+**8. 和同批其他篇的关系**
+- **同一个作者群的"系列作"**：本文作者 **Zhiyuan Wang / Shan Zhang / Qingkai Meng / Hongbin Luo**（L3）与 **9GPFG5U3 (LiR)** 的作者群**完全重合**（LiR 作者：Hefan Zhang, Zhiyuan Wang, Shan Zhang, Qingkai Meng, Hongbin Luo）。本文参考文献 **[10]**（L307）正是 LiR 的会议版 "Optimizing link-identified forwarding framework in LEO satellite networks" (WiOpt 2023)——而这也正是 9GPFG5U3 的参考文献 [1]（L633）。**两条引用链在同一个组内完全对上。**
+- **直接引用了 8AYW2Y78 (Hypatia)**：参考文献 [4]（L295）即 Kassing et al. Hypatia。**这是本批内第二条确证的 Hypatia 引用**（第一条是 LiR 的 [2]）。
+- **与 9GPFG5U3 (LiR) 是互补而非竞争**：LiR 解决"包**怎么走**"（用 BF 编码路径），DB-R 解决"链路事件期间包**别被丢**"（默认/备份路由）。两者都建立在**同一个拓扑事实**上——LEO 网格有确定性邻居与多条等价路径（L228 vs LiR 的 L17）。**但 DB-R 面向的是 IP/OSPF 栈（FRR、路由表、LSA），LiR 是推倒重来的新架构**；DB-R 更像是"在不改协议栈的前提下尽量拿到 LiR 想要的好处"。
+- **与 8AYW2Y78 (Hypatia) 的结论直接互证**：Hypatia 说"loss 和 delay 都是糟糕的拥塞信号"（Hypatia L254/L256）；DB-R 用具体数字量化了这件事——**CUBIC 吞吐最多掉 67%、BBR 最多掉 41%**（L53），并且给出了机制解释（丢包→砍窗 / RTT→低估 BW）。**这是本批里对 Hypatia 那条结论最直接的一次定量延伸。**
+- **与 S85KQ4FC 的对照**：S85KQ4FC 认为要高通量就得**别逐包推理**；DB-R 反过来强调**逐包查表必须快**（默认路由是查表兜底）。两者都在星上转发路径上做文章，但一个砍推理、一个加表项。
+- **与 9C6HB6AF 的区别**：9C6HB6AF 用集中式 NCC 决定分流比例；DB-R 是**纯分布式**（跑 FRR，L80），且刻意避开集中式——它批评 Cao et al. 的一点就是对方测试床用集中式路由计算（L78）。
+- *[回填位：本批剩余篇目引用核实]*
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**这是本批目前对"时延/吞吐的瞬态响应"给出最细颗粒数据的论文**，而且它的因果方向和通常的"负载→时延"是**反向的**——它展示的是**事件→拥塞控制误判→到达率塌陷→吞吐下降→缓慢恢复**这条链。具体可用的事实：
+1. **一次链路事件会把发送率打掉再慢慢爬回**，且**爬回过程可持续数十秒**：ISL 失效 5 秒，CUBIC 吞吐从 150 掉到 46 Mbps 再回升（L248）；BBR 的 BW 从 150 掉到 50 Mbps 再回升（L170）。**这就是一条"到达率对扰动的响应曲线"，只是扰动源是链路事件而不是负载变化。**
+2. **CUBIC 与 BBR 对同一次事件的响应差别很大**：GSL 切换下 BBR 的 BW 从 180→80 Mbps，ISL 失效下从 150→50 Mbps（L170）——**同样的 RTT 变化（130→170 ms），两种算法的估计器反应不同**。
+3. **丢包型信号比时延型信号更脆弱**：DB-R 消除了丢包后，**CUBIC 与 BBR 的性能变得几乎相同**（L254, L256）——反过来说，**在 OSPF 下两者的差距几乎全部来自丢包，而不是来自时延**。这是对"LEO 里哪种拥塞信号更不可靠"的一个干净的分离实验。
+4. **RTT 的具体数值**：ISL 失效使端到端 RTT **从 130 ms 变到 170 ms**（L130, L170）——**这是"路径变化（而非排队）带来的时延阶跃"的一个实测样本**，与 Hypatia 的 Rio–St. Petersburg 96→111 ms（Hypatia L207）是同性质的现象、不同星座。
+5. **BBR 的 pacing gain 序列 {1.25, 0.75, 1, 1, ...}**（L150）意味着**即使链路完全稳定，BBR 的发送率本身也在周期性振荡**——这是分析"到达率"时容易被忽略的内生项。
+**但**：本文**完全没有做负载扫描**，背景流量固定；"经验流"虽按 Poisson 过程生成（L252），但那是**流到达**的随机性，不是**到达率水平**的变化。所以对"负载水平变化下的时延曲线"，它没有贡献。
+
+**10. 一句话评价**
+**从"改路由而不是改传输层"这个角度切入 CUBIC/BBR 在 LEO 的失效问题，工程上极其干净**（默认路由搭在既有 LSA 上、零额外信令；备份路由蹭 LEO 网格的多等价路径），且有**真实 Linux 内核 + 真实分布式路由软件**的实现背书；它是本批里把 Hypatia"loss/delay 都是坏信号"这条定性结论**做成可量化、可修复的工程方案**的第一篇——但**它止步于"消除丢包"，没有回答"负载升高后这套机制还灵不灵"**，也没有处理默认路由与备份路由同时被触发的情形。

@@ -58,3 +58,29 @@ R5 读卡：跨区域时延差异只体现在 min RTT（下界）；唯一度量
 
 - **GPLEP83L**：§IV.F Discussion 把 Table I 的数字**写反**（说 GPT 时延更低，实际是 Opus 85.13 vs GPT 88.41）。→ 只用 §IV.D / Table I。
 - **GPDPLJNG**：**§IV 整节缺失**、从 III 直接跳 V；**全文无任何具体数值、无表格**；基线只有最短路一个。→ 不可作为定量依据。
+
+## F8【跨篇口径缺陷·动摇可比性】"平均时延"的分母在不同论文里不一样，导致"负载↑→时延↑"不自动成立
+
+主控逐字核验的三条证据（全部已在 VM 原文核对）：
+1. **VFS59FHI L269 逐字**：
+   > "However, the average delay **decreases** as u increases with some sizes. This phenomenon is caused by **big rejection ratio**, and only part of traffic can occupy resources. When the rejection ratio is small, the average delay increases as the size extends."
+   → 被拒绝的业务**不进入时延统计**，负载升高时平均时延反而下降。
+2. **UKEKU5ZG L232 逐字**：
+   > "By dividing the total latency by the number of **transmitted** data packets, the average latency can be obtained."
+   → 分母是"已发送"包数，同样把未成功者排除在外。
+3. **UKBSA7WN L204**：超时包仍留在队列缓冲、直到出队时才判定丢弃 → 丢包判定滞后，同样影响时延口径。
+
+**结论**：在存在拒绝/丢包的 LEO 路由研究里，**"负载↑ ⇒ 平均时延↑"不是自动成立的常识，完全取决于分母定义**（含拒绝 vs 仅成功业务）。
+**处置（两条，都要做）**：
+1. 本项目任何时序延指标必须**显式声明口径**（分母、是否含被拒/丢弃业务），并在实验设计里同时报告**到达率（PDR）与时延**——这一点恰好与本项目"主指标=到达率+端到端时延"的固定边界一致；
+2. **登记为候选方向 N2**：把"负载-时延曲线的口径依赖"本身做成一个被测量、被显式化的命题。**是否够格做选题，待全部读卡回来后再判**（现为 3 篇的独立观测，且都是各自实验的副产物）。
+
+## F9【候选方向·从阅读中浮现】拒绝率与时延是对立指标，可分离（VFS59FHI）
+
+VFS59FHI L294/L302：Dijkstra 时延最低但拒绝率最高；HRA 拒绝率改善但时延最高；"拒绝率小的前提下，可绕行区域越大，平均时延越高"。
+→ 与 F8 合起来指向同一个问题域：**负载升高时，系统在"丢/拒"与"慢"之间如何取舍**，而这个取舍点从未被作为研究对象显式刻画。
+
+## F10【教材层可迁移判据】"收敛最优 ≠ 在线表现最好"（LJG6ZW7B Cliff Walking，L2409–L2419）
+
+Q-learning 学到最优贴崖策略，但因 ε-greedy 偶发掉崖，**在线回报反而差于学到次优绕路策略的 Sarsa**。
+→ 对本项目的意义：若评价指标是"在线到达率/时延"，**"训练收敛到最优策略"不足以作为结论**；必须报告部署期（冻结策略）的在线表现。这与本项目"固定训练后部署"的暂用设定直接相关。

@@ -416,4 +416,66 @@ Python + Keras 搭 MPNN 与 DQN（L206）。星座：**9 条倾斜轨道 × 每�
 **10. 一句话评价**
 本批**方法学上最"小"却最锋利**的一篇：不发明新网络结构、不用 DQN、状态只有 2 bit/邻居，改动只有一处——**把 Q 更新的 bootstrap 目标从"自己的 Q"换成"邻居的 Q"**（式 8），以此显式建模"我的动作体现在邻居队列上"这一多智能体耦合；它同时给出了本批唯一的**形式化拥塞判据（回归斜率 t 检验）**、唯一的**归一化负载定义**（$\ell$ 相对网络容量）、以及一个杀伤力很强的对照实验——**连知道全局瞬时队列状态的源路由 genie 都不如它**。代价是负载只测单点、丢包未报、缺同级别的分布式基线；但作为"把 Q-routing 这条 1993 年的线认真接到 LEO 场景"的工作，它对"负载变化下到达率/时延"这一选题的参考价值高于本批任何一篇 DQN 论文。
 
+## YD4JUT7G — Internet Backbones in Space（ACM SIGCOMM CCR 2020；Giacomo Giuliari, Tobias Klenze, Markus Legner, David Basin, Adrian Perrig, Ankit Singla @ ETH Zürich）
+
+**1. 一句话**
+一篇**跨域（inter-domain）路由的架构比较论文**：把"LEO 星座如何接入今天的 Internet 路由体系"拆成四条路线（白盒 BGP / 黑盒 BGP+地面冗余 WAN / CDN 式重路由 ReRo / 理想 PAN+路径控制 PaCo），用**轨道仿真 + BGP 事件计数 + 地面段成本模型 + NOAA 降雨数据**四条证据链比较它们的成本、稳定性与时延，结论是"CDN 式方案在平均意义上接近最优，且今天就能部署"。
+
+**2. 问题设定**
+LEO 星座承诺给长距离通信**低于地面光纤的时延**（真空光速 vs 光纤 2c/3，且避开绕行的光纤路由，L25、L53），但它天生与 Internet 路由不兼容。作者列出三个让 SN 无法对等体"隐藏"其物理层特性的因素（L27）：① 大气效应与卫星失效导致连通性时变；② 商业可行性要求**部分部署**，于是连通性按卫星临时可见性呈**间歇**状；③ 卫星传输**时延更低但成本更高**，需要能区分流量、主动决定何时走卫星。第二个矛盾是成本—性能权衡（L73）：卫星连通性带宽受限（稀缺资源）、价格更高，而**今天的 Internet 路由不支持实时通告变化的路径时延**，对等体无法据此选路。
+
+**3. 方法骨架**（非 RL：架构设计与对照评估，四条路线）
+- **① 白盒（White Box）**（§2.4）：SN 作为一个普通 AS（SN-AS）参与 BGP，GSL 的连通性变化对域间路由基础设施**完全透明**。作者用仿真量化其致命伤（见第 4 项）。
+- **② 黑盒（Black Box）**（§3）：SN-AS 自建/租用**地面冗余 WAN** 互连各 GST，把 GSL 的抖动在域内吃掉，对外呈现稳定连通性。代价是全部地面段成本由 SN 独自承担。
+- **③ CDN 式（ReRo）**（§5）：把 GST 类比 CDN 边缘节点——**宿主到合作 ISP 的网络里**（成本分摊，L155–157）；GST 之间持续交换 GSL 连通性/带宽/短期天气预报；**inactive 的 GST 把流量经地面网重路由到 active GST**（L159、L171）。源端用 DNS 或 IP anycast 找最近的 GST（L165）。方案命名为 **ReRo（re-routing）**。
+- **④ 理想最优（PAN + PaCo）**（§4）：基于 **路径感知网络（PAN）**，具体用 **SCION** 实现（L137–143）。在控制面 PCB 里嵌入两类额外信息：**(i) connectivity profile**（GSL 连通性变化的表示，使路径无需反复通告/撤销，端主机用各 GST 的 profile 求交即可判断路径在任一时刻是否可用）；**(ii) time-varying bandwidth class**（由当地天气预报与 GST 可见卫星数算出，用来判断 SN 能否支撑所需带宽）（L141）。这叫**路径控制（PaCo）**。
+- **时延模型**（§6.1、附录 A.2，L217–221）：源→GST 的地面段 = 大圆距离 × **地面绕行因子 2.3** ÷ (2c/3)；GST→GST 的卫星段 = 路径长度 ÷ **c（真空）**；三项相加。
+- **仿真器**（附录 A.2）：自研。空间段按星座参数生成图并复现轨道运动；地面段 GST 之间用 **Delaunay 三角剖分**模拟相邻连接；GST 在卫星仰角超过**最低仰角（Starlink 取 40°）**时可建立 GSL（L416–418）。
+
+**4. 它声称的效果**（分四条证据链）
+- **① 白盒的 BGP 抖动量化**（Fig 1，L88）：在 **SpaceX 二期星座的 10% 部署**下仿真。卫星常常**只可见几分钟**；用**过滤阈值**滤掉过短窗口可减少路由更新，但被滤掉即产生**连通性浪费**。**即使阈值设到 6 分钟、大多数事件被滤掉，每个 GST 每天仍有近 20 个事件、每个至少触发一次 BGP 更新**——而代价是 **15%–45% 的可用连通性被浪费**。且每次断开会导致**至少一次、通常很多次** BGP 通告（多个 AS 的前缀在单个 GST 断开后全球不可达），两端都受同样的抖动影响，会触发路由抖动抑制（route flap damping）、使卫星路径被禁用（L90）。
+- **② 黑盒的成本**（Table 1，L114–121）：单 GST 成本 = **基础设施 7 M$ + 天线 3 M$**（30 副天线 × 10 万$），WAN 造价 **10 k$/km**。样本结果（1000 次随机部署的平均）：100 个 GST → WAN 0.47 B$、总计 **1.5 B$**；500 → 2.3/7.3 B$；1000 → 4.6/**15 B$**；1833（GDP 采样）→ 8.5/**27 B$**；1833（全球所有 >30 万人口城市）→ 12/**30 B$**。对照：**整个 SpaceX Starlink 星座的估计成本约 100 亿美元**，而黑盒模型在此之上再加约一倍（L121）。
+- **③ GST 选址的时延代价**（Fig 2，L225）：两种部署——"每个源城市一个 GST"（基线最优）vs "只在 IXP 部署 GST"。**经 IXP 路由的平均额外时延约 10 ms**；对长距离通信影响不大（空间段时延主导），但**当端到端时延本身很低时，这个增量在相对意义上很可观**。
+- **④ 降雨衰减下的 ReRo vs PaCo**（Fig 3，L245）：用 **NOAA 2018 全年历史天气**，每天取两个时刻的降雨累积量，用 **11 个阈值**判定 GST 是否 inactive，得到 **7744 个仿真场景**（L236）。结果：PaCo 与 ReRo 的时延 **CDF 非常接近**，平均损失只有**几个百分点**；但**每个场景内的最大损失（Avg. maximum）可超过 30%**，**所有场景中的绝对最坏情况（Worst case）损失可超过 80%**。作者判断这些损失"可忽略"，因为单向时延本身很低、几毫秒的波动可接受（L245）。
+- **汇总（Table 2 + §7）**：**PaCo 能在 95 分位上带来超过 10% 的平均改进**（L262）；白盒最易部署但极度脆弱；黑盒提升稳定性但成本成倍、且可扩展性差；CDN 式解决了可扩展性且平均近最优。
+- **两个基线**：IXP 部署 vs 源城市部署（§6.1）；ReRo vs PaCo（§6.2）。PaCo 的搜索空间限制在**最近的 3 个 GST**，作者称仿真显示放开到更多 GST 收益迅速递减（L238）。
+
+**5. 实验条件**
+星座：**SpaceX Starlink 二期**，每星 **4 条 ISL**（2 同轨前后 + 2 异轨左右），与同批其他论文的四链路假设一致（L195）。BGP 抖动实验用该星座的 **10% 部署**（L86）。地理：源与目的从**人口 >30 万的城市**中按 UN 数据采样，因星座在极区无覆盖，**限制在 −56° 至 56° 纬度**，共 **1833 个城市**（L195）。IXP：从 Euro-IXP 数据集出发，初始 626 个 IXP，去重后得 **353 个唯一地点**（L211）。GST 选址启发式：按**单位面积 GDP** 的概率分布采样（L106）；WAN 造价只算到最近 IXP 且**剔除超过 1000 km 的连线与跨洋跳**（认为可租用现成光纤）（L108）。时延参数：地面绕行因子 2.3、光纤中光速 2c/3、真空中 c。**注意**：这是**非 RL 的架构研究**，没有训练/评估之分；其"动态"维度是**连通性抖动与降雨**，不是流量负载。
+
+**6. 它自己承认的局限**（无正式 Limitations 小节，但有明确的 scope 声明）
+- L106 逐字："The choice of the optimal placement of GSTs given cost and performance constraints is a hard problem, and is outside the scope of this article."
+- L57 逐字："We omit further discussion of the direct-to-consumer scenario, as it is simple to implement from the perspective of Internet routing, and focus on an SN aiming to offer transit connectivity."
+- L129 逐字："This raises the question of which entity will make the final decision on the choice of forwarding path. **We remain agnostic to this dilemma**."
+- L272 逐字（明确指出本文不管域内路由）："Intra-domain satellite routing: Routing inside a satellite constellation is a well studied topic [...]. However, these works do not consider the effects that SNs have on the Internet as a whole."
+- L110：成本模型"excludes equipment to light the fiber, support facilities and staff, management costs, and leasing prices for trans-oceanic fiber"，且更复杂的冗余拓扑"could increase this cost manifold"。
+
+**7. 它没做但看起来能做的地方**（基于内容）
+1. **时延模型里完全没有排队/拥塞**：卫星段时延 = 路径长度 ÷ c（L221），GSL 只做"可用/不可用"的二元判定。**带宽被当作用来筛掉不可用 GST 的准入门槛，而不是被争用的资源**——于是"路径控制的收益"只在**连通性**维度上被度量，在**负载**维度上完全空白。
+2. **L71 那句关于负载的断言是全篇唯一（也是最有价值）的负载相关论断**："Augmenting the throughput between dynamically changing 'hot' end-points will require **non-shortest path routing, trading off some latency for bandwidth**"——但作者**没有做任何实验去量化这个 trade-off**（没有"多绕几跳能换来多少带宽"的曲线）。这是本文自己点出却未兑现的一个实验。
+3. **GST 选址只用了 GDP 采样和"所有 >30 万人口城市"两种启发式**（L106、L119），作者自己说最优选址是 hard problem 且超出范围（L106），但**没试过任何贪心/优化基线**——而 Fig 2 已经显示选址对时延的敏感度不小（10 ms 平均差）。
+4. **PaCo 只考虑最近 3 个 GST**（L238），且"收益递减"的判断来自未展示的仿真。若端到端时延低时相对损失很大（L225），那么"3 个够不够"应该按时延区间分层回答，而不是给一个全局结论。
+5. **ReRo 的重路由只在 GST 层做**，但 §5.2 提到"GSL 拥塞时由负载均衡器把包重路由到附近 GST"（L171）——**这句一笔带过，没有任何拥塞场景的仿真**。这恰恰是"负载变化"进入本文框架的入口，但被略过了。
+6. 降雨衰减只用了**降雨阈值**这一个致因（L236）。作者在 §2.3 里列了四个连通性抖动来源（卫星运动、雨衰、部分部署、ISL 带宽约束），但**只仿真了雨衰和部分部署两种**。
+7. 成本模型排除了运营支出（L102 逐字："We disregard the recurring operational expenditure"），因此"黑盒成本翻倍"这个结论是**下界**；作者承认了，但没有给出上界区间。
+
+**8. 和同批其他篇的关系**（**本文是本批的"共同祖先"之一**）
+- **被同批两篇直接引用**：**X5K285MW** 的参考文献 **[8]** 就是本文（"Internet backbones in space, ACM SIGCOMM CCR 50, 1, 2020"，见 X5K285MW L143）；**XM6NUPM4** 的参考文献 **[17]** 也是本文（见 XM6NUPM4 L396）。两篇都把本文当作"LEO 网络架构"这条线的奠基引用。
+- **与 X5K285MW 共享另两条关键文献**：本文引 **Handley 2018「Delay is Not an Option」（HotNets'18）** 为 [20]（L326），而 X5K285MW 引同一篇为 [10]（X5K285MW L147）；本文引 **Bhattacherjee et al. HotNets'18「Gearing up for the 21st century space race」** 为 [3]（L292），X5K285MW 引 **Bhattacherjee & Singla CoNEXT'19** 为 [2]（X5K285MW L131）——**同一作者群的姊妹篇**。**结论：X5K285MW、XM6NUPM4、YD4JUT7G 三篇构成一个紧密的引用三角。**
+- **与 XM6NUPM4 共享 del Portillo 的成本/星座对比线**：本文 [7][8][9] 是 del Portillo 系列（L300–304），XM6NUPM4 的 [4] 引用的是同一篇 del Portillo 2019 Acta Astronautica（XM6NUPM4 L370）。
+- **与 XM6NUPM4 的实质呼应**：XM6NUPM4 的核心是"最少需要多少颗卫星"（空间段成本），本文的核心是"地面段要花多少钱"（**Table 1b 显示地面段成本可与空间段同量级甚至更高**，L121）——两篇合起来才是 LEO 网络的总成本图景。
+- **与 Y2H4NPLU 的对照**：Y2H4NPLU 是**域内逐跳**路由（分布式 Q-learning），本文明确把域内路由划到范围外（L272）；Y2H4NPLU 的一个核心卖点正是"不依赖地面段、信令开销最小"（Y2H4NPLU L5），而本文恰恰在讨论地面段（GST/WAN）的部署与成本——**两篇从"要不要地面段"这个角度互补**。
+- **与 S85KQ4FC / XM64YRAW 的关系较远**：那两篇是域内逐包/逐路径的路由优化，本文是跨域架构选择，问题层次不同。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**没有直接贡献**——这是必须如实说的。本文的整条证据链中**没有任何一处扫描流量到达率**：其"动态"轴是 **GSL 连通性抖动**（部分部署）与 **降雨衰减**（天气），时延模型里连排队项都不存在（卫星段 = 路径长度/c，L221），带宽只作为"GST 是否可用"的门槛。因此它不能回答"到达率上升时延如何变化"。
+**但它提供了三条对这一问题有支撑价值的事实**：
+1. **带宽—时延权衡的存在性论断**（L71 逐字）："Augmenting the throughput between dynamically changing 'hot' end-points will require non-shortest path routing, trading off some latency for bandwidth." 这是**"热点端点的吞吐提升必须以时延为代价"**的明确表述，与 Y2H4NPLU 的"时延主导项随负载切换"、X5K285MW 的"路径多样性换吞吐"、XM64YRAW 的"负载均衡换传播时延"在方向上完全一致——四篇独立论文指向同一个结构性权衡。
+2. **ISL 带宽预算的量化**（L71）：ISL 容量估计区间 **5–20 Gbps**。这是任何负载均衡/路由方案可用的**带宽总量级**——XM6NUPM4 采用的 20 Gbps 正落在这个区间上界。
+3. **连通性抖动的时间尺度**（L88）：卫星对单个 GST 常常**只可见几分钟**，在 6 分钟过滤阈值下每 GST 每天仍有约 20 次连接—断开事件。这给出了"网络可用性的时间粒度"，是判断"负载变化需要多快被响应"的物理约束。
+4. **雨衰的量级**（L67 逐字）："At these frequencies, atmospheric rain fade severely degrades radio communication, **reducing throughput by orders of magnitude**."——即**有效带宽可以在天气尺度上塌陷数个数量级**，这是比流量波动更剧烈的一种"负载—容量失配"来源。
+
+**10. 一句话评价**
+本批的**架构层基准文献**：它不提出路由算法，而是把"LEO 星座接入 Internet"这个问题框架化，并用一张**跨域稳定性（BGP 事件数）— 地面段成本（B 美元级）— 端到端时延（ReRo vs PaCo）**的三维权衡表证明"白盒最优部署点不存在、黑盒成本翻倍、CDN 式平均近最优"，因此它被同批的 X5K285MW 与 XM6NUPM4 双双引用并非偶然——**后两篇分别在"域内怎么选路"和"空间段要多少卫星"两个方向上展开，而本文回答的是"地面段怎么落地、代价多少"**。对"负载变化下的到达率/时延"这一问题，它的价值不在于数据而在两处论断：**带宽—时延权衡的存在性**（L71）与**有效带宽可因天气塌陷数个数量级**（L67），前者为整个选题提供了动机层面的引用支撑，后者提醒任何只考虑流量负载的模型都漏掉了一个更剧烈的扰动源。
+
 <!-- END -->

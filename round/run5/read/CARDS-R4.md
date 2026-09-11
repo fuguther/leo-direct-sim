@@ -459,4 +459,90 @@ LEO 网络研究**没法在真实系统上做实验**（"it is costly to carry o
 一篇**系统/工具论文**：不提出任何路由或负载算法，而是用"**KV 库分离配置与容器网络管理 + 绕开 Docker CLI/Network Manager + eBPF 替代 bridge**"三招把容器化 LEO 仿真的效率与规模推上去（6–10× 建网提速、4408 星实测）；它在方法谱系里是**基础设施层**，对"负载变化下到达率/时延"这一具体问题**没有直接贡献**，但它是唯一能让别人那条结论**在真实协议栈上被复现和反驳**的平台，因此它的价值是条件性的：**取决于后续有没有人在它上面做负载实验**。
 
 
+## DVS8C3CC — On-Demand Routing in LEO Mega-Constellations with Dynamic Laser Inter-Satellite Links
+
+**1. 一句话**
+把"**建立一条激光星间链路要花几秒**"这件事当成时延代价写进路由目标函数（而不是像前人那样预先建好静态拓扑），在这个前提下把"什么时候换路"形式化成整数线性规划（NP-hard），再给三个复杂度递增的启发式（ILPR / ALPR / ISASR）在同一个星座上比"平均时延 vs 换路率 vs 计算时间"的取舍。
+
+**2. 问题设定**
+LEO 巨型星座开始用**激光星间链路（LISL）**替代射频 ISL（容量 10 Gbps，未来到几百 Gbps 甚至 Tbps，L54）。但**LISL 的建链过程（PAT：指向-捕获-跟踪，见 Fig 1）需要几秒**，而 RF ISL 建链不到 1 ms（L63）。具体数字：**Mynaric 的 CONDOR 首次建链要 30 s，交换轨道参数后约 2 s**；Tesat 与 General Atomics 的终端建链在**数十秒**量级（L83）。
+由此产生的基本矛盾（L69、L85）：**当前做法为了躲开建链时延，预先建好静态拓扑并离线算好路由——代价是"链路即使在空闲时也保持激活"，能量效率差**，而且算了过多的路由、占用了星上内存与算力（"they establish more links than necessary (and for longer), and compute an excessive number of routes"，L85）。作者的赌注是：随着 PAT 技术改进，**建链时延会从秒级降到毫秒级**，届时"按需建链 + 按需路由"才变得可行——但那时建链时延就必须作为代价显式进模型。
+作者明确指出的文献缺口（L79 逐字）：**"there has been no previous work that takes into account the link setup delay as an important component contributing to latency in routing schemes."**
+
+**3. 方法骨架**
+**不是 RL，是组合优化 + 启发式**。
+- **网络模型（第 II 节）**：再生载荷、源/目的地面站；距离 ≤ **LISL range** 才能建链 → **非网格网状拓扑（non-grid mesh）**，邻居数随时间变化。用 **虚拟拓扑（N 个快照）**离散时间，每槽内拓扑固定。每条边代价 = 传播时延（边长/c）+ **节点时延**（处理+发送+排队，"node delay is the sum of processing, transmission, and queuing delay"，L112）。
+  **关键简化（L112 逐字）**："**we assume a negligible queuing delay in order to explore the effect of LISL setup delay on routing decisions**"——排队时延被显式设为零。
+- **SDN 编排（L116）**：地面控制器集中算路并下发 $mathcal{A}^{[i]}$；**假设"两条相邻路由的时间戳间隔 > 算路+下发时间"**，即新路由总能提前就位。**卫星不留备用光终端**（为省 SWaP），因此**换路必然产生一次建链时延 $eta_s$**；且 $eta_s$ **只计一次**（因为新链路可并行建立）。
+- **ILP 形式（第 III 节）**：目标式 11a = 时延项 + 惩罚项，代价函数为
+  $\overline{\eta_{LE}} = \overline{\eta_{delay}} + \frac{\eta_s}{100}\lambda$（式 10，L180）——**这是全文最核心的一条关系：平均端到端时延 = 平均传播/节点时延 + 建链时延 × 换路率**。
+  换路率 $\lambda = \frac1N\sum_{i=1}^{N-1}(1-\sum_r \alpha_r^{[i]}\alpha_r^{[i+1]})\times100\%$（式 9）。因为目标里有**两个二值变量的乘积**，先是非线性整数规划，用 $\beta_r^{[i]}\le\alpha_r^{[i]}$、$\beta_r^{[i]}\le\alpha_r^{[i+1]}$、$\beta_r^{[i]}\ge\alpha_r^{[i]}+\alpha_r^{[i+1]}-1$（式 12d–f）线性化后成 **ILP，NP-hard**（L223）。
+- **四个算法（第 IV 节）**——两个正交维度：**怎么选路**（瞬时 vs 平均）× **保持多久**（每槽重选 vs 保持到断）：
+  1. **ILSR**（基线）：每个时隙跑一次 Dijkstra（瞬时最短），复杂 $O(N(V+E)\log V)$。**不感知 $\eta_s$**。
+  2. **ILPR**：首次跑 Dijkstra 选最短，**只要这条路由的边还在就保持不变**，断了才重算（Algorithm 1）。复杂度同 ILSR 量级。**不感知 $\eta_s$**。
+  3. **ALPR**：**感知 $\eta_s$**。只枚举**边不相交（disjoint）**的候选路由（用"求最短→删其所有边→再求最短"迭代得到，L272），对每条算**含 $\eta_s$ 的平均时延** $\overline{\eta}_r^{[i]}=\frac{1}{l-i+1}(\eta_s+\sum_{k=i}^{l}\delta_r^{[k]})$（式 13），选最小者并保持到它失效。复杂度最坏 $O(NV(NV+(V+E)\log V))$。
+     **论文给了一个很好的直观例子（Table II）**：4 条路由，$\eta_s=1$ ms 时选瞬时最优的 Route 1（均值 26.98 > 但）…；$\eta_s=1000$ ms 时改选**存在时间最长**的 Route 2（均值 118.84 最优）——**$\eta_s$ 一变，最优路由就换人**。
+  4. **ISASR**：**感知 $\eta_s$** 且**每槽重选**。把每条边的代价改成 $cost_{mod}=cost_{old}+\gamma\{cost_{st}+cost_{act}\}$（式 14）：$cost_{st}$ **正比于 $\eta_s$、反比于该边剩余存活时隙数**（式 15 分段定义，边一旦过期设 $\infty$）；$cost_{act}$ 对**已激活**的边设 0、未激活的设 $\eta_s$。还会**把 $cost_{st}\ge cost_{thrsh}$ 的星间边从搜索空间删掉**（但保留所有 GS-卫星边以免失联，L327）。算完再跑 DSR。复杂度 $O(N(NE+(V+E)\log V))$。
+  - **$\gamma$ 的选取（第 V.C 节）**：$\overline{\eta_{LE}}$ 关于 $\gamma$ **是凸的**（Fig 5），**最优 $\gamma$ 随 $\eta_s$ 增大而增大**，因此作者直接取 $\gamma=\eta_s$；并说明"找最优 $\gamma$ 超出本文范围，可用梯度下降之类的递归方法"。
+
+**4. 它声称的效果**（图表为主，正文同样缺少成体系的数值）
+- **平均端到端时延 vs $\eta_s$**（Fig 3，L379）：$\overline{\eta_{LE}}$ 随 $\eta_s$ 单调上升（对所有算法）；**除 $\eta_s$ 极小时，ILSR 最差**（因为它不感知 $\eta_s$）；**ISASR 在所有 $\eta_s$ 下最好**；**$\eta_s=1$ ms 时 ILSR 反而略优于 ILPR 和 ALPR**（因为后两者"黏"在旧路由上而换路代价已经很小了）。**NY-Hanoi 的平均时延高于 NY-London**（更长的连接 → 传播+节点时延更高、跳数更多、路由更易断 → $\lambda$ 更高）。
+- **时延分解**（Fig 4，L388）：ILPR/ILSR 的 $\overline{\eta_{delay}}$ 与 $\lambda$ **不随 $\eta_s$ 变化**（不感知）；ALPR/ISASR **$\eta_s$ 高时牺牲 $\overline{\eta_{delay}}$ 换低 $\lambda$**，$\eta_s$ 降低时重点回到 $\overline{\eta_{delay}}$。ALPR 在中等以上 $\eta_s$ 时 $\overline{\eta_{delay}}$ 最大，ISASR 的 $\lambda$ 最小。
+- **计算时间**（Fig 6，L404）：**ILPR 最省、ISASR 最贵**，且**复杂度越高性能越好**——"the higher the complexity, the better is the performance"。ILSR/ILPR 的计算时间不随 $\eta_s$ 变；ALPR 与 ISASR **$\eta_s$ 越大计算时间越低**（因为越倾向选长期稳定的路由，算法被调用的次数越少）。ISASR 内部还发生一次**反常的此消彼长**：$\eta_s$↑ → $cost_{st}$↑ → 删除更多边（$\tau_1$↑），但搜索空间变小使代价修改 $\tau_2$ 与 DSR $\tau_3$ 下降，**总体计算时间反而下降**。
+- **中断概率**（Fig 7–11，L414–L416）：**瞬时端到端时延的直方图是双峰的**——**低时延那一坨是"没有换路"的时刻，高时延那一坨是"发生换路"的时刻，两坨之间的间隔量级正好是 $\eta_s$**（L414 逐字："The portion with lower end-to-end latencies are the occurrences where there is no route change, and higher end-to-end latencies are those with the route change events. In addition, the latency gap between these two portions is in the order of $\eta_s$ value"）。在中高 $\eta_s$（10/100/1000 ms）下，**中断概率基本上就等于换路率**；$\eta_s=1$ ms 时两坨重叠，这个对应关系失效。
+  QoS 阈值取 $\eta_Q=$ 40/35/30/27 ms 对应 $\eta_s=$ 1000/100/10/1 ms（L416）。
+- **平均抖动**（式 16，Fig 12，L453）：抖动 = 相邻时隙时延差的绝对值平均。$\eta_s$ 越大抖动越大；ILSR 抖动最大；中高 $\eta_s$ 下 ISASR 抖动最小，**但 $\eta_s$ 很小时 ISASR 反而比 ILPR/ALPR 差**（因为它换路更频繁）。
+- 基线：**ILSR**（用时隙化的瞬时 Dijkstra，即"现状"）。
+- **未给绝对数值**：全文结论均为曲线与相对比较，**平均时延的具体毫秒数、计算时间的具体秒数都只在图里**。
+
+**5. 实验条件**
+**Starlink Phase I version 2：1584 颗星、24 个轨道面 × 66 颗、高度 550 km、倾角 53°**（Table III，L367）；卫星速度 7.6 km/s；**LISL range 1500 km**、**GS range 1000 km**（作者说明 Starlink Phase I v2 的最大 LISL 距离是 5016 km，取 1500 km 是为了**保证不受地球遮挡**，L375）；**节点时延 1 ms**；**N = 600 个时隙，每槽 1 秒**；$cost_{thrsh}=100$；$\gamma=\eta_s$。
+用 **Ansys STK** 生成星座并**与 Python 接口**导出 600 槽的顶点/边/边长数据，算法在 Python 里跑（L375）。**两个洲际连接：纽约-伦敦与纽约-河内**。仿真机：2.3 GHz i5 + 20 GB RAM。计算时间记录 **100 次迭代的平均**（L404）。
+**关键简化（L375 逐字三条）**：
+- "Considering very high data rate (tens of gigabits per second) LISLs, **the transmission delay is assumed to be negligible**."
+- "**as congestion is beyond the scope of this paper, queuing delay is not considered**."
+- 处理时延取 1 ms，故每颗星节点时延 = 1 ms。
+**训练/评估**：无学习环节；评估即四个算法跑同一批 STK 导出的数据集。
+
+**6. 自述局限（逐字）**
+- **排队与拥塞被显式排除**（L375）："**as congestion is beyond the scope of this paper, queuing delay is not considered**"；第 II 节同样说明"we assume a negligible queuing delay in order to explore the effect of LISL setup delay on routing decisions"（L112）。
+- L392（$\gamma$）："**Finding and using the optimal $\gamma$ in ISASR is beyond the scope of this study**, and one can easily build a recursive model such as gradient descent to find the optimal $\gamma$."
+- L414：**所提算法不是为最坏时延设计的**——"**Although the proposed algorithms are not designed to handle worst-case delays**, we compare these algorithms from the outage probability perspective..."
+- L116：**初始配置时延被排除**——"Although this initial configuration imposes a delay on the communication in the very beginning, **it can be considered as a configuration mode, which is beyond the scope of this paper**."
+- L116：**假设所有 LISL 的建链时延相同**，与相对速度无关——"For the sake of simplicity, we assume the same LISL setup delay value to establish any new LISL irrespective of the relative velocity between the associated nodes."
+- 未来工作清单（L465–L473）本身即自我承认的空白，逐条：**排队时延 + 用 ML 预测拥塞**；**异构建链时延**（不同代际/公司/轨道相对速度不同）；**多源多目的（site diversity）与不同流量负载**；**最坏时延与抖动优化**；**用非不相交的有限路由集替代只考虑 disjoint 路由**。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **排队时延被设为零**（L375、L112）——而作者自己在未来工作里第一条就说要把队列状态和 ML 拥塞预测加进来（L465）。**这几乎是明写的下一步**：把 $\eta_{LE}=\overline{\eta_{delay}}+\frac{\eta_s}{100}\lambda$（式 10）里的 $\overline{\eta_{delay}}$ 换成含排队的项，问题就变成"建链代价 vs 拥塞代价"的联合优化。
+2. **$\gamma$ 直接取 $=\eta_s$ 而没有优化**（L392）：作者证明最优 $\gamma$ 随 $\eta_s$ 增大（Fig 5 是凸的），却把寻优留给了未来——**这是一个现成的、收益可测的空位**。
+3. **ALPR 只考虑边不相交路由**（L272），作者承认这可能漏掉更好的路由（"there may exist a better route that shares edges between two disjoint routes, and due to considering only the disjoint shortest routes, we may lose a better route by not even considering it"，L309），并在未来工作里列出。
+4. **只有两条洲际连接（NY-London、NY-Hanoi）**（L375）——样本量极小，没有做"连接长度/纬度分布"的系统扫描，而这直接决定 $\lambda$ 与跳数。
+5. **$\eta_s$ 被假设为全网统一常数**（L116），未来工作里承认现实中会异构——**这是模型里最容易松动也最有现实意义的假设**。
+6. **没有真正的流量维度**：全文只有"一个源-目的 GS 对、一条活跃路由"（L114 逐字："Considering a scenario with one source-destination GS pair connection in the network, only the edges associated with a particular route r will be active"）。**多流并存时的链路争用完全没建模**——而"按需建链"的现实吸引力恰恰来自多流共享终端资源。
+7. **ISASR 删边用固定阈值 $cost_{thrsh}=100$**，正文说这是"观察 $cost_{st}$ 直方图后选的、以便**不删任何边**、展示 ISASR 的最高性能"（L375）——**这个参数在实验里被调成了什么都不做**，因此**删边带来的复杂度收益实际上没有被评估**（除第 V.D 节为做对比才固定为 1，L404）。
+
+**8. 和同批其他篇的关系**
+- **与 CTWVLBCY（Umbra）最像，也最值得对照**：两篇都是"**离线/集中式计划 + 时变拓扑 + 目标函数里有时延与切换代价的权衡**"，都用**时间离散化**（Umbra 用 TEN 的时隙层，本文用 N 个快照）。差别在于：Umbra 的代价是**地面站的排队**，本文的代价是**光链路的建链时延**；Umbra 用网络流求全局最优，本文用 ILP + 启发式求单流最优。
+- **与 BBNQ4EAQ 共享"虚拟拓扑/快照"思想**：BBNQ4EAQ 用 netgrid 与 beacon 做时间连续模型，本文用 N 快照的虚拟拓扑（引 [34–36]）——**两篇都在治"离散化粒度 vs 精度"这个病**，且 BBNQ4EAQ 明确承认静态拓扑假设在路由时间长时非最优，本文的 $\lambda$ 恰好是对这个代价的量化。
+- **与 CMNCS52M / CYMQ2GLA / EG9X569M 是"集中式 vs 分布式"的对立面**：那三篇坚持**分布式、只用局部信息**（CMNCS52M 的 L46 明确说集中式"infeasible due to excessive communication overhead"），本文明确采用 **SDN 集中式控制器**（L116）并假设"算路+下发总能赶在需要之前完成"。**这是本批里对"集中式可接受"这一立场最明确的论文**，正好可以做反面参照。
+- 与 **DS9SPARV（OpenSN）**互补：OpenSN 是评测平台，本文的算法（尤其 ISASR 的删边逻辑与 Dijkstra 调用次数）是一个天然的 OpenSN 实验负载。
+- **本批没有一篇引用它**（2024 年发表，晚于本批多数）；它引用的 [27]（RL 排队/带宽感知去中心化路由）与 [24–26]（拥塞排队时延）是本批 DRL 路线的邻居。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**对"时延"有直接贡献，对"负载/到达率"没有贡献，而且作者是明确排除的。**
+- **有贡献的一面（可复用的事实与形式化）**：
+  1. **式 10 $\overline{\eta_{LE}}=\overline{\eta_{delay}}+\frac{\eta_s}{100}\lambda$**：把时延拆成"**连续项 + 离散事件项**"，并指出**离散事件项 = 单次切换代价 × 切换频次**。这是一个可以直接搬到"负载变化"场景的形式：把 $\eta_s$ 换成"排队时延"，就得到"负载项 + 切换项"的同类结构。
+  2. **双峰时延直方图**（L414）：**时延分布的形状由"是否发生换路"这一离散事件决定，两峰间隔恰为 $\eta_s$**。这条事实的推广形式很重要：**在多变的网络里，端到端时延可能不是被"负载的连续变化"支配，而是被"离散的拓扑/路由事件"支配**——这与本批多数论文默认的"时延随负载连续上升"的图景是冲突的，值得单独检验。
+  3. **"中断概率 = 换路率"这一等价关系**（L416，在中高 $\eta_s$ 下）：说明**尾时延的成因可归因于切换事件计数**。
+  4. **切换代价 × 切换频次的权衡有最优工作点**：$\eta_s$ 小则频繁换路（追瞬时最优）更划算，$\eta_s$ 大则黏住稳定路由更划算，**交叉点在 $\eta_s=1$ ms 附近**（Fig 3 的 zoom-in）。
+- **没有贡献的一面**：
+  - **排队时延被显式设为零**（L375、L112），**没有负载、没有到达率、没有缓冲区、没有拥塞**。
+  - **网络里只有一条流**（L114），因此**没有多流争用**，也就没有"负载"的落脚点。
+  - **发送时延也被假设可忽略**（L375，因 LISL 速率达数十 Gbps）——这进一步抽掉了"负载 → 时延"的通道。
+  - 因此：本篇提供的是"**拓扑事件驱动**"的时延图景，而"**负载驱动**"的时延在本篇里被**结构性地删掉了**。作者自己在未来工作第一条（L465）承认并指定了补法。
+
+**10. 一句话评价**
+**首次把"光链路建链时延"作为一等时延代价引入 LEO 路由**，并用一条极简关系式（式 10）把问题变成"**平均时延 vs 换路率**"的两项权衡，再给出一条从轻到重的启发式谱系（ILPR→ALPR→ISASR）供按 QoS 预算选型；方法谱系上属于"**把经典最短路/ILP 用到新代价项上**"，理论干净、取舍讲得清楚，但其代价是**把排队与多流全部抽掉**——因此它回答的是"**切换代价有多大**"，而不是"**负载变化下时延怎么变**"，与本主题是相交而非覆盖的关系。
+
+
 <!-- END-OF-CARDS -->

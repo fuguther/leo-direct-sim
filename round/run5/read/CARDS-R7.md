@@ -260,5 +260,66 @@ LEO 节点多、拓扑高速变化、节点资源受限，传统路由失效（L
 
 **10. 一句话评价**
 把已有 X（GraphSAGE 归纳嵌入）接到已有 Y（逐节点 DQN 路由）上，动机（LEO 算力受限、拓扑多变）是 LEO 的，实验环境却是 NSFNet 的；方法谱系上属于"GNN 提升 DRL 泛化性"这一支在卫星路由上的移植，真正的 LEO 验证缺席。
+## PIXWFHAC — Reinforcement Learning-Based Routing Algorithm in Satellite-Terrestrial Integrated Networks
+
+**1. 一句话**
+把卫星路由建成有限状态 MDP，用**表格 Q-learning**（QLRA）做路由，再用"按邻居分层 + 从终点反向更新 Q 值"的分裂加速策略（SQLRA）把收敛从 60 轮压到 30 轮；关键设定是**时延只算传播时延、拥塞只表现为链路被移出图**。
+
+**2. 问题设定**
+STIN 中，星间路由算法大多源自地面网络（OSPF/RIP/AODV，L23），依赖最短路径或最小代价，因此**卫星网络在路由过程中容易拥塞**；且星座规模扩大后这些算法无法在有限的通信时间内快速收敛。作者还点名一个被忽视的维度（L23 逐字）："most of the work on satellite routing ignores the impact of user request resources on the performance of satellite network"。此外 L23 末尾说："considering the power and computing resources of LEO satellite, it is not appropriate to deploy these algorithms on satellites"——即算法不该放在星上。
+
+**3. 方法骨架**
+- **时间离散化（L51–L63）**：把总运行时间 T 切成 N_T 个时间片，片内拓扑固定（快照法，引 [20]）；时间片长度 T_t ≤ min{τ(u,v)}（卫星对可见时间），**实际取 4 分钟**（L63）。假设用户通信时长 u_req−t ≥ T_t（式 5）。
+- **图与链路（式 3/4，L68/L74）**：无向图 G=(V,E)，链路 link(u,v) = (bandwidth, delay, error, time) = （可用带宽、传播时延、误码率、可用时间）。假设网络连通。
+- **目标（式 11–15，L129–L145）**：最大化全用户平均效用 (1/M)·max Σ_i [θ·B(path^i) + β·D(path^i) + λ·E(path^i) + ω·T(path^i)]，约束为带宽不超容（式 12）、指示函数 y∈{0,1}（式 13）、**中间节点流入=流出**（式 14）、权重和为 1（式 15）。四个权重用 **AHP（层次分析法）** 定，取 θ=0.30、β=0.15、λ=0.18、ω=0.37（L359）。
+- **注意式 11 的符号问题**：D（时延）与 E（误码率）越大越差，却在目标函数里是**加号**；作者在奖励里用单调递减归一化修正（式 19/20，L182/L186），但目标函数本身没改。
+- **MDP（第 4 节，L155–L171）**：状态 S_t = {link_i,j}，即**全网所有链路的联合状态**（式 17）；动作 = 跳到索引为 a 的卫星，动作集 A={1..N}，one-hot 编码（L173）；奖励 = 四个分量各自 min-max 归一化后加权求和，r = θ·r(b) + β·r(d) + λ·r(e) + ω·r(t)（式 22，L196）——带宽与可用时间用递增归一化，时延与误码率用递减归一化。
+- **QLRA（算法 2，L272–L298）**：先用 **PCA 路径检查算法**（算法 1，L225–L244，一个 BFS）判断可达性，不可达就直接停，省算力（L219）；可达则 ε-greedy 选动作、按 Bellman 式（26）更新 Q 表，收敛后按式（25）取最优路径；**每服务完一个用户就更新奖励矩阵 R 和网络图结构**（算法 2 第 17–18 行）——即**链路资源被消耗掉后从图中移除**。
+- **终点奖励（式 28，L259）**：到达终态时奖励额外加常数 C，加速收敛。
+- **SQLRA（算法 3，L312–L339）**：两点加速。(1) **分裂式收敛策略**：以目的节点 J 为中心，把网络按邻居关系分层（J 的邻居为第一层），**逐层横向更新 Q 值**，从而破坏成环条件（L270）；(2) **Q 值从后往前更新**：因为卫星网络状态可事先全部获知，用 BFS 从 end_node 反向遍历全网（L306）。作者给的理由逐字："according to Equation (26), we know that updating the node's Q value from back to front make Q-table converge faster"。
+- **部署位置**：agent 部署在地面控制中心（L154 逐字 "the agent is deployed in ground control center"；L431 重申在控制中心训练以节省星上算力）。
+
+**4. 它声称的效果**
+**这是本篇最大的问题：正文没有给出任何一个结果数字。**
+- 唯一给出的数字是收敛速度（L310）："SQLRA needs 30 episodes to converge, and QLRA needs 60 episodes to converge"。
+- 其余全部是定性描述：吞吐（Fig 9/13）、时延（Fig 10/14）、误码率（Fig 11/15）、可见时间（Fig 12/16）分别是"最好/最差/趋势上升或下降"，全部推给图。摘要里的 "greatly enhances the performance... in terms of throughput, delay, and bit error rate" 没有数值支撑。
+- 基线四个：QLAODV [42]、QSR [43]、OSPF [30]、ACO [44]（L347）。
+- 若干可复用的定性判断：QLAODV 因偏好跳数最少的路径而最差——L372 逐字解释了原因："In satellite network, the distance between satellites in the same orbit is different from that between satellites in different orbits; the path with the minimal hops is not always the optimal path." OSPF 因贪心易陷局部最优而劣于 ACO（L372）。在"不同源目对"场景下，**SQLRA 的误码率并非最好，OSPF 最好**（L425 逐字："the performance of QSR is worst and that of OSPF is best... although the performance of SQLRA is not the best, it is close to that of OSPF"）。
+
+**5. 实验条件**
+- **星座**：Walker delta，**8 个轨道面 × 每面 6 颗 = 48 颗 LEO**，倾角 45°，高度 650 km，每星 4 个邻居，RAAN 25°，**仿真时长 1400 s**（表 1，L357）。用 **STK** 建模（L349）。
+- **时延口径**：L354 逐字 "Due to the long distance between satellites, the delay of satellite communication is mainly determined by the propagation delay of satellite links. Therefore, we mainly consider the propagation delay of satellite links in this paper." 式（8）D(path) = Σ delay(link)——**没有排队时延、没有传输时延、没有处理时延**。
+- **两项分布假设（L354）**：链路误码率 "follows a uniform distribution"；**用户请求的带宽资源 "follows a Poisson distribution"**。
+- **超参（L359）**：α（学习率）= 0.001，γ（折扣）= 0.9，是通过"分析实验结果"选出的最优值。
+- **两个场景（L361）**：场景一全部用户共用同一源目卫星对；场景二用户使用不同源目卫星对。横轴都是**用户数**。
+- 平台：PyCharm，Win10，16 G RAM，3.2 GHz CPU（L355）——**没有用 GPU，也没有星上部署实验**。
+- 训练与评估同一环境，未见跨分布测试。
+
+**6. 它自己承认的局限**
+**有，而且很关键（L437 逐字）**："Although SQLRA algorithm performs better than other routing algorithms in two different scenarios, it does not have the ability of online learning. When the number of users in satellite network changes or some satellites do not work well, SQLRA needs to retrain model."
+后续计划："we are going to use deep neural network to design a routing algorithm with online learning ability... In addition, traffic scheduling and satellite handoff management are also our future research issues."
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **作者自己点破的缺口就是选题本身**：L437 说用户数变化就要重训。而全篇实验的横轴恰恰就是用户数——即它在一个**每变一次负载就要重训**的算法上，做了负载扫描。把"负载变化"从实验自变量升级成**在线适应问题**，是这篇留出的最直接下一步。
+2. **时延口径截断了最重要的那一项**。只算传播时延（L354），于是"拥塞导致时延上升"的机制只能是**路径变长**（链路被消耗后从图里移除，算法 2 第 18 行），而不是排队。这意味着本篇的"时延随用户数上升"曲线里，排队时延 = 0。这是一个可以被直接质疑并可被补上的缺口：把队列加回去，结论会怎么变？
+3. **表格 Q-learning 的状态空间是全网链路联合状态**（式 17）——48 颗星、每链路 4 个连续量，Q 表规模随网络规模爆炸。作者只用 48 星做实验，没有做规模扩展测试，也没讨论这个方法能不能上 Starlink 规模。这与它自己引用的痛点（L23 逐字 "with the expansion of satellite network (e.g., Starlink), these routing algorithms cannot converge quickly"）形成直接矛盾。
+4. **AHP 权重是主观给定的**（θ=0.30/β=0.15/λ=0.18/ω=0.37，L359），没有任何敏感性分析。而"可用时间"权重给到最大（0.37），比"时延"（0.15）高一倍多——这个选择对结论的影响完全没有被检验。
+5. **误码率用均匀分布**（L354）——不是物理模型，这使 BER 那一列结果（Fig 11/15）基本没有物理意义。
+6. **没有任何复杂度/开销数字**：它批评别的算法算不动（L23），自己却没给 Q 表大小、单次决策时间、收敛所需样本数。
+
+**8. 和同批其他篇的关系**
+与 MXQVNU3P、LZKNZA8B 同属"RL 做 LEO 路由"，但**方法代际明显更早**：本篇是**表格 Q-learning**（2010 年代的做法），另两篇是 DQN/GAT-LSTM-DQN 的深度版本。三篇的共同结构是"Dijkstra/OSPF 当基线 + RL 提升时延与吞吐"。与 LBMABZJ7 的关系值得注意：LBMABZJ7 用闭式几何论证"跳数优先于距离"，本篇用实验结果给出同一结论的另一个版本——L372 逐字 "the path with the minimal hops is not always the optimal path"，两者独立指向同一个事实。未见引用同批其他篇。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**这是同批里对这个问题最正面的一篇，但数字全在图里。**
+- **负载轴是显式的**：两个场景的横轴都是**用户数**（L365/L402），且用户请求带宽服从 Poisson 分布（L354）——这是本批中少数把"负载"做成实验自变量的论文。
+- **有机制解释**：时延随用户数上升，原因被作者讲清楚了（L378 逐字）："As the number of users increases, the current paths cannot meet the needs of users, and these algorithms begin to select new paths. At this time, the delay of the selected paths is greater than that of the previously selected paths." 即**负载上升 → 原路径饱和 → 改走更长的传播路径 → 时延上升**。
+- **但这个机制是"路径伸长"，不是"排队"**：由于式（8）只累加传播时延（L354），本篇的负载→时延曲线里**排队时延恒为零**。这一点必须在使用它的结论时标明。
+- **可复用的负事实**：QLAODV 的时延曲线 "mostly unchanged at the beginning"，只有当当前路径断开或饱和后才换路（L378）——即**负载上升初期，最短跳数类算法对负载不敏感**，时延上升是滞后的。
+- 缺：没有到达率的具体数值、没有负载扫描点数、没有时延的绝对值——全部依赖图。
+
+**10. 一句话评价**
+把 Q-learning 搬到卫星路由的最朴素版本（表格 Q + Bellman + ε-greedy），真正的贡献是两个工程加速技巧（分层分裂 + 反向更新）；它的价值不在方法新意，而在于它是本批里唯一把"用户数"当横轴、并**明确暴露了负载一变就得重训这一硬伤**的论文。
+
 
 

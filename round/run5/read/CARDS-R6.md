@@ -507,3 +507,67 @@ ucdotmathrm t_{n,t}$ —— **该星覆盖范围内的人口数 × 人均设备�
 **10. 一句话评价**
 **用"重复模式"这一极简结构性洞察，把 LEO 拓扑设计从 NP-hard 优化里救出来**——论证（为什么 ILP/随机图/蚁群都不行）比解法本身更有价值，且"用 2% 的 stretch 换 32% 的跳数"是一个非常干净的权衡事实；但它把**流量负载、排队时延、星地连接**三样东西全部排除在模型外，因此它回答的是"拓扑在物理上能有多好"，而不是"负载变化下会有多堵"。
 
+
+## KPUZIMU5 — The Surprising Effectiveness of PPO in Cooperative Multi-Agent Games
+
+**1. 一句话**
+**MAPPO**：把单智能体的 PPO 原样搬到协作多智能体场景（策略只看局部观测、**价值函数看全局状态**，即 CTDE），不做任何领域特化的算法或架构改动，就在 MPE / SMAC / GRF / Hanabi 四个基准上打平甚至超过 off-policy 的 SOTA——并总结出**五个决定成败的实现细节**。
+
+**2. 问题设定**
+MARL 文献近年几乎被 off-policy 方法（MADDPG、值分解类 QMix/QPlex/RODE）占据，PPO 这种 on-policy 方法"significantly less utilized"（L9）。作者认为原因有两个（L15）：① **人们相信 PPO 在样本效率上不如 off-policy**；② **单智能体 PPO 的常见实现与调参习惯直接搬到多智能体场景会失效**。注意：本文**不是要提出新算法**（L19 逐字："Our aim in this work is not to propose a novel MARL algorithm"），而是要**纠正一个经验判断**并给出实操建议。
+
+**3. 方法骨架**
+- **问题设定（第 3.1 节）**：**DEC-POMDP** $\langle\mathcal S,\mathcal A,O,R,P,n,\gamma\rangle$，**共享奖励**（L43）。每个 agent 用自己的策略 $\pi_\theta(a_i|o_i)$ 从局部观测出动作，联合优化 $J(\theta)=\mathbb E[\sum_t\gamma^t R(s^t,A^t)]$。
+- **MAPPO vs IPPO（第 3.2 节）**：两者结构都跟单智能体 PPO 一样（策略 + 价值两个网络）。区别只在价值函数的输入——**MAPPO 的价值网络吃全局状态**（因此是 CTDE 结构），**IPPO 只吃局部观测**（完全独立学习）。$V_\phi(s)$ 只用于训练期降方差，执行时不需要。
+- **实现细节（第 3.3 节）**：**参数共享**（同质 agent 共享策略与价值网络，被认为能提升学习效率）；采用 **GAE [29]**（即本批 JSX5XG88）+ 优势归一化 + **value clipping**。
+- **五个关键因素（第 5 节，本文真正的贡献）**：
+  1. **价值归一化**（第 5.1 节）：用**滑动均值/标准差**标准化价值目标，算 GAE 时再反归一化。建议 1：**务必用价值归一化**。
+  2. **价值函数输入表示**（第 5.2 节）：对比 CL（拼接所有局部观测）/ EP（环境提供的全局状态）/ **AS**（EP + 本 agent 局部观测）/ **FP**（AS 去掉重叠特征）。结论：**CL 维度太高、效果差**（尤其 agent 多时）；EP 缺 agent 特有信息；**AS 与 FP 都好，FP 略优**。建议 2：**同时包含局部与全局特征，并检查不要无谓增加输入维度**。
+  3. **训练数据使用**（第 5.3 节）：**与单智能体的惯例相反**——单智能体常用 32/64 个 mini-batch、训几十个 epoch，而**多智能体下复用样本过多会掉性能**。建议 3：**难任务 ≤10 epoch、易任务 15 epoch，且尽量不要切 mini-batch**（1 个 mini-batch 在 22/23 个 SMAC 地图上最好）。
+  4. **PPO 裁剪**（第 5.4 节）：建议 4：**裁剪系数 ε 保持在 0.2 以下**，在此区间内权衡稳定性与收敛速度。作者的解释（L192）：小 ε 限制每次更新中策略的变化幅度，从而**缓解 MARL 的非平稳性**。
+  5. **Batch size**（第 5.5 节）：存在一个**临界批量**，低于它最终性能差；但不是越大越好，过大反而损害样本效率。建议 5：**先用大批量拿最好性能，再调小以优化样本效率**。
+- **一个未列入五因素但单独详述的技巧**：**death masking（第 C.3 节）**——SMAC 里 agent 死亡后，其局部观测变为全零，但全局状态仍有非零信息，造成**价值输入分布漂移**。作者把死亡 agent 的价值输入替换为"零向量 + agent ID"（$\mathbf 0_a$），四种方案里这个最好，且**必须保留 agent ID**（否则不同角色的 agent 无法区分）。
+
+**4. 它声称的效果**
+- **MPE（Fig 1，L90）**：MAPPO 与 QMix 在所有任务上近乎持平，在 Comm 任务上超过 MADDPG，**样本量相当**；IPPO 虽不用全局信息，也能打平或超过集中式 off-policy 方法，但在 Comm/Reference 上最终回报略低。
+- **SMAC（Table 1，L96）**：**MAPPO(FP) 与 IPPO 在绝大多数地图上至少与 QMix 持平**，用同样步数；**MAPPO 在 14 个地图中的 10 个上与 RODE 相当或更好**；给更多样本后几乎每个地图都能追平或超过 RODE。多个地图上 MAPPO 达 **100.0% 胜率**（如 2m_vs_1z、3m、25m、corridor），而 QMix 在 25m 只有 85.9%、6h_vs_8z 只有 9.4%（MAPPO 88.3%）。
+- **GRF（Table 2，L110）**：MAPPO 在**每个场景都明显超过 QMix**（如 3v.1：88.03 vs 8.12）；**在没有用内在奖励的情况下超过使用内在奖励的 CDS**；且在 5 个场景中的 4 个上**超过用了人类专家数据预训练的 TiKick**。
+- **Hanabi（Table 3，L124）**：MAPPO 在几乎所有设置下与 SAD / VDN 的最好与平均回报相当或更优。**关键发现**：IPPO 在 2 agent 时与 MAPPO 相当，但**随着 agent 数增加，MAPPO 明显拉开差距**——说明**集中式 critic 输入是关键的**（L126）。
+- **参数共享消融（Table 4，L331）**：MAPPO 全面优于 MAPPO-Ind（不共享），差距在难图上极大：MMM2 90.6 vs 13.0、6h_vs_8z 88.3 vs 11.4、3s5z 84.4 vs 37.8。
+- **基线**：MPE 用 QMix/MADDPG；SMAC 用 QMix、QPlex、CWQMix、AIQMix、RODE；GRF 用 QMix、CDS、TiKick；Hanabi 用 SAD、VDN。所有基线都**重新实现并做了等规模网格搜索**（L73）。
+
+**5. 它的实验条件**
+- **完全不是网络场景**：四个基准是 **MPE（2D 粒子世界）**、**SMAC（星际争霸微操）**、**GRF（谷歌足球）**、**Hanabi（花火卡牌）**（L59）。
+- 硬件（L82）：**256 GB RAM、单颗 64 核 CPU、一块 RTX 3090**。
+- 规模：SMAC agent 数 **2 到 27**（L305）；Hanabi 2–5 人；GRF 每场景 2500 万步（CA-hard 和 Corner 为 5000 万步）；Hanabi 最多 **100 亿环境步**（L124）。
+- 超参（Table 7，L558）：**GAE λ=0.95、γ=0.99**、Huber loss（δ=10.0）、梯度裁剪范数 10.0、Adam、优化器 ε=1e-5；SMAC 用 num envs=128、buffer length=25、1 层 GRU、hidden 64、fc dim 64。
+- **训练与评估同分布**：所有基准都是标准评测集，**没有做跨分布/跨任务泛化测试**。
+- 种子数：MPE 10 个（L88）、SMAC 6 个（L96）、GRF 6 个（L106）、Hanabi 至少 3 个（L122）。
+
+**6. 它自述的局限**
+- **只有离散动作、只有协作、几乎全是同质 agent**（L218 逐字）："our benchmark environments all use discrete action spaces, are all cooperative, and in the vast majority of cases, contain homogeneous agents."
+- **未来工作才做竞争性、连续动作、异质 agent**（L218 逐字）："In future work, we aim to test PPO on a wider range of domains such as competitive games and MARL problems with continuous action spaces and heterogeneous agents."
+- **纯经验、无理论**（L218 逐字）："our work is primarily empirical in nature, and does not directly analyze the theoretical underpinnings of PPO."
+- 对 death masking 的理论刻画也只是"值得做"（L358 逐字）："While the arguments here are intuitive the clear experimental benefits suggest that theoretically characterizing the effect of this method would be valuable."
+
+**7. 它没做但看起来能做的地方**
+1. **它明确说"多智能体下样本复用要少"，理由是缓解非平稳性（L170），但没有验证这个假设**——把 epoch 数降下来到底是缓解非平稳、还是仅仅相当于缩小了每次更新的有效步长？没有做诊断（比如测策略 KL 随 epoch 的变化）。
+2. **临界批量（critical batch size）现象被观测到但没有被解释**（L212）。"低于临界值性能差、高于临界值只损样本效率"这个形状本身值得一个理论或至少一个 scaling 分析。
+3. **最优超参是按任务类别手工网格搜出来的**（Table 13：MPE 与 SMAC 用同一套搜索空间）。**"易任务 15 epoch、难任务 5–10 epoch"这条建议需要预先知道任务难度**——没有给出自动判断难度的办法。这与 JSX5XG88 把 γ/λ 的自适应列为未来工作是**同一类缺口**。
+4. **所有实验都是同质 agent**，而参数共享恰恰依赖同质性。**异质多智能体（例如每颗卫星角色不同）时这套建议是否还成立完全未知**。
+5. **没有报告训练时间/算力对比**（只有硬件配置），只说"样本量相当"。在 RL 用于实际系统的语境下，墙钟时间与能耗同样是约束。
+6. **death masking 的"保留 agent ID"这一条**，本质上说明**价值函数需要角色信息**——这与它对价值输入表示的讨论（AS/FP）是同一个主题，却没有合并成一个统一的"价值函数该看什么"的结论。
+
+**8. 和同批其他篇的关系**
+**这是一篇 MARL 方法论论文，不是 LEO 论文**。它与本批的 **JSX5XG88（GAE）** 有**直接的引用关系**：MAPPO 用 GAE 算优势（L53、Alg.1 L245 逐字 "Compute advantage estimate $\hat A$ via GAE on $\tau$, using PopArt"），参考文献 [29] 就是 Schulman et al. 的 GAE（L486）。两者是同一方法论谱系的两代：GAE 解决"优势怎么估"，MAPPO 解决"多智能体下 PPO 怎么配"。
+与 LEO 类论文的关系：本批中 **J68GU76W 用 DDQN（值方法）**、**S85KQ4FC（锚件）与 K7U4TYJN（SKYLINK）用 MAB**——**没有一篇用 PPO/MAPPO**。也就是说，这篇代表的方法线在 LEO 路由语料里**尚未被使用**。它引用的谱系全是 RL：Qmix[27]、MADDPG[22]、VDN[32]、COMA[11]、SAD[15]、RODE[37]、QPlex[36]。**未见引用任何卫星/网络文献**。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**没有直接贡献**——零。四个基准都是游戏/控制环境，没有网络、没有到达率、没有排队、没有时延。
+**但有两条间接的、对"用 MARL 做 LEO 路由"这件事有用的事实**：
+- **"多智能体下样本复用要少"**（建议 3）：这条建议如果迁移到 LEO 路由（每颗星一个 agent、网络状态随负载与拓扑持续非平稳变化），意味着**必须用较少的 epoch、不做 mini-batch 切分**。这是对"在线适应负载变化"这条路线的一个**具体的工程约束**。
+- **"agent 数增加时，集中式 critic 的价值会凸显"**（L126，Hanabi 从 2 人到 5 人 MAPPO 相对 IPPO 优势扩大）。这直接对应 LEO 场景里"星座规模从几十颗涨到几千颗"的情形——**如果要用 MARL 做路由，全局 critic 的收益会随星座规模增大而增大，但全局状态的维度也会随之爆炸**。这个张力本文没有触及（它最大 27 个 agent）。
+
+**10. 一句话评价**
+**一次高质量的"经验纠偏"**：它证明了在协作多智能体里 PPO 不必被 off-policy 方法取代，并把"怎么配 PPO"从口口相传变成五条可操作的建议（尤其"少 epoch、不切 mini-batch"与单智能体惯例相反）；在方法谱系里它属于**基础工具链的配置手册**，与 LEO 路由无直接关系，但对任何打算用 MARL 做星上决策的工作构成必要的前置知识。
+
