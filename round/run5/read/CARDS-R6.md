@@ -636,3 +636,58 @@ LEO 星座路由要在"高度动态、物理上巨大、流量非均匀分布且
 **10. 一句话评价**
 **一次有价值的负面结果报告**：它没有把 FD-MADRL 包装成成功案例，而是**用奖励消融和两档规模说明了全分布式 DQN 路由的短视与不稳定**，并诚实承认 CL-DC 方案还只是提案；在方法谱系里它属于"**对已有 FD-MADRL 路线做压力测试与诊断**"，对本选题的贡献是那条"**跳数更优 → 链路更饱和**"的实测矛盾与"**负载一变、24 节点就学不动**"的规模现象。
 
+
+## L5F3DK68 — Satellite-based Communications Security: A Survey of Threats, Solutions, and Research Challenges
+
+**1. 一句话**
+一篇 **SATCOM 链路层安全综述**：把卫星通信的安全文献划成**物理层安全**与**密码学**两大支，逐支梳理威胁模型、方案与交叉对比表，最后列出未来方向与新兴课题。
+
+**2. 问题设定**
+虽然新制造工艺与射频技术承诺降低成本并提升带宽/覆盖，但**攻击者能力在过去二十年大幅进步，而 SATCOM 的安全方案没有同步更新**（L77 逐字："cybersecurity techniques and solutions applied in SATCOM links should be updated to reflect the substantial advancements in attacker capabilities characterizing the last two decades"）。更糟的是：**商业紧迫性让运营商在系统权衡中不断放宽安全服务，导致攻击面扩大**（L77 逐字："business urgency and opportunities are leading operators towards challenging system trade-offs, resulting in an increased attack surface and a general relaxation of the available security services"）。且许多在轨系统**要么完全没做安全，要么跑的是过时的专有 AES 变体**（L139），改造它们成本极高。
+
+**3. 方法骨架**
+**这是综述，没有方法骨架**——它的"骨架"是**分类学与对比表**：
+- **两大分支（L79）**：① **物理层安全方案**（第 3 节）；② **密码学方案**（第 4 节）。
+- **物理层安全再分三块**：3.1 **信息论安全**（保密速率 $S=C_L-C_E$，式 1，L158；保密中断概率 SOP，L163）；3.2 **抗欺骗/反 GNSS 欺骗**；3.3 **抗干扰**。每块都配一张跨文献对比表（Table 4/5/6），维度包括链路类型、CSI 可知性、对手类型（内部/外部）、天线数与类型、采用的技术、是否需专用硬件、评估方法（仿真/实验）。
+- **密码学再分三块**：4.1 **认证**（Table 7：密钥分发技术、安全属性、形式化/非形式化安全分析、评估方法）；4.2 **密钥协商**（Table 8：密码技术、目标安全服务、对手模型如 Canetti–Krawczyk）；4.3 **量子密钥分发 QKD**（Table 9：BB84 / 纠缠基 / 诱骗态等）。
+- **每块结尾固定给"Lessons learned"与"Future directions"**——这是全文的组织节奏。
+- 第 5 节列新兴课题：认知星地网络、无人机-卫星、SATCOM 中的 AI、软件定义卫星、空间物联网络切片、绿色卫星、Starlink 信号用于机会式导航、商业卫星运营的网络安全、**NTN 安全标准化（3GPP）**、6G 安全与隐私。
+
+**4. 它声称的效果**
+**综述类论文没有性能数字**，只有对文献格局的统计性陈述：
+- **链路覆盖极不均衡**：信息论安全方案**绝大多数只看星地（SG）链路**，只有 4 篇考虑地星（GS）链路（L165）；抗干扰同样以 SG 为主，**只有 [107,111,119] 考虑 GS，只有 [119] 讨论 GG**（L207）。
+- **对手模型普遍过简**：绝大多数工作假设**单个全向天线窃听者**（L171/L173 逐字："All the analyzed contributions consider adversaries equipped with omnidirectional antennas"），少数考虑多天线但不考虑合谋。
+- **CSI 假设过于理想**：**绝大多数工作假设窃听者侧信道质量完全可知**（L167）。
+- **评估方法偏仿真**：抗干扰方案"most of the analyzed approaches were evaluated using simulations"（L217）；只有 [102,105,108,110,120,121] 做了真实部署。认证与密钥协商同样"most of the analyzed schemes use simulation-based evaluation"（L275/L293）。
+- **一个反复出现的结构性结论**：**所有物理层方案都不修改星上发射链路**（L223 逐字："All the analyzed approaches do not propose the modification of the transmitted signals or the transmitting chain. Indeed, modifying a satellite is assumed to be too expensive"），代价是**改动被转移到接收端**（L229），而在需要不间断运行的场景下这也是障碍。
+
+**5. 它的实验条件**
+**无实验**——这是文献综述（L376 明确声明 "No data was used for the research described in the article"）。它的"条件"是指检索与归类范围：以**链路层安全**为界，**明确把安全路由排除在外**（L93 逐字："although many contributions are available on secure routing, e.g. [21,22], the focus of our investigation is link-layer security in satellite communications, and secure routing is therefore out of scope"）。Table 1 对比了 12 篇已有综述在六个维度上的覆盖情况，用以论证本篇的增量。
+
+**6. 它自述的局限**
+- **明确排除安全路由**（L93 逐字，同上）——这是它自己划定的边界，也意味着**路由与安全的交叉地带（例如"路由被攻击者操纵"）不在覆盖范围内**。
+- **星间链路（SS）安全评估是空白**（L241 逐字）："Despite being effective, none of the above-described security solutions provided a security evaluation of the satellite to satellite communication links. This is because of the hardness of both obtaining information about the communication protocols used by such links (often protected by intellectual property rights) and by the nature of such links, envisioned as a kind of core network, far from users' services. However, due to the wireless nature of such communications, attacks on these links are both possible and potentially dreadful"。
+- **量子信道的可用性风险**（L330）：有窃听者时量子信道会被破坏、通信中断——这既能快速发现 MITM，也**打开了 DoS 攻击的口子**，且因为覆盖范围大而更难检测。
+- **QKD 生成工具的物理层安全评估缺失**（L332 逐字）："At the time of this writing, no works are available that evaluate the physical-layer security of QKD signal generation tools."
+- **NTN 安全尚无专门规范**（L358 逐字）："none specifications edited by the 3GPP specifically took into account network security issues for NTNs"，3GPP 目前的建议是**直接把 5G 安全架构照搬到 NTN**，而这会带来通信开销、软件更新、无线链路不可靠等挑战。
+
+**7. 它没做但看起来能做的地方**
+（以下均基于本文内容，不涉及本选题的方向推荐）
+1. **星间链路安全是最大空白**：作者自己说 SS 链路"attacks are both possible and potentially dreadful"（L241），却**没有任何一篇被综述的工作做过评估**。抗干扰那节也印证了这点——SS 链路"is never considered because of the actual hardness of the jamming at high distances"（L207）。
+2. **对手模型的全向天线假设被作者自己指出不现实**（L173），并把"定向对手天线"列为未来方向（L239）——但如果对手是定向的，**拓扑与几何信息（星历）就成了攻击者需要的输入**，这个耦合没有被展开。
+3. **3GPP 把 5G 安全直接搬到 NTN** 这一现状（L358）本身就是一个可攻击的假设：NTN 的链路时延、间歇连通、拓扑变化都会让 5G 的密钥刷新/重认证流程失效——作者点到"communication overhead、software updates、unreliability"三个挑战就停了。
+4. **安全与性能的权衡没有被量化**：全文反复说"加安全会影响运行"（L322），但**没有任何一处给出"加多少安全、损失多少时延/吞吐"的数字**。
+5. **"软件定义卫星"被列为一节（L344）却只有三句话**，而 SDN 集中控制器恰恰是单点故障的经典来源——与安全的关系被草草带过。
+
+**8. 和同批其他篇的关系**
+**与本批其余 10 篇几乎没有关系**——它是安全方向的综述，其余 10 篇全部是路由/拓扑/流量工程/RL 方法论。
+**唯一的结构性对照**：本批中 **J68GU76W（GEO 控制器）、JLF7IEBQ（SaTE 集中式 TE）、JZA5SEQA（中心 + 中继星分级）** 都把"集中控制器"当作架构基石，而本文在讨论软件定义卫星时指出 **SDN 自带安全问题**（L344–L346），并在"未来方向"里点名 SS 链路安全是空白。也就是说：**本批的架构假设（集中控制、星间链路可信）恰好落在本文标注的空白区里**——但这只是位置上的相邻，本文并未讨论路由。
+本文引用的文献谱系是安全领域（NDSS/WiSec/BlackHat、GNSS 欺骗检测、QKD、3GPP 标准化文档），**与本批其他篇零重叠**。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**没有直接贡献**，而且是彻底的没有——全文不涉及到达率、不涉及队列、不涉及路由性能、不涉及负载。它提到的时延只有两处，且都是**作为 6G 的需求背景**一笔带过（L362："It is crucial that any security proposal framed in this context protect the communications while guaranteeing reliability, low latency, and secure and efficient transmission services"），以及开头把降低时延列为新技术的承诺（L77）。
+**唯一可能被间接引用的一条事实**：LEO 在 550 km 高度、仰角 40° 时**覆盖约 105 万平方公里、半径约 580 km**（L105）——这是一个人口/用户密度换算成**单星到达量**时有用的几何常数，但它来自本文转引的 [25]，且本文用它讨论的是覆盖而非负载。**不构成对本选题的贡献。**
+
+**10. 一句话评价**
+**一篇组织良好的卫星通信链路层安全综述**——分类清晰、对比表扎实、对未来方向的判断（星间链路安全空白、3GPP 照搬 5G 安全的隐患）有分量；但它在主题上与"LEO 路由在负载变化下的到达率/时延"**没有交集**，纳入本批语料只说明语料构成里混入了相邻但不同的问题域。
+

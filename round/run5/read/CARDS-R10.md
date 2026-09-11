@@ -478,4 +478,68 @@ LEO 星座承诺给长距离通信**低于地面光纤的时延**（真空光速
 **10. 一句话评价**
 本批的**架构层基准文献**：它不提出路由算法，而是把"LEO 星座接入 Internet"这个问题框架化，并用一张**跨域稳定性（BGP 事件数）— 地面段成本（B 美元级）— 端到端时延（ReRo vs PaCo）**的三维权衡表证明"白盒最优部署点不存在、黑盒成本翻倍、CDN 式平均近最优"，因此它被同批的 X5K285MW 与 XM6NUPM4 双双引用并非偶然——**后两篇分别在"域内怎么选路"和"空间段要多少卫星"两个方向上展开，而本文回答的是"地面段怎么落地、代价多少"**。对"负载变化下的到达率/时延"这一问题，它的价值不在于数据而在两处论断：**带宽—时延权衡的存在性**（L71）与**有效带宽可因天气塌陷数个数量级**（L67），前者为整个选题提供了动机层面的引用支撑，后者提醒任何只考虑流量负载的模型都漏掉了一个更剧烈的扰动源。
 
+## YI9G7NR7 — DQDRA: A Dyna-Q-Enhanced Distributed Routing Algorithm for Heterogeneous LEO Constellations（IEICE Trans. Fundamentals, LETTER, 2026）
+
+**1. 一句话**
+面向"通信星座 + 遥感星座"的**异构** LEO 网络：先用一个最优时间匹配算法建跨层链路（CLL），再用 **Dyna-Q**（模型 + 无模型混合）做**全分布式**逐跳路由，让每颗星只凭局部观测决定下一跳；实测在 $\ell=0.8/0.9$ 的高负载下时延与送达率都优于集中式与基线分布式方案。
+
+**2. 问题设定**
+遥感数据下行的三条既有路径都有硬伤（L23）：① **直连地面**——接触时间太短，紧急任务的传输机会严重受限；② **经 ISL 路由回地面站**——虽然摆脱了可见性约束，但**地面站附近的节点拥塞与受限的下行带宽通常导致缓冲溢出**（这是"负载 → 丢包"的直接陈述）；③ **GEO/MEO 中继**——受信道接入、星上存储与下行带宽限制。既有研究多聚焦单层星座（L27），少数跨层工作**依赖集中式路由**，而集中式需要实时收集全网资源使用信息，面临 "high computational overhead, long update cycles, and insufficient real-time performance"（L27）。
+
+**3. 方法骨架**（RL：**表格型 Q-learning + Dyna-Q 模型增强**；另有非 RL 的链路匹配算法）
+- **系统模型**（§2.1）：图 $G=(V,E)$，$E=\{E_{ISL},E_{CLL},E_{S2G}\}$，全部链路**双向**，不依赖地面站即可路由（L35）。速率式 1：$R(i,j)=W\frac{P_t(i)G_t(i)G_r(j)}{k_BT_SB\,L_{total}(i,j)}$；总路损式 2：$L_{total}=L_f L_a L_r L_c$（自由空间、气体吸收、雨衰、云衰）。**频率与衰减的处理有区分**：$E_{S2G}$ 工作在 **65 GHz**，按 ITU-R 标准（典型天气）建模气体/雨/云衰；ISL（**18 GHz**）与 CLL（**40 GHz**）因不经过对流层、大气衰减可忽略，只算自由空间路损（L52）。
+- **可见性约束**（式 3–4，L59–66）：两颗卫星的视线角 $\theta_A\ge\beta_A$、$\theta_B\ge\beta_B$，其中 $\beta$ 是**视线与大气层相切的角度**——即显式排除穿过大气的视线。这比同批多数论文的"仰角阈值"更严格。
+- **流量与队列**（§2.3）：每星 FIFO 缓冲上限 $Q_{max}$，**满则丢包**（L70）。定义**归一化网络负载** $\ell=\sum_{v_R\in V_R}\lambda^{(v_R)}/\lambda^{*}$，其中 $\lambda^{(v_R)}$ 是每颗遥感星的包生成率，$\lambda^{*}$ 是由 $E_{S2G}$ 速率算出的**最大可承载总负载**（L70）——与 **Y2H4NPLU** 的负载定义同构。
+- **时延模型**（式 5，L80）：$L(i,j)=\frac{q_i\cdot B}{R(i,j)}+\frac{B}{R(i,j)}+\frac{\|ij\|}{c}$ = 排队 + 传输 + 传播。
+- **① 最优时间匹配算法**（§3.1，**本文独有的贡献**）：先算 $v_i$ 产生的数据包所需传输时间 $T_i$；据轨道参数确定通信域 $C_i$（与 $v_i$ 相位差最小的轨道面内所有可见通信卫星）；算跨层接触时长 $\tau(i,j)$ 及最大者 $\tau_{max}(i)$。若 $\tau_{max}(i)\ge T_i$，**不选 $\tau_{max}$ 那颗**——因为 "Directly selecting the satellite offering $\tau_{max}(i)$ would, however, waste substantial CLL resources and degrade the overall cross-layer capacity"（L89）——而是选 **$i^{*}=\arg\min_{v_j\in C_i}\tau(i,j)$（式 6）**，即**满足传输需求的最短接触时长**，以最大化链路利用率并更均匀地分配流量。若 $\tau_{max}(i)<T_i$（所有 $v_j$ 的缓冲视为饱和），则改用**遥感层内的最短距离原则**选下一跳 $v_n$，并对其通信域 $C_n$ 重复该过程，直到找到通信域内存在满足时长要求的通信卫星的遥感上行星 $v_i^{up}$（L100）。
+- **② DQDRA**（§3.2）：POMDP 四元组 $(S,A,P(s,a),R(s,a))$（L109）。**状态** $S_i=\{L_i,N_i\}$：$L_i$ = 包头取出的目的信息；$N_i$ = 链路质量与缓冲拥塞，**2 bit 编码**——"00" = 队列占用 0–20%（不拥塞）、"01" = 20–80%（轻载）、"10" = 80–100%（重载）、"11" = 链路不可用（L111）。**动作**：选下一跳（经 ISL 或 CLL 的邻居星，或通往地面站的链路）（L111）。**奖励**（式 7–9）：到达目的地给 $r_d$；进入环路给 $r_{loop}$；否则 $r_{queue}+r_{dist}$，其中 $r_{queue}=w_1(1-e^{t_q(j)})$、$r_{dist}=w_2\frac{\|id\|-\|jd\|+\|sd\|}{\|sd\|}$（L116–127）。
+- **Dyna-Q**（L142）：在真实经验之外，用**已学到的模型**生成模拟经验——每步选一个曾访问过的状态 $s$、一个曾执行过的动作 $a$，由模型预测 $s'$ 与 $r$，再用这条模拟转移更新动作价值函数。
+- **Q 更新**（式 10，L147）：$Q_i^{*}(s_t,a_t)=(1-\alpha)Q_i(s_t,a_t)+\alpha\left[r_t+\gamma\max_{a'}Q_j(s'_{t+1},a'_t)\right]$——**bootstrap 目标取的是邻居 $j$ 的 Q 表**。$\varepsilon$-greedy，$\varepsilon=0.1$（表 1）。
+- 输出：路由表；每星自主决策，**不需要全局网络状态**（L15）。
+
+**4. 它声称的效果**（本批**数值最具体**的一篇）
+- **收敛**（Fig 5a，$\ell=0.8$，L158）：基线分布式方法需要 **240 个 episode** 才接近稳态，且收敛后仍有明显波动（作者判为 "insufficient learning of complex traffic dynamics"）；**DQDRA 在 episode 160 即稳定，比基线分布式快约 33%**。
+- **负载扫描 $\ell=0.5\to0.9$**（Fig 5b/5c，L160）：**轻载（$\ell<0.6$）时三种算法都达到低时延且送达率 100%**。
+  - $\ell=0.8$：DQDRA 平均 E2E 时延 **241 ms**，优于集中式 **266 ms** 与基线分布式 **256 ms**，分别改善 **9.4%** 与 **5.9%**；送达率 **98.6%**，分别高 **3.6%** 与 **6.8%**。
+  - $\ell=0.9$：DQDRA 优势更明显，**时延降低 27.6% 与 18.6%**，**送达率提升 8.4% 与 15.0%**。
+- **归因**（L160）：集中式 "assigns routes based on instantaneous link rates, causing load imbalance and excessive queuing delays"；基线分布式 "relies solely on real interaction samples, which leads to insufficient congestion avoidance capability and increased packet loss under heavy traffic"。
+- **基线**（L156）：(a) **集中式**——边权 $w_{i,j}=1/R(i,j)$，全局 Dijkstra 最短路；(b) **基线分布式**——model-free RL，每星维护 Q 表，转发给 Q 值最高的邻居。
+- **作者自述的权衡**（L162 逐字）："The proposed DQDRA trades increased algorithmic complexity for improved routing performance under high traffic loads. While this may lead to **marginal performance degradation in lightly loaded networks**, it enables significantly better scalability, adaptability, and latency reduction."
+
+**5. 实验条件**
+异构星座（L154）：**通信星座 1000 km / 倾角 60° : 1000/36/1**；**遥感星座 500 km / 倾角 75° : 300/15/1**（记法应为 总星数/轨道面数/相位因子）。表 1（L140）：卫星天线**半锥角 55°**；地面站**最低仰角 15°**；发射功率**卫星 20 W / 地面站 50 W**；载频 **ISL 18 GHz、CLL 40 GHz、S2G 65 GHz**；**流量负载 $\ell$ 从 0.5 到 0.9**；$\varepsilon=0.1$；**链路系统带宽 800 MHz**；**包长 64 kbit**。E2E 时延按式 5 计算；**送达率 = $p_{success}/p_{all}$**（L154）。集中式基线是全局 Dijkstra。
+**转换缺陷**：Table 1 在 MinerU 中被串行（如 "Carrier Frequency of &1sL (GHz)" 实为 $E_{ISL}$、"Probability €" 实为 $\varepsilon$），LaTeX 符号丢失；正文 L52 引用 **ITU-R 标准为文献 [13]**，但**参考文献列表在 MD 里只到 [12]**（L194），[13] 的条目缺失。
+
+**6. 它自己承认的局限**
+- L162 逐字（**唯一的性能相关自述**）："While this may lead to marginal performance degradation in lightly loaded networks, it enables significantly better scalability, adaptability, and latency reduction in heterogeneous LEO constellations."
+- L166 逐字（结论段 future work）："Future work will focus on ensuring QoS under link failure scenarios."
+- 全文仅 6 页 LETTER，**没有 Limitations 小节**；也未讨论 $w_1,w_2,\alpha,\gamma,Q_{max}$、缓冲容量的取值。
+
+**7. 它没做但看起来能做的地方**（基于内容）
+1. **$w_1,w_2,\alpha,\gamma,Q_{max}$ 全部未给**（表 1 只给了 $\varepsilon$），而 $r_{queue}=w_1(1-e^{t_q(j)})$ 里的 $e^{t_q}$ 对 $t_q$ 极其敏感——**这一项的标定直接决定拥塞规避的强度**，不给值等于不可复现。
+2. **"轻载时 DQDRA 反而略有退化"被作者承认但从未量化**（L162 只说 marginal）。既然实验已经扫了 $\ell=0.5$ 到 0.9，把 $\ell<0.6$ 区间的三条曲线数值列出来就能回答"退化多少"——这是现成的。
+3. **送达率只在 $\ell\ge0.8$ 给出数值**（98.6%），轻载区只说 100%；而**丢包机理（缓冲满 vs 环路 vs 链路不可用）没有分解**。
+4. **时间匹配算法的收益没有被单独消融**：Fig 5 的对比是"DQDRA vs 集中式 vs 基线分布式"，三者都跑在同一个 CLL 建立策略下，因此**最优时间匹配（式 6）本身贡献了多少**完全未知。
+5. **式 5 的排队项与文字自相矛盾**：正文说 "the packets ahead of it in the queue may be addressed to other nodes and therefore traverse different outgoing links, each potentially offering a different rate $R(i,\cdot)$"（L77），但公式里排队项写的是 $\frac{q_i\cdot B}{R(i,j)}$——用的是**当前包那条链路的速率**，与文字描述的 $R(i,\cdot)$ 不符（Y2H4NPLU 的对应式 3 用的正是 $R(i,\cdot)$）。
+6. **Dyna-Q 的模型形式从未说明**：是查表型确定性模型还是概率模型？每步做多少次模拟更新（planning steps $n$）？这是 Dyna-Q 的核心超参，全文未提。
+7. **只做了"平稳网络条件"（stationary network conditions，L160）**——作者自己用了这个词，却没有做非平稳（流量突变）实验，而"动态适应性"正是它批评集中式时用的理由（L27）。
+
+**8. 和同批其他篇的关系**
+- **与 Y2H4NPLU 高度同源（本批最值得注意的一处重合）**：两篇的**状态定义完全相同**（$S_i=\{L_i,N_i\}$，$L_i$ = 包头目的信息，$N_i$ = 邻居状态**2 bit 编码**）、**奖励结构完全相同**（三段式：$r_{del}$ / $r_{loop}$ / $r_{queue}+r_{dist}$，且 $r_{dist}=w_2\frac{\|id\|-\|jd\|+\|sd\|}{\|sd\|}$ 逐字符相同）、**Q 更新式的形式完全相同**（bootstrap 目标取**邻居 $j$ 的 Q 表** $Q_j$）、**负载定义同构**（$\ell=\sum\lambda/\lambda^{*}$，$\lambda^{*}$ 由星地链路速率算出）、**时延三段分解相同**（排队+传输+传播）、**也都用 $\varepsilon$-greedy 且 $\varepsilon=0.1$**。差别在于：本文是 **Dyna-Q（加模型模拟经验）**、面向**异构双星座 + CLL**、状态编码是**四个队列占用档位**（Y2H4NPLU 是"高/低容量 + 长队列"三档）、并多了一个时间匹配算法。**事实记录**：YI9G7NR7 的参考文献列表（L170–194，[1]–[12]）中**没有出现 Soret / Leyva-Mayorga 等的 Q-learning for distributed routing 一文**；我不对其成因下判断，仅提示主控核对——这可能是同一研究脉络的延续、也可能是引注遗漏，需要在主控层面确认。
+- **与 X5Z98UPM / XLRW7XXN / XM64YRAW 的关系**：同属"RL 做 LEO 路由"，但本文是**表格型 Q-learning**（非 DQN），且是唯一处理**异构双星座 + 跨层链路（CLL）**的；XLRW7XXN 与 X5Z98UPM 都是单层同构星座、四邻居动作空间。本文的**动作空间**（ISL/CLL/星地链路三选）也与它们不同。
+- **与 X2FCSU4S 的对照**：X2FCSU4S 用 **GEO 缓存**卸载 LEO 拥塞；本文用**通信星座的 CLL** 卸载遥感星座的拥塞——两者都是"把拥塞节点的数据搬到另一层"，但一个是存储卸载 + 博弈定价，一个是链路卸载 + RL 路由。
+- **与 YD4JUT7G 的对照**：YD4JUT7G 明确指出高频段**雨衰可使吞吐塌陷数个数量级**（YD4JUT7G L67）；本文在 65 GHz 的 $E_{S2G}$ 上确实按 ITU-R 建模了气体/雨/云衰（L52），**是本批唯一把雨衰写进链路速率公式的路由论文**——两者在这点上互相印证。
+- **引用**：本文引 **Wang et al.「Optimization for dynamic laser ISL scheduling with routing: A MADRL approach」（[8], L184）**，即"激光 ISL 调度 + 路由"的多智能体 DRL 方向；引 **Markovitz & Segal「Advanced routing algorithms for low orbit satellite constellations」（[12], L194）** 作为集中式路由的代表。
+
+**9. 对"负载变化下到达率/时延"的贡献**（**本批数值最具体、且带送达率的负载扫描**）
+1. **给出了完整的"负载 → 时延 + 送达率"双曲线**，负载轴是**归一化到网络容量的** $\ell\in[0.5,0.9]$（L70、L140），这是本批**唯一同时给出时延绝对值（ms）与送达率绝对值（%）随负载变化**的论文（L160）。
+2. **明确了"轻载无差别区"的边界**：**$\ell<0.6$ 时三种算法都是低时延 + 100% 送达率**（L160 逐字："For light traffic loads ($\ell<0.6$) all algorithms achieve low E2E latency with a 100% delivery success rate"）——这是本批第四次独立观测到同一现象（XLRW7XXN「网络空闲时三种算法差别不大」、XM64YRAW「低负载时 GQN 相对 SP 无明显优势」、X5K285MW「闲置网络下时延差异不显著」），**四次独立观测指向同一结论：负载感知路由的收益是负载的函数，且在低负载区趋近于零**。
+3. **量化了收益随负载的增长斜率**：$\ell=0.8$ 时时延优势 9.4%/5.9%，到 $\ell=0.9$ 时放大到 27.6%/18.6%（L160）——**负载从 0.8 涨到 0.9，优势翻了三倍**，这是"负载感知路由收益具有强非线性"的一个可直接引用的数据点。
+4. **送达率的负载敏感性也随算法而异**：$\ell=0.8$ 时 DQDRA 98.6%，比集中式高 3.6%、比基线分布式高 6.8%；$\ell=0.9$ 时优势扩大到 8.4% 与 15.0%（L160）——**基线在拥塞下的丢包增长明显更快**。
+5. **给出"学习曲线"的负载依赖**：收敛 episode 数在最难的 $\ell=0.8$ 下，DQDRA 160 vs 基线分布式 240（L158）。
+**局限**：① 只扫了**平稳**流量（作者自述 "under stationary network conditions"，L160），没有突变/非平稳负载；② 负载离散取 0.5–0.9，**曲线上的点数与取值间隔未给**；③ 送达率未做丢包机理分解；④ 时延只报平均值，无尾分布。
+
+**10. 一句话评价**
+一篇 6 页 LETTER，**方法增量非常明确**——把 Y2H4NPLU 那条"分布式 Q-routing"的骨架（同一套状态/奖励/邻居 Q 更新）搬到**异构双星座 + 跨层链路**上，并把 model-free 的 Q-learning 换成 **Dyna-Q**（用学到的模型生成模拟经验以加速策略改进，实测收敛快 33%），外加一个**"选满足需求的最短接触时长而非最长"**的时间匹配算法（式 6）——后者的动机（不浪费 CLL 资源、更均匀分配）是本文最有原创性的一点。它的实验是本批**对"负载变化下时延/送达率"贡献最直接**的一篇：给出 $\ell$ 从 0.5 到 0.9 的绝对时延与送达率，并第四次独立复现了"低负载区算法无差别"这一现象。**最需要主控注意的是**：它与 Y2H4NPLU 在状态、奖励、Q 更新、负载定义四处几乎逐式相同而参考文献中未引该文，以及 $w_1,w_2,\alpha,\gamma,Q_{max}$、Dyna-Q 规划步数、[13] 条目等**复现所必需的参数大面积缺失**。
+
 <!-- END -->

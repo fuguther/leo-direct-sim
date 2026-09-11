@@ -545,4 +545,77 @@ LEO 巨型星座开始用**激光星间链路（LISL）**替代射频 ISL（容�
 **首次把"光链路建链时延"作为一等时延代价引入 LEO 路由**，并用一条极简关系式（式 10）把问题变成"**平均时延 vs 换路率**"的两项权衡，再给出一条从轻到重的启发式谱系（ILPR→ALPR→ISASR）供按 QoS 预算选型；方法谱系上属于"**把经典最短路/ILP 用到新代价项上**"，理论干净、取舍讲得清楚，但其代价是**把排队与多流全部抽掉**——因此它回答的是"**切换代价有多大**"，而不是"**负载变化下时延怎么变**"，与本主题是相交而非覆盖的关系。
 
 
+## E4NYGLGX — Safe and efficient off-policy reinforcement learning (Retrace(λ))
+
+**1. 一句话**
+把 IS、$Q^\pi(\lambda)$、TB(λ) 三种 off-policy return-based 算法写成**同一个算子形式**（式 3，区别只在 trace 系数 $c_s$），然后取 $c_s=\lambda\min(1,\pi/\mu)$ 得到新算法 **Retrace(λ)**——它同时做到"**方差低**、对任意 off-policy 程度**安全收敛**、在近似 on-policy 时**不浪费样本**"，并**首次**证明了无 GLIE 假设的 return-based off-policy 控制收敛，顺带补上了 1989 年以来悬空的 **Watkins' Q(λ) 收敛性证明**。
+
+**2. 问题设定**
+强化学习里一个根本权衡（L15）：**Monte Carlo 式 return 方法**与函数逼近结合时行为更好、探索传播更快，但**难以用到 off-policy 数据**；**自举（bootstrap）方法**容易处理 off-policy 数据，却在其他方面吃亏。作者要证明"**从 return 学习**"与"**off-policy 学习**"不必互斥。
+已有的三条路线各有硬伤：
+- **IS（重要性采样）**：$c_s=\pi/\mu$，理论对任意 $\pi,\mu$ 都收敛，但**方差可能极大甚至无穷**（"IS estimates can suffer from large – even possibly infinite – variance"，L79），因为它是 $\pi/\mu$ 连乘。
+- **$Q^\pi(\lambda)$ / $Q^*(\lambda)$（Harutyunyan 等 2016）**：$c_s=\lambda$，方差低，但**只在 $\mu$ 与 $\pi$ 足够接近时**才在 $Q^\pi$ 附近收缩——条件是 $\lambda<\frac{1-\gamma}{\gamma\varepsilon}$，其中 $\varepsilon:=\max_x\|\pi-\mu\|_1$（L81）。作者直说这在控制场景下"**not safe**"，因为控制里目标策略是对当前 Q 贪心的，$\mu$ 与 $\pi$ 天然会拉开（L17）。
+- **TB(λ)**：$c_s=\lambda\pi(a_s|x_s)$，对任意 $\pi,\mu$ 都安全，但**在 near on-policy 情况下会过早截断 trace**，用不上完整 return（L83）。
+
+**3. 方法骨架**
+**纯理论 + 一个算法，不是应用论文。**
+- **统一算子（式 3，L74）**：
+  $\mathcal{R}Q(x,a):=Q(x,a)+\mathbb{E}_\mu\big[\sum_{t\ge0}\gamma^t\big(\prod_{s=1}^{t}c_s\big)\big(r_t+\gamma\mathbb{E}_\pi Q(x_{t+1},\cdot)-Q(x_t,a_t)\big)\big]$
+  ——**四种算法的差别全在 $c_s$**（Table 1，L93）：IS 用 $\pi/\mu$；$Q^\pi(\lambda)$ 用 $\lambda$；TB(λ) 用 $\lambda\pi(a_s|x_s)$；**Retrace(λ) 用 $\lambda\min(1,\pi(a_s|x_s)/\mu(a_s|x_s))$**。
+- **Retrace 的直觉（L85）**：重要性比**截断在 1**——既不像 IS 那样方差爆炸，又在 on-policy 时**不截断**（因为 $\min(1,\cdot)$ 在 $\pi\approx\mu$ 时接近 1），off-policy 时**安全截断**；且 $\min(1,\pi/\mu)\ge\pi$，所以**截得比 TB(λ) 少**。
+- **三个定理**：
+  - **Theorem 1（策略评估）**（L107）：只要 $c_s\in[0,\pi/\mu]$，$\mathcal{R}$ 就以 $Q^\pi$ 为唯一不动点且是 $\gamma$-压缩：$\|\mathcal{R}Q-Q^\pi\|\le\gamma\|Q-Q^\pi\|$，**对任意 $\pi,\mu$**。
+  - **Remark 1（L141）**：更精细的结论是**状态-动作相关的压缩系数** $\eta(x,a)\in[0,\gamma]$，$|\mathcal{R}Q-Q^\pi|\le\eta(x,a)\|Q-Q^\pi\|$；$c_1=0$（立即截断）时 $\eta=\gamma$，学完整 return（$c_t\approx1$）时**可以接近 0**。
+  - **Definition 1（L153）**：引入**"increasingly greedy"策略序列**——$P^{\pi_{k+1}}Q_{k+1}\ge P^{\pi_k}Q_{k+1}$；$\varepsilon_k$-greedy（$\varepsilon_k$ 不增）与 softmax（温度不增）都属于此类（Lemma 2、3，Appendix B）。
+  - **Theorem 2（控制）**（L165）：$Q_{k+1}=\mathcal{R}_kQ_k$ 下，$\|Q_{k+1}-Q^*\|\le\gamma\|Q_k-Q^*\|+\varepsilon_k\|Q_k\|$；**只要 $\varepsilon_k\to0$ 就 $Q_k\to Q^*$**。关键：**行为策略 $\mu_k$ 完全任意**。
+  - **Theorem 3（在线算法）**（L217–L225）：给出每访形式的在线更新式（式 7），$Q_{k+1}(x,a)\gets Q_k(x,a)+\alpha_k\sum_{t\ge s}\delta_t^{\pi_k}\sum_{j=s}^{t}\gamma^{t-j}\big(\prod_{i=j+1}^{t}c_i\big)\mathbb{I}\{x_j,a_j=x,a\}$，并证明 a.s. 收敛到 $Q^*$。
+- **核心卖点（L253）**：**Theorem 3 不需要 GLIE 假设**——作者称这是"**第一个**不需要 GLIE 的 λ-return（$\lambda>0$）收敛结果"；作为推论（L255）**首次证明 Watkins' Q(λ) a.s. 收敛**。
+- **$c_s$ 的选取权衡（第 4.1 节，L237–L243）**：**低方差**要求 $c_s$ 小（且 $\mathbb{V}(c)<1/\gamma^2$，这直接排除了 IS），**快收缩**要求 $c_s$ 大（$c_s=1$ 时一步到位）；**Retrace(λ) 是这个权衡的折中**。
+- **一个未证明的推广**（式 9，L248）：放松 Markov 假设后可以**在时间上互相补偿**——某一时刻用小 trace、另一时刻用大于 1 的 trace，只要乘积 < 1：$c_s=\lambda\min(\frac{1}{c_1\cdots c_{s-1}},\frac{\pi(a_s|x_s)}{\mu(a_s|x_s)})$。作者明确说这条**只在策略评估下被证明**（L245）。
+
+**4. 它声称的效果**
+**理论结论 + Atari 实验，与网络/时延无关。**
+- **理论**：Theorem 1（$\gamma$-压缩，任意 $\pi,\mu$）、Theorem 2（控制收敛，任意行为策略）、Theorem 3（在线 a.s. 收敛，无 GLIE）；推论：Watkins' Q(λ) 收敛。
+- **实验条件（Appendix F，L676）**：60 个 Atari 2600 游戏（ALE）；**16 线程 CPU 异步**（沿用 Mnih 2016 的框架），每线程私有 replay **62,500 transitions**（DQN 总容量的 1/16）；Shared RMSprop，步长退火到 0 共 $3\times10^8$ 帧；$\varepsilon$ 每 50 000 帧按概率 0.3/0.4/0.3 在三套退火表之间随机切换；**每个配置跑 4 个随机种子取平均**；minibatch 64；Retrace/TB/$Q^*$ 用 **4 条 16 步序列**的 minibatch。
+- **结果（Table 2，L684）**：$\lambda$ 从 0.0 扫到 1.0。**Retrace 在每一个 $\lambda$ 上都不比 TB 差**（"Retrace always achieve a score higher than TB"）；**$\lambda=0.9$ 时 Retrace 0.9034 为全表最高**（TB 0.7753、DQN 0.7256、$Q^*$ **0.02926**）；$\lambda=1.0$ 时 Retrace 0.8698、TB 0.8158。**$Q^*(\lambda)$ 在 $\lambda\le0.5$ 时最好（0.8419）但 $\lambda>0.5$ 后崩塌**（0.0293、0.0432）——作者据此说它"**also not safe**"，且"the safe threshold of $\lambda$ is likely to be problem-dependent"（L682）。
+- **正文的对比陈述（L286）**：Retrace 与 TB 都**大幅优于 Q-Learning**；Retrace 相比 TB 的优势"**narrower but still marked**"，在 **30 个游戏上最好，TB 拿下其余 15 个**。
+- 基线：**DQN / one-step Q-learning**、**TB(λ)**、**$Q^*(\lambda)$**。
+
+**5. 实验条件**
+**与 LEO 网络、路由、负载、到达率毫无关系。** 环境是 **Arcade Learning Environment 的 60 个 Atari 2600 游戏**；"life lost" 视为 episode 终止（L678）；reward 裁剪到 $[-1,1]$；多步算法里把量裁剪到 $[-1,1]$ 后再除以序列长度（L678）。超参在 8 个游戏（Asterix, Breakout, Enduro, Freeway, H.E.R.O, Pong, Q*bert, Seaquest）上做**先粗后细的对数扫描**（L678）。
+**训练/评估**：4 个随机种子平均；用 Bellemare 等的 **inter-algorithm score**（把每游戏在参与比较的算法集合内归一化到 [0,1]）——**注意作者自己警告"average scores are not directly comparable across different values of λ"**（Fig 2 图注，L689），因为每个 $\lambda$ 下的 worst/best 不同。**没有跨分布或跨任务泛化评估。**
+
+**6. 自述局限（逐字）**
+- L272（**Open questions**，逐字两条）："**(1) Removing the technical assumption that $P^{\pi_k}$ and $P^{\pi_k\wedge\mu_k}$ asymptotically commute, (2) Relaxing the Markov assumption in the control case in order to allow trace coefficients $c_s$ of the form (9).**"
+- L245：式 9 的推广"**only the result for policy evaluation has been proven so far**"。
+- L225：Theorem 3 的收敛证明**依赖一条"相当技术性"的额外假设**——"we make the additional (rather technical) assumption that $P^{\pi_k}$ and $P^{\pi_k\wedge\mu_k}$ commute at the limit"，虽然对 $\varepsilon$-greedy 等成立。
+- L259（**代价**）："**Unlike Retrace(λ), $Q^\pi(\lambda)$ does not need to know the behaviour policy $\mu$.**"——即 Retrace **必须知道行为策略**用于所选动作的概率；L261 指出 TB(λ) 同样不需要。
+- L268：$\mu$ 未知时可以**用样本估计 $\hat\mu$ 代替**（引用了一篇文献，但该处引文在转写里显示为 "?"，说明原文引用信息在此版本中缺失）。
+- L682：$Q^*(\lambda)$ 的**安全 $\lambda$ 阈值"likely to be problem-dependent"**——这是对整类算法（包括它自己 $\lambda$ 取值）的一条自述性警告。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **"知道 $\mu$ 才能算 trace"这一条是落地成本**（L259）：在经验回放里 $\mu$ 是当时的行为策略，需要额外存储每一步行为策略的概率。**论文没有讨论存储/计算开销**——在星上资源受限场景（本批多篇论文反复强调）这是一个实际的接口问题。
+2. **Theorem 3 的两条假设（渐近可交换、Markov trace）都没被放松**（L272），且作者承认是"相当技术性"的——**这是纯理论遗留**，与应用无关但影响算法在其变体下的可用性。
+3. **只测了 Atari**（L678）：一个**确定性、离散动作、单智能体**的基准（作者自己在 L682 里说 $\lambda=1$ 至少在**确定性环境**下合理）。**完全没有测多智能体、非平稳环境或连续动作**——而 Theorem 1/2 声明可扩展到连续动作空间（L270），却**没有对应的实验**。
+4. **没有与"多步目标 + 函数逼近"的稳定性理论挂钩**：实验里 reward 与 target 都做了裁剪（L678），这是一个**工程补丁**，论文没有把它纳入理论分析。
+5. **$\lambda$ 的选择没有给出原则**：Table 2 显示 Retrace 各 $\lambda$ 都不差，但**为什么 $\lambda=0.9$ 最优、$\lambda=1$ 次之，没有解释**；作者只给了"Retrace 下 $\lambda=1$ 合理"这一句经验判断（L682）。
+6. **没有报告方差**：论文核心主张之一是"**low variance**"，但实验里**只报了 inter-algorithm score（性能），没有报 trace 的方差或更新的方差**——主张与证据之间缺一条直接测量。
+
+**8. 和同批其他篇的关系**
+- **它与本批其余 10 篇毫无主题关系**：那些是 LEO 网络（路由/调度/负载均衡/仿真平台/AoI），这一篇是**纯 RL 理论**（NIPS 2016，DeepMind）。
+- **它在语料里的位置是"算法祖先"**：本批中大量使用 DQN/DDQN 的论文（CMNCS52M、CYMQ2GLA，以及 S85KQ4FC、EG9X569M 等）所用的自举式 Q-learning 家族，其收敛性问题正是本文所处理的；但**本批没有任何一篇引用 Retrace(λ)**——我通读的 6 篇 LEO 论文（BBNQ4EAQ、BLFJ6CLV、BV4XI6CU、CMNCS52M、CTWVLBCY、CYMQ2GLA、DS9SPARV、DVS8C3CC）的参考文献里都没有 Munos 或 Retrace。它们用的都是 **DDQN + 经验回放 + 目标网**（CMNCS52M 的 L131、CYMQ2GLA 的 L224），即**单步 off-policy**，而不是 λ-return。
+- **一个值得注意的反差**：本批多篇论文自称"DDQN"却写出 max 目标（S85KQ4FC 式 17、CMNCS52M 式 5），只有 CYMQ2GLA 式 17 写对了 double 形式——**而 Retrace 关心的正是这类 off-policy 目标值的偏差与收敛问题**。这篇论文恰好是那个"目标值该怎么写才安全"的问题的**理论权威出处**（虽然 DDQN 本身出自 van Hasselt，不是本文）。
+- 与 **DS9SPARV（OpenSN）** 的关系：两篇都是"**给别人的研究提供基础**"的论文（一个是平台，一个是理论），都不解决具体的 LEO 问题。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**没有直接贡献。** 具体理由：
+- 全文的**状态空间是 Atari 的游戏画面**，**奖励是游戏分数**，**没有网络、没有队列、没有到达过程、没有时延**。搜索全文，"queue/arrival/delay/latency/congestion" 这些概念**一个都不存在**（除 "delay scheduling" 之类无关词外）。
+- 它的因变量是**"算法能否收敛、收敛多快、样本效率多高"**，自变量是 **$\lambda$、$\pi$ 与 $\mu$ 的差距、trace 截断方式**——全是 RL 内部量。
+- **唯一可迁移的间接线索**：Theorem 1 的 Remark 1（L141）指出**压缩系数 $\eta(x,a)$ 是状态相关的**，且在"学到完整 return"时可以远小于 $\gamma$。若把 LEO 路由建模成 RL，这提示**不同网络状态下的收敛速度天然不同**（例如拥塞态与空闲态的收敛速度不同）——但**这是我从数学形式做的外推，论文本身完全没有谈到任何网络语义**，不应算作它的贡献。
+- 同样地，Theorem 3 的"**不需要 GLIE**"对 LEO 场景有一层潜在意义：当网络持续非平稳时，行为策略不必渐近贪心——**但论文的例子全是 Atari，作者没有讨论非平稳环境**。
+
+**10. 一句话评价**
+**语料里的"工具书"型论文**：方法谱系位置是"**为 off-policy return-based RL 提供一个统一算子框架，并给出 Retrace(λ) 这一安全且高效的折中点 + 三条收敛定理**"，其价值（λ-return 在任意 off-policyness 下的安全性、无 GLIE 收敛、Watkins Q(λ) 收敛的补证）在 RL 领域是奠基性的；但**对"负载变化下的到达率/时延"这一具体问题，它的贡献是零**——本批出现它，只能说明语料在收集 LEO 路由工作的同时把 RL 理论源头一并纳入了，而**这一批 LEO 论文实际上并没有用到 Retrace**（它们停在 DDQN 单步自举）。
+
+
 <!-- END-OF-CARDS -->

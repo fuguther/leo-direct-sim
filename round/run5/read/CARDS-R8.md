@@ -232,5 +232,75 @@
 **10. 一句话评价**
 **把经典 age-optimal sampling（Sun et al. 2017）推广到"多异构路径 + 间歇可用 + 能量约束"的理论工作**：结构定理干净（阈值式采样 + 至多 $\binom{N}{2}$ 个选路阈值），Bisec-REAVI 免离散化是真贡献；代价是完全外生的时延模型（无负载、无排队、可用性 i.i.d.），因此它离"负载变化下的到达率/时延"这条线**只差一个它自己没建的拥塞项**。
 
+## S2QZRBEJ — A First Look at Starlink Performance
+
+**1. 一句话**
+一篇纯实测论文（IMC 2022）：在比利时一个固定站点上连续数月测量 Starlink 的**空载 vs 负载**时延、丢包、吞吐与网页 QoE，并用 QUIC（绕开 TCP PEP）把"负载下 RTT/丢包怎么变"单独量了出来（L33、L59）。
+
+**2. 问题设定**
+LEO 星座（Starlink，当时 2000+ 星）作为新出现的接入技术，其真实运行表现未被充分研究（L59）；唯一可比的是 Kassem et al. [34]。作者关心的是：**单一观测点访问全球分布式资源时，在高负载/重负载下用 TCP 和 QUIC 会看到什么**（L59）。动机里点明传统 GEO SatCom 的最小往返时延约 600 ms（L57），而 Starlink 承诺约 20 ms 时延、100–200 Mbps（L59）——需要独立核实。
+
+**3. 方法骨架**（**无算法，是测量学**）
+- 测试床三台 PC（L67）：PC-Starlink（常规 Starlink 订阅）、PC-Wired（校园 1 Gbit/s）、PC-SatCom（GEO 转售，下行 ≤100 Mbit/s、上行 ≤10 Mbit/s）；拥塞控制均为 Cubic，TCP 接收窗口内核默认。
+- **QUIC 是核心工具**：QUIC 报文加密认证、**无法被 PEP 优化**，因此测到的是真实端到端时延；且 QUIC 的包号机制能把**每一个丢包**精确定位、把重传与原包区分开（L69）。两类流量：(i) 100 MB HTTP/3 批量传输；(ii) 轻量消息流——每秒 25 条、每条 5–25 kB，持续 2 分钟，平均码率仅 3 Mbit/s，**远低于链路容量**（L69）。下载/上传各占一半。
+- 时延：ping 11 个锚点（7 个 RIPE Atlas 位于欧洲/北美/亚洲 + 4 个比利时志愿者节点），每 5 分钟 3 次 ping（L71）。
+- 丢包：下载看客户端 QUIC 收到的包号缺号，上传看服务端返回的 ACK 帧（L118）。
+- 吞吐：Ookla SpeedTest CLI，每 30 分钟一次（L78）。
+- 网页：BrowserTime 自动访问比利时 top-120 网站，每 30 分钟随机 30 个，取 **onLoad** 与 **SpeedIndex** 两个与 QoE 相关的指标（L80）。
+- 中间盒：traceroute + Tracebox 查 PEP；用 **Wehe** 检测流量歧视（TD）（L183-185）。
+
+**4. 它声称的效果**（基线：GEO SatCom 与校园有线网）
+- 空载时延：本地锚点中位 RTT **46–52 ms**，95 分位 <70 ms，最小 **20.5 ms**（验证 20 ms 承诺）；德国探针中位 42 ms；旧金山中位 184 ms、新加坡中位 270 ms（L96）。
+- 5 个月趋势平坦：欧洲锚点中位稳定在 **~50 ms**（25 分位 40 ms、75 分位 60 ms），最小值约 20 ms（L105）。
+- **无昼夜规律**，作者据此推断基础设施**利用率低**——理由是多数运营商的链路都会出现昼夜模式（L105 逐字："this can hint low utilization of the infrastructure as most operator links are impacted by diurnal patterns"）。
+- **负载下的时延（H3 批量）**：中位/95 分位/99 分位 RTT = **95 (104) / 175 (237) / 210 (310) ms**，括号内为上传（L107；每条曲线 >200 万个 RTT 样本）。上传的 RTT 增长大于下载，作者解释为下载可用带宽更大、**路由器队列排空更快，因此同等队列长度下排队时延更小**（L107）。
+- **低速率消息流**：RTT 基本在 100 ms 以内，下载（上传）中位 **50 (66) ms**、95 分位 71 (87) ms、99 分位 87 (143) ms（L112）。
+- **丢包（Table 2，L110）**：H3 下载 **1.56%**、上传 **1.96%**；消息流下载 **0.40%**、上传 **0.45%**。
+- 丢包突发结构：H3 下载中 **超过 75% 的丢包事件涉及多个连续包**，上传多为单包；共识别 **244 008** 次丢包事件，事件时长中位 **49 μs**，75/90 分位 58/113 μs，95/99 分位 **1.5/7.5 ms**，另有少量 >1 s 的疑似断连（L120）。消息流丢包更罕见但突发更长，99 分位时长 127 ms，个别突发 >100 包（L133）。
+- **关键对照实验**：从阿姆斯特丹（Starlink 出口附近）向服务器发 H3（消息）下载，580 万（280 万）包中仅丢 10（8）个 → 丢包发生在 **Starlink 网络内部**，不是本地或服务器造成（L135）。
+- 吞吐：下行 100–250 Mbit/s、中位 **178**、最大 **386** Mbit/s；上行中位 **17** Mbit/s、最大 64 Mbit/s（L152）。SatCom 下行中位 82 Mbit/s、上行 4.5 Mbit/s（L154）。QUIC H3 下行只有 100–150 Mbit/s，低于 Ookla TCP 测速（L158）。
+- 网页 QoE：Starlink onLoad 中位 **2.12 s**、SpeedIndex **1.82 s**；SatCom 10.91 s / 8.19 s；有线 1.24 s / 1.0 s（L173-175）。建连耗时 SatCom 平均 2030 ms vs Starlink **167 ms**（L173）。
+- 中间盒：两层 NAT（192.168.1.1 与 CGNAT 100.64.0.1），**未发现 PEP**；Wehe 跑十轮**未发现流量歧视**（L183-185）。
+
+**5. 它的实验条件**
+- **单站点**（比利时 Louvain-la-Neuve），时间跨度：时延 5 个月、吞吐/网页 4 个月、SatCom 对照 2 周；数据采集期 2021-12-20 至 2022-04-07（L74、L80）。
+- 关键背景：**星间链路（ISL）当时未启用**——作者用 traceroute 验证到旧金山与新加坡的出口节点与欧洲相同（荷兰 + 德国各一个），据此判断 ISL 未开（L96）；ISL 计划 2022 年底启用（L191）。
+- "负载"是**自造的**：空载 ping vs 自己发起批量传输；**不是**对全网负载的扫描。
+- 无训练环节。
+
+**6. 它自述的局限**（逐字，第 4 节 Discussion）
+- L189："This study presents an initial characterization of Starlink from the perspective of **a single site in Western Europe**."
+- L189："we emphasize the presence of (moderate) packet loss **even at low network utilization**."
+- L191："our ping latency measurements are still in the early stages in terms of **temporal and spatial scale**. As we aim at tracking latency evolution over time, **the number of anchors we probe is limited** and does not allow us to provide a complete picture of latency for a comprehensive set of targets worldwide."
+- L191："**Inter-satellite links do not seem to be enabled**, but Starlink plans to deploy them by the end of 2022."
+- L195："we only studied a limited number of websites... We did **not account for differences in experience that could be due to different browsers, different devices**, or other factors. Also, **we only visited landing pages**."
+- L131（方法层面的诚实声明）："from the transport viewpoint, **there is no known way to distinguish between congestion and medium-induced losses**."（即无法把丢包归因到拥塞 vs 介质）
+
+**7. 它没做但看起来能做的地方**（基于内容）
+1. **没有真正的"负载扫描"**：负载只有两档（空载 / 100 MB 批量传输），且是**自己产生的**。要得到"到达率 → 时延/丢包"的曲线，只需把批量传输换成受控速率的阶梯（如 10/50/100/200 Mbit/s），设备与 QUIC 采集链已经具备（还公开了 530 GB 抓包，L199）。
+2. **无法分离拥塞丢包与介质丢包**（L131 自述）——但作者其实已经拿到区分线索：H3（高码率）丢包频繁且突发短，消息流（低码率）丢包罕见但突发长且 99 分位时长可达 127 ms（L120、L133）。**突发时长 vs 码率**这个二维关系可以直接做成一张"丢包成因判别图"。
+3. **ISL 未启用**（L96、L191）：作者把"ISL 开启后包怎么在天上走、性能怎么随地变化"明确留作未来工作——这是全批最干净的一个"当时做不了、现在能做"的窗口。
+4. **无昼夜/无趋势**被解释成"利用率低"（L105），但这是**推断**，没有独立的负载证据（如运营商标称容量或第三方拓扑测量）；把"低利用率"变成实测结论需要额外观测。
+5. 上行慢的归因只说了一半：报告了 quiche **未实现 packet pacing** 导致 25 kB 大消息堆在网络缓冲里抬高 RTT（L112）——这意味着"上行 RTT 更高"部分是**客户端实现缺陷**而非网络特性，值得用支持 pacing 的实现重测。
+
+**8. 和同批其他篇的关系**
+- 它是本批唯一**真实测量**的论文，与其余仿真/理论论文是"地面真值 vs 模型"的关系。
+- 与 **R5QTFKD2** 直接互补又直接冲突：R5QTFKD2 把路径时延建成**平稳外生分布**（对数正态/Gamma）且可用性是 i.i.d. 伯努利，本文恰好给出了这些分布的真实形状与**负载依赖**证据（中位 RTT 从 ~50 ms 涨到 ~95 ms）——两篇合起来正好暴露"外生时延"假设的失真。
+- 与 **QSNRQ8PF** 综述：综述把"负载不均衡"列为挑战（QSNRQ8PF L119），本文是这条挑战在真实系统里的量化。
+- 它引用 **Hypatia**[27] 与 **Kassem et al.**[34]（L189、L259、L273）；不引用同批其他篇。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**本批最硬的一条实证证据**，而且是唯一的真实系统证据：
+- **时延随负载接近翻倍**：同一链路，空载中位 RTT ~50 ms → H3 批量负载下中位 **95 ms（下载）/104 ms（上传）**，99 分位 210/310 ms（L105、L107）。
+- **给出了机制**（不是相关而是因果解释）：L107 逐字——上传增幅大于下载"may be explained by the larger available bandwidth for downloads allowing **emptying the router queues faster** than for uploads, having thus a **smaller impact on queuing delay** for equally-sized queues"。即：**排队时延**是负载敏感项，且它对"容量/队列比"敏感。
+- **低码率几乎不受影响**：3 Mbit/s 消息流的 RTT 中位数 50/66 ms，与空载 ping 同量级（L112）——说明抬升来自**排队**而非路径本身，这为"负载-时延"曲线提供了两个明确的锚点。
+- **丢包同样随负载出现**：高码率 1.56%/1.96% vs 低码率 0.40%/0.45%（L110）。
+- **一个反直觉的边界条件**：作者未观察到昼夜模式，据此推断网络**利用率低**（L105）——意味着这些负载效应是**自激**的；**全网负载带来的时延抬升，本文没有测到**。
+**局限必须说清**：这里没有"到达率 λ"这根轴，只有"空载 vs 饱和批量"两点；也没有排队模型。
+
+**10. 一句话评价**
+**一篇把"负载让排队时延显形"测出来的实测锚点论文**：它没有算法、没有 λ 轴，但给出了空载 ~50 ms 与负载 ~95/104 ms 这两个可被任何 LEO 路由仿真直接引用的真值，并明确指出 ISL 当时未启用——对做仿真的人而言，这是"上限有多乐观"的校准基准。
+
+
 
 
