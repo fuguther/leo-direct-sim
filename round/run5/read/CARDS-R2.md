@@ -605,7 +605,83 @@ LEO 通信网需要巨大负载容量与信息处理速度（L15）。现状是*
 **10. 一句话评价**
 **本批唯一把"星上排队"真正建成路由代价的论文**——它用 M/M/1/N 与 M/M/c 把"激光接收缓存有限"和"CPU 资源池五单元"这两个硬件约束写进了 Q 值，并给出了负载阈值与"绕路降时延"的实证；但把所有排队参数留空、把目标函数式 (11) 留成乱码，使它成为**思路可用、数字不可用**的一篇。
 
+## 7AXASN73 — A Survey on Nongeostationary Satellite Systems: The Communication Perspective
+
+**1. 一句话**
+从物理层一直到应用层，把 NGSO（非静止轨道）卫星通信做了一次全栈综述——天线/链路预算/星间链路/波形/多址/空间信息网络/SDN/切片/资源管理/干扰/频谱共享/安全，再加监管共存、星座设计、用户设备、运行问题四大部署挑战，最后给出 7 个未来方向。
+
+**2. 问题设定**
+NGSO 相比 GSO 的核心卖点是**传播时延更低、体积更小、信号损耗更低**，从而能把时延敏感应用搬到天上去（L5、L17）。作者自陈现有综述的缺口（L46 逐字）："there still lacks a survey providing comprehensive discussions on the whole multi-orbit NGSO communication system aspects"，并特别指出监管共存问题此前只被高层提及、**用户设备需求在公开文献里根本没人梳理**（L46 逐字："the user equipment requirements and advances have not been explored in the open literature"）。
+
+**3. 方法骨架**（综述类，无算法；结构 = 分类框架 + 参数对照 + 挑战清单）
+论文结构（L71）：§II NGSO 系统特征与分类（按服务分"天基互联网提供商"与"空间任务"两类）；§III 通信前景（物理层与无线接入 → 网络方面 → 系统与架构）；§IV 部署挑战（监管共存 / 星座设计 / 用户设备 / 运行问题）；§V 未来方向；§VI 结论。
+关键的分类与对照表：
+- **Table I**（L57）与 14 篇既有综述逐项对比覆盖范围（天基互联网、空间任务、监管共存、星座设计、运行挑战、用户设备、星间连通性、有源天线、波形与接入、软件定义卫星、空间回传、网络切片、资源优化、干扰管理、安全、宽带连接、Open RAN）。
+- **Table II**（L88）缩略语表。
+- **Table III**（L170）**GSO vs LEO 的链路预算数值对照**——本卡最有用的一张表，见第 9 项。
+- **Table IV**（L323）ITU 关于 NGSO-GSO 频谱共享的规则（Ku/Ka/Q-V 三段的频率范围与优先级）。
+三条贯穿全文的技术判断：
+- **ISL 是降低对地面站依赖的关键**（L178）；RF ISL 成熟但速率低、有干扰；FSO/激光速率高但要复杂捕获跟踪；**THz 在太空无大气衰减是优势，但半导体器件是瓶颈**（L180）。
+- **控制架构的集中 vs 分散权衡**（L258）：集中式（控制器在地面服务器）管理效率高但复杂度与 OPEX 高，**控制器到每个节点的控制信道本身还要占带宽**；分散式各星自主调节但**难达全局最优**。
+- **资源管理的特殊性**（L262）：NGSO 可用资源比 GSO 少得多（载荷小），且**优化参数"很快过时"**，因此需要降维、低复杂度元启发式或机器学习方法（L262 逐字："the optimization parameters quickly become outdated"）。
+
+**4. 它声称的效果**（综述，给出的是整理后的对照事实）
+- **LEO 的 RTD 约为 GSO 的 1/36**（L174 逐字："the RTD in the LEO link is about 36 times lower than in the GSO link"）：Table III 给出 GSO 前向链路 **515.18 ms** vs LEO **14.35 ms**（600 km 高度、仰角 30°）。
+- **LEO 链路预算在手持终端上明显更好**：S 波段手持终端下 GSO 的 CNR 仅 **0.51 dB**（下行）/ −14.86 dB（上行），而 LEO 达 **6.61 dB** / −1.66 dB；VSAT（Ka 波段）下两者都不错但 **LEO 上行仍优于 GSO 达 16 dB**（L172）。
+- **空间段规模事实**（L103–L114）：Starlink 初期近 12,000 颗（后续可能扩到 42,000），分 550 km/1,110 km/340 km 三层；单星吞吐 17–23 Gbps；用户终端最小仰角 40°。OneWeb 648 颗、18 个极轨面、1,200 km、倾角 87°、最小仰角 55°。O3b 20 颗赤道轨道 8,000 km、用户级约 500 Mbit/s。Kuiper >3,000 颗、LeoSat 108 颗、Telesat 177 颗、Boeing 2,956 颗、华为 Massive VLEO 10,000 颗（300 km）。
+- **UCS 数据库**：在轨运行卫星已超 4,000 颗，NGSO 数量远多于 GSO（Fig 1，L22）。
+- **全球仍有 39% 人口无法接入地面宽带**（L94）。
+- **时延对比的物理根据**：真空光速比光纤高约 50%（$3\times10^8$ vs $2\times10^8$ m/s），所以带 ISL 的低轨星座时延也低于地面光纤（L82）。
+- **天文与碎片风险**：粗略估计未来可能另有 **50,000 颗以上**卫星进入地球轨道（L347）。
+
+**5. 实验条件**
+综述类，无实验；其"条件"体现为引用与数据口径：
+- 链路预算采用 **3GPP 技术说明 [6], [7]** 的参数（L172）；示例 LEO 取 **600 km 高度、仰角 30°**（L174、Table III）。
+- 两类用户终端：**S 波段手持终端**（全向天线、线极化）与 **Ka 波段 VSAT**（定向相控阵、圆极化、60 cm 等效口径）（L343）。
+- 时间范围：Table I 显示既有综述覆盖 2016–2021，本文为 **2022**（L57）。
+- 参考文献数量极大（[1]–[307]，L419–L1030），是典型的 IEEE 综述体量。
+- **作者没有做任何自己的仿真或数值实验**；Table III 是转述 3GPP 参数的计算结果。
+
+**6. 它自己承认的局限**
+**没有独立的 Limitations 章节**（全文通读：§I–§VI，无 limitation 小节）。但自述缺口极多，且都很具体：
+- 用户设备在公开文献中无人梳理，L46（逐字见第 2 项）。
+- NGSO-NGSO 干扰刚起步，L268 逐字："most of the prior works focus mainly on the inter-system interference between GSO and NGSO, while the serious issue of NGSO-NGSO interference was recently addressed only in [210]–[213]."
+- **ISL 之间的干扰需要更多研究**，L275 逐字："However, the interference between ISLs needs more investigation, which is a serious problem in the NGSO networks as it may occur not only in the overlap of coverage areas but also wherever inter-satellite communications take place."
+- 区域星座设计未被深入研究，L333 逐字："This topic has not been deeply investigated in the literature, and thus, new sophisticated approaches to design optimal constellation patterns are needed."
+- 边缘计算的实际限制未明，L381 逐字："While this application seems very promising, its practical limitations and requirements are not yet fully understood."
+- 网络切片在 NGSO 上仍处早期，L245 逐字："network slicing is still at an early stage of its application into 5G systems and requires novel algorithms and solutions to involve the NGSO systems."
+- 物理层安全在卫星上仍是婴儿期，L291 逐字："this method applied to satellite communications is still in its infancy."
+- SDN 缺少面向小卫星的架构，L241 逐字："there is a lack of SDN-based architecture solution specifically designed for small satellites."
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **全篇没有任何"负载"作为自变量的讨论**：资源管理、回传、路由全都在谈"需求非均匀""参数很快过时"（L262、L235），但**没有一处给出负载强度 → 性能的量化关系**。这是这篇全栈综述最一致的空洞。
+2. **§V.B 明确把"负载均衡 + 最短端到端传播时延路径"列为尚待探索**，L377 逐字："However, the expected connectivity improvement will be achieved at the cost of higher complexity that is essential for **load balancing between satellite links** and for **finding paths with the shortest end-to-end propagation delay**, as well as tackling the dynamicity of the nodes (e.g., high relative speeds, frequent handovers), **which are yet unexplored areas in the literature**."——这是全篇与本选题最贴近的一句话。
+3. **§III.B.2 列出了"空天回传"需要建模的全部输入项**（L235）：拓扑变化、带宽、链路时延、**异构业务/类别的流量生成剖面**、节点的计算与存储能力——**这是一份完整的负载场景要素清单，但论文只列举未组织**。
+4. **Table III 只给了静态链路预算**（L170）：没有随仰角、随可见星数、随用户密度变化的任何曲线。
+5. **干扰管理一节完全没有容量/负载维度**（L268–L275）：所有讨论都是功率、角度、频段，没有"干扰随负载增长"的分析。
+6. **作者自己指出 NGSO 的优化参数"很快过时"**（L262），但**没有给出过时的时间尺度**——而这恰恰是判断"需要多快的在线算法"的关键数字。
+
+**8. 和同批其他篇的关系**
+- **与 5AZHJE7N（STIN 仿真器综述）**：**同批的两篇综述，但分工完全不同**。5AZHJE7N 关心"用什么工具做仿真"（工具盘点 + 功能矩阵），本篇关心"系统本身有哪些技术"（物理层到应用层 + 部署挑战）。两者的共同缺口都是**流量/负载**：5AZHJE7N 的三个关键仿真功能不含流量（其 L257–L263），本篇的通信前景与挑战清单也不含负载建模。
+- **与 67CSKFK4（Handley）**：本篇是 Handley 之后 5 年的综述，**却完全没有引用 Handley 那篇**（参考文献 L419–L1030 通读未见 "Delay is Not an Option"）。同时本篇在 §V.B（L377）把"负载均衡 + 最短时延路径"称为"yet unexplored areas"——**而 Handley 在 2018 年已经把这个问题明确提出来了并给出了假设方案**。这是一处可以直接指出来的**综述遗漏**。
+- **与 53HEEK33 / 5N5LQPPP / 6GWNYSTT（Q-routing 与 DRL 路由）**：本篇把路由归入 §III.B 的"网络方面"，只用两段话概括（SDN 与集中/分散控制，L239–L241、L258），**没有引用任何一篇 RL/DRL 路由论文**，与那几篇不构成对话。
+- **与 5PYWVRC5**：本篇 L377 的"负载均衡与最短时延路径尚未探索"与 5PYWVRC5 的实验结论（FD-MADRL 打饱和链路）**恰好对得上**——但两篇互不引用（5PYWVRC5 发表于 2024 年前后，时间上晚于本篇）。
+- **与 5HJ8ATR7（MOSAIC）**：本篇 §III.C.3 关于 SDN 控制平面带宽开销的论断（L258："The control channels between a controller and each node will also require additional bandwidth resources"）与 5HJ8ATR7 实测的"信令占 15.75% ISL 带宽"（其 L149）是同一条事实的两种表述。
+- **与 57EB6US5 / 6C843JTS**：无关（本篇不涉及 RL 方法论）。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**有可引用的负向证据 + 一份参数底表，但没有正向贡献。**
+1. **最直接的一条**：本篇 §V.B **把"负载均衡 + 最短端到端传播时延路径"明确称为 "yet unexplored areas in the literature"**（L377）——这是**一篇 2022 年的 IEEE 全栈综述对选题正当性的背书**：到 2022 年为止，这个方向在综述作者眼中仍是空白。
+2. **可引用的时延底表（Table III，L170）**：GSO 前向链路 RTD 515.18 ms vs LEO 14.35 ms（600 km、30° 仰角）；S 波段手持终端下行 CNR：GSO 0.51 dB / LEO 6.61 dB；上行 GSO −14.86 dB / LEO −1.66 dB；VSAT Ka 波段上行 LEO 比 GSO 好 16 dB。**这是一份"同等条件下 LEO 比 GSO 好多少"的量化底表**，可用于说明为什么时延敏感业务要放到 LEO。
+3. **一条关于负载性质的关键论断**：LEO 的**需求是非均匀且不确定的**，传统星座设计（极轨、Walker-Delta、flower）**没有考虑地面需求特征**，因此在"全球非均匀且不确定的需求"下是低效的（L329 逐字："these design approaches do not take into consideration the demand characteristics on Earth, which makes them inefficient strategies when bearing in mind the non-uniform and uncertain demand over the globe"）。作者推荐的替代是**分阶段弹性部署**（适应需求演化）。
+4. **一条关于算法时效性的论断**：NGSO 的资源管理"优化参数很快过时"（L262），加上 LEO 可见窗口短（用户设备必须在很短可见窗口内完成接入，L337、L285 提到 "short visibility window"）——**这为"在线/快速响应负载变化"提供了动机，但没有给出时间尺度数字**。
+5. **限制**：全篇没有到达率（pps）、没有排队模型、没有负载-时延曲线、没有负载作为自变量的任何图。
+
+**10. 一句话评价**
+**一份覆盖面极广但深度均匀偏浅的 NGSO 通信全栈地图**——它的价值在于用 Table III 给出了 LEO/GSO 的时延与链路预算基准、并用一句话（L377）确认了"负载均衡 + 最短时延路径"是空白；它的不足在于**通篇不谈负载强度**，且漏引了 Handley 那篇早已提出同一问题的论文。
+
 <!-- END-CARDS-R2 -->
+
 
 
 

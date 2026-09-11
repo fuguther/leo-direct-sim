@@ -301,6 +301,76 @@ LEO 星座（Starlink，当时 2000+ 星）作为新出现的接入技术，其�
 **10. 一句话评价**
 **一篇把"负载让排队时延显形"测出来的实测锚点论文**：它没有算法、没有 λ 轴，但给出了空载 ~50 ms 与负载 ~95/104 ms 这两个可被任何 LEO 路由仿真直接引用的真值，并明确指出 ISL 当时未启用——对做仿真的人而言，这是"上限有多乐观"的校准基准。
 
+## SBCHGBCP — Segment routing for traffic engineering and effective recovery in low-earth orbit satellite constellations
+
+**1. 一句话**
+在没有星间链路（ISL）、只能靠地面中继用 RF 转发的那一类 LEO 星座（Starlink Phase 1 形态）里，把地面网的 **Segment Routing（SR）** 搬上来做两件事：用"延时受限 + 卫星不相交的 2 段路径"做流量分割以压低**单星最大负载（MSL）**，以及用两段备份路径把故障保护覆盖率顶上去（L22、L39-41）。
+
+**2. 问题设定**
+Starlink Phase 1 的 1584 颗星（550 km、周期约 90 min）**不支持激光 ISL**，星间通信只能经地面站（中继/网关/用户终端）用相控阵 RF 转发；卫星与地面站距离超过 RF 最大可达距离就断链，因此这个混合拓扑**随时间变化**（L28）。作者点出两类麻烦：①**负载激增**——太阳能卫星能量预算有限，"The surge of load may bring about an increase in **queuing delay** and a sharp drop in energy"，且单条最短路（SPR）在 DDoS 之类的突发流量下很脆弱（L30）；②**节点/链路故障**——约 3% 的 Starlink 卫星已失联，RF 链路又受天气影响，突发故障会中断在传流、造成丢包或乱序（L30）。困难在于：卫星移动快，**负载状态难以采集或预测**，传统 TE/FRR 方案搬不过来（L35）。
+
+**3. 方法骨架**（**非 RL**：图算法 + 源路由 + 启发式选路）
+- 星座模型（式1a-c，L79-87）：1584 星、550 km、**72 个轨道面倾角 53°、每面 22 星**；单点波束、可通信仰角 25°以上、**最大 RF 距离约 1123 km、足迹半径 940 km**；任意地面站至少被两颗星同时覆盖（L73）。
+- 地面中继布放：密度参数 $\rho$，沿线每隔 $(1/\rho\times\omega)$ 放一个（L102）；$\rho\ge1$ 即可全球覆盖（L104）。
+- 时变拓扑用**时间图**建模：时隙 $m$ 内拓扑视为固定，$G_m=(N,L_m)$；**时隙 50 ms**（与 [2] 相同）（L111、L113）。
+- SR 的星上实现（关键工程点）：**SID popping 只在（能力更强、易升级的）地面中继做**，卫星只按最上层 SID 查表转发——卫星保持"简单"（L130-134）。**只考虑 2 段路径**（每条段列表至多两个 SID），依据是 IP 网里 2 段已接近最优 TE（L132）。
+- 优化目标（式3，L144-146）：最小化 **MSL** $=\max_s\sum_{l\in L_s}\eta_l$。**特意不用"最大链路利用率"**——因为卫星处理能力受限、容易成热点（L144）。
+- 路径约束（L155）：①**延时约束**——候选路径时延不超过最短路的 $z$ 倍（$z$ 称 delay factor，扫 $[1,2]$）；②**卫星不相交**——同一流的多条路径不得在卫星处重叠（在地面中继处允许交叉，因为假定拥塞只发生在卫星）。
+- **DBTS（Algorithm 1，L161-187）**：先求最短路 $p_0$ 与 $d_0$ 得界 $D=z\cdot d_0$；对每颗卫星 $s$ 构造以 $s$ 为中点的 2 段路径 $\{s,y\}$，时延 $\le D$ 者入候选集 $\Psi$；按延时升序贪心挑选与已选集 $\Phi$ 卫星不相交的路径；**把流量在 $\Phi$ 上均分**（L165）。
+- **DBTS+（L189-215）**：令路径代价 $c_k=1/h_k$（$h_k$ 为跳数）→ 分割比 $r_k=c_k/\sum_i c_i$，**给更短的路径分更多流量**，既降低全网总流量也缓解乱序（L196、L212、L215）。
+- **快速重路由（第 6 节）**：**LFA** 预计算"备用下一跳"；当备用下一跳不存在时，**LFA+** 枚举卫星/地面中继作中点，预计算一条 **2 段备份路径**（L223-231）。保护覆盖率按 $\delta$（式9）与 $\delta^*$（式10，剔除集合 $\varepsilon$——那些"只被一颗卫星覆盖"的地面中继所致的不可保护路径）度量（L311、L317）。
+
+**4. 它声称的效果**（基线 SPR [2]；Table 2 在 L299）
+- 均匀流量：$D=1.5d_0$ 时 MSL 相对 SPR 降约 **20%**（L246）。
+- **非单调的 D 效应（核心发现）**：$D$ 从 $1.2d_0$ 增到 $1.5d_0$，MSL 降约 2 个单位（可用不相交路径变多）；但 $D$ 从 $2d_0$ 增到 $\infty$，MSL 反而**升 1 个单位**——多找到的路径更长，抬高了全网流量、制造新热点。**MSL 最低点在 $D=1.5d_0$**，作者称这是"路径多样性与网络总负载之间的良好平衡"（L246）。
+- 非均匀流量：DBTS/DBTS+ 相对 SPR 的增益从 20% 降到 **15%**；作者给的反直觉解释是"在非均匀流量模式下，SPR 反而制造了更少的热点"（L248）。
+- **代价**：MSL 约 20% 的改善只换来约 **10%** 的加权 RTT 上升（L256）。**注意：摘要（L22）写的是"about 30% lower maximum satellite load"，正文（L246）写的是"about 20% reduction"——两处数字不一致，我按正文取值。**
+- 路径/跳数（Table 2，L299，均匀/非均匀）：SPR 平均路由数 1、跳数 4.03/3.86；DBTS 在 $D=1.2/1.5/2/\infty$ 时路由数 2.61/3.58/4.22/4.59、跳数 4.13/4.46/4.72/4.95；DBTS+ 跳数恒小于 DBTS（如 $D=\infty$ 时 4.70 vs 4.95）。
+- 快速重路由：$\rho=1$ 时 LFA+ 的保护覆盖率比 LFA **高约 15%**；$\delta$ 与 $\delta^*$ 的差距约 **25%**（说明不可保护路径很多）；$\rho=4$ 时该差距降到约 **13%**，且 **LFA+ 的保护覆盖率超过 99%**，此时 LFA 与 LFA+ 差别很小（L320-324）。
+
+**5. 它的实验条件**
+- 仿真器沿用 Handley [2] 为 Starlink 写的那个；地面中继密度 **$\rho=4$**；时隙 **50 ms**；每次仿真 **500 s = 10000 时隙**（L235）。
+- 流量矩阵：用户终端用同样的布放模型、密度 **$\rho=1$**，**美国境内共 19 个** → 构成 **19×19** 矩阵（L239、L244）。均匀矩阵：361 条流每条 **1 个单位**（作者注明"可视为 1000 包/秒"）；非均匀矩阵：每条在 $[0,2]$ 随机（L244）。
+- 明确假设：**"linking capacity is not the bottleneck"**（L111）——即不做链路容量约束。
+- 快速重路由实验：**只考虑美国境内的地面中继**，假定境外无中继（L314）。
+- 无训练环节。
+
+**6. 它自述的局限**（逐字）
+- L227："It should be noted that even with **LFA+, 100% protection coverage is not guaranteed**."
+- L314："we **only consider the ground relays located inside the USA**, i.e., we assume no ground relays outside the USA. Under this assumption, **100% protection coverage is impossible even if an ideal protection mechanism** (supporting arbitrary backup path) is available."
+- L239："(Note that, **the traffic matrix used here is only to evaluate our proposed algorithms. It does not mean that such a traffic matrix can be easily collected** or even utilized to construct the corresponding forwarding table.)"
+- L142："Besides, **the traffic matrix is never easy to obtain**."
+- L102："While finding the optimal locations for ground relays is an interesting problem, **this paper focuses on traffic engineering while assuming that all ground relays are properly placed**."
+- L111："In this paper, our goal is to minimize the MSL, and we **assume linking capacity is not the bottleneck**."
+- L165（乱序问题被外推）："we **assume that the packet out-of-order problem is solved at the destination** using, e.g., re-sequencing buffers."
+
+**7. 它没做但看起来能做的地方**（基于内容）
+1. **负载不是一根轴，只有两个点**：均匀（每条流 1 单位）与非均匀（$[0,2]$ 随机）（L244）。既然目标是**负载均衡**，最自然的下一步就是把流量矩阵整体缩放（0.5×/1×/2×…），看 MSL 与 RTT 如何随总负载变化——设备与仿真器都现成。
+2. **模型里没有排队时延**：MSL 是纯负载计数（L144），RTT 是路径时延（式6，L253）；而引言明确指出负载激增会带来**排队时延上升**（L30）。所以那个"$+10\%$ RTT"是**路径变长**的效应，不是拥塞效应——把排队显式建进代价函数是最直接的缺口。
+3. **$z$（延时因子）是静态常数**，最优值 1.5 靠扫描发现（L246、L155）。既然 MSL 对 $z$ 非单调，**按当前负载自适应调 $z$** 是现成的机制设计口子。
+4. **摘要与正文数字不一致**（30% vs 20%，L22 vs L246）——需要复核，可能有一处是笔误。
+5. **能量完全没有进模型**：引言提到太阳能卫星"limited energy budget"与负载激增导致"sharp drop in energy"（L30），但目标函数与约束里没有任何能量项。
+6. 地面中继的最优布放被显式排除（L102），但它自己证明 $\rho$ 从 1 到 4 会显著改变保护覆盖率（L320-324）——布放与 TE/FRR 的联合优化是明确空缺。
+
+**8. 和同批其他篇的关系**
+- 谱系上是**经典负载均衡路由 + 现代 SR** 的合流：引用的 **TLR**[30] 与 **ELB**[31]（L390、L392）正是 QSNRQ8PF 综述里被反复点名的两个经典对照（QSNRQ8PF 的 [95]、[94]，L628、L626）——本文是把它们放进"无 ISL + 地面中继"这个新拓扑里重做。
+- 与 **S2QZRBEJ** 共享同一个现实前提（**Starlink 初期无 ISL**，S2QZRBEJ L96 用 traceroute 实测确认，本文 L28 直接作为建模前提），且都引 **Hypatia**[34]（L398 / S2QZRBEJ L259）。两篇合起来正好构成"ISL 缺失期"的实测 + 仿真两面。
+- 与 **R37BNQQ8** 都是"网络优化/启发式"而非 RL，但 R37BNQQ8 做的是 SDN + 蚁群的端到端跨域路径，本文做的是 SR 源路由 + 分段备份，**优化目标也不同**（前者是时延/碎片/带宽/均衡加权和，后者是纯 min-max 单星负载）。
+- 与 **R5QTFKD2** 形成对照：R5QTFKD2 是单源到单目的 N 条并行路的年龄优化，本文是全网多商品流的负载均衡——都关心"选哪条路"，但一个优化 AoI、一个优化最大负载。
+- 不引用同批其他篇。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**贡献是"负载结构"而非"负载水平"**：
+- **它把负载当作要均衡的量，而不是自变量**：MSL 以"单位"（1 单位 ≈ 1000 pps，L244）报告，**没有对总到达率做扫描**——所以给不出 λ → 时延 的曲线。这是它最明显的缺口。
+- **一条真正可用的结构性事实（非单调）**：放宽延时界 $D$ 会同时增加"可用不相交路径数 $\Psi$"和"平均跳数 $H$"，前者改善均衡、后者抬升总负载并制造热点；净效果使 MSL 在 **$D=1.5d_0$ 取到极小**（L246）。这是"给路由更多自由度反而更差"的实证，且它把机制拆成了两个可测的中间量（Table 2 的 $\Psi$ 与 $H$，L299）。
+- **均衡收益依赖于流量分布形态**：均匀 20% vs 非均匀 15%，且 **SPR 在非均匀流量下反而制造更少热点**（L248）——意味着"负载均衡算法的收益随流量形态变化"，这在讨论"负载变化"时是一条必须区分"总量变化"与"分布变化"的提醒。
+- **均衡与时延的定量置换率**：约 **20% MSL 换取约 10% RTT**（L256）。这是本批唯一一条"负载均衡代价"的显式数字。
+- 但**没有排队、没有 λ、没有拥塞**——所以对"到达率/时延"只有间接价值。
+
+**10. 一句话评价**
+**把地面网的 SR + 流量分割工程化地搬到"无 ISL 的 LEO 星座"上**：方法本身是成熟工具的移植（未改 SR、未改 LFA），真正有信息量的是两条实证——**MSL 对延时界 $D$ 非单调、最优在 $D=1.5d_0$**（L246），以及**均衡收益随流量均匀性从 20% 掉到 15%**（L248）；但它的负载没有成为自变量、时延里没有排队，因此离"负载变化下的到达率/时延"仍隔一层。
+
+
 
 
 

@@ -320,6 +320,67 @@ STIN 中，星间路由算法大多源自地面网络（OSPF/RIP/AODV，L23）�
 
 **10. 一句话评价**
 把 Q-learning 搬到卫星路由的最朴素版本（表格 Q + Bellman + ε-greedy），真正的贡献是两个工程加速技巧（分层分裂 + 反向更新）；它的价值不在方法新意，而在于它是本批里唯一把"用户数"当横轴、并**明确暴露了负载一变就得重训这一硬伤**的论文。
+## NPF75WS5 — A Multifaceted Look at Starlink Performance
+
+**1. 一句话**
+用 1920 万条 M-Lab 众包测速（34 国）、180 万条 RIPE Atlas 主动测量（21 国）加两个受控终端（德国 + 苏格兰），把 Starlink 从全球宏观性能到亚秒级内部调度一起量了一遍；**结论里最硬的一条是 Starlink 存在 bufferbloat，且负载下的 RTT 膨胀可达 2–4 倍**。
+
+**2. 问题设定**
+Starlink 已是唯一拥有 200 万+ 用户、4000+ 在轨卫星的商业 LEO 网络（L51），但学界对它的理解受限于**缺乏全球观测点**（L69）。作者指出既有研究要么只有几个地理位置（[25,35,36,40]），要么靠仿真/模拟外推（[26,31]），社区已公开呼吁建立全球 LEO 测量测试床（[52,61,74]）。本篇要补的就是这个全球视角的空白。
+
+**3. 方法骨架**
+非 RL，是四路测量拼图。
+- **M-Lab 全球测速（第 3.1 节，L99–L102）**：NDT 协议、单条 10 s WebSocket TCP 连接，通过 ASN **AS14593** 识别 Starlink 客户端；只取 ndt7（用 TCP BBR）且自 2021 年 6 月以来测量数 ≥1000 的国家 → **19.2M 样本、34 国**。注意 L102 的坑：M-Lab 用 PoP 分配的公共 IP 反推用户位置，所以"国家/城市"标签是被 PoP 决定的。
+- **RIPE Atlas（L104）**：**98 个 Starlink 探针、21 国**，目标是 7 家云厂商的 145 个数据中心（见附录 B）。用 ICMP traceroute 按跳拆出**终端→GS（静态 100.64.0.1 地址）、GS→PoP（172.16/12）、PoP→终点**三段，2 s 间隔；10 个月（2022-12 至 2023-09）得到 **≈1.8M 样本**。还用反向 DNS PTR 做地理位置校正（如 tata-level3-seattle2.level3.net）。
+- **实时应用测量（第 3.2 节）**：Zoom 会议（用 [41] 的工具链取亚秒级 QoS 指标）；Amazon Luna 云游戏（用 [17] 的自动化系统玩赛车游戏 The Crew，含自定义流媒体客户端记录帧/码率 + 机器人按预设间隔做游戏动作），并与 5G 调制解调器对比。游戏服务器放在靠近 Starlink PoP 的 AWS（≈1 ms RTT）。
+- **受控实验（第 3.3 节）**：两台终端分别在德国（接 53° 壳层）与苏格兰（高纬，用**金属板做法拉第屏蔽**遮住南向，把可见范围限制到 70° 和 97.6° 壳层），用 CelesTrak 等外部卫星跟踪器验证。工具为 irtt（3 ms 间隔小 UDP 包）与 iperf（100 ms 粒度），同时每秒轮询终端 gRPC 取连接状态。
+
+**4. 它声称的效果**
+- **全球时延**：Starlink 中位时延约 **40–50 ms**（L133）；多数国家地面 ISP 仍略优，但哥伦比亚反过来更好，马尼拉明显更差。欧洲的罗马/巴黎 75 分位比都柏林/伦敦/柏林长约 20 ms（L135）。南美 75 分位超 100 ms、尾部到 200 ms（L137）。
+- **负载下的时延膨胀（最关键）**：L144 逐字 "Figure 8 reveals significant delay inflation under load as during active downloads, Starlink experiences ≈ 2–4× increased RTTs, reaching almost 400–500 ms (Figure 8a)." 且**上行下行不对称**：上行 RTT 的 60 分位升至 ≤100 ms，下行约 200 ms。
+- **吞吐**：75 分位下下载 ≈50–100 Mbps、上传 ≈4–12 Mbps（L146）；丢包率在 75 分位 4–8%，与吞吐呈负相关。**17 个月里吞吐是"稳定"而非"增长"**（L146）。
+- **Luna 云游戏（表 1，L162）**：游戏时延——地面 133.53±19.79 ms、蜂窝 165.82±23.55 ms、**Starlink 167.13±23.12 ms**（三者中最差）；空闲 RTT 分别 9 / 46 / 40 ms；吞吐 1000 / 150 / 220 Mbps；1080p 时长占比 100% / 94.11% / **99.45%**；卡顿 0±0 / 0±220.34 / **0±119.74 ms/min**。
+- **Zoom（L160）**：上行单向时延 Starlink **52±14 ms** vs 地面 **27±7 ms**；下行 35±11 vs 32±7。Starlink 会主动多发 FEC 包（平均 146±99 Kbps vs 地面 2±2 Kbps）。帧率两边都 ≈27 FPS。
+- **bent-pipe 基线**：全球 ≈**40 ms**（区间 36–48 ms），蜂窝最后一公里比它低约 1.5 倍（L186）。
+- **15 秒重构**：受控实验确认每 15 s 一次全局重构，德国与苏格兰两地**时间对齐**，说明是全局协调调度；且用"视野内只剩单颗星"的实验**证伪了卫星切换假说**（L211）。
+- **附录 C 的一条长期趋势**：吞吐随时间下降被归因于 Starlink 用户数增加（L428 逐字 "We observe decreasing goodputs over time, which can be largely attributed to an increase of Starlink users."）。
+
+**5. 实验条件**
+- **测量对象**：真实 Starlink 商业网络，不是仿真。轨道壳层数据见附录表 2（L368）：53°/72 面/550 km/1401 在轨；53.2°/72/540/1542；70°/36/570/301；97.6°/10/560/230。
+- **目的端**：M-Lab 500+ 服务器、145 个云数据中心，全部选在靠近 Starlink PoP 的位置以剔除地面路径影响。
+- **受控终端**：德国（53° 壳层）与苏格兰（被屏蔽到 70°/97.6°），irtt 服务器部署在与两地 PoP 相距 <1 ms 的云 VM 上。
+- **两个对照基线**：地面有线（1 Gbps 以太网）与 5G 蜂窝。
+- 时间跨度：M-Lab 自 2021 年 6 月起；RIPE Atlas 2022-12 至 2023-09；云游戏 150 分钟。
+- 数据公开：>300 GB 数据集与脚本（[44][45]）。
+- 训练/评估概念不适用（无学习模型）。
+
+**6. 它自己承认的局限**
+- L176 逐字："Note, however, that our Starlink terminal was set up without obstructions and the weather conditions during measurements were favorable to its operation [36]. Different conditions, especially mobility, may change the relative performance of Starlink and cellular, which we plan to explore further in the near future."
+- L102 承认众包数据的定位伪影："all speed tests across countries are mapped to a city... we approached our analysis with caution, particularly when examining fine-grained region-specific insights."
+- L117 承认 RIPE Atlas 缺亚秒可见度："A significant limitation of RIPE Atlas measurements is their lack of sub-second visibility, which is essential for understanding the intricacies of Starlink network."
+- L92 承认 ISL 无法直接观测："Note that not all Starlink satellites are ISL-capable and it is difficult to effectively estimate ISL usage as Starlink satellites have no visibility at IP layer [52]."
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **bufferbloat 只给了一个相对量（2–4× / 400–500 ms），没有给"负载 → 时延"的完整函数**。测速是固定 10 s 满载下载，负载是二值状态（空闲 vs 满速），不是被扫描的自变量。把它做成"给定注入速率，测稳态 RTT"的曲线，是这篇最直接的空缺——而这是排队论模型可以直接吃的输入。
+2. **它自己指出时延膨胀可能来自三处队列**（L144 逐字："Possible explanations can be queue size differences at the Dishy (affecting uploads), the ground station (affecting downloads), or satellites (impacting both)."）——**但没有做归因实验**。上行/下行的不对称（≤100 ms vs ≈200 ms）是一个现成线索：若是 AQM 在起作用，上行应当更平缓——作者自己也提出 AQM 假说（L144）但没验证。
+3. **15 秒重构与 bufferbloat 是两个独立的时延来源，论文没有把它们分离开**。L226 承认重构造成 "brief sub-second connection disruptions"；做负载→时延建模时必须同时扣除这个周期性台阶（对照同批 L63JISQN 的同类发现）。
+4. **附录 C 的"吞吐随用户数下降"是宏观相关，不是受控因果**（L428）：用户数、卫星数、基础设施部署同时在变，无法分离。
+5. **没有排队模型、没有到达率**：全篇是端到端测量，没有应用层到达过程，因此不能直接给出"到达率 λ → 时延"的映射。
+
+**8. 和同批其他篇的关系**
+与 **L63JISQN 是相互印证的姊妹篇**：L63JISQN 用 4 个终端发现 15 秒全局调度器，本篇用德国+苏格兰两地**独立复现**并进一步**证伪卫星切换假说**（L211），还直接引用 L63JISQN 为 [74]（L396）。与 P6XJZNQK 同属"用真实 Starlink 测量应用层体验"这一支，且都关心抖动对应用的影响；本篇用 Zoom/Luna，P6XJZNQK 用 Netflix 视频流。与 LBMABZJ7（Starlink 几何路由）形成"实测 vs 理想几何"的对照——后者假设无拥塞，前者量到的正是拥塞。与 LZKNZA8B / MXQVNU3P / PIXWFHAC 这些仿真类路由论文是**靶子与射手的关系**：本篇提供了它们应当去对齐的真实数字。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**本批中贡献最大的两篇之一。**
+- **直接给出负载→时延的定量事实**：L144 逐字 "during active downloads, Starlink experiences ≈ 2–4× increased RTTs, reaching almost 400–500 ms"。基线取 minRTT，作者明确说明选它是因为 "not affected by queuing delays"（L121）——**即这条膨胀量就是排队时延本身**，口径干净。
+- **给出上行/下行不对称**：上行 60 分位 ≤100 ms，下行 ≈200 ms（L144），为"队列在哪一端"提供可判定证据。
+- **给出瓶颈位置的三候选**：Dishy（影响上行）/ 地面站（影响下行）/ 卫星（影响两者），并提到 AQM 假说（L144）——直接可用的归因实验设计。
+- **一条跨时间的负载效应**：吞吐随用户数增加而下降（L428），但属宏观相关。
+- **局限**：没有到达率作为自变量，没有稳态排队曲线；给的是"两种负载状态下的时延差"，不是"时延(λ) 函数"。
+
+**10. 一句话评价**
+本批里证据质量最高的测量论文：把 LEO 的"负载→时延"从传闻变成了可引用的数字（满载下载时 RTT 膨胀 2–4 倍、达 400–500 ms），并独立复现了 15 秒全局重构；它不提供模型，但提供了别人建模时必须对齐的靶子。
+
 
 
 

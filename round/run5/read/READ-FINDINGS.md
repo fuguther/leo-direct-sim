@@ -138,3 +138,41 @@ MXQVNU3P 与 LZKNZA8B 属同族（图算子 + 序列/空间建模），但 **MXQ
 
 **处置**：有效语料 = **104 篇**。另需在全库扫一遍剩余离题条目（已列入待办）。
 **注意**：离题不等于无用——QMIX、MADDPG、Asymmetric DQN、GAE 这类是**方法供体**（可迁移的算法件），只是不能当 LEO 领域事实。
+
+## F17【缺口·作者自己写出来的，本批最直接】SKYLINK 把"负载→时延"的连续过渡段整个删掉了
+
+**K7U4TYJN 逐字（L82，主控核验）**：
+> "Satellites and ground stations have limited data buffers... If the outgoing data rate $R^{out}_{v,t}$ is less than the incoming data rate $R^{in}_{v,t}$, the buffer at the receiving node fills up. **When the buffer is full, a uniform percentage of data from every incoming stream will be dropped** to align the incoming stream size with the outgoing rate."
+
+**排队时延被写成台阶函数**（R6 读卡）：$\Delta_C \le 0$ 则 $D^q = 0$，否则直接跳到 $Q_{max}/$出速率。
+→ 即：**缓冲的填充/排空过渡过程不建模**，负载一旦超过服务率，时延**从 0 跳到满值**，中间的连续过渡段不存在。
+
+**为什么这条最重要**：这是全库目前**唯一由作者显式声明**的"负载→时延映射被简化"的缺口，而且**简化掉的恰好是本项目关心的那一段**（负载变化过程中的时延演变）。它比我此前登记的 N1/N2/N3 都更直接——那三条是观测到现象，这条是**指明了一个被删掉的研究对象**。
+
+## F18【测量学·与 F8 呼应并升级】最短路"平均时延更低"是幸存者偏差（K7U4TYJN 自己承认）
+
+**L364 逐字（主控核验）**：
+> "shortest-path algorithms, such as Dijkstra and k-shortest paths, exhibit relatively low delays. However, this is primarily **because these algorithms deliver fewer data in general, favoring data that are closer to the ground**."
+
+**与 F8 合起来**：F8 是分母口径问题（含不含被拒业务），F18 是**幸存者偏差**（只算成功送达的、且偏向近处的）。
+→ 合起来构成一条硬约束：**任何"负载升高 → 时延升高/降低"的结论，必须同时报告丢包率与吞吐，否则结论可以反向**。这与我逐字核验的 F8 三篇证据方向一致，且这条是**作者自己承认的**。
+
+## F19【实测数据·可直接用】SKYLINK 的负载扫描（12.7M → 127M 用户）
+
+逐字（L348，主控核验）：
+> "From 12.7 to 127 million users, the drop rate for Dijkstra increases from **15.6% to 72.4%**, while for k-shortest paths it increases even faster..."
+
+→ 这是全库**跨度最大的一次负载扫描**（10 倍用户数），且**横轴是规模而非到达率**。可用作"负载—丢包"的量级参照与对照基线。
+
+## F20【时间尺度夹缝】物理拓扑 70 ms 就变，工程重配只能做到分钟级
+
+- **JLF7IEBQ 实测**：Starlink 拓扑保持时间平均仅 **70 ms**；
+- **JS857IYN L252 明确**：拓扑重配**做不到亚秒级**（配置复杂度/服务连续性/稳定性）。
+
+→ 对本项目：任何"按拓扑变化重算策略"的设计，必须落在这个夹缝里——**物理上 70 ms 就过期，工程上分钟级才允许重配**。这为"何时更新"提供了硬约束（与 S85KQ4FC 的抖动触发门、R5QTFKD2 的阈值结构定理呼应）。
+
+## F21【"时延最优 ≠ 负载均衡"实测】L2VKYTAV
+
+FD-MADRL 学出的路径**跳数更少但把链路用饱和**；把用过的链路加 20% 负载后，**12 节点仍稳、24 节点不稳**。
+另：**全局奖励要等多跳传播延迟 T 后才到达（滞后），局部奖励即时**（L33 逐字）。
+→ 与本项目"奖励设计"支直接相关：**全局信号的滞后性是被实测记录的，不是假设**。
