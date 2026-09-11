@@ -814,6 +814,230 @@
 7. **动态频谱管理在标准化工作中的缺位（含 THz 与 FSO）**：501。本库无对应论文。
 8. **星上基站升级困难与功率受限导致的功能退化**：497。本库无对应论文（注：8N9QJHC2 的故障恢复路由与之相关，但那是 T1 档，不在本档结论范围）。
 
+---
+
+## 11. BV4XI6CU — Load Balancing for 5G Integrated Satellite-Terrestrial Networks
+
+- 本地定位：TIER-ASSIGNMENT.md:112，"综述：只取共识与开放问题，不承重"（**注**：该篇实为**算法研究论文**，非综述；定档表将其归入 T5。本档按 T5 深度要求执行，但因其含完整算法，第 2 项的负载相关表述密度是本批最高）
+- MD 总行数：485
+- 读取范围：第 3–16 行（题录/摘要/索引词）、17–37 行（I. INTRODUCTION）、92–180 行（II.D LOAD MEASUREMENT IN 5G MULTI-RATs + II.E PROBLEM FORMULATION）、184–315 行（III. THE PROPOSED ALGORITHM 全节）、316–330 行（IV.A SIMULATION ENVIRONMENTS）、398–409 行（IV.F IMPACT OF DELAY-TOLERANT FLOWS WITH DIFFERENT NETWORK LOAD + V. CONCLUSION）。**基本通读**（除 IV.B–IV.E 的结果图描述外）。
+
+### 11.1 该文认定的开放问题清单（逐字 + 行号）
+
+该文为非综述研究论文，"开放问题"以引言中的既有工作缺口形式呈现：
+
+| # | 行号 | 逐字原文 |
+|---|---|---|
+| O1 | 13（摘要） | "However, previous load balancing algorithms do not consider the coexistence of NTNs and TNs and ignore the different resource allocation units in a multi-RAT network." |
+| O2 | 29 | "The previous work used a multi-RAT network to increase capacity and coverage of the TNs, but did not consider load balancing in terrestrial RAT. Further, previous work did not devise a common metric to measure RAT traffic loads, which is necessary in a multi-RAT network because different RATs use different time frequency r..." |
+| O3 | 100 | "However, the total number of PRBs, `$N _ { P R B }$`, in 5G changes dynamically with changes in subcarrier spacing [21]. Therefore, the RBUR cannot be directly used to measure the cell load in 5G RAT." |
+| O4 | 102 | "Furthermore, radio resources are not allocated in terms of the PRBs in an NTN. Since, we need a common metric/parameter to measure the radio resources utilization of different RATs for a 5G multi-RAT network." |
+| O5 | 120 | "If RRUR is more than a predefined threshold, the cell is overloaded, and UEs moving to that cell will either be dropped or will experience low data rates. Hence, new UEs in an overloaded cell will reduce the per UE data rates." |
+| O6 | 25 | "However, sometimes UEs cannot move to neighboring cells due to a scarcity of resources and limited coverage. This affects efficient load balancing among cells, and decreases QoS of the users." |
+| O7 | 408 | "The proposed algorithm depends on the availability of delay-tolerant flows to achieve better performance." |
+| O8 | 404 | "When the network load is high, the adaptive multi-RAT MLB requires a higher ratio of delay-tolerant flows to balance the terrestrial cells. Hence, we can say that the adaptive multi-RAT MLB depends on the availability of delay-tolerant flows for inter-RAT offloading to achieve better performance." |
+
+### 11.2 涉及"负载过程/突发/时延/到达率/信用分配/决策成本"的表述（逐字 + 行号）
+
+本篇是本批 **"负载"主题的核心来源**，逐条如下：
+
+| 行号 | 逐字原文 | 归类 |
+|---|---|---|
+| 94 | "Proper load measurement of cells is crucial for optimizing the performance of a network through load balancing. For that purpose, a common load measurement metric is needed to measure the load of each RAT in a multi-RAT network." | **负载度量的前置性** |
+| 97 | `$overline { { R B } } _ { n } = rac { 1 } { T cdot N _ { P R B } } sum _ { 	au in ( t - T , t ) } R B _ { n }$`（式 2） | **负载＝时间窗 T 内的资源块占用均值**（公式逐字抄录） |
+| 100 | "where `$R B _ { n }$` and `$N _ { P R B }$` are the number of allocated resource blocks and the total number of resource blocks in the cell, respectively." | 式 2 符号定义（逐字） |
+| 104 | "In this paper, we introduce the radio resource usage ratio (RRUR) as a load measurement metric for the multi-RAT network. We defined RRUR as the ratio of bandwidth used by RAT to the total RAT bandwidth." | RRUR 定义 |
+| 107 | `$eta _ { n } = rac { 1 } { T cdot omega _ { n } } sum _ { 	au in ( t - T , t ) } gamma _ { 	au } cdot arsigma _ { 	au }$`（式 3） | 5G RAT 的 RRUR（公式逐字抄录） |
+| 110 | "where `$omega _ { n }$` is the total bandwidth of 5G cell `$n ,$` and `$gamma _ { 	au }$` and `$arsigma _ { 	au }$` are the allocated PRBs and resource block bandwidth at time τ, respectively. The resource block bandwidth depends on the numerologies." | 式 3 符号定义（逐字） |
+| 115 | `$eta _ { S } = rac { 1 } { T cdot omega _ { s a t } } sum _ { 	au in ( t - T , t ) } Omega _ { 	au }$`（式 4） | 卫星 RAT 的 RRUR（公式逐字抄录） |
+| 118 | "where `$Omega _ { 	au }$` is the bandwidth allocated to UEs based on the Shannon formula and `$omega _ { s a t }$` is the total bandwidth of the satellite at time τ ." | 式 4 符号定义（逐字） |
+| 120 | "Based on the common load measure metric, i.e., RRUR, load distribution among cells of different RATs is determined. A higher RRUR of a cell indicates that the cell has a higher load to serve and fewer available resources." | 负载→资源可得性 |
+| 124 | "In a network, if the RRUR of a RAT cell is close to 1, a user that moves into the cell will either be dropped or will experience a low data rate." | **负载水平→用户被丢弃** |
+| 129 | `$operatorname* { m i n } quad sum _ { orall n in mathcal { T } } | overline { { eta } } - eta _ { n } | ^ { 2 }$` + `$mathrm { s u b j e c t ~ t o : ~ } eta _ { S } leq T h r _ { a d p } ,$` + `$eta _ { kappa } ^ { i } geq ho _ { i } , quad kappa in mathcal { N }$`（式 5） | **优化目标：最小化各小区 RRUR 与目标值的平方距离**；约束含自适应阈值与每用户资源下限（公式逐字抄录） |
+| 132 | "where `$eta _ { n }$` is the RRUR of terrestrial cell n, `$eta _ { S }$` is the RRUR of a satellite cell S, `$T h r _ { a d p }$` is the adaptive threshold, `$eta _ { kappa } ^ { i }$` is the resource allocated to user i by cell κ, and `$ho _ { i }$` is the resources required by user i, from which `$ho _ { i }$` is calculated based on the minimum data rate required by UE i." | 式 5 符号定义（逐字） |
+| 161 | `$overline { { eta } } = E [ eta _ { n } ]$`（式 7） | 目标负载＝RRUR 的期望（公式逐字抄录） |
+| 189 | `$T h r _ { a d p t } = m a x ( overline { { eta } } , t h r _ { i n i t } )$`（式 8） | **自适应阈值＝均值与初始阈值的较大者**（公式逐字抄录） |
+| 192 | "where `$t h r _ { i n i t }$` is the fixed initial threshold used to determine whether there is a need for load balancing in the network. The adaptive threshold, `$T h r _ { a d p t }$`, is used to adopt the network load. **The network load can vary over time because of user mobility and variances in required data rates of the UEs.**" | **负载随时间变化的两大成因**（用户移动 + 需求速率方差）——本批对"负载过程"成因最明确的表述之一 |
+| 203 | `$eta _ { n } > T h r _ { a d p t } , n in mathcal { T }$`（式 9） | **过载判定：RRUR 超过自适应阈值**（公式逐字抄录） |
+| 215 | `$hat { eta } _ { Gamma _ { k } } ^ { e _ { 1 } } = rac { ho _ { e _ { 1 } } arsigma } { omega _ { Gamma _ { k } } }$`（式 10） | **目标小区负载增量的预估**（公式逐字抄录） |
+| 221 | `$eta _ { Gamma _ { k } } + hat { eta } _ { Gamma _ { k } } ^ { e _ { 1 } } < T h r _ { a d p t }$`（式 11） | 目标小区不过载约束（公式逐字抄录） |
+| 225 | `$eta _ { o } - hat { eta } _ { o } ^ { e _ { 1 } } > eta _ { Gamma _ { k } } + hat { eta } _ { Gamma _ { k } } ^ { e _ { 1 } } .$`（式 12） | **源小区减载后仍高于目标小区**——防乒乓（公式逐字抄录） |
+| 218 | "Before offloading UE `$e _ { 1 }$` to cell `$Gamma _ { k }$`, the algorithm checks the following conditions in order to restrict the target cell load to below overload status and to avoid unnecessary offloading of UEs to neighboring cells, i.e., to avoid ping-pongs:" | **乒乓（ping-pong）规避** |
+| 210 | "For intra-RAT load balancing, first the UEs of `$E _ { o }$` with delay-sensitive flows, and then UEs with delay-tolerant flows, move to underloaded neighboring cells one by one based on the load status of cell `$o .$`" | **按业务时延敏感度排序迁移**（决策次序） |
+| 210 | "The UEs in `$E _ { o } = \{ e _ { 1 } , . . , e _ { n } \}$` are then sorted in ascending order of serving cell RSRPs and the UEs are arranged according to data flow type." | 按 RSRP 升序 + 按流类型排序（迁移候选的排序规则） |
+| 262 | "After intra-RAT load balancing, the algorithm again checks the load status of the cell o. If the cell is still overloaded, i.e., `$eta _ { o } ~ > ~ T h r _ { a d p }$`, the algorithm performs inter-RAT load balancing by transferring the load of cell o to satellite cell S by offloading the delay-tolerant flows of UEs if" | **两级负载均衡（先 intra-RAT 后 inter-RAT）** |
+| 265 | `$eta _ { S } < T h r _ { a d p }$`（式 13） | 卫星未过载条件（公式逐字抄录） |
+| 299 | `$eta _ { S } + hat { eta } _ { S } ^ { arepsilon _ { 1 } } < T h r _ { a d p t }$`（式 14） | 卫星不过载约束（公式逐字抄录） |
+| 302 | "The above condition prevents the satellite from being overloaded. For the offloading of data flows, the UPF directs the flow of UE `$arepsilon _ { 1 }$` to NTN gNB as we considered the separate user plane for each RAT." | 用户面按 RAT 分离 |
+| 305 | `$eta _ { S } = eta _ { S } + hat { eta } _ { S } ^ { arepsilon _ { 1 } } ,  mathrm { a n d } $` + `$eta _ { o } = eta _ { o } - hat { eta } _ { o } ^ { arepsilon _ { 1 } } .$`（式 15） | **负载状态的增量更新式**（公式逐字抄录） |
+| 310 | "When UEs moves to a satellite, they will experience a long delay. However, offloading UEs with delay-tolerant data flows will not affect the QoS of the UEs, whereas UEs with delay-sensitive data are served by the 5G RAT." | **时延承受度作为分流依据** |
+| 312 | "We analyzed the computational complexity of the proposed algorithm using big O notation." | **决策成本（复杂度）显式分析**——本批唯一做此分析的篇目 |
+| 314 | "the overall computational complexity of the proposed load balancing algorithm becomes `$O ( | T | ^ { 2 } ) + O (  { mathcal { T } } | T | )$`. Generally, `$mathcal { T } gg | mathcal { T } |$` so we can say that the computational complexity for the proposed load balancing algorithm is O(I|T|)." | **算法复杂度结果：O(I·|T|)**（公式逐字抄录） |
+| 400 | "For the different network load, we changed the required data rate of each UE. The required data rates for each UE were 5-10 Mbps and 10-15 Mbps for low and high network load, respectively." | **负载水平＝每用户需求速率**（负载的定义方式登记） |
+| 404 | "By increasing delay-tolerant traffic, the adaptive multi-RAT MLB finds more UEs with delay-tolerant flows, and offloads the UEs from overloaded cells to a satellite to balance the network." | 分流比例随可分流业务占比变化 |
+| 408 | "Based on intra-RAT and inter-RAT offloading, the load across terrestrial cells became more balanced and the number of satisfied UEs increased in the network." | 结果（不作贡献，仅登记） |
+
+**信用分配**：本篇为**非学习**的路由/负载均衡算法（阈值 + 逐用户贪心），不存在 RL 信用分配问题。与"负载/时延/决策成本"相关的表述已在上表穷举。
+
+### 11.3 负向声明核验（模式 / 实测计数 / 命中判定）
+
+- 模式 `credit` → **实测计数 0**。
+- 模式 `arrival rate` → **实测计数 0**；`arrival process` → **实测计数 0**。
+- 模式 `Poisson` → **实测计数 0**。
+- 模式 `burst` → **实测计数 0**。
+- 模式 `self-similar` → **实测计数 0**。
+- 模式 `non-stationar` → **实测计数 0**。
+
+**重要限定**：本篇虽有"负载随时间变化"的定性表述（L192）与时间窗均值度量（式 2/3/4），但**全文未对负载的到达过程做任何随机过程建模**（无 Poisson、无 burst、无自相似、无马尔可夫到达过程）。负载在其模型中是**可测量、可预测均值的确定性量**（式 7 的期望），这构成与本库"负载过程/突发"选题的**明确缺口对照**。
+
+### 11.4 它提到但本库其他论文未跟进的方向
+
+1. **多 RAT 统一负载度量（RRUR）**：104–118。本库 T1/T2 路由论文的负载度量均为单一网络内的队列长度/链路利用率，**无跨 RAT 统一度量**的设计。
+2. **自适应阈值（式 8）驱动的过载判定**：189。本库 T2 的 ELB（JP79GMZS）用固定阈值 + 队列占用；式 8 的"阈值随网络均值浮动"在 T2 档需复核是否被采用。
+3. **防乒乓（ping-pong）的双向约束（式 11+12）**：218–226。本库 T2 负载均衡论文未见对"迁移后再迁回"的显式约束。
+4. **按业务时延敏感度决定迁移次序**：210。本库 T2 有按优先级分流的方案（T9X6QCLL L185 记载），但未见"迁移候选排序 = RSRP 升序 × 流类型"的组合规则。
+5. **显式的算法复杂度分析**：312–314。本库多数路由论文不报复杂度（需 T1/T2 档复核）。
+6. **延迟容忍流占比作为性能前提**：404、408。本库 T1/T2 论文较少把"可分流业务占比"作为性能的前提条件显式声明。
+
+---
+
+## 12. 524XNF29 — Non-Terrestrial Networks in 5G & Beyond: A Survey
+
+- 本地定位：TIER-ASSIGNMENT.md:113，"综述：只取共识与开放问题，不承重"
+- MD 总行数：771
+- 读取范围：第 4–23 行（题录/摘要/索引词）、333–439 行（VII. OPEN ISSUES AND FUTURE DIRECTIONS 全节 + VIII. TOWARD 6G SATELLITE COMMUNICATIONS + IX. CONCLUSIONS）。
+- **未通读（如实声明）**：24–332 行（I–VI 各节：引言、NTN 描述、NTN 架构、NTN 在蜂窝中的角色、5G 中的 NTN、3GPP 研究活动）。
+
+### 12.1 该综述认定的开放问题清单（逐字 + 行号）
+
+| # | 行号 | 逐字原文 |
+|---|---|---|
+| O1 | 335 | "In this section, we discuss the main open issues and pave the way to future research directions. In particular, we focus on the management of mobility, propagation delay, and radio resources." |
+| O2 | 339 | "However, the motion of both the NGSO satellites around Earth and the UEs in a given region yields a time-varying NGSO channel. The dynamic nature of NGSO satellite links has an important implication on handover and paging procedures." |
+| O3 | 341 | "In the case of NGSO satellites, frequent intra-satellite handovers are related to high speeds of the beam footprint on the ground." |
+| O4 | 360 | "The moving tracking area incurs high paging loads that are difficult to manage by the network. Indeed, the NGSO beam footprints do not correspond to the terrestrial cells on the ground. As a consequence, the NGSO satellite-based RAN is not able to provide the exact information on the UE tracking area during the initial registration. Furthermore, the UE cannot always establish its location for Registration Update and Paging procedures." |
+| O5 | 366 | "None of the works in past literature considered the 5G NR. Future studies might integrate the NR technology with the NTN to improve compatibility with 5G NR terrestrial networks." |
+| O6 | 366 | "New procedures to support dual-connectivity and novel mechanisms for vertical handovers might be proposed to improve global network coverage, service continuity, and seamless mobility in hybrid/integrated terrestrial and NTN systems." |
+| O7 | 366 | "Further, solutions for UE geolocation are required to determine the belonging beam (satellite), the beam (satellite) belonging time, and the next-to-switch beam (satellite) to simplify handover and paging procedures." |
+| O8 | 370 | "The propagation delay has a profound impact on the system performance in non-terrestrial communications and can be considered as one of the main challenges for URLLC applications and critical communications (i.e., public safety)." |
+| O9 | 376 | "In NGSO satellite-based communications, the UE radio channel is characterized by rapid fluctuations over time; hence, after the propagation time has elapsed, the UE may no longer be able to decode the received data or can perceive an undesired QoS." |
+| O10 | 380 | "In future research activities, it might be essential to investigate the ways how these factors lead to changes in the user channel as well as how to cope with abrupt channel variations by considering propagation delay to ensure service continuity." |
+| O11 | 384 | "Radio resource management is one of the major considerations in 5G NR technology. Hence, efficient radio resource allocation is essential to avoid the following:" |
+| O12 | 398 | "The availability of new frequency bands (i.e., mmWave) and the introduction of scalable 5G NR numerology [134] led to additional challenges in the management of the radio spectrum for NTN systems." |
+| O13 | 398 | "Indeed, different numerologies (i.e., different subcarrier spacings) may coexist over a given frequency band, thus generating novel types of interference, known as inter-numerology interference (INI) [135]." |
+| O14 | 400 | "Therefore, the research community might address the issue of INI mitigation in multinumerology NTN systems for 5G and beyond technologies." |
+| O15 | 400 | "Future research activities can focus on new solutions to boost the capacity by limiting inter-beam interference in multi-spotbeam satellite systems." |
+| O16 | 400 | "Finally, novel radio resource allocation techniques might be required to handle the transmission of several services and to cope with inter radio access network interference in hybrid/integrated terrestrial-NTN systems." |
+| O17 | 427 | "Here, the 6G NTN is expected to support emerging critical use cases (i.e., disaster prediction) and achieve global connectivity with seamless network access in maritime and mountainous scenarios." |
+
+### 12.2 涉及"负载过程/突发/时延/到达率/信用分配/决策成本"的表述（逐字 + 行号）
+
+| 行号 | 逐字原文 | 归类 |
+|---|---|---|
+| 370 | "The propagation delay is defined as the latency either from the NTN gateway to the NTN terminal via space/airborne platform (i.e., transparent payload) or from the space/airborne platform to the NTN terminal (i.e., regenerative payload)." | **传播时延的定义口径**（逐字） |
+| 370 | "Furthermore, the propagation delay depends on the NTN platform altitude, the NTN gateway position and elevation angle, and the NTN terminal position [3]." | 传播时延的依赖因子 |
+| 372 | "• One-way propagation delay considers the time needed by the information to travel from the NTN gateway to the NTN terminal through the NTN platform (in the case of the transparent payload-based satellite) or from the NTN platform to the NTN terminal (in the case of the regenerative payload-based satellite)." | 单向传播时延定义（逐字） |
+| 374 | "• Two-way propagation delay, also known as Round Trip Time (RTT), takes into account the time required by the information to travel from the NTN gateway to the NTN terminal through the NTN platform and back (in the case of the transparent payload-based satellite) or from the NTN platform to the NTN terminal and back (in the case of the regenerative payload-based satellite)." | 双向传播时延/RTT 定义（逐字） |
+| 376 | "Furthermore, the propagation delay is a crucial parameter to be considered during the choice of transmission parameters (i.e., MCS)." | **时延作为决策参数**（MCS 选择） |
+| 376 | "In NGSO satellite-based communications, the UE radio channel is characterized by **rapid fluctuations over time**; hence, after the propagation time has elapsed, the UE may no longer be able to decode the received data or can perceive an undesired QoS." | **信道快速波动 + 反馈时延 → 决策失效**（决策时标与过程时标的错配） |
+| 380 | "The NTN channel is modeled by considering relative movements of both the NTN platform and the UE, NTN altitude and orbit, UE antenna type, atmospheric conditions, presence or absence of obstacles (i.e., building, foliage, mountains), deployment scenario, and frequency bands." | 信道模型输入的穷举（逐字） |
+| 360 | "The moving tracking area incurs **high paging loads** that are difficult to manage by the network." | 寻呼负载 |
+| 362 | "In [119], the authors modeled the handover process and proposed a strategy for inter-beam satellite handover based on the potential game for mobile terminals to minimize the number of handovers, **balance the LEO constellation load**, and reduce the handover time." | **切换次数最小化 + 星座负载均衡 + 切换时间**（三目标） |
+| 388 | "In the case of heterogeneous NTN systems, when an NGSO satellite enters the LoS conditions with the GEO satellite, dynamic RRM techniques aid in coping with mitigating interference between the GEO and the NGSOs inside the GEO LoS cone." | 干扰（非负载） |
+| 390 | "The integration of NTNs with terrestrial systems may be exploited in many 5G scenarios to extend cellular coverage or to **offload terrestrial traffic**. In the latter case, radio resources need to be allocated to limit the interference between the GEO (or NGSO) and the gNBs." | **地面流量卸载到 NTN** |
+| 425 | "• Artificial Intelligence for real-time satellite decisions and seamless satellite control to achieve high-level autonomous operations." | **实时卫星决策**（决策时延要求） |
+| 410 | "• Time Engineered Applications, such as industrial automation, autonomous systems, and massive sensor networks, where the time factor is extremely important for real-time response." | 时间要素作为 6G 应用类别 |
+| 348 | 表 8 中 "Propagation delay. Varying NTN channel" → Effect: "Channel estimation / Scheduling" → Issues: "**Delay-CSI-MCS management**: new techniques to select transmission parameters (i.e., MCS) to ensure that UE may perceive satisfactory service quality and reliably decode transmitted data **despite rapid channel fluctuations and long propagation delays**." | **延迟-CSI-MCS 联合管理** |
+
+### 12.3 负向声明核验（模式 / 实测计数 / 命中判定）
+
+- 模式 `credit` → **实测计数 0**。
+- 模式 `arrival rate` → **实测计数 0**；`arrival process` → **实测计数 0**。
+- 模式 `Poisson` → **实测计数 0**。
+- 模式 `burst` → **实测计数 0**。
+- 模式 `self-similar` → **实测计数 0**。
+- 模式 `non-stationar` → **实测计数 0**。注意：本篇 L339 用 "time-varying NGSO channel"、L376 用 "rapid fluctuations over time" 表述信道时变性，但**未使用 non-stationar 一词**（已用精确模式核验）。
+
+### 12.4 它提到但本库其他论文未跟进的方向
+
+1. **延迟-CSI-MCS 联合管理（应对快速信道波动 + 长传播时延）**：348 表 8、376。本库无对应论文。
+2. **星历数据管理（向 UE 高效提供并更新星历）**：348 表 8。本库无对应论文。
+3. **馈电链路切换（feeder link switch-over）的无缝管理**：348 表 8。本库无对应论文。
+4. **交错 numerology 干扰（INI）在 NTN 的抑制**：398–400。本库无对应论文。
+5. **面向 UE 地理定位以简化切换与寻呼的机制**：366。本库无移动性管理论文。
+6. **全息无线电 / 非射频（光）NTN**：421–423。本库无对应论文。
+7. **多播预编码与用户聚类（k-means）以抑制多波束干扰**：392–396。本库无对应论文。
+8. **以势博弈（potential game）同时最小化切换次数、均衡星座负载、降低切换时间**：362。本库 T1/T2 未见势博弈方法的切换/负载联合优化（需 T1/T2 档复核）。
+9. **地面流量向 NTN 卸载及其干扰约束**：390。本库 BV4XI6CU 做了相邻工作，但无跨档系统比较，仅在综述层登记。
+
+---
+
+## 13. 5AZHJE7N — Network Simulators for Satellite-Terrestrial Integrated Networks: A Survey
+
+- 本地定位：TIER-ASSIGNMENT.md:114，"综述：只取共识与开放问题，不承重"
+- MD 总行数：721
+- 读取范围：第 3–18 行（题录/摘要/索引词）、126–137 行（III.C STIN SIMULATION EVALUATION METRICS 全节）、413–465 行（VI. FUTURE RESEARCH DIRECTIONS 全节 + VII. CONCLUSION）。
+- **未通读（如实声明）**：19–125 行（I. INTRODUCTION、II. STIN BACKGROUND、III.A/III.B）、138–412 行（IV. 仿真框架与工具、V. 仿真器文献综述——本批未通读的最大区块）。
+
+### 13.1 该综述认定的开放问题清单（逐字 + 行号）
+
+| # | 行号 | 逐字原文 |
+|---|---|---|
+| O1 | 419 | "The dynamic integration simulation of the packet-level network simulator and the astrodynamics simulator is still not satisfactory. Due to the complex natures of these isolated simulators, most of the simulations in the literature are based on a static file exchange fashion, e.g., a static satellite trace file is generated by STK first and then loaded by other tools, which is not flexible." |
+| O2 | 421 | "While some early attempts to build a dynamic integration environment have been made in the literature, e.g., in GEMINI [83], there is not yet a perfect solution, especially for large-scale LEO constellations." |
+| O3 | 423 | "Under this situation, the network simulator should possess the ability to model the evolving network topology and evaluate the adapted network management schemes, e.g., new routing methods when the previous ones no longer work." |
+| O4 | 427 | "For most existing STIN simulators, the generated network traffic follows some empirical distributions or emulates some specific services, e.g, web browsing or live streaming. The network functions and protocols are evaluated with these normal behaviors and Monte-Carlo simulations, without considering malicious and abnormal user behaviors in more realistic scenarios." |
+| O5 | 429 | "The common cyber-attacks in terrestrial networks could be applied in different layers if similar protocols are to be used in STIN, which include the denial-of-service (DoS) and distributed DoS attacks in the networking layer and blocking, jamming, and spoofing in the physical layer." |
+| O6 | 431 | "The complex user behavior emulation has only been considered in several studies [98], [99], and there is still room for improvement [100]." |
+| O7 | 444 | "Further integration between cloud computing and STIN simulation is required with better support for large-scale simulation and web-based GUIs if millions of users and thousands of network nodes are to be emulated. It is not only a scientific problem to build an efficient and distributed simulation platform, but also a challenging engineering problem to implement a scalable and sustainable cloud-based STIN simulation platform, which is worth further exploration." |
+| O8 | 448 | "AI has been proven effective for network optimization and management of satellite and terrestrial networks in previous studies [101]–[105]. However, previous applications of AI in networking rely on external simulation tools, e.g., TensorFlow and PyTorch. For those researchers who are not familiar with these development tools, it is difficult to leverage the state-of-the-art AI models. It is still in an early stage to integrate AI tools and network simulators, so that new network-related models and algorithms can be designed more efficiently" |
+| O9 | 450 | "Another potential direction is to benchmark AI-based networking solutions in STIN scenarios. While AI models have been introduced in many studies, their performance is evaluated in different settings and without a unified dataset, e.g., ImageNet for image classification." |
+| O10 | 450 | "The challenge is that real-world traffic data are difficult to acquire in satellite-terrestrial integrated networks for both the technical and political reasons [109]. One potential alternative solution is to embed the STIN simulators with some common parameters or simulation data that can be loaded directly and used as benchmarks for evaluating and comparing different AI models [110]." |
+| O11 | 458 | "Some research progress has been made in the literature. However, dedicated simulation tools have not been developed yet [15]." |
+| O12 | 458 | "Most of the existing relevant studies are based on MATLAB and Monte Carlo simulations [116]–[118], and there is still a huge research space for developing efficient simulation tools." |
+| O13 | 464 | "It is observed that the research of developing STIN simulators is still in an early exploration stage with no mature solutions." |
+| O14 | 128 | "However, these existing discussion for KPIs is not comprehensive, and in this survey, we present a novel and comprehensive taxonomy of STIN simulation evaluation metrics as shown in Figure 4." |
+
+### 13.2 涉及"负载过程/突发/时延/到达率/信用分配/决策成本"的表述（逐字 + 行号）
+
+| 行号 | 逐字原文 | 归类 |
+|---|---|---|
+| 132 | "The network layer metrics focus on the end-to-end communication capacities for services in STIN scenarios, including **throughput, packet error rate (PER), end-to-end delay, delay jitter**, etc. Since multiple routes can be leveraged in an STIN, e.g., through the satellite segment or the ground segment, it would become more complex to evaluate the networking performance when multiple paths are involved." | **网络层评价指标的穷举**（吞吐/PER/时延/抖动） |
+| 132 | "The evaluation metrics for specific network protocols and algorithms are also considered, e.g., the routing and load balancing algorithms, which include **the convergence time of routing protocols** and **the load balancing ability to avoid network congestion**." | **收敛时间与负载均衡能力被列为评价指标**（决策成本的度量口径） |
+| 301 | "in a predefined way with the simulation scenario setup or following a **Poisson probability distribution with an arrival rate**. The traffic demand of each user is set to ..."（SatSysSim [75] 的描述） | **业务到达的 Poisson 分布 + 到达率**（`arrival rate` 与 `Poisson` 的唯一命中） |
+| 427 | "the generated network traffic follows some empirical distributions or emulates some specific services, e.g, web browsing or live streaming" | **现有仿真器的流量生成方式：经验分布或特定业务模拟** |
+| 130 | "Scalability is also a very important evaluation metric to evaluate whether the network can support large numbers of users in both satellite and terrestrial domains." | 可扩展性（用户规模） |
+| 134 | "The physical layer metrics focus on the context of shared spectrum access (SSA) for both the satellite and terrestrial links. The wireless links can be interrupted by various factors, e.g., adversarial attacks or background noises." | 物理层指标与链路中断因素 |
+| 136 | "The specific geometrical metrics include satellite constellation coverage, system redundancy, link duration, etc." | 几何指标（含链路持续时间） |
+| 13（摘要） | "Simulation challenges arise with the fast growth of LEO mega-constellations, including frequent re-connection and handover, long satellite transmission delay, high dynamics of satellite network topologies, and the integ..." | 仿真挑战清单（含长传播时延、高动态拓扑） |
+| 423 | "the network simulator should possess the ability to model the evolving network topology and evaluate the adapted network management schemes, e.g., new routing methods when the previous ones no longer work" | 拓扑演化建模 |
+| 462 | "Five requirements are also listed and recommended when designing new STIN simulators from the perspectives of **fidelity, scalability, extensibility, agility, and real-time**" | 仿真器的五项设计要求（含 real-time） |
+
+**关键判定**：本篇对本题的价值在于 **L132**——它把 **"路由协议的收敛时间"** 与 **"负载均衡能力（避免网络拥塞）"** 并列为标准评价指标。这是本批 13 篇中**对"决策成本应被度量"最制度化的一次表述**，可作为本库 T1/T2 论文评价体系缺口的对照基准。
+
+### 13.3 负向声明核验（模式 / 实测计数 / 命中判定）
+
+- 模式 `credit` → **实测计数 0**。
+- 模式 `arrival process` → **实测计数 0**。
+- 模式 `burst` → **实测计数 0**。
+- 模式 `self-similar` → **实测计数 0**；`non-stationar` → **实测计数 0**。
+- 模式 `arrival rate` → **实测计数 1**。
+  - **命中位置与逐字**：L301 "...in a predefined way with the simulation scenario setup or following a Poisson probability distribution with an arrival rate. The traffic demand of each user is set to..."。
+  - **判定**：该处是对**第三方仿真器 SatSysSim [75] 的流量生成方式**的描述（"或按 Poisson 分布以某到达率生成"），**不是该综述自身对负载过程的建模或主张**。故"该综述本身未给出到达过程模型"的判断成立，但需登记：**本篇是全 13 篇中唯一提到'仿真器可用 Poisson 到达率生成流量'的篇目**。
+- 模式 `Poisson` → **实测计数 1**（同上 L301）。
+
+### 13.4 它提到但本库其他论文未跟进的方向
+
+1. **面向 AI 的网络仿真统一基准数据集（类比 ImageNet）**：450。本库无基准数据集论文；该文明确指出**实测流量数据因技术与政治原因难以获取**——与本库 T3 档测量类论文形成呼应。
+2. **动态集成仿真（包级网络仿真器 × 天体动力学仿真器，非静态文件交换）**：419–421。本库无仿真平台论文。
+3. **恶意与异常用户行为仿真（DoS/DDoS、阻塞、干扰、欺骗）**：427–431。本库无对应论文。
+4. **网络仿真即服务（NEaaS）与云化大规模仿真平台**：433–444。本库无对应论文。
+5. **AI 工具嵌入仿真器（免去用户配置 TensorFlow/PyTorch 环境）**：448。本库无对应论文。
+6. **通导感一体化（navigation-sensing-communication integration）的专用仿真工具**：452–458。本库无对应论文。
+7. **路由协议收敛时间作为标准评价指标**：132。本库 T1 论文普遍不报收敛时间（需 T1 档复核）。
+8. **链路持续时间（link duration）作为几何层评价指标**：136。本库 T1/T2 论文较少把 link duration 单列（需复核）。
+
 <!--APPEND-->
+
 
 
