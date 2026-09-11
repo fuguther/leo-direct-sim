@@ -12,9 +12,12 @@ import argparse, json, os, sys, time
 from pathlib import Path
 
 HOOK_DIR = Path(__file__).resolve().parent
-PERM_FILE = HOOK_DIR / "permissions.json"
-ORCH_FILE = HOOK_DIR / "orchestrator.id"
-LOG_FILE = HOOK_DIR / "unregistered.log"
+# 测试隔离（事故根因修复，2026-09-11）：
+# 此前验证脚本直接写真实清单，两次把运行中的主控锁死。现支持环境变量重定向：
+#   DSH_PERM_FILE / DSH_ORCH_FILE / DSH_HOOK_LOG 指向隔离副本 → 测试全程不碰真实状态。
+PERM_FILE = Path(os.environ["DSH_PERM_FILE"]) if os.environ.get("DSH_PERM_FILE") else (HOOK_DIR / "permissions.json")
+ORCH_FILE = Path(os.environ["DSH_ORCH_FILE"]) if os.environ.get("DSH_ORCH_FILE") else (HOOK_DIR / "orchestrator.id")
+LOG_FILE = Path(os.environ["DSH_HOOK_LOG"]) if os.environ.get("DSH_HOOK_LOG") else (HOOK_DIR / "unregistered.log")
 
 NEUTRAL_READ = [
     "round/zotero/ZOTERO-INDEX.md",
@@ -112,9 +115,11 @@ def cmd_reserve(a) -> int:
         print("REFUSED: 已有未消费票据属其他角色（%s）——同批票据必须同角色以免错配"
               % ", ".join(sorted(roles)), file=sys.stderr)
         return 2
+    target = getattr(a, "session", "") or ""
     for _ in range(a.count):
         pend.append({"role": a.role, "extra_read": a.extra_read or [],
                      "extra_write": a.extra_write or [], "note": a.note or "",
+                     "session": target,          # 绑定具体子会话 ID（空=不绑定，仅父会话校验）
                      "reserved_at": time.strftime("%H:%M:%S")})
     d["tickets"] = pend
     save(d)
@@ -139,6 +144,48 @@ def claim_ticket(session_id: str):
     d["tickets"] = pend
     save(d)
     return entry, "claimed:%s" % t["role"]
+
+
+def cmd_grant(a) -> int:
+    """直接授权（推荐用法）：绑定「具体子会话 ID + 角色 + 任务文件」。
+
+    与 reserve 的区别：grant 在**派发前**就知道会话 ID 时使用，直接写入 sessions，
+    不经过"票据"这一中间态 —— 这是 Codex 要求的"授权绑定具体子会话"的强形式。
+    """
+    if a.role not in ROLE_GRANTS:
+        print("REFUSED: 未知角色 %s" % a.role, file=sys.stderr)
+        return 2
+    if not a.session:
+        print("REFUSED: grant 必须指定 --session（授权必须绑定具体子会话 ID）", file=sys.stderr)
+        return 2
+    d, st = load()
+    if st != "ok":
+        print("REFUSED: 权限清单状态 %s，先 init" % st, file=sys.stderr)
+        return 2
+    if a.session == d.get("orchestrator_session"):
+        print("REFUSED: 不能把主控会话授权为研究角色", file=sys.stderr)
+        return 2
+    parent, origin = "", ""
+    try:
+        sys.path.insert(0, str(HOOK_DIR))
+        import lib_hook as _L
+        parent, origin = _L.session_origin(a.session)
+    except Exception:
+        pass
+    allowed_parents = {d.get("orchestrator_session") or ""} | set(d.get("orchestrator_history") or [])
+    allowed_parents.discard("")
+    if parent and origin == "subagent" and parent not in allowed_parents:
+        print("REFUSED: 该会话的父会话不在本清单主控集合内（parent=%s）" % parent, file=sys.stderr)
+        return 2
+    d.setdefault("sessions", {})[a.session] = {
+        "role": a.role, "note": a.note or "",
+        "extra_read": a.extra_read or [], "extra_write": a.extra_write or [],
+        "parent": parent, "origin": origin,
+        "granted_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+    save(d)
+    print("GRANTED %s -> %s (parent=%s origin=%s)" % (a.session, a.role, parent or "-", origin or "-"))
+    return 0
 
 
 def cmd_bind(a) -> int:
@@ -219,16 +266,19 @@ def main() -> int:
     i.add_argument("--orchestrator", default=""); i.add_argument("--keep", action="store_true")
     i.add_argument("--force", action="store_true")
     r = sub.add_parser("reserve"); r.add_argument("--role", required=True); r.add_argument("--count", type=int, default=1)
+    r.add_argument("--session", default="", help="绑定具体子会话 ID（推荐：指定后只有该会话可领票）")
     r.add_argument("--extra-read", action="append"); r.add_argument("--extra-write", action="append"); r.add_argument("--note", default="")
     b = sub.add_parser("bind"); b.add_argument("--session", required=True); b.add_argument("--role", required=True)
     b.add_argument("--note", default=""); b.add_argument("--extra-read", action="append"); b.add_argument("--extra-write", action="append")
+    gr = sub.add_parser("grant"); gr.add_argument("--session", required=True); gr.add_argument("--role", required=True)
+    gr.add_argument("--note", default=""); gr.add_argument("--extra-read", action="append"); gr.add_argument("--extra-write", action="append")
     u = sub.add_parser("unbind"); u.add_argument("--session", required=True)
     sub.add_parser("show")
     g = sub.add_parser("grants"); g.add_argument("--role", required=True)
     sub.add_parser("audit")
     a = ap.parse_args()
-    return {"init": cmd_init, "reserve": cmd_reserve, "bind": cmd_bind, "unbind": cmd_unbind,
-            "show": cmd_show, "grants": cmd_grants, "audit": cmd_audit}[a.cmd](a)
+    return {"init": cmd_init, "reserve": cmd_reserve, "bind": cmd_bind, "grant": cmd_grant,
+            "unbind": cmd_unbind, "show": cmd_show, "grants": cmd_grants, "audit": cmd_audit}[a.cmd](a)
 
 
 if __name__ == "__main__":

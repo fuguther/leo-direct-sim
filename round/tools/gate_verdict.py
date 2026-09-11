@@ -15,7 +15,8 @@ import argparse, csv, hashlib, json, os, sys, time
 from pathlib import Path
 
 WT = Path(__file__).resolve().parents[2]
-GATE_DIR = WT / "round" / "run2" / "gates"
+# 测试隔离（事故根因修复）：判定目录支持环境变量重定向 → 验收测试全程不写真实 gates 目录。
+GATE_DIR = Path(os.environ["DSH_GATE_DIR"]) if os.environ.get("DSH_GATE_DIR") else (WT / "round" / "run2" / "gates")
 VERDICTS = ("PASS", "REVISE", "BLOCK", "INPUT_INSUFFICIENT")
 
 
@@ -72,9 +73,15 @@ def cmd_record(a) -> int:
     return 0
 
 
-def check(cand_id: str, ledger_path: Path):
-    """返回 (ok: bool, reason: str)。供台账与 hook 共用。"""
+def check(cand_id: str, ledger_path: Path, expect_hash: str | None = None):
+    """返回 (ok: bool, reason: str)。供台账与 hook 共用。
+
+    expect_hash（Codex 要求 #4）：校验**最终将写入的版本**而非仅"当前已存在版本"。
+    调用方在写入前把待写入行的 content_hash 传进来；同一调用内既改内容又申请推荐时，
+    旧判定（绑定旧 hash）会被正确拒绝。
+    """
     ch, ver = current_hash(ledger_path, cand_id)
+    target = expect_hash or ch
     if ch is None:
         return False, "候选 %s 不在台账中" % cand_id
     p = verdict_path(cand_id)
@@ -84,9 +91,9 @@ def check(cand_id: str, ledger_path: Path):
         rec = json.loads(p.read_text(encoding="utf-8"))
     except Exception as e:
         return False, "判定记录损坏：%s" % e
-    if rec.get("ledger_content_hash") != ch:
-        return False, ("判定记录绑定的是旧版本（记录 %s / 当前 %s）—— 卡内容已变更，须重新判定"
-                       % (rec.get("ledger_content_hash"), ch))
+    if rec.get("ledger_content_hash") != target:
+        return False, ("判定记录绑定的是旧版本（记录 %s / 本次将写入 %s）—— 卡内容已变更，须重新判定"
+                       % (rec.get("ledger_content_hash"), target))
     v = rec.get("verdict")
     if v != "PASS":
         return False, "候选 %s 当前版本判定为 %s（%s）" % (cand_id, v, rec.get("note") or "无备注")

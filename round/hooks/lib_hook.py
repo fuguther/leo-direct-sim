@@ -6,7 +6,7 @@ v2 → v3 关键变化：
   #4 损坏即停：清单 missing/corrupt 时，研究会话失败关闭；主控凭 orchestrator.id 仍可操作；
   #3 最小授权：读/写一律按具体文件匹配（由 perm.py 的角色表 + 派发端 --extra-* 决定）。
 """
-import json, os, re, sys, time
+import json, os, re, subprocess, sys, time
 from pathlib import Path
 
 # 受控研究区 = 本 hook 所在 worktree（**不依赖载荷 cwd**）。
@@ -14,9 +14,10 @@ from pathlib import Path
 # 而非本 worktree；因此按 cwd 判定"是否研究会话"会漏判 —— 必须按**访问路径**判定。
 HOOK_DIR = Path(__file__).resolve().parent
 HOOK_WORKTREE = HOOK_DIR.parents[1]        # round/hooks -> round -> worktree 根
-PERM_FILE = HOOK_DIR / "permissions.json"
-ORCH_FILE = HOOK_DIR / "orchestrator.id"
-LOG_FILE = HOOK_DIR / "unregistered.log"
+# 测试隔离（事故根因修复）：环境变量重定向到隔离副本；测试绝不写真实状态。
+PERM_FILE = Path(os.environ["DSH_PERM_FILE"]) if os.environ.get("DSH_PERM_FILE") else (HOOK_DIR / "permissions.json")
+ORCH_FILE = Path(os.environ["DSH_ORCH_FILE"]) if os.environ.get("DSH_ORCH_FILE") else (HOOK_DIR / "orchestrator.id")
+LOG_FILE = Path(os.environ["DSH_HOOK_LOG"]) if os.environ.get("DSH_HOOK_LOG") else (HOOK_DIR / "unregistered.log")
 
 EXTERNAL_DENY_SUBSTR = [
     "/.dsh/sessions/",
@@ -115,6 +116,35 @@ def orchestrator_id() -> str:
         return ""
 
 
+SESS_ROOT = Path.home() / ".dsh" / "sessions"
+
+
+def session_origin(session_id: str):
+    """读取该会话自身日志首行，返回 (parentSession, origin)。
+
+    依据（实测）：session 日志首行含 parentSession / origin=subagent / delegationDepth。
+    这是运行时可验证的父子关系，用于替代此前「谁先访问谁领票」的匿名领取。
+    找不到日志时返回 ("", "")。
+    """
+    if not session_id:
+        return "", ""
+    try:
+        for proj in SESS_ROOT.iterdir():
+            f = proj / session_id / "session.jsonl.zstd"
+            if not f.exists():
+                continue
+            out = subprocess.run(["zstd", "-dc", str(f)], capture_output=True, timeout=15)
+            head = out.stdout.decode("utf-8", "ignore").split(chr(10), 1)[0]
+            try:
+                j = json.loads(head)
+            except Exception:
+                return "", ""
+            return j.get("parentSession") or "", j.get("origin") or ""
+    except Exception:
+        return "", ""
+    return "", ""
+
+
 def resolve_role(session_id: str, wt, allow_claim: bool = True):
     """返回 (role, entry, reason)。role ∈ orchestrator / <角色> / unknown。"""
     d, st = load_perms()
@@ -129,15 +159,32 @@ def resolve_role(session_id: str, wt, allow_claim: bool = True):
     entry = (d.get("sessions") or {}).get(session_id or "")
     if entry:
         return entry.get("role") or "unknown", entry, ""
+    # 修复（Codex 要求 #3）：取消"按访问顺序领取" —— 授权必须**绑定具体子会话 ID**。
+    # 预授权（perm.py grant --session <id> --role ...）在派发前写入 sessions；
+    # 若派发时恰好未知 id，可用一次性票据，但领取必须**同时匹配** parentSession（附加校验）。
     if allow_claim and wt is not None and session_id:
-        try:
-            sys.path.insert(0, str(HOOK_DIR))
-            import perm as _perm
-            got, why = _perm.claim_ticket(session_id)
-            if got:
-                return got["role"], got, why
-        except Exception:
-            pass
+        parent, origin = session_origin(session_id)
+        allowed = {d.get("orchestrator_session") or ""} | set(d.get("orchestrator_history") or [])
+        allowed.discard("")
+        pend = d.get("tickets") or []
+        if pend and parent and origin == "subagent" and parent in allowed:
+            t = pend[0]
+            # 若票据已指定目标会话，则只有该会话能领（这是"绑定具体 ID"的强形式）
+            target = t.get("session") or ""
+            if target and target != session_id:
+                return "unknown", {}, "票据已绑定其他会话（%s），本会话不可领取" % target[:12]
+            try:
+                sys.path.insert(0, str(HOOK_DIR))
+                import perm as _perm
+                got, why = _perm.claim_ticket(session_id)
+                if got:
+                    return got["role"], got, why
+            except Exception:
+                pass
+        if parent and origin == "subagent" and parent in allowed:
+            return "unknown", {}, "本主控派发的子会话，但无对应票据（请先 grant/reserve）"
+        tag = "非本主控派发的会话" if parent else "无法验证会话来源"
+        return "unknown", {}, "%s（parent=%s origin=%s）" % (tag, parent or "-", origin or "-")
     return "unknown", {}, "未登记且无可用票据"
 
 

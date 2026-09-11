@@ -217,13 +217,18 @@ def cmd_add(args):
     return 0
 
 
-def _guard_recommendation(cand_id: str, status: str, ledger_path: str) -> bool:
+def _guard_recommendation(cand_id: str, status: str, ledger_path: str,
+                         pending_row: dict | None = None) -> bool:
     """推荐资格校验：状态转换的**共同入口**（status / revise 等一律经过）。
 
-    绑定要求：候选当前 content_hash 必须有对应的 PASS 判定记录，且被审卡文件仍存在、未被改动。
+    Codex 要求 #4（2026-09-11 修复）：
+      - 校验对象是**最终将写入的候选版本**，而不是仅"当前已存在版本"；
+        因此调用方把待写入行（pending_row）传进来，本函数用它的 content_hash 去比对判定记录。
+      - 覆盖**所有**状态修改入口（status / revise，含 --set 里的 status）。
     """
     if status != "recommended_pending_review":
         return True
+    target_hash = (pending_row or {}).get("content_hash") or ""
     try:
         import importlib.util as _ilu
         _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gate_verdict.py")
@@ -231,13 +236,13 @@ def _guard_recommendation(cand_id: str, status: str, ledger_path: str) -> bool:
         _gv = _ilu.module_from_spec(_spec)
         sys.modules["gate_verdict_guard"] = _gv
         _spec.loader.exec_module(_gv)
-        ok, why = _gv.check(cand_id, Path(ledger_path))
+        ok, why = _gv.check(cand_id, Path(ledger_path), expect_hash=target_hash or None)
     except Exception as e:
         print("REJECTED: 无法校验闸门判定（%s）—— 拒绝在无法校验时置为推荐" % e, file=sys.stderr)
         return False
     if not ok:
         print("REJECTED: %s" % why, file=sys.stderr)
-        print("  说明：任何进入推荐的路径（status/revise）都必须绑定「候选 ID + 当前版本 + 通过判定」；"
+        print("  说明：任何进入推荐的路径都必须绑定「候选 ID + **待写入版本** + 通过判定」；"
               "草稿/淘汰/工作记录不受影响。", file=sys.stderr)
         return False
     return True
@@ -262,17 +267,30 @@ def cmd_revise(args):
     if illegal:
         print("REJECTED: 不可修订字段 %s（身份/版本/哈希由工具管理）" % sorted(illegal), file=sys.stderr)
         return 2
+    # 修复（Codex 验收反例）：status 也可经 --set 传入，此前该路径完全绕过推荐门禁。
+    # 现统一提取并走同一守卫：--status 与 --set {"status": ...} 等价且都必须过闸。
+    requested_status = args.status or updates.pop("status", None)
+    if requested_status is not None and requested_status not in STATUSES:
+        print("REJECTED: 未知状态 %s（词表 %s）" % (requested_status, STATUSES), file=sys.stderr)
+        return 2
     lb_changed = [f for f in LOAD_BEARING
                   if _norm_lb(cur.get(f, "")) != _norm_lb(updates.get(f, cur.get(f, "")))]
     row = dict(cur)
     row.update(updates)
-    if args.status:
-        if args.status not in STATUSES:
-            print("REJECTED: 未知状态 %s（词表 %s）" % (args.status, STATUSES), file=sys.stderr)
+    if requested_status is not None:
+        row["status"] = requested_status
+    # Codex 要求 #4（2026-09-11）：
+    #  a) 已推荐候选发生**承重修改** → 自动转 needs_revision（待重审），不保留推荐态；
+    #  b) 同一调用内"既改内容又申请推荐" → 用**将写入的 hash** 校验（旧判定会被拒）。
+    if lb_changed and cur.get("status") == "recommended_pending_review" \
+            and requested_status in (None, "recommended_pending_review"):
+        row["status"] = "needs_revision"
+        print("AUTO_DEMOTED: 已推荐候选发生承重变更 → needs_revision（须重新审查并重新判定）")
+    if requested_status == "recommended_pending_review":
+        probe = dict(row)
+        probe.update({"content_hash": content_hash(row)})
+        if not _guard_recommendation(args.cand_id, requested_status, args.ledger, pending_row=probe):
             return 2
-        if not _guard_recommendation(args.cand_id, args.status, args.ledger):   # #5 共同入口
-            return 2
-        row["status"] = args.status
     row.update({
         "row_no": len(rows) + 1, "version": int(cur["version"]) + 1, "op": "revise",
         "supersedes_row": cur["row_no"], "content_hash": content_hash(row),
@@ -301,8 +319,11 @@ def cmd_status(args):
     if not cur:
         print("NOT_FOUND: cand_id %s" % args.cand_id, file=sys.stderr)
         return 2
-    # 推荐资格校验走共同入口（status / revise 同一个守卫）
-    if not _guard_recommendation(args.cand_id, args.status, args.ledger):
+    # 推荐资格校验走共同入口；校验对象是**将写入的版本**（这里 status_change 不改内容，
+    # 故将写入 hash == 当前 hash；显式传入以保持与 revise 路径同一语义）。
+    probe = dict(cur)
+    probe["status"] = args.status
+    if not _guard_recommendation(args.cand_id, args.status, args.ledger, pending_row=probe):
         return 2
     row = dict(cur)
     row.update({"row_no": len(rows) + 1, "version": int(cur["version"]) + 1, "op": "status_change",

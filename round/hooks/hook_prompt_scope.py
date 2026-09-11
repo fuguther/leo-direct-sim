@@ -13,7 +13,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from lib_hook import block, read_input
 
-FORBIDDEN_IN_PROMPT = [
+# Codex 要求 #5（2026-09-11）：历史审查**必须能被正常派发**。
+# 此前一律禁止提示词出现 HISTORY-INDEX 等字样，导致"派历史审查任务"这一合法动作被拦。
+# 现改为**按角色判定**：只有非历史审查角色才禁止携带历史全集。
+HISTORY_ITEMS = [
     "HISTORY-INDEX",
     "ELIMINATED-REGISTER",
     "淘汰台账",
@@ -21,6 +24,12 @@ FORBIDDEN_IN_PROMPT = [
     "run1/card-",
     "notes/raw/",
 ]
+# 允许携带历史全集的任务类型标记（派发端在提示词中显式声明角色）
+HISTORY_ROLE_MARKERS = [
+    "历史碰撞审查", "历史审查者", "history_reviewer", "history reviewer",
+    "role: history_reviewer", "角色：历史审查者",
+]
+FORBIDDEN_IN_PROMPT = HISTORY_ITEMS
 DISPATCH_TOOLS = ("subagent", "subagent_fork", "subagent_codex")
 
 
@@ -44,6 +53,9 @@ def main() -> None:
             for m in re.finditer(r"prompt\s*:\s*\"((?:[^\"\\]|\\.){0,20000})\"", code):
                 blob += m.group(1) + "\n"
     if not blob:
+        sys.exit(0)
+    # 历史审查角色豁免：其职责就是读历史库（否则任务无法派发）
+    if any(mk in blob for mk in HISTORY_ROLE_MARKERS):
         sys.exit(0)
     hits = [f for f in FORBIDDEN_IN_PROMPT if f in blob]
     if hits:

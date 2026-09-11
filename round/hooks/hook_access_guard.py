@@ -39,11 +39,13 @@ HINT_UNREG = "已暂停本次操作。请主控执行 perm.py reserve --role <�
 
 
 def collect(payload_tool, ti, cwd):
-    """收集本次访问涉及的（归一化）路径：结构化参数 + shell 字面路径（尽力）。
+    """收集本次访问涉及的路径。
 
-    修正（实测漏洞）：bash 可带 workdir 参数，此时相对路径应基于 **workdir** 解析；
-    此前一律用 session cwd（主仓库）解析，导致 `workdir=<worktree> + cat round/run1/...`
-    被归一化到主仓库路径而漏拦。
+    Codex 要求 #5（2026-09-11 修复）：
+      - 可强制部分只取**工具的结构化路径参数**（file_path/path/target/notebook_path）；
+      - 任意 shell 代码做字面量匹配，**仅作尽力检测**；
+        不再使用"路径存在"启发式（既漏又误），也不把文本里的文件名当成访问。
+      - bash 的 workdir 作为相对路径基准（此前用 session cwd 会漏判）。
     """
     out = []
     for raw in tool_paths(payload_tool, ti):
@@ -55,7 +57,7 @@ def collect(payload_tool, ti, cwd):
         blob = " ".join(str(ti.get(k, "")) for k in ("command", "code", "script"))
 
         def dual_base(seg):
-            """字面量在两个基准下解析，任一落入研究区即取之（解决 cwd=主仓库的漏判）。"""
+            """字面量在两个基准下解析；任一落入研究区即取之（解决 cwd=主仓库的漏判）。"""
             first = None
             for cand_base in (shell_cwd, str(HOOK_WORKTREE)):
                 k2, v2 = normalize(seg, cand_base, HOOK_WORKTREE)
@@ -66,7 +68,6 @@ def collect(payload_tool, ti, cwd):
             return first or ("empty", "")
 
         seen = set()
-        # A) 具体文件（带扩展名）
         for m in PATHLIKE.finditer(blob):
             c = m.group(0)
             if c in seen or len(c) < 4:
@@ -75,16 +76,13 @@ def collect(payload_tool, ti, cwd):
             kind, val = dual_base(c)
             if kind != "empty":
                 out.append((kind, val, "shell-file"))
-        # B) 敏感目录（不带扩展名）：列目录本身即泄漏
         for m in DIRLIKE.finditer(blob):
             seg = m.group(0).rstrip("/")
-            if seg in seen:
+            if seg in seen or len(seg) < 4:
                 continue
             seen.add(seg)
             kind, val = dual_base(seg)
-            if kind != "worktree":
-                continue
-            if any(val == d or val.startswith(d + "/") or val.startswith(d) for d in SENSITIVE_DIRS):
+            if kind == "worktree" and any(val == d or val.startswith(d + "/") or val.startswith(d) for d in SENSITIVE_DIRS):
                 out.append(("worktree", val, "shell-dir"))
     return out
 
