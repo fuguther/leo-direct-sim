@@ -843,3 +843,114 @@
 
 ---
 
+## 10. K93SCUF2 — Network topology design at 27,000 km/hour（Motifs）
+
+### 10.1 机制公式（逐字）
+
+- L162（**目标函数**，逐字）：To aggregate our stretch (S) and hop-count (B) measures, arbitrary linear combinations may be used. We define M _ { \alpha } = \alpha S + B _ { \beta } , where α controls how much more we value stretch. Most of our analysis weighs both factors equally (α = 1), but in §5.5, we examine the impact of varying α. … Finally, we define our objective function, \Phi _ { \alpha } , as the sum of M _ { \alpha } across endpoint pairs, weighted by the traffic matrix H.
+- L162（**拉伸定义**）：For each endpoint pair, we quantify latency in terms of stretch, i.e., the ratio of the shortest-path distance across the designed network and the geodesic distance.
+- L355（**§5.5 处的度量重述——注意与 L162 写法不一致**）：An operator may prioritize stretch (S) or capacity (hop count, B). We thus evaluate our approach for M _ { 1 } , M _ { 5 } , M _ { 10 } , (and correspondingly, \Phi _ { 1 } , Φ_5 , \Phi _ { 10 } ) where M _ { \alpha } = S \alpha + B (see §3.1).（**如实登记：L162 为 M_α = αS + B_β，L355 为 M_α = Sα + B，两处写法不同，本文件逐字保留，不做融合**）
+- L181（ILP 剪枝启发式，逐字）：We obtain an estimate of the path length between two end points, S and T, through an ISL between two particular satellites, A and B by adding the geodesic distance between S and A's terrestrial nadir, the A-B ISL length, and the geodesic distance between B's nadir and T. If this estimate exceeds the geodesic S-T distance by ≥ 1.5×, we restrict the ILP from considering an A-B ISL to carry S-T traffic.
+- L235（**motif 集合定义，逐字）**：The set of all motifs, M = [ S _ { e } ] ^ { 2 } = \{ \{ a , b \} : a , b \in S _ { e } , a \neq b \}
+- L239（**最优 motif 选择**，逐字）：Output the best motif m = \underset { x \in M } { \arg \operatorname* { m i n } } \Phi _ { \alpha } ( x ) .
+- L221（**motif 定义**，逐字）：a motif is a 3-satellite, 2-ISL connectivity pattern, repeating which throughout the constellation fully describes its ISL topology. Henceforth, we use motif to refer to both the connectivity pattern, and its resulting topology.
+- L231–L237（枚举过程，逐字）：
+  - Consider a satellite at the Equator, e.
+  - Let S _ { e } be the set of all satellites within e's range.
+  - The set of all motifs, M = [ S _ { e } ] ^ { 2 } = \{ \{ a , b \} : a , b \in S _ { e } , a \neq b \}
+  - As an (optional) optimization, cull equivalent motifs.
+  - Output the best motif m = \underset { x \in M } { \arg \operatorname* { m i n } } \Phi _ { \alpha } ( x ) .
+- L114（**最大 ISL 距离的解析计算，逐字**）：The key visibility constraint is to avoid the ISL entering the atmosphere any lower than the Thermosphere [79]. This is the lowest atmospheric layer devoid of water vapour, and starts at ∼80 km above Earth's surface. Thus, the minimum clearance ofan ISL above the Earth's surface should be 80 km, as illustrated in Fig. 2. Given these constraints, it is trivial to calculate the maximum ISL range, e.g., for satellites operating at an altitude of h _ { S } = 5 5 0 km (Starlink's phase I altitude), the maximum ISL length can be calculated as d _ { I S L } = 5 , 0 1 4 km.
+- L167（ILP 约束的**文字化**，逐字）：For brevity and ease of understanding, we omit the mathematical formulation of the constraints in favor of intuitive textual descriptions: ISLs are duplex. / Each satellite should have ≤ 4 ISLs active. / An ISL can be connected if visibility allows. / An ISL can carry traffic if it is active. / Flow should be conserved at satellites. / End points should source or sink flow correctly per H.
+- L336–L340（**多 motif 迭代分区搜索**，逐字）：
+  - We consider zones of a width, W, of a few latitude degrees. For instance, for a 53° constellation, if W = 18°, we have 3 zones: 0-18°, 18-36°, 36-53°.
+  - We consider each zone separately, starting with the first. Within a zone, the latitudes closest to the Equator determine the motifs possible, as satellites are farthest apart there. For each motif possible in the first zone, we evaluate its \Phi _ { 1 } by populating the entire constellation with it, and keep the best.
+  - To move to the next zone, we remove all ISLs from the constellation, except those connected to any satellite within the preceding zone. We again identify all possible motifs for the zone, and exhaustively evaluate performance with each motif populating the rest of the constellation, leaving links from previous zone(s) fixed. We repeat this process until each zone has been used to augment the motif combination.
+- L346（**分区宽度的代价-收益**，逐字）：With W = 18°, a satellite changes its ISLs every ∼12 minutes, making an ISL setup overhead of a few or even small tens of seconds tolerable. Lower W (more zones) could potentially improve performance for static snapshots, but increases link churn, thus suffering in practice from link setup overheads. However, we find that performance improvements start to saturate after 3 zones ( W = 18° ): for 3 or more zones, \Phi _ { 1 } improves by 7% over the single motif (one zone) while with 2 zones, the improvement is 5.6%.
+
+### 10.2 决策粒度
+
+**离线设计（设计期一次性决策）+ 少量受控的运行期切换**。这不是运行时逐包/逐跳决策论文。
+
+- L52（问题定位，逐字）：We frame the problem of inter-satellite topology design for large LEO constellations, showing why intuitive approaches like Integer programming, random graphs, and ant-colony optimization are unsuitable.
+- L136（输入输出，逐字）：Given (a) a constellation's satellite trajectories, (b) a small number of inter-satellite connection units at each satellite, and (c) a target traffic matrix between terrestrial endpoints; our goal is to decide which satellite-satellite connections to build to minimize latency and hop-count in end-end paths.
+- **动作的时间结构（本批独有的一种）**：单 motif 下拓扑**恒定不变**；多 motif 下按纬度带切换，切换周期 ≈12 分钟。
+  - L248：Thus, each satellite is continuously connected to the same satellites — even at higher latitudes as satellites change directions, we still maintain the same connections. Thus, motifs provide long-term, stable connections throughout the topology.
+  - L346：a satellite changes its ISLs every ∼12 minutes
+- **路由本身不在此文范围内**：L408 逐字（自述分解）：There is also work on problems that affect, or are affected by ISL topology: optimizing trajectories [9] and routing [2, 7, 65, 71]. While co-dependent, the complexity of these problems seems to necessitate decomposition and separate treatment, at least while research in this area matures.
+
+### 10.3 是否含学习成分
+
+**否。**
+
+- 检索 X2_anylearning_all，实测 **K93SCUF2 = 0**。
+- 检索 T2_discount_clean，实测 **K93SCUF2 = 0**。
+- 检索 W_multiagent，实测 **K93SCUF2 = 0**。
+- 组成：穷举 motif 搜索 + ILP（作为对照，被否）+ 随机正则图（作为对照，被否）+ 蚁群（作为对照，被否）+ 多分区迭代启发式。
+
+### 10.4 可迁移点（含公式）
+
+1. **「重复模式」把设计空间降维到单个局部视图**——这是本批最强的降维思想。
+   - L39：As a first attempt at addressing this problem, we propose a novel approach exploiting repetitive patterns: if the topology is restricted such that each satellite's local view is the same as that of any other, then one can limit topology design to the space of all possible local views at just one satellite. We refer to each such local view as a motif.
+   - L40：Even for the densest proposed constellations, the space of possible motifs, while nontrivial, is small enough to search exhaustively and identify the optimal motif for a target traffic matrix.
+   - 量化：L252 \`we find that 1029 unique motifs exist\`（40² 星座）。**迁移**：我们方案的策略空间若具平移不变性，可只在「单节点局部视图」上搜索。
+2. **用「赤道处最小可达集」做安全枚举（offline 可行性保证）**：
+   - L223：Note however, that satellites are farther apart at the Equator and closer to each other at higher latitudes, implying that a near-Equator satellites have the fewest in-range satellites. Thus, for enumerating motifs, we use a satellite at the Equator, ensuring that for any other satellite, the considered motifs will only contain feasible links.
+   - **迁移**：策略空间的可行性可由「最不利点」保证，而非逐点验证。
+3. **「零 churn」作为一等设计目标，并给出反例量化**：
+   - L213：An ideal solution would not only yield substantial improvements over +Grid for a static snapshot of the system, but also minimize churn in links to avoid the few seconds to tens of seconds of overheads incurred from link changes (§2.2).
+   - L187（ILP 的 churn 反例，逐字）：For 20 cities (the largest scale we could run the ILP for), ILP topologies generated just one minute apart share only 9% of links.
+   - L202（随机图的 churn 反例，逐字）：within 2 (5) minutes, more than 8% (19%) of the ISLs become infeasible.
+   - **迁移**：我们方案的「动作时间结构」必须把重配置代价计入，否则会重蹈 ILP/RRG 覆辙。
+4. **拥挤度用 betweenness 度量，并把 hop count 当作容量代理**：
+   - L126：We use the number of on-path satellite hops as a simple proxy for network throughput, drawing on prior network design work [62]: an end-end connection traversing many ISLs uses capacity at each of these, reducing capacity for other connections. Thus, with fixed ISL count and capacity, reducing hop-counts for end-end connections frees up bandwidth that can be used to serve more traffic.
+   - L368：For each of 5,000 randomly selected city pairs, we compute lowest-latency paths between them, and count the frequency of appearance of each ISL in such paths. (This is referred to as “edge betweenness centrality” in graph theory.)
+   - L370（结果，逐字）：The 75th and 90th percentile link-use frequency for +Grid is 4× and 5× that of mm_1 respectively.
+   - **迁移**：hop count 作为容量的廉价代理，可作我们方案 reward 的 shaping 项。
+5. **多目标用 Pareto 前沿而非加权和**：L256 \`Motifs expose a trade-off between stretch and hop count, with several motifs at the Pareto frontier. Random graphs provide only one point in the design space.\`；L359 \`the 20% improvement in \Phi _ { 10 } with mm_10 is composed of 53% reduction in hop count, while increasing stretch by only 9%, compared to +Grid.\`
+6. **自述「什么方法不管用」的完整清单（对我们是负结果库）**：ILP（L185 \`Even for just 25 cities, the ILP does not finish within 2 days on a machine with 64 cores and ∼500 GB of memory.\`）、随机正则图（L202/L207）、蚁群（L209 \`This approach performs well for small problem sizes (few tens of city pairs) but does not converge for larger cases, while also causing high link churn.\`）。
+
+### 10.5 是否已被 RL 论文采用
+
+**被 2 篇 T1 学习型论文引用。**
+
+全库检索模式 27,000 km/hour|network topology design at，命中文件（16 个）= 5HJ8ATR7 8AYW2Y78 DS9SPARV DVS8C3CC FLQLU3T4 GGFJ3SEG IEI3BYFF JS857IYN K93SCUF2 L63JISQN MYBALQ2D S85KQ4FC T9X6QCLL W6M3GU7L X5K285MW XM6NUPM4。
+
+| 引用方 | 性质 | 行号 | 逐字 |
+|---|---|---|---|
+| FLQLU3T4 | T1（对偶引导图学习） | L685 | [7] D. Bhattacherjee and A. Singla, "Network topology design at 27,000 km/hour," in Proceedings of the 15th International Conference on Emerging Networking Experiments and Technologies. Orlando Florida: ACM, Dec. 2019, pp. 341–354. |
+| S85KQ4FC | T1（锚件：流级 DRL） | L563 | [34] D. Bhattacherjee and A. Singla, "Network topology design at 27,000 km/hour," in Proc. 15th Int. Conf. Emerg. Netw. Exp. Technol., 2019, pp. 341–354. |
+
+**采用方式**：FLQLU3T4 L44 在正文中引用其 motif 思想（\`Beyond the grid pattern, optimizing motif-based patterns, small and repeatable graph structures, can improve robustness and efficiency [7].\`）；S85KQ4FC 的（[34]）在正文中出现在 L17/L79/L89 一带的 ISL 拓扑讨论语境。**未见把 motif 搜索直接作为学习动作空间的用法。**
+
+### 10.6 实验合同里与「负载」相关的设置（仅作实验条件登记，不作贡献）
+
+- 星座：L183 \`We use a 40^2 LEO constellation (53°, 550 km) with a maximum ISL length of 5,014 km.\`；L84 \`The first phase will use p = 24 orbits, each with n = 66 satellites, for a total of N = 1,584 satellites. Orbit inclination will be 53° and the altitude ∼550 km.\`；L86 \`Kuiper (Amazon) aims to deploy 3,236 LEO satellites … phase A will be a 34^2 constellation with an inclination of 51.9° and an altitude of 630 km\`
+- **负载模型（关键的两种流量矩阵，逐字）**：
+  - 人口积模型：L156 \`H specifies traffic distribution between the 1,000 most populous cities (2025 population estimates [27]) as ground sites, with city-city traffic volume scaled ∈ [0,1] in proportion to the population products of the city pairs.\`
+  - GDP 模型：L308 \`we consider economic activity, in terms of Gross Domestic Product (GDP), as a proxy for Internet traffic … we use the top 100 cities ordered by their GDP [78] as ground sites, with city-city traffic volume scaled ∈ [0,1] in proportion to the GDP products of the city pairs.\`
+- **负载为静态矩阵，时变流量明确留待未来**：L310 逐字 \`Considering time-varying traffic is left to future work, we note that one could evaluate the potential motifs against snapshots of traffic over a desired time period, picking the one that provides the highest performance over time.\`
+- ISL 距离约束：L300 \`For the 40^2 constellation, the longest links in +Grid are 1,467 km, giving us a lower bound on range. We thus evaluated ranges between this bound and the maximum of 5,014 km.\`；L376 \`(b) the minimum range necessitated by +Grid, 2,006 km. The latter represents worstcase power-limited ISLs.\`
+- 未建模项：L266 \`They are also easier to evaluate efficiently, and incorporate into optimization, than, e.g., network throughput as measured with some routing scheme.\`（用 hop count 代理吞吐，不跑真实路由）
+- **负载=静态城市对流量矩阵（人口积 / GDP 积两种），无到达过程、无突发、无时变**。
+
+### 10.7 该文自述的局限（逐字）
+
+- L390–L394（不确定性清单，逐字）：
+  - \`The satellites' ISL range and speed of link setup depend on a complex calculus involving non-networking factors like satellite weight and launch cost, making it hard to zero in on the inputs for topology design.\`
+  - \`Market conditions, regulator oversight, and terrestrial connectivity, will together drive workloads, making it impossible to evaluate for the right traffic matrix.\`
+  - \`Space endeavors are prone to setbacks and changes, so the setting we are studying is evolving. For instance, over the course of our work, SpaceX updated its Starlink plans to use lower and different orbits to address concerns about space debris. The plans we use were up to date as ofJuly 2019.\`
+- L396（自辩，逐字）：\`However, these uncertainties are poor arguments for not addressing the technical challenges. … At the very least, even with the most conservative assumptions (i.e., worstcase ISLs, single motifs with no link changes), our work shows significant promise beyond the +Grid strategy widely assumed to be the default.\`
+- L398（未来工作，逐字）：\`We would, of course, like to extend this effort in several ways, including accounting for temporal variations in the traffic matrix, inter-linking of different phases of the large constellations, analyzing settings with larger numbers of inter-satellite links, interplay with ground-satellite connectivity, and co-design with satellite trajectories and routing.\`
+- L264（**诚实的对照劣势自述**）：\`At the largest scale we could run the ILP (20 cities), it achieves 54% lower (better) \Phi _ { 1 } than +Grid. The motif's Φ_1 is 45% better than +Grid, but 18% worse than the ILP. We remind the reader that the ILP is not a practical approach for the reasons discussed earlier (§3.1).\`
+
+### 10.8 该文没有考察的算法选择（基于 10.1–10.6 判定）
+
+- **无学习成分**（§10.3 实测）。
+- **无路由算法**（L408 自述分解；L266 用 hop count 代理吞吐）。
+- **无失败成因区分**：ISL 失效只在 churn 讨论中出现（L202），被当作「不可行链路」处理，**不区分故障原因**。检索 Y_dropcause，实测 **K93SCUF2 = 0**。
+- **无逐包/逐跳决策**：动作是设计期拓扑选择（L136）。
+- **无动态流量**：L310 自述把时变流量留待未来。
+
+---
+

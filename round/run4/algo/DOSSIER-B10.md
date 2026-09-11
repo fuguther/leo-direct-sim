@@ -872,7 +872,7 @@
 | 305 | `$eta _ { S } = eta _ { S } + hat { eta } _ { S } ^ { arepsilon _ { 1 } } ,  mathrm { a n d } $` + `$eta _ { o } = eta _ { o } - hat { eta } _ { o } ^ { arepsilon _ { 1 } } .$`（式 15） | **负载状态的增量更新式**（公式逐字抄录） |
 | 310 | "When UEs moves to a satellite, they will experience a long delay. However, offloading UEs with delay-tolerant data flows will not affect the QoS of the UEs, whereas UEs with delay-sensitive data are served by the 5G RAT." | **时延承受度作为分流依据** |
 | 312 | "We analyzed the computational complexity of the proposed algorithm using big O notation." | **决策成本（复杂度）显式分析**——本批唯一做此分析的篇目 |
-| 314 | "the overall computational complexity of the proposed load balancing algorithm becomes `$O ( | T | ^ { 2 } ) + O (  { mathcal { T } } | T | )$`. Generally, `$mathcal { T } gg | mathcal { T } |$` so we can say that the computational complexity for the proposed load balancing algorithm is O(I|T|)." | **算法复杂度结果：O(I·|T|)**（公式逐字抄录） |
+| 314 | "the overall computational complexity of the proposed load balancing algorithm becomes `$O ( \| T \| ^ { 2 } ) + O (  { mathcal { T } } \| T \| )$`. Generally, `$mathcal { T } gg \| mathcal { T } \|$` so we can say that the computational complexity for the proposed load balancing algorithm is O(I\|T\|)." | **算法复杂度结果：O(I·\|T\|)**（公式逐字抄录；表格中的竖线为 Markdown 转义，原文为 `|`） |
 | 400 | "For the different network load, we changed the required data rate of each UE. The required data rates for each UE were 5-10 Mbps and 10-15 Mbps for low and high network load, respectively." | **负载水平＝每用户需求速率**（负载的定义方式登记） |
 | 404 | "By increasing delay-tolerant traffic, the adaptive multi-RAT MLB finds more UEs with delay-tolerant flows, and offloads the UEs from overloaded cells to a satellite to balance the network." | 分流比例随可分流业务占比变化 |
 | 408 | "Based on intra-RAT and inter-RAT offloading, the load across terrestrial cells became more balanced and the number of satisfied UEs increased in the network." | 结果（不作贡献，仅登记） |
@@ -1037,7 +1037,164 @@
 7. **路由协议收敛时间作为标准评价指标**：132。本库 T1 论文普遍不报收敛时间（需 T1 档复核）。
 8. **链路持续时间（link duration）作为几何层评价指标**：136。本库 T1/T2 论文较少把 link duration 单列（需复核）。
 
-<!--APPEND-->
+---
+
+## 14. 对抗性问题 G-A 的专项回答（全库范围）
+
+### 14.0 问题
+
+> 全库是否有任何工作，把**同一个失败事件**（丢包/超时/溢出）按**物理原因**拆成**不同的学习通道或惩罚项**（例如区分"决策缓存溢出"与"链路队列溢出"）？
+
+### 14.1 检索口径与实测计数
+
+检索命令形式：进入 `/data/liguang13/topic-loop-r2/md` 后执行 `grep -rliE '<pattern>' --include='*.md' .`，再用 `sed` 截取 itemKey 段并 `sort -u`（`-l` 列文件、`-i` 忽略大小写、`-E` ERE）。
+
+**重要口径说明**：每个 itemKey 目录下除正文 MD 外，还有 MinerU 生成的若干 JSON 中间产物（含同样的段落文本）。若检索时不限定只搜 MD 正文，命中文件数会虚增约 3 倍，并引入**换行拼接造成的假阳性**。**本表计数已限定只搜 MD 正文。**
+
+| 检索模式（原文，ERE） | 命中文件数 | 命中的 itemKey |
+|---|---|---|
+| `credit assignment` | **5** | 6C843JTS, 9FLZ88LZ, JSX5XG88, LJG6ZW7B, QGAREQUM |
+| `counterfactual` | **5** | 9FLZ88LZ, FGQSH4AI, I2WH9RRR, KPUZIMU5, LJG6ZW7B |
+| `reward decompos` | **0** | （无） |
+| `multi-objective` | **12** | 2QRYMWBI, 3MRQRWHU, JS857IYN, L5F3DK68, LJG6ZW7B, LNA28YZY, QSNRQ8PF, UKBSA7WN, Y2H4NPLU, YI9G7NR7, Z74SR656, ZIUBKVPZ |
+| `MORL` | **4** | 5HJ8ATR7, MYBALQ2D, NPF75WS5, UKBSA7WN |
+| `reward vector` | **1** | UKBSA7WN |
+| `separate (reward\|penalty)` | **1** | LJG6ZW7B（**未在正文确认，见下方假阳性说明**） |
+| `buffer overflow` | **3** | GPDPLJNG, J68GU76W, JP79GMZS |
+| `overflow` | **10** | 42E4NAQU, 9C6HB6AF, GPDPLJNG, J68GU76W, JP79GMZS, LJG6ZW7B, R37BNQQ8, TQF59BD7, X2FCSU4S, YI9G7NR7 |
+| `failure (reason\|cause)` | **1** | 8N9QJHC2 |
+| `drop (reason\|cause)` | **1** | 9KZDXPKC |
+| `cause of.{0,20}(loss\|drop\|overflow)` | **1** | L5F3DK68 |
+| `(loss\|drop\|overflow).{0,20}(reason\|cause)` | **13** | 7AXASN73, 7TASFUDR, 9KZDXPKC, A7QNRKML, CYMQ2GLA, K7U4TYJN, L5F3DK68, LJG6ZW7B, QSNRQ8PF, S2QZRBEJ, TSV3IE8S, UF8IQTA2, X2FCSU4S |
+| `different.{0,30}(penalty\|channel) for` | **0** | （无） |
+| `two (kinds\|types) of (loss\|drop)` | **0** | （无） |
+
+**已核验并逐条排除的假阳性**：
+- `drop (reason\|cause)` 在 9KZDXPKC 的命中逐字为 L246 "the throughput drop caused by GSL handover" 与 L248 "the throughput drop caused by ISL failure"——**"drop caused by" 是散文搭配，不是"丢包原因分解"**；但它另有实质价值，见 14.2 反例 E。
+- `(loss|drop|overflow).{0,20}(reason|cause)` 在 CYMQ2GLA 的命中逐字为 L322 "ELMDR has the highest packets drop rate. The reason is that the pass back routing information of..."——**"The reason is that" 是解释性散文**，不是失败原因分类。
+- `separate (reward|penalty)` 在 LJG6ZW7B 的命中来自该书目录下 JSON 中间产物的换行拼接；在**正文 MD 中用 `separate reward` 与 `separate.{0,40}(reward|penalty)` 检索均为 0 命中**，故不给出逐字引文，仅登记为"疑似命中、未在正文确认"。
+- `multi-head` 一项未逐一核验；已知 35T2JJRJ（Transformer）的多头注意力与奖励分解无关，未纳入判定。
+
+**范围限定（诚实声明）**：我本批只**通读**了 T5 的 13 篇；对上述命中的其他 itemKey，只**定位并逐字引用命中行**，未通读全文。因此下列"是否构成反例"的判定**基于命中原文**，不排除这些论文在未读段落中有相关表述。
+
+### 14.2 结论：未发现完全覆盖 G-A 的反例；发现 2 个实质部分反例 + 3 个次要近邻
+
+**结论一句话**：全库**没有任何一篇**把**同一个丢包/超时/溢出事件**按**物理原因**拆成**不同的学习通道或惩罚项**。最接近的两篇分别沿"失效物理类型（链路故障）"与"优化目标类型（多目标）"两条**不同轴**逼近，**均不完全覆盖 G-A**。
+
+#### 反例 A（最强近邻）：8N9QJHC2 — Recovery Routing Based on Q-Learning for Satellite Network Faults（T1）
+
+- **分解轴：链路故障的物理类型**（永久端口故障 vs 瞬时介质干扰），**不是丢包/溢出**。
+- 逐字（L31）："At the same time, based on the Q-learning algorithm in reinforcement learning, we propose a route recovery technology based on the above-mentioned fault detection. `$e$` collected information is used to update the Q-value table composed of two-dimensional state space and one-dimensional action space. **For diferent types of faults, update the Q-value of the local state space and action space of diferent related nodes to achieve the purpose of distinguishing route recovery for diferent types of faults.** At the same time, because the reward function consists of **queuing time, transmission time, and link lifetime**, the discount factor is also related to the link lifetime, which efectively reduces the impact of network dynamics on the stability of routing results and ensures the stability of path connections."
+- 逐字（L328）："Two faulty links are set in the selected path: **one is a permanent failure caused by a port failure, and the other is a temporary link failure caused by the transmission medium interference.**"
+- 逐字（L321，图 6 图题）："Trend of the accuracy rate of **fault classification in two stages of fault detection** varies with the fault rate."
+- 逐字（L243 / L253，算法步骤）："(4) Update the Q-value table according to the detection result of the first stage of the fault detection mechanism." / "(5) Update the Q-value table according to the detection results in the second stage of fault detection mechanism."
+- **惩罚项公式逐字**（式 14 区段）：`$Q _ { F } ^ { \mathrm { o d d } } ( d _ { i } , F ^ { \prime } ) = - \infty$`、`$Q _ { F ^ { \prime } } ^ { \mathrm { o d d } } ( d _ { i } , F ) = - \infty$`；邻居节点则按 `$\Delta Q _ { Y } ( d _ { i } , F ) = t _ { q } + \gamma \operatorname* { m a x } Q _ { F } ^ { \mathrm { o d d } } ( d _ { i } , Y ) - Q _ { Y } ^ { \mathrm { o d d } } ( d _ { i } , F )$` 正常更新。
+- **判定（是否覆盖 G-A）**：**部分覆盖，但不覆盖 G-A 的核心**。三条理由：
+  (a) 分解对象是**链路故障**，不是 G-A 所指的**丢包/超时/溢出**；
+  (b) 惩罚是**跨原因一致的 `-∞` 硬惩罚**——不同故障类型**没有不同的惩罚值，也没有不同学习通道**；类型差异只体现在"更新哪些节点的 Q 表"（状态/拓扑层面），而非奖励层面；
+  (c) 奖励函数的三项是 queuing time / transmission time / link lifetime，属**代价类型**分解，与"失败原因"无关。
+- **对 G-A 的价值**：它证明 LEO 卫星网络的 Q-learning 路由文献**已具备"识别故障物理类型并分流处理"的机制**（故障分类 + 两阶段检测 + 分类型 Q 更新），因此在物理原因维度上做区分在本领域**不是天方夜谭**；缺的是**把这一区分落到奖励/惩罚通道上**。
+
+#### 反例 B：UKBSA7WN — QRLSN（T1，多目标 RL）
+
+- **分解轴：优化目标类型**（端到端时延 vs 网络流量开销负载），**不是失败原因**。
+- 逐字（L139）："In QRLSN, we adopt a Multi-Objective Reinforcement Learning (MORL) algorithm to balance endto-end delay and network traffic overhead load."
+- 逐字（L141）："MORL differs from typical RL, which considers several optimization objectives simultaneously in the learning process, **where a reward vector is provided for the agent at each update step**, which could be described as."（`reward vector` 全库**唯一**命中）
+- 逐字（L147）："where `$i \in [ 1 , n ]$` and n represents the number of objectives; `$r _ { i }$` is the i th feedback signal of the agent’s reward vector obtained from the interaction with the environment."
+- 逐字（L149）："The overall policy can be synthesized into `$\mathrm { T Q } ( s , a )$`, which can be calculated by using Q-values from all objectives. In this paper, a **weighted sum approach** is adopted by computing a linearly weighted sum of Q-values."
+- 逐字（L158）："In the proposed QRLSN, **two optimization targets** are obtained by a reward vector `$f _ { r } = [ f _ { r _ { 1 } } , f _ { r _ { 2 } } ]$`, and according to Eq. (7), the two Q-values are updated by."
+- 逐字（L168）："where `$f _ { r _ { 1 } }$` and `$f _ { r _ { 2 } }$` denote the reward function to optimize the **end-to-end delay** and **network traffic overhead load** respectively; `$d _ { i j }$` is the transmission time between adjacent satellite nodes; `$n _ { q }$` is the number of data packet queued in the current node."
+- **判定（是否覆盖 G-A）**：**不覆盖**。它的**通道结构**（奖励向量 + 每目标一套 Q 值 + 线性加权合成）与 G-A 所需形式**高度同构**，但**分解轴是"目标类型"而非"失败物理原因"**，且两个目标（时延、开销）本身都不是失败事件的分因。
+- **对 G-A 的价值**：这是本库**唯一**现成的"多通道奖励 + 多套 Q 值"实现，可直接作为 G-A 设想的**技术模板**——把 `$f _ { r _ { 1 } }$`/`$f _ { r _ { 2 } }$` 从"目标"换成"失败原因"即得 G-A 所需结构。
+
+#### 反例 C：JP79GMZS — Explicit Load Balancing (ELB)（T2）—— 承认了两种物理原因，却**主动消除其中一种**
+
+- **分解轴：无（它在实验设计上把原因合并掉了）**。
+- 逐字（L213）："In all conducted simulations, **all links are presumed to be error-free. The rationale beneath this assumption is to avoid any possible confusion between throughput degradation due to packet drops (due in turn to buffer overflows at satellites) and that due to satellite channel errors.**"
+- 逐字（L5，摘要）："Such scenario obviously leads to congestion of the heavily loaded links. It ultimately results in **buffer overflows, higher queuing delays, and significant packet drops**."
+- 逐字（L197）："...receivers refer to the TTL field of packet headers to judge whether the out of order in the reception of packets is **due to congestion or simply to changes in the communication path**."
+- **判定（是否覆盖 G-A）**：**不覆盖，但它是对 G-A 最有价值的"负证据"**。它明确**区分了两种物理丢包原因**（"buffer overflows at satellites" vs "satellite channel errors"），并**用假设（链路无差错）消除了其中一种**，目的正是"避免混淆"。
+- **对 G-A 的价值**：① 证明"丢包的物理原因之分"在本领域**被明确认识到**，G-A 不是伪问题；② 作者选择的处理方式是**实验控制**（假定掉一种原因）而非**学习分解**——这恰好划出了 G-A 的**空白带**：既然要"避免混淆"，为什么不把两种原因**分别喂给不同的学习通道**？③ 它的 TCP 层机制按 **TTL 判断乱序是"拥塞"还是"路径变更"**，是与"按原因区分"最接近的机制，但那是**接收端重排恢复逻辑**，不是学习信号。
+
+#### 反例 D（次要）：2QRYMWBI 转述的 [73]（多目标 DRL 波束跳变）
+
+- **分解轴：业务目标类型**（实时业务时延 vs 非即时业务吞吐）。
+- 逐字（L246）："In [73], the authors investigated the optimal fairness policy for beam hopping in DVB-S2X satellite regarding two main goals: **minimizing the delay of real-time services transmission and maximizing the throughput of non-instant services transmission**. To cope with the time-varying and unpredictable wireless channel issues, and differentiated service arrival rates in the multi-beam satellite environment, this work employed the **model-free multi-objective deep reinforcement learning** approach..."
+- **判定**：**不覆盖**（分解轴是目标类型，且为综述转述的第三方工作）。
+
+#### 反例 E（次要）：9KZDXPKC — How to Route CUBIC and BBR Packets in Space（T2）
+
+- **分解轴：在实验分析中按物理原因归因吞吐骤降，但该文非学习类，无惩罚项**。
+- 逐字（L246）："Comparing the two curves shows that DB-R mechanism can prevent the **throughput drop caused by GSL handover** under BBR."
+- 逐字（L248）："Comparing the two curves shows that DB-R mechanism can avoid the **throughput drop caused by ISL failure** under BBR."
+- **判定**：**不覆盖**。它把吞吐下降**归因到不同的物理事件**（GSL 切换 vs ISL 失效），但这是**结果解释**，不存在学习通道，也不存在分因惩罚项。
+
+#### 反例 F（次要）：LJG6ZW7B（Sutton & Barto, T4 教科书）
+
+- 模式 `separate (reward|penalty)` 全库**唯一**命中在该书，但**未能在正文确认**（见 14.1 假阳性说明）。
+- **判定**：不构成反例。该书讨论的是**通用 RL 的奖励分解原理**，从**目标/子任务**维度出发，**不涉及失败事件的物理原因**。
+
+### 14.3 反向证据（支持"G-A 是真缺口"的显式原文）
+
+1. **J68GU76W**（T1，RL 路由）L198 逐字："Queues for the satellites are assumed unbounded, so **buffer overflow is not explicitly modeled**, though reducing queue length inherently lowers overflow risk."
+   → 一篇 T1 级 RL 路由论文**显式声明不建模缓冲溢出**，即该文**在结构上无法**区分"溢出丢包"与"其他丢包"。
+2. **GPDPLJNG**（T1）L82 逐字："Each node u should follow the flow imbalance rule to its buffer variation for each source-destination flow pair at all timeslots, which also signifies that all the flows passing through the node **will not provoke buffer overflow**:" → 以**约束**保证不发生溢出，使"溢出"不成为可学习事件。
+3. **42E4NAQU**（T1）逐字："...**effectively preventing queue overflow** and allowing..." → 同样是**排除**溢出而非**分解**溢出。
+4. **本批 T5 的 13 篇**：`arrival process` **0 命中**、`self-similar` **0 命中**；仅 2 篇提到 `Poisson`（2QRYMWBI 的随机接入到达过程、5AZHJE7N 转述仿真器的 Poisson 到达率）。→ 综述层面对"负载到达过程"的建模关注度**极低**，更谈不上"按失败原因分解学习信号"。
+
+### 14.4 G-A 判定的最终结论（含不确定性声明）
+
+- **未发现完全覆盖 G-A 的反例。**
+- **最接近的是 8N9QJHC2**（按链路故障物理类型分流 Q 更新；但惩罚跨原因一致，且对象是链路故障而非丢包/溢出）。
+- **结构上最可复用的是 UKBSA7WN**（奖励向量 + 多套 Q 值 + 加权合成；轴是目标而非失败原因）。
+- **最有价值的负证据是 JP79GMZS**（明确命名两种丢包物理原因，却用"链路无差错"假设消除其一以"避免混淆"）。
+- **不确定性**：(a) 对非 T5 的 itemKey 只做了**命中行定位**，未通读，可能遗漏未含上述关键词的表述；(b) 检索词为英文，未做同义词穷举（如 `packet discard`、`loss type`、`failure mode`）；(c) 已用列文件方式复核以排除 JSON 中间产物造成的假阳性，但 `multi-head` 一项未逐一核验，已在表中标注。
+
+---
+
+## 15. 完成度声明（fail-loud）
+
+### 15.1 已通读的篇目（13/13 全部完成）
+
+| itemKey | 精读段落 | 未通读段落（如实登记） |
+|---|---|---|
+| 2QRYMWBI | 1–20、542–604、794–900 | 21–541、605–793、901–1933 |
+| LNA28YZY | 1–18、600–694 | 19–599、695–1398 |
+| 7AXASN73 | 9–14、48–74、227–251、293–406 | 15–47、75–226、252–292、407–1030 |
+| IP7RRM3A | 1–38、200–262 | 39–199、263–492 |
+| LRSXMWX9 | 1–10、434–593 | 11–433、594–986 |
+| QSNRQ8PF | 1–30、107–132、251–320 | 31–106、133–250、321–707 |
+| T9X6QCLL | 1–31、159–188、271–284、462–501 | 32–158、189–270、285–461、502–899 |
+| Z74SR656 | 1–8、434–513 | 9–433、514–1293（**含与本题最相关的 VI. ML-Empowered NTNs，未通读——本批最大缺口**） |
+| L5F3DK68 | 51–62、334–369 | 63–333、370–835 |
+| UMKF328H | 84–97、451–506 | 98–450、507–624 |
+| BV4XI6CU | 3–37、92–330、398–409 | 331–397（结果图描述） |
+| 524XNF29 | 4–23、333–439 | 24–332、440–771 |
+| 5AZHJE7N | 3–18、126–137、413–465 | 19–125、138–412（**含 IV/V 仿真器综述主体，未通读**）、466–721 |
+
+### 15.2 明确未完成的部分（不以关键词扫描冒充通读）
+
+1. **Z74SR656 的 VI. ML-Empowered NTNs（约第 306–384 行）未通读**。该节与本选题（RL/ML 用于卫星网络）直接相关，其开放问题清单**可能有重要遗漏**；本文件对该篇的开放问题仅覆盖第 IX 节。
+2. **5AZHJE7N 的 IV/V 节（约第 138–412 行，仿真器逐工具综述）未通读**。该节含各仿真器对流量生成/负载建模的支持能力，**可能有对本题有用的事实**，未提取。
+3. **T5 之外的其他 itemKey 未通读**（第 14 节已声明）；G-A 的判定基于命中行原文，不排除遗漏。
+4. 第 4、5、6、7、8、9、10、12、13 节的"开放问题清单"因只读挑战/未来方向节，**可能遗漏正文中的问题陈述**，已在各篇"读取范围"处逐条标注。
+
+### 15.3 红线执行自查
+
+- 每条均为 **MD 行号 + 逐字英文原文**；无"提出了 XX 方法"式概括。
+- 公式（BV4XI6CU 式 2/3/4/5/7/8/9/10/11/12/13/14/15；8N9QJHC2 式 14；UKBSA7WN 的奖励向量与加权合成式）均**逐字抄录 LaTeX 原文**，未改写成自然语言。
+- 判"未见"的每一条均写明**精确检索模式 + 实测计数 + 命中判定**（第 0 节统一协议 + 各篇第 N.3 小节 + 第 14.1 节的假阳性逐条排除）。
+- **算法是主体，环境是实验条件**：BV4XI6CU 的仿真参数、T9X6QCLL 的 Starlink 实测值、2QRYMWBI 的预测窗口等均标注为"条件登记/量化登记"，未列为贡献。
+- 只写了分配给我的**一个文件**：`round/run4/algo/DOSSIER-B10.md`。
+
+### 15.4 出错与更正记录（fail-loud）
+
+1. 本文件第一版曾把 2QRYMWBI 的 `credit` 声明误写为"仅以 'Credits: NASA' 出现"，实测为 **0 命中**；已更正。误因：该判断来自 LNA28YZY L621 的记忆串位。
+2. 第一版遗漏了 2QRYMWBI L246 的 `arrival rate` 命中、L618 的 `Poisson` 命中、LNA28YZY L414/L441/L457 的 `burst` 命中、IP7RRM3A L400 的 `burst` 命中；已在第 0 节统一核验表中补齐并逐条判定。
+3. 文件写入过程中曾发生一次**整文件覆盖事故**（误用全量写覆盖了已完成的部分），已全文重写恢复；内容以当前版本为准。
+4. 访问 JP79GMZS（非本批文件）时遇到一次 `[HOOK-BLOCK]`；按规程等待 20 秒后重试成功，已取得所需原文（14.2 反例 C）。
+5. 一次跨文件检索因误纳入 JSON 中间产物导致命中数虚增（例如 `credit assignment` 由 5 虚增至 76）；已改用只搜正文 MD 的口径重算，第 14.1 节的计数为**修正后口径**。
+
 
 
 
