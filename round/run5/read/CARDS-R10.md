@@ -283,4 +283,137 @@ Python + Keras 搭 MPNN 与 DQN（L206）。星座：**9 条倾斜轨道 × 每�
 **10. 一句话评价**
 在方法谱系上，它是 **"GNN 当 DQN 的 Q 函数逼近器"这一支在 LEO 星间路由上的落地**（引 Almasan et al. 2022 那条线），最实质的两个改动是**把 ISL 而非卫星设为 GNN 节点**、以及**把动作空间从"下一跳"抬到"整条 k-最短路"**；这两个选择都合理且有解释，实验也确实扫了负载轴并给出了"低负载无差别、高负载优势放大"这一与同批多篇互相印证的结论——但它终究是一篇 6 页会议短文：**载荷与权重的全部数值、k 的取值、参考路径的定义、训练超参全部缺失，泛化只在同一星座的 5 个时点验证**，"更强的泛化能力"这个中心论点实际上没有被它自己的实验真正检验（没有跨星座/跨规模）。
 
+## XM6NUPM4 — Your Mega-Constellations Can Be Slim: A Cost-Effective Approach for Constructing Survivable and Performant LEO Satellite Networks
+
+**1. 一句话**
+不问"怎么路由"，而问"**到底需要多少颗卫星**"：把"可生存 + 有性能"的星座设计写成整数规划 SPLD（最少卫星数，同时满足冗余路径数、链路容量、端到端时延三类约束），再用 MEGAREDUCE 在多项式时间内反复"可行性判定 + 收缩/扩张"搜索近优解，在 Starlink/Kuiper 真实参数上最多砍掉约 20–22% 的卫星。
+
+**2. 问题设定**
+巨型星座的部署既带来**可生存性**（更多冗余备份链路与路径，抗太阳风暴/辐射/硬件故障，L17）和**性能**（更广覆盖、更高星座总容量，L19），也带来**成本**与**治理问题**（空间交会与碎片，L25）。作者指出既有工作要么只优化覆盖/时延/容量而**不考虑空间环境下的可生存性**（L27），要么是**静态地面网络的 SND 问题**、难以直接搬到高动态的天基骨干（L56），要么靠引入 GEO 分层来省卫星但**会抬高时延且 GEO 容量有限**（L58）。核心问题（L13）："from a network perspective, how many LEO satellites exactly does an LSN need"。
+
+**3. 方法骨架**（非 RL：整数规划建模 + 多项式时间可行性判定 + 启发式调优）
+- 网络建模（第 III.A 节）：时隙化，$I^t_{ij}$ 表示 i 与 j 在时隙 t 是否互相可见，$e^t_{ij}=1$ 表示该时隙存在活动链路（**链路只有两端可见才能激活**，L70）；LSN 建成时变图 $G_t=(V,E_t)$，$V=S\cup\mathcal{C}$（卫星 ∪ 地面小区，L72）。地面按 H3 方法聚合成**小区**（cell），一个点波束服务一个小区（L74）。
+- 容量模型：每条波束的上/下行容量 $Cap^t_{ji}/Cap^t_{ij}$，卫星总上/下行容量受星上供电约束（$Cap^{max}_{up}, Cap^{max}_{down}$）（L74）。**关键假设**：激光 ISL 容量远高于无线 GSL，且在有空间流量调度的情况下 **ISL 不太可能成为瓶颈**（L74 逐字："the capacity of laser ISLs is much higher than that of radio GSLs, and ISLs are unlikely to be the bottleneck in LSNs with existing space traffic steering"）。
+- 可生存性定义：需求 d 关联 $i,j$ 是 **R-edge connected**，当且仅当**在所有时隙**下 i 与 j 之间都有至少 R 条边不相交路径（L76–78）。
+- **基本 SPLD**（第 III.B 节）：目标 min $\sum_{i\in S}x(i)$，约束 8 条（式 1–8）：可见性、链路端点须在子图内、每星激活 ISL 数 ≤ 发射机数 $N_{ISL}$、每个 cell 上/下行容量、卫星 GSL 容量上限，以及**式 8 的最小割形式可生存性约束**——对任意非空真子集 $\overline{V}$，割边数 ≥ $\max r_{pq}$，保证至少 $r_{pq}$ 条边不相交路径（L122）。
+- **加时延约束的 SPLD**（第 III.C 节，核心构造）：把无向图转成**有向分层图**（layered graph），按需求分解成 $|D|$ 个子问题。时延门限取 $L_d=\lceil\lambda\cdot L^{sp}_{ij}\rceil$（$L^{sp}$ 是最短路"长度"，$\lambda\ge1$ 是约束因子，L128）；建 $L_d+1$ 层，边只能从第 $l$ 层连到第 $l+1$ 层，**这样任何从 src 到 dst 的路径都自动满足 L 跳约束**（L137–139）。在分层图上写流量守恒式 9（保证 $r_d$ 单位流、同时保证 $r_d$ 可生存性）、防环式 10、边不相交与卫星入选式 11、链路容量式 12。
+- 复杂度：**即使所有 r=1，单时隙 SPLD 也退化为 Steiner Tree，NP-hard**；作者初步实验显示数百颗星的规模就已无法求解（L171）。
+- **MEGAREDUCE**（第 IV 节）：核心思想是"最优解难求，但**判定给定 LSN 是否可行可以多项式时间做**"（L177）。四步循环：初始化 → 可行性判定 → 星座调优（可行则 Shrink，不可行则 Expand）→ 在可行解中选卫星数最少的（L182–190）。
+  - 搜索范围 $[\mathcal{N}_{min},\mathcal{N}_{max}]$：$\mathcal{N}_{max}$ 取原星座卫星数；**$\mathcal{N}_{min}$ 的关键洞察**——要保证 cell i 与 j 之间有 $r_{ij}$ 条不相交路径，至少要有 $r_{ij}$ 颗卫星对 i、j 可见（L196）。
+  - **调优原则（本文最漂亮的一条洞察，L255）**：Walker Delta 星座中任意两颗通信卫星之间最短路径的最大跳数是 $\lceil(O+M)/2\rceil$，**当 $O=M$ 时取最小值**——所以 Shrink/Expand 都朝"让轨道数 O 与每轨星数 M 更接近"的方向调整。
+  - Algorithm 1（搜索，L198）、Algorithm 2（FeasibilityCheck，L224）、Algorithm 3（Shrink/Expand，L257）。可行性判定里：对每个时隙的每个 cell 先算可用上/下行容量（Algorithm 2 line 3–6），再对每个需求建分层图、用**最大流**算可达的边不相交路径数并与 $r_{src,dst}$ 比较（line 11–12），最后**逐需求扣减** src 上行与 dst 下行容量（line 14–17）。
+
+**4. 它声称的效果**
+- 时延约束用 $\lambda$ 参数化：如已知需 ≥1500/1600 颗星才能满足 $r_{min}=5/6$，则可反推"给 1550 颗星，可支撑的 $r_{min}$ 到 5"（L350，这是函数求逆的用法）。
+- Fig 4（L306）：随可生存性要求 $r_{min}$ 提高，MEGAREDUCE 动态增星、构建更多边不相交冗余路径；**即便在 $r_{min}=6$ 的最严苛情形，Starlink 与 Kuiper 的所需卫星总数仍可分别减少 20.05% 与 21.88%**。
+- Fig 5（L308）：把**每小区平均容量需求从 20 Mbps 扫到 40 Mbps**，所需卫星数随需求上升（更多高吞吐波束）。
+- Fig 6（L310）：$\lambda$ 越小（路径长度约束越紧），需要越密的星座来提供受长度约束的冗余路径。
+- Fig 7（L328）：**高度 × 倾角 × 所需卫星数**的 3D 曲面，两个观察：① 所需卫星数**随高度上升而下降**（覆盖更广、单 cell 被更多星服务、冗余链路更多），但作者同时指出**高度上升会带来更高的星地传播时延**；② 所需卫星数**随倾角增大而上升**，因为多数通信小区在 $[-70°,70°]$ 纬度带内，倾角更大的星座能为这些"热点小区"提供更高卫星密度。
+- Fig 8 韧性分析（L332）：两种失效模型——**太阳风暴**（邻近一批卫星同时损毁，用例：2022-02-04 报废的 49 颗 Starlink）与**随机失效**（硬件故障/器件老化）。指标是**可达率**（可达通信对 / 总通信对）。**基线是 UltraDense（文献 [12] Deng et al.）**；相同星座规模下 MEGAREDUCE 可达率更高。
+- Fig 9a 增量部署（L354）：用 SpaceTrack 的 Starlink 真实历史数据（2019-12 至 2023-06），真实 Starlink 的 $r_{min}$ 在 **3.5 年内从 0 涨到 5**；用同样分批发射数量但改用 MEGAREDUCE 设计，**早期阶段就能取得更高的可生存性**。
+- Fig 9b 在轨调整（L356）：Starlink 的**年衰减率 AAR ≈ 2.6%**（每年约 2.6% 卫星失活）；不补星则生存性渐降，按 MEGAREDUCE 及时调整结构可维持较高生存性。
+
+**5. 实验条件**
+仿真器：扩展 **StarPerf**（作者自己的前作，L452），增加"灵活调整星座结构"与"可生存性评估"能力；星座信息取自公开监管文件（FCC 的 SpaceX Gen2 与 Kuiper 文档，L448–450）；地面站分布按 starlink.sx（L454）。参数（L284）：**激光 ISL 容量 20 Gbps，共享 GSL 容量 4 Gbps，$N_{ISL}=4$**。**每个实验都仿真一个完整的回归周期**（L284）。优化器基于 **Gurobi** + **SkyField**（高精度轨道/轨迹计算）实现（L284）。流量：结合 Starlink 可用性地图与文献 [11] 的**人口比例流量模型**生成需求矩阵（L286）。初始星座：**Starlink 一期 4408 颗 / 5 个轨道壳层 / 高度 540–570 km**；**Kuiper 3236 颗**（L290）。代码开源：https://github.com/SpaceNetLab/MegaReduce（L362）。
+**一个关键交代（L332）**："We assume that the high layer routing protocols can efficiently detect redundant paths and switch to the backup path if the current path fails."——即韧性评估**假设路由协议能即时切换**，路由本身不在本文范围内。
+
+**6. 它自己承认的局限**
+**未见自述**。第 VI 节 "CONCLUSION AND ACKNOWLEDGEMENT"（L358–360）通读到底，只有正面总结与致谢，没有 limitation、没有 future work；全文也没有 Limitations 小节。读过的段落：摘要（L5–7）、引言（L9–33）、背景与相关工作（L35–62）、系统模型与问题陈述（L64–171）、优化机制（L173–278）、评估（L280–356）、结论（L358–362）、参考文献（L364–465）。
+（可算作**显式假设**而非局限的有：L332 的路由协议即时切换假设；L74 的"ISL 不会是瓶颈"假设。）
+
+**7. 它没做但看起来能做的地方**（基于内容）
+1. **时延约束完全是"跳数/路径长度"约束**（$L_d=\lceil\lambda L^{sp}\rceil$，L128），**排队时延完全不建模**。而 LSN 的实际端到端时延在负载高时由排队主导——本文的"acceptable latency"实际只覆盖了传播部分。这是它自己框架内最明显的一处缺口。
+2. **容量需求是"每小区平均容量"这一个静态标量**（20–40 Mbps，L308），没有任何时间维度：没有峰值/均值比、没有到达率的时变过程、没有突发性。而它自己的 GSL 容量模型（式 4–7）是按"所有需求之和 ≤ 同时可见卫星容量之和"来判定的，这个判定在时变流量下会完全不同。
+3. **可行性判定用的是平均/总量口径**：Algorithm 2 里对每个 cell 只维护一个 $AvaiCap$ 标量并按需求逐个扣减（L241–244），**没有考虑需求之间的时间重叠或随机性**。
+4. Rayleigh/多径、干扰、误码率**完全不在模型里**（容量是给定的常数 $Cap$），所以"20 Gbps ISL"这个数字的可靠性未被检验。
+5. MEGAREDUCE 是**启发式搜索**（二分式的 Shrink/Expand + 迭代上限 $I_{limit}$），**没有给出与最优解的差距（近似比）**，只说"near-optimal"（L360）。$I_{limit}$ 的取值也没给。
+6. **$\lambda$（时延约束因子）的取值范围在正文中没有明确给出**，只说"as the value of λ decreases"（L324）。
+7. 韧性评估的失效模型是**两种特定模式**（太阳风暴成簇失效、独立随机失效），**没有考虑相关性失效**（例如同一轨道面系统性退化的共因失效），而 Walker Delta 的轨道面结构恰恰容易产生这类失效。
+
+**8. 和同批其他篇的关系**
+- **与 X5K285MW 耦合最深**：两篇共享至少 4 条核心参考文献——**Bhattacherjee & Singla, CoNEXT'19「Network topology design at 27,000 km/hour」**（本文 [11]，X5K285MW 的 [2]）、**Giuliari et al.「Internet backbones in space」**（本文 [17]，X5K285MW 的 [8]）、**Gvozdiev et al.**（本文 [41] "On low-latency-capable topologies…" SIGCOMM'18；X5K285MW 的 [9] "Low-Latency Routing on Mesh-Like Backbones" HotNets'17——**两篇都用了 Gvozdiev 那条关于"额外跳数与传播时延关系"的分析线**）、**Walker 1984**（本文 [42]，X5K285MW 的 [16]）。
+- 更实质的呼应：X5K285MW 讨论"**放宽最小跳约束（允许 +2 跳或更多），只要仍满足 QoS 就还能提升负载均衡**"（X5K285MW L70）；本文则把同一件事做成了**硬约束**——$\lambda$ 就是"允许多少倍的跳数"，且 Fig 6 显示 $\lambda$ 越小需要越多卫星（L310）。**两篇从两个方向夹住了同一个变量**：一个问"多给几跳能换来多少吞吐"，一个问"要求几跳要付出多少卫星"。
+- 与 **S85KQ4FC**：两篇都在 LEO 巨型星座背景下讨论"网络级性能 vs 资源"，但 S85KQ4FC 关注的是**星上推理资源**，本文关注的是**卫星数量/部署成本**——两个不同的"资源预算"维度。
+- 本文引 **OPSPF（Pan et al., [36]）**——该文也出现在 X5Z98UPM 的参考文献（其 [30]），是 LEO 路由领域的共享基线；本文引 **SpaceRTC（Lai et al., [38]）** 与 **resilient routing in STIN（[39]）** 作为"空间流量调度"互补工作。
+- 方法谱系上本文与同批三篇 DRL 路由（X5Z98UPM / XLRW7XXN / XM64YRAW）**完全不同路**：那三篇是"给定网络、优化转发策略"，本文是"给定需求、优化网络本身"。**它的基线 UltraDense（[12] Deng et al.）也是"最少需要多少 LEO 卫星"这一路**，不是路由算法。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**是"容量规划"而非"负载动力学"的贡献**，需要分开说：
+- **直接贡献**：给出"**需求 → 所需网络规模**"的定量曲线。Fig 5 把每小区平均容量需求从 20 扫到 40 Mbps，给出所需卫星数单调上升（L308）——这是本批唯一一条"负载 → 资源"（而非"负载 → 时延/丢包"）的曲线。Fig 6 给出"时延约束 $\lambda$ 收紧 → 所需卫星数上升"（L310）。Fig 7 给出高度/倾角对所需卫星数的二维影响面。
+- **与"到达率/时延"的关系**：**没有直接贡献**。本文的"时延"是**路径长度约束**（跳数 ≤ $\lceil\lambda L^{sp}\rceil$），不含排队时延、不含到达率；"容量需求"是**静态平均值**（Mbps per cell），不含到达过程、不含突发性。换句话说，它回答的是"**为了承载这个量级的流量，网络至少要多大**"，而不是"**到达率变化时，时延会怎么变**"。
+- **一个间接但有价值的事实**：L328 明确指出"提高轨道高度可以减少所需卫星数、但会增加星地传播时延"——即**卫星数量与时延之间存在结构性权衡**（不是通过路由，而是通过星座几何）。这与 X5K285MW 的"路径多样性与平均时延权衡"、XM64YRAW 的"负载均衡与传播时延权衡"属于同一族的**权衡结构**，只是调节旋钮从"选路"换成了"星座几何"。
+
+**10. 一句话评价**
+本批唯一一篇**站在网络设计者而非路由器角度**的论文：把"最少多少颗卫星"这个运营层面的问题写成一个带最小割可生存性约束的整数规划，用"可行性判定多项式、最优解 NP-hard"这一经典突破把问题拆成"判定 + 二分调优"，并用 $O=M$ 时 $\lceil(O+M)/2\rceil$ 跳数最小这条 Walker Delta 的结构性质作为调优启发式——工程上扎实、真实数据驱动（StarPerf + FCC 文档 + SpaceTrack 历史 + 20/4 Gbps 链路参数）、代码开源，与同批路由论文共享 Bhattacherjee/Gvozdiev/Walker 这条 LEO 拓扑设计血脉；但它与"负载变化下的到达率/时延"这一问题**基本不在同一维度**：时延被简化成跳数约束、容量需求被简化成静态均值，因此它提供的是**规划期的一个标量答案**，而非运行期的动态曲线。
+
+## Y2H4NPLU — Q-learning for distributed routing in LEO satellite constellations
+
+**1. 一句话**
+把 1993 年的 **Q-routing**（Boyan & Littman，[8]）搬到 LEO 星座上做**全分布式多智能体**路由：每颗卫星是一个独立 agent，只用 2 bit 编码的邻居链路/队列信息和邻居回传的 Q 值更新自己的 Q 表，**主动与两个"中央集权 + 已知队列状态"的 Dijkstra 基线对比**，证明分布式 Q-routing 支持的负载更高。
+
+**2. 问题设定**
+摘要（L5）把 LEO 路由的难点讲得比同批任何一篇都清楚，逐字："The topology, of finite size, is dynamic and predictable, the traffic from/to Earth and transiting the space segment **is highly imbalanced**, and **the delay is dominated by the propagation time in non-congested routes and by the queueing time at Inter-Satellite Links (ISLs) in congested routes**." 既有做法的两个毛病（L5）：**依赖与地面或其他卫星的过量通信**（信令开销），以及**对"通往目的地的各段链路"刻画过度简化**（例如文献 [7] 用截断高斯分布建模排队时延，L15 逐字："the model of the queueing time is too simplistic, e.g., using truncated Gaussian distributions"）。作者还引文献 [4] 的一个实测事实：传统 unipath 源路由的端到端平均时延约 **100 ms**，其中**传播时延占比随负载在 37%–66% 之间变化**（L13）——这直接把"时延的主导项随负载切换"写进了问题设定。
+
+**3. 方法骨架**（RL，**表格型 Q-learning**，非 DQN；多智能体 POMDP）
+- POMDP 四元组 $(S,A,P(s,a),R(s,a))$，观测来自自身队列/链路 + 邻居反馈（L62）。
+- **状态**（L79）：$S_i=\{L_i,N_i\}$。$L_i$ = 从包头取出的目的节点 + 自身链路连通性 $\mathcal{E}_i$；$N_i$ = 四个邻居（2 同轨 + 2 异轨）各自的**链路质量与缓冲拥塞，每个只用 2 bit 编码**——$s_t=2$ 表示"长队列或链路不可用"，$s_t=0/1$ 分别表示"不拥塞且链路容量高/低"。作者自述这样做是"**minimizes the state space and alleviates the computation cost, which is an advantage for satellites with limited computation capabilities**"（L79）。
+- **动作**（L97）：$a_t$ 从 $\mathcal{E}_i\cup\mathcal{E}_{i_G}$ 里选下一跳（邻居卫星或通往网关的链路）。
+- **奖励**（式 5–7，L84–95）：三段式——若下一跳 j 的关联网关就是目的地，给 $r_{del}$；若 j 已在包已访问集合 $\mathcal{P}_p$ 中，给循环惩罚 $r_{loop}$；否则 $r_{queue}+r_{dist}$，其中
+  $r_{queue}=w_1(1-10^{t_q(j)})$（**随下一跳排队时延指数增长的惩罚**），
+  $r_{dist}=w_2\frac{\|id\|-\|jd\|+\|sd\|}{\|sd\|}$（归一化的"到目的地斜距缩短量"）。
+- **Q 更新（本文唯一的实质方法学改动）**（式 8，L130）：$Q_i^{*}(s_t,a_t)=(1-\alpha)Q_i(s_t,a_t)+\alpha\left(r_t+\gamma\max_a Q_j(s_{t+1},a)\right)$——注意 $\max$ 里取的是**邻居 j 的 Q 表**，而不是 i 自己的。理由（L103 逐字）："the actions taken by satellite i are observable in the state change of the neighbouring satellites, more specifically in the increased queue length of the next hop j. Therefore, we modify the usual formulation to reflect this partial knowledge and correlation among actions."
+- **反馈最小化**（L133）：算法与邻居的唯一交互就是"成功收到包之后回传一个 Q 值"，在一段已经建立的链路上传输。
+- $\varepsilon$-greedy，$\varepsilon$ 初期高、随后指数下降（L101）。Algorithm 1（L105–127）。
+- **一跳时延**（式 3，L51）：$L(i,j)=\underbrace{t_q(i)}_{\text{排队}}+\underbrace{B/R(i,j)}_{\text{传输}}+\underbrace{\|ij\|/c}_{\text{传播}}$。**链路速率**（式 1，L33）：$R(i,j)=W\max\{\rho: \frac{P_r(i,j)}{k_BT_SB}\ge \mathrm{SNR}_{min}(\rho)\}$，即在 **DVB-S2** 的调制编码方案里选满足 SNR 的**最高频谱效率**——链路速率是**自适应**的，这点同批多数论文都没做。
+- **队列模型**（L46）：每星一个 FIFO 发送缓冲，上限 $Q_{max}$，**满则丢包**。
+- **流量模型**（L38）：每个活跃网关把等量数据发给其余所有网关，到达服从**泊松分布**速率 $\lambda^{(g)}_{UL}$；定义 $\lambda^*$ 为网络可支持的最大负载（由上下行 GSL 速率算出），**总负载 $\ell=\sum_g\lambda^{(g)}_{UL}/\lambda^*$**——这是一个归一化的、可跨场景比较的负载定义。
+
+**4. 它声称的效果**
+- **稳定性分析（本文最硬的实验设计，L141）**：定义"路径稳定"= 端到端时延不随时间增长。做法是取**最后 200 个到达目的地的包**（避开训练期），对"时延 vs 包序号"做线性回归得斜率 $\hat\beta_1$，再做 **t 检验，$H_0:\beta_1\le0$，显著性水平 0.05**；未通过则该路径标记为不稳定。
+- Fig 3（L143）不稳定路径比例 vs 活跃网关数：**data rate BM 从 9 个网关起急剧上升**（因为它按高数据速率选路、无法感知拥塞）；**latency genie BM 在 8 个网关就开始上升**但比 data rate BM 慢；**Q-routing 的初始上升最慢**，只有在 **超过 14 个网关**时才比另两者差，但那时三者都 > 0.1、网络已不可用。**8 个网关时 Q-routing 没有任何不稳定路径**；9 个网关时 Q-routing 只有一条不稳定路径（Inuvik, Canada → Córdoba, Argentina）。
+- **对"genie 也输"的解释（L143）**：所有不稳定路径有三个共同特征——① 两网关间距离大，② 由南向北，③ **多数有相同的目的地**。原因是 genie 在源端按**当时的**队列状态选路，但包到达远端链路时队列状态早已不同（"If the distance is long, the queue of a distant satellite might be empty at the time the packet is transmitted from the source, but increase significantly before the packet arrives"）。作者据此断言：**即便假设全局瞬时知识，源路由本身也是次优的**。
+- Fig 4（L151）时延分解 vs 活跃网关数：**传输时延在所有情形下 < 0.72 ms**，相对传播与排队可忽略、故未画；**latency genie BM 的传播时延最低**，但其**排队时延在 $|G|\ge8$ 时显著上升**；**Q-routing 的传播时延在所有情形下都比另两者略大**，作者给了两条原因（见第 6 项）。
+- Fig 5（L160）时延-时间曲线：Q-routing **初期时延较大**（探索阶段随机选路），随后迅速下降到稳定值并转入以利用为主；data rate BM 在 $|G|=3$ 时保持低值，但 $|G|=9$ 时出现**线性增长**——即拥塞的可视化特征。
+- **基线有两个，且都很强**（L56）：**data rate BM**（边权 $w_{i,j}=1/R(i,j)$，即偏好高速率链路的传统源路由）与 **latency genie BM**（**假设瞬时已知所有卫星的队列状态**，源网关据此选最小 E2E 时延的路径）。
+
+**5. 实验条件**
+自研 Python 仿真器（L137）。星座：**Kepler 星座，$M=7$ 个轨道面，高度 600 km，每面 $N_m=20$ 颗星**（共 140 颗）（L137）。地面：**最多 18 个发射网关**，位置**基本取自真实 KSAT 网络**，逐个列出：Málaga（西班牙）、Los Angeles（美国）、Aalborg（丹麦）、Córdoba（阿根廷）、Tolhuin（阿根廷）、Inuvik（加拿大）、Nemea（希腊）、Nuuk（格陵兰）、Bangalore（印度）、Tokyo（日本）、Port Louis（毛里求斯）、Awarua（新西兰）、Svalbard（挪威）、Vardø（挪威）、Panama（巴拿马）、Azores（葡萄牙）、Singapore（新加坡）（L137）。实验取排序后的前 $|G|$ 个，$2\le|G|\le18$，**流量负载固定 $\ell=0.85$**；作者说这个范围与负载"allow us to analyze very low load up to scenarios with high congestion"（L137）。
+通信参数（L139）：发射功率**卫星 10 W / 网关 20 W**；载频**下行 20 GHz、上行 30 GHz、ISL 26 GHz**；抛物面天线**网关 33 cm、卫星 26 cm**；所有链路带宽 $W=$ **500 MHz**；包长 $B=$ **64.8 kbits**。
+星上天线配置（L26）：1 副对地天线 + 4 副星间天线（2 副在 roll 轴两侧→同轨 ISL，2 副在 pitch 轴两侧→异轨 ISL），$|\mathcal{E}_i|\le4$，且 $\mathcal{E}_i$ **由文献 [3] 的算法动态更新**。
+**负载轴的设计**：论文用"**活跃网关数 $|G|$**"而非"每网关速率"来扫负载（因为总负载 $\ell$ 固定为 0.85，增加网关数即增加总到达率）——这是一个干净的负载扫描设计。
+
+**6. 它自己承认的局限**（三处，均以 future work 形式给出）
+- L79 逐字："In the future, we will extend the space space and apply other advanced learning techniques to characterize the tradeoff between complexity of the learning algorithm and performance gain."
+- L151 逐字（**明确承认 Q-routing 传播时延更差及其原因**）："The propagation latency with Q-routing is a bit larger than the other two in all cases. There are two reasons for this: (1) we include the exploration stage at the beginning of the simulation when the satellites are mostly trying random paths (see Fig. 5); (2) we use a simple encoding of the status of the link to limit the size of the state space."
+- L164 逐字："Future work will look at the extension of the state space to DRL and the evaluation in scenarios with heterogeneous QoS requirements and policies."
+（另可视为半自述的是 L15：作者批评文献 [7] 的模型，并声明自己与 [6][7] 的区别在于"考虑地面段拓扑及其与空间段的连通性，并在**每个 ISL 都有队列、且多个并发数据流互相影响**的现实设定下求解"。）
+
+**7. 它没做但看起来能做的地方**（基于内容）
+1. **负载只测了单点 $\ell=0.85$**（L137），全部扫描都走"活跃网关数"这一维。$\ell$ 本身（0.5/0.85/1.0）作为横轴从未被扫——而 $\ell$ 才是它自己定义的那个"归一化到达率"。
+2. **2 bit 的状态编码是全文最小的那个旋钮，却没做消融**。作者自己说它是"传播时延略大"的原因之一（L151），但没试过 3 bit/更多档位来看能换回多少时延。这是现成的、代价极低的实验。
+3. **$Q_j$（邻居 Q 表）的交换假设了"成功收到包"这一前提**（L133）——但**队列满就丢包**（L46）。丢包时反馈丢失、Q 表不更新，而拥塞时丢包最频繁——**恰好在最需要学习的时候学习信号消失**。论文完全没有讨论这个反馈回路的失效模式，也没报过丢包率。
+4. **奖励里的 $r_{queue}=w_1(1-10^{t_q(j)})$ 是指数形式**（式 6），$t_q$ 单位是秒，$10^{t_q}$ 在 $t_q$ 略大时就会爆炸；$w_1,w_2$ 的取值全文未给，也没有量纲/稳定性讨论。
+5. **两个基线都是集中式源路由**，而作者的卖点之一是"分布式、不经地面"（L5、L164）。**缺一个同级别的分布式基线**（例如 ELB 式的邻居拥塞通告），因此"分布式"的收益与"Q-learning"的收益是纠缠的、无法分离。
+6. **$|G|>14$ 之后网络整体不可用**（L143），但从 14 到 18 的区间里 Q-routing 表现更差——作者只解释到"那时三者都不稳定"就停住了，没有进一步刻画拥塞崩溃的过程。
+7. 时间尺度论证（L72）说"agent 在 <0.5 s 内学会新路径，远快于星座移动的分钟级尺度"，因此可以不处理拓扑变化与学习的时间尺度耦合。这个论证是**从结果反推的**（"As observed in the results"），且只对 140 颗星的规模成立，大规模星座下未被检验。
+
+**8. 和同批其他篇的关系**
+- **与 S85KQ4FC 的关系最关键**：S85KQ4FC 的核心论点是"DRL 逐包推理速度跟不上转发速度，决策队列会堆爆"，而本文是**表格型 Q-learning + 2 bit 状态**——状态空间极小、查表即得，**天然回避了推理开销问题**（作者正是以"limited computation capabilities"为理由做这个编码，L79）。两篇合起来给出一条重要对照：**"把学习问题做小"和"把推理成本当约束优化"是解决同一个瓶颈的两条不同路线**。
+- **与 X5K285MW 的呼应**：X5K285MW 实测传播时延占比高、并发现"最小跳集合内逐流随机选路"就能大幅提升可承载负载；本文引文献 [4] 的 **100 ms 端到端、传播占 37%–66% 随负载变化**（L13），并进一步证明**连"已知全局瞬时队列状态"的 genie 源路由都不如分布式 Q-routing**（L143）——这实际上给出了"源路由为何注定次优"的机理解释（决策时刻与到达时刻的队列状态错配），比 X5K285MW 的"路径多样性"解释更深一层。
+- **与 XM64YRAW 的对照**：XM64YRAW 也报"低负载时所有方案差不多、高负载时 GQN 优势放大"，但它的动作空间是**整条 k-最短路**（源路由式），而本文用 genie 实验直接论证**源路由式决策在长距离下是次优的**。两篇在"是否应该把决策下沉到每一跳"上给出相反方向的证据，值得并列。
+- **与 XM6NUPM4 的对照**：XM6NUPM4 的"时延"是跳数约束（不含排队），本文的式 3 明确是"排队 + 传输 + 传播"三项，且实测传输项 < 0.72 ms 可忽略、排队项在高负载下主导——两篇对"时延到底由什么构成"给出了互补的粒度。
+- **共享参考文献**：本文引 **DRL-ER（Liu, Zhao, Xin et al., [6], L178）**——该文同时出现在 **S85KQ4FC** 与 **XLRW7XXN** 的参考文献里，是三篇共同的基线。本文引 **Boyan & Littman 1993「Packet routing in dynamically changing networks」（[8], L182）** 作为 Q-routing 的方法祖先，这是本批唯一一篇明确接续 Q-routing 原始谱系的论文。
+
+**9. 对"负载变化下到达率/时延"的贡献**（**本批目前最直接、最定量的一篇**）
+它几乎就是围绕这条轴设计的：
+1. **给出了"负载 → 时延主导项切换"的实证**：非拥塞时传播时延主导、拥塞时 ISL 排队时延主导（L5、L54），并进一步用 Fig 4 把三项分开画（L151）。结合文献 [4] 的"传播占比 37%–66% 随负载变化"（L13），可以得到一条清晰的叙事：**时延的构成比例本身是负载的函数**。
+2. **用严格的统计判据（t 检验 + 回归斜率）定义了"拥塞拐点"**：不是看某条曲线翘起来，而是判定"端到端时延是否随时间显著增长"，$H_0:\beta_1\le0$、$\alpha=0.05$、最后 200 包（L141）。这是本批**唯一一个把"是否拥塞"形式化成可检验命题**的工作，可直接迁移到其他论文的评测里。
+3. **量化了各方案的可承载负载差异**：data rate BM 从 **9 个活跃网关**起崩溃、latency genie BM 从 **8 个**、Q-routing 到 **14 个**才落后（L143）——即在"网络仍可用"的区间内，学习型分布式路由的容量比"已知全局队列状态的源路由"还高。
+4. **一个反直觉的事实**：**掌握全局瞬时队列状态的 genie 反而比按速率选路的 BM 更早出现不稳定路径**（8 网关 vs 9 网关，L143）——说明"信息更多"不等于"决策更好"，源路由的决策时刻与执行时刻错配才是瓶颈。
+5. **负载定义是可比的**：$\ell=\sum\lambda_{UL}^{(g)}/\lambda^*$，$\lambda^*$ 由 GSL 速率上限算出（L38）——这是一个归一化到"网络容量"的到达率，比同批其他论文用"数据包数"或未说明量纲的"总需求速率"更严谨。
+**局限**：$\ell$ 固定 0.85 单点；**没有报丢包率**（而队列满丢包是模型的一部分，L46）；时延只报平均值，无尾分布。
+
+**10. 一句话评价**
+本批**方法学上最"小"却最锋利**的一篇：不发明新网络结构、不用 DQN、状态只有 2 bit/邻居，改动只有一处——**把 Q 更新的 bootstrap 目标从"自己的 Q"换成"邻居的 Q"**（式 8），以此显式建模"我的动作体现在邻居队列上"这一多智能体耦合；它同时给出了本批唯一的**形式化拥塞判据（回归斜率 t 检验）**、唯一的**归一化负载定义**（$\ell$ 相对网络容量）、以及一个杀伤力很强的对照实验——**连知道全局瞬时队列状态的源路由 genie 都不如它**。代价是负载只测单点、丢包未报、缺同级别的分布式基线；但作为"把 Q-routing 这条 1993 年的线认真接到 LEO 场景"的工作，它对"负载变化下到达率/时延"这一选题的参考价值高于本批任何一篇 DQN 论文。
+
 <!-- END -->

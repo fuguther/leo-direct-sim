@@ -349,3 +349,161 @@ LEO 比 GEO 单向链路时延低，但**链路可变、不稳定**，导致时�
 **10. 一句话评价**
 **把地面 FRR/SR 的成熟工具箱（备份路径 + 段路由 + 集中/分布混合）搬到卫星网，并给出两个具体的分区与维护算法**——工程动机（星上算力有限）是真实的，但实验做在"平面上随机撒点"和"每 30 秒一个包"的极简设定上，**摘要还把两个基线算法说成自己的算法**，结论的可采信度受限。
 
+
+## K7U4TYJN — SKYLINK: Scalable and Resilient Link Management in LEO Satellite Networks
+
+**1. 一句话**
+把每颗星变成一个**独立的多臂老虎机（MAB）**：用 **UCB + tile coding** 只根据"到邻居的距离"这一个上下文，给自己的各条出边排一个优先级列表，再按**注水（water-filling）**把进来的流量灌进去——全程**不用任何全局信息、不用中心控制器**，目标是同时压低**平均时延**与**丢包率**的加权和。
+
+**2. 问题设定**
+三条罪状针对既有方案（L25）：① 最短路（Dijkstra/k-shortest）会让大量路径**重叠在同一条 GSL 上**，在高密度区或 GSL 容量受限处形成瓶颈；② 学习类方案（DQN）与最短路一样**依赖中心控制器**（通常在地面，因为星上算力有限），需要持续收集全局状态 → 对拓扑变化的**响应慢**、通信开销大；③ 中心依赖还**降低韧性**（失效必须被中心发现才能处理）。它点名既有工作"考虑 mega 星座但只看预定义的源–目的对，而不是全网流量模式"，且**同时做到"分布式"与"抗失效"的工作是缺失的**（L53 逐字："a critical gap in the literature is the lack of approaches that simultaneously adopt a distributed framework and focus on resilience against network failures"）。
+
+**3. 方法骨架**
+- **系统模型（第 III 节）**：时隙制，τ 固定。星间是**全双工光 ISL**，星地是**半双工射频 GSL**，**每星最多 4 条 ISL**（同轨 2 + 邻轨 2，构成 +grid）；地面站有 $mu_i$ 副天线，接最近的 $mu_i$ 颗星（L63）。有向图 $mathcal G_t=(mathcal V,mathcal E_t)$，$mathcal V=mathcal Ncupmathcal Mcup{z}$（$z$ 是互联网节点）。
+- **到达模型（式 1，L77，核心）**：$R^{mathrm g}_{n,t}=mathrm{Pop}_{n,t}cdot dcdot
+ucdotmathrm t_{n,t}$ —— **该星覆盖范围内的人口数 × 人均设备数 × 每设备每秒流量 × 当地时刻缩放因子**。即**到达率 = 人口密度 × 日周期节律**。
+- **缓冲与丢弃（第 III.C 节）**：每节点缓冲 $Q_v^{max}$。若出速率 < 入速率，缓冲被填满；**满则对所有入流按同一比例丢弃**使 $R^{mathrm{out}}=R^{mathrm{in}}$。**关键建模取舍（L82 逐字）**："Our model focuses on the steady state of buffers, either filled or empty, disregarding the transitional phases of filling or emptying." 丢包原因：链路容量不够、成环、无出边、时延超 $T_{max}$。
+- **容量**：ISL 用光链路功率预算（式 2 接收功率含指向损耗与截获比例）→ 香农（式 4，含缩放因子 λ<1，因为只有部分容量能给用户数据）；GSL 用 EIRP/FSPL/大气衰减（式 5–8），**天空噪声温度 $T_{sky}$ 随仰角变化**（式 8）。
+- **时延（式 10–12）**：传播 $D^{mathrm{Tx}}=d/c$；**排队时延（式 11，L161）**：$Delta_C:=R^{mathrm{in}}-summin(x,C)$，若 $Delta_Cle 0$ 则 $D^q=0$，否则 $D^q=rac{Q_v^{max}}{sum_{(v,w)}min(x_{(v,w)},C_{(v,w)})}$；路径时延 $D_X=min(sum D^{mathrm{Tx}}+D^q, T_{max})$。
+- **目标（式 13–15）**：$c_{v,t}=rac{sum_X R_X D_X}{sum_X R_X}$（**按流量加权的平均路径时延**），全网 $c_t=rac{sum_n R^{mathrm g}_{n,t}c_{n,t}}{sum_n R^{mathrm g}_{n,t}}$。**丢包之所以能被"联合最小化"，是因为被丢弃的数据被记为时延 $T_{max}$**（L186 逐字："As dropped data contributes the highest possible delay of $T_{max}$ to $c_t$, considering $c_t$ as the optimization target leads to a joint minimization of average delay and drop rate."）——**这是一个把丢包折算成时延的加权技巧**。
+- **SKYLINK（第 V 节）**：
+  - **动作是连续的**（各链路的流量分配），MAB 处理不了 → 先**给链路排序**，再按序注水（L205），容量用满才灌下一条。
+  - **UCB（式 16）**：$mathrm{UCB}^g_t(v,w)=ar c_{v,w}(g,d)-sqrt{rac{2log t}{n(v,w,g,d)}}$——**是减号**，因为目标是最小化 cost，**低分 = 高偏好**。
+  - **上下文 = 到邻居的距离**，用 **tile coding** 量化成**重叠的若干分区**（例：500 km 一段），每个 tile 独立学习，最后对 |G| 个分区取平均（式 17）。
+  - **注水（式 18/19）**：前 i 条用满 $sigma C_j$，第 i+1 条补足余额，其余为 0；链路内部再按**入流比例分摊**。$sigma<1$ 是**容量不确定性折扣**，防止高估容量导致高丢包（L227）。
+  - **复杂度（第 V.E 节）**：$mathcal O(k|mathcal G|+klog k)$，**与星座规模、用户数无关**（因为 k 受可见地面站数限制，不超过 4+可见 GSL）。
+- **仿真器（第 VI 节）**：用 **CosmicBeats** 预算位置，flow-level（stream-based）仿真，**不实例化单个包**。
+
+**4. 它声称的效果**
+- **摘要（L17）**：2540 万用户下，加权 cost 比 bent-pipe **降 29%**、比 Dijkstra **降 92%**；丢包率比 k-最短路**降 95%**、比 Dijkstra **降 99%**、比 bent-pipe **降 74%**；吞吐**高 46%**。
+- **可扩展性（Fig 4，L327–L348）**：用户数 12.7 / 25.4 / 63.5 / 127 M。
+  - 12.7 M 时：cost 比 k-最短路 −5.0%、比 NC-SKYLINK −11.3%、比 bent-pipe −29.5%、比分布式 Q-learning −29.8%、比 random −54.4%、比 Dijkstra −84.6%。
+  - 25.4 M 时：比 Dijkstra −91.7%、k-最短路 −64.5%、random −52.5%、Q-learning −27.3%、bent-pipe −28.7%；上下文化本身（vs NC-SKYLINK）贡献 **+11.1%**。
+  - **丢包率随负载的爆炸**（L348，本卡最有价值的数字）：**Dijkstra 从 15.6% 涨到 72.4%，k-最短路从 0.6% 涨到 38.6%**（12.7 → 127 M 用户）。
+  - 25.4 M 时丢包率：比 k-最短路 −95.4%、比 Dijkstra −99.2%、比 Q-learning −56.1%、bent-pipe −75.6%、random −87.6%。**SKYLINK 与 NC-SKYLINK 的丢包率都是 0.3%**，所以 cost 的改善**全部来自平均时延更低**（L348 逐字："showing that the improvements in cost are due to the fact that SKYLINK achieves a lower average delay than NC-SKYLINK"）。
+  - 吞吐：比 Dijkstra +45.8%、比 k-最短路 +6.0%。
+- **一周时间序列（Fig 5–7）**：三条结论（L350 逐字）："(a) shortest-path algorithms lack scalability, (b) SKYLINK has a learning phase and converges within days, and (c) SKYLINK is resilient to fluctuations affecting other schemes"。**丢包率呈现日周期模式**（L362），最短路算法波动大、SKYLINK 几乎可忽略。
+- **时延的关键反直觉发现（L364，本卡最重要的一条）**：最短路算法的**平均时延反而更低**，但那是因为**它们本来就送得少**——"favoring data that are closer to the ground"；SKYLINK 送的是那些会被最短路丢弃的数据。而 NC-SKYLINK 缺少上下文，会**渐进式"遗忘"**，时延越来越高。
+- **韧性（第 VII.B 节）**：第 3 天起 3% 卫星 GSL 中断、第 5 天恢复。cost 上升：bent-pipe **+67.6%**、k-最短路 **+23.2%**、**SKYLINK <10%**。丢包率：k-最短路 5.7%→7.5%、bent-pipe 1.1%→3.7%、**SKYLINK ≤0.7%**。Dijkstra 的丢包率**始终 >12%**（大到被排除出图）。
+- **跳数**：大多数数据在靠近地面站的高人口区，**平均跳数接近 1**；失效期间 SKYLINK 与 NC-SKYLINK 跳数显著上升（说明在改道）。
+- **基线**：bent-pipe、Dijkstra、k-最短路（k=4）、random、分布式 Q-learning [24]，外加**消融变体 NC-SKYLINK**（去掉上下文与 tile coding）。
+
+**5. 它的实验条件**
+- **星座**：**OneWeb，636 颗**，近极轨 Walker Star；**146 个地面站**（全球最大城市）（L315）。
+- **仿真参数（Table II，L317）**：时间步长 **τ=15 s**，总步数 **T=40320**（≈7 天），**TTL $T_{max}$=200 ms**，仿真起点 2023-09-28 08:26 UTC，**用户 25.4 M**（$d=0.003175$），**每设备上传流量 ν=22.98 kbps**；**缓冲：地面站 1 GB、卫星 50 MB**；地面站到互联网链路 50 Gbps、时延 1–5 ms；**ISL 带宽 5 GHz**、口径 10 cm、发散角 $1.744	imes10^{-5}$ rad、指向损耗 0.9、噪声温度 290 K、发射功率 0.1 W；**上行缩放 λ=0.08**；**GSL 带宽 250 MHz**、EIRP 34.6 dBW、$G_{rx}$=10.8 dB、载频 19 GHz。
+- 每个实验**重复 R=100 次**取平均；各指标标准差 **<1%**。
+- **负载扫描**：12.7 / 25.4 / 63.5 / 127 M 用户（锚定 Starlink 2026-01 预测的 12.7 M，再取 1×/2×/5×/10×）。
+- **训练 = 评估**：在线学习（MAB 无离线训练），但**有数百到数千个时隙的学习期**（τ=15 s，一周 = 40320 步）。
+- **参数调优（第 VII.C 节）**：距离量化精度扫 20–2000 km，分区数扫 1–6；**最优 = 500 km + 2 分区**。20–50 km 太细（每上下文样本太少），1000–2000 km 太粗（无法区分上下文）。
+- **上下文消融（L397，重要负面结果）**：试过**卫星数据负载、当地时刻、UTC、卫星位置**，**全都不比"到邻居的距离"更好**，把它们加进去也不提升。作者归因于距离直接影响链路容量与时延。
+
+**6. 它自述的局限**
+- **缓冲只建模稳态**（L82 逐字，最关键）："Our model focuses on the steady state of buffers, either filled or empty, disregarding the transitional phases of filling or emptying."
+- **流级模型、不实例化包**（L146 逐字）："We do not consider single packets. Drop rates are computed directly at the rate level in our stream-based model."；L296："Individual packets are not instantiated."
+- **地面站选择的影响被排除**（L156 逐字）："While the choice of ground station does influence the actual delay, this effect is beyond the scope of this work."
+- **未来工作才做大星座与其它 QoS**（L403 逐字）："In future work, we will scale our experiments to larger constellations (e.g., Starlink), incorporate alternative Quality-of-Service objectives, and integrate MEO and GEO satellites as well as airborne relays"；能耗对比也只是"an interesting direction"。
+- **只测 GSL 失效**（L382 逐字）："We restrict our analysis to GSLs failures because they have the higher impact."——并说即使 50% 卫星失去全部 ISL，各方案 cost 上升也都 <10%，**因为瓶颈是 GSL 容量**。
+
+**7. 它没做但看起来能做的地方**
+1. **"缓冲只建稳态"这一条直接抹掉了负载瞬变**（L82）。负载变化最关键的物理过程恰恰是缓冲**填充的那段时间**——那正是排队时延从 0 涨上去的过程。作者把它显式排除了。**这是本选题最直接可切入的缺口**。
+2. **排队时延是"阶跃函数"而非"负载的连续函数"**（式 11）：$Delta_Cle0$ 时为 0，一旦过载立刻跳到 $Q^{max}_v/	ext{出速率}$。也就是说论文里报告的"时延"在过载时其实是"**排空一整个满缓冲要多久**"，而不是当前队列长度对应的时延。**"负载 → 时延"曲线在这篇论文里被建模成了二值台阶**，中间那段连续过渡完全不存在。
+3. **"卫星负载"作为上下文无效**（L397）——这是一个反直觉的负面结果，而它恰恰说明**在当前建模下负载信息对决策没帮助**。但这很可能是因为第 2 条（时延被建模成台阶，负载的细微差别不体现为 cost 差别）。**这两条限制是耦合的**，作者没有意识到。
+4. **学习期长达数天**（L350）。τ=15 s 下一周是 40320 步。"负载变化"若发生在小时级以下，策略根本来不及。**收敛速度与负载变化速度的失配没有被讨论**。
+5. **σ（容量折扣）与 tile coding 两个参数都是手工调的**，且 σ 的具体取值在正文没有给出。
+6. **只用了一个星座（OneWeb 636 星）**；作者自认要扩到 Starlink。
+7. **成本函数把丢包折算为 $T_{max}$ 的时延**（L186）——这是一个**人为的等价汇率**，权重由 $T_{max}$ 隐含决定。换一个 $T_{max}$ 会不会改变方案排序？没有做敏感性分析。
+8. **平均跳数接近 1**（L389），意味着这个网络上绝大多数流量根本没走 ISL——**这篇论文的"路由"其实更像"选地面站"**。ISL 的价值在它的评测里被人口分布结构稀释了。
+
+**8. 和同批其他篇的关系**
+**这是本批（R6）里与选题最贴合的一篇**，且与多篇构成直接对照：
+- vs **S85KQ4FC（锚件卡）**：S85 把"决策队列"当一等约束，SKYLINK 完全没有决策成本的概念（它的算法复杂度是常数级，这是它敢全分布式的底气）；S85 是集中式 GEO 控制 + DDQN，SKYLINK 是**彻底反中心**。
+- vs **J68GU76W**：两者都用 RL/学习做转发，但 J68 是集中式残差 DDQN + 队列长度目标；SKYLINK 是分布式 MAB + 时延/丢包目标。
+- vs **JLF7IEBQ（SaTE）**：SaTE 是中心化 TE，认为"算得快"是核心；SKYLINK 直接绕开计算问题——**它证明"不算全局最优"也能赢**。
+- vs **JS857IYN（DoTD）**：DoTD 只优化链路拓扑的物理性能（无流量），SKYLINK 有完整流量模型。
+- vs **JZA5SEQA**：JZA5SEQA 用预置备份路径换可靠性，SKYLINK 用在线学习换自适应。
+- **它引用了本领域的关键文本**：[26] Handley "Delay is not an option"、[29] Li et al. "Stable Hierarchical Routing"（**与 JLF7IEBQ、JS857IYN 引用同一篇**，说明这是公共锚点）、[22] Deng et al. 距离 back-pressure、[19] Gounder k-最短路、[30] Lai et al. INFOCOM'23 韧性路由。**未见引用本批其他 10 篇**。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**本批目前为止贡献最大的一篇**，而且贡献的恰好是**负载 → 时延/丢包**这条曲线：
+- **显式的、成规模的到达率扫描**：12.7 → 127 M 用户（**10 倍跨度**），并给出 **Dijkstra 丢包率 15.6%→72.4%、k-最短路 0.6%→38.6%** 的完整响应曲线（L348）。**这是全批最干净的"负载 → 性能崩溃"数据**。
+- **日内到达率节律被建模并被验证为真实可观测**：式 1 的 $mathrm t_{n,t}$ 因子（人口 × 当地时刻），Fig 6a 显示**最短路算法的丢包率呈现明显的日周期波动，而 SKYLINK 几乎没有**（L362）。这直接支持"负载是时变的、且时变幅度足以改变方案排序"。
+- **一条极重要的测量学警告（L364）**：**平均时延不能单独看**——最短路算法的平均时延更低，纯粹是因为它们**只送近距离的数据、把远距离的数据丢掉了**。任何"负载升高时看时延"的实验，如果不**同时报丢包率与吞吐**，结论会完全反过来。这条对整个选题的方法论都适用。
+- **瓶颈定位**：作者明确说**GSL 容量才是全网瓶颈**，ISL 全断 cost 也只涨 <10%（L382）；且**平均跳数接近 1**（L389）。这对"负载变化下到底哪个环节先饱和"给出了一个具体答案：**在这个人口分布下，先饱和的是星地链路，不是星间链路**。
+- **明示的缺口**：**缓冲被建模为"非满即空"的稳态**（L82），**排队时延被建模成台阶函数**（式 11）——**负载变化过程中的瞬态排队行为被整篇论文排除在外**。这正是"负载变化下的到达率/时延"可以合法切入的位置。
+
+**10. 一句话评价**
+**把"每颗星一个上下文老虎机"这一极简分布式方案做到全域规模并打赢集中式/最短路基线**——方法上属于"用经典的 MAB + tile coding 换掉全局优化"，胜在复杂度与星座规模解耦；对负载–时延问题，它给出了本批最有价值的**负载扫描曲线**与一条**"时延必须与丢包同看"**的测量学教训，但它自己把**缓冲瞬态与排队时延的连续过渡**显式排除在模型之外，留下了最直接的可攻缺口。
+
+
+## K93SCUF2 — Network topology design at 27,000 km/hour
+
+**1. 一句话**
+提出 **motif（基元）**：一个"3 颗星、2 条 ISL"的局部连接模式，把它**复制到全网每颗星**就能完整定义整个星座的 ISL 拓扑——于是拓扑设计从"全网 NP-hard 优化"塌缩成"**在一颗赤道星的可达集合里穷举选 2 个**"；再用**按纬度分区的 multi-motif** 换一点可控的链路抖动，换来更大增益。
+
+**2. 问题设定**
+挑战既有默认假设：**ISL 必须连接近邻、必须网格化**（L31 逐字："a more widespread, usually implicit, assumption that inter-satellite links must be local, and grid-like"）。作者算了一笔账：550 km 高度下，只要 ISL 不进入中间层（**离地 80 km 以上**），**最大 ISL 长度可达 5014 km**（L114）；对 40² 星座，赤道上的一颗星**理论上能与 190 颗其他星建链**（L116）。所以"+Grid 的近邻约束是不必要的自我限制"。问题被精确定义为（L136）：给定轨迹、每星少量 ISL、目标地面流量矩阵，**如何连线使端到端时延与跳数最小**。
+
+**3. 方法骨架**
+非 RL，是**结构化的穷举搜索**：
+- **Motif 定义（第 4.1 节）**：若卫星 A 从其可达集合中选两颗 B、C 相连，**把这个模式复制到全网**，则每颗星的局部视图完全相同（Fig 6，L221）。A 的另外两条 ISL 由其他星按同样方式连过来决定。**一个 motif = 3 星 2 链的模式**，重复即得全网拓扑。**+Grid 是这个家族的一个成员**。
+- **穷举流程（L231–L239）**：① 取一颗**赤道上的星** $e$（那里卫星间距最大，可达集合最小，保证 motif 在其他纬度也都可行）；② $S_e$ = $e$ 可达的全部卫星；③ $M=[S_e]^2=\{\{a,b\}:a,b\in S_e,a\ne b\}$；④ 可选地剔除等价 motif（利用对称性）；⑤ 输出 $m=\arg\min_{x\in M}\Phi_\alpha(x)$。
+- **目标函数（第 3.1 节）**：$M_\alpha=\alpha S+B$，$S$ 是 **stretch**（设计网络最短路距离 / 大地线距离），$B$ 是**跳数**；$\Phi_\alpha=\sum_{\text{端点对}}M_\alpha\cdot H$（按流量矩阵加权）。$\alpha=1$ 为默认（时延与容量等权）。
+- **流量矩阵**：**人口乘积模型**——取 1000 个人口最多的城市（2025 估计），城市对流量正比于人口乘积，缩放到 [0,1]（L156）；另有 **GDP 乘积模型**（前 100 城市）作对照（L308）。
+- **为什么传统方法不行（第 3 节，本文最有价值的论证）**：
+  - **ILP**：20 城时最优（$\Phi_1$ 比 +Grid 低 54%），但 **25 城在 64 核/500 GB 上跑 2 天跑不完**，外推到 1000 城需 $10^{29}$ 天（L185）。更致命的是**时间动态**：相隔仅 1 分钟的两次 ILP 解**只有 9% 的链路重合**（L187）。
+  - **随机正则图（RRG）**：median stretch 牺牲 11%，median 跳数降 53%，$M_1$ 降 43%，$\Phi$ 降 42%（L200）。但 **2 分钟内 >8%、5 分钟内 >19% 的 ISL 变得不可行**（L202）；且**无法针对流量矩阵优化**（L207）。
+  - **蚁群**：小规模好，大规模不收敛，链路抖动大（L209）。
+- **Multi-motif（第 5 节）**：卫星在高纬更密（Fig 12：53° 星座的 motif 选项从赤道 ~1100 涨到 53° ~3600，L321），所以**按纬度分区**用不同 motif。分区分辨率 $W$ 是"允许多少抖动"的旋钮（第 5.3 节的迭代搜索：从赤道侧开始，固定前一区的链路，穷举下一区）。**$W=18^\circ$ 时卫星约每 12 分钟换一次 ISL**（L346），而 ISL 建立开销是"几秒到几十秒"（L103）。
+- **拥塞分析（第 5.6 节）**：用**边介数中心性**（5000 个随机城市对的最低时延路径计数）作为拥塞代理。
+
+**4. 它声称的效果**
+- **40² 星座（53°、550 km）有 1029 个唯一 motif**（L252）。**+Grid 的加权 stretch = 1.25、跳数 = 10.57**（L252）。
+- 最优 motif 相对 +Grid：**median（95 分位）$M_1$ 改善 44.5%(54%)、$M_5$ 改善 26.2%(37%)、$M_{10}$ 改善 16.8%(22.3%)**（L262）。
+- 单个 motif 的 $\Phi_1$ 比 +Grid 好 **45%**，但比 ILP（20 城）差 **18%**（L264）。
+- **用 2% 的 stretch 换 32% 的跳数改善；用 10% 换 47%**（L260）。
+- **Multi-motif（3 区、W=18°）**：$\Phi_1/\Phi_5/\Phi_{10}$ 分别比 +Grid 好 **48% / 30% / 20%**（L357）。3 区以上收益饱和（比单 motif 再好 7%，2 区时是 5.6%）；极轨下 3 区比单 motif 好 9.5%（L346）。
+- **具体星座（Table 1，L378）**：**Starlink** 可见距离 ISL 下 median $M_1$ 改善 **52%**、$\Phi_1$ **54%**；**即使最悲观的功率受限距离下仍有 37% / 40%**。**Kuiper** 38% / 45%（可见距离），但最小距离下只有 **1% / 4%**。40² 为 45%/48%（可见）、9%/7%（最小）。
+- **时间稳定性（Fig 8，L276）**：2 小时逐分钟快照，$\Phi_1$ 的时间波动**在 median 的 10% 以内**；多 motif 还能进一步降低时间方差（Fig 14）。
+- **拥塞（Fig 15，L370）**：+Grid 的 75 分位与 90 分位链路使用频次分别是 $mm_1$ 的 **4 倍与 5 倍**。
+- **RTT 对比（Fig 3，L124）**：40² 星座 vs 今日互联网，8 个大城市 28 对，median（95 分位）RTT 改善 **70%(65%)**。
+- **基线**：+Grid（主基线）、ILP、随机正则图、蚁群。
+
+**5. 它的实验条件**
+- 主星座：**40² = 1600 颗**（53° 倾角、550 km），另测 $16^2/24^2/32^2/40^2$ 和极轨 90° 版本。
+- **最大 ISL 长度 5014 km**（80 km 中间层净空），最低界为 +Grid 所需长度（40² 是 1467 km，Starlink 2006 km，Kuiper 1761 km）。
+- 地面站：**1000 个人口最多的城市各一个站**，假设任意带宽、只要在可见范围内就能连（L158）。**地面站布放与星地连接联合优化被明确排除**（留给未来工作）。
+- 流量：**静态、时不变**的流量矩阵（人口乘积或 GDP 乘积）；**"考虑时变流量留给未来工作"**（L310 逐字）。
+- 时延只算**传播时延**：$D^{Tx}=d/c$ 类的最短路；**忽略排队与处理时延**（L130 逐字："our accounting for latency uses only propagation delay, ignoring queuing and processing at each hop"）。
+- 吞吐用**跳数做代理**（L126），依据是"固定 ISL 数与容量下，减少端到端跳数就释放了带宽"。
+- 代码与数据公开（[12]，L448）。无训练过程（非学习方法）。
+
+**6. 它自述的局限**
+- **只算传播时延**（L130 逐字）："our accounting for latency uses only propagation delay, ignoring queuing and processing at each hop. However, accounting for these would only improve our results, as we achieve much lower hop counts than +Grid."（后半句是**推测**，无数据支撑）
+- **RTT 对比可能对卫星网络过于有利**（L124 逐字）："We acknowledge that this comparison is perhaps overly favorable to satellite networks: overheads from sub-optimal routing, congestion and queuing, and forward error correction are not accounted for here"
+- **时变流量未做**（L310 逐字）："Considering time-varying traffic is left to future work, we note that one could evaluate the potential motifs against snapshots of traffic over a desired time period, picking the one that provides the highest performance over time."
+- **输入参数本身不确定**（L390–L394）：ISL 距离与建链速度取决于卫星重量/发射成本等非网络因素；市场需求决定流量矩阵；Starlink 计划本身在变（用的是 2019 年 7 月前的数据）。
+- **跳数只是吞吐的代理**（L126 逐字）："We use the number of on-path satellite hops as a simple proxy for network throughput"。
+- **星地连接被简化**（L158）：只在可见范围内假设可连，"Considering GS placement and GS-satellite connections jointly in the optimization is left to future work"。
+- 未来工作（L398）：时变流量矩阵、大星座不同阶段互联、更多 ISL、与星地连接/路由的联合设计。
+
+**7. 它没做但看起来能做的地方**
+1. **流量矩阵是静态的，且明确把时变留给未来工作**（L310）。这意味着**"负载变化"在这篇论文里根本不存在**——拓扑是对着一张固定的流量表选的。而作者自己已经指出"可以拿一段时间内的流量快照来评估 motif，选长期最优的那个"——**这个提示没有被任何人（包括他自己）执行**。
+2. **时延只算传播时延**（L130）。它辩解说"排队时延只会让我们的结果更好"，但这个论证**只在拥塞确实更轻时成立**——如果 motif 把流量集中到了少数长链路上（stretch 换跳数正是这个方向），拥塞的**空间分布**会改变，跳数少不等于不排队。**这是一个被推测掩盖的空洞**。
+3. **stretch 与跳数的权衡（$\alpha$）由算子手选**，论文给了 Pareto 前沿但没有给"该选哪个 α"的判据。
+4. **multi-motif 的分区宽度 W 是唯一控制抖动的旋钮**，而"抖动代价"（每次重连几秒到几十秒）**从未被量化成时延或丢包**——只有"12 分钟换一次，所以几十秒可以接受"这样的定性论证（L346）。**ISL 建立期间的数据去哪了？没写。**
+5. **地面站布放被排除在外**（L158）。但人口乘积流量模型 + "每城一个站"的假设，与 SKYLINK（K7U4TYJN）实测的"绝大多数流量在近地面站处直接落地、平均跳数≈1"形成尖锐张力——**motif 优化的链路，可能承载的是被这个假设人为放大出来的长距离流量**。
+6. 只测了 **Starlink / Kuiper 的 phase-1**，与当时规划相比已经是"未来"，与今天的实际部署结构差异更大。
+
+**8. 和同批其他篇的关系**
+**它是本批的"拓扑设计"祖辈**：**JS857IYN（DoTD）明确引用它（作为 [17]）并称"motif 方法相对邻居网格把时延与容量改善了 2 倍"**——DoTD 是它的直接后继（用动态规划打分替代穷举 motif）。与 **JS857IYN** 的差异很关键：motif 追求**零链路抖动**（结构本身就不变），DoTD 追求**最大化历史链路留存**；motif 用穷举，DoTD 用 DP；两者都**没有流量负载模型**。与 **JLF7IEBQ（SaTE）** 对照：SaTE 说拓扑给定、优化流量分配；motif 说流量给定、优化拓扑。与 **K7U4TYJN（SKYLINK）** 形成本批最强对照：SKYLINK **分布式、在线学习、有流量负载与排队时延**，motif **集中式设计、静态流量、无排队时延**。它引用了 **[71] Taleb et al. 的 ELB——即本批 JP79GMZS**（L566），这是本批内一条明确的引用链。也引用 Handley "Delay is Not an Option" [28]、Klenze "Networking in Heaven as on Earth" [39]、del Portillo [21]、Wood [81]、Gavish & Kalvenes [26]、Singla Jellyfish [62]。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**没有直接贡献**，而且是有意识的排除：流量矩阵**静态且时不变**（L310 明确留作未来工作），时延**只算传播时延、忽略排队**（L130），没有任何到达率扫描或负载维度。
+**但有两条外围事实可记**：
+- **"跳数 ≈ 容量占用"这一代理关系被显式论证并在第 5.6 节用边介数拥塞验证**（L370：+Grid 的 75/90 分位链路使用频次是 $mm_1$ 的 4/5 倍）。这给"如何在不做逐流仿真时估计网络拥塞"提供了一个廉价代理，且给出了"代理与真实拥塞方向一致"的证据。
+- **"+Grid 的拥塞分布更不均"** 这一结论可以借用：**同样的总流量下，拓扑选择会改变拥塞的空间集中度**。对"负载升高时哪条链路先饱和"这个问题，它给出了一个结构性答案（近邻网格把流量压在少数短链上）。
+- 另有一条**可用的量级**：ISL 建立开销"**几秒到几十秒**"（L103），且 550 km 高度星速 **27,306 km/h**（标题所指）。
+
+**10. 一句话评价**
+**用"重复模式"这一极简结构性洞察，把 LEO 拓扑设计从 NP-hard 优化里救出来**——论证（为什么 ILP/随机图/蚁群都不行）比解法本身更有价值，且"用 2% 的 stretch 换 32% 的跳数"是一个非常干净的权衡事实；但它把**流量负载、排队时延、星地连接**三样东西全部排除在模型外，因此它回答的是"拓扑在物理上能有多好"，而不是"负载变化下会有多堵"。
+

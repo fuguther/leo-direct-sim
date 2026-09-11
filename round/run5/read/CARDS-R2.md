@@ -319,7 +319,219 @@ DRL 路由收敛慢有两个来源（L17 逐字）："Firstly, in the pre-traini
 **10. 一句话评价**
 **把"用传统算法当老师"（Dijkstra 蒸馏）和"把 TD 目标拉长到两跳"这两个现成技巧缝到 LEO 路由 DRL 上的工程改进**；相对同作者前作 53HEEK33 是从控制面转向算法面的一次尝试，但它把卖点（两跳）只固定为 2、把负载只固定为 3000、把结果只画成曲线，**恰好把"负载变化下的到达率/时延"这一维完整地留空**。
 
+## 5PYWVRC5 — Shaping Rewards, Shaping Routes: On Multi-Agent Deep Q-Networks for Routing in Satellite Constellation Networks
+
+**1. 一句话**
+用 12 星 / 24 星两个小簇做对照实验，**证伪式地**说明：全分布多智能体 DQN（FD-MADRL）的局部奖励设计会导致"最后几跳做出次优决策、把链路打饱和"，且规模一大训练就不稳；因此提出一个还没实现的混合方案 CL-DC（集中学习、分散控制）。
+
+**2. 问题设定**
+LEO 星座的流量需求**非均匀分布**（L17 逐字："traffic requirements are non-uniformly distributed. As the constellation moves relative to Earth, **hot spots are geographical rather than topological**"），且星上处理能力受限（L17）。FD-MADRL 的卖点是"变化和中断可以本地快速处理"，但代价是每个 agent 只有局部视野，**端到端一致性与稳定性存疑**，而且 agent 还得学着去预测其他 agent 的行为（L27 逐字："The end-to-end coherence and stability becomes questionable, the agents have to learn the behavior of other agents as well"）。全文核心问题：**在什么条件下 FD-MADRL 会失效，以及奖励该怎么设计**。
+
+**3. 方法骨架**
+（这是一篇短文/扩展摘要，无新算法，主要是奖励设计 + 对照实验）
+- **FD-MADRL 的状态/动作**（L29）：状态 = 相邻链路负载 + 上一跳 + 目的地；动作 = 可用的 ISL（下一跳）。每星 4 条 ISL（L17）。
+- **集中式复合奖励**（式 2，L39）：$r^G_{t+T} = w_1 U(t) - w_2 L(t) - w_3 D(t)$——链路利用率、流级时延、丢包率；**注意它带一个延迟 $T$**，因为多跳传播导致全局奖励到得很晚（L33 逐字："this reward is only received after a significant time lag, denoted by T, due to the multi-hop propagation delays"）。
+- **局部奖励**（式 3，L45）：$r^L_{t+1} = w_4\delta^L_{th}(t) - w_5 l^L(t) - w_4 d^L(t)$——局部链路阈值、局部时延、饱和链路导致的丢包。**注意式 (3) 里第一项与第三项都用了 $w_4$，而正文说权重是 $w_4,w_5,w_6$（L42）——印误。**
+- **本文实际采用的 FD-MADRL 奖励**（式 4，L53）：因为全分布设计通常不考虑复合奖励（L48 逐字："For fully decentralized designs, composite rewards are typically not considered"），作者改用**路径压缩量 ψ**（到目的地的距离减少，沿用 [4]）：到达目标 +Ψ；路径缩短 +ψ；路径变长 −ψ；路径没缩短且有环 −Ψ（|Ψ| ≫ |ψ|）；**再加三档链路负载阈值奖励**：负载 < 0.4 → +ξ₁；0.4 < 负载 ≤ 0.8 → −ξ₂；负载 > 0.8 → −ξ₃；链路饱和 → −Ξ（Ξ 与 Ψ 同量级）。
+- 关键调参原则（L48、L50）：惩罚必须比奖励**大至少一个数量级**；"+Ψ 也给"能改善训练表现，**即使它没有沿路径回传给所有节点**（L48 逐字："Including a similarly large reward, so +Ψ, for a successful path improved training performance - even though it was not propagated to all nodes along the path"）。
+- 提出的未来架构 **CL-DC**（Fig 5，L90–L92）：actor 在本地决策、critic 网络提供集中指导；作者认为 Q 函数在训练与执行时需要同样信息，因此建议转向 policy gradient / actor-critic。
+
+**4. 它声称的效果**（这是一篇**负面结果为主**的论文）
+- **规模效应**：24 星簇比 12 星簇需要**两倍以上**的 episode 才能稳定达到最大奖励（L66 逐字："more than twice as many episodes are required to achieve maximum rewards consistently"）。
+- **局部视野的代价（具体反例）**：在 24 星簇里从节点 4 到节点 23，学出来的策略是**先往节点 8 走**（因为那条相邻链路负载更低），但这会导致路径经过节点 22，再走几乎饱和的链路到 23（L66 原文给出这个完整例子）。作者结论："the limited scope of individual nodes can result in costly end-to-end decisions."
+- **与规则基线的对比（Fig 3，L74）**：作者自述 FD-MADRL **跳数更少**（"for most routes FD-MADRL requires fewer hops"），**但倾向于把链路打饱和**（"However, the approach tends to saturate links"）。基线是动态多代价 Dijkstra（SPF，主动避开负载 > 80% 的链路，L74）。
+- **动态负载下的不稳定**（§2.2.2，L78–L83）：把每个上 episode 用过的链路加 **20% 额外负载**（episode 内特有，避免全饱和）。结果：奖励比静态情形更低更不稳；**12 星簇仍能高性能，24 星簇结果不稳定**（L83 逐字："While a high performance can be achieved for the 12-node cluster nonetheless, the results are unstable for the 24-node cluster"）。原因归纳为：更多场景会导致选到饱和链路，或无意中引入环路；**主动规避潜在瓶颈对全分布 agent 很难**（L83）。
+- **总判定**（L94）："the investigated FD-MADRL approaches face scaling challenges, particularly in mastering complex scenarios **where they are expected to surpass state-of-the-art methods**"。
+- **本文无任何具体数值**（时延 ms、利用率 %、丢包率），全部结论只由 Fig 2/3/4 的曲线支撑。
+
+**5. 实验条件**
+- 环境：自建 gym 环境（L60）；DQN 用 Keras/TensorFlow 实现（L60）。
+- 拓扑：**12 星簇与 24 星簇**两个规模，作者明确说这是**星座的一个子网**（"a sub-network of an SCN, e.g. a cluster in a distributed architecture"，L60）——**不是完整星座**。
+- 负载设置："While the loads are set randomly, they comply with observed link characteristics of plausible non-uniformly distributed traffic scenarios [6]"（L60）——**随机但有现实依据的链路负载**。
+- 评价指标：以**逐跳时延（即跳数）**与**路径上的最大链路负载**为主（L60 逐字："we focus on the latency on a per-hop basis, i.e. the hop count, as well as the link loads"）。
+- **动态负载机制**（L78）：每个上 episode 使用过的链路额外 +20% 负载，且仅在该 episode 生效。
+- 作者明确声明范围限制（L60 逐字）："Due to the limited scope of this manuscript, **only the described reward design is investigated**."
+- 训练/评估：同一环境；未做跨分布测试；未报告训练步数与 wall-clock。
+
+**6. 它自己承认的局限**
+**没有独立的 Limitations 章节**，但**自述局限异常充分**（这是本文最有价值的部分）：
+- 范围，L60 逐字："Due to the limited scope of this manuscript, only the described reward design is investigated."
+- 局部视野的固有问题，L87 逐字："For FD-MADRL, we have shown that **the limited scope of each agent negatively impacts the end-to-end routes, in both static and dynamic scenarios**. Moreover, with increasingly complex policies, the agents have to learn the behavior of other agents, **which is counterproductive for scalability**."
+- 集中式的代价，L87 逐字："A CDRL-based scheme on the other hand, **loses the flexibility of decentralization, introduces a single point of failure, and needs additional signalling**."
+- FD-MADRL 主动避障能力不足，L83 逐字："**learning to proactively avoid potential bottlenecks is difficult with fully decentralized agents**."
+- 结论性自评，L94 逐字："while DQN-based architectures represent promising solutions..., they still have **practical limitations**... In-depth investigations are required to fully evaluate their actual viability."
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **式 (3) 的权重印成 $w_4, w_5, w_4$，与正文的 $w_4,w_5,w_6$ 不一致**（L42 vs L45）——不是大问题，但说明这篇短文还没打磨完。
+2. **CL-DC 只画在图里、没有任何实现或实验**（Fig 5，L90）：作者自己说"future research may consider"，这是全文最大的空白。
+3. **三档负载阈值（0.4 / 0.8 / 饱和）是硬编码的**（L53），没有做阈值敏感性分析，也没有说明这两个阈值怎么来的。
+4. **动态负载实验只做了 +20% 一种幅度**（L78）：没有扫 10%/30%/50%，也没有做负载的时间变化模式（阶跃、斜坡、正弦）——**这正是本选题最接近的空口**。
+5. **指标只有跳数与最大链路负载**，没有端到端时延（ms）、没有到达率/丢包率曲线、没有吞吐——而它在式 (2)/(3) 里明明定义了 L(t) 和 D(t)。
+6. **24 星就已经不稳，但没有给出规模-稳定性的定量边界**（多少星开始崩、崩在什么指标上），只有 Fig 2/4 的定性描述。
+7. **奖励量级 ψ/ξ/Ψ/Ξ 全部是定性描述**（"in the domain of"、"at least a magnitude higher"，L48–L50），没有给出实际数值，也没有做权重扫描。
+
+**8. 和同批其他篇的关系**
+- **与 57EB6US5（DQN 原论文）**：直接继承，引用 Sutton & Barto [7] 与经验回放（L27），是 DQN 在星座路由上的应用与**压力测试**。
+- **与 53HEEK33 / 5N5LQPPP（Ding 组两篇）**：**结论方向相反**。Ding 组两篇都声称分布式 DRL 路由优于 Dijkstra；本篇声称 FD-MADRL 相对规则基线"跳数更少但会把链路打饱和"且规模一大就不稳，并明确说"这些方法被期待超越 SOTA，但实际面临扩展挑战"（L94）。**本篇是这批里少见的对 DRL 路由持负面结论的论文**，与 5AZHJE7N 综述中"AI 方法无可比基准"的自述（其 L450）互相印证。
+- 被引的直接前作 **[6] Roth, Brandt, Bischl（2022）** 与 **[4] Soret et al.（arXiv 2306.01346）** 是同一条线的：前者是"分布式 SDN 负载均衡路由"（本篇的规则基线与场景来源），后者提供了 ψ（路径压缩量）这一奖励形式。
+- 与本批 5HJ8ATR7 / 5AZHJE7N：无关。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**这是本批至今对"负载变化"这一维处理得最直接的论文**，共四条可用事实：
+1. **明确把"负载作为状态、且负载是自反馈的"**：§2.2.2 让上 episode 用过的链路 +20% 负载（L78），即"路由决策会改变未来的负载"（L78 逐字："routing decisions impact future states and link loads change dynamically"）。这是本批唯一一个把"决策→负载→下一轮决策"闭环建进仿真里的设计。
+2. **给出了负载-规模的联合失败边界**：动态负载下 12 星仍稳、24 星不稳（L83）。虽然没给数值曲线，但**指出了失败随规模与负载复杂度共同发生**。
+3. **给出了一个具体的"负载规避失败"机制**：agent 为了选低负载链路而绕路，结果走到下游的饱和链路上（节点 4→8→22→23 的例子，L66）。**这是"逐跳贪心看负载"在端到端上的反例**，对任何用局部负载信息做路由的方案都是直接警告。
+4. **区分了负载的三个档位并给了阈值语义**：<0.4 奖励、0.4–0.8 惩罚、>0.8 重罚、饱和最重罚（式 4，L53）——这是一份可复用的"负载分级"设计。
+5. **受限之处**：全文**没有到达率这个自变量**，也没有端到端时延/丢包曲线；负载只以"链路利用率"形式出现，且只有静态随机分布与 +20% 动态两种设置。**它证明了"负载变化会让 FD-MADRL 不稳"，但没有量化"负载变化幅度 → 时延/到达率退化多少"。**
+
+**10. 一句话评价**
+**一篇用极小规模对照实验对 FD-MADRL 做负面评估的短论文**——它的价值不在提出方法（CL-DC 只是一张图），而在于用可复现的反例把"局部奖励 + 逐跳负载规避"的两个失效模式钉死了，是本批里唯一敢说"DRL 路由还没证明能超越规则基线"的一篇。
+
+## 67CSKFK4 — Delay is Not an Option: Low Latency Routing in Space
+
+**1. 一句话**
+用 SpaceX 向 FCC 提交的公开轨道参数搭了一个 Starlink 仿真器，论证**五条激光链路是构建低时延 LEO 骨干的最小必需数**，并给出「卫星路径在 >3000 km 距离上能打败任何地面光纤」的初步结论；**全文的关键价值在于它把「负载相关路由」明确列为未解问题**。
+
+**2. 问题设定**
+光纤里的光速比真空慢约 47%（L13 逐字："free-space lasers communicate at c, the speed of light in a vacuum, which is ≈ 47% higher than in glass"）。一旦拥塞控制与 bufferbloat 被解决，广域流量的剩余瓶颈就是「光在玻璃里不够快」（L11 逐字："once traffic engineering has mitigated congestion and buffer bloat has been addressed, for wide-area traffic the remaining problem is that the speed of light in glass simply isn't fast enough"）。问题：**在这种新拓扑上该怎么建网、怎么路由，能得到什么时延特性**。作者强调 FCC 文件只讲了 RF 与频谱，**没有讲任何星间通信细节**（L13）。
+
+**3. 方法骨架**
+- **自建仿真器**（L7、L15），基于 FCC 文件公开参数；未知参数「从第一性原理取合理值」（L15 逐字："Where details are not publicly available, we adopt reasonable parameters from first principles"）。
+- **轨道配置推导（§2）**：Phase 1 = 1,600 星、32 个轨道面 × 50 星/面、高度 1,150 km、倾角 53°（Table，L31）。**相位偏移（phase offset）是全文第一个原创参数**：0–1 之间的 1/32 倍数，偶倍数会碰撞（L37），在奇数倍数中仿真最小星间距后得出 **5/32** 最优（L37）。Phase 2 再加 1,600 星（53.8° 倾角，低 40 km），最优相位偏移 **17/32**（L41）。最终 4,425 星（L43）。
+- **可达性假设**：卫星「可达」的定义是地面看过去**距天顶 40° 以内**（L21）。伦敦上空约 30 颗星在这个范围内（L39）。
+- **激光链路数量推导（核心贡献）**：从 FCC 里提到的 5 个碳化硅「通信组件」反推每星 5 条激光（L23），并论证 **5 条是构建低时延密集 LEO 网络的实际上限/最小值**（L23、L47）。分配方案（§3、Fig 4）：2 条给同轨前后（只需微调指向，uptime 最高），2 条给相邻轨道面（p→p±1 的**同序号**星，提供近乎东西向连接），第 5 条给**交叉轨道面的 NE-bound 与 SE-bound 两类星之间**的互联（快速追踪、频繁重建）。
+- **路由（§4）**：**Dijkstra**，边权 = 链路时延。两个变体：(a) 只把卫星间激光链入图，地面对接「正上方」的星；(b) **RF 上下行链路与激光链路一起入图共同路由**（L95），此时通常选中距天顶接近 40° 的星，代价是 RF 信号低 3 dB、可能降低码率（L93）。
+- **预测性路由**：每 10 ms 跑一次 Dijkstra 对笔记本 CPU 毫无压力（L78）；更关键的是「所有链路变化完全可预测」（L78 逐字："all the link changes are completely predictable"），因此**每 50 ms 跑一次「200 ms 后」的网络拓扑并缓存**，源端就能判断发出的包会不会走到那时已经断掉的链路上，从而实现源路由（L78）。
+- **多路径**：迭代式 Dijkstra + 删除已用链路，取前 20 条不相交路径；假设激光与 RF 同容量（作者承认现实不会如此，故结果是**路径时延的上界**，L126）。
+
+**4. 它声称的效果**
+- **主结论**：距离 > 约 3,000 km 时，这样建的网能提供**比任何可能的地面光纤网络更低的时延**（L7）。
+- **NYC–London RTT（Fig 7，L89）**：光纤大圆下界 55 ms，实际互联网 RTT 76 ms；卫星平均 RTT 明显低于两者。**但在 70–95 秒之间出现一个大的时延尖峰**（L89 逐字："the large delay spike between 70 and 95 seconds is certainly undesirable"）。
+- **尖峰根因（自己诊断）**：两端城市正上方的星分别落在 NE-bound 与 SE-bound 两个子网里，第 5 条激光虽然连通两个子网，但**路径不够直接、且链路保持时间短**（L91）。
+- **RF+激光联合路由（Fig 8，L105）**：NYC–London、SF–London、London–Singapore 三对城市「在所有情况下卫星 RTT 都显著低于光纤大圆下界」。
+- **南北向是弱项**：London–Johannesburg 卫星路径约为最佳互联网路径 182 ms 的**近一半**，但「远非最优，因为它必须经由 SW 与 SE 链路之字形绕行」（L109）。加入 Phase 2 后改善约 **20%**（L122）。次优路径（紫色曲线）说明**时延不依赖任何单颗星或单条链路**（L122）。
+- **多路径（Fig 11，L128）**：前 20 条不相交路径中**有 5 条低于光纤大圆下界，全部 20 条都低于当前互联网路径**；但**路径越差时延抖动越大**（第 20 条远比第 1 条抖）。第 20 条的 10% 抖动不足以触发 TCP 超时，但**时延快速下降会引起重排序，让 TCP 误判丢包并触发快速重传**（L128）。
+- 重排序方案（§5，L134–L144）：接收端重排缓冲，把低时延路径上的包压到与高时延路径一致——这样做后**第 20 好的路径 RTT 仍约 74 ms，低于当前互联网 RTT**（L134）。更进一步的方案是发送端打序号 + 路径 ID + t_last 时间戳。
+
+**5. 实验条件**
+- 星座：Starlink Phase 1（1,600 星）+ Phase 2（再 1,600 星）→ 共 4,425 星（L19、L31、L43）。**只研究 LEO 部分，不含 7,518 颗 VLEO（340 km）**（L19 逐字："In this paper, we examine only the LEO constellation"）。
+- 每星 5 条激光（L23）；地面可达角 40°（L21）。
+- 路由算法：Dijkstra，每 10 ms 可跑一次全网；预测性路由每 50 ms 跑一次 200 ms 后的拓扑（L78）。
+- 对比基线：光纤沿大圆的 RTT 下界（55 ms，NYC–LON）、当前互联网实测 RTT（76 ms，L89）；London–Johannesburg 用 182 ms（L109）。
+- **明确声明不建模容量**（L25 逐字："in this paper we will refrain from modelling network capacity, as this is too speculative, and focus instead on latency, which is constrained only by topology and the speed of light"）。
+- **所有仿真假设卫星内部没有明显排队**（L150 逐字："All the simulations above assume that no significant queuing happens in the satellites themselves"）。
+- 作者提到配有仿真视频（[8]，L172）。
+
+**6. 它自己承认的局限**
+**没有独立的 Limitations 章节**，但自述限制非常明确：
+- 不建模容量，L25（逐字见上）。
+- 不建模排队，L150（逐字见上）。
+- 多路径结果的乐观性，L126 逐字："This implicitly assumes that laser links and RF links have the same capacity - this is unlikely in reality; whichever turns out to be the bottleneck, a real network will allow more paths than this, so the figure effectively shows an **upper bound** on path latency."
+- 南北向路由不佳，L109（逐字见第 4 项）。
+- 第 5 条链路（跨子网）保持时间短，L91。
+- 重排序的处置方案仍是设想，L142–L144 用 Suppose、we would hope 等假设语气。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **§5 Load-Dependent Routing 是全文自己点出的最大空白，且是逐字可引的**（L150–L154）："All the simulations above assume that no significant queuing happens in the satellites themselves." 作者进一步指出：高优先级流量可靠准入控制保证，**但普通互联网流量得不到这种待遇**，因此 LEO 运营商需要主动流量工程来避免热点；还引 [6] 指出「网状网络上的最短路径路由特别容易制造热点」（L150）。
+2. **它自己给出了一个具体且未被验证的混合方案假设**（L154）：高优先级低时延流量走显式路由 + 准入控制；其余流量由卫星监测链路负载并**全球广播**给所有地面站，地面站**在略差的路径间随机化**以把流量从热点引开。作者还论证为什么 LEO 与传统拓扑不同、**不容易出现「在最优与次优路径间反复横跳」的不稳定**：因为密集 LEO 有极多时延相近的路径，地面站可以用比负载广播时延**长得多**的时间尺度慢回切（L154）。——这是一条完整的、可实验的假设，作者说 "We believe this is an interesting direction for future routing work"。
+3. **地面集中式负载相关路由（B4[9]、LDR[7]）被作者判定为「太慢」**：它们按分钟级做决策，对密集 LEO 星座不够快；能否扩展或控制器-地面站时延是否永远太高，作者明确称为 open question（L152）。
+4. **时延尖峰（Fig 7 的 70–95 s）只被解释、未被解决**（L89–L91）：根因是两端落在不同子网，但作者没有给出避免方案。
+5. **失败场景只讨论了 5 个收发器坏 1 个**（L146），没有做「链路批量失效」或「热点区域星群拥塞」的情形。
+6. **重排序与 TCP 的交互只是定性推断**（L128），没有任何仿真或传输层实验。
+
+**8. 和同批其他篇的关系**
+- **与 5HJ8ATR7**：5HJ8ATR7 的 Related Work 明确引用了本篇（其 [100] 即 "Handley, Mark. Delay is Not an Option: Low Latency Routing in Space"），并把 "network-layer routing [98–100]" 划归他人工作。**本篇是 5HJ8ATR7 的上游引用**。
+- **与 53HEEK33 / 5N5LQPPP**：方式相反。Ding 组两篇用 RL 取代 Dijkstra 以求「适应动态」；本篇全用 Dijkstra，并论证**因为拓扑变化完全可预测，预测性 Dijkstra 就够了**（L78）。**这是本批里对「是否需要用 RL 做 LEO 路由」最直接的一种反问姿态**——虽然本篇从未提及 RL。
+- **与 5PYWVRC5**：两者结论方向一致且互补。5PYWVRC5 用实验证明 FD-MADRL 会「为了低负载绕路而最终打饱和下游链路」，本篇 L150 引用 [6]（Gvozdiev 等，Handley 也是作者之一）指出「网状网最短路径路由特别容易制造热点」——**同一个失效模式的两种证据**。
+- **与 57EB6US5**：无关（本篇不涉及 RL）。
+- 与本批 5AZHJE7N：无关（本篇是算法/拓扑论文，不是仿真器综述）。
+
+**9. 对「负载变化下到达率/时延」的贡献**
+**这是本批至今唯一一篇把「负载变化下的路由」当作核心 open problem 明确写出来的论文**，即使它自己没做实验：
+1. **明确的负向声明**：全文所有仿真**假设卫星内无排队**（L150），所以本篇给出的所有时延数字都是**无负载的纯传播时延下界**，与负载无关。
+2. **明确的任务定义**："the network must be capable of routing with low delay, **even when traffic levels are high enough to saturate the best paths**"（L132）——这是对选题最直接的一句话需求陈述。
+3. **失败机制的先验陈述**：网状网上的最短路径路由**特别容易制造热点**（引 [6]，L150）；且**热点在 LEO 里是地理的而不是拓扑的**（L154 逐字："these hotspots tend to be geographic rather than topological"）——与 5PYWVRC5 的 L17 表述完全一致（同一研究传统）。
+4. **给出了一个可检验的稳定性论证**：密集 LEO 有极多时延相近路径，因此可以用**远长于负载广播时延的时间尺度**慢速回切，从而避免传统拓扑中「最优/次优反复横跳」的不稳定（L154）。**这是本批中唯一一条关于「负载相关路由为何在 LEO 中可能比在地面更稳定」的正面论证。**
+5. **给出了负载相关方案的时标约束**：B4/LDR 的分钟级决策对密集 LEO 太慢（L152）——为「负载变化必须多快响应」提供了一个下界参照（需要远快于分钟级）。
+6. **给出了可用的路径多样性事实**：NYC–LON 有 20 条不相交路径、其中 5 条优于光纤下界（L128）；50°N 附近单点可见约 60 颗星（L124）。**路径冗余是负载均衡的物质基础**，这个数量级是可复用的。
+
+**10. 一句话评价**
+**LEO 低时延路由的开山之作**——它自己只做了「无负载、无排队」的 Dijkstra 时延分析，但它把后面十年这批论文要做的事（负载相关路由、热点、稳定性、准入控制、多路径）**在一节 Research Agenda 里全部点名了**，是整批语料的时间与问题源头。
+
+## 6C843JTS — Learning to Predict by the Methods of Temporal Differences
+
+**1. 一句话**
+提出并第一次从数学上证明 TD(λ) 这一族"用**相邻两次预测之差**而不是"预测与最终结果之差"来分配信用"的增量式预测学习方法——证明了线性 TD(0) 的渐近收敛性（定理 2）、以及在重复呈现训练集时收敛到**最大似然最优预测**（定理 3），并证明线性 TD(1) 与 Widrow-Hoff 监督学习产生完全相同的权重更新（定理 1）。
+
+**2. 问题设定**
+"学习预测"= 用与一个**不完全已知系统**的过往经验预测其未来行为（L15、L19）。传统做法是把预测问题硬塞进监督学习框架：把每个观测和**最终结果**配成对 $(x_t, z)$（L39、L65）。作者认为这**忽略了序列的时间结构**（L39 逐字："Although this pairwise approach ignores the sequential structure of the problem"），并主张：**大多数被当作单步预测的问题，本质上都是多步预测问题**（L47）。多步预测的定义（L43）：预测的正确性**不在预测时立即揭晓，而是在其后的多步中逐步透露部分信息**。天气、选举、棋局、棒球击球手判断好坏球都是多步问题的例子（L21、L45）。
+
+**3. 方法骨架**
+- **形式化（§2.2）**：经验以"观测-结果序列" $x_1,x_2,\dots,x_m,z$ 给出，每个 $x_t$ 是实值特征向量，$z$ 是实值标量结果；学习器产生预测序列 $P_1,\dots,P_m$，每个都是对 $z$ 的估计；这里简化为 $P_t = P(x_t, w)$（L55）。
+- **监督学习原型（式 2）**：$\Delta w_t = \alpha(z-P_t)\nabla_w P_t$；线性情形 $P_t = w^Tx_t$ 退化为 **Widrow-Hoff / delta 规则 / LMS**（L75–L81）。**关键缺陷：式 (2) 的所有 $\Delta w_t$ 都依赖 $z$，因此在序列结束前无法计算，不能增量实现**（L85 逐字："(2) cannot be computed incrementally"）。
+- **TD 的出发点（核心恒等式）**：把误差写成预测变化之和 $z - P_t = \sum_{k=t}^{m}(P_{k+1}-P_k)$，其中 $P_{m+1} \equiv z$（L90）。代入并交换求和次序后得到 **TD(1)**（式 3）：$\Delta w_t = \alpha(P_{t+1}-P_t)\sum_{k=1}^{t}\nabla_w P_k$——**可以增量计算**，因为每个增量只依赖一对相邻预测与梯度的历史累加和（L102–L105）。**定理 1**：多步预测问题上，线性 TD(1) 与 Widrow-Hoff 产生相同的按序列权重变化（L109）。
+- **TD(λ) 族（式 4，L116）**：$\Delta w_t = \alpha(P_{t+1}-P_t)\sum_{k=1}^{t}\lambda^{t-k}\nabla_w P_k$，$0\le\lambda\le1$——对越久远的观测向量，改动按 $\lambda^k$ **指数衰减**（L113）。λ=1 即 TD(1)。
+- **可增量实现的关键（eligibility trace 前身）**：$e_{t+1} = \nabla_w P_{t+1} + \lambda e_t$（L124）——这就是后来的资格迹递推。
+- **TD(0)**（L130）：$\Delta w_t = \alpha(P_{t+1}-P_t)\nabla_w P_t$，与监督学习式 (2) 形式完全相同，**只是把 $z$ 换成 $P_{t+1}$**（L133）。
+- **理论部分（§4）**：假设数据由**吸收马尔可夫过程**生成（L202）。理想预测 $E\{z|i\} = [(I-Q)^{-1}h]_i$（式 5，L215）。**定理 2**（L222）：对任意吸收马氏链、任意起始分布、任意有限期望的结果分布、任意线性无关的观测向量集，存在 $\epsilon>0$，使得对所有 $0<\alpha<\epsilon$ 和任意初始权重，**线性 TD(0) 的预测在期望意义下收敛到理想预测**。**定理 3**（L358）：在线性无关观测向量下，反复呈现训练集且每次呈现后更新，**线性 TD(0) 收敛到最大似然最优预测** $(I-\hat Q)^{-1}\hat h$（式 8）。
+- **TD 作为梯度下降（§4.3，L376–L404）**：定义 $J(w)=E_x\{(E\{z|x\}-P(x,w))^2\}$；关键分歧点在于**如何估计 $E\{z|x_t\}$**——用实际的 $z$ 估计 → 监督学习 (2)；用紧随其后的预测 $P(x_{t+1},w)$ 估计 → TD(0)（L404）。作者在此点出全文核心论点："our real goal is for each prediction to match the **expected value** of the subsequent outcome, not the **actual outcome** occurring in the training set"（L404）。
+- **推广（§5）**：§5.1 累积结果（预测剩余累积代价，$\Delta w_t = \alpha(c_{t+1}+P_{t+1}-P_t)\sum\lambda^{t-k}\nabla_w P_k$，L419，三个定理"带有显然的修改后"依然成立，L422）；§5.2 序列内权重更新（L438–L449，并指出如果序列内改 $w$，预测变化会同时来自 $w$ 与 $x$，**极端情况下可能导致不稳定**，L446）；§6 与其他研究的关系（含 Adaptive Heuristic Critic，L520–L528）。
+
+**4. 它声称的效果**
+- **计算/存储优势**：若 M 是序列最大长度，TD(1) 在很多情形下**只需监督学习 1/M 的内存与速度**（L105 逐字："(3) will require only 1/M th of the memory and speed required by (2)"）。
+- **随机游走实验（§3.2，L161–L194）**：5 状态有界随机游走（B–F，从 D 出发，A/G 吸收），真实右端终止概率为 1/6, 1/3, 1/2, 2/3, 5/6（L176）；100 个训练集 × 每集 10 条序列；λ 取 1 / 0 / 0.1 / 0.3 / 0.5 / 0.7 / 0.9（L169）。
+- **实验一（重复呈现，Fig 3，L176）**：性能随 λ 从 1 下降而**快速改善，且在 λ=0 时最好**；各点标准误约 σ=0.01，故 TD 与 Widrow-Hoff 的差异"高度显著"（L172）。作者特意指出这**与常识矛盾**：Widrow-Hoff 在训练集上最小化 RMS 误差，却比其他所有 TD 方法都差（L181）——解释是它只最小化**训练集**误差，不一定最小化**未来经验**的误差（L181）。
+- **实验二（单次呈现，Fig 4/5，L183–L190）**：所有 λ<1 的方法在绝对表现与 α 的可接受范围上都优于监督学习；但**最佳 λ 不是 0，而是约 0.3**（L190）。原因（L192）：λ=0 沿序列反向传播预测值很慢——举例：D、E、F 初始预测都是 0.5，序列 $x_D,x_E,x_F,1$ 中 TD(0) 只改 F，而其他方法会以递减幅度同时改 E 和 D。
+- **反向遍历的替代方案**（L194）：单次呈现时若从序列末尾往前更新可以一步传播到序列开头，但**会丧失增量实现的优势**（"it has no incremental implementation"）。
+- **一般性结论（§7，L532）**：TD 方法"计算更便宜、学得更快"；其中一个 TD 方法（TD(1)）与监督学习产生完全相同的预测与学习变化，同时保留计算优势；另一个（TD(0)）虽学习变化不同，但已被证明渐近收敛到同样的正确预测。
+
+**5. 实验条件**
+- 唯一的计算实验是**有界随机游走**（bounded random walk）：5 个非终态 B–F，从 D 出发，每步等概率左右移动，进入 A 或 G 即终止（L151、L165）。
+- 观测向量是 5 维单位基向量（每个状态一个），因此 $P_t$ 就是 $w$ 的第 i 个分量（L167）——**极简设定，目的是让方法差异最清晰**（L167 逐字："We use this particularly simple case to make this example as clear as possible"）。
+- 100 个训练集 × 每集 10 条序列（L169、L172）。
+- 实验一：重复呈现直到权重不再显著变化（L174）；实验二：每个训练集只呈现一次，且每条序列后即更新，初始权重全设 0.5（L183）。
+- **理论假设**：吸收马尔可夫过程、观测向量线性无关、$\alpha$ 足够小（L202、L220、L222）。
+- 作者明确说明游戏例子"太复杂，无法详细分析"（L163），随机游走的目的是把问题压到最简以免混入无关因素（L163）。
+
+**6. 它自己承认的局限**
+**没有独立的 Limitations 章节**，但§3.1、§4.2、§5 中有明确的自我限定，逐字引用如下：
+- TD 可能失败的反例，L157 逐字："This game-playing example can also be used to show how TD methods can fail. Suppose the bad state is usually followed by defeats except when it is preceded by the novel state... In this odd case, TD methods could not perform better and might perform worse than supervised-learning methods." 并接着说 "it remains a **greater difficulty for TD methods** than it does for supervised-learning methods"。
+- 游戏例子不构成证明，L155 逐字："The example does not prove TD methods will be better on balance, but it does demonstrate that a subsequent prediction can easily be a better performance standard than the actual outcome."
+- 学习率理论缺口，L374 逐字："That TD(0) converges to a better set of estimates with repeated presentations helps explain how and why it could learn better estimates from a single presentation, **but it does not prove that**. What is still needed is a characterization of the learning rate of TD methods"。
+- 最优估计本身不可实现，L354：最大似然最优程序需要 $O(n^2)$ 内存与每步多达 $O(n^3)$ 计算，而监督学习与 TD 方法只要 $O(n)$。
+- 推广部分不保证理论适用，L408 逐字："Except where explicitly noted, the theorems presented earlier **do not strictly apply** to these extensions."
+- 序列内更新可能导致不稳定，L446（逐字见第 3 项）。
+- 理论只覆盖线性 TD(0)：§4 开头明确"The theory developed here concerns the linear TD(0) procedure"（L198），并在 L222 强调只有**线性** TD(0) 被证明。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **只有 TD(0) 有权重收敛定理，TD(λ)（0<λ<1）没有**（L198、L222）：而实验里最好的恰恰是 λ≈0.3（L190）——**被实验证明最好的参数，正是理论没覆盖的区间**。这是本文最明显的理论与实验裂缝。
+2. **非线性/多层网络的收敛性完全没碰**：作者只在 L31 说 TD 方法"can be directly extended to multi-layer networks (see Section 6.2)"，但第 6 节通读后并未给出任何收敛结果（L29–L31、L530–L540）。
+3. **学习率（收敛速度）没有定理**：作者自己承认（L374）。这直接关系到后续所有 DRL 路由论文"收敛慢"的抱怨。
+4. **反向遍历方案被承认更优但被放弃**（L194）："when learning is done offline from an existing database, working backward in this way should produce the best predictions"——离线场景下这条建议从未被后续工作系统验证。
+5. **λ 的选择没有理论指导**：实验一最优 λ=0、实验二最优 λ≈0.3（L176 vs L190），作者只给出定性解释（TD(0) 反向传播慢，L192），没有给出"该选多大 λ"的判据。
+6. **唯一的实验是 5 状态的玩具问题**（L165），所有结论都在这个尺度上得出。
+
+**8. 和同批其他篇的关系**
+- **与 57EB6US5（DQN）**：**这是 DQN 的理论上游**。DQN 论文里的 $y = r + \gamma\max_{a'}Q(s',a';\theta^-)$ 就是 TD 目标；DQN 用"独立目标网 + 经验回放"解决的那个"自举导致发散"的问题（其 L17），其根源正是本篇 L198 所说的"most of their learning is done on the basis of previously learned quantities... it can also make them difficult to analyze and to have confidence in"。**本篇只对线性 TD(0) 给出了收敛保证；DQN 用非线性网络把这个保证丢掉了**。
+- **与 53HEEK33 / 5N5LQPPP（Ding 组）**：53HEEK33 的式 (2) 是标准 Q-learning 表格更新（其 L84）；5N5LQPPP 的 DDQN 软更新（其 L168）——都是本篇 TD 谱系的下游。53HEEK33 的"空包收敛法"（周期性广播更新整张 Q 表）在概念上**非常接近本篇 §5.2 讨论的"何时更新权重"的问题**，但 53HEEK33 未引用本篇。
+- **与 5PYWVRC5**：5PYWVRC5 关于"奖励设计决定成败"（其 §1.3）与本篇 §4.3 的"$J(w)$ 该怎么定义"是同一个问题的两种提法：本篇从理论上说明目标应该是**期望结果**而非**实际结果**，5PYWVRC5 则用实验证明**局部奖励会诱导次优的端到端决策**。
+- **与 67CSKFK4 / 5HJ8ATR7 / 5AZHJE7N**：无关。
+- 在本批 11 篇里，本篇与 57EB6US5 是**唯二的方法论基础论文**（其余 9 篇是 LEO 领域应用）。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**没有直接贡献**——本篇不涉及网络、不涉及到达率、不涉及排队时延。但有一条**可直接迁移的建模工具**，这在做"负载变化下的时延预测"时是关键：
+1. **§5.1 累积结果预测（L410–L428）明确把"包交换电信网中预测一个包的总时延"列为应用场景**（L412 逐字："in a packet-switched telecommunications network one may want to predict the total delay in sending a packet"）。并给出形式：$\Delta w_t = \alpha(c_{t+1}+P_{t+1}-P_t)\sum_{k=1}^{t}\lambda^{t-k}\nabla_w P_k$（L419），其中 $c_{t+1}$ 是第 t 到 t+1 步之间的**实际代价**（可以是时延、可以是排队时长）。**这给了"时延作为累积代价被 TD 学习"一个现成的理论接口**，且作者声明三个定理在此情形下依然成立（L422）。
+2. **"预测剩余累积代价"而非"整段总代价"**（L414）——对应到路由里就是**预测"从当前节点到目的地的剩余时延"**，这正是所有 Q-routing 类方法的 Q 值语义。本篇给出了它的理论依据。
+3. **一句话的建模警告**（L404）：目标是让预测匹配**期望值**，而不是匹配**训练集中实际发生的那一次**。在负载变化场景下，这句话直接对应"**不能拿单次高负载下的时延样本去拟合，要拟合该负载水平下的期望时延**"——而本批多篇 LEO 论文（如 5N5LQPPP）恰恰是用单次仿真轨迹做奖励。
+4. **时序结构被显式利用**：本篇的全部卖点就是"利用序列的时间结构"（L532），而负载变化本身就是一种时间结构——**这为"把负载的时间演化作为 TD 学习对象"提供了方法论许可**，尽管本篇自己从未涉及负载。
+
+**10. 一句话评价**
+**RL 的信用分配从"等结果"变成"看下一步"的那一步**——它是本批 11 篇里两篇方法论源头之一，为后来所有 Q-learning/DQN 类 LEO 路由工作提供了更新的合法性（TD(1)≡监督学习）、收敛保证的范围（线性 TD(0)）以及一个至今仍被忽视的警告：**要拟合的是期望，不是那一次实际发生的结果**。
+
 <!-- END-CARDS-R2 -->
+
+
+
 
 
 

@@ -213,3 +213,85 @@ MCN 里想用多径提升吞吐/容错，但两个卡点（L38, L40）：
 
 **10. 一句话评价**
 **把 GNN 用来解决"换星座要重训"这个真问题上、并且是全批少数真做了负载扫描的多径调度论文**，但方法学上有一处硬伤——**动作空间维度照样随星座/流量规模增长，与它批评 DDPG-TE 的理由完全同构**，且 PPO/DQN 的算法描述前后矛盾（式 32-39 是 DQN+PER 的写法，L478 也自称 DQN），复现性存疑。
+
+## 9FLZ88LZ — QMIX: Monotonic Value Function Factorisation for Deep Multi-Agent Reinforcement Learning (ICML 2018, Oxford/Whiteson)
+
+**1. 一句话**
+证明做"集中训练、分散执行"（CTDE）**不需要把联合 Q 值拆成各智能体的和**（VDN 的做法），只要保证 Q_tot 对每个 Q_a **单调**就够了——具体做法是让混合网络的权重恒非负（由 hypernetwork 生成），于是分散执行时各智能体仍然只需对自己的 Q_a 取 argmax。
+
+**2. 问题设定**
+团队协作任务里，智能体必须**分散执行**（只看自己的局部观测），但**训练时通常能拿到全局状态**（L22 CTDE 范式）。问题是：联合动作值函数怎么表示？
+- **一个极端 IQL**（L26）：每个智能体独立学自己的 Q_a，无法显式表达智能体之间的交互，且因为别人也在学，环境非平稳，**可能不收敛**。
+- **另一个极端 COMA/全集中**（L28）：学一个完整的 Q_tot(s,u)，但需要 on-policy（样本效率低），而且"训练全集中 critic 在智能体超过一小撮时就不可行"。
+- **中间 VDN**（L30）：Q_tot = Σ Q_a，分散策略自然产生（各自贪心），但 **"VDN severely limits the complexity of centralised action-value functions that can be represented and ignores any extra state information available during training"**（L30 逐字）。
+**核心洞察（L32）**：从 VDN 的**完全分解**退到 QMIX 的**单调性约束**——只需要全局 argmax 与各自 argmax 一致即可。
+
+**3. 方法骨架**
+
+**问题形式**：Dec-POMDP 七元组 G = <S, U, P, r, Z, O, n, γ>（L62）。每个智能体有动作-观测历史 τ^a，策略 π^a(u^a|τ^a)。所有智能体**共享同一个奖励函数** r(s,u)（L62）。
+
+**核心约束式 (5)（L113）**：∂Q_tot / ∂Q_a ≥ 0, ∀a ∈ A
+
+**等价条件式 (4)（L105）**：argmax_u Q_tot(τ,u) = ( argmax_{u^1} Q_1(τ^1,u^1), …, argmax_{u^n} Q_n(τ^n,u^n) )
+
+**三层架构（L116-L124）**：
+1. **Agent networks**：每个智能体一个，用 **DRQN** 实现，输入是当前局部观测 o_t^a 和上一个动作 u_{t-1}^a（L118）。
+2. **Mixing network**（L120）：前馈网络，把各 Q_a 非线性地混合成 Q_tot。**为了强制单调性，权重（不含偏置）被限制为非负**；作者引 Dugas et al. 2009 论证这样"能任意逼近任何单调函数"。
+3. **Hypernetworks**（L122）：**每个 hypernetwork 以全局状态 s 为输入，生成 mixing network 某一层的权重**。每个 hypernetwork = 单线性层 + **绝对值激活**（保证权重非负），输出向量再 reshape 成权重矩阵。**偏置同样由 hypernetwork 产生，但不限制非负**；最后一个偏置用 2 层带 ReLU 的 hypernetwork 产生。
+
+**为什么用 hypernetwork 而不把 s 直接喂进 mixing network（L124，关键设计理由）**：原文 "because Q_tot is allowed to depend on the extra state information in **nonmonotonic** ways. Thus, it would be overly constraining to pass some function of s through the monotonic network alongside the per-agent values." —— 即**状态可以非单调地影响 Q_tot，只有 agent Q 那一路必须是单调的**。这是与 VDN 的核心区别。
+
+**训练**：端到端最小化式 (6)（L134）：L(θ) = Σ_i ( y_i^tot − Q_tot(τ,u,s;θ) )²，其中 y^tot = r + γ·max_{u'} Q_tot(τ',u',s';θ⁻)，θ⁻ 是目标网（同 DQN）。**因为式 (4) 成立，对 Q_tot 取 max 的复杂度是智能体数的线性，而不是最坏情况的指数**（L137）。
+
+**表示能力（§4.1, L141）**：QMIX 能表示的类 = "任何在**完全可观测**设定下能分解为各智能体值函数的**非线性单调组合**的值函数"，严格包含 VDN 的线性单调类。**代价**：式 (5) 让它**无法表示不满足这种分解的值函数**——L143 逐字 "any value function for which an agent's best action depends on the actions of the other agents at the same time step will not factorise appropriately"。附录 A.1（L337）进一步指出**在 Dec-POMDP 里 QMIX 不一定能表示**（因为局部观测可能区分不出真实状态，导致 Q_a 的排序与 Q_tot 不一致）。
+
+**4. 它声称的效果**
+- **两步博弈（§5, L156）**：100% 探索（ε=1）下训练 5000 episode。**VDN 收敛到次优策略**（第一步选 A，回报 7），**QMIX 找到最优**（回报 **8**）。Table 2（L158）给出学到的 Q_tot。
+- **StarCraft II 微观操作（§7）**：6 张图 **3m / 5m / 8m / 2s3z / 3s5z / 1c3s5z**（L170）。QMIX 在**所有图**上最好，**异质单位图（2s3z, 3s5z, 1c3s5z）差距最大**（L223, L235）。IQL "在所有场景都学不出能稳定取胜的策略"，且训练高度不稳定（L219）。VDN 在 5m/8m 上能学会 focus firing，但 **3m（需要更精细控制）上学不会**；在 3s5z 和 1c3s5z 上 **VDN 打不过简单的启发式**（L235）。
+- **消融（§7.2, L239）**：
+  - **3m（同质单位）**：非线性分解**不总是必需**，但加了隐藏层也不拖慢学习。
+  - **2s3z / 3s5z（异质单位）**：**必须同时有"中心状态信息"+"非线性值分解"**才能做好。
+  - **QMIX-NS**（去掉 hypernetwork，权重直接学、取绝对值）"performs on par or slightly better than VDN"——说明**不结合状态时，非线性分解不一定有益**。
+  - **VDN-S 对比 QMIX-Lin**：证明"要充分利用中心状态，必须有非线性混合"。
+- **学到的策略（§7.3, L243）**：2s3z 上 VDN 只会"先往左跑、进射程就打"，不管站位和兵种克制；**QMIX 学会让 Zealot 先挡住并攻击敌方 Zealot，Stalker 在安全距离输出**——因为 Zealot 克制 Stalker（L243）。8m 上 QMIX 和 VDN 都学会"摆成半圆从侧面开火"。
+- **启发式基线胜率（Table 7, L397）**：3m **76%**、5m 60%、8m **95%**、2s3z 82%、3s5z **45%**、1c3s5z 70%。
+- **两步博弈最终回报（Table 6, L372）**：IQL 7 / VDN 7 / VDN-S 7 / **QMIX 8** / QMIX-Lin 7 / **QMIX-NS 8**。
+
+**5. 实验条件**
+- **平台**：StarCraft II Learning Environment (SC2LE)，**不是** SC1/BW（L168，作者说 SC2LE 有官方支持、更稳定）。
+- **设置（§6.1）**：双方**同数量同类型**单位对称放置；我方由学习智能体控制，敌方由**内置 medium 难度 AI + 手工启发式**控制（L170）；每 episode 开始敌方被命令进攻。
+- **动作空间（L172）**：move[direction]（只能东南西北）、attack[enemy id]（仅当敌人在射程内）、stop、noop。**刻意禁用了游戏的 attack-move 宏操作和待机自动还击**，逼智能体自己探索。
+- **部分可观测（L174）**：用**视野范围**实现；智能体只能看到存活且在视野内的单位，**无法区分"死了"和"视野外"**。
+- **奖励（L176）**：每步 = 对敌方造成的**总伤害**；每击杀 1 个 +10；全歼 +200。**归一化到 episode 最大累计回报 = 20**。
+- **训练细节（附录 C.2, L386-L392）**：agent network = DRQN（GRU 64 维隐状态，前后各一个全连接层）；ε 从 1.0 线性退火到 0.05（50k 步）；γ=0.99；replay buffer 最近 5000 episode；batch 32 episode 且**完整展开**；目标网每 200 episode 更新；RMSprop，lr 5e-4；**所有 agent network 共享参数**（故把 agent id one-hot 拼到观测上）。mixing network 单隐藏层 32 单元 + ELU；最后偏置的 hypernetwork 单隐藏层 32 + ReLU。
+- **episode 长度上限（L390）**：3m/5m 60 步，8m/2s3z 120 步，3s5z 150 步，1c3s5z 200 步；超时算输。
+- **评估（§7, L213）**：训练每 100 episode 暂停一次，跑 **20 个独立 episode**（各智能体贪心分散执行），"test win rate" = 全歼敌方的比例；曲线是 **20 次 run 的均值 + 95% 置信区间**。
+- **训练与评估的关系**：**同一套地图和环境**，仅靠 ε-greedy 的贪心执行做评估，**没有跨地图/跨规模的泛化测试**（虽然对比了 6 张不同图，但每张图都是独立训练）。
+
+**6. 它自己承认的局限**（逐字引用）
+- L141（§4.1）："However, the constraint in (5) prevents QMIX from representing value functions that do not factorise in such a manner."
+- L143："Intuitively, any value function for which an agent's best action depends on the actions of the other agents at the same time step will not factorise appropriately, and hence cannot be represented perfectly by QMIX."
+- L337（附录 A.1，最尖锐的一条）："In a Dec-POMDP, QMIX **cannot necessarily** represent the value function. This is because each agent's observations are no longer the full state, and thus they might not be able to distinguish the true state given their local observations."
+- L253（未来工作）："In the near future, we aim to conduct additional experiments to compare the methods across tasks with a larger number and greater diversity of units. In the longer term, we aim to complement QMIX with more coordinated exploration schemes for settings with many learning agents."（**即：单位数更多、异质性更强的场景没测**）
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **单调性约束在 Dec-POMDP 下的失效**是作者自己承认的（L337），但**没有给出任何补救或诊断工具**——能不能检测"当前场景下 QMIX 的分解是否成立"？这是个明确的空白。
+2. **智能体数量最多只到 9 个左右**（1c3s5z = 1+3+5），**规模从未推到几十/上百**（L253 自述）。而 LEO 星座动辄几百上千颗星——QMIX 的规模适用边界完全没探。
+3. **hypernetwork 生成权重意味着参数量随 mixing network 规模增长**，但论文没有给任何**计算/显存开销分析**，也没有推理时延数据。
+4. **ε 退火后的探索完全靠独立 ε-greedy**（L386），L253 说要"更协调的探索"——**多智能体协同探索**是它自己指出的下一步。
+5. **奖励用总伤害 + 击杀奖励**（L176），这是**密集奖励**。如果换成稀疏奖励（如只给最终胜率），单调分解是否仍然有效？没测。
+6. **只跟 value-based 方法比（IQL/VDN）与启发式基线**，没有跟当时更强的 policy-gradient 类 MARL 做同条件对比（虽然 §2 讨论了 COMA）。
+
+**8. 和同批其他篇的关系**
+**这是本批唯一一篇纯 MARL 算法论文，含 0 行 LEO/卫星/网络内容**。全库范围内它是"方法供体"而非"应用论文"——如果本批/全库里有 LEO 多智能体路由论文（比如 S85KQ4FC 提到的 FDR-MARL），很可能**引 QMIX 或用 QMIX 做基线**，或者引它的前身 VDN（L311）与 COMA（L273）。
+- **概念上与 9C6HB6AF 相反**：9C6HB6AF 用**集中式单智能体**（NCC 一个 PPO/DQN 决定全网分流），QMIX 恰恰是为**分散执行**设计的。两者代表 LEO 路由的两条路线：集中优化 vs 分散 MARL。
+- **与 8N9QJHC2 的血统关系**：8N9QJHC2 用表格 Q-learning 逐节点维护 Q 表（本质是**独立学习**，接近 IQL 的朴素形态），而 QMIX 正是为了修 IQL 的非平稳性而生。把 8N9QJHC2 的"每星一张 Q 表"换成 QMIX 式分解，是一个自然但没人做的组合。
+- **对 S85KQ4FC 的直接价值**：S85KQ4FC 关心"星上推理成本"，而 QMIX 的 agent network 是 DRQN（带 GRU），**推理时延比前馈网络更高**——这正好是 S85KQ4FC 那篇要解决的问题的另一面。
+*[回填位：读完本批/全库后补：本批是否有篇目引用 VDN/QMIX]*
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**没有直接贡献，而且是彻底的无关**。这篇的"环境"是 StarCraft II 战斗，**没有网络、没有链路、没有队列、没有到达率、没有时延**；它的"负载"概念是敌方单位数量与兵种构成（3m/5m/8m/2s3z/3s5z/1c3s5z），不是流量强度。奖励是伤害值和击杀（L176），与排队时延无关。
+**唯一可迁移的方法论**：它示范了"**把联合目标分解为局部量、同时保证分散执行的最优性**"这一模式（单调性约束）。如果 LEO 路由要把"全局时延/到达率"分解到每颗星的局部决策上，QMIX 的单调分解是现成的工具——**但这个迁移本篇没做，也没暗示要做**。
+
+**10. 一句话评价**
+CTDE 范式的**里程碑式方法论文**（单调值分解 + hypernetwork 条件状态），在 MARL 方法谱系里是 VDN 与 IQL/COMA 之间的关键一环；**但它是一篇纯 RL 算法论文，与 LEO 网络、与负载/时延问题没有任何交集**——它在 111 篇语料里的价值是"可被引用的方法组件"，不是"领域事实"。

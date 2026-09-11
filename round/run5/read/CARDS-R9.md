@@ -203,3 +203,203 @@ LEO 路由的老问题：拓扑快变 + 负载不均。引言把传统方案分�
 **"集中式预训练 + 分布式在线学"这一乘积式组合的清晰实现**，方法本体仍是 1993 年的 tabular QR（补了 ε 衰减、周期广播、地面初始化三处工程件），"Multi-Agent"只是"每星一个独立 Q 表"的叫法而非真正的多智能体算法（无协调机制、无非平稳性处理）；它最有价值的地方不是方法，而是**用另一套实验独立复现了 UKBSA7WN 那条"低负载集中式赢、高负载分布式赢"的反转**。
 
 
+## UMKF328H — LEO Satellites in 5G and Beyond Networks: A Review From a Standardization Perspective
+
+> IEEE Access, vol. 10, 2022（DOI 10.1109/ACCESS.2022.3162243）。作者：Tasneem Darwish, Gunes Karabulut Kurt, Halim Yanikomeroglu, Michel Bellemare, Guillaume Lamontagne（Carleton 大学 / Polytechnique Montréal / MDA Space）。全文 624 行，逐行读完（1–105 / 106–215 / 216–330 / 331–440 / 441–545 / 546–624 六段；**546–624 行全部是参考文献 [20]–[45]，无正文**）。
+
+**1. 一句话**
+一篇**标准化综述而非技术论文**：把 3GPP 从 Release 14 到 Release 18 关于"卫星接入 5G"的全部 Study Item / Work Item 梳理成一条时间线，再把卫星给 NR（5G 空口）造成的冲击逐项列表（传播时延、多普勒、移动小区、HARQ、PRACH、TA、功控、PAPR……），最后给出 6G 时代还缺什么标准化。
+
+**2. 问题设定**
+卫星与地面蜂窝历史上是"两个独立生态、各自标准化"（L88 附近逐字："satellites and terrestrial networks have always been considered two independent ecosystems, and their standardization efforts have proceeded independently of each other"）。5G 要卖全球无缝覆盖，就必须把卫星拉进同一套规范。它要回答的是：**3GPP 已经做到哪一步、哪些还只是 Study Item、哪些根本没人管**。谁遇到麻烦：想把卫星接入塞进 5G 核心网/空口的运营商与设备商，以及因为"没有统一标准"而被迫做封闭实现的厂商（L441 提到 DVB 的专有特性导致"interoperability problems among satellite access networks from different solution vendors, and it has led to a fragmented SatCom market"）。
+
+**3. 方法骨架（这是综述，没有算法；骨架 = 它的分类框架）**
+- **按 release 逐条梳理 3GPP 工作**（III.A，L172–L226；汇总表 Table 2）：R15 启动 TR 38.811（RAN，"Study on NR to support NTN"）+ TR 22.822（SA，"Study on using satellite access in 5G"）；R16 有 4 项（含 WI#800010-5GSAT 与 TR 28.808 的编排研究）；R17 有 TR 23.737 两阶段 + TR 28.808 + TR 38.821；R18（5G-Advanced 起点）有 920035(5GSATB)、920034(SCVS)，并列了 RAN 主题清单，其中含"**NTN evolution, including both NR and IoT aspects**"（L~215）。
+- **用例分类框架**（III.B，L~228–L248，Figure 2 / Table 3）：把卫星接入 5G 的用例归为**三大类——service continuity / service ubiquity / service scalability**，Table 3 逐条列出 17 个用例及其应用（漫游、广播组播叠加、边缘内容分发、公共安全、IoT、临时卫星组件、网络韧性、回传、跨境服务连续、全球卫星叠加层、离岸风电场……）。
+- **架构分类**（IV，L~252–L~270，Figure 4）：TR 38.811 的两类接入网（VSAT 宽带 / 手持窄带）；TR 38.821 的三种 NG-RAN 架构：**透明（bent-pipe）**、**再生（regenerative，又分 gNB-CU+DU 全处理 / 仅 gNB-DU）**、**多连接（multi-connectivity）**。
+- **NR 冲击清单**（V，L~294–L~372）：先列设计约束（V.A，L~296–L~320），再列受影响 NR 特性与潜在对策（V.B + Table 4）。
+- **管理与编排**（VI，L~350–L~368）：TR 28.808 的两套参考管理架构（3GPP RAN 融合卫星 NR-RAT / 非 3GPP 卫星 RAN），三类需求（网络切片管理、卫星组件管理、卫星组件监控）。
+- **非 3GPP 组织**（VII，L~370–L~452；Table 5）：ITU-R WP 4A/4B/4C、WRC-19、IETF（MPTCP RFC 8684）、ETSI（NFV/MEC/TC-SES/OSM）、5G PPP、ECC、NICT Japan、IEEE INGR、**CCSDS**、**AEEC/ARINC**、DVB。
+- **6G 未来标准化方向**（VIII，L~456–L~504，Figure 7）：A 移动性管理、B 路由、C SDN/NFV 采纳、D 智能管理与编排（ENI/SON/**SEN**）、E 容错、F 动态频谱管理。
+
+**4. 它声称的效果**
+综述没有"效果"，只有**汇总结论与它点出的空白**：
+- 3GPP 的 NTN 工作"从 Release 14 就开始了"（L~170），到 R17 时 RAN1 物理层规范冻结排在 2021 年 12 月、Stage 3（RAN2/3/4）2022 年 3 月、ASN.1 与性能规范 2022 年 9 月（L~190）——**这是一篇有时效性的文档地图**。
+- 明确判定管理/编排方向"**the standardization work on NTN management is nevertheless quite limited within the 3GPP working groups**"（L366 逐字）。
+- 明确判定 SDN/NFV 方向"the use of SDN/NFV in an LEO SatNet **has not yet been fully investigated**"（L482 逐字）。
+- 明确判定智能管理与编排：ENI 与 SON 概念"are still limited to the 5G context and may not be sufficiently agile"，而 SEN（Self-Evolving Network）"is quite a recent concept and **has not yet been considered by standardization organizations**"（L~495 一带）。
+- 动态频谱管理："this issue is **not covered sufficiently** in the standardization works"（L~503）。
+- **没有仿真、没有实验、没有任何性能数值**。
+
+**5. 实验条件**
+**无实验**。它的"数据"是 3GPP 文档号、release 号、会议日期（Table 6 列了 R18 Workshop 2021-06-28~07-02、RAN#93-e 2021-09、TSGs#94-e 2021-12、WRC-19 2019-10-28~11-22、AEEC KSAT 会议）。
+唯一带数字的是它引述的标准指标与物理事实：
+- **RTT 要求**（L250 逐字）：GEO 600–800 ms、MEO 125–250 ms、**LEO 30–50 ms**，并注明这些值"include the delays of processing on both ground and orbit as well as the variable propagation delays"。
+- **单星覆盖**（L311）：550 km 高度、40° 仰角下覆盖 **1.05 百万 km²**、半径约 580 km；作为对照 5G 微蜂窝约 12.5 km²。
+- **多普勒**（L315）：600 km 高度卫星在 20 GHz 下行产生 **400 kHz** 多普勒、30 GHz 上行 **600 kHz**；而 NB-IoT 系统带宽只有 180 kHz。
+- **单向传播时延**（L340）：LEO 600 km 轨道**连续变化 2–7 ms**。
+- 频谱（L~305）：S 波段 2×15 MHz，Ka 波段上行 2×2.5 GHz、下行 2×2.4 GHz。
+- UE 速度需支持到 **1000 km/h**（L~320）。
+
+**6. 自述局限**
+**未见自述局限**——综述体裁，通篇（L84–L504 正文全部段落我已逐段读过，L506–L624 为参考文献）没有任何"本文的不足"段落。它只承认**被综述对象的不足**（3GPP 在管理编排上很有限、SDN/NFV 未充分研究、频谱管理覆盖不足、SEN 尚无标准化组织考虑）。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **它点名"路由"是 6G 标准化方向之一（VIII.B，L478），却只给了半页、零技术细节**。而路由恰恰是它列出的"ISL 会因高流量负载在星座某些分区拥塞"（L478 逐字："some ISLs may get congested due to high traffic loads at certain partitions of the SatNet"）这一问题的唯一解。**这篇综述把"路由"识别为一个标准化缺口，却没有梳理任何一条既有路由方案的技术谱系**（既没提虚拟拓扑、也没提 Q-routing/DRL）。这是一个明确的补白位置。
+2. **它引用的 QoS 指标里明确含"packet delivery delay, packet delivery ratio"（L478）**，但没有给出这两个指标在 LEO 负载变化下的任何目标值或数据——标准里应该定什么阈值，综述没说。**给"到达率/时延"定一个可辩护的目标区间，是这篇综述逻辑上直接指向的下一步。**
+3. **ITU/IETF/CCSDS 三条线（VII）各只写一两段**，其中 IETF 侧只提了 MPTCP，**完全没提 IETF 关于拥塞控制的既有标准工作**（而它在 L~426 明确说 transport area 的工作涵盖"congestion control and (active) queue management"）——这一条与路由/拥塞主题直接相关却被一笔带过。
+4. **Table 1 的对比表**自我定位为"唯一同时覆盖 3GPP 活动 / 其他组织 / NR 影响 / 管理编排 / 用例 / 架构"的综述（L~108）。这是一个可被后续工作直接检验和被超越的定位声明。
+5. **时效性硬伤**：正文冻结在 2022 月初（收稿 2022-02-23），R17 当时"still open"、R18 刚批准包。**R18 之后的 NTN 演进（含 IoT NTN）在这篇里完全没有内容**——L~215 只列了主题名。
+6. **三大用例分类（continuity / ubiquity / scalability）从未被用来做任何定量权衡**——例如"scalability 类用例（广播/组播卸载）与 ubiquity 类用例（窄带回传）对路由的要求是否冲突"，这一层分析本可由分类框架自然导出。
+
+**8. 和同批其他篇的关系**
+本批（R9）其余篇目尚未读完，暂无法逐篇比对。**就体裁而言它与本批其他所有论文都不同**：其余是算法/协议论文，这篇是标准化综述，**没有任何算法、没有仿真、没有基线**。它与路由类论文的交集只在一处——VIII.B 节（L478）承认路由是 6G 的标准化方向，并点出 ISL 拥塞与 QoS（时延、投递率）需求，**但不引用任何一篇具体路由工作**。因此它对本批的价值是"**背景与约束的可信来源**"（LEO RTT 30–50 ms、单向时延 2–7 ms、多普勒量级、覆盖面积），而不是"方法参照"。
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**有间接但可引用的贡献——提供的是"约束数字"而非"负载-时延关系"。** 具体：
+1. **它给出了 LEO 卫星接入的 RTT 目标区间 30–50 ms（L250）**，且明确这个数**包含地面与在轨处理时延**——这是任何"负载变化下的时延"研究都必须对齐的口径基准。
+2. **它给出了单向传播时延在 600 km 轨道上连续变化 2–7 ms（L340）**——即"即使零负载，时延本身也是时变的"，这对"把负载导致的排队时延从总时延中分离出来"这件事直接相关。
+3. **它明确把"ISL 拥塞"归因于"high traffic loads at certain partitions of the SatNet"（L478）**——这是一个标准化综述对"负载→拥塞"因果链的正式背书，可作为选题动机的外部引用。
+4. **它把 QoS 要求明确表述为"packet delivery delay"与"packet delivery ratio"两个指标（L478）**——与本主题的"到达率/时延"提法几乎同构，**说明这两个指标是标准语境下的既有口径，不需要自己另造**。
+5. **它指出 LEO 下"thousands of UE being connected to an LEO satellite"需要几乎同时切换（L~468）**——这是"负载在时间上高度突发且相关"的一个物理来源。
+**缺口**：全文没有任何"到达率 → 时延/投递率"的曲线、模型或数据。
+
+**10. 一句话评价**
+**一篇 2022 年初冻结的 3GPP NTN 标准化地图**：价值在于把"卫星接入 5G"的制度进展、NR 冲击清单和 6G 缺口做成可检索的索引，并提供了少量可直接引用的物理约束数字（RTT 30–50 ms、单向时延 2–7 ms、多普勒 400/600 kHz）；但它**在方法谱系上不占位置**——它识别出"ISL 负载拥塞"和"路由"是缺口，却没有、也不打算梳理任何一条路由技术路线。
+
+
+## VACUFEHB — Computationally Efficient Algorithms for Third Order Adaptive Volterra Filters
+
+> 会议短文（Asilomar 系）。作者：Xiaohui Li, W. Kenneth Jenkins（UIUC Coordinated Science Lab）、Charles W. Therrien（Naval Postgraduate School）。全文 250 行，逐行读完（1–125 / 126–250 两段；L229–L232 为计算机实验、L233–L236 致谢、L237–L250 参考文献与图）。
+
+**⚠️ 先给结论：这篇与本批主题（LEO 卫星网络 RL 路由 / 负载变化下的到达率与时延）没有任何关系。** 它是一篇**纯数字信号处理**论文，讲三阶 Volterra 自适应滤波器的快速算法。全文没有出现卫星、轨道、星座、路由、网络、队列、到达率中的任何一个概念。我不做任何强行联系。
+
+**1. 一句话**
+利用三阶（立方）Volterra 自适应滤波器在输入为**高斯过程**时自相关矩阵的**块对角结构**（式 9），把准牛顿更新解耦成三块（式 13），再用**预条件共轭梯度**（PCG）算其中那块非 Toeplitz 子矩阵的 Kalman 增益，从而把复杂度压下来。
+
+**2. 问题设定**
+带记忆长度 $N$ 的三阶 Volterra 滤波器（式 1）要建模强非线性，但输入向量 $X(n)$ 由线性项、二阶互积、三阶互积拼成后，**自相关矩阵 $R_X$ 的特征值扩散极其严重，且是非 Toeplitz 的**（L~30 附近逐字："the eigenvalue spread of the autocorrelation matrix of the third order filter input is increased dramatically. Because of this, many LMS based linear adaptive algorithms are not very effective in increasing the convergence speed. Also, because the matrix is non-Toeplitz, it is even more difficult to develop a fast adaptive algorithm"）。谁遇到麻烦：要用 Volterra 滤波器做非线性系统辨识、又跑不动传统 LMS 收敛速度的人（二阶情形的解法是作者团队自己前作 [2]，本文是三阶推广）。
+
+**3. 方法骨架（无 RL，全是线性代数 + 自适应滤波）**
+- **滤波器定义**（式 1，L~18）：$y(n)=\sum h_1 x(n-m_1)+\sum\sum h_2 x(n-m_1)x(n-m_2)+\sum\sum\sum h_3 x(n-m_1)x(n-m_2)x(n-m_3)$。
+- **向量化**（式 2）：$y(n)=W^T(n)X(n)$，$X(n)$ 由六类数据向量拼成（式 3–8）：线性项 $x_1$、平方项 $x_2$、立方项 $x_3$、相邻互积 $x_{2c}$、三阶连续互积 $x_{3c}$、平方乘相邻 $x_{sqc}$。
+- **关键结构发现**（式 9，L~63）：对零均值独立高斯输入，$R_X=\mathrm{diag}(R_t, R_{sq}, R_c)$ —— **块对角**，且 $R_c$ 还是**对角阵**，$R_t$ 是 $(N^2+N)\times(N^2+N)$ 非 Toeplitz，$R_{sq}$ 是 $N\times N$ 非 Toeplitz。
+- **预处理链**（Fig 1，L~80 附近）：彩色高斯输入先进**线性变换去相关**，再逐路**功率归一化**，使进入 Volterra 滤波器的信号近似 i.i.d. 高斯——**这是让式 9 成立的前提假设**。
+- **准牛顿更新**（式 12，L~92）：$W(n+1)=W(n)+\mu R_X^{-1}(n)X(n)e(n)$，因 $R_X$ 块对角而**解耦成三条独立更新**（式 13）：$W_t$（用 $R_t^{-1}$）、$W_{sq}$（用 $R_{sq}^{-1}$）、$W_c$（用 $R_c^{-1}$）。
+- **第一块最简单**（式 14，L~130）：$R_c$ 是对角阵 → $w_{c,k}(n+1)=w_{c,k}(n)+\mu\frac{1}{\sigma_{c,k}^2}x_{c,k}(n)e(n)$。
+- **第二块直接抄前作**（L~136）：$R_{sq}$ 的快速 Kalman 增益更新算法已在 [2] 的**二阶**滤波器里给出，"can be directly applied to $3^{rd}$ order"。
+- **第三块是本文真正的新内容**：$R_t$ 非 Toeplitz，快速准牛顿法"simply not applicable here"（L~140），故改用**共轭梯度**（CG，2.1 节）——CG 不利用结构，所以恰好适用于非 Toeplitz 矩阵。为加速收敛再加**预条件**（2.2 节）：
+  - $M_1$（式 21a）：取 $R_t$ 但把 $E[x_1 x_{2c1c}^T]$、$E[x_3 x_{2c1c}^T]$ 置零，保留左上块——**但对角上那块仍是非 Toeplitz，逆仍难算**；
+  - $M_2$（式 21b）：进一步简化，只用 $E[x_{2c1c}x_{2c1c}^T]$ 沿对角线的 $N$ 个子块 → $M_2$ 成**块对角**（左上三对角 + 其余为标量 $E[x^6]$），逆极好算。**实验只用 $M_2$**。
+- 完整的四步算法在 L~118–L~128 列出（Step 0 初始化 → Step 1 变换+功率归一化 → Step 2 构造三阶输入并算误差 → Step 3 分别更新三条 Kalman 增益 → Step 4 循环）。
+
+**4. 它声称的效果**
+- 只有定性结论、**没有任何数字**（L231 逐字）："the new adaptive algorithm shows dramatic improvement in convergence rate in comparison to the LMS algorithm. The results also illustrate that the chosen preconditioner chosen is very effective in improving the convergence rate."
+- 唯一的对照基线是 **LMS**（学习曲线画在同一张 Fig 2 上）。
+- **没有复杂度表达式**：文中反复说"computationally efficient""much simplified""dramatic improvement"，但**从头到尾没有给出新的 $O(\cdot)$ 阶数**（只提到用传统求逆需 $O(N^3)$ 量级的乘法数，L~138 一带写作"o(Nq multiplications"，OCR 有损坏）。
+
+**5. 实验条件**
+- 任务：辨识一个**三阶非线性系统**（L231）。
+- 输入：**彩色高斯信号**，由一个**二阶低通滤波器**产生。
+- 变量：每次更新时用 **1 次迭代 / 2 次迭代 / PCG 全迭代** 三档，比较收敛速度。
+- 预条件器：只用 $M_2$。
+- 基线：LMS。
+- **训练与评估**：就是一次系统辨识仿真，没有训练/测试划分概念。
+- **全文只有一张结果图（Fig 2）**，MD 中不可读，正文没有任何坐标值。
+
+**6. 自述局限**
+**未见自述**。全文（L1–L250）没有任何 limitations / future work 段落，也没有讨论 $M_1$ 与 $M_2$ 的取舍代价、或 CG 迭代次数与收敛的权衡。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **$M_1$ 被提出来但没被实验**：作者说 $M_1$ 的对角块仍是非 Toeplitz"so it is still computationally intensive to calculate its inverse"（L~215），于是跳到 $M_2$。**$M_1$ 与 $M_2$ 之间"逼近程度 vs 求逆成本"的定量权衡从来没做**。
+2. **"dramatic improvement"没有任何数字**——收敛速度提升了几倍、达到同一误差需多少样本，均未给。
+3. **没有复杂度阶数**：既然标题就叫"computationally efficient"，给出新算法的乘法数/迭代数与 LMS、与全矩阵求逆的对照是分内之事。
+4. **彩色高斯 + 线性变换去相关这个前提从未被检验**：式 9 的块对角性依赖"线性变换能完美去相关"（L~85 逐字"If the input signal x(n) is stationary..."与前面"Assuming the linear transform can perfectly decorrelate"）。**去相关不完美时结构退化多少、算法是否还成立，全文没测**。
+5. **只辨识三阶非线性系统、只测一种输入谱**，没有扫输入相关性强度（即低通滤波器的极点位置）——恰好这是最能暴露"去相关假设是否脆弱"的轴。
+
+**8. 和同批其他篇的关系**
+**与同批任何一篇都没有关系。** 本批（R9）其余篇目围绕 LEO 卫星网络路由/标准化展开（UF8IQTA2、UKBSA7WN、UKEKU5ZG、UMKF328H 等），本篇属于 IEEE 信号处理社区，引用文献只有 4 篇（[1] 作者前作 Asilomar 1996、[2] Marshall & Jenkins 1992 快速准牛顿、[3] Hull 博士论文 1994、[4] Golub & Van Loan 矩阵计算），**没有一篇与网络/通信/卫星相关**，也不被本批任何论文引用。它在语料中的存在更像是**检索/归档环节误入的条目**——这本身是一条关于语料构成的观察，值得主控记录。
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**没有直接贡献，也没有间接贡献。** 它处理的"信号"是**音频/一般时间序列意义上的输入样本**，不是网络流量；它优化的"收敛速度"是**自适应滤波器系数收敛到维纳解的样本数**，不是端到端时延或投递率；它的"条件数/特征值扩散"是**数值线性代数概念**，与队列拥塞不是同一件事。
+**唯一需要说明的是我为何不做联想**：本主题里有"到达率"和"队列"两个词，本篇里有"输入过程"和"能量/功率"，表面词汇可以搭桥（例如把流量到达建模成有色高斯过程），但那是**本文完全没有做、也完全没有声称的事**。按任务纪律，我如实写"没有直接贡献"，不硬扯。
+
+**10. 一句话评价**
+**一篇与 LEO 路由主题无关的数字信号处理短文**——用"高斯输入下三阶 Volterra 自相关矩阵块对角"这一结构性质 + PCG 预条件 $M_2$ 来替代无法用于非 Toeplitz 矩阵的快速准牛顿法；方法谱系上它是作者团队二阶工作 [2] 的三阶推广，**且通篇无一个数值**。放入本语料属误入条目。
+
+
+## VFS59FHI — Load-Balancing Routing Algorithm Based on Segment Routing for Traffic Return in LEO Satellite Networks
+
+> IEEE Access, vol. 7, 2019（DOI 10.1109/ACCESS.2019.2934932）。作者：Wei Liu, Ying Tao, Liang Liu（中国空间技术研究院 通信卫星研究所）。全文 365 行，逐行读完（1–120 / 121–250 / 251–365 三段；L307–L365 为参考文献与作者简介）。
+
+**1. 一句话**
+针对"**地面信关站集中在有限区域内**"这一真实部署约束造成的回传汇聚拥塞，把 LEO 星座按"信关站 + 反向缝（reverse slot）"的相对位置**动态切成轻载区与重载区**，轻载区用预均衡最短路径、重载区用基于**拥塞指数 $c(e)=F(e)/r(e)$** 的最小权路径，再用 **Segment Routing** 把跨区路径串成一致转发。
+
+**2. 问题设定**
+LEO 星座（Iridium NEXT / Starlink）的地面信关站**只能布在有限地理区域内**，而各类业务的回传流量（IoT 回传、数据回传）会向这一小片区域汇聚 → 信关站周边链路"severe link congestion and excessive link load"（L19 段附近）。作者在相关工作里明确点出这个前提**以往研究重视不足**（L35 逐字："the restriction that ground gateway stations are arranged within a limited area does not receive enough attention"）。物理上还有第二个麻烦：Walker 星座首末轨道间存在**反向缝**，那里的卫星之间不建 ISL（L~56），它会**切断**本来可用的绕行路径。谁遇到麻烦：信关站上空那几颗卫星及其周边链路，以及因此被拒绝的回传业务。
+
+**3. 方法骨架（非 RL，协议/图论工程）**
+- **系统模型**（III 节，L52–L58）：Walker 星座 $N=n\times m$（$n$ 轨道 × $m$ 星/轨道），极轨均布；节点集 = 卫星 $V_S$ + 信关站 $V_{GW}$（$X$ 个）+ 中心站 $v$；链路集 = 星间链路 $E_{ISL}$（带宽 $B_{ISL}$）+ 馈电链路 $E_F$（带宽 $B_F$）+ 地面链路 $E_G$（**带宽视为无限**）。除反向缝附近外每星 4 条有向星间链路。用 **VT（虚拟拓扑）** 处理动态性，地面按**地理栅格（traffic cell）**离散化。
+- **流量模型**（III.B，L60–L74）：每个栅格绑定一颗星；栅格 $k$ 有**流量密度 $f^{(k)}$**（= 该栅格业务需求 / 系统最大流量需求，按地理位置和人口**预测**标定），实际需求 = $u\times f^{(k)}$，$u$ 为单位业务值。链路 $e$ 承载总流量 $F[e]$（式 2、3）。**优化目标**（III.C，L76–L84）：最大化相对吞吐 $T$，约束是 $F[e_{ISL}]\le B_{ISL}$、$F[e_F]\le B_F$。
+- **负荷分区**（IV.A，L121–L135）：把信关站所在区域按地面栅格**外扩成矩形**，矩形内 = 重载区（$y_n$ 轨道 × $y_m$ 星/轨道），矩形外 = 轻载区。分区**动态**取决于反向缝位置：反向缝穿过信关站区域时以信关站为中心扩展；反向缝在信关站区域外时，**只把含信关站但不含反向缝的区扩进重载区**，以避免反向缝割裂重载区（Fig 4(a)(b)）。
+- **轻载区路由**（L~137）：路径必须经过重载区最外圈节点（outermost nodes）。用 **最小生成树（MST）** 生成最短路（作者理由："traffic of light load zone is at a low level, which can improve the delay performance and reduce SR overhead"）；再做**预均衡**——统计各 outermost node 被占用次数 $x_i$，把链路权值调成 $(0.5+0.1\times x_i)$（0.5 是初始权值、0.1 压量级防过调），然后在**预均衡后的网络**上重算以中心站为源的 MST，取反向后截取轻载区部分。
+- **重载区路由**（L~139–L~160）：重载区节点只在区内路由、不进入轻载区；outermost node 承载"本地业务 + 轻载区汇入业务"两部分，按**流量从大到小排序优先路由**（"the larger the traffic, the shorter the path"）。
+  - **拥塞指数**（式 4，L143）：$c(e)=F(e)/r(e)$，$r(e)=b(e)-F(e)$ 为剩余带宽；$r=0$ 时 $c=\infty$，空链路时 $c=0$。
+  - ⭐ 作者对选 $c(e)$ 而非链路利用率 $F(e)/b(e)$ 给了明确理由（L145 逐字）："Compared with link utilization $F(e)/b(e)$, $c(e)$ is more monotonically incremental to $F(e)$ and more sensitive to load change. $c(e)$ would increases sharply if the traffic is too larger which is good to balance the network load."
+  - **链路权值**（式 5，L154）：$w(e)=0.01+c(e)$（空链路 = 0.01，剩余带宽为 0 时 $w=\infty$）；路径权值 $w(P)=\sum_{e\in P}w(e)$（式 6），路径剩余带宽 $r(P)=\min_{e\in P}r(e)$（式 7）。
+  - 剩余带宽不足的链路**直接删除**，再在权值网络上跑 **Dijkstra**（起点为卫星、终点为中心站）。**找不到路 → 该业务被拒绝并丢弃**（L~160）。
+- **Segment Routing**（II.B，L37–L50）：用 Node SID / Adjacency SID / Service SID 三种段标识 + CONTINUE / PUSH / NEXT 三种操作，把跨区路径压成段列表（SL），使中间路由器不必维护全路径信息——**这是让"分区不同策略"能无缝拼接的机制**。
+- **复杂度**（IV.B，L~172）：轻载区 $O(N^2)$，重载区 $O((y_n y_m)\times(y_n y_m+X+1)^2)=O((y_n y_m)^3)$，合计 $O(N^2+(y_n y_m)^3)$。极端情形 $y_n=y_m=0$ 时退化为 $O(N^2)$。
+
+**4. 它声称的效果**
+- 场景：Table 1（L174）**6 轨道 × 12 星 = 72 颗**、极轨 90°、轨道间隔 30°、**4 个信关站**、$B_{ISL}=25$、$B_F=100$。
+- 重载区尺寸扫描（Table 2，L180–L186）：$y_n\in\{3,4,5,6\}$，各种 $y_m$，直到 $(6,12)$ 即**全网都是重载区**。
+- 五种指标（V.A，L~200）：平均拒绝率、平均相对吞吐、最大链路利用率、平均时延、平均抖动。
+- 结果：
+  - **$(6,12)$ 在均匀分布下五个指标全是最优/阈值**（L207、L~211、L~215 等）；预测分布下 $(6,12)$ 的**平均拒绝率为 0%**（L209）。
+  - 规律：拒绝率随重载区尺寸扩大而下降、吞吐上升、最大链路利用率下降；**但平均时延随尺寸扩大而上升**（成本项）。
+  - **单维度扩展收益很小**（L~302 逐字："The increase of one dimension only can get little benefit, such as (3,2), (4,2), (5,2), (6,2)"）——必须两个维度同时扩。
+  - ⭐ **一条反直觉结论**（L269 逐字）："However, the average delay decreases as u increases with some sizes. This phenomenon is caused by **big rejection ratio, and only part of traffic can occupy resources**. When the rejection ratio is small, the average delay increases as the size extends." —— **负载升高反而使"平均时延"下降，因为被拒绝的业务不计入统计**。
+  - 对比（Fig 17，L294）：**Dijkstra 平均时延最小但拒绝率最高**；HRA 拒绝率改善但**时延最高**；JDDA 拒绝率更小但时延更高；本方法**拒绝率最小且时延较小**。对比时选尺寸 $(6,5)$ 以平衡收益/成本/复杂度（L300）。
+- 抖动（式 12）：随尺寸波动、"acceptable when the rejection ratio is small"（L~290）。
+- ⚠️ **全文没有一个绝对数值**：所有指标都只有曲线（Fig 7–17），正文只给相对趋势和"0%"这一个例外。
+
+**5. 实验条件**
+- 星座与带宽见上（Table 1）。
+- **流量栅格**（Fig 6，L~176）：一张 6×12 的栅格图，格内数字是**预测得到的流量密度**（图在 MD 中严重损坏，只能看出量级 $10^{-3}\sim10^{-1}$ 与个别大值如 0.86、0.938）。
+- 两种分布：**均匀分布**（所有密度 = 1）与**预测分布**（Fig 6）。
+- 单位业务值 $u$：均匀分布取 **1, 2, 3**；预测分布取 **4, 5**（作者理由：预测分布里有些密度很小，网络有足够余量）。
+- 仿真用 **C++** 自写（L~200）。
+- **评估的是静态快照式的路由结果**，没有排队过程、没有到达过程、没有时间演化——"到达"只以栅格需求 $u\times f^{(k)}$ 的形式出现。
+- 无训练环节（非学习算法）。
+
+**6. 自述局限（L306 逐字，全文唯一一处）**
+"The results could be a solution for congestion problem in LEO satellite networks, and the entry point is traffic return. **The extension to all types of traffic and the design of on-satellite router** could get more attention in further discussion."
+（两条：只处理了"回传"这一类流量；星上路由器的设计未涉及。**未见**对时延口径问题、$u$ 缺绝对单位、反向缝建模简化等的任何自述。）
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. ⭐ **它自己发现并写出了"拒绝率升高 → 平均时延下降"这个统计假象（L269），但只把它当作现象解释了一句，没有修正口径**。式 11 的 $D_T$ 分母是"成功传输的栅格数 $|S_S|$"——**分母随负载变化**。作者甚至观察到"当拒绝率小时，时延随尺寸增大而上升"这一相反趋势，**却把两者并列陈述而不追问哪个才是真实趋势**。这是本文最锋利、也最容易补的一刀：**同时报"含拒绝的端到端时延"与"仅成功业务的时延"**，或明确把拒绝写成独立维度。
+2. **拥塞指数 $c(e)=F(e)/r(e)$ 是有理函数，在 $r\to0$ 时发散**，作者只用一句"more sensitive to load change"作为优点（L145）。**发散行为的后果（权值数值爆炸、Dijkstra 的数值稳定性）从未被检验**，也没给与 $F/b$ 的对照实验——而这本是一个一页就能做的消融。
+3. **$(6,12)$ 即"全网重载区"在几乎所有指标上最优**，这意味着**分区机制本身带来的收益可疑**：如果最优解是"不分区"，那么轻载区/重载区这套划分的价值主要体现在**复杂度**（$O(N^2)$ vs $O((y_ny_m)^3)$）而非性能。作者选了 $(6,5)$ 做对比是出于折中，**但没有做"$(6,12)$ 与 $(6,5)$ 的指标差值 vs 复杂度差值"的显式权衡曲线**。
+4. **0.5 与 0.1 两个常数是手调**（L~137："0.5 is the initial link weight... 0.1 is used to reduce the order of magnitude for $x_i$ avoiding over-adjustment"），**未做敏感性**。
+5. **$u$ 的单位被作者刻意剥离**（III.B 逐字："Units of traffic value and u are the same as units of $B_{ISL}$ and $B_F$, so the traffic in this paper can be considered as the relative traffic based on 1 unit bandwidth"）。这使得**结果无法与任何真实业务量对齐**，也无法与其他论文的数字比较。
+6. **反向缝的处理是硬约束**（那里没有 ISL），但**没有测反向缝扫过网络时的瞬态**——分区是"动态"划分的，可全文只给了静态情形下的结果，**切换瞬间的路由抖动/重路由代价完全没测**（式 12 的 jitter 是时延标准差，不是重路由代价）。
+7. 业务**不可拆分**（要么全过要么被拒绝），而 SR 本身支持段列表——**做部分分流/多路径回传是现成的机制**，作者没做。
+
+**8. 和同批其他篇的关系**
+本批（R9）其余篇目尚未读完，暂无法逐篇比对。就谱系看，它与 UF8IQTA2 同属"**非学习的经典路由/负载均衡**"一线（都靠启发式规则而非学习），但**切入角度完全不同**：
+- UF8IQTA2 的驱动因素是"星间链路不稳 + 负载不均"，用**预测**做前馈避让；
+- 本篇的驱动因素是"**地面信关站地理集中**"这一**部署约束**（这是本批迄今唯一以信关站布点为第一性问题的论文），用**分区 + Dijkstra 权值**做反应式分流。
+它把 MIRA[8]、DT-TTAR[9]、DTBR[10]、HRA[11]、JDDA[12] 列为相关工作，其中 HRA 与 JDDA 是它的对比基线。**它不引用本批其他任何一篇。**
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**有强直接贡献，而且是本批迄今对本主题最"扎心"的一篇。** 三条：
+1. ⭐ **它实测并写出了一个会污染整个子领域的统计陷阱**（L269）：在式 11 的时延口径（分母 = 成功传输的栅格数）下，**负载 $u$ 升高时平均时延反而下降，因为被拒绝的业务不进入统计**。它同时观察到"拒绝率小时，时延随尺寸（承载能力）扩大而上升"。**这两条放在一起意味着：在存在拒绝/丢包的系统中，"负载 ↑ → 平均时延 ↑" 这条常识并不自动成立，取决于分母怎么定义。** 这对任何要做"到达率 → 时延"曲线的工作都是必须先定的口径问题——**主控在汇总时应把这条单列**。
+2. **拒绝率 vs 时延构成一对显式的对立指标**（L294）：Dijkstra 时延最低但拒绝率最高、HRA 拒绝率改善但时延最高——**说明"降时延"和"降拒绝"在拥塞路由里是可分离甚至对立的目标**，不能只报一个。
+3. **给出了一条"承载能力 → 时延"的单调关系**：在拒绝率小的前提下，**重载区（即可用于绕行的区域）越大，平均时延越高**（L~302、L~316）——即**负载均衡能力是用时延买来的**，这为"负载 vs 时延"的权衡提供了机制性证据。
+**口径缺口**：它的"负载"是**静态的栅格需求 $u\times f^{(k)}$**，不是到达率；链路带宽只有 25/100 两个抽象单位，没有 pps、没有队列、没有到达过程——**所以它给的是"负载水平 → 稳态指标"，不是"到达率 → 时延"的动态关系**。
+
+**10. 一句话评价**
+**一篇把"信关站地理集中"当作第一性问题、用"分区 + 拥塞指数权值 + SR 拼接"求解的经典（非学习）负载均衡路由论文**；它在本批里的独特价值不在方法（Dijkstra + 手调权值，基线也全是同类启发式），而在于它**诚实地记录下了"高负载下平均时延反而下降"这一指标口径假象**——这是全库少见的、关于"怎么测"的自觉。
+
+

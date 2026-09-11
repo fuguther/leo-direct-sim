@@ -165,4 +165,168 @@
 **10. 一句话评价**
 **把安全 RL 的 distributional + CVaR 工具第一次系统性地接到 LEO 逐包路由上，并用事件驱动半马尔可夫把"同步时隙"这个不物理的假设摘掉了**——领域贡献在**形式化与约束建模**（排队时延当本地拥塞量、CVaR 当约束），算法部件（SAC/IQN/primal-dual）全部来自通用 RL；它最大的空白恰恰是它最该做的：**只测了一个到达率**，因此它给出的是"负载固定时的风险价值"，而不是"负载变化下的到达率-时延规律"。
 
+
+## 4QG5VYHQ — Information Freshness of Updates Sent over LEO Satellite Multi-Hop Networks
+
+> 覆盖：逐字读完第 1–507 行（第 406–507 行为参考文献，正文 1–404）。全文 507 行。
+
+**1. 一句话**
+把 LEO 多跳中继网建模成 **K 级串联 M/M/1 队列（含逐节点交叉流量、逐链路擦除信道）**，给出**平均 AoI 的紧近似与上下界、PAoI 分布尾部的上界、以及系统平均时延的精确值**，再通过蒙特卡洛验证；核心发现是 **AoI 关于负载是 U 形曲线、存在一个最优运行点 $\rho^*$**，且丢包在低负载下有害、在高负载下反而有益。**这是本批唯一把"到达率扫描"当作主要实验维度的论文。**
+
+**2. 问题设定**
+船舶/货物跟踪这类卫星 IoT 应用（VDES、AIS、ADS-B，L19/L36）的端点是"多个相距极远的地面源与地面站"，单跳连不上，必须靠 **ISL 串起若干颗卫星中继**（L21）。麻烦在于：**串联队列之间的相互作用使理论分析极难**（L28 逐字："These multi-hop networks are difficult to study theoretically due to the complex interactions between subsequent queueing systems, and the literature on the subject is limited"），再加上**每条链路有独立的错误率**、**每个节点还有自己的交叉流量**（L58）。作者自述本文是"第一篇对一般拓扑给出平均 AoI 与总时延的很好近似与上下界的工作"（L28）。指标取舍上，它明确说对这类应用**信息新鲜度（AoI）比传统时延更重要**（L19）。
+
+**3. 方法骨架**
+- **模型**（第 III 节）：K 跳串联，第 k 跳服务速率 $\mu_k$（平均服务时间 $S_k=1/\mu_k$），擦除概率 $\varepsilon_k$（以 $1-\varepsilon_k$ 正确到达，L60）。源是速率 λ 的泊松过程；节点 k 还接收速率 $\theta_k$ 的交叉流量，其中比例 $\psi_k$ 从该节点离开本连接、其余沿同一条路走（L58）。汇聚到节点 k 的交叉流量 $\bar\theta_k=\sum_{j=1}^{k}\theta_j\prod_{i=j}^{k-1}(1-\psi_i)(1-\varepsilon_i)$（式 1）。上行接入两种极端：理想多包接收（UNB/SigFox）与破坏性碰撞（经典 ALOHA）；两者都归结为"错就不重传，等下一次更新"，得到**被稀释的泊松流 $\lambda(1-p_c)$**（L73-77，Fig.3 验证了该近似的合理性）。
+- **平均 AoI 的几何法**（第 III.A-III.B 节）：AoI 过程是锯齿（Fig.4），时间平均 AoI 写成面积比（式 2），每个梯形的面积 $Q_i=Y_iT_i+Y_i^2/2$（式 3），于是 $\bar\Delta=\lambda\mathbb E[Q_i]$（式 4）。**有错时**引入"连续 n 个包丢失"的额外面积 $Q_i^{(n)}$（式 5-6），再按丢包个数取期望得 $\bar\Delta=\lambda\sum_n p_s(K)(1-p_s(K))^n\mathbb E[Q_i^{(n)}]$（式 7），其中 $p_s(j)=\prod_{i=1}^j(1-\varepsilon_i)$。关键中间量是**节点响应率** $\alpha_j=\mu_j-(p_s(j)\lambda+\bar\theta_j)$（L141），总系统时间服从 **Hypoexponential 分布**（式 8-9），进而把式 7 化成闭式**式 10**。
+- **界与近似**（第 IV 节）：$\mathbb E[Y_iT_i]$ 难以精算，于是给出
+  - **近似** $\bar\Delta\simeq\sum_j\frac{1}{p_s(K)\alpha_j^{n_j}}+\frac{1}{\lambda p_s(K)}+\frac{(1-p_s(K))^2}{\lambda p_s(K)^2}$（式 14，假设 $Y_i$ 与 $W_i$ 独立）；
+  - FCFS 的**下界**（式 21，用 $\sum(x_i)^+\ge(\sum x_i)^+$ 式 17 推得）与**上界**（式 22，用 $W_{i,k}\le T_{i-1,k}$）；
+  - 合并成 $\bar\Delta$ 的上下界（式 23）。
+- **队列策略**：FCFS；**OPF（Oldest Packet First，按源端时间戳而非到达时间排优先级）**；**HAF（Highest Age First，按该节点上"当前 AoI 最大"的源优先）**（L84/L257）。OPF/HAF 的下界由式 24-29 给出（用了两个简化假设：队列从不为空、且后到的包都更年轻，L259）。
+- **PAoI 尾部上界**（第 IV.C 节）：$\xi_i\le T_{i-1}+S_i+Y_i$（式 30），右边是参数向量 $\omega=(\alpha,\mu,\lambda)$ 的 Hypoexponential 变量，CDF 由式 31 给出。
+- **验证**：蒙特卡洛（L317），两种拓扑：**line**（K 颗卫星串联、每个节点都有地面源、$\psi_i=0$，瓶颈在最后的下行）与 **dumbbell**（K=4，三个源-宿对共享一条 ISL，$\theta_2>0,\psi_2=1$）（L326-328）。
+
+**4. 它声称的效果**
+- **AoI 关于负载是 U 形**（L344，Fig.7a）：低负载时主导项是"同源相邻包之间的间隔"，AoI 很高；高负载时排队成为主导，AoI 又升上去。**中间存在最优负载**。举例：$\rho=0.05,K=10$ 时每个源到达率仅 0.004（因 $\mu_{DL}=0.8$），平均到达间隔 250。
+- **界的紧度**：低 ρ 时上下界很紧（排队近似的误差对总 AoI 影响小）；高 ρ 时仍"reasonably tight"尤其 K 小；近似式"非常接近经验曲线、仅略微高估"（L344）。
+- **丢包的双面性**（L346）：低 ρ 时丢包**增加** AoI（本来就稀少的包丢一个影响很大）；高 ρ 时丢包**反而降低**平均 AoI——因为包很密、丢一个无关紧要，而**下行负载下降缓解了拥塞、减少了排队时延**。作者自己把它称作 age-dilemma 的又一个实例（L54）。
+- **缓冲影响可忽略**（L346/L50）：无限缓冲的假设下，有限缓冲对平均 AoI 的影响**低于 1%**，除非缓冲只有 1-2 个包。
+- **调度策略**（L361）：OPF 与 FCFS 在全网平均 AoI 上**差别可忽略**；**HAF 在高负载下能小幅降低 AoI**。公平性上（Fig.10，JFI）：OPF 显著缩小源间差距、链越长效果越明显；HAF 居中。
+- **PAoI 尾部上界很松**（L374）：除 $\rho=0.8$ 外，界"几乎总是松的"；作者解释是因为界推导把 $Y_i$ 与 $W_i$ 解耦，而两者的**负相关在尾部极其重要**（长的到达间隔与长的等待同时出现现实中极罕见，但在上界分布里不罕见）。
+- **ALOHA vs 泊松**（L379，Fig.12）：在第一跳速率相同的前提下，ALOHA 上行的 AoI 略低于理想泊松，除极高负载外。
+- **Dumbbell**（L383-392）：$\rho=N\lambda$。**源数越多，达到最小 AoI 的最优负载越高**（$\rho=0.7$ 时 N=2 对应 λ=0.28，N=6 对应 λ=0.093）；高 ρ 段 AoI 上升但在 N 大时更平缓。HAF 在高负载下能明显降低平均 AoI（Fig.14），且负载体现在"源间协调"上。
+- **一条可以直接拿走的网络设计结论**（L390 逐字）："the bottleneck should be placed as early as possible in the path, as links before might suffer from queueing, but packets coming out from the bottleneck are spaced far apart in time and are almost never queued at later links. **The line network example we presented above, with gradually increasing load until the bottleneck in the downlink, is the worst possible scenario for AoI.**"
+
+**5. 它的实验条件**
+**仿真参数表（Table II，L349）**：line 网 $K\in\{2,6,10\}$；$\mu_{ISL}=1$；$\mu_{DL}=0.8$；$\psi=0$；所有链路 $\varepsilon=0.01$；每个源 100 000 个包；dumbbell $K=4$、交叉源数 $N\in\{2,6,10\}$。
+**负载定义（式 32）**：$\rho=(\lambda+\sum_j\theta_j)/\mu_{DL}$；取 $\theta_1=0$、$\lambda=\theta_j=\rho\mu_{DL}/K$（L342）。**即：负载 ρ 是被主动扫描的自变量**，从低到高扫过整条曲线，且明确不计入链路错误率以便与无错情形可比。
+验证方式是**蒙特卡洛**而非包级网络仿真；仿真中丢弃初始瞬态与尾部包以保证稳态（L334）。**没有真实的 Walker 星座几何、没有轨道动力学、没有 ISL 切换**——"LEO"体现在参数含义（ISL/DL 速率不同、仰角、覆盖）而非拓扑构造。
+
+**6. 它自己承认的局限**（逐字）
+- **跳间服务时间独立**（L60）："in this work, we model the service time for each link for the same packet as independent for tractability. This assumption is equivalent to considering uncorrelated distances between pairs of satellites; **considering a correlated system is left for future work**."
+- **无限缓冲**（L50）："The analysis is done for **infinite buffers** at each node, but it has been observed that having a limited storage capacity has little impact in the age performance of the multi-hop network."（后文 L346 给出量化：除 1-2 包缓冲外影响 <1%。）
+- **关键项无法精算，只能给界**（L161）："The $\mathbb E[Y_iT_i]$ term is complex... its analytical derivation is **too cumbersome to calculate for the general case**, but we can find lower and upper bounds on the average AoI for each source."
+- **OPF/HAF 的下界用了两个简化假设**（L259）："The lower bound is based on two simplifying assumptions, both of which reduce the age by removing possible cases from the calculation..."（队列从不为空；只考虑后到的包都更年轻）
+- **PAoI 尾部上界很松**（L374）："In this case, the bound is **almost always loose**, except for $\rho=0.8$... The looseness of the bounds can be explained by the fact that they are derived by decoupling $Y_i$ and $W_i$."
+- **未来工作自陈**（L404）：拥塞控制（限制源生成速率以维持最低 AoI）、抢占式队列管理（短状态更新与长传输混合）、**更真实的 ISL 模型（把每个中继变成 G/G/1）**、以及**含错误情形的更紧尾部界**。
+
+**7. 它没做但看起来能做的地方**（基于内容）
+1. **路径是给定的，路由从不被决策**（全篇）：它分析 AoI，但不优化路径；连"换一条路"这种动作都不存在。作者自己在 L404 提的"拥塞控制"也只限速不换路——**把限速与选路联合起来是开着的口子**。
+2. **$\rho^*$（最优负载）只被画出来，没有被求解**：Fig.15 给了 $\rho^*$ 随源数 N 的曲线，但没有解析的 $\rho^*$ 表达式或闭式条件。既然式 10/14 已经是闭式，$\partial\bar\Delta/\partial\rho=0$ 应该是可推的。
+3. **交叉流量参数 $\theta_k,\psi_k$ 是外生静态的**：真实的 LEO 交叉流量会随轨道位置与时刻变化，论文完全没碰时变性。
+4. **跳间距离相关性被显式排除**（L60），但 LEO 同轨 ISL 链的距离几乎完全相关——这是它自己指出却未做的最贴近物理的一条。
+5. **只到 M/M/1**，G/G/1 被留给未来（L404），而 LEO 的 ISL 服务时间显然不是指数分布（定长包 + 基本恒定速率）。
+6. **PAoI 尾部界太松**（L374 自述），且**不覆盖有错情形**（第 IV.C 节标题就是 "in the error-free case"）——最需要尾部保证的场景恰好没有界。
+7. **HAF 只在高负载下有收益、OPF 只改善公平**，两者都没有被组合，也没有与"限速"这一最古老的 AoI 手段联合评估。
+
+**8. 和同批其他篇的关系**
+它与同批的 LEO-RL 路由论文（如 39NJWBI7）是**同一物理系统、两种方法论**的镜像关系：39NJWBI7 把排队时延作为约束用 CVaR 去优化、但只在**一个到达率**上验证；本篇不做任何学习、**却把整条到达率→AoI 曲线解析地算了出来**。参考文献（L406-507，逐条看完）显示它的血统完全在**排队论/AoI 理论**一侧：Kaul/Yates [5]、Bedewy-Sun-Shroff 的多跳 LCFS 最优性 [33][34]、Champati 的 PAoI 统计保证 [31]、Yates 的抢占服务器网络 [40]、以及作者自己的前作 [17]（2 星串联的理想链路版本）与 [32]（串联队列的 PAoI 分布）。**它不引用任何 RL/DRL 路由工作。** 与 524XNF29（3GPP NTN 综述）互补：后者给约束清单，本篇给约束下的解析性能。
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**本批到目前为止最直接、最可复用的一篇。** 它贡献了五条硬事实：
+1. **AoI 对负载是 U 形，存在内部最优 $\rho^*$**（L344/L390）。这条直接否定了"负载越低越好"和"负载越高越好"两个直觉，且给出了两种机制的交接：低负载段由**到达间隔**主导，高负载段由**排队**主导。
+2. **$\rho^*$ 随源数 N 单调升高**（L390）：同一个总负载 ρ 由更多源分摊时，每源 λ 更小、包流更平滑，最优运行点就上移。（L390 给出具体数：$\rho=0.7$ 时 N=2 → λ=0.28，N=6 → λ=0.093。）
+3. **丢包在过载侧是"减压阀"**（L346）：同一积压水平下，链路错误通过降低下游负载**降低**平均 AoI。**任何把"丢包率"当作纯负指标的时延研究都需要处理这个反号。**
+4. **瓶颈位置决定 AoI，早瓶颈优于晚瓶颈**（L390）：负载沿路径递增、直到下行才拥塞的 line 网络是 AoI 最差的情形。这是一条纯粹的拓扑-负载交互事实。
+5. **一组可直接代入的闭式表达式**（式 10/14/23/29）：给定 $\lambda,\theta_k,\psi_k,\mu_k,\varepsilon_k,K$，可以直接算出平均 AoI 与均值的上下界，不需要仿真。**这为"负载扫描"提供了一个零成本的高保真对照组**——任何声称在负载变化下改进了时延/AoI 的学习方法，都可以先与这条解析曲线对账。
+**边界**：它的"时延"是 AoI 与系统时延，**不是到达率意义上的吞吐**；且所有结论建立在 M/M/1 + 独立跳间服务时间上，**跳数 K ≤ 10、交叉流量静态**，与真实 Walker 星座的动态性有距离。
+
+**10. 一句话评价**
+**把 LEO 多跳中继的 AoI 从"单跳/两跳特例"推进到一般 K 节点串联队列，并给出了整条负载-新鲜度曲线与最优运行点**——方法谱系上它站在**排队论/AoI 理论**那条线的最前沿，**完全不做学习、也不做路由**；对本次选题而言它是**最理想的"解析对照物"**：凡是声称"负载变化下改进了到达率/时延"的学习类工作，都应该能对回它的 U 形曲线与 $\rho^*$ 位移规律。
+
+
+## 3MRQRWHU — Multi-QoS routing algorithm based on reinforcement learning for LEO satellite networks
+
+> 覆盖：逐字读完第 1–468 行（正文 1–361，参考文献 363–443，作者简介 445–468）。全文 468 行。
+
+**1. 一句话**
+用**表格型 Q-learning** 给 LEO 星座做逐业务选路，用 DiffServ 的优先级给业务分级，再加两条工程手段：①**等待时间晋级**（低优先级业务等久了自动提权，防止饿死）；②**辅助收敛**（走过的节点临时删掉，压缩动作空间、避免绕圈）。出发点不是时延最优而是**"高优先级业务优先 + 低优先级业务用来填负载均衡"**这个双目标折中。
+
+**2. 问题设定**
+LEO 卫星"资源受限 + 拓扑时变"，且用户请求呈**区域集中**（L17 逐字："concentrated services requests in small areas and time-varying network topology in the case of limited regional resources"）。作者指出的既有毛病是：多 QoS 路由优化会让流量**挤在时延最短的那条链路上**，破坏负载均衡，而且**低优先级业务被长期忽略**（L17）。它要在满足业务多 QoS（时延/丢包/带宽三类）的同时，把全网的**链路利用率方差**压下来，并且让低优先级业务也能被处理（L27-33）。
+
+**3. 方法骨架**
+- **拓扑**（第 2.1 节）：$N=i\times j$ 星座，每星 4 条 ISL（2 条同轨 + 2 条异轨）；**极区（纬度 >70°）异轨链路关闭**，且第 1 条与第 6 条轨道运行方向相反形成的**缝隙两侧不建链**（L41）——所以拓扑是不规则的。时间切成 $\tau_n=(t_{n-1},t_n]$，**每个时间片内拓扑视为静态**（L46）。
+- **业务模型（DiffServ，第 2.2 节）**：每个业务 $u$ 有三个需求等级：$\phi_{delay}(u),\phi_{loss}(u),\phi_{band}(u)$，总等级 $\phi(u)=\phi_{loss}+\phi_{band}+\phi_{delay}$（式 1）。权重 $\alpha=\phi_{delay}/\phi^{max}$、$\beta=\phi_{loss}/\phi^{max}$、$\lambda=\phi_{band}/\phi^{max}$、$\gamma=(\phi^{max}-\phi(u))/(k\phi^{max})$，满足 $\alpha+\beta+\lambda+k\gamma=1$（式 2）；**$\gamma$ 是负载均衡的权重**，业务需求越低、$\gamma$ 越大——即"低需求业务承担负载均衡任务"。
+- **等待时间晋级机制**：定义 $\phi_{time}(u)$，业务每跨过一个未被处理的时间片就 +1，上限 $\phi_{time}^{max}$；最终优先级 $\phi_{time}(u)+\phi(u)$（式 3）。上限的作用是"**避免低优先级业务反过来长期抢占高优先级资源**"（L80）。
+- **问题**（式 10）：max $R(\mathbf{path})=\max(\alpha r^{delay},\beta r^{loss},\lambda r^{band},\gamma r^{var})$，约束为：链路总带宽 ≤ 链路容量（式 4）、业务带宽 ≤ 路径上最小可用带宽（式 5）、路径时延 ≤ 等级要求（式 7）、路径丢包率 ≤ 等级要求（式 8）、路径带宽 ≥ 等级要求（式 9）。
+- **Q-learning（第 3.1 节）**：MDP $M=(S,P,R,A)$；**状态 $S_{\tau_p}=\{\mathrm{delay}(e_{i,j}),\mathrm{loss}(e_{i,j}),\mathrm{band}(e_{i,j})\}$（式 11）**；动作 = 从当前星跳到下一跳星；$\varepsilon$-greedy（式 12）；Q 表更新用式 13 的 Bellman；$a^*=\arg\max Q^*$（式 14）。
+- **奖励（第 3.2 节）**：用 min-max 归一化定义 $r^{delay},r^{loss},r^{band}$（式 15）；负载均衡用**全网链路利用率的方差** $\mathrm{Var}(E)=\frac{\sum(l(e_{i,j})-\overline{l})^2}{\mathrm{num}(e_{i,j})}$（式 16），$\mathrm{Var}^{max}=(\mathrm{Band}(e_{i,j})/2)^2$（式 17），$r^{var}=\frac{\mathrm{Var}^{max}-\mathrm{Var}(E)}{\mathrm{Var}^{max}}$（式 18）；总奖励 $r(a)=\alpha r^{delay}+\beta r^{loss}+\lambda r^{band}+k\gamma r^{var}$（式 19）。
+- **辅助收敛算法（第 3.3 节）**：标记走过的节点，把该节点及其邻接节点临时设为"不可通行"，直到到达目的节点；好处是**在节点 H 处可选动作从 3 降到 2**（L266）。Algorithm 1（L273-310）：按 $\phi$ 排序业务 → 逐业务初始化 Q 表 → 迭代 maxepoch 次 → 每次删节点/断邻边 → 更新 Q → 记录总回报 $R(j)$ → 取最优路径 → 更新拓扑 → 移除该业务。
+
+**4. 它声称的效果**
+- **负载均衡效用**（Fig.6，L346）：AQLRA 相对 Dijkstra **提升 200%**、相对蚁群 **提升 50%**。理由是 Dijkstra 只看跳数导致业务集中在少数链路、蚁群受权重设置影响更偏时延。
+- **综合效用**（Fig.7，L353）：AQLRA 相对 Dijkstra **提升约 88%**、相对蚁群 **提升约 43%**。
+- **低优先级业务的时延稳定性**（Fig.5，L340）：设置"每个时间片都有大量高优先级业务，而 Default 业务数随时片递增"。**从第 3 个时间片起 Default 业务无法在片内处理完、平均处理时延开始上升**；AQLRA 因考虑因素多、总时延更大；但**第 5 个时间片后等待时间晋级机制生效**，Default 业务的平均总时延**被稳定在 80 ms 附近**；而两个对比算法（优先级固定）的总时延**波动很大**，说明"相当一部分低优先级流量长期没被处理"。
+- **高负载下高优先级的质量**（L328）：高负载时 AQLRA 让低优先级业务**主动选差链路**，把好链路留给"可能到达的高优先级业务"，即**用牺牲低优先级换取高优先级的 QoS 保证**。
+
+## 36RZKNW5 — An integrated routing and data fragmentation strategy for optimizing end-to-end delay in LEO satellite networks
+
+> 覆盖：逐字读完第 1–435 行（正文 1–346，CRediT 348–350，参考文献 360–435）。全文 435 行。
+
+**1. 一句话**
+在 **DTN/接触图（CGR）** 框架下，先用 **Yen 算法**找出 K 条候选多路径，再按 **Bundle Protocol 把数据切成碎片分派到多条路径**，用一个贪心迁移过程（把数据从"时延最长的那条路"搬到"时延最短的那条路"）来最小化 $T_M=\max_r T_r$；方法名叫 RSFFA。**没有强化学习**——这是本批少见的纯启发式 + 组合优化路线。
+
+**2. 问题设定**
+LEO 网络拓扑时变、链路频繁中断，传统路由算法应付不了（L26）。既有工作的问题被逐条列出：基于 CGR 的路由（[6][7]）虽然能找最优路径，但"**在应对星间链路拥塞方面鲁棒性不足**"（L32 逐字："the robustness of these methods in handling inter-satellite link congestion remains insufficient"）；单路径路由对拥塞和突发事件的适应性差（L56）；多路径算法要么对拓扑变化敏感、要么管理开销大（L56）。作者要的是：**多条可用路径同时用、并按各条路的容量把数据分下去**，让最慢的那条路不再成为端到端时延的瓶颈（L216）。
+
+**3. 方法骨架**
+- **系统模型（第 3 节）**：图 $G=(V,E)$，类 Iridium 的同轨/异轨 ISL；只考虑"用户经卫星链路到地面站"这一过程（L85）。用 DTN 的**存储-转发 + Bundle Protocol**，把数据包 $D$ 切成若干 bundle，各 bundle 独立选路并行传输，中间节点找不到下一跳就暂存等机会（L70/L87）。
+- **时延模型（第 3.2 节，本文最该被仔细看的一段）**：把总时延拆成三部分（L91）：
+  - 传播时延 $t^{prop}_{i,j}=L_{i,j}/c$（式 1）；
+  - 传输时延 $t^{trans}_{i,j}=D_{i,j}/r_{i,j}$（式 2）；
+  - **等待时延** $t^{wait}_{i,j}=0$ 若 $t^{start}_{i,j}\le t_{now}$，否则 $=t^{start}_{i,j}-t_{now}$（式 3）——**注意：这里的"等待"是"等接触窗口开始"的链路可用性等待，不是排队拥塞等待。**
+  - 接触容量 $C_{i,j}=(I_{i,j}-t^{prop}_{i,j})\times r_{i,j}$（式 4）；路径容量取沿途接触的最小值；路径时延 $T_r=\sum_{contact\in r_k}(t^{prop}+t^{trans}+t^{wait})$（式 5）。
+- **问题 P1（第 3.3 节）**：从 N 条可用路径中选 M 条，把数据 $D$ 分下去，最小化最晚到达时间 $T_M=\max_{r}T_r$（式 6/7）；约束 C1 数据全部分完、C2 不得超过各路径容量、C3 恰好选 M 条、C4 非负/0-1（L138-141）。这是一个 **MILP**，M 在优化过程中动态确定。
+- **RSFFA（Algorithm 1，L168-208）**：① 记录最小容量 $C_{min}$，按初始分配算出各路时延并**按时延升序排序**；② 顺序分配数据（每路取 $\min(C_r,D_{rem})$）；③ **碎片优化循环**：找出时延最长/最短的两条路，把 $\text{transfer}=\min(\text{min\_vol},\text{size})$ 的数据从最长搬到最短，若最大最小延迟差 < size 则 size 按衰减因子 $\alpha$ 缩小，直到"最大最小延迟差 ≤ 0.1"或迭代次数耗尽；④ **增路判据**：若新的 $T_M'$ 比旧的差、或已用满 N 条路就停，否则加一条路重跑（L203-207）。
+- **复杂度**：$O(N\log N + T\cdot N)$，空间 $O(N)$（L218）。
+- **部署设想**（L222）：作为**星上增强模块**嵌入现有路由协议，输入是 TLE 推出的接触计划与当前网络资源状态。
+- **理论性质**：因为 $T_M=\max_r T_r$，最终时延由最慢路径决定；理想情况（各路时延相等）下最终时延等于各路时延的平均值，算法通过碎片调度让最大值逼近这个理想值（L216）。
+
+**4. 它声称的效果**
+- **迭代曲线**（Fig.2，L266-268）：前若干次迭代把大量数据从最长时延路搬走、总时延快速下降，之后趋于稳定，末段只做小规模搬移。
+- **路径数的影响**（Fig.3，L272）：500 MB 数据，路径数 2→11：**2 条 200.01 s；3 条 133.41 s（降约 33%）；4 条 127.06 s；5–8 条降幅放缓；9 条骤降到 53.80 s；10 条 46.27 s；11 条 44.23 s**。边际收益递减。
+- **端到端时延 vs 数据量**（Fig.4，L286-290）：**100 MB 时 RSFFA 23.68 s，MPJOL 235.48 s，PPO-CSO MR 236.81 s，RMA 77.66 s**；**1000 MB 时 RSFFA 145.26 s，MPJOL 260.22 s，PPO-CSO MR 306.41 s，RMA 349.35 s**；500 MB 时 RSFFA 79.95 s vs MPJOL 245.92 s。RMA 在 500→1000 MB 之间从 292.90 s 涨到 349.35 s。
+- **路径利用率**（Fig.5，L304-306）：RSFFA 从 100 MB 的 **0.094406** 升到 1000 MB 的 **0.56288**；PPO-CSO MR 在 1000 MB 为 0.369849；RMA 从 0.0316729 升到 0.2807291。
+- **负载均衡度（Jain 公平指数）**（Fig.6，L312-319）：RSFFA 0.36（100 MB）→ **0.66**（1000 MB）；MPJOL 0.57→0.64；PPO-CSO MR 0.34→0.62；RMA 0.084→0.23。
+- **时延方差**（Fig.7，L325-331）：RSFFA 从 **1.62** 缓升到 **18.62**；MPJOL 75.23→68.01（一直很高）；PPO-CSO MR 300 MB 时 76.44 → 1000 MB 时 84.40；**RMA 从 100 MB 的 2.35 暴涨到 1000 MB 的 101.97**。
+- 作者对最后一条的解释（L333）：数据量增大后低时延路径容量逼近上限，必须引入更高时延的路径来分担，因此方差会略升——**这是全文少数几处诚实的机制解释**。
+
+**5. 它的实验条件**
+**仿真器**：DtnSim（DTN 专用网络仿真器，L248）。
+**拓扑**：**Iridium-NEXT，66 颗活跃卫星**，高度约 780 km，周期 102 min，6 个近极轨道面、每面 11 颗、相邻面间隔 60°（L250）。
+**参数（Table 3，L260）**：**时间片 6 min，一个轨道周期分 W=17 片**；算法迭代 100 次；**数据量 $D\in[100,1000]$ MB**；衰减因子 $\alpha=0.9$；初始搬移量 10 MB；**星间速率 $r=25$ Mbps，星地速率 $r_g=20$ Mbps**。
+**每个时间片内接触计划视为静态**，接触计划由预测卫星位置/距离/可见性预生成后喂给仿真器（L252）。
+**负载维度**：**变化的量是"数据总量 D"（100→1000 MB）**，不是到达率；Fig.3 另扫路径数 2→11。
+**基线**：RMA（随机多路径）、MPJOL [27]（KSP + 按路径权重比例分配）、PPO-CSO MR [36]（DRL 多路径协同路由）。**明确排除了单路径 CGR 作为对照**，理由是"单路径 CGR 与多路径负载均衡策略设计目标不同，直接比较不能反映本方法的价值"（L254），作者改为在 DtnSim 里把 CGR 与 Yen 算法结合生成多路径作为共同底座。
+**训练与评估**：无训练（无学习成分），全部为同一套仿真。
+
+**6. 它自己承认的局限**（逐字）
+- L344："First, **the computational complexity of the algorithm is relatively high**, particularly in large-scale satellite networks where increasing numbers of routes and nodes lead to significant computational overhead. Second, the study **primarily focuses on validating the strategy in simulation environments**. Future research should incorporate more realistic network scenarios... Moreover, **enhancing the algorithm's robustness and adaptability in dynamically changing network environments remains an open challenge.**"
+- L346（未来工作中最重要的一条自陈）："**Integrating buffer-aware mechanisms is a critical next step for practical deployment.** In real LEO networks with multiple data flows, **incorporating buffer status at intermediate satellites into routing decisions will be essential to effectively manage congestion** and optimize resource utilization. Exploring lightweight buffer state information and dynamic congestion control strategies is therefore paramount."
+即作者自认：**当前模型不含中间节点缓冲状态，也就没有真正的拥塞/排队建模**；此外还要处理计算复杂度、更具动态性的网络环境与真实流量模型。
+
+**7. 它没做但看起来能做的地方**（基于内容）
+1. **"拥塞"是被反复声称要解决的问题，但模型里根本没有排队**：式 3 的 $t^{wait}$ 是"等接触窗口开始"的链路可用性等待，**与队列长度无关**。论文却在 L216、L290、L321 多处把结果归因于"避免拥塞""缓解链路拥塞"。作者自己在 L346 承认 buffer-aware 是未来工作——**这意味着全文关于"拥塞"的论断都缺少对应的建模基础**，这是最值得指出的缺口。
+2. **负载轴是"数据总量"而不是到达率**：D 从 100 到 1000 MB 是一次性数据量的扫描，没有 $\lambda$、没有多流并发、没有流到达过程。**"负载变化"在本篇里等价于"这次要传多少数据"**。
+3. **100 MB 时与基线的差距达 10 倍（23.68 s vs 235 s）没有被解释**：如此量级的差距通常提示基线实现或参数配置有问题，而不是方法优势。论文只做定性归因（"MPJOL 无法绕过中断路径"），没有任何诊断。
+4. **Fig.3 与 Fig.4 的数字互相矛盾**：Fig.3 说 500 MB 且 2 条路时 200.01 s，Fig.4 说 500 MB 时 RSFFA 为 79.95 s——除非路径数不同（Fig.4 可能用了全部可用路径），但论文没有交代，也没给出 Fig.4 的路径数。
+5. **容量式 4 假设链路在接触窗口内对该流独占**，多流并发下不成立；论文没有讨论共享。
+6. **没有重复实验/置信区间**：100 次是算法内部迭代次数，不是 100 次独立仿真，所有指标都是单次运行的点值。
+7. **只考虑单一"用户→地面站"的传输**（L85），没有多源多宿的竞争。
+8. **没有做参数敏感性**（$\alpha$、初始搬移量、时间片长度都是单点设定）。
+
+**8. 和同批其他篇的关系**
+它代表本批里 **DTN/接触图这条独立支线**——与"RL 路由"支线（39NJWBI7、3MRQRWHU）在方法论上几乎不相交：**不用学习、不用 Q 值、不做在线决策**，而是"预生成接触计划 + 组合优化 + 贪心碎片迁移"。它的对照基线里有一个 DRL 方法（PPO-CSO MR [36]，L234/L432），也就是说它**把 RL 方法当作被击败的对象**——这与 39NJWBI7 把启发式当作被击败对象的方向正好相反。参考文献（L360-435，逐条看完）覆盖 CGR/DTN 传统（[6][7][10][11][29][31]）、LEO 负载均衡路由（[17]-[20][28]）、多路径（[22]-[27]）与 DRL 拥塞控制（[33][34][36]），**不引用本批任何其他篇目**。它与 4QG5VYHQ（解析 AoI）在"关心延迟"上一致，但一个走排队论、一个走接触图组合优化。
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**有负载轴、有时延曲线，但"负载"的定义不是到达率，且时延里没有排队项。**
+- **可以带走的定性事实**：**多路径碎片化能压住"时延离散度随负载增长"的速度**。Fig.7 给出具体对照：RSFFA 的时延方差从 1.62 涨到 18.62（10 倍数据量），而随机分配（RMA）从 2.35 暴涨到 **101.97**。也就是说，**在负载上升时，不做分配策略时受害最大的不是平均时延而是时延的离散度**——这条与 39NJWBI7 的"平均 vs 尾部"分裂现象是同一类观察，只是指标不同（这里是跨路径的方差，那里是单个流的 CVaR）。
+- **另一个可用的断言**：路径数增加对时延的边际收益递减（Fig.3），并且在某些路径数处出现**非线性骤降**（2→3 降 33%；8→9 从 ~127 s 级骤降到 53.80 s）——说明"多路径"的收益不是平滑的，存在需要跨过的门限。
+- **不能带来的**：它**没有到达率 λ**（负载 = 一次性数据量 D）；它的"等待时延"是**接触窗口等待而非排队等待**（式 3），所以**它测到的时延增长不包含拥塞排队成分**——尽管论文反复用"拥塞"来解释结果。任何想用它支撑"负载升高 → 排队时延升高"的引用都会踩空。作者自己在 L346 承认模型缺 buffer 状态。
+
+**10. 一句话评价**
+**把 DTN 接触图路由与 Bundle 碎片化拼成一个"多路径 + 按容量分数据"的启发式调度器（RSFFA）**，在方法谱系上属于 **CGR/DTN 组合优化支线**而非学习路线，并且明确把 DRL 路由当作对照击败；它最大的问题不在于方法而在于**模型**：**"等待时延"被定义成等链路可用而非排队**，因此它一边声称解决拥塞、一边没有任何拥塞模型——它对"负载变化下到达率/时延"能提供的是"多路径可抑制负载上升时时延离散度的膨胀"这一条定性事实，**给不出任何到达率意义下的排队时延证据**。
+
 <!-- END -->

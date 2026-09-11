@@ -305,4 +305,158 @@ LEO 极化星座的分布式路由（L13、L23）。作者点出的既有工作�
 把互联网与 sneakernet 领域的**时间扩展网络**首次搬到卫星数据下传场景，并用它**证明了一个反直觉命题：主动闲置链路比用满链路更好**；方法谱系上属于"**把经典网络流用到新场景 + 发现新现象（UQE）**"，理论上干净（有定理、有多项式算法）、实验上扎实（真实 153 星 trace、6 M 影像），但由于**假设无 ISL**、且负载不可调，它与本批的路由类论文是**互补而非竞争**关系。
 
 
+## CYMQ2GLA — A Two-Hops State-Aware Routing Strategy Based on Deep Reinforcement Learning for LEO Satellite Networks (DRL-THSA)
+
+**1. 一句话**
+让每颗星维护**两跳范围内**的链路状态表（用 HELLO 包互通），把每条 ISL 按"预测的队列占用率"分成 Free/Busy/Congested 三档并据此反向要求上游降速，再用**每个目的节点一个 DDQN** 直接由两跳状态输出下一跳；离线训练、星上只推理。
+
+**2. 问题设定**
+LEO 星座几十到几百颗星，**"arbitrary flow arrival and uneven traffic load among areas bring about unbalanced traffic distribution"**（摘要 L13；引言 L19 写作"dynamic link states and unbalanced traffic load caused by arbitrary flow arrival and communication hot spots"）。作者点出的两个既有缺陷（L21 逐字）："the packet drop rate at network layer becomes abnormally high, and the cumulative queuing delay during transmission gets non-negligibly large"。
+对既有方案的两条具体批评：(a) **TLR [10] 需要全局状态信息**周期性为每个源-目的对算最优路由，"It may cost a lot to collect global state information due to propagation delay between satellites"（L21），因此算出来的路由"cannot be absolutely real-time"；(b) **ELB [9] 没有考虑单条队列**（"did not consider individual queues"），"a part of link congestion still cannot be prevented"（L21）；(c) ELMDR [12] 依赖 mobile agent 回传，**难以跟上状态变化**（L21）。
+
+**3. 方法骨架**
+- **拓扑与虚拟节点（第 2.1 节）**：四邻居（两条 intra-plane + 两条 inter-plane）；cross-seam 与南北极区不能建 inter-plane ISL；采用 **Virtual Node (VN)** 策略把运动卫星映射成固定虚拟节点，**把动态拓扑变成静态拓扑**，handoff 时状态信息从旧星搬到新星（L44）。
+- **链路状态三档 + 预测（第 2.2 节）**：
+  - 用滑动滤波预测平均输入/输出速率：$I_{avg}=(1-\lambda_I)I_{avg}(t-t_c)+\lambda_I I_{avg}(t)$（式 1、2，L60/L64）；**权重 $\lambda_I,\lambda_O$ 按负载动态调**（式 3、4，L70/L74，靠 $\alpha_0,\alpha_1,\alpha_2$ 三个常数夹住）——论文自己说这是"filter"，目的是**滤掉短时轻负载**（L67）。
+  - 预测队列占用率 $p=q+\frac{[I_{avg}-O_{avg}]t_c}{L_{max}}$（式 6，L88），当前占用率 $q=L(t)/L_{max}$（式 5）。
+  - **阈值也是自适应算出来的**：$T_1=\min(\max(1-\frac{2[I_{avg}-O_{avg}]t_c}{L_{max}},0),1)$，$T_2=\min(\max(1-\frac{[I_{avg}-O_{avg}]t_c}{L_{max}},0),1)$（式 9、10，L108/L112）。$q<T_1$ 为 **FS**，$T_1\le q\le T_2$ 为 **BS**，$q>T_2$ 为 **CS**（L115）。
+  - **背压式降速**：进入 BS/CS 就发通知要求邻居把输入速率降到 $I_{avg}\cdot X$，其中 $X=\min(\max(I_s/I_{avg},0),1)$（式 12，L126）；进入 CS 则 $X=0$，**立即停传**（L129）。
+- **两跳状态维护（第 2.3 节，Algorithm 1，L149–182）**：每星存 LST（自己的）+ NLST（邻居的）。连通性用 **HELLO/ACK**（周期 $t_h$，超时 $t_d$ 未收到 ACK 则判 off）；状态变化时**广播**给邻居，邻居更新 NLST。
+- **MDP 与 DDQN（第 3 节）**：
+  - 状态 $S=[N_s,N_d,LST]$，动作 $A=N_{next}$（下一跳），转移概率 $P_{next}=(\sum_{i=1}^m s_i)^{-1}$（式 13）。
+  - **奖励**（式 15，L213）：到目的 $r_d$；动作失败/拥塞 $-r_c$；否则 $-dif(N_s,N_d)$，其中 $dif=\alpha(RAAN_s-RAAN_d)^2+\beta\min[|\omega_s-\omega_d|^2,(2\pi-|\omega_s-\omega_d|)^2]$（式 14，L209）——**注意：这是一项纯粹的拓扑位置距离（升交点赤经 + 平近点角），不包含任何队列或时延项**。
+  - DDQN（式 16、17，L227/L233）：目标值 $Y^{DDQN}=r+\gamma Q(s',\mathrm{argmax}_{a'}Q_i(s',a';\theta^{online});\theta^{target})$——**这个才是真正的 double 形式**（与同批 CMNCS52M、S85KQ4FC 写出 max 目标的写法不同）。在线网每步更新，目标网每 $N^{target}$ 步硬拷贝。
+  - **每个目的节点一个 DDQN**，全网 DDQN 数量 = 卫星数（L259）。
+- **离线训练 + 星上推理（第 3.2 节，L220）**：地上仿真训练，训练好的模型存到星上**不再更新**。
+- **四种情形的处理（L285–L291）**：链路失效、链路恢复、链路状态变化、**无限环路**。防环做法很工程化：把 $[N_{next},N_d,NLST]$ 再喂一次网络得到"两跳后到达的星"$N_{two}$，**若 $N_{two}==N_c$ 就临时把该方向置为 off 并重算**（Algorithm 3 第 10 步，L277）。
+- 作者对开销的论证（L293）：Dijkstra 需要全局路由表更新开销过大，而 DRL-THSA 只用局部两跳信息，**且链路状态变化时不需要重算**（因为 DDQN 已经学过所有情形）。同时承认"**it is not applicable to the networks where the number of disconnected links is destructive**"。
+
+**4. 它声称的效果**
+**重要事实：本文正文里几乎没有给出任何数值结果**——4.2.1–4.2.4 全部是"it can be seen that DRL-THSA is lower/higher than ELB, TLR and ELMDR"，数字只存在于 Fig 4–12 的曲线里。可提取的只有定性结论：
+- **端到端时延**（Fig 4、5，L310）：DRL-THSA < ELB、TLR、ELMDR。作者给出的原因是它滤掉了短时轻负载，避免 ELB/TLR 被瞬时轻负载骗到拥堵链路上；并且"两跳内换路避免了更多排队时延"。
+- **丢包率**（Fig 6、7，L322）：DRL-THSA 最低，ELMDR 最高（因为高负载下回传的路由信息可能过时），ELB 高于 TLR（因为 ELB 不考虑当前跳的拥塞，"packets might be dropped before sending"）。
+- **吞吐**（Fig 8、9，L332）：DRL-THSA 最高。
+- **流量分布指数**（式 18，L345）：$Index=(\sum x_i)^2/(n\sum x_i^2)$，越大越均匀；DRL-THSA 最好（Fig 10、11）。
+- **平均队列占用率**（Fig 12，L356）：在"传输率固定 3.5 Mbps、流数固定 300"这一高负载点上，DRL-THSA **平均队列占用最低**。作者归因于两点：滤掉短时轻负载；**ε-greedy 取 0.9（即 90% 概率随机探索！）**使流量被进一步打散。
+- 基线：**ELB [9]、TLR [10]、ELMDR [12]**（L304）。
+
+**5. 实验条件**
+NS-3.29，**Iridium-like：66 颗星、6 个轨道面**（L299）。ISL 容量 **25 Mbps**，上下行也 25 Mbps；**平均包长 1 KB**；**队列长度 100 个包**；高度 780 km；极区边界纬度 **70°**；**路由重算周期 600 ms**（Table 4，L302）。
+**流量模型**：**200 条 On-Off 流，On-Off 周期服从 shape=1.5 的 Pareto 分布，平均 burst 与 idle 时间都设 500 ms**（L299）。**负载通过两个旋钮扫**：(a) 单流发送速率 **2.5 → 3.5 Mbps**（流数固定 200）；(b) 流数 **200 → 300**（速率固定 3.5 Mbps）（L310）。
+DRL-THSA 参数：$\alpha_0=0.02$、$\alpha_1=0.1$、$\alpha_2=0.3$；$t_c=30$ ms；ISL 缓冲 100；$t_s=200$ ms；$t_h=t_d=30$ ms；**ε=0.9**（Table 4）。仿真时长 **60 s**，每个场景**跑 100 次取平均**（L299）。
+**训练/评估**：DDQN 在地上训练，但**论文没有给出训练集的生成方式、训练轮数、网络结构、收敛判据**——第 3.2.1 节只给了 Algorithm 2 的伪码（L238–257）。评估在 NS-3 里，与训练环境是否一致**未说明**。
+
+**6. 自述局限（逐字）**
+- L293："**However, it is not applicable to the networks where the number of disconnected links is destructive.**"（对大面积断链不适用）
+- L293 也自述适用边界："DRL-THSA makes full use of the two-hops link state information which is partially updated. It significantly reduces the updating overhead when only a few link states change."（**只有在少数链路变化时才省开销**）
+- L363（结论/未来工作）："In future research, we will study the impact of deep learning network structure and parameter settings on routing strategy performance."——即**当前工作没有做网络结构与参数的敏感性研究**。
+- L310 承认一条**反向现象**："the average end-to-end delay of DRL-THSA **increases** with the increasing of flows. Since the congestion of node is tried to be avoided, the packets will be transmitted on another routing path, **which increases the average end-to-end delay**."——即避堵会走更长的路，负载越高时延越差。
+- **未见**作者说明：DDQN 的训练细节、训练与评估环境的一致性、"每目的一个网络"带来的模型总量（66 个网络）在星上是否可行（只在 L220 说"limited resources and processing capacity on the satellite"，把训练放地上）。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **奖励函数与论文主张不符（最大的一处）**：题目叫"state-aware"，链路状态三档是全文核心机制，但**奖励（式 15）只有 $-dif(N_s,N_d)$ 这一项拓扑距离，完全没有队列、时延或链路状态项**。也就是说 DDQN 是在"往目的地方向走"的引导下训练的，其"避堵"能力只能来自**状态里带了 LST** 这一间接通道。可以做一个直接对照：把 $d$ 型的 hop 时延加进奖励（CMNCS52M 后来正是这么做的，并在 L60 批评本文"**its advantages over a simpler one-hop strategy remain unclear given the additional overhead it introduces**"）。
+2. **"两跳 vs 一跳"从未做消融**——CMNCS52M 的 L60 明确点名了这一点，而本文自己也没有任何 one-hop 对照。
+3. **ε=0.9 被当成"优点"**（L356：0.9 的 ε 使流量被"autonomously"打散从而降低队列占用）——这在 RL 语义上是**90% 随机动作**，等价于"故意保留大量随机性来均摊流量"。这是一个可疑的解释，值得单独检验：**把 ε 调低后队列占用是否变差？**论文没测。
+4. **正文无任何数值结果**（见第 4 项），所有结论只能从图上读——可复现性上是一个明显缺口。
+5. **"每目的一个 DDQN"共 66 个模型**，但论文没有报告模型体积、推理时延、星上存储需求——而 L220 恰恰以"星上资源受限"为由把训练放到地上。**推理成本从未被量化**。
+6. **四类异常里只做了机制描述，没有各自的单独评测**：链路失效/恢复/状态变化/防环四种情形在 4.2 节里**没有分别给出结果**，只在综合曲线里体现。
+7. **60 s 的仿真时长**（L299）与 **600 ms 的重算周期**：60 s 内只有 100 次重算机会，而"滤掉短时轻负载"用的滤波窗口 $t_c=30$ ms——时间尺度上的匹配关系没有讨论。
+
+**8. 和同批其他篇的关系**
+- **被 CMNCS52M 直接引用并批评**：CMNCS52M 的文献 [18] 就是本文（L329 逐字："C. Wang, H. Wang, and W. Wang, 'A two-hops state-aware routing strategy based on deep reinforcement learning for LEO satellite networks,' Electronics, vol. 8, no. 9, 2019"），并在 L60 批评"两跳相对一跳的优势不明、开销却增加"。
+- **与 CMNCS52M 是同一条技术线的先后两代**：都是"每星一个 agent + 局部观测 + DQN 家族 + 避堵"。差别清晰：CMNCS52M **把排队/传输时延写进奖励**（式 7）、**去掉最大跳数约束**、**扫星座规模**；本文**奖励是纯拓扑距离**、**用两跳状态 + 阈值背压**、**只做 66 星星座**。
+- **与 BBNQ4EAQ（netgrid）共享"把动态拓扑静态化"这一手法**：BBNQ4EAQ 用空间立方格，本文用 **Virtual Node**（L44）——两篇是同一思想（把运动卫星映射到固定"位置"）的两种实现，且本文的 VN 思路直接来自 [20][21]（L411/L413）。
+- **与 TLR/ELB 的关系是"被它批评又被它当基线"**：TLR 与 ELB 既是本文的两条主要基线（L304），也是 BBNQ4EAQ 和 CMNCS52M 共同引用的经典对照——**这三篇共享同一套祖先**。
+- 与 **EG9X569M（鲁棒 DRL 路由）**同属"LEO + DRL 路由"，但本文早 3 年且方法更轻量。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**有直接且具体的贡献——这是本批少数显式扫描负载的论文之一。**
+- **两个负载旋钮被显式扫描**：单流速率 2.5→3.5 Mbps、流数 200→300（L310）。这是**可控的负载强度**（不同于 CTWVLBCY 的不可调 trace、CMNCS52M 的"换队列分布图"）。
+- **到达过程有明确模型**：**200 条 On-Off 流，ON/OFF 时长服从 shape=1.5 的 Pareto 分布，均值各 500 ms**（L299）。Pareto(1.5) 是**重尾**分布——这意味着突发性强，本身就是"负载变化"的一种刻画。
+- **给出了可复用的"负载→拥塞"机制**：式 6（预测队列占用 $p$）+ 式 9/10（自适应阈值 $T_1,T_2$）**把"到达率减服务率 × 检查周期"直接换算成队列占用率的预测**，这是一个干净、可以直接搬用的排队判据。式 12 的降速比 $X$ 是一个**基于负载的背压**机制。
+- **给出了"负载升高 → 时延上升"的实测方向**（Fig 5，L310），并且作者**给出了原因**：避堵导致绕路 → 平均时延上升。
+- **给出了负载 → 排队占用的实测**：3.5 Mbps × 300 流时 DRL-THSA 的平均队列占用最低（Fig 12，L356）。
+- **缺口**：正文无任何数值（只有图），因此**"负载 → 时延"的定量斜率无法从文中取得**；也没有把"到达率"作为独立自变量（ON-OFF 的均值固定 500/500 ms，只靠速率和流数两个旋钮改负载）；链路被假设为**无差错**（L322 逐字："the links between satellites are assumed as error-free. Thus, the packets are dropped when the queue buffer of the satellite is not enough"）——**丢包完全来自缓冲区溢出与 TTL 超时**，这使它的丢包口径与"负载"高度绑定，反而更适合研究负载。
+
+**10. 一句话评价**
+"**把链路队列状态做成可通行的三档信号 + 用两跳状态喂 DDQN**"这一组合的早期代表：机制层（自适应阈值、背压降速、HELLO 保活、防环）写得相当完整且工程可落地，但**学习层是薄的**——奖励里没有时延/队列项，训练细节缺失，全部结论只有曲线没有数字，因此它更应该被读作"**状态感知机制 + DQN 作为选路器的拼接**"，而不是一个真正的负载感知学习方案；它后来被 CMNCS52M 明确点名"两跳相对一跳的收益不明"，这一批评基本成立。
+
+
+## DS9SPARV — OpenSN: An Open Source Library for Emulating LEO Satellite Networks
+
+**1. 一句话**
+一个**基于容器虚拟化**的 LEO 星座仿真/仿真平台（不是仿真器而是 emulator，跑真实内核协议栈和真实应用）：把"用户配置"与"容器网络管理"用一个 **KV 数据库**隔开，绕开 Docker CLI 和 Docker Network Manager 直接操纵 Linux 虚拟设备和 netlink，并用 **eBPF/XDP 虚拟链路**替代 Linux bridge，从而在单机和多机上都能高效地搭建/拆解大规模星座、快速切换星地链路。
+
+**2. 问题设定**
+LEO 网络研究**没法在真实系统上做实验**（"it is costly to carry out experiments in a real-world SN. Even for those commercial giants like SpaceX and Amazon, it also takes a few years to deploy their LEO constellations"，L17），因此依赖仿真/仿真。但既有平台有三个具体不足（L25）：(a) **对频繁状态变化（ISL 失效/恢复、GSL 切换）的仿真效率不够**，拖慢实验进度；(b) **可扩展性不足**，难以仿 Starlink 这种上千颗的星座；(c) **大多不完全开源**，无法提供可复现的评测平台。
+作者进一步把已分类的三类技术路线摆出来（L19–L23）：轨道分析（STK，不做网络协议）、离散事件仿真（流级 StarPerf / 包级 Hypatia 等）、虚拟网络仿真（Mininet 系的 LeoEM、容器系的 StarryNet、VM 系的 Celestial/NEaaS/LORSAT），并指出包级仿真器有两条硬伤（L57）：**事件调度无法并行、耗时长**；**跑不了真实 OS 协议栈**，结果与真实系统有差距。
+
+**3. 方法骨架**
+**不是算法论文，是系统/工具论文**。核心是三个组件 + 三处效率改进。
+- **架构（第 III.A 节，L77–L87）**：
+  - **User-Defined Configurator**：用户写星座参数与规则（ISL 失效模型、GSL 切换策略、轨迹更新）。
+  - **Key-Value Database（Etcd）**：中间层，记录机器/节点/链路/应用四类配置（Table III，L97）。**关键设计**：用户配置**不直接传给**容器网络管理器，而是写进 KV 库，由管理器去读——这就是"分离架构"，换来的是可扩展性（L33）。
+  - **Container Network Manager**：多机经 VXLAN 互联，含 Container Runtime Manager（容器生命周期）、Virtual Link Manager（虚拟链路）、Message Forwarder（信息中转）。
+- **效率改进 1：节点管理（L110）**：用官方 **Docker SDK** 替代 CLI（跳过 shell 与 docker-client 进程）；用**协程池**调度创建/销毁任务，池大小按 CPU 核数确定，避免过度进程切换。
+- **效率改进 2：链路管理（L112–L123）**：**跳过 Docker Network Manager**，直接管 Linux 虚拟设备与 network namespace；Docker 建链需三步（建网、连第一个容器、连第二个容器）且每步内部还有解析/取信息等动作，OpenSN**一次调用建链**。
+- **效率改进 3：节点与链路创建的依赖编排（L125）**：Docker/StarryNet 要等**所有**容器建好才开始建链；OpenSN 有个 waiting pool，**容器一建好就立刻建它的链路**。
+- **多机扩展（第 III.C 节）**：控制面用**加权轮询（Weighted Round Robin）**把实例与链路分派到各机器（Algorithm 1，L148–167）；指令下发靠 Etcd 的 server-push；数据面用 **VXLAN** 跨机传以太帧。
+- **eBPF 链路（第 III.D 节，核心创新）**：用挂在 XDP hook 上的 eBPF 程序做**帧重定向**。
+  - **机内**：用 eBPF program + map 直接重定向，**完全取代 Linux bridge**；切换时只需**改 redirect map**，不需要删建设备，且**容器接口保持不变**（L196）。
+  - **机间**：**直接改目的 MAC**转发，不做以太帧↔UDP 报文的转换（VXLAN 要做）——因为卫星网络链路是**点对点**的，"each source MAC address corresponds to a unique destination MAC address"（L225）。额外好处是**不依赖 Linux 内核的网络层协议**，因此用户可以在其上开发新的网络层架构（L227）。
+- **可扩展性（第 III.E 节）**：镜像配置动作**下放给容器内的初始化程序**，因此换镜像不用改仿真器本身（StarryNet 因为用直接函数调用配 BIRD，只能用它那一张镜像，L235）。
+
+**4. 它声称的效果**（这是平台性能指标，不是网络算法指标）
+- **建网/拆网**（第 V.A 节，Fig 12，L346）：相对容器系的 **StarryNet 快 6×–10×**；相对 Mininet 系的 LeoEM **略慢**（因为 LeoEM 不跑分布式路由软件）；**eBPF 链路比传统虚拟链路建网快约 10–15%、拆网最多快 2×**。
+- **链路状态更新**（第 V.B 节，Fig 14，L365）：GSL 切换配置相对 **Mininet 快 2×（10 个切换）/ 4×（100 个切换）**；**OpenSN 带 eBPF 比不带 eBPF 快 10×（10 个切换）/ 5×（100 个切换）**；规模到 1000 时**不带 eBPF 的版本因并发瓶颈耗时剧增，带 eBPF 的仍保持低耗时**。ISL 时延更新也比 StarryNet 和 Mininet 高效（靠并发执行 + **直接 netlink 交互**）。
+- **运行期资源**（第 V.C 节，Fig 15，L373–L406）：三个时期（建网 / 路由收敛 / 稳定运行）。**OpenSN 更早进入稳定期**；StarryNet 在建网期 CPU 只有 10–40% 而 OpenSN 冲到 70%（说明 OpenSN 把资源用上了）；**收敛期 StarryNet 的 CPU 仍高达约 70%**，因为"StarryNet takes the ping command as the daemon process of each container, which will frequently trigger soft interruptions"（L404）；稳定期两者内存相近，OpenSN CPU 更低（用了轻量 daemon，收敛后进 idle）。
+- **资源容量影响**（第 V.D 节，L410）：Case A/B/C（32/48/64 vCPU）下，OpenSN 的**路由收敛时间随资源增加而缩短**，而 **StarryNet 几乎不变**。
+- **机器数影响**（第 V.E 节，L414–L416）：1 机 / 2 机 / 4 机（总资源相同）下，**机器越多建网与收敛越快**；原因被定位到**内核线程数**——机器越少，单机上平均跑的内核线程越多，建网越慢（Fig 19）。
+- **规模验证**（第 V.F 节，L436–L441）：成功仿真 **五层 Starlink 共 4408 颗星**（硬件仅 96 核 / 256 GB），做法是**把每层切成独立 OSPF 区域**并把建网与路由配置分阶段。收敛时刻：Shell V 在 600 s、IV 在 800 s、III 在 900 s、II 和 I 在 1500 s。
+- **最低需求**（L250）：**1 vCPU + 2 GB** 即可建 Iridium（6×11）并跑 OSPF。
+- 基线：**StarryNet**（容器系）、**LeoEM / Mininet**（Mininet 系）。
+
+**5. 实验条件**
+三台 **DELL R7840**（Xeon Gold 5218、各 191.5 GB 内存）。OpenSN 与 StarryNet 用**三 VM 共 48 vCPU / 96 GB**；LeoEM/Mininet 用**单 VM 48 vCPU / 96 GB**（因为它不支持多机，L342）。资源实验另用四 VM 共 64 vCPU / 128 GB。
+使用的星座（Table IV，L308）：**Iridium 780 km/11 面/66 星、OneWeb 1200 km/18 面/720 星、Kuiper 630 km/34 面/1156 星、Starlink Shell-I 550 km/72 面/1584 星**，以及 Shell-II~V（合计 4408 星）。内核版本 5.4（Ubuntu 20.04）到 6.8（Ubuntu 24.04）实测，预期兼容 4.1+。
+**注意：没有网络流量负载模型。** 路由软件默认 **FRRouting**（支持 OSPF 等，L314）；案例场景是一个**视频流**（CP→卫星网→TU，三个 AS，L239），但不是性能评测的对象。评测指标全是**平台耗时与资源占用**（建网时间、切换时间、CPU/内存），**不是时延、吞吐、丢包**。
+**训练/评估**：无学习环节；"评估"就是同一组星座在不同平台上跑，比较耗时。
+
+**6. 自述局限（逐字）**
+- L449（未来工作开头）："**The development of OpenSN is still in its early stage.**"
+- L453：**"OpenSN is now built on host-centric IP networking architecture, which was initially designed for wired networks."**——即目前只支持 IP 架构，NDN/LIPSIN 等还没支持。
+- L451：**收敛时间尚未研究**——"we would like to develop more state-of-the-art routing protocols (e.g., OPSPF and LoFi) on OpenSN, and then **investigate the convergence time in LEO mega-constellations**."（说明当前论文没有做收敛时间研究）
+- L455：**"We will isolate the protocol logic from the kernel implementation for OpenSN"**——即新协议还得改内核栈代码。
+- L436（规模验证的自述困难）："It poses significant challenges to emulate Starlink constellation with five shells **due to our limited hardware resources**"；为此不得不**把每层切成独立 OSPF 区域**——这是一个**为了跑得动而做的简化**，作者没有评估它对路由行为的影响。
+- L320：承认 **LeoEM/Mininet 在若干方面比 StarryNet 和 OpenSN 更高效**（因为它不跑分布式路由软件）——比较并不完全公平，作者做了说明。
+- L346：OpenSN 相对 LeoEM 建网是**略慢**的（"slightly increases"）。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **它完全没有"网络性能"评测**：全文没有一条关于时延/吞吐/丢包/排队的结果。所有指标都是"多久建好网、切换多快、占多少 CPU"。**平台存在的意义是让别人测这些**，但论文自己没有给出任何一个用它跑出来的网络层结论作示范（唯一的 case study 是视频流，且没有报告性能数字）。
+2. **五层 Starlink 案例把每层切成独立 OSPF 区域**（L436）——这是一个**为了绕开硬件限制的路由域切分**，而"分域"本身会对路由最优性有影响。作者只报告了资源曲线，**没有比较分域前后的路径质量**。
+3. **"收敛时间"被明确列为未来工作**（L451），而它恰恰是 LEO 路由最关键的指标之一（拓扑一直在变，收敛追不上变化就没有意义）。OpenSN 已经有能力测，只是这篇没测。
+4. **没有队列/缓冲区建模**：虚拟链路只管**距离、时延、带宽**（Table III 的 Link 参数），**没有队列长度或丢包模型的配置项**。要做"负载变化下的时延"研究，需要在容器里自己配 tc/netem——平台没有内置。
+5. **流量是"用户自己起的应用"**（视频流 case，L239），**没有内置的流量发生器或到达过程配置**（Poisson/ON-OFF/重尾等），也没有负载强度的扫描接口。这与本批其他论文（都要显式设定流量模型）之间的接口是空的。
+6. **多机分派用加权轮询**（Algorithm 1），权重是**手工指定的机器权重**，不是按实际负载反馈调整——对异构机器或负载漂移没有自适应。
+7. **eBPF 机间链路隐含依赖"点对点、源 MAC 唯一对应目的 MAC"**（L225）——这在卫星 ISL/GSL 上成立，但**一旦引入组播、广播或动态多径转发就不成立**，论文把这一点当成优势说了，却没讨论边界。
+
+**8. 和同批其他篇的关系**
+- **它是本批（乃至整个语料）的方法论底层设施**：CMNCS52M 用仿真、CYMQ2GLA 用 **NS-3**、EG9X569M/BBNQ4EAQ 用自研仿真器、CTWVLBCY 用自研离散事件仿真器——**每篇都自带一套仿真器**，OpenSN 正是针对这种不可复现现状提出的。它与这些论文是"工具 vs 使用者"的关系。
+- **与 CTWVLBCY 的 CTWVLBCY 明确指出"most SN emulators are not fully open source"**——CTWVLBCY 也自建了仿真器并承诺开源（其 L222），两者是同一痛点的两次回应。
+- **与 BBNQ4EAQ 的 LSNS 仿真器**（BBNQ4EAQ 的 L361，基于 ONE 扩展）是同类工作；但 BBNQ4EAQ 是**离散事件仿真**、OpenSN 是**真实协议栈仿真**，粒度不同。
+- **引用关系**：OpenSN 的参考文献里有 **ELB [14]、OSPF [12]、LoFi [13]** 等路由工作，以及本批之外的大量 LEO 网络文献（Handley 的 HotNets 系列 [4][6]、Bhattacherjee 的拓扑设计 [8]、Hypatia [27]、StarPerf [26]）。**本批没有一篇引用它**（它 2024/2025 年才发，晚于多数）；它也没有引用本批任何一篇。
+- **与 CMNCS52M 的间接关系**：CMNCS52M 引用的 [11]（Internet of satellites）是 OpenSN 作者之一 Ruiz-de-Azúa 的工作，同属一个研究脉络里的邻居。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**没有直接贡献——这是本批里与本主题关系最弱的一篇（除 ETTA3DIV 外）。** 理由具体：
+- 全文的因变量是**平台耗时与资源占用**（建网/拆网/切换时间、CPU/内存），**自变量是星座规模与机器配置**（66/720/1156/1584/4408 星；1/2/4 机；32/48/64 vCPU）。**没有"到达率"、没有"排队时延"、没有"丢包"**。
+- 它的链路配置项只有**距离、时延、带宽**（Table III），**没有队列**；因此"负载变化"在研究里没有落脚点。
+- 唯一沾边的是它**能否支撑**这类研究：由于跑的是**真实内核协议栈**（队列、缓冲区、TCP 拥塞控制都是真的），它**原则上**能给出比离散事件仿真更可信的"负载→时延"数据——这正是它自己主张的价值（"the packet-level simulation results still exhibit differences compared to the real-world system"，L57）。但这是**能力**而不是**贡献**。
+- 有一条**间接的可用事实**：**路由收敛时间是可测的**且被点名为未来工作（L451），而收敛时间直接决定"拓扑/负载变化后网络多快恢复到时延基线"——这是通往"负载变化下的时延"的一条现成接口。
+- 另一条：**内核线程数会影响建网与操作速度**（Fig 19，L416）——说明**仿真环境的性能本身会随环境负载漂移**，这对任何用仿真器产出的时延数据的可信度是一个提醒（虽然作者只谈建网，不谈数据面）。
+
+**10. 一句话评价**
+一篇**系统/工具论文**：不提出任何路由或负载算法，而是用"**KV 库分离配置与容器网络管理 + 绕开 Docker CLI/Network Manager + eBPF 替代 bridge**"三招把容器化 LEO 仿真的效率与规模推上去（6–10× 建网提速、4408 星实测）；它在方法谱系里是**基础设施层**，对"负载变化下到达率/时延"这一具体问题**没有直接贡献**，但它是唯一能让别人那条结论**在真实协议栈上被复现和反驳**的平台，因此它的价值是条件性的：**取决于后续有没有人在它上面做负载实验**。
+
+
 <!-- END-OF-CARDS -->

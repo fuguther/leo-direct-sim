@@ -282,3 +282,113 @@ LEO 网络研究长期卡在"拿不到真实数据"：要么自购昂贵星盘�
 
 **10. 一句话评价**
 **把"网络测量"往下游推了一步：不是再测一条新链路，而是问"一堆时延统计量能不能认出这是哪个区域、哪个统计量最有用"**——方法谱系的位置是"把标准的层次化统计特征工程 + 互信息 + XGBoost 这套通用流程，搬到 LEO 区域时延这个新数据集上，未对任何一环做方法创新"；它真正的信息量在一条负面结论（**下界可辨识、波动不可辨识**）和一条自曝的缺口（**最能区分的特征最不稳定，漂移疑似来自负载但未测**）。
+## GPDPLJNG — Multi-Commodity Flow Routing for Large-Scale LEO Satellite Networks Using Deep Reinforcement Learning (DRL-SR)
+
+**1. 一句话**
+把 LEO 星座路由写成 **DTN 存储-携带-转发（store-carry-and-forward）语义下的多商品流二进制整数规划**（NP-hard），再用**一个集中的单智能体多步 DQN** 来解：状态是"所有卫星位置 + 剩余缓存 + 所有请求的位置与大小"，动作是**每个时隙同时为全部 $N\times M$ 个请求各选一个下一跳**（输出层按 $N\times M$ 分组，每组 $|V|$ 个 Q 值），奖励是一套手工写死的、基于"离目的星远近"的分段打分函数（L128–L180）。
+
+**2. 问题设定**
+LEO 拓扑随时间剧变（L21 段：卫星"cover an area of around five to twelve minutes per pass"），把地面路由协议直接搬过来不行。作者把时间轴切成 $T$ 个时隙、每时隙长 $\tau$，**假设每个时隙内拓扑不变、跨时隙瞬间切换**（L39 段）。
+要解决的具体麻烦是：用户请求要经天基网络从源星送到目的星，而**链路容量有限、每颗星缓存有限**（式 1 与式 3），且 DTN 机制允许"原地存着不下发"（式 4 的 $\beta$）。作者自述的缺口（L27 逐字）："to the best of our knowledge, few of them considered the selection of simultaneous multiple actions per step for single-agent reinforcement learning, which has significantly high complexity."
+**关键立场**：智能体不是卫星，而是**地面卫星运营中心的调度器**（L180 逐字："Assume that an agent acts as a controller in the satellite launch company"；L212 逐字："The satellite operation center as an agent will determine the next-hop for all the considered $(N \times M)$ requests"）。
+
+**3. 方法骨架**
+**优化模型（§II）**：
+- 图：每时隙 $G^t=(V,E^t)$，节点是卫星，边是双向 ISL（L39）。
+- 请求（商品）：$k_{i,\delta}=\{s_{i,\delta},d_{i,\delta},w^{i,\delta}\}$——第 $i$ 个用户在时隙 $\delta$ 注入的请求，含源星、目的星、数据量（L39）。
+- 变量：$\alpha_{t,u,v}^{s,d}\in\{0,1\}$（是否从 u 转发到 v）、$\beta_{t,u}^{s,d}\in\{0,1\}$（是否就地缓存）。
+- 约束：式(1) 链路容量、式(2) 每条流每时隙只能有一个动作、式(3) 节点缓存上限 $b_u$、式(5) "存 or 发"三选一、**式(6) 每个用户最多 $M$ 个请求同时占用网络**、式(7) 缓存流量守恒、式(8)(9) 源星流出/目的星流入守恒。
+- 目标：式(11)(12) 最小化**全网总路由时延** $z$。
+- **单跳时延式(10)**：$D_{u,v}(t)=\alpha_{t,u,v}\left(\frac{\Delta_{u,v}(t)}{c}+\frac{w^{i,\delta}}{r_{u,v}}\right)+\beta_{t,u}\tau$——即"传播时延（距离/光速）+ 传输时延（数据量/速率），若原地等则加一个时隙 $\tau$"（L96 附近）。
+
+**MDP（§III.A，L180 起）**：
+- **状态** $s_t=\{P_t,Q_t\}$：$P_t=\{(l_t^i,p_t^i)\}$ 是所有卫星的位置与**剩余可用缓存**；$Q_t=\{(l_t^{k_{i,\delta}},w^{k_{i,\delta}})\}$ 是所有请求的**当前位置与大小**（L180）。
+- **动作** $a_t=\{a_t^{k_{i,\delta}}\}$，每个 $a_t^{k}\in\{u\}\cup nb_u$——**留在原地或去某个邻居**，全体请求同时决策（L180 与式(16)）。
+- **奖励**：式(14) $R(s_t,a_t)=\sum_i\sum_\delta D^{k_{i,\delta}}(s_t,a_t^{k})$，其中每一项由**手工编写**的 8 个分段 (13a)–(13h) 给出（L148–L178）：
+  - (13a) 当前星没有邻居 ⇒ 留在原地，基础 $1/\tau$ 加 $\beta$；
+  - (13b)(13c) 留下 vs 转发，按"离目的星更近"加/减 $\beta$；
+  - (13d)–(13h) 转发情形：基础项 $\left(\frac{c}{\Delta_{u,v}}+\frac{r_{u,v}}{w^{i,\delta}}\right)$（**注意这是时延的倒数之和，不是时延**），再按"下一跳是否为目的地"（$+\Gamma$，$\Gamma>2\beta$）、"是否离目的地最近"（$+2\beta$）、"是否越走越远"（$-2\beta$）加减。
+- **掩码（masking）**：缓存满的星不许再接请求、剩余带宽为 0 的链路不许用、请求大小超过星/链路能力的被屏蔽（L188）。
+- **简化假设**：星间信道**无丢包**，请求当拍必达、不会跨时隙留在链路上（L190 逐字："the channels between the two satellites are assumed to be no-loss"）。
+- **算法**：**多步 DQN**，损失式(17) $\left(R_t^{(n)}+\gamma_t^{(n)}\max_{a'}Q_G(s_{t+n},a';\theta_G)-Q(s_t,a_t;\theta)\right)^2$，估计网 + 目标网 + 经验回放（n-step buffer）+ $\epsilon$-greedy，目标网每 $N_F$ 步硬替换（Algorithm 1，L250 起）。
+
+## GPLEP83L — LLM-Driven Automated Reward Design for Reinforcement Learning-Based Routing in LEO Satellite Networks (LARGE)
+
+**1. 一句话**
+提出 **LARGE**：用**三个 LLM 智能体**（Metrics Interpreter / Reward Design / Code Generator）组成一个**嵌套闭环**——外层拿仿真反馈的网络指标反复改写奖励函数、内层校验奖励代码能否用仿真器里真实存在的变量实现——从而**免去人工设计 RL 路由奖励函数**这件事（L39–L61 框架，L3 摘要）。
+
+**2. 问题设定**
+LEO 路由用 RL 已很常见，但**RL 的效果"critically depends on the design of the reward function"**，而奖励设计"remains a complex manual process requiring significant domain expertise and extensive trial-and-error"（L3 摘要逐字；L13 段复述）。作者点名的缺口是：已有 LLM 自动奖励工作（Text2Reward、CARD、AutoReward 等）**主要面向机器人或游戏环境**——"where feedback signals are well defined and closely aligned with task objectives"（L17 逐字）——而**LLM 自动奖励在 LEO 这类高度动态系统上"remains largely unexplored"**（L3）。更具体地（L21 末尾逐字）："no prior work proposes a closed-loop framework in which an LLM autonomously generates and refines reward functions based on structured network metrics for DDQN-based routing in LEO satellite constellations"。
+形式化（§II，L27）：奖励设计问题 = 求 $r^*=\arg\max_{r\in\mathcal{R}} F(\mathcal{T}_M(r))$（式 1），其中 $\mathcal{T}_M(r)$ 是用奖励 $r$ 训练出的策略、$F$ 是在仿真里算出的适应度。
+
+**3. 方法骨架**（核心是 LLM 闭环，不是 RL 算法创新）
+**三个 LLM 智能体**（L39）：
+- **Metrics Interpreter Agent**：分析仿真返回的网络指标，转成结构化 prompt；
+- **Reward Design Agent**：基于内部知识与上下文生成奖励函数定义 + 简短理由；
+- **Code Generator Agent**：把定义实现成可执行代码，并**校验每个变量在仿真环境里是否可直接获得或可由其他变量导出**。
+
+**两阶段**（L39）：
+- **§III.A 冷启动生成**（L46）：Reward Design 收到描述路由问题与优化目标的 prompt，产出奖励定义 → Code Generator 检查变量可得性；**若某变量不可用，就带着"缺失变量清单"打回去要求重写**，如此往复直到能实现，防止奖励只依赖一小撮现成变量。这一阶段**不针对具体环境变量**，即刻意保持"无偏先验"。
+- **§III.B 迭代改进**（L55）：用上一轮的奖励训练 RL 智能体 → 仿真返回 **goodput (Mbps)、path stretch、端到端时延 (ms)** 以及训练指标（累积奖励、loss）→ Metrics Interpreter 判断是否满足收敛准则；**不满足则把指标转成结构化 prompt**（指出改进方向、强化优化目标、并**明确告知上一轮奖励是变好还是变差**）→ Reward Design 提出新奖励 + 理由 → Code Generator 校验并实现 → **用新奖励从零重训**，循环直到满足准则。实现成功后还会生成一份 markdown 文档解释奖励函数及设计理由。
+- **停止准则**：**goodput 一旦超过专家基线就停**（L75 逐字："The LARGE search loop terminates once a candidate reward function achieves a goodput higher than that of the baseline reward"）。
+
+**RL 侧（不是本文贡献，照搬）**：多智能体设定，**每颗卫星是一个独立 agent**、只凭局部信息做下一跳决策；**全部实验统一用 DDQN**；分在线学习与离线部署两阶段（L67）。
+
+**4. 它声称的效果**
+**Table I（L102 附近）——12 秒推理阶段，10 个随机种子的均值 ± 标准差**：
+| 方法 | Goodput (Mbps) | Delay (ms) | Path stretch |
+|---|---|---|---|
+| **Baseline（仿真器自带、专家设计）** | **1451.62 ± 131.67** | 85.65 ± 2.44 | 1.464 ± 0.066 |
+| LARGE-GPT（GPT-5.4） | 1324.03 ± 237.34 | 88.41 ± 2.32 | 1.569 ± 0.088 |
+| **LARGE-Opus（Claude Opus 4.6）** | **1409.56 ± 133.10** | **85.13 ± 3.03** | 1.486 ± 0.034 |
+- 摘要的核心 claim（L3 逐字）："the best-performing configuration reaching goodput within approximately 3% of the baseline and slightly lower end-to-end delay, without manual reward engineering"——**核对 Table I：1409.56 vs 1451.62 差 2.90%，且时延 85.13 < 85.65，确实成立，但这里说的"最优配置"是 LARGE-Opus**。
+- 搜索阶段（Fig 3）：**第 3 次迭代就达到基于 goodput 的停止准则**；第 1 次迭代（冷启动）达不到，说明迭代改进是必需的（L89 附近）。
+- 达到准则后继续迭代**不再有实质增益**——作者归因于后续提案趋于保守，"modifications mainly consist of small changes to the coefficient values"（L89）。
+- **⚠️ 本文内部有一处明确矛盾，且影响到结论的归属**：
+  - §IV.D（L104）说："LARGE-Opus achieves the closest overall performance to the baseline, with comparable goodput, slightly lower delay, and a similar path stretch. **LARGE-GPT obtains lower goodput and a higher path stretch**"——**与 Table I 一致**。
+  - §IV.F（L123）却说："LARGE-Opus produces a more aggressive and structurally richer reward, but ... **it shows lower goodput and higher path stretch than the expert baseline**. In contrast, **LARGE-GPT produces a more conservative reward ... achieving comparable goodput, slightly lower delay, and similar path stretch**."——**按 Table I，LARGE-GPT 的 goodput 最低（1324）、时延最高（88.41），"slightly lower delay" 描述的是 LARGE-Opus 而非 LARGE-GPT。§IV.F 把两个 backbone 的角色写反了。**
+  这不是措辞含糊，而是**同一篇论文的两节给出互相颠倒的归因**；由于 §IV.F 正是"Discussion"，复现者若照它理解会得到相反的结论。**必须由作者澄清。**
+
+**5. 它的实验条件**
+- **仿真器**：文献 [18] 的开源 LEO 路由仿真器（Lozano-Cuadra 等，ESA SPAICE 2024），事件驱动离散时间、动态时变图（节点=卫星与网关，边=ISL 与 GSL），建模流量生成、包转发、排队、传输、传播（L65）。
+- **流量模型**（L65）：地面网关把附近用户的地面流量聚合成**固定大小 $B=64{,}800$ bit 的块**（同一目的地）注入星座，作为包在网络中逐跳转发到目的网关。
+- **星座**：**Kepler，140 颗卫星，7 个轨道面，轨道高度 600 km**（L73）。
+- **关键对照设计**：**用固定星座**，作者自述理由是"to isolate the effect of reward optimization from changes in orbital topology, link dynamics, and path-length distributions"，从而"between reward functions while keeping the routing environment unchanged"（L73）。
+- **DDQN 超参全部固定为仿真器默认值**，跨所有实验不变，确保**唯一变量是奖励函数**（L73）。
+- **基线**：仿真器自带的、由领域专家设计的奖励函数（L73）。
+- **两个 LLM backbone**：**GPT-5.4**（称 LARGE-GPT）与 **Claude Opus 4.6**（称 LARGE-Opus）；每个 backbone 在整条流水线的所有 LLM 智能体中保持一致，并各自独立跑到满足收敛准则（L73）。
+- **三阶段协议**（L75）：
+  1. **搜索期**：每个候选奖励**只训 0.2 秒**，产生约 **70,000 个逐跳奖励事件**与 **35,000 个训练步**；
+  2. **训练期**：用选中的奖励**从头重训 1 秒**，每 0.2 秒记一个 checkpoint；
+  3. **推理期**：不再学习，**部署 12 秒**，期间卫星位置随时间更新——作者称这是"the primary benchmark for assessing generalization under realistic dynamic conditions"。
+  全部结果在 **10 个不同随机种子**上报告均值 ± 标准差。
+- **负载设定：没有。** 流量块大小固定 64,800 bit，星座固定，**没有做任何负载/到达率扫描**。
+- **训练与评估的环境不是同一套**——但差别只在**时长**（0.2 s / 1 s / 12 s）与**是否继续学习**，拓扑与流量条件不变。
+
+**6. 它自己承认的局限（逐字引用）**
+- L129 逐字（§V 结论）："Although this work focuses on a controlled Kepler constellation scenario to isolate reward optimization, **future work will extend the evaluation to additional constellation architectures, traffic loads, gateway deployments, and longer inference horizons**. Further directions include robust multiobjective stopping criteria, prompt sensitivity analysis, and fine-tuned LLMs to improve convergence speed and reward quality."——**"traffic loads"（负载）被明确列为未做、留作未来工作**，这是本文自己承认的最大空白之一。
+- L113 逐字（§IV.E）："However, the inference results also show that a more expressive reward does not necessarily lead to uniformly better generalization."——**更"丰富"的奖励不一定泛化更好**，这是它自己给出的负面结论。
+- **未见自述**：① 搜索期 0.2 秒、训练期 1 秒、推理期 12 秒这些**极端短的时长**是否足以说明问题，全文没有任何讨论；② **停止准则"goodput 一旦严格大于基线就停"在 10 个种子下有 ±131～±237 Mbps 的方差**，这个准则的统计效力问题**完全没被提及**；③ §IV.F 与 §IV.D 的矛盾**未被承认**（作者似乎没察觉）。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **把"负载"从 future work 变成实验**（L129 自己点名）：现在 $B=64{,}800$ bit 固定、星座固定、网关固定，**三个"环境维度"全部冻结**，只动奖励。至少要扫流量强度，才能判断 LLM 生成的奖励**在负载变化时是否还稳定**——而这恰恰是本文没回答、且最容易做的。
+2. **修掉那个停止准则**：现在"严格大于基线就停"在 $pm 200$ Mbps 量级的方差下几乎必然早停。**改成"连续 k 轮显著优于基线"或直接用置信区间**，是纯方法论改进，不需要动框架。
+3. **消融"迭代反馈"本身**：作者在结论里断言收益来自闭环（L129 逐字："showing that the benefit comes from the closed-loop interaction"），但**没有做"只冷启动、不迭代"的对照**，也没有做"随机扰动系数"的对照。这个消融是验证该 claim 的最低成本实验。
+4. **把 §IV.E 的奖励结构差异变成可复用的先验**：Table II（L121）已经列了 8 条"专家基线 vs LARGE-Opus"的结构差异（邻居排序、速率感知、队列罚项从"绝对排队时间"改成"相对服务时间"、显式逐跳代价、ping-pong 惩罚等）。**这些差异中哪一条真正带来增益，完全没有做逐项消融**——而这正是人工奖励设计最需要的知识。
+5. **澄清 §IV.D 与 §IV.F 的矛盾并给出结论**（见第 4 项）。
+
+**8. 和同批其他篇的关系**
+- **与 GPDPLJNG（DRL-SR）是同一问题的两种做法**：两者都用 DRL 解 LEO 路由、都强调拓扑动态、都以"时延"为核心指标之一。差别在于 GPDPLJNG 把奖励**手工写死成 (13a)–(13h) 的分段打分**，而本篇正是要**自动化掉这个手工过程**——**本篇几乎可以看作对 GPDPLJNG 那类"手工势函数奖励"的直接替代方案**。本篇还多了一个 GPDPLJNG 完全没有的指标：**path stretch**（逐跳数与 Dijkstra 最短路的比值）。
+- **与 FLQLU3T4（DeepLaDu）**：同样做 LEO 路由，但 FLQLU3T4 完全不用 RL（对偶 + GNN），且优化目标从"吞吐"到"绕开拥塞链路"。本篇与 FLQLU3T4 共享"用学习解决组合优化"的框架，但一个学对偶价格、一个学奖励函数。
+- **与本批 FGQSH4AI（MADDPG）**：本篇的多智能体 DDQN 是"独立学习"（每星一个 agent、只凭局部信息、无集中式 critic），**正是 MADDPG 那篇所批评的"环境非平稳 + replay 失效"的设定**。两篇构成"问题"与"另一种解"的对照。
+- 参考文献（L135–L174）**无一篇来自本批其他 10 篇**。
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**几乎没有直接贡献，但提供了一条极有价值的"负空间"。**
+- **没有直接贡献**：全文无负载变量、无到达率、无队列长度曲线。流量是固定大小 64,800 bit 的块，星座固定、网关固定（L65、L73）。作者自己在 L129 把 "traffic loads" 明确列进 future work——**即负载维度是被作者主动排除在实验设计之外的**。
+- **但有一条可用的事实**：**"更丰富/更激进的奖励不一定泛化更好"**（L113）。具体地，Table I 显示 LARGE-GPT 在搜索期与训练期 goodput 更高（§IV.D），到 12 秒推理期却掉到最低（1324 vs 1409），且方差最大（±237）。**这是一个"训练指标更好但部署更差"的实例**——对任何用 RL 做路由的人都适用。
+- **另一个可复用的对照设计**：作者用"固定星座"来"isolate the effect of reward optimization from changes in orbital topology, link dynamics, and path-length distributions"（L73）。**这个"冻结环境、只动一个变量"的设计选择是正确的**，也正是"负载变化"研究应该借鉴的反面——要研究负载，就得把负载当成那个唯一变动的变量，其余全冻结。
+- **一条可直接引用的时延量级**：Kepler 星座（140 星 / 7 面 / 600 km）下，专家基线奖励的端到端时延是 **85.65 ± 2.44 ms**，goodput **1451.62 ± 131.67 Mbps**，path stretch **1.464**（Table I）。这是本批里少见的"给出了具体星座参数 + 具体数值"的实验点。
+
+**10. 一句话评价**
+**把"LLM 自动奖励设计"这个已经在机器人与自动驾驶领域成型的套路，第一次（作者自称）搬进 LEO 卫星路由**——方法谱系的位置是"**引入一个新域，不动任何一环的方法**"：LLM 三智能体分工、双层循环、Code Generator 校验变量可得性，全部照搬已有范式，RL 侧更是直接使用现成仿真器与默认超参。它的真实价值有两个：一是把"奖励函数能不能自动设计"这个问题在 LEO 路由上做了存在性证明（**3 次迭代内达到基线水平**），二是 §IV.E 的 Table II 给出一份**"LLM 生成的奖励比专家奖励多了什么结构"的差异清单**（邻居排序、相对服务时间罚项、显式逐跳代价、ping-pong 惩罚）——后者可能比论文本身的结论更有复用价值。但**实验时长（0.2 s / 1 s / 12 s）短到难以支撑其 generalization 主张，停止准则在 $pm 200$ Mbps 方差下缺乏统计效力，且 §IV.D 与 §IV.F 对两个 backbone 的归因互相颠倒**——这三点使它的结论目前只能当作"方向可行"的信号，不能当作可复现的性能结论。
