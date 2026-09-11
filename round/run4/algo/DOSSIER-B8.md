@@ -80,7 +80,10 @@
 - L154 逐字（不可归因声明）：`HitchHiking’s methodology to measure latency cannot on its own attribute the cause behind the latency (e.g., congestion, suboptimal routing).`
 - L209 逐字（拥塞模式不可观测）：`Starlink does not reveal its internal fiber paths between ground stations and POPs, terrestrial routing decisions, satellite selection algorithm, ISL routing, or congestion patterns.`
 
-**（c）突发/到达率**：**未见**。检索词 `arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level`（grep -n -i -E，范围=该篇 MD 全文 L1–L572）**仅命中 L83 一处**，且该处是描述他人仿真器：`which simulate LEO Internet performance across location, satellite orbiting pattern, and congestion level`（L83）。全文无到达过程、无包级/流级到达率、无突发长度分布的测量。本篇是**纯时延可达性测量**，不产生负载过程事实。
+**（c）突发/到达率**：**未见**。核验命令与实测计数（主控核验协议 v2）：
+- 模式 A：`grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"`，范围 `/data/liguang13/topic-loop-r2/md/GGFJ3SEG/GGFJ3SEG/txt/GGFJ3SEG.md` 全文 → **count = 1**（命中行：L83）。
+- 模式 B：`grep -ciE "time series|stochastic|Markov|queue"`，同上范围 → **count = 0**。
+- 命中位置与为何不构成反例：唯一命中 L83 逐字 `Theoretical Models. Given the dificulties in collecting empirical data, one of the most popular methodologies for studying LEO satellite networks is to use theoretical physics-based models, which simulate LEO Internet performance across location, satellite orbiting pattern, and congestion level.` —— 该处是**描述他人仿真器可扫的参数轴**（congestion level），本篇**既未测量也未建模**到达过程，故不构成反例。全文无到达过程、无包级/流级到达率、无突发长度分布的测量。本篇是**纯时延可达性测量**，不产生负载过程事实。
 
 **（d）可作为"负载不变"的反证**：L190 的"no packet drop or drop in bandwidth"配合 L289 的"尖峰普遍存在"，构成一条重要事实：**在没有可观测拥塞信号时，时延仍出现 >2σ 且持续 ≥15 s 的尖峰**——即"时延尖峰 ≠ 负载尖峰"。
 
@@ -167,7 +170,11 @@
 - L94（实验设计，逐字）：`We first measure the latency without load on the link, which is the best latency Starlink subscribers could achieve. We then perform QUIC downloads and uploads, thus generating bandwidth pressure and study how the RTT evolves under load.`
 - **时延随负载的量化跃升**：空闲态欧洲 anchor 中位 50 ms（L106）→ H3 bulk 下载 95 ms 中位 / 175 ms P95 / 210 ms P99；上传 104 / 237 / 310 ms（L107）；轻载 messages 只到 50 / 66 ms 中位（L112）。→ **同一链路，把应用发送速率从 ~3 Mbit/s 提到 100MB 批量传输，RTT 中位数约翻倍，P99 可到 300 ms 量级。**
 - **突发/丢包的形状随负载反转**（L137 逐字已列）：高负载=**频繁但短**（多数 1 包）；低负载=**稀疏但长**（>100 包、持续 104–127 ms 的 P95/P99）。这是"突发≠拥塞"的直接实测依据。
-- **到达率**：**未见**任何到达过程/到达率建模。补充检索词 `arrival|poisson|interarrival|per second|pps|packets/s|utilization|offered`（grep -n -i -E，范围=该篇 MD 全文 L1–L292）命中 L69、L105、L120、L189、L227，其中 L69 是**施加的**消息速率条件（`sends 25 variable length messages per second during 2 minutes`、`The average bitrate of this transfer is 3 Mbit/s`），L189 是作者对"低利用率"的评论（`the presence of (moderate) packet loss even at low network utilization`）。**全篇无测得的分组到达过程**。
+- **到达率**：**未见**任何到达过程/到达率建模。核验命令与实测计数（主控核验协议 v2），范围均为该篇 MD 全文 L1–L292：
+  - 模式 A（突发族）：`grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"` → **count = 3**；命中行 L120、L129、L133。**为何不构成反例**：三处均指**已观测的丢包事件突发长度分布**（`loss burst length is the number of consecutively lost packets for each loss event`，L120；L129 图题；L133 讨论 messages 的 burst 更长），是**丢包的形状描述**，不是到达过程/到达率。
+  - 模式 B（补充）：`grep -ciE "arrival|poisson|interarrival|per second|pps|packets/s|utilization|offered"` → **count = 5**；命中行 L69、L105、L120、L189、L227。**逐条为何不构成反例**：L69 `sends 25 variable length messages per second during 2 minutes` + `The average bitrate of this transfer is 3 Mbit/s` = **本篇施加的**轻载条件（实验输入，非测得过程）；L105 `we compute our statistics using 6-hours bins` = 统计分箱粒度；L120 `we determine the received packets by looking at the ACK frames returned by the server` = 丢包判定方法；L189 `the presence of (moderate) packet loss even at low network utilization` = 作者对"低利用率"的定性评论；L227 `https://www.speedtest.net/it/apps/cli` = 参考文献 URL（"pps" 子串）。
+  - 模式 C：`grep -ciE "time series|stochastic|Markov|queue"` → **count = 1**；命中行 L107 `allowing emptying the router queues faster than for uploads, having thus a smaller impact on queuing delay for equally-sized queues` = **排队时延的机理解释**，无排队/到达过程模型。
+  → **全篇无测得的分组到达过程、无到达率统计量。**
 - **昼夜负载变化**：L106/L152 给出**未观测到昼夜周期**（RTT 用 Mood's test；吞吐变化 <±10%），并据此推断基础设施利用率低。
 
 ### 4) 能否作为定标或现象证据
@@ -250,7 +257,10 @@
 - **周期性的非负载型扰动（15 s）**：L169、L206、L211、L226、L228。关键事实是**区间内稳定、区间边界跳变**，且**与卫星切换解耦**（L211 的单星可见窗口实验：`The significant RTT variance between intervals invalidates the hypothesis that the RTT changes are caused by satellite handovers (no handofs are possible with single satellite in field-of-view).`）。→ 与 GGFJ3SEG 的 15 s 量子（GGFJ3SEG L190）**相互独立地吻合**。
 - **上行/下行不对称**：L144（下载膨胀远大于上传 60 分位）、L160（Zoom 上行 OWD 52±14 ms 显著高于下行 35±11 ms）。
 - **突发**：本篇**无自身测得的丢包突发长度分布**；L169 的 `RTT spikes and packet losses of several orders` 是**引用他人**（[25, 52, 74]），不可当作本篇实测数字。
-- **到达率/负载过程**：**未见**。检索词 `arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level`（grep -n -i -E，范围=该篇 MD 全文 L1–L463）与补充词 `time series|stochastic|Markov|queue`（同范围）后：负载一律以"测速期间施加的批量传输"或 goodput（Mbps）这一**结果量**出现，**全篇没有到达过程的建模或测量**。
+- **到达率/负载过程**：**未见**。核验命令与实测计数（主控核验协议 v2），范围均为该篇 MD 全文 L1–L463：
+  - 模式 A：`grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"` → **count = 0**。
+  - 模式 B：`grep -ciE "time series|stochastic|Markov|queue"` → **count = 2**；命中行 L144、L246。**为何不构成反例**：L144 命中词是 `queue buildups` 与 `queue size diferences at the Dishy`（bufferbloat 段内的**机理解释**：`wherein latencies during trafic load can increase significantly due to excessive queue buildups [40]`），该段无排队模型、无到达过程；L246 是参考文献标题 `[1] Richelle Adams. 2012. Active queue management: A survey.`。
+  → 负载在本篇一律以"测速期间施加的 10 s 批量传输"或 goodput（Mbps）这一**结果量**出现，**全篇没有到达过程的建模或测量**。
 
 ### 4) 能否作为定标或现象证据
 
@@ -276,4 +286,279 @@
 11. **未读部分**：附录 A（轨道信息）、B（数据中心端点）、C（全局补充图）、D（bent-pipe 全局视图）、E（定向测量挑战）正文未逐段读，仅确认标题（L408–L440）；正文引用其处（L135、L137、L142、L146、L191）已按正文行号引用。L220–L224 为图 16 的坐标轴标签行，非正文。
 
 ---
+## 4. P6XJZNQK — A Global Perspective on the Past, Present, and Future of Video Streaming over Starlink
+
+**书目（逐字）**：L1 `# A Global Perspective on the Past, Present, and Future of Video Streaming over Starlink`；L3–L6 Liz Izhikevich（UCLA）/ Reese Enghardt / Te-Yuan Huang / Renata Teixeira（Netflix）；L16 `Proc. ACM Meas. Anal. Comput. Syst. 8, 3, Article 30 (December 2024), 22 pages. https://doi.org/10.1145/3700412`。
+**已读范围**：L1–L340（摘要 L8、引言 L18–L30、LEO 视频增长 L32–L64、QoE L66–L200、拥塞控制 L202–L241、ABR L243–L305、局限 L307–L315、相关工作 L317–L329、未来工作 L331–L335、结论 L337–L339）。参考文献 L345–L466 未读。
+
+### 1) 测量/建模对象与条件（逐字+行号）
+
+- L26：`In this work, we provide the first global analysis of on-demand video streaming over LEO. Using data from a large video streaming service, Netflix, we analyze over one million LEO households across 85 countries for over two years.`
+- L36（数据口径）：`The data collected focuses on viewing duration (without looking into what people are viewing), quality of experience metrics (e.g., play delay) collected from the client device, network metrics (e.g., round-trip time) collected from the server’s TCP stack, and metadata (e.g., autonomous system, country, device type).`；`We identify Starlink households by their autonomous system (ASN 14593).`
+- L72–L80（会话筛选条件逐字）：`(1) theoretically capable—as determined by Netflix subscription plan and device type—to stream at least at a 720p high definition resolution to ensure low quality is due to the network; (2) at least 5 minutes long …; (3) destined towards TVs … which are more likely to be stationary, thereby minimizing customer mobility artifacts; and (4) streamed during the first week of April 2024, unless otherwise noted.`
+- L86（质量口径）：`We quantify perceptual video quality using a popular full-reference objective video quality assessment algorithm [40]: Video Multi-Method Assessment Fusion (VMAF) [28].`；L88 `we report VMAF as a Maximum Quality Ratio` … `Maximum Quality Ratio is computed by dividing the time-weighted VMAF … by the maximum possible VMAF available for the session.`
+- L226（A/B 实验条件）：`We run an A/B test using New Reno with MulTCP on over 1 million Netflix video streaming sessions over Starlink.` … `We run the test for a week in mid-April 2024.`
+- L257（仿真条件）：`we simulate diferent ABR strategies on a random sample of 500K Starlink and 500K non-Starlink streaming sessions, randomly sampled between April 20–May 5, 2024.` … `Netflix’s player records throughput over time in 500 ms buckets, where throughput is computed as the number of bytes downloaded during a given bucket divided by the active transfer time during the bucket.`
+
+### 2) 可引用的事实与数字（逐字+行号）
+
+| # | 事实（逐字） | 行号 |
+|---|---|---|
+| 1 | `As of April 2024, the most widely deployed LEO network is Starlink, with near 6K satellites [43] and over 2.6 million users [6].` | L54 |
+| 2 | `As of August 2024, Starlink is the 29th of over 20,000 ISPs responsible for all global viewing seconds.` | L56 |
+| 3 | `As of April 2024, customers from over 85 countries stream video over Starlink. Starlink leads in geographic diversity; the second most geographically diverse network has users from less than half the number countries as Starlink.` | L58 |
+| 4 | `large mainland territories—the US, Canada, Australia, Mexico, and Brazil—compose the top 5 countries that contribute the most Netflix viewing seconds over Starlink. Together, they contribute near 90% of all viewing seconds over Starlink.` | L60 |
+| 5 | `While the majority of regions today increase the number of viewing seconds by roughly 10%, Africa grows its streaming by over 20%.` | L62 |
+| 6 | `Customers on or near the Pitcairn Islands rely on the Starlink most, streaming 30% of their video over Starlink. Zambia, Rwanda and Malawi also rely the most on LEO, streaming over 5% of their video over Starlink. In comparison, the United States streams less than 1% of their video over Starlink.` | L64 |
+| 7 | `Starlink customers are 60% more likely to experience a bitrate switch, and 200% more likely to experience a rebufer relative to the most popular Internet service providers.` | L68 |
+| 8 | `Starlink provides up to 18% better Maximum Quality Ratio in the worst video streaming sessions in Malawi and Zambia, and up to 8% worse in the worst streaming sessions across Mexico, Rwanda, and Brazil.` | L103 |
+| 9 | `Countries with historically high RTTs (Zambia, Rwanda, Malawi) experienced play delays that were up to 250% higher than the US.` | L147 |
+| 10 | `Zambia, Rwanda, Malawi experience play delays that are 5–10% lower than non-Starlink alternatives.` | L149 |
+| 11 | `For sessions that experience at least one bitrate switch, 50% of Starlink sessions will experience over 2 times the number of bitrate switches compared to non-Starlink networks.` | L168 |
+| 12 | **`Uniquely, over 95% of Starlink’s throughput is lower than alternative networks. For example, Starlink throughput is nearly always 50% of what a top 10 ISP ofers and falls below 20 Mb/s`；`Over 90% of bitrate switches, no matter the network, occur at throughputs below 20 Mb/s.`** | L170 |
+| 13 | **`80% of observed throughputs increase/decrease with greater magnitude than in a Top 10 ISP. On average, Starlink throughput increases/decreases take longer to recover: While 50% of throughput decreases that reach below 10Mb/s … in non Starlink networks take roughly 5 seconds to recover back to above 10Mb/s, 50% of Starlink throughput decreases take roughly 15 seconds to recover. Coincidentally, 15 seconds is the interval that Starlink re-configures static routes for packet forwarding between satellites and/or ground stations [2].`** | L172 |
+| 14 | `In Figure 11a, we illustrate an example video streaming session over Starlink, which sufers from a total of eight bitrate switches within the span of 100 seconds. The Starlink throughput dipping below 20 Mb/s twice while the bufer level dips below holding less than 1 minute of video (Figure 11b) contributes to the decreases in bitrates. Meanwhile, a sudden upward burst of throughput contributes to the successive increases in bitrate.` | L174 |
+| 15 | `they are significantly (216%) more likely to occur over Starlink than a Top 10 ISP, and 40% more likely to occur relative to any non-Starlink network. Furthermore, if a customer experiences at least one rebufer, Starlink customers are 50% more likely to experience more than one rebufer. In the worst case, Starlink customers experience twice as many rebufers as non-Starlink customers.` | L192 |
+| 16 | `Streaming sessions near Africa and Latin America are over 2 times more likely to experience a rebufer relative to the United States.` | L194 |
+| 17 | `In the median case, Starlink sessions spend 50% less time in the reduced bitrate state.` … `Starlink sessions are six times more likely to experience an outage (i.e., a period of at least 8 seconds) compared to non Starlink sessions. Outages are often due to a physically obstructed dish or no satellite in line of sight [48].` | L198 |
+| 18 | **`Starlink’s high packet round trip times (RTTs) and increased retransmit rates contribute to low TCP congestion windows, and hence, lower throughput. We find (Figure 13) that 75% of minimum RTTs over Starlink are at least two times greater than non-Starlink networks.`** … `we discover the majority of Starlink sessions experience nearly two times the retransmit rate relative to non-Starlink networks. The increase in Starlink retransmits is likely influenced by random loss on satellite links [34]; the use of Active Queue Management (FQ-CoDel) on the Starlink WiFi router [6], which minimizes latency at the expense of packet loss; and potential packet reordering [27], which may lead to duplicate acknowledgments and spurious retransmits.` | L213 |
+| 19 | **`New Reno with MulTCP increases average throughput by 30-40% compared to the default congestion controller`** … `Increase in throughput results in a statistically significant, 0.08%–1% increase in lower quantile VMAF. Further, network rebufers per hour of video played decrease by 7%, play delay decreases by 2%, and bitrate switches decrease by 5%. Nevertheless, New Reno with MulTCP over Starlink is still 33% more likely than non-Starlink sessions to experience a bitrate switch.` | L235–L237 |
+| 20 | **`New Reno with MulTCP presents undesirable drawbacks. Retransmit rates increase by 300% on average and the 95th percentile of latency measurements increases by 77% on average, indicating that New Reno with MulTCP fills in-network queues to a greater capacity. Further, the increase in latency under load could cascade into other problems when competing with real-time flows.`** | L239 |
+| 21 | `Due to Starlink’s excessive variability (Section 3.4.1), smoothed throughput overestimates throughput by up to an additional 10% compared to non-Starlink throughputs.` | L277 |
+| 22 | `Starlink sessions under the same ABR configuration, on average, experience a roughly 35% significant increase in the number of network rebufers per hour. Critically, no amount of Starlink throughput smoothing actually allows it to achieve a non-Starlink equivalent network rebufer rate.` | L279 |
+| 23 | ABR 扫描参数范围逐字：`we sweep throughput smoothing window size (using exponentially weighted moving average) between 0–300000 ms, throughput discounts between 0–60%, bufer level between 0–100000 ms at which to apply bufer discount.` | L264 |
+
+### 3) 对"负载变化/突发/时延/到达率"的事实贡献
+
+- **负载→时延的实验证据（最强的一条）**：L239 —— 人为提高发送并发度（MulTCP 模拟 3 条连接）后吞吐 +30–40%，但**重传率 +300%、P95 时延 +77%**，作者明确归因为 `fills in-network queues to a greater capacity`。这是"把链路推向高负载 → 队列填充 → 时延上升"的**在网 A/B 实测**（100 万用户、一周）。
+- **时延的量级与分布**：L213 `75% of minimum RTTs over Starlink are at least two times greater than non-Starlink networks`。
+- **突发/时变的形状**：L172 给出**吞吐跌落后的恢复时间分布**（Starlink 中位约 15 s vs 非 Starlink 约 5 s），并把它与 15 s 重配置周期联系起来；L170 给出"95% 的吞吐低于替代网络、低于 20 Mb/s"。
+- **到达率/负载过程**：**未见**。核验命令 `grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"`，范围=该篇 MD 全文 L1–L466 → **count = 1**；唯一命中行 L174（`a sudden upward burst of throughput`）。**为何不构成反例**：该处指**单次会话里吞吐的突升**（结果量），非包/流到达过程。另一模式 `grep -ciE "time series|stochastic|Markov|queue|poisson"` → **count = 2**；命中行 L239（`fills in-network queues to a greater capacity`）与综述性排队叙述，均为排队机理描述，**无排队模型、无到达过程**。
+
+### 4) 能否作为定标或现象证据
+
+- **LEO 实测（全球最大规模的应用层视角）**：L26（100 万+ 家庭、85 国、2 年）、L36（Netflix 服务端 TCP 栈指标）、L226（100 万用户的真实 A/B）。
+- **可作定标输入**：吞吐–时延耦合（L235/L239：+30–40% 吞吐 vs +300% 重传 / +77% P95 时延）；minRTT 比值（L213）；恢复时间（L172）。
+- **现象证据**：15 s 恢复时间与 15 s 重配置的耦合（L172）；"提吞吐≠提 QoE"的反直觉因果证据（L237、L241：`eforts to simply match Starlink’s performance metrics, such as average throughput, with those of terrestrial networks do not necessarily lead to an overall improvement in quality of experience over Starlink.`）。
+- **对本选题的直接价值（作者自述的推广面）**：L335 `we should build general solutions that consider non-congestive losses and treat throughput variation as a first order metric, rather than merely optimizing for performance over LEO networks.` → **"把吞吐方差当一阶指标"是本篇对 RL 路由奖励设计的直接可引主张**（非拥塞性丢包亦需显式建模）。
+
+### 5) 边界与不可外推项
+
+1. **单一 vantage point**：L309 `Our understanding … are inherently biased by our vantage point: Netflix.`；L311 `trends in Starlink’s growth over time (Section 2) are predominantly based on Netflix users and may not accurately represent Starlink’s overall user base.`
+2. **绑死 Netflix 算法**：L311 `our analysis of Starlink’s delivery of high-quality video (Section 3) relies on Netflix’s streaming algorithms and congestion controller and might not hold for other streaming services.`
+3. **只对视频流成立**：L311 `the quality of experience we measured for Starlink users may not translate to other types of applications … the video bufer helps hide many of transient network disruptions typical of LEO access.`
+4. **会话长度筛选偏差**：L315 `we filter for video sessions at least five minutes long (Section 3.1). However, such filtering could unintentionally exclude video sessions that were aborted early due to poor video quality.`
+5. **不是底层网络测量**：指标来自服务端 TCP 栈与客户端播放器（L36、L257 的 500 ms 桶），**无包级时延/队列观测**；不能反解链路级排队过程。
+6. **时间绑定**：增长分析 2022-01–2024-04（L34），QoE 主口径为 2024-04 第一周（L80），A/B 为 2024-04 中一周（L226）→ 绝对数值不可外推到其它时期。
+7. **LEO 特异性不可外推**：L54 `We limit our study to Starlink, as not enough users stream Netflix over other LEO networks to garner a suficiently large sample size.`
+8. **自述的 ABR 现状**：L323 `only one LEO-optimized ABR exists: Zhao [59] designed an ABR algorithm specific for Starlink, but it sufers from increased bitrate switches and an undesirable rebufer-quality tradeof` → LEO 专用算法尚无成功先例（对本选题是背景证据）。
+
+---
+
+## 5. L63JISQN — Making Sense of Constellations: Methodologies for Understanding Starlink's Scheduling Algorithms
+
+**书目（逐字）**：L1 `# Making Sense of Constellations`；L3 `Methodologies for Understanding Starlink’s Scheduling Algorithms`；L5–L21 Hammas Bin Tanveer（University of Iowa）、Mike Puchol（Google X）、Rachee Singh（Cornell）、Antonio Bianchi（Purdue）、Rishab Nithyanand（University of Iowa）。
+**已读范围**：L1–L149（全文正文：摘要 L15、引言 L17–L33、背景 L35–L45、流量工程证据 L47–L59、卫星分配识别 L61–L89、全局调度器 L91–L124、建模 L126–L141、相关工作 L143–L145、结论 L147–L149）。参考文献 L151–L200 未读（仅确认标题 L151）。
+
+### 1) 测量/建模对象与条件（逐字+行号）
+
+- L19（对象）：`we empirically uncover the scheduling algorithms used by the Starlink network by analyzing data from high-frequency measurements from four Starlink terminals (deployed both in the US and the EU) to servers co-located at their corresponding Point-of-Presence.`
+- L49（装置，逐字）：`We perform our measurement using four Starlink terminals — one each in Western Europe, Northeast US, Midwest US, and Northwest US. To improve the precision of our measurements, we configured the Starlink router to operate in bridge mode and connected them to a dedicated Raspberry Pi via Ethernet.` … `The destination of our measurements were servers co-located at the Starlink PoPs assigned to the regions of our user terminals.`
+- L51（**关键实验条件，逐字**）：`Packets were sent using iRTT [3] at the rate of 1 packet/20 ms and iPerf3 at a bandwidth of 50% of the upstream connection. These parameters were chosen because they allowed stable and reliable measurements of the Starlink network. At higher frequencies and bandwidths, the packet loss rates and measured round-trip times were highly variable even within the same measurement period.` … `the clocks of our vantage points and servers were routinely synchronized using NTP.`
+- L65–L67（卫星识别方法）：`Obstruction maps are 123px x 123px, 2-dimensional images which mark the trajectory of satellites that recently served the user terminal.` … `We used starlink-grpc-tools [4] to extract the 2-d obstruction maps every 15 seconds from each terminal.` … `We use CelesTrak [2] to get the TLEs for Starlink satellites. Since these files only indicate satellite positions every six hours, we use the SGP4 satellite propagation algorithm [22] to calculate satellite positions`
+- L71（XOR 隔离法）：`we perform an XOR operation on the obstruction map from 𝑥 and 𝑥 − 1 (i.e., the prior 15-second slot). This will result in the erasure of all satellite trajectories which were common to the two figures — leaving visible only the trajectory associated with the satellite connected to the terminal during slot 𝑥.` … `we perform a terminal reset every 10 minutes (since resetting the terminal starts a fresh gRPC map).`
+- L89（识别精度校验）：`We validate our similarity matching via a manual (visual) pilot test study, in which the authors manually identified the best match between 500 sets of gRPC and TLE trajectories. The DTW similarity method and our manual tests overlapped on over 99% of all outcomes.`
+
+### 2) 可引用的事实与数字（逐字+行号）
+
+| # | 事实（逐字） | 行号 |
+|---|---|---|
+| 1 | **`It is immediately obvious that major changes in latency characteristics occur every 15 seconds — specifically, at the 12th, 27th, 42nd, and 57th second past every minute. Notably, these changes are observed from all our measured locations for all periods of time.`** | L57 |
+| 2 | **`we are also able to confirm that the latency characteristics observed during these consecutive 15-second windows are statistically diferent (Mann-Whitney U test; p < .05) from each other for all locations and over the entire period of our measurements.`** | L57 |
+| 3 | `these efects were noticed even when our terminals were running well under capacity` | L57 |
+| 4 | **`This is because changes in satellite allocation occur every 15 seconds which is insuficient time to meaningfully cause impacts on performance due to change in satellite positions/distances.`** | L57 |
+| 5 | `latency measurements the user terminal frequently form parallel bands that are a few milliseconds apart. These bands reflect evidence that radio frames are allocated to user terminals by an on-satellite controller in a somewhat round-robin fashion.` | L59 |
+| 6 | `On average, there are 35–44 satellites in the field of view of a user terminal in any 15 second slot.` | L93 |
+| 7 | `the median angle of elevation of selected satellites (solid lines) is 22.9°s higher than that of the available but unselected satellites (dotted lines). Although only 30% of all available satellites had their AOEs in 45° to 90° range, the global scheduler picked 80% of satellites from the range (averaged over all locations).` | L97 |
+| 8 | `In other locations, 58% of satellites on average were available towards the north of the user terminals, however, the user terminal was mapped to satellites from the north 82% of the times.`；受阻终端对照 `The terminal in Ithaca was assigned only 9.7% of the satellites from the region compared to 55.4% on average by user terminals in other locations.` | L99 |
+| 9 | `Averaged over all locations, the probability of picking a satellite increases with an increase of one month in the satellite’s launch date.` | L111 |
+| 10 | **`During such slots, the global scheduler opts for the sunlit satellites 72.3% of the time averaged over all locations. We also find that the global scheduler only picks dark satellites during 15 second slots where the %(dark/available) satellites is >= 35% (averaged over all locations).`** … `We find that the AOE of dark satellites picked by the scheduler was 25 degrees higher than their sunlit counterparts.` | L122 |
+| 11 | `As a Starlink satellite has a service lifetime of about 5 years` | L113 |
+| 12 | `The Starlink constellation consists of more than 4,000 satellites which were released in batches since 2018.` | L111 |
+| 13 | `A Starlink satellite connects to multiple user terminals at a time. They allocate radio frames to user terminals mapped to them to exchange data.` | L43 |
+| 14 | `Terminals can connect to any satellite at an angle of elevation higher than 25°s` … `While tens of satellites satisfy the angle of elevation constraints, a terminal can connect to only one satellite at a time.` | L41 |
+| 15 | `The proposed model significantly outperforms the baseline model and predicts the correct allocated satellite characteristics 65% of the time (𝑘=5 guesses), in comparison to the baseline of 22%.` | L134 |
+
+### 3) 对"负载变化/突发/时延/到达率"的事实贡献
+
+- **时延的确定性时间结构（对建模最关键）**：L57 —— 15 s 周期、**相位固定**（每分钟第 12/27/42/57 秒）、**统计显著**（Mann-Whitney U, p<.05），且**在终端远未满载时依然出现**（L57 第 3 条）。→ 这是"**时延的结构性跳变与负载无关**"的直接实测证据，与 NPF75WS5 L228（15 s 全局同步、非切换导致）**独立互证**。
+- **控制器分层与负载的关系**：L23 `First, a global network controller allocates a satellite to each user terminal based on a variety of factors including load, geospatial conditions, satellite charge, etc.`；L43 `This controller considers factors such as user priority, current load, and per-terminal flow characteristics when forwarding the trafic from user terminals to ground stations.` → **负载是调度器的输入（由 FCC 文件确认的机制描述），但本篇没有测量负载本身**。
+- **突发/到达率**：**未见**。核验命令 `grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"` → **count = 0**；`grep -ciE "time series|stochastic|Markov|queue|poisson"` → **count = 0**（范围=该篇 MD 全文 L1–L200）。
+- **可测性的实测约束**：L51 —— 只有在 **1 packet/20 ms、50% 上行带宽** 的温和条件下数据才稳定；更高频/更高带宽下"even within the same measurement period"时延与丢包高度可变。→ **对"高负载下可测性"的实测约束**。
+
+### 4) 能否作为定标或现象证据
+
+- **LEO 实测 + 逆向工程**：4 个终端（US/EU）、毫秒级 iRTT、目的地在同 PoP（排除地面段）。
+- **可作定标输入**：15 s 周期与相位（L57）、视场内卫星数 35–44（L93）、AOE 选择偏好（L97：中位高 22.9°、80% 选自 45°–90°）、北向偏好 82%（L99）、日照偏好 72.3% 与暗星阈值 35%（L122）。
+- **可复用制品**：L141 `In order to facilitate future simulations and evaluations of the Starlink network, our model will be publicly available on paper acceptance.`（离线调度器近似模型，top-5 精度 65% vs 基线 22%，L134）→ **可直接作为我们仿真器的"时变星地关联"生成器**。
+- **现象证据**：15 s 相位固定的确定性重配置是本批最强的"非随机时间结构"证据。
+
+### 5) 边界与不可外推项
+
+1. **样本极小**：4 个终端、4 个地点（L19、L49）→ 结论的统计基础是**空间 4 点**；L93 的 35–44 颗视场卫星为均值口径。
+2. **终端被主动复位**：L71 `we perform a terminal reset every 10 minutes` → 观测窗口被人为切分为 10 分钟段，**长时间连续行为不可观测**。
+3. **测量负载被人为压低**：L51 的 1 pkt/20 ms 与 50% 上行带宽是**为保证稳定而选的低强度条件**，故本篇**不能**给出高负载下的时延/丢包事实。
+4. **调度器机制是"推断 + FCC 佐证"**：L21 `We were able to confirm the validity of these major findings using recent FCC filings by SpaceX [5].`；L57 亦为 `we conclude that our measurements have uncovered evidence of this scheduler`（证据式结论，非直接读取实现）。
+5. **模型输入不完整（作者自述）**：L136 `we expect that other publicly-unavailable features such as terminal density in a region and satellite load characteristics will also impact the global scheduler. Therefore, the performance of our model is constrained by the unavailability of data.`
+6. **模型时效性**：L141 未给出发布时间；L111 的"偏好新卫星"与 L113 的 5 年寿命推断绑定 2023 年星座状态 → **不可外推到其它年份**。
+7. **未读部分**：参考文献 L151–L200（仅确认标题）。
+
+---
+
+## 6. GJJQUMQ2 — Deciphering Region-Level Signatures from Latency Measurements in LEO Satellite Internet
+
+**书目（逐字）**：L1 `# Deciphering Region-Level Signatures from Latency Measurements in LEO Satellite Internet`；L3 `Xiang Shi, Yifei Zhang, and Peng Hu`；L5–L7 `Advanced Network and Embedded Systems Lab (AEL) / Dept. of Electrical and Computer Engineering, University of Manitoba, Winnipeg, Canada`。
+**已读范围**：L1–L203（全文正文：摘要 L9、索引词 L11、引言 L13–L25、相关工作 L27–L33、问题形式化 L35–L43、框架 L45–L108、评测 L110–L200、结论 L201–L203）。参考文献 L205–L236 未读（仅确认标题 L205）。
+
+### 1) 测量/建模对象与条件（逐字+行号）
+
+- L9（对象）：`we formulate the problem of region-level latency characterization using Starlink round-trip time (RTT) measurements from the public LENS dataset.`
+- L31（数据来源，逐字）：`LEOScope from the University of Surrey is the first testbed that enables the measurements of Starlink LEO satellite Internet at the global scale. Arising from this work, the LENS dataset [3] is one of LEO satellite network measurement datasets, containing fine-grained measurement observations. It provides geographically distributed Starlink dish measurements with timestamped RTT observations and point-of-presence (PoP) related deployment information`
+- L116（样本选择，逐字）：`From the 30 Starlink dish measurement sites in the LENS dataset, we select dish measurement data from five different regions for analysis (e.g., Victoria, Ulukhaktok, Seattle, Bruhl, and Kanazawa).`
+- L129（采样率与规模，逐字）：`In (1), N denotes the total number of samples within the file. The LENS measurement time interval is 10 ms, so the expected values of N are 360,000 (i.e., N = 100 × 60 × 60).`
+- L49（特征框架）：`the framework consists of three stages: 1) segmenting the raw RTT sequence into non-overlapping one second (1-s) intervals and extracting primary statistical features, 2) aggregating these second-level features over 60 seconds (60-s) sliding windows to generate more stable secondary representations, and 3) using the resulting feature space for regional comparison, discriminative analysis, and downstream classification.`
+- L61（样本数校验）：`Since the original RTT measurements are collected every 10 ms, each segment contains approximately 100 samples under normal conditions.`
+- L170（训练/测试切分，逐字）：`The training dataset comprises RTT measurement data from five regions … over a six-day period (Jan 18–23, 2026). To evaluate the model’s short-term and long-term stability, the test datasets were selected from three independent test days: January 24th, 2026 (i.e., short-term), as well as February 4th and March 10th, 2026 (i.e., long-term).`
+- L163（训练样本量）：`The LENS dataset is highly fine-grained (i.e., 10 ms intervals). Even after 60-s feature extraction, the six-day training dataset still remains around 8,640 samples.`
+
+### 2) 可引用的事实与数字（逐字+行号）
+
+| # | 事实（逐字） | 行号 |
+|---|---|---|
+| 1 | `While regions like Bruhl, Seattle, and Victoria maintain a minimum RTT of approximately 15-18 ms, Ulukhaktok stays within the 35-40 ms range.` | L133 |
+| 2 | `the Ulukhaktok region shows a statistically significant separation from other regions, exhibiting consistently higher RTT values across all three features (e.g., minimum, median, and mean RTT).` | L133 |
+| 3 | `the ground distance between Ulukhaktok’s dish and its associated Seattle PoP station is significantly greater than that of other regions. In summary, our empirical evidence directly confirms that regions with limited infrastructure and long ground distances between the dish and the PoP station lead to increased network latency` | L135 |
+| 4 | `The rtt_s_min_w_min feature achieves the highest score, indicating that the minimum RTT has the strongest discriminative power regarding the target region. Conversely, rtt_s_mean_absdiff_mean and rtt_s_max_w_max exhibit the lowest scores` | L144 |
+| 5 | **`The model achieves a high classification accuracy of 83% on the short-term test dataset. Its accuracy gradually declines on long-term test datasets.`** | L172 |
+| 6 | `region 2 (i.e., Ulukhaktok) achieves the highest scores across all three test datasets.` … `the model encounters difficulty classifying between regions 0 and 1 (i.e., Bruhl and Seattle, respectively). This problem arises as the RTT distributions for the two regions are similar` | L174 |
+| 7 | `Feature F10 (i.e., rtt_s_min_w_min) has the highest XGBoost importance and also exhibits the largest DI scores on both Feb.04 and Mar.10 long-term test datasets. This suggests that the minimum-RTT signature is highly discriminative but also temporally unstable.` | L200 |
+| 8 | `the decreases in long-term accuracy are likely related not only to the model structure itself, but also to temporal distribution drifts in the latency features, which may be caused by changes in user demand, ground station/PoP status, network traffic, or other operational conditions.` | L200 |
+| 9 | 波动度量公式（逐字 LaTeX，L95–L97）：`\delta _ { w } = \frac { 1 } { n _ { w } - 1 } \sum _ { k = 1 } ^ { n _ { w } - 1 } ( \mu _ { k + 1 } - \mu _ { k } ) ,`（原文为绝对值形式：左竖线 \mu_{k+1} - \mu_k 右竖线） | L96 |
+| 10 | 主特征向量（逐字 LaTeX）：`\theta _ { k } = \big [ n _ { k } , \mu _ { k } , \sigma _ { k } , m _ { k } , \operatorname* { m i n } _ { k } , \operatorname* { m a x } _ { k } , q _ { k , 0 . 9 5 } , q _ { k , 0 . 9 9 } \big ] .` | L84 |
+| 11 | `Packet loss is an inherent challenge in satellite networks. When packet loss occurs, the record entity is typically displayed as none (i.e., a missing value).` | L161 |
+| 12 | **引述他人（非本篇实测，但是本批次的关键二手事实）**：`Go ing beyond large-scale RTT observation, Garcia et al. [6] provide a detailed characterization of Starlink one-way delay using high-frequency probe measurements, revealing minor diurnal variation, clear uplink/downlink asymmetry, and strong latency inflation during periodic 15-second reconfiguration events. Similarly, Casparsen et al. [7] develop a statistical framework for end-to-end latency characterization and prediction, showing that Starlink latency exhibits a repeatable 15-second structure with identifiable boundary spikes and stable intra-period behavior.` | L33 |
+| 13 | **引述他人**：`WetLinks [9] offers a large-scale longitudinal Starlink dataset collected from two European vantage points over six months, comprising RTT, throughput, packet loss, traceroutes, and co-located weather measurements, which makes it particularly useful for studying long-term performance trends and weather effects.` | L31 |
+
+### 3) 对"负载变化/突发/时延/到达率"的事实贡献
+
+- **时延的区域性事实**：L133 —— min RTT 15–18 ms（Bruhl/Seattle/Victoria）vs 35–40 ms（Ulukhaktok，高纬/远 PoP）。**可直接引用的区域基线数值**。
+- **最小 RTT 是最强判别特征**：L144、L187 `the importance score of the rtt s min w min feature is significantly higher than that of the other features.` → **对定标的口径建议：用 min RTT 而非均值做区域/链路基线**。
+- **长期非平稳性（对 RL 泛化的直接证据）**：L172（83% → 长期下降）、L200（min-RTT 特征漂移最大，并把漂移归因于 `changes in user demand, ground station/PoP status, network traffic, or other operational conditions`）。→ "**同一区域同一特征分布随时间漂移**"的实测证据。
+- **负载/突发/到达率**：**未见**。核验命令 `grep -ciE "arrival|offered load|load factor|burst|inter-?arrival|packet rate|traffic intensity|Erlang|congestion level"` → **count = 0**；`grep -ciE "time series|stochastic|Markov|queue|poisson"` → **count = 1**；命中行 L37（`Each region produces a high-frequency latency time series`）。**为何不构成反例**：该处是**对 RTT 序列的称呼**，无随机过程建模。全文以 RTT 统计特征为对象，不涉及负载过程。
+
+### 4) 能否作为定标或现象证据
+
+- **LEO 实测（二手数据再分析）**：数据为 LENS 数据集（L31），本篇**不采集数据**，只做特征工程与分类；是**对已公开实测数据的再分析**，而非新测量。
+- **可作定标输入**：区域 min RTT 数值（L133）；采样口径（10 ms、360k 样本/小时，L129）；特征定义（L84、L96）。
+- **现象证据**：区域间 min RTT 分离（L133–L135）；**长期漂移**（L200）。
+- **不能作**：任何负载/到达率/队列相关定标（未测）。
+
+### 5) 边界与不可外推项
+
+1. **只有 5 个区域**：L116（Victoria、Ulukhaktok、Seattle、Bruhl、Kanazawa），且 Kanazawa 数据在 2026-01-25 后为空：L170 `Notably, the Kanazawa region’s RTT measurement data in the LENS dataset has been empty since January 25, 2026. Therefore, our long-term test datasets only include four regions.`
+2. **时间窗口极短**：训练 6 天（2026-01-18–23），短测 1 天（01-24），长测 2 天（02-04、03-10）（L170）；跨区域比较用 7 天（L138 图题 `seven-day (Jan 18–24, 2026)`）→ **不能外推为季节/年度尺度**。
+3. **数据缺口处理**：L161 丢包表现为缺失值，靠 XGBoost 稀疏感知分裂处理（`XGBoost architecture employs the sparsity aware split finding algorithm for handling the missing values in the training data.`）→ **丢包率未被量化，只被当作缺失**；本选题若要用丢包事实，**须另找来源**。
+4. **模型精度非物理结论**：83%（L172）是**区域分类**精度，不等于对时延的预测能力；作者亦自述 `improving long-term accuracy remains a challenge`（L203）。
+5. **未纳入的变量**：L142 `we performed label encoding on the target variable and filtered out redundant features (e.g., timestamps and distance) from the dataset` → 距离被人为剔除（仅用于解释性讨论），故 L135 的距离–时延关系是**定性推断**而非模型内因果。
+6. **本条最关键外推风险**：篇章结论中 `network traffic` 仅作为**漂移的可能原因之一**出现（L200），**无任何流量测量支撑** —— 引用时不得写成"该文测量了流量影响"。
+7. **未读部分**：参考文献 L205–L236（仅确认标题 L205）。
+
+---
+
+<!-- GA-SECTION-START -->
+## 附录 GA：对抗性问题（缺口主张 G-A）的全库检索与反例判定
+
+**主控问题原文**：全库是否有任何工作，把**同一个失败事件**（丢包/超时/溢出）按**物理原因**拆成**不同的学习通道或惩罚项**（例如区分"决策缓存溢出"与"链路队列溢出"）？
+
+### GA-1 检索模式与实测计数
+
+检索范围：`/data/liguang13/topic-loop-r2/md/**/txt/*.md`，共 **111** 个 MD 文件（`ls -d ... | wc -l` = 111）。全部使用 `grep -raniE "<pattern>" --include=*.md .`（`-a` 强制文本，避免 Sutton&Barto 书被 grep 判为 binary 而漏计）。
+
+| 模式（原文照抄） | 命中行数 | 命中文件数 |
+|---|---|---|
+| `credit assignment` | 17 | 5 |
+| `counterfactual` | 8 | 2 |
+| `reward decompos` | **0** | 0 |
+| `multi-objective` | 27 | 10 |
+| `MORL` | 9 | **1** |
+| `separate (reward\|penalty)` | **1** | 1 |
+| `drop (reason\|cause)` | 2 | 1 |
+| `overflow` | 12 | 10 |
+| 补充：`reward vector\|vector reward\|weighted sum of (the )?reward\|multiple rewards\|distinct reward\|reward component\|per-cause\|failure cause\|cause of (the )?(packet )?(loss\|drop)\|loss reason\|drop cause` | 14 | 7 |
+
+### GA-2 反例排查（逐条排除）
+
+**排除项（不构成反例，含理由）**：
+1. `credit assignment` 的 17 行：分布于 6C843JTS（TD 学习原文）、LJG6ZW7B（Sutton&Barto 教材及索引）、QGAREQUM、JSX5XG88（GAE）——全部是**通用 RL 的时序信用分配**，与"失败原因分解"无关。
+2. `counterfactual` 的 8 行：9FLZ88LZ、FGQSH4AI、I2WH9RRR、KPUZIMU5、LJG6ZW7B —— 全部指向 **COMA（counterfactual multi-agent policy gradients）** 的作者名/参考文献，是**多智能体信用分配**，不是失败原因分解。
+3. `multi-objective` 的 27 行：大部分落在参考文献条目或综述性语句（2QRYMWBI、LNA28YZY、Z74SR656、JS857IYN、QSNRQ8PF、3MRQRWHU、L5F3DK68、YI9G7NR7）。
+4. `separate (reward|penalty)` 唯一命中：LJG6ZW7B L6887 —— 神经科学脚注（Graybiel / dopamine），无关。
+5. `drop (reason|cause)` 两处命中：9KZDXPKC L246（`GSL Handover`）、L248（`ISL Failure`）——"丢包原因"是**实验场景对照**，不是学习通道。
+6. `overflow` 的 12 行：42E4NAQU（Dijkstra 基线描述）、9C6HB6AF（引用他人 AMBRLB）、GPDPLJNG（流守恒/buffer 规则）、J68GU76W（TLE 数据获取）、JP79GMZS（NS 仿真）、R37BNQQ8（`l(t)` 权重公式）、TQF59BD7（buffer 大小）、YI9G7NR7（遥感下行）、X2FCSU4S、LJG6ZW7B —— **无一处把 overflow 作为独立的惩罚通道**。
+
+**命中但需判定的三项（本批的"部分反例"）**：
+
+#### (1) 8N9QJHC2 — 最接近 G-A 的反例：按**故障物理原因**分流 Q 更新（T1 批次论文，非本批）
+
+- L29 逐字：`based on the Bayesian decision theory, when the known conditions are limited, the posterior probability index representing the posterior probability of diferent types of faults on each link is obtained through a priori probability ofdiferent fault types. Furthermore, the purpose of distinguishing the types oflink failures is achieved.`
+- L99 逐字（**这就是"物理原因"轴**）：`\$e two types of failures are temporary link failures caused by transmission medium interference and permanent link failures caused by problems with node port hardware equipment.`
+- L31 逐字（**分离进入了学习过程**）：`based on the Q-learning algorithm in reinforcement learning, we propose a route recovery technology based on the above-mentioned fault detection. \$e collected information is used to update the Q-value table composed of two-dimensional state space and one-dimensional action space. For diferent types of faults, update the Q-value of the local state space and action space of diferent related nodes to achieve the purpose of distinguishing route recovery for diferent types of faults.`
+- L176 逐字：`Corresponding to the two stages of fault detection, this technique uses diferent route update methods to recover the routes of nodes related to diferent types of faulty links.`
+- L31 逐字（**关键限制：奖励仍只有一条**）：`because the reward function consists of queuing time, transmission time, and link lifetime, the discount factor is also related to the link lifetime`
+- 分解轴判定：**失败原因（传输介质干扰 vs 端口硬件故障）**——正是 G-A 要的轴。
+- 是否覆盖 G-A：**部分覆盖，不构成完整反例**。理由（基于以上逐字原文）：(a) 分离发生在 `update the Q-value of the local state space and action space of diferent related nodes`（**更新哪些节点的 Q 表**），不是"同一个失败事件进入不同惩罚项/不同价值头"；(b) 奖励函数**唯一**，由 `queuing time, transmission time, and link lifetime` 组成，**没有按原因区分的惩罚项**；(c) Q 学习为单标量（L204 `Q _ { i } ^ { l } ( d _ { k } , y _ { z } ) = Q _ { i } ^ { l + 1 } ( d _ { k } , y _ { z } )` 收敛式；L216 `Q _ { i } \left( d _ { k } , y _ { z } \right) \leq 0`）。→ **"同一失败事件 → 按物理原因分通道惩罚"这一核心仍未被覆盖**。
+
+#### (2) UKBSA7WN（QRLSN）— 结构最像"分通道"，但分解轴是**优化目标**而非失败原因
+
+- L139 逐字：`In QRLSN, we adopt a Multi-Objective Reinforcement Learning (MORL) algorithm to balance endto-end delay and network traffic overhead load.`
+- L141 逐字：`MORL differs from typical RL, which considers several optimization objectives simultaneously in the learning process, where a reward vector is provided for the agent at each update step`
+- L143–L145（**逐字 LaTeX 更新式**）：
+  ```
+  Q _ { i } ( s , a ) \gets ( 1 - \alpha ) Q _ { i } ( s , a ) + \alpha \biggl [ r _ { i } + \gamma \operatorname* { max } _ { a ^ { \prime } \in A } Q _ { i } ( s ^ { \prime } , a ^ { \prime } ) \biggr ]\tag{ð(6)Þ}
+  ```
+- L154–L156（**逐字 LaTeX 合成式**）：
+  ```
+  \mathrm { T Q } ( s , a ) = \sum _ { i = 1 } ^ { n } w _ { i } Q _ { i } ( s , a )\tag{ð(7)Þ}
+  ```
+- L158 逐字：`In the proposed QRLSN, two optimization targets are obtained by a reward vector $f _ { r } = [ f _ { r _ { 1 } } , f _ { r _ { 2 } } ]$`
+- L160–L167（**逐字 LaTeX 奖励分量**）：
+  ```
+  f _ { r _ { 1 } } = \left\{ \begin{array} { c c } { { r _ { \mathrm { m a x } } } } & { { N _ { t + 1 } \mathrm { i s \ d e s t i n a t i o n } } } \\ { { r _ { \mathrm { m i n } } + \left( \frac { e } { 2 } \right) ^ { - d _ { i j } } } } & { { \mathrm { O t h e r w i s e } } } \end{array} \right.\tag{ð(8)Þ}
+  ```
+  ```
+  f _ { r _ { 2 } } = \left\{ \begin{array} { c c } { { r _ { \mathrm { m a x } } } } & { { N _ { t + 1 } \mathrm { i s \ d e s t i n a t i o n } } } \\ { { r _ { \mathrm { m i n } } + \left( \frac { e } { 2 } \right) ^ { - n _ { q } } } } & { { \mathrm { O t h e r w i s e } } } \end{array} \right.\tag{ð(9)Þ}
+  ```
+- L168 逐字（**轴的判据**）：`where $f _ { r _ { 1 } }$ and $f _ { r _ { 2 } }$ denote the reward function to optimize the end-to-end delay and network traffic overhead load respectively; $d _ { i j }$ is the transmission time between adjacent satellite nodes; $n _ { q }$ is the number of data packet queued in the current node.`
+- 分解轴判定：**优化目标类型（端到端时延 vs 网络流量开销负载）**；奖励中的 `n_q`（当前节点排队包数）是**负载目标的度量**，不是"溢出原因"。
+- 是否覆盖 G-A：**不覆盖，但提供最强的结构模板**。它是全库唯一被确认存在的"奖励向量 + 每目标一个 Q_i + 加权合成"实现（L141/L147/L158），可直接复用其结构做"分原因惩罚通道"——但**需要把 i 的语义从"优化目标"改成"失败物理原因"**，该文自身没有这样做。
+
+#### (3) GPLEP83L — 惩罚按**事件类型**分开（专家基线）
+
+- L110 逐字：`The baseline reward follows a relatively compact design, mainly combining a distance-based term, a queue-based term, and fixed penalties or bonuses for special events such as delivery, unavailable links, and loop formation.`
+- 分解轴判定：**事件类型（投递 / 链路不可用 / 成环）**，其中队列项与不可用链路项确实分开。
+- 是否覆盖 G-A：**不覆盖**。该分解不区分"同一丢包事件究竟由缓存溢出还是链路队列溢出导致"；`unavailable links` 是拓扑性不可达，`queue-based term` 是时延度量，二者**不构成对同一失败事件的因果拆分**。
+
+#### (4) 旁证：非学习类工作确实做了"失败原因"分类，但不进入学习
+- X2FCSU4S L15 逐字：`the queue length becomes larger and a cache overflow appears. In this paper, the abundant storage resources of the multilayered satellite network (MLSN) are used to avoid the packet loss caused by a cache overflow of the Low Earth Orbit (LEO) satellites.` → **"缓存溢出"被明确识别为丢包原因**，但手段是 Stackelberg 博弈 + 缓存定价（非学习通道）。
+- 9KZDXPKC L246/L248：`GSL Handover` 与 `ISL Failure` 作为两种造成吞吐下降的场景**分别实验**，但不进入任何学习目标。
+
+### GA-3 结论（对 G-A 的判定）
+
+在全库 111 篇中，**未发现任何工作把同一个失败事件按物理原因拆成不同的学习通道或惩罚项**：
+- `reward decompos` **0 命中**；`separate (reward|penalty)` **1 命中且无关**；`drop (reason|cause)` **2 命中且仅为实验场景**。
+- 最接近的是 **8N9QJHC2**（把链路故障按"介质干扰/端口硬件"分类并把结果分流到不同节点的 Q 更新），但它的**奖励函数唯一**、**Q 为单标量**，分离只体现在"更新哪些节点"。
+- 唯一具备"多通道 Q"结构的是 **UKBSA7WN**（MORL 奖励向量 + 每目标 Q_i + 加权合成 TQ），但其通道轴是**优化目标**（时延/负载），不是失败原因。
+- → **G-A 的缺口成立**：把"决策缓存溢出"与"链路队列溢出"这类**同构失败事件的不同物理原因**分别接入独立价值头/独立惩罚项，在全库范围内**未见先例**；UKBSA7WN 的多通道骨架可作为实现该缺口的现成载体。
+
+<!-- GA-SECTION-END -->
 <!-- SENTINEL-END -->

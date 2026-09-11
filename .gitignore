@@ -27,3 +27,7 @@ LITERATURE/papers/
 round/hooks/permissions.json
 round/hooks/unregistered.log
 round/hooks/__pycache__/
+
+# 原子写入临时目录（工具产生的可忽略中间件）
+**/.tmpdir/
+.*.tmpdir/

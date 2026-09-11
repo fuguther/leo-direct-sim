@@ -951,6 +951,395 @@ L172 逐字："Generate a single-layer LEO constellation of 64 satellites using 
 - 对比基线：Dijkstra 最短路径、最大流算法（L174）。
 - 评估指标：端到端时延（Fig. 4）、吞吐量（Fig. 5）、参与转发的卫星数（Fig. 6，"反映负载均衡"）。
 
-<!--APPEND-->
+## 5PYWVRC5 Shaping Rewards, Shaping Routes（FD-MADRL 路由的奖励塑形研究）
+
+**重复条目说明**：5PYWVRC5 与 L2VKYTAV 为同一篇的两个入库副本，MD 正文逐字节相同（md5 均为 b116d516852ae09a832f7e658d1ed602，均 123 行，均为 20434 字节）。本篇按 itemKey **5PYWVRC5** 记录一次；L2VKYTAV 不再重复拆解。以下行号对两个副本通用。
+
+作者：Manuel M. H. Roth, Anupama Hegde, Thomas Delamotte, Andreas Knopp（DLR / UniBw München）。这是一篇 **workshop/short paper**（含 Acknowledgment、References 共 123 行），核心内容是**奖励塑形的系统刻画**，而非新算法。
+
+### 1. MDP 定义
+
+**状态**：L29 逐字（一句话，无公式）：
+
+> "For FD-MADRL, the state space consists of information about the adjacent link loads, the previous hop and the destination."
+
+→ 三个分量：邻居链路负载、**上一跳**（previous hop）、目的地。**无维度、无归一化说明**。注意 "previous hop" 是唯一的记忆类字段，但它是**空间路标**（防环）而非时间量。
+
+**动作**：L29 逐字："The action space emcompasses the available ISLs, so the available next hops."（原文 "emcompasses" 为笔误。）4 条 ISL（L17："we assume four ISLs on each satellite as in [6]"）。无掩码（grep -n -i -E "mask|feasib|legality" → 0 命中）。
+
+**奖励**：本篇的重点，**给了三个公式**。
+
+全局奖励（含 T 步滞后），Eq (2)，MD L39 逐字：
+
+> r _ { t + T } ^ { G } = w _ { 1 } U ( t ) - w _ { 2 } L ( t ) - w _ { 3 } D ( t )\tag{2}
+
+（L33 逐字："At time step t, the global reward of an agent can capture relevant end-to-end characteristics. Specifically, the flow-specific latency L(t), the maximum or average link utilization $U ( t ) .$ , and the resulting packet dropping rate D(t) can be considered. Each metric is weighted by a factor, denoted as $w _ { 1 } , w _ { 2 } ,$ and $\boldsymbol { w } _ { 3 }$ . However, this reward is only received after a significant time lag, denoted by $T ,$ , due to the multi-hop propagation delays."）
+
+局部奖励，Eq (3)，MD L45 逐字：
+
+> r _ { t + 1 } ^ { L } = w _ { 4 } \delta _ { t h } ^ { L } ( t ) - w _ { 5 } l ^ { L } ( t ) - w _ { 4 } d ^ { L } ( t )\tag{3}
+
+（**原文笔误登记**：第三项应为 $w_6$，原文写作 $w_4$；L42 明确 "these metrics are weighted by factors, denoted as $w _ { 4 } , w _ { 5 } ,$ , and $\boldsymbol { w } _ { 6 }$"，故 Eq (3) 与文字自相矛盾。）
+
+**最终用于 FD-MADRL 的局部奖励**，Eq (4)，MD L53 逐字（8 分支分段函数）：
+
+> r _ { t + 1 } ^ { \prime } = \left\{ \begin{array} { l l } { + \Psi , } & { \mathrm { i f ~ g o a l ~ r e a c h e d } } \\ { + \psi , } & { \mathrm { i f ~ o v e r a l l ~ p a t h ~ r e d u c t i o n } } \\ { - \psi , } & { \mathrm { i f ~ o v e r a l l ~ p a t h ~ e x t e n s i o n } } \\ { - \Psi , } & { \mathrm { i f ~ p a t h ~ n o t ~ r e d u c e d } \ \& \log } \\ { + \xi _ { 1 } , } & { \mathrm { i f ~ l i n k ~ l o a d < 0 . 4 } } \\ { - \xi _ { 2 } , } & { \mathrm { i f ~ 0 . 4 < l i n k ~ l o a d \leq 0 . 8 } } \\ { - \xi _ { 3 } , } & { \mathrm { i f ~ l i n k ~ l o a d > 0 . 8 } } \\ { - \Xi , } & { \mathrm { i f ~ l i n k ~ s a t u r a t e d } } \end{array} \right.\tag{4}
+
+（"& log" 为 "& loop" 的 OCR 笔误。）
+
+系数关系（L48–L50 逐字）："Instead of using local delays, we utilize the estimated resulting decrease in distance towards the destination, as in [4]. We denote the value of this path reduction ψ. Most importantly, to form coherent paths, loops have to be punished, but only at the nodes which are actually causing them. In this case a punishment −Ψ is received, which should be at least a magnitude higher than ψ. Including a similarly large reward, so +Ψ, for a successful path improved training performance - even though it was not propagated to all nodes along the path." / "To incentivise decentralized load balancing, a threshold-based approach proved effective. The utilized values of ξ are in the domain of ψ for balanced paths. Depending on which policy is more desired, the values for ψ and ξ can be varied. −Ξ punishes the usage of saturated links, which results in packet drops. As we intend to strongly discourage this behaviour, −Ξ is in the domain of −Ψ."
+
+→ **所有系数只给定性量级关系（Ψ ≫ ψ，Ξ ~ Ψ），无具体数值。**
+
+折扣 γ：Eq (1)（MD L24）中出现 $\gamma$，但**未给数值**。
+
+**转移/终止**：episode 终止＝到达目的节点（Eq (4) 的 "+Ψ, if goal reached"）。**有跨 episode 的状态耦合**（见第 5 项）——这是本篇最独特的一点。
+
+### 2. 学习算法与更新式
+
+DQN（L27："DQNs utilize DNNs to approximate the Q-function in complex routing environments. During training, agents interact with the environment and store their experiences in replay bufers for increased stability."）。
+
+Q 值更新（Bellman 式），Eq (1)，MD L24 逐字：
+
+> Q ( s _ { t } , a _ { t } ) = r _ { t } + \gamma \operatorname* { m a x } _ { a _ { t + 1 } } Q ( s _ { t + 1 } , a _ { t + 1 } )\tag{1}
+
+**无 target network 公式、无损失公式、无 ε 策略公式**。实现（L60 逐字）："a specifically designed environment was created using the gym library [8]. The DQN functionality were implemented using Keras for Tensorflow [9, 10]."
+
+**网络结构未给**（层数/宽度/激活全无）。**超参全无**。这与本篇"只研究奖励设计"的定位一致（L60 逐字："Due to the limited scope of this manuscript, only the described reward design is investigated."）。
+
+### 3. 信用分配
+
+**按"造成问题的那个节点"精准归因**——这是本篇的核心论点。L48 逐字：
+
+> "Most importantly, to form coherent paths, loops have to be punished, but only at the nodes which are actually causing them."
+
+并明确指出路径级奖励的传播问题（L48）："+Ψ ... even though it was not propagated to all nodes along the path."
+
+同时也指出**全局奖励的时滞**（Eq (2)，滞后 T 步）与**分布式不可用性**（L48 逐字："For fully decentralized designs, composite rewards are typically not considered [3, 4]. The limited scope makes it difficult to evaluate the impact of individual actions of independent agents."）。
+
+→ **本批对"信用分配"问题论述最深入的一篇**：它把"奖励该发给谁"作为独立研究对象。
+
+### 4. 状态里有没有时间信息？
+
+**没有**。第 1 项三个分量（邻居链路负载 / 上一跳 / 目的地）均为瞬时或静态。检索 grep -n -i -E "EWMA|exponential(ly)? weighted|moving average|smoothing factor" → 0 命中；grep -n -i -E "frame.?stack|stacked|historical|history|previous state|past state|memory" → 0 命中（"previous hop" 未被该检索覆盖，但它本身是空间量）。
+
+**但时间性体现在奖励上**：Eq (2) 的全局奖励滞后 T 步、Eq (3) 的局部奖励滞后 1 步 —— 论文把"奖励到达时间"当作设计变量（L33："this reward is only received after a significant time lag, denoted by T"），这在本批中是唯一如此表述的。
+
+### 5. 动作有没有时间结构？
+
+**无动作驻留/缓存**。但**有跨 episode 的环境耦合**——本批独有，L78 逐字：
+
+> "The idea is to test the robustness of the approach by evolving the state space according to previously made decisions. This corresponds more to an actual SCN scenario, where routing decisions impact future states and link loads change dynamically. In a sense, we investigate subsequent snapshots of the constellation. To this end, we change the network to be affected by the previous action trajectory: an additional load of 20% is added to each utilized link of the previous episode. These additional loads are only episode-specific, to avoid saturation on all links."
+
+→ 即"上一 episode 用过的链路，本 episode 负载 +20%"。这是**直接针对"路由决策反作用于负载"**的机制。
+
+### 6. 多智能体设定
+
+FD-MADRL：每星独立智能体、各自模型、局部知识。L27 逐字：
+
+> "While CDRL is based on a singular agent, in FD-MADRL, each satellite is assumed to act as an independent agent with its own model and only partial knowledge of the environment."
+
+无参数共享、无通信、**无 CTDE**；但**明确把 CL-DC（集中学习-分散控制）作为提出的方向**。检索 grep -n -i -E "VDN|QMIX|QTRAN|MADDPG|centrali[sz]ed critic|CTDE" → 0 命中；L92 的 "Centralized Learning - Decentralized Control (CL-DC)" 与 "multi-agent actor-critic" 是**讨论中的未来架构**，非本文实现。
+
+L92 逐字（提议架构）："To balance these concepts, future research may consider a hybrid approach based on Centralized Learning - Decentralized Control (CL-DC)... a central controller provides guidance, while decisions are made locally by the agents. Local actions and rewards are forwarded to the central entity for learning."
+
+### 7. 训练协议
+
+L60 逐字：
+
+> "The resulting grid network represents a sub-network of an SCN, e.g. a cluster in a distributed architecture [6]. For the comparisons we use a cluster of 12 satellites as well as a cluster of 24 satellites with varied link loads. The larger cluster is shown in Fig. 1. While the loads are set randomly, they comply with observed link characteristics of plausible non-uniformly distributed traffic scenarios [6]. For this performance comparison, we focus on the latency on a per-hop basis, i.e. the hop count, as well as the link loads."
+
+两个设置：(a) **静态**路径寻找（Fig. 2/3）；(b) **动态可变链路负载**（Fig. 4，即第 5 项的 +20% 耦合）。
+
+**训练/评估分布**：12 节点与 24 节点两规模对比（L66："more than twice as many episodes are required to achieve maximum rewards consistently"）。**未给 episode 数、步数、训练时长**。
+
+### 8. 该文的算法贡献
+
+(1) 对 FD-MADRL 的**局部奖励塑形**做系统刻画：给出 Eq (4) 的 8 分支分段奖励（含"只在致环节点惩罚"与基于 0.4/0.8 阈值的负载分档），并与 Eq (2)(3) 的全局/局部复合奖励对照；(2) 提出**决策反作用于负载的动态场景**（L78 的 +20% 耦合）来暴露短视；(3) 提出 CL-DC 混合架构（未实现）。
+
+### 9. 该文自述的局限
+
+L87 逐字：
+
+> "For FD-MADRL, we have shown that the limited scope of each agent negatively impacts the end-to-end routes, in both static and dynamic scenarios. Moreover, with increasingly complex policies, the agents have to learn the behavior of other agents, which is counterproductive for scalability."
+
+L94 逐字：
+
+> "In conclusion, while DQN-based architectures represent promising solutions for routing and network control in complex SCNs, they still have practical limitations. The investigated FD-MADRL approaches face scaling challenges, particularly in mastering complex scenarios where they are expected to surpass state-of-the-art methods. In-depth investigations are required to fully evaluate their actual viability."
+
+### 10. 该文没有考察的算法选择
+
+- **未实现所提的 CL-DC**：第 6 项；L92 明说是 "future research may consider"，**从未做集中学习 vs 分散学习的实验对照**。
+- **未考察 actor-critic**：L92 提到 "future research may also focus on policy gradient techniques for multi-agent actor-critic architectures [12]"，**只有展望无实验**（检索 grep -n -i -E "actor.?critic|PPO|A2C|SAC|DDPG|TD3|policy gradient" → 命中仅 L92 与参考文献 L124）。
+- **无 TD 目标/损失公式、无网络结构**：第 2 项；**从未比较任何网络或算法变体**（L60 自认 "only the described reward design is investigated"）。
+- **无多步回报/资格迹**：grep -n -i -E "n-step|multi-step|eligibility trace|lambda-return" → 0 命中；但它自己识别了"奖励时滞 T"问题（Eq (2)），却**未考察任何时滞补偿手段**（reward shaping potential、delay-aware credit assignment 等）。
+- **无 DQN 变体**：grep -n -i -E "dueling|prioriti[sz]ed replay|noisy net|distributional|rainbow|double" → 0 命中。
+- **状态完全无时间聚合**（第 4 项检索）：从未比较瞬时状态 vs 带历史状态。
+- **动作无时间结构**：从未考察驻留/摊销（尽管第 5 项已引入负载与决策的耦合，这本是研究"决策频率"的天然场景）。
+- **未研究奖励系数数值**：Ψ、ψ、ξ、Ξ 只给定性量级（第 1 项引文），**从未做系数的敏感性扫描**——而这是"reward shaping"论文最该做的实验。
+- **无动作掩码**（检索 0 命中）。
+- **网络规模非真实星座**：12/24 节点的 grid 网络，**从未在真实 Walker 星座或真实轨道动力学下验证**。
+- **无负载分布变化的迁移研究**：负载"randomly"设置且"episode-specific"，从未比较不同负载强度/分布的泛化。
+
+### 11. 可复用的具体机制
+
+1. **8 分支分段奖励（局部、只在致环节点惩罚）**（Eq (4)）——**本批最值得直接借用奖励设计**。它的三个设计要点可逐条搬走：
+   - 目标达成给大正 $+\Psi$ 且**大正奖励不上溯到路径所有节点**（L48）；
+   - 环路惩罚 $-\Psi$ **只发给真正致环的节点**，量级 $\gg \psi$；
+   - 链路负载用 0.4 / 0.8 两档阈值离散化（$+\xi_1$ / $-\xi_2$ / $-\xi_3$），饱和链路 $-\Xi$（$\Xi \sim \Psi$）。
+   对我们：把"是否造成环路""是否把包推向饱和链路"做成**只归因到当前节点的离散奖惩**，可与连续项（如 CMNCS52M 的 $t_{\mathrm{HOP}}$）叠加。
+2. **决策反作用于负载的 episode 耦合**（L78）："an additional load of 20% is added to each utilized link of the previous episode" —— 一个极低成本的机制，用来把"路由的长期后果"引入训练，避免策略只学"当下最短"。可直接作为我们训练环境的负载演化规则。
+3. **全局奖励的显式时滞项**（Eq (2)）：$r _ { t + T } ^ { G } = w _ { 1 } U ( t ) - w _ { 2 } L ( t ) - w _ { 3 } D ( t )$，把"端到端指标 T 步后才可得"写成公式 —— 若我们要做"路径级奖励 + 分布式执行"，这是需要显式面对的时滞建模起点（尽管该文未解决它）。
+
+### 12. 实验合同里与"负载"相关的设置（仅作条件登记）
+
+- 网络：**grid 子网**，12 星与 24 星两档；每星 4 条 ISL（L17）。
+- 负载：随机设置，但"comply with observed link characteristics of plausible non-uniformly distributed traffic scenarios [6]"（L60）。
+- 动态场景：上一 episode 使用过的链路 +20% 负载，且仅 episode 内有效（L78）。
+- 链路负载阈值：0.4 / 0.8 / 饱和（Eq (4)）。
+- 对比基线：动态多代价 Dijkstra（SPF），且"Links with high link loads (> 80% of capacity used) are actively avoided"（L74）。
+- 评估指标：每跳时延（hop count）与路径上最大链路负载（Fig. 3）。
+
+---
+
+## 本批小结（Batch 1：深度 DQN/MARL 族，7 篇 / 8 个 itemKey）
+
+### 一、本批共同采用的算法范式
+
+7 篇全部落在 **value-based、离散动作、off-policy 的 DQN 家族**，无一例外：
+
+| 篇 | 算法名（原文写法） | TD 目标公式 | 状态是否含时间聚合 | 动作是否有时间结构 | 多智能体 |
+|---|---|---|---|---|---|
+| CMNCS52M | DQN-LSNR（称 DDQN） | 有 Eq(5)，但是 max 目标 | 无（仅包级 visit counter） | 无 | 独立 |
+| 42E4NAQU | DDQN | **无公式** | 无 | 无 | 集中训练+分布执行+在线 |
+| LZKNZA8B | GAT-LSTM-DQN | 有 Eq(10)，max 目标 | **有（LSTM 隐状态）** | 无 | 独立 |
+| S85KQ4FC | MADRL（称 DDQN） | 有 Eq(17)，但是 max 目标 | 无 | **有（流级缓存+抖动刷新）** | 独立 |
+| J68GU76W | DDQN + 残差策略 | **无公式** | 无 | 无 | 单集中智能体 |
+| CYMQ2GLA | Double-DQN（DRL-THSA） | 有 Eq(17)，**真 double 分解** | **有（自适应 EWMA 预测）** | 部分（600 ms 重算节拍） | 独立 |
+| XLRW7XXN | DQN | **无公式** | 无 | 无 | 单集中控制器 |
+| 5PYWVRC5 | DQN（FD-MADRL） | 仅 Eq(1) Bellman 式 | 无 | 无（但有 episode 间负载耦合） | 独立 |
+
+共同点（每一条都有上文的行号与引文支撑）：
+
+1. **奖励一律是标量、逐跳即时**，没有任何一篇把奖励分解到"链路 × 时间"的二维结构上。
+2. **动作空间一律是"四邻居选一"**（J68GU76W 的链路激活二值、S85KQ4FC 的四方向概率是仅有的两个变体），且**全部没有动作掩码**——掩码相关检索在 7 篇里全为 0（CMNCS52M/CYMQ2GLA/XLRW7XXN/5PYWVRC5 为 0 命中；其余命中均为 "feasibility/scalability" 语境的假匹配）。
+3. **训练与评估分布基本同一套**：只有 CMNCS52M 系统随机化了训练星座（3–12 平面 × 4–16 星/面）并做 130 配置外推；其余 6 篇全部单场景训练单场景评估。
+4. **"DDQN" 多为名义称呼**：4 篇自称 DDQN，但只有 CYMQ2GLA 写出了真正的 double 分解式（Eq (17)：selection 用 $\theta^{online}$、evaluation 用 $\theta^{target}$）；CMNCS52M（Eq (5)）与 S85KQ4FC（Eq (17)）的公式仍是原版 max 目标。
+5. **离线训练 + 星上冻结推理**是共同部署范式（CMNCS52M L191、CYMQ2GLA L220、XLRW7XXN L146），只有 42E4NAQU 声称部署后在线更新（且无消融）。
+
+### 二、本批共同【没有】考察什么
+
+1. **没有一篇做过"状态里有没有时间信息"的消融**。LZKNZA8B 有 LSTM、CYMQ2GLA 有 EWMA 预测，但两者都**从未比较"带时序 vs 不带时序"**（LZKNZA8B 全文无 ablation 检索结果）。这意味着"时序到底有没有用"在本批中**是空白**——恰好是我们选题可以正面回答的问题。
+2. **没有一篇比较过不同训练分布**。负载分布的差异（CMNCS52M 三模型、J68GU76W 三种星座）都是"各自训练各自评估"，从未测"在 A 分布训练、在 B 分布评估"。
+3. **没有一篇做过多步回报 / 资格迹 / n-step**（7 篇检索全 0 命中）。全部是 1-step TD。
+4. **没有一篇做过 dueling / 优先回放 / 分布式 RL / Rainbow 类变体**（7 篇检索全 0 命中）。
+5. **没有一篇用过策略梯度族**（PPO/SAC/DDPG/TD3 检索全 0 命中）；actor-critic 仅出现在 5PYWVRC5 的未来工作展望里。
+6. **没有一篇实现过真正的 MARL 协作机制**（VDN/QMIX/QTRAN/MADDPG/CTDE 检索全 0 命中）。所谓"多智能体"全部是"每星一个独立 DQN + 局部观测"，**无参数共享、无通信、无集中 critic、无针对非平稳的处理**。5PYWVRC5 与 42E4NAQU 各自把"集中学习-分散控制"写进未来工作，但本批无人做。
+7. **没有一篇把"推理开销/决策时延"作为一等算法变量**——只有 S85KQ4FC 正面处理（且用工程手段而非学习手段），CYMQ2GLA 的 600 ms 重算节拍是隐式处理。
+8. **公平性/能耗**：检索 "fairness|jain|energy consumption|power consumption" 在 7 篇中，除 LZKNZA8B 的 "Green AI" 计算碳排分析（L276–L296）与几处参考文献标题外，**无一篇把公平性或能耗写进奖励**。
+
+### 三、本批里最接近可复用机制的 2–3 条（含公式）
+
+**第 1 条（首选）：S85KQ4FC 的"流级路由缓存 + 时延抖动触发刷新"**（MD L338 / L368）
+
+- 刷新判据：$\Delta \mathcal { D } _ { i } ^ { \nu , k } = \left| \mathcal { D } _ { i } ^ { \nu , k } - \mathcal { D } _ { i } ^ { \nu , k - 1 } \right|$
+- 路由更新：$\mathrm { r o u t e } _ { i } ^ { \nu , k + 1 } = \left\{ \begin{array} { l l } { \mathrm { a r g m a x } _ { a } Q _ { i } ( o _ { i } ( t ) , a _ { i } ( t ) ; \mu _ { i } ) , ~ \Delta \mathcal { D } _ { i } ^ { \nu , k } > \theta _ { t h r } } \\ { \mathrm { r o u t e } _ { i } ^ { \nu , k } , ~ \mathrm { o t h e r w i s e } } \end{array} \right.$
+- 流的定义：$\text{flow} \equiv (\text{入端口}, \text{目的星})$，与源用户解耦。
+
+**为什么最可复用**：它是本批唯一一个**把"决策时刻"本身作为算法变量**的机制，且**完全免模型**（只测量转发时延），可以叠加在任何已有策略之上而不改变训练过程——对我们的"动作时间结构"这一选题目是最直接的起点。
+
+**第 2 条：CYMQ2GLA 的"自适应系数 EWMA + 外推预测 → 状态分级"**（MD L60/L64/L70/L74/L88/L108）
+
+- 滤波：$I _ { a v g } = ( 1 - \lambda _ { I } ) \cdot I _ { a v g } ( t - t _ { c } ) + \lambda _ { I } \cdot I _ { a v g } ( t )$
+- 自适应系数：$\lambda _ { I } = \left\{ \begin{array} { l l } { \operatorname* { m a x } \biggr \{ \frac { I _ { a v g } ( t ) } { I _ { a v g } ( t - t _ { c } ) } \cdot \alpha _ { 1 } , a _ { 0 } \biggr \} , I _ { a v g } ( t ) < I _ { a v g } ( t - t _ { c } ) } \\ { \operatorname* { m i n } \biggr \{ \frac { I _ { a v g } ( t ) - I _ { a v g } ( t - t _ { c } ) } { I _ { a v g } ( t - t _ { c } ) } , \alpha _ { 2 } \biggr \} } \end{array} \right.$
+- 外推与阈值反解：$p = q + \frac { \left[ I _ { a v g } - O _ { a v g } \right] \cdot t _ { c } } { L _ { \operatorname* { m a x } } }$，$T _ { 2 } = \operatorname* { m i n } ( \operatorname* { m a x } ( 1 - \frac { \left[ I _ { a v g } - O _ { a v g } \right] \cdot t _ { c } } { L _ { \operatorname* { m a x } } } , 0 ) , 1 )$
+
+**为什么可复用**：这是本批唯一**把时间维度真正做进状态**（而非只做进网络结构）的设计，且**阈值由观测量反解而非超参**，可随负载自适应。与 LZKNZA8B 的 LSTM 方案形成两种可对照的"时间进状态"路线（显式统计量 vs 学习表征）——这正是我们选题可以做的对照实验。
+
+**第 3 条：CMNCS52M 的"visit-counter 放大的单跳代价" + 5PYWVRC5 的"只在致环节点惩罚"**（MD L166 / L172；MD L53）
+
+- CMNCS52M：$r _ { i } ^ { a } = \left\{ \begin{array} { l l } { R , } & { \mathrm { i f ~ } j = D } \\ { - R , } & { \mathrm { i f ~ } j = - 1 } \\ { - \big ( t _ { \mathrm { H O P } } ( i , j , L ) \times ( 1 + \mathbf { h } _ { i } ( a ) ) } & { \mathrm { o t h e r w i s e } } \end{array} \right.$，$t _ { \mathrm { H O P } } ( i , j , L ) = t _ { \mathrm { P } } ( i , j ) + t _ { \mathrm { T X } } ( L ) + t _ { \mathrm { Q } } ( j )$
+- 5PYWVRC5：Eq (4) 的 $-\Psi$ 只发给"actually causing them"的节点（见 L48 引文）
+
+**为什么可复用**：两者解决的是同一个问题（环路与拥塞的信用分配）的**两种互补范式**——CMNCS52M 把它塞进连续奖励的乘性系数（训练期、隐式），5PYWVRC5 把它做成离散分支的精确归因（显式、只在过错节点）。二者**在原理上可以叠加**，且都无需改动网络结构。
+
+---
+
+## 附：本批拆解完整性与核验说明
+
+- 覆盖：CMNCS52M、42E4NAQU、LZKNZA8B、S85KQ4FC、J68GU76W、CYMQ2GLA、XLRW7XXN、5PYWVRC5（= L2VKYTAV 重复副本，已注明）。
+- 每篇均给出 12 项；奖励/更新式均抄 LaTeX 原文；原文笔误与 MinerU 表格错位均已就地标注。
+- 判"未见"的检索方式：对每篇 MD 全文执行 grep -n -i -E，检索词与命中情况逐条写在该篇第 4/10 项内；检索范围＝该篇 MD 全文行数（CMNCS52M 374 / 42E4NAQU 197 / LZKNZA8B 341 / S85KQ4FC 664 / J68GU76W 256 / CYMQ2GLA 418 / XLRW7XXN 217 / 5PYWVRC5 123）。
+
+**⚠️ 负向声明的权威证据以「附录 A」为准**（精确检索模式原文 + 实测计数 + 命中位置与判定）。正文第 4/10 项中的检索描述为早期宽模式版本；若与附录 A 冲突，以附录 A 为准。
+
+---
+
+# 附录 A：负向声明（"未见/没有 X"）的精确检索证据
+
+**检索方式**：grep -n -iE，逐条给出**模式原文 / 实测计数 / 命中位置与判定**。凡有命中一律给出位置并说明**为何不构成反例**。
+
+| itemKey | 全文行数 | | itemKey | 全文行数 |
+|---|---|---|---|---|
+| CMNCS52M | 374 | | J68GU76W | 256 |
+| 42E4NAQU | 197 | | CYMQ2GLA | 418 |
+| LZKNZA8B | 341 | | XLRW7XXN | 217 |
+| S85KQ4FC | 664 | | 5PYWVRC5 | 123 |
+
+## A.1 模式 P1 — DQN 变体（dueling / 优先回放 / 分布式 RL）
+
+模式原文：
+**double[- ]?(q|dqn)|dueling|prioriti[sz]ed (experience )?replay|noisy net|distributional|c51|rainbow**
+
+| 篇 | 实测计数 | 命中位置与判定 |
+|---|---|---|
+| CMNCS52M | **2** | L81、L256 —— **均为图片文件名哈希**（"…b2c51bdb743…"、"…d833ac51c3b4de…"），命中子串 c51。**实质命中数 = 0**。另：L131 的算法名 "Double Deep Q-Network" 未被本模式命中（写作 double-deep 而非 double-dqn），属**模式覆盖不足**，人工核对确认该名称存在。 |
+| 42E4NAQU | 0 | — |
+| LZKNZA8B | 0 | — |
+| S85KQ4FC | **3** | L192 "incorporates double DQNs (DDQNs)"（**仅名称声明**；其 TD 目标 Eq (17) 仍是 max 形式，见正文第 2 项）；L541 参考文献 [23] 标题 "Distributional reinforcement learning-based router…"（**他引标题**）；L621 参考文献 [63] Van Hasselt "Deep reinforcement learning with double Q-learning"（**他引标题**）。→ **均不构成"比较过 DQN 变体"的反例**。 |
+| J68GU76W | **1** | L257 参考文献 [17] Van Hasselt double Q-learning 标题。**他引，非本文实验**。 |
+| CYMQ2GLA | **6** | L222/L224/L238/L261 等，均为**本文算法名** "Double-DQN" 的正常出现（该篇确实实现了 double 分解）。**不构成反例**；本篇"未比较 DQN vs DDQN"由"全文无对照实验"支撑，非由计数支撑。 |
+| XLRW7XXN | 0 | — |
+| 5PYWVRC5 | **1** | L110 参考文献 [5] "Hierarchical Deep Double Q-Routing" 标题。**他引，非本文实验**。 |
+
+## A.2 模式 P2 — 多步回报 / 资格迹
+
+模式原文：**n-step|multi-step|eligibility trace|lambda-return**
+→ **8 篇全部实测计数 0**（无任何命中，含参考文献）。"全部为 1-step TD"成立。
+
+## A.3 模式 P3 — 策略梯度族
+
+模式原文：**actor-?critic|\bppo\b|\ba2c\b|\ba3c\b|\bsac\b|\bddpg\b|\btd3\b|policy gradient**
+
+| 篇 | 实测计数 | 命中位置与判定 |
+|---|---|---|
+| CMNCS52M / 42E4NAQU / LZKNZA8B / J68GU76W / CYMQ2GLA / XLRW7XXN | 0 | — |
+| S85KQ4FC | **1** | L41 —— 命中词 **actor-critic**，位于**相关工作**："Liu et al. [16] proposed DRL-OR-S, a highly scalable online routing algorithm using a novel graph-based actor-critic network architecture." **他引，非本文方法**。 |
+| 5PYWVRC5 | **3** | L90（图 5 标题 "actor-critic approach using Centralized Learning and Decentralized Control"）、L92（正文 "future research may also focus on policy gradient techniques for multi-agent actor-critic architectures"）、L124（参考文献 [12] Lowe et al. MADDPG 标题）。**L90/L92 属未来工作展望，L124 属他引**；本文实验未用任何策略梯度方法。 |
+
+## A.4 模式 P4 — MARL 协作机制 / CTDE
+
+模式原文：**\bvdn\b|qmix|qtran|maddpg|centrali[sz]ed critic|\bctde\b|parameter sharing|shared (network )?parameters**
+→ **8 篇全部实测计数 0**。"无一篇实现协作式 MARL"成立。
+
+> 注：42E4NAQU L129 含 "centralized training" 字样（"This centralized training enables the model to capture the overall traffic dynamics"），**未被本模式命中**（模式限定 centrali[sz]ed **critic**）。人工核对确认该处为**架构描述**而非 CTDE 机制，见正文该篇第 6 项引文。
+
+## A.5 模式 P5 — 动作掩码
+
+模式原文：**action mask|masking|invalid action|illegal action|infeasible action**
+→ **8 篇全部实测计数 0**。
+
+> 注：正文另查过宽模式 **mask|feasib|legality**，CMNCS52M 有 3 处命中（L46 相关工作、L125 路径可行性约束、L151 visit counters memory），**均为散文词而非动作掩码**。采用收紧模式后为 0。
+
+## A.6 模式 P6 — 状态中的时间聚合
+
+模式原文：**ewma|exponentially weighted|moving average|smoothing factor|frame[- ]stack|stacked (frames|observations)|sliding window**
+
+| 篇 | 实测计数 | 命中位置与判定 |
+|---|---|---|
+| CMNCS52M | **1** | L185 "showing the **moving average** of the long-term reward of the last 100 episodes" —— **训练曲线的平滑画法**，非状态特征。**不构成反例**。 |
+| 其余 7 篇 | 0 | — |
+
+> **重要限制（防止误导）**：本模式**不覆盖** LZKNZA8B 的 LSTM（Eq (8)）与 CYMQ2GLA 的 EWMA 式滤波（Eq (1)(2)）——后两者是**真实的时间聚合机制**，但表述为 "LSTM" / "$\lambda_I$" 而不含上述关键词。因此正文对这两篇的判定是"**有**时间信息，并已逐字引述公式"；本模式仅用于支撑**其余篇目**的"无时间聚合"结论。
+
+## A.7 模式 P7 — 训练分布迁移
+
+模式原文：**curriculum|domain randomi|transfer learning|meta-learning|fine-tun**
+→ **8 篇全部实测计数 0**。"无一篇做过 training→evaluation 分布迁移"成立。
+
+## A.8 模式 P8 — 公平性 / 能耗
+
+模式原文：**fairness|jain index|energy consumption|power consumption**
+
+| 篇 | 实测计数 | 命中位置与判定 |
+|---|---|---|
+| CMNCS52M | **1** | L97 —— "This adaptive modulation strategy helps reduce **power consumption** and conserves satellite resources…"（**系统模型里的速率自适应描述**，非奖励项、非优化目标）。 |
+| 42E4NAQU | **1** | L15 —— 相关工作综述句 "…with a focus on latency, **power**…"（**背景陈述**）。 |
+| LZKNZA8B | **3** | L278/L280/L292 —— "Green AI" 能效/碳排**评估**（TDP 30 W、碳强度 495），是**事后指标**，未进入奖励或状态。 |
+| 其余 5 篇 | 0 | — |
+
+**结论**：无一篇把公平性或能耗写进奖励函数；LZKNZA8B 只在评估侧做了能耗核算。
+
+---
+
+# 附录 B：对抗性问题 G-A 的库级回答
+
+> **问题 G-A**：全库是否有任何工作，把**同一个失败事件**（丢包 / 超时 / 溢出）按**物理原因**拆成**不同的学习通道或惩罚项**（例如区分"决策缓存溢出"与"链路队列溢出"）？
+
+**检索范围**：全库 **111** 个 itemKey 的 MD 全文（/data/liguang13/topic-loop-r2/md/星/星/txt/星.md）。
+
+**结论：未发现覆盖 G-A 的工作。** 全库有若干篇在"分解轴"上做了通道/项拆分，但轴分别是**目标类型、智能体、时间**，**没有一篇以"失败事件的物理原因"为分解轴**。
+
+## B.1 检索证据（模式原文 / 全库命中文件数 / 判定）
+
+| 模式原文 | 命中文件数 | 判定 |
+|---|---|---|
+| credit assignment | 5 | 命中 6C843JTS（Sutton 早期 TD 文献）、JSX5XG88（GAE）、QGAREQUM、9FLZ88LZ。**均为"时间延迟型信用分配"**，无失败原因分解。 |
+| counterfactual | 5 | 9FLZ88LZ（QMIX 综述 COMA）、FGQSH4AI / I2WH9RRR / KPUZIMU5（COMA 他引标题）。轴＝**智能体**。 |
+| reward decompos | **0** | 无命中。 |
+| multi-objective 或 mult(objective 或 i-objective | 12 | 多为波束跳变/资源分配领域与他引标题；实质命中见 B.2。 |
+| separate (reward 或 penalt) | 1 | 唯一命中非 G-A 语境。 |
+| drop (reason 或 cause) 或 drop reason | 1 | 9KZDXPKC L246/L248 —— 是**实验分场景**（GSL 切换 / ISL 失效）分别测吞吐，非学习通道拆分。 |
+| overflow | 10 | 42E4NAQU L145（队列容量设 1 Gb/s）、J68GU76W L198（队列无界）、TQF59BD7 L482（buffer limitations）、X2FCSU4S L15（cache overflow）等。**均为建模/实验条件**，无一处把溢出原因拆成不同惩罚项。 |
+| reward vector 或 vector reward 或 multi-head 或 multiple heads 或 separate (value )?heads 或 per-objective | 16 | 实质命中仅 UKBSA7WN（见 B.2）；其余为 Transformer "Multi-Head Attention"（35T2JJRJ 等）假匹配。 |
+| failure (type 或 cause 或 reason) 或 cause of (the )?(loss 或 drop 或 failure) 或 loss cause | 23 | 最近邻见 B.3（8N9QJHC2）；其余为物理层安全、能量等无关语境。 |
+| distinguish(es 或 ing)? between 或 differentiat(e 或 es 或 ing) between | 21 | 8N9QJHC2 L358 为最近邻；其余无关。 |
+| penalt(y 或 ies 或 ize) (term 或 for 或 on) | 6 | 39NJWBI7 L304（拉格朗日乘子阈值）、7TASFUDR L200、X5K285MW L106（每跳处理惩罚）等，**均为单一标量惩罚项**。 |
+
+## B.2 最近邻反例 1（轴＝**目标类型**，不覆盖 G-A）：UKBSA7WN / QRLSN
+
+该书用 **MORL + 奖励向量**，为**每个目标**维护**独立 Q 通道**。逐字引文（L141 / L147 / L149）：
+
+> "MORL differs from typical RL, which considers several optimization objectives simultaneously in the learning process, where a reward vector is provided for the agent at each update step"
+
+> "where \(i \in [ 1 , n ]\) and n represents the number of objectives; \(r _ { i }\) is the i th feedback signal of the agent's reward vector obtained from the interaction with the environment."
+
+逐目标的 Bellman 更新 Eq (6)（MD L144）与合成式 Eq (7)（MD L155）——**这是"分通道 Bellman + 加权合成"的现成骨架**：
+
+> \(Q _ { i } ( s , a ) \gets ( 1 - \alpha ) Q _ { i } ( s , a ) + \alpha \biggl [ r _ { i } + \gamma \operatorname* { m a x } _ { a ^ { \prime } \in A } Q _ { i } ( s ^ { \prime } , a ^ { \prime } ) \biggr ]\)
+
+> \(\mathrm { T Q } ( s , a ) = \sum _ { i = 1 } ^ { n } w _ { i } Q _ { i } ( s , a )\)
+
+两目标的奖励分量 Eq (8)(9)（MD L161/L165），**差异仅为几何量不同**（时延 vs 队列长度）：
+
+> \(f _ { r _ { 1 } }\)：达目的地 \(r _ { \mathrm { m a x } }\)，否则 \(r _ { \mathrm { m i n } } + \left ( \frac { e } { 2 } \right ) ^ { - d _ { i j } }\)（d_ij ＝邻星间传输时间）
+
+> \(f _ { r _ { 2 } }\)：达目的地 \(r _ { \mathrm { m a x } }\)，否则 \(r _ { \mathrm { m i n } } + \left ( \frac { e } { 2 } \right ) ^ { - n _ { q } }\)（n_q ＝本节点排队包数）
+
+**判定**：分解轴＝**目标类型**（端到端时延 vs 网络流量开销负载）。**没有**按失败原因拆分——两个通道对**同一次失败**（未达目的地）给的都是同一个 r_min，不区分原因。→ **不覆盖 G-A**。但它是本库"一个事件 → 多学习通道"在**目标轴**上的最近邻，其 Eq (6)+(7) 结构**可直接改轴复用**（把通道索引 i 从"目标"换成"失败物理原因"）。
+
+## B.3 最近邻反例 2（轴＝**故障物理原因**，但停在检测/恢复层，不覆盖 G-A）：8N9QJHC2
+
+该书是**基于 Q-Learning** 的卫星网络故障恢复路由（L3 标题 "Recovery Routing Based on Q-Learning for Satellite Network Faults"；L31 "based on the Q-learning algorithm in reinforcement learning"），**明确区分两类物理故障**，逐字（L358）：
+
+> "It solved the problem that currently it is impossible to distinguish between temporary and permanent failures. This mechanism introduces two factors of a priori probability of link failure, permanent node port failure and temporary link failure, due to transmission medium interference. Two types of failure a posteriori pr[obability]..."
+
+L362 逐字：
+
+> "It solved the problem that there is no corresponding route recovery design for faults with diferent durations. This technology divides the route restoration process into two phases."
+
+**判定**：分解轴＝**故障物理原因（永久端口故障 vs 介质干扰引起的临时链路故障）**——与本问题最接近。但两处拆分分别落在**故障检测的先验/后验概率估计**与**路由恢复流程的阶段划分**上，**未见**把这二者拆成**不同的 Q 通道或不同的奖励惩罚项**。→ **不覆盖 G-A**。价值：证明"按物理原因分类"在本领域**已有先例可援引**，只是尚未进入学习通道。
+
+## B.4 最近邻反例 3（轴＝**智能体** / **时间**，不覆盖 G-A）：9FLZ88LZ、JSX5XG88
+
+- 9FLZ88LZ 逐字（L52 / L54）："COMA (Foerster et al., 2018) uses a centralised critic to train decentralised actors, estimating a **counterfactual advantage function for each agent** in order to address multi-agent credit assignment" / "value decomposition networks (VDN)... decomposes a central state-action value function into a **sum of individual agent terms**"。→ 轴＝**智能体**。
+- JSX5XG88 逐字（L17）："A key source of difficulty is the long time delay between actions and their positive or negative effect on rewards; this issue is called the **credit assignment problem**"，并给出 GAE（广义优势估计）。→ 轴＝**时间**（偏差-方差权衡）。
+
+**判定**：二者均为"信用分配"的经典解，但分解轴为智能体 / 时间。→ **不覆盖 G-A**。其中 GAE 尤其值得登记：本批 7 篇**全部是 1-step TD**（附录 A.2 实测 0 命中），而全库已有 GAE 这类**多步信用分配**工具，构成"库内有工具、本批未用"的明确空位。
+
+## B.5 非反例登记（易被误认为覆盖 G-A）
+
+- **IXVSNEE3**（L385 逐字）："Considering packets may be dropped due to **congestion or link unavailability**, path survival probability is introduced to quantify the likelihood of a packet successfully reaching its intended destination." —— 它在**同一句里区分了两种丢包原因**，但通篇是**解析式路径存活概率**（Eq (29) 等）。实测 grep -c -iE "reinforcement learning|q-learning|dqn|reward" ＝ **0**，即**该文不含任何强化学习**。→ **不覆盖 G-A**。
+- **9KZDXPKC**：把 GSL 切换 / ISL 失效作为**两个实验场景**分别报告吞吐（L246/L248），是**评测分层**而非学习通道拆分。
+- **X5K285MW**（L106）："we applied the processing penalty on each hop" —— 单一标量逐跳惩罚，非按原因分通道。
+
+## B.6 G-A 的净结论
+
+1. **全库 111 篇中，没有任何一篇把同一失败事件按物理原因拆成不同的学习通道或惩罚项。** → **G-A 作为缺口主张成立**，可直接用于选题论证（附精确检索证据，见 B.1）。
+2. 最接近的反例是 **8N9QJHC2**（按永久/临时故障分类，停在检测与恢复流程层）与 **UKBSA7WN**（分通道 Bellman + 加权合成，轴为目标类型）。
+3. **对选题的正面价值**：UKBSA7WN 的"逐通道 Bellman（Eq (6)）+ 加权合成（Eq (7)）"提供了**现成的分通道工程骨架**；只需把通道索引从"目标"换成"失败物理原因"，即可把 G-A 从缺口变成可实现的机制。这属于"**机制可复用、轴未被占**"，是理想的选题位。
+4. **风险提示**：8N9QJHC2 说明"永久 vs 临时故障"这一分类在本领域已被用过，因此 G-A 的新颖性应建立在**"把该分类接进学习通道/奖励"**上，而**不是**"首次区分这两类故障"——后者的新颖性已被占。
+
+
 
 

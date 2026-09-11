@@ -450,3 +450,204 @@
 - 失效注入 L230（随机删边/恢复，单次路由最多 5 条并发失效）。
 - 对比算法 L224 "Data Rate Benchmark (DR-BM) algorithm" 与 L226 "The Q-routing algorithm"。
 - 集中式开销对照 L218（地面站周期性获取全局信息）。
+
+---
+
+## PIXWFHAC QLRA / SQLRA：分裂式加速收敛 Q-learning（STIN，集中式）
+
+**1. MDP 定义**
+- 形式：L154 "The routing process is modelled as Markov decision processes (MDPs) and represented by `$M = ( S , A , P , R )$` ... Furthermore, `$\hat { P }$` is the state transition probability function, `$P ( s ^ { \prime } \mid s , a ) = P ( s ^ { \prime } = s ^ { \prime } \mid s = s , a = a )$`."
+- **智能体是集中式的**：L154 "In STINs, the environment is the link states of satellite network, and it is time-varying. And the agent is deployed in ground control center."
+- 状态 s_t（逐字段）：
+  - L159 `$$\begin{array} { r } { \operatorname* { l i n k } _ { i , j } = \big ( b _ { i , j } , d _ { i , j } , e _ { i , j } , t _ { i , j } \big ) , 0 \leq i , j \leq N , } \end{array}\tag{ð16Þ}$$`
+  - L168 `$$\begin{array} { r } { S _ { t } = \left\{ \operatorname* { link } _ { i , j } \right\} , 0 \leq i , j \leq N , j \in N ( i ) , } \end{array}\tag{ð17Þ}$$`
+  - 含义 L162 "variables `$b _ { i , j } , \ d _ { i , j } , \ e _ { i , j } ,$` and `$t _ { i , j }$` represent the available bandwidth, the propagation delay, the bit error rate, and the available time of link between satellite i and satellite `$j ,$` respectively."
+  - 字段：每条链路 4 维 —— 可用带宽 b、传播时延 d、误码率 e、可用时长 t；状态 = 当前节点的邻居链路集合 `$j \in N(i)$`。
+  - 维度：4 × |N(i)|（N=48 星，每星 4 邻居 → 16 维）。
+  - 归一化：**奖励侧做 min-max 归一化**（见 eq 18-21）；状态本身原文未说明是否归一化。
+  - 时间聚合：无。
+- 动作 a_t：L173 "the agent moves from the current satellite to the satellite whose index is a. The number of satellites is N, so the action set is denoted by `$A = \{ 1 , 2 , \cdots , N \}$` For the convenience of calculation, the action is coded by one-hot coding in our simulations"。**动作空间 = 全网 N=48**（不限于 4 邻居），是本批唯一对全网寻址的。
+  - 掩码：无显式动作掩码；但有**前置可达性检查**（Path Checking Algorithm, L219-244）不通过则不进入学习。
+- 奖励 r_t（逐字 LaTeX）：
+  - L178 `$$r ( b ) = \frac { b - \operatorname* { m i n } \left( b \right) } { \operatorname* { m a x } \left( b \right) - \operatorname* { m i n } \left( b \right) } ,\tag{ð18Þ}$$`
+  - L182 `$$r ( d ) = \frac { \operatorname* { m a x } { ( d ) } - d } { \operatorname* { m a x } { ( d ) } - \operatorname* { m i n } { ( d ) } } ,\tag{ð19Þ}$$`
+  - L186 `$$r ( e ) = { \frac { \operatorname* { m a x } { ( e ) } - e } { \operatorname* { m a x } { ( e ) } - \operatorname* { m i n } { ( e ) } } } ,\tag{ð20Þ}$$`
+  - L190 `$$r ( t ) = \frac { t - \operatorname* { m i n } { \left( t \right) } } { \operatorname* { m a x } { \left( t \right) } - \operatorname* { m i n } { \left( t \right) } } ,\tag{ð21Þ}$$`
+  - 汇总 L196 `$$\boldsymbol { r } = \boldsymbol { \theta } \cdot \boldsymbol { r } ( \boldsymbol { b } ) + \boldsymbol { \beta } \cdot \boldsymbol { r } ( \boldsymbol { d } ) + \boldsymbol { \lambda } \cdot \boldsymbol { r } ( \boldsymbol { e } ) + \boldsymbol { \omega } \cdot \boldsymbol { r } ( \boldsymbol { t } ) ,\tag{ð22Þ}$$`
+  - 权重 L359 "we set the values of θ, β, λ, and ω in Equation (11) as 0.30, 0.15, 0.18, and 0.37, respectively."；来源 L199 "Here, we use analytic hierarchy process (AHP) to determine the value of these parameters."
+  - **终止奖励重定义** L259 `$$r ( s _ { t + 1 } \mid s _ { t } , a _ { t } ) = { \left\{ \begin{array} { l l } { r ( s _ { t } , a _ { t } ) } & { s _ { t + 1 } { \mathrm { ~ i s ~ n o t ~ t e r m i n a l ~ s t a t e } } , } \\ { r ( s _ { t } , a _ { t } ) + C } & { s _ { t + 1 } { \mathrm { ~ i s ~ t h e ~ t e r m i n a l ~ s t a t e } } . } \end{array} \right. }\tag{ð28Þ}$$`，动机 L256 "in order to speed up the convergence of Q-table, we redefine the reward function, where C is a constant."（**C 的数值未报告**）
+  - 归一化：min-max + 单调递减；L193 "The link delay and the bit error rate are negative to the link selection. Therefore, we use monotone decreasing function to present the corresponding rewards in the process of normalization." —— **本批唯一显式做奖励标准化的**。
+  - 折扣：更新式中记作 λ，L250 "`$\lambda$` is the discount rate"；取值 L359 "when the learning rate α and discount factor γ are set to 0.001 and 0.9, respectively, the convergence effect of the algorithms is the best."
+- 转移/终止：终止 = 到达目的（s_{t+1} is terminal）。episode = 一次源-目寻路，L152 "The agent interacts with the environment continuously until the episode is end or the number of interaction steps reaches the threshold set in advance."
+- 资格迹/多步：未见（检索 `n-step|multi-step return|eligibility trace` 严格模式 0 命中，见文末检索证据表）。
+
+**2. 学习算法与更新式**
+- 累计回报 L202 `$$R _ { t } = r _ { t + 1 } + \gamma r _ { t + 2 } + \gamma ^ { 2 } r _ { t + 3 } + \gamma ^ { 3 } r _ { t + 4 } + \cdots = \sum _ { k = 0 } ^ { \infty } \gamma ^ { k } r _ { t + k + 1 } .\tag{ð23Þ}$$`
+- 状态-动作值 L208 `$$Q _ { \pi } ( s _ { t } , a _ { t } ) = E _ { \pi } [ R _ { t } \mid S _ { t } = s _ { t } , A _ { t } = a _ { t } ] .\tag{ð24Þ}$$`
+- 最优值 L214 `$$${ Q _ { \pi } } ^ { \ast } ( s _ { t } , a _ { t } ) = \operatorname* { m a x } _ { \pi } Q _ { \pi } ( s _ { t } , a _ { t } ) .\tag{ð25Þ}$$`
+- 更新式 L247 `$$Q ( s , a ) = Q ( s , a ) + \alpha \biggl [ r + \lambda \operatorname * { m a x } Q \Bigl ( s ^ { \prime } , a ^ { \prime } \Bigr ) - Q ( s , a ) \biggr ] ,\tag{ð26Þ}$$` —— 注意这是 **Watkins 增量形式（含 −Q(s,a)）**，与同批其他篇的 (1−α) 凸组合写法**代数等价但书写不同**。
+- 探索 L253 `$$a = \left\{ \begin{array} { l l } { { \mathrm { s e l e c t a n ~ a c t i o n ~ r a n d o m l y , } } } & { { r ^ { \prime } < \varepsilon , } } \\ { { \mathrm { a r g ~ } \operatorname* { m a x } _ { a } Q ( s , a ) , } } & { { r ^ { \prime } \geq \varepsilon . } } \end{array} \right.\tag{ð27Þ}$$`
+- double/target net：未见（严格模式 0 命中，见检索证据表）。网络结构：无神经网络（Q 表 + 奖励矩阵 R）。
+- **分裂式加速收敛（SQLRA 核心）** L270 "Similar to the broadcast mechanism, we split the satellite network according to the neighbour information of nodes. As shown in Figure 6, for destination node J, we regard its neighbour nodes as the first layer, and nodes with the same colour belong to the same layer. We update the Q value of all nodes in the same layer every time until all nodes of satellite network are updated. This scheme ensures that the Q value of each node is updated along a horizontal direction, and it destroys the condition of forming a loop between nodes."
+- **自目的节点反向更新（BFS 顺序）** L306 "The traditional reinforcement learning updates the Q value of each node from front to back. But in the satellite network, we can obtain all the states of the satellite network in advance. Therefore, no matter what state the agent is in, we can know the next state of agent according to the actions taken by the agent. In addition, according to Equation (26), we know that updating the node's Q value from back to front make Q-table converge faster."
+- 路径检查伪码要点（Algorithm 1, L219-244）：L232 "6. if node not in path:"（**以"路径中未出现"为扩展条件，天然排除环路**）。
+
+**3. 信用分配：这篇怎么把奖励归到动作上？**
+- 逐跳即时奖励：eq(22) 的加权和，每跳作用于所选链路。
+- 路径级终局：eq(28) 的 +C 常数加成。
+- 分解到链路：**分解到单条链路的 4 个物理量**（带宽/时延/误码率/可用时长），是本批对"链路级信用"刻画最细的。
+- 是否区分损失原因：未见显式区分（检索 `credit assignment|counterfactual|reward decompos` 严格模式 0 命中）。
+- **资源消耗回写环境**（环境随动作改变）：伪码 L290-291 "17. Update the reward matrix R based on the consumption of link resources. / 18. Update the structure of satellite network graph based on the consumption of link resources."
+
+**4. 状态里有没有时间信息？**
+- **没有**。L159 四字段 (b, d, e, t) 中 `$t_{i,j}$` 是**可用时长（未来可见时间）**，属前瞻量而非历史量；S_t 为当前所有邻居链路快照。
+- 检索 `EWMA|exponentially weighted|moving average|history of|historical (state|information|feature)|time window|sliding window` 严格模式 0 命中。
+- 结论：无时间聚合；t_{i,j} 是"对未来可见性的先验"，不是历史窗口。
+
+**5. 动作有没有时间结构？**
+- 按**用户请求**逐个触发：伪码 L275 "2. for user_req in users_req_list:" → L278 "5. for i=1 to Episodes:"。
+- 动作驻留/流级缓存/摊销：未见。切换代价：未见。
+- **动作级搜索截止时间**：L213 "the maximum execution time of the agent's action is set to `$t _ { m a x }$`. Therefore, the SDN controller is required to plan an optimal path for the service flow within a time interval `$t _ { m a x } ,` otherwise the path allocation is terminated."（**本批唯一给单次动作设截止时间的**）
+- ε：固定，无退火（L359 只给 α 与 γ）。
+
+**6. 多智能体设定**
+- **不是多智能体**：L154 "the agent is deployed in ground control center"，单一集中式 agent。
+- 检索 `centralized training|CTDE|parameter sharing|shared parameters|non-stationar|nonstationar` 严格模式 0 命中（本篇本身即"集中式 agent"，命中 0 是因未使用该术语）。
+- 环境非平稳被**显式建模**（第 3 项：资源消耗后更新奖励矩阵与图结构）。
+- 部署：L431 "we train the SQLRA algorithm at the ground control center, which reduces the consumption of computing resources and storage resources of satellites."
+
+**7. 训练协议**
+- 训练分布 vs 评估分布：**同一套**（STK 生成的 48 星星座；无跨分布迁移实验）。
+- 采样：逐用户请求、逐 episode 重跑；伪码 L274 "1. Initialize Q-table, α, γ, ε, Episodes=M."
+- 拓扑/资源演化：有 —— 每次寻路后资源消耗并回写（L290-291）。
+- 收敛量：L310 "SQLRA needs 30 episodes to converge, and QLRA needs 60 episodes to converge."（收敛速度即核心比较量）
+- 会话时长：Table 1 (L357) "Simulation time | 1400 s"。
+
+**8. 该文的算法贡献（与 1–7 的具体改动对应）**
+(1) **分裂式加速收敛**：按到目的节点的邻居层级分层、逐层同步更新 Q（L270），破坏成环条件、消除 loop/ping-pong 无效序列（L266）；(2) **自目的节点向源节点的反向 Q 更新**（BFS 顺序，L306）；(3) 前置**路径检查 PCA**（Algorithm 1, L219-244）避免无解时浪费算力。三项共同对应"更新顺序"这一族改动（第 2 项），证据为 L310 的 30 vs 60 episodes。
+
+**9. 该文自述的局限（逐字）**
+- L437 "Although SQLRA algorithm performs better than other routing algorithms in two diferent scenarios, it does not have the ability of online learning. When the number of users in satellite network changes or some satellites do not work well, SQLRA needs to retrain model. In the future research, we are going to use deep neural network to design a routing algorithm with online learning ability."
+
+**10. 该文没有考察的算法选择（基于 1–7 实际内容）**
+- **奖励经加权和压成标量，从未保留向量形式**：eq(22) 把 4 项线性加权求和（权重由 AHP 给定），且**权重从未被消融或做敏感性分析** —— 只报一组 (0.30, 0.15, 0.18, 0.37)（L359）。对比同批 UKBSA7WN 保留向量 Q_i 再合成。
+- **状态逐字段均为瞬时/前瞻量、无任何时间聚合**（第 4 项）：t_{i,j} 是未来可见时长，不是历史。
+- **从未比较过不同训练分布**（第 7 项同源）；且因自述无在线学习（L437），**天然无法考察分布漂移**。
+- **从未使用动作掩码**：动作空间为全网 N=48（L173），无 safe-action 约束（检索 `action mask|invalid action|infeasible action|safe action|feasible action` 严格模式 0 命中）；环路只靠分裂式更新间接抑制。
+- 从未使用多步回报/资格迹（严格模式 0 命中）。
+- **从未隔离分裂式分层的独立贡献**：SQLRA vs QLRA 对比（L310）**同时**改了两件事（分裂分层 + 反向更新），两者各自贡献未被分离。
+- **终止奖励常数 C 的数值未报告**（eq 28），使该文最主要的收敛加速项之一不可复现。
+- 从未考察 α 与 γ 的交互（只给一组 α=0.001、γ=0.9，L359）。
+- 从未考察 t_max（动作截止时间）的取值影响。
+
+**11. 可复用的具体机制（含公式）**
+1. **按"到目的节点的跳数"分层 + 逐层同步更新（分裂式加速）**：L270（第 2 项引）。等价于用 BFS 逆序做**同步值迭代**；与同批 5N5LQPPP 的 two-hop、53HEEK33 的空包广播同属"收敛加速"族，但**只有本篇改的是更新顺序而非感知范围** —— 三者可组合。
+2. **min-max 奖励归一化 + 单调递减映射**：eq(18)-(21)，尤其 L182 `$r ( d ) = \frac { \operatorname* { m a x } { ( d ) } - d } { \operatorname* { m a x } { ( d ) } - \operatorname* { m i n } { ( d ) } }$`。把异量纲指标（Hz / ms / 误码率 / 秒）拉进同一标量的最直接做法。
+3. **资源消耗回写环境**：伪码 L290-291，可用于负载耦合仿真。
+4. **动作级搜索截止时间 t_max**：L213，避免在含环图上无限搜索。
+
+**12. 该文实验合同里与"负载"相关的设置（仅作实验条件登记，不作贡献）**
+- 星座 L354 "The satellite constellation adopts the Walker delta model. The satellite network consists of eight orbital planes, and every orbit has six satellites. There are 48 LEO satellites in total. The inclination angle of each satellite orbit is 45 degrees, and the altitude of satellite orbit is 650 km."（Table 1：48 星 / 8 面 / 45° / 650 km / 1400 s / 邻居数 4）
+- 负载模型 L354 "the bandwidth resources requested by each user follows a Poisson distribution."；L354 "we assume that the bit error rate of each satellite link follows a uniform distribution."
+- 时延构成 L354 "Due to the long distance between satellites, the delay of satellite communication is mainly determined by the propagation delay of satellite links. Therefore, we mainly consider the propagation delay of satellite links in this paper."
+- **两套场景** L361 "one is that all users communicate with each other by the same source satellite node and destination satellite node, and the other is that all users communicate with each other through diferent source satellite nodes and destination satellite nodes."（同源目 vs 异源目 —— 本批唯一的场景变量设计）
+- 对比算法 L347 "we compare SQLRA with QLAODV [42], QSR [43], OSPF [30], and ACO [44]"。
+- 工具 L349 "we use satellite tool kit (STK) to simulate it"；L354 "we use Pycharm as development tool. The environment is Win10 Operating System with 16 G RAM and 3.2 GHz CPU."
+
+---
+
+## TSV3IE8S 多径 + Q-learning 自适应路由（SDN 集中式）
+
+**1. MDP 定义**
+- 形式：L167 "The Markov decision process (MDP) provides a mathematical framework for modeling Q-learning systems, represented by a quadruple `$( S , A , P , R )$`"；转移函数 L170 `$$S \times A \to R\tag{2f}$$`
+- **智能体是 SDN 控制器（集中式）**：L202 "the routing system based on Q-learning is composed of SDN controller and satellite nodes. The SDN controller acts as an agent to interact with the environment and obtain three signals: state, action and reward."
+- 状态 s_t：L202 "the state space is represented by the traffic matrix of the nodes and the links between the nodes, which represents the current network link traffic load."
+  - 字段：**节点的流量矩阵 + 节点间链路的流量矩阵**（原文未给逐维展开）。
+  - 另有等价表述 L211 "any switch node `$v \in V$` in the SDN network can be regarded as a state `$s$`."
+  - 归一化：原文未说明。
+  - 时间聚合：无。
+- 动作 a_t：L202 "The agent takes which node to forward the data packet to as an action space."；L211 "Each state `$s \in S$` has an optional action set `$A ( s )$` , which is composed of links connecting the state of `$s ,$`"。
+  - 动作 = 下一跳节点。
+  - **"终止搜索"被保留为显式动作**：L213 "Although the termination search strategy belongs to the invalid strategy set `$\Pi _ { u s e l e s s } ,$` it is still used as an option for the agent (SDN controller) to search for actions."
+  - 掩码：`$\Pi _ { u s e f u l }$` 与 `$\Pi _ { u s e l e s s }$` 被显式定义为两个集合（L213），但终止动作仍在动作空间内 —— 属**集合划分（软掩码）而非硬掩码**。
+- 奖励 r_t（逐字 LaTeX）L196 `$$R _ { i  j } = \mathrm { R } ( i , j | _ { s _ { t } , a _ { t } } ) = - c o s t + \alpha _ { 1 } B W _ { i j } - \alpha _ { 2 } d e l a y _ { i j } - \alpha _ { 3 } l o s s _ { i j }\tag{2i}$$`
+  - 含义 L189 "the reward function is set as an index of comprehensive link states as shown in Formula (2i), in which `$\alpha _ { 1 } , \alpha _ { 2 } , \alpha _ { 3 }$` are the adjustment factors of link bandwidth, delay and packet loss rate respectively."
+  - 分量定义 L193 "The abscissa represents the remaining link bandwidth ratio (inversely proportional to the link load), while the ordinate represents the immediate reward of the link bandwidth part `$B W _ { i j }$` ... when the link utilization rate is overloaded, the reward value of the bandwidth part tends to almost 0, and the mid-term transition is smooth, but the gradient value is getting higher and higher, until the link is idle (occupancy rate is lower than 30%), its reward value approaches 100. `$d e l a y _ { i j }$` and `$l o s s _ { i j }$` represent the ratio of the delay and packet loss rate of link `$(i,j)$` to the maximum delay and packet loss in the global link, respectively, thus, the values are all between (0,100]."
+  - **BW 分量用 sigmoid 塑形**：L193 "According to the above analysis, the bandwidth part of the reward function is set based on the sigmoid function, as shown in Figure 6."（**本批唯一用 sigmoid 塑形奖励分量的**）
+  - 归一化：delay_ij / loss_ij 按全局最大值归一化到 (0,100]；BW_ij 落在 (0,100)。
+  - 终止加成：伪码 L229 "`$\pmb { R } _ { t } = \pmb { R } _ { t } ( s _ { t } , \pmb { a } _ { t } ) + \pmb { 1 0 0 } ;$`"
+  - 权重取值：L317（时延敏感业务）"set the parameters in the Q-routing algorithm take `$a _ { 1 }$` to 0, `$a _ { 2 }$` to 1, and `$a _ { 3 }$` to 0"。**其余业务类型的取值未系统报告。**
+  - 折扣 γ：更新式含 γ 但**数值未报告**。
+- 转移/终止：终止 = 到达 Goal state（伪码 L228 "10. if state `$s _ { t + 1 } ==$` Goal state"）；**另有超时终止** L222 "4. while `$t \leq t _ { m a x }$`"。
+- 资格迹/多步：未见（严格模式 0 命中，见文末检索证据表）。
+
+**2. 学习算法与更新式**
+- 算法名：Q-routing（原文 "Dynamic Routing Algorithm Based on Q-learning (Q-routing)"，L215）。
+- 更新式 L178 `$$Q ( s _ { t } , a _ { t } ) = ( 1 - \alpha ) Q ( s _ { t } , a _ { t } ) + \alpha [ R ( s _ { t } , a _ { t } ) + \gamma m a x Q ( s _ { t + 1 } , a _ { t + 1 } ) ]\tag{2g}$$` —— **自身下一状态 bootstrap（非邻居 Q 表）**，这点与同批 Q-routing 族（Y2H4NPLU / UKBSA7WN / 53HEEK33 / UKEKU5ZG）不同。
+- 最优值 L184 `$$Q ^ { * } ( s _ { t } , a _ { t } ) = E [ R ( s _ { t } , a _ { t } ) + \gamma \underset { a \in A } { m a x } Q ^ { * } ( s _ { t + 1 } , a _ { t + 1 } ) ]\tag{2h}$$`
+- **ε 递减（有闭式衰减律）** L173 "The exploration strategy we use in this chapter is `$\varepsilon - d e c r e a s i n g$`, where the probability of choosing a random action (exploration) is `$\varepsilon \in [ 0 , 1 ]$` and choosing the best action (exploitation) is `$1 - \varepsilon .$` In this way, at the beginning, maintain a high exploration rate, and each subsequent episode `$\tau \in \varLambda$` will decrease according to `$\varepsilon _ { \tau } = \sqrt { 1 - [ \tau / ( 4 \times | \varLambda | ) ] ^ { 2 } }$`" —— **本批唯一给出探索率闭式的**。
+- double/target net：未见（严格模式 0 命中）。网络结构：无神经网络（Q matrix）。
+- 收敛性引用 L204 "it has been proved in [21] that Q-learning will sufficiently converge to the `$\xi$` neighborhood of the optimal value after `$(N l o g ( 1 / \xi ) / \xi ^ { 2 } ) ( l o g N + l o g l o g ( 1 / \xi ) )$` iterations, where N represents the number of states in the MDP"。
+- 结构说明：第 2 章是**无学习的多径 BFS 负载均衡**，第 3 章是 Q-learning；两者是**串联的备选方案**而非同一算法的部件 —— L326 "when the topology information cannot be obtained, the Q-routing algorithm with the link state considered, has obvious advantages"。
+
+**3. 信用分配：这篇怎么把奖励归到动作上？**
+- 逐跳即时奖励：eq(2i)，作用于所选链路 (i,j)。
+- 路径级终局：+100（伪码 L229）。
+- 分解到链路：**4 分量分解到链路** —— cost（固定项）、BW_ij（sigmoid）、delay_ij、loss_ij。
+- 是否区分损失原因：**部分** —— loss_ij 单列（L193 "the ratio of the delay and packet loss rate of link (i,j) to the maximum delay and packet loss in the global link"），但它是**链路内在丢包率属性**，不是"本跳决策导致的丢包事件"的成因。
+- 检索 `credit assignment|counterfactual|reward decompos|separate (reward|penalty)` 严格模式 0 命中。
+
+**4. 状态里有没有时间信息？**
+- **没有**。状态 = 当前流量矩阵（L202 "represents the current network link traffic load"），瞬时快照。
+- 检索 `EWMA|exponentially weighted|moving average|history of|historical (state|information|feature)|time window|sliding window` 严格模式 0 命中。
+- 时间结构仅在算法侧：**动作截止时间 t_max**（L213）与 **ε 的 episode 衰减**（L173）。
+
+**5. 动作有没有时间结构？**
+- 按**业务流请求**触发，且**含准入决策**：L165 "The SDN controller must make a decision at each discrete time interval to accept or reject new service requests based on the current system state. In the case of acceptance, it is decided to allocate the best transmission path for the traffic flow. If declined, there is no need to allocate resources for it."（**本批唯一把 accept/reject 与路由合在同一 MDP**）
+- 流级摊销：一条业务流分配一条路径，L202 "the corresponding flow table will be sent to the corresponding nodes"。
+- 切换代价：未见显式项。
+- **动作级截止时间**：L213 "the maximum execution time of the agent's action is set to `$t _ { m a x }$` ... otherwise the path allocation is terminated."
+- **学习因子α可变**：伪码 L235 "17. `$t = t + 1 ,$` update learning factor `$\alpha _ { t }$`"（本批唯一）。
+
+**6. 多智能体设定**
+- **不是多智能体**：SDN 控制器单一 agent（L202）。
+- 检索 `centralized training|CTDE|parameter sharing|shared parameters|non-stationar|nonstationar` 严格模式 0 命中。
+- 通信：控制器下发流表（L202）；控制器获取全局状态（L114 "the SDN controller obtains the global network state"）。
+
+**7. 训练协议**
+- 训练分布 vs 评估分布：**同一套**（16 节点示例拓扑，L243；无跨分布迁移实验）。
+- 采样：按业务集遍历，伪码 L221 "3. for `$S ^ { k }$` in business set S"。
+- 业务到达：L165 "We assume that business flow requests arrive independently. Furthermore, the probability of the business type follows a pre-specified Poisson distribution."
+- 拓扑更新：L47 "The inter-satellite network nodes update the topology information of the entire network periodically"。
+- 时长：L243 "the simulation time was set to 1 h"；发包率 L243 "the sending rate of business data packets increased from 10 packets/s to 100 packets/s"。
+
+**8. 该文的算法贡献（与 1–7 的具体改动对应）**
+(1) **多径搜索与 Q-learning 的组合**：拓扑可知时用 BFS 分层多径做负载均衡，拓扑不可得时退回 Q-learning（L326），对应第 2 项的双阶段结构；(2) **sigmoid 塑形的带宽奖励分量**（eq 2i 的 BW_ij，L193），对应第 1/3 项；(3) **奖励按业务类型重配权重** α1/α2/α3，L202 "If a business is delay-sensitive, the reward function will increase the weight of the delay part"，对应第 1 项。
+
+**9. 该文自述的局限（逐字）**
+- L326 "Traditional algorithms can obtain only one shortest path, and is difficult to guarantee that a randomly discovered shortest path can meet the requirements of the service."（对传统方法的评述）
+- **未见于本篇**：Conclusions 全文（L324-326）**没有 future work / limitation 自述句**。检索范围：该篇全文，检索词 `future work|limitation`，0 处自述性表述。
+
+**10. 该文没有考察的算法选择（基于 1–7 实际内容）**
+- **奖励是标量、从未分解**：eq(2i) 单一标量；4 个分量在奖励内部加权求和（对比同批 UKBSA7WN 的向量 Q）。
+- **状态逐字段均为瞬时量、无任何时间聚合**（第 4 项）。
+- **从未比较过不同训练分布**（第 7 项同源）；训练与评估同为 16 节点示例拓扑。
+- **权重 α1/α2/α3 只对单一业务类型取值**：L317 只报时延敏感业务的 (0,1,0)，**未系统扫描"业务类型 × 权重"组合**，尽管 L202 声称权重随业务类型变化。
+- 从未使用硬动作掩码（虽定义 `$\Pi _ { u s e f u l }$`/`$\Pi _ { u s e l e s s }$`，但终止动作仍在动作空间内，L213）。
+- 从未使用多步回报/资格迹（严格模式 0 命中）。
+- **折扣因子 γ 数值未报告**。
+- 从未隔离"多径 BFS"与"Q-learning"两条路径的贡献边界（二者是分支而非叠加，L326）。
+- **从未给出状态特征的具体维度与构造方式**（仅称"流量矩阵"），不可复现。
+
+**11. 可复用的具体机制（含公式）**
+1. **ε 的闭式递减律**：L173 `$\varepsilon _ { \tau } = \sqrt { 1 - [ \tau / ( 4 \times | \varLambda | ) ] ^ { 2 } }$` —— 只需总 episode 数 |Λ| 即可复现，比同批的"指数衰减"或"µ^t·ε"自由参数更少。
+2. **sigmoid 塑形的链路负载奖励**：eq(2i) 的 `$B W _ { i j }$` 项，L193 饱和特性（拥塞→≈0；空闲→≈100）天然避免负载项主导总奖励。
+3. **按业务类型重配权重**：L202 —— 同一套分量、不同权重实现多业务；与 UKBSA7WN 的向量 Q 形成对照（**前者在奖励层混合，后者在 Q 层分离**）。
+4. **准入 + 路由合并的单 MDP**：L165 的 accept/reject 与路径分配同一决策。
+
+**12. 该文实验合同里与"负载"相关的设置（仅作实验条件登记，不作贡献）**
+- 拓扑（**非真实星座**）：L243 "Taking the 16-node inter-satellite network shown in Figure 7 as an example, assuming the following topology, it is required to calculate the routing table from node V7 to other nodes"。
+- 负载 L243 "the sending rate of business data packets increased from 10 packets/s to 100 packets/s, and the simulation time was set to 1 h."
+- 业务模型 L165 "the probability of the business type follows a pre-specified Poisson distribution"；链路属性 L123 "the link bandwidth capacity, transmission delay and packet loss rate are expressed as `$b _ { i j } , \ d _ { i j }$` and `$l _ { i j }$`"。
+- 目标函数 L134 `$$\lambda \underset { ( i , j ) \in E } { m a x } l o a d _ { i j } + ( 1 - \lambda ) \sum _ { k \in K } \sum _ { ( i , j ) \in E } x _ { i j } ^ { k } \cdot d _ { i j }\tag{2a}$$`，其中 L137 "`$l o a d _ { i j } = \frac { \sum _ { k \epsilon K } x _ { i j } ^ { k } * b ^ { k } } { b _ { i j } } \times 1 0 0 \% .$`" —— **min-max 形式目标（最大链路负载 + 累计时延）**，本批唯一把"最坏链路负载"写进目标的。
+- 对比算法：Dijkstra（L317）；多径部分对比 BFS（L250）。
