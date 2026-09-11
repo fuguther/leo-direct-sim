@@ -571,3 +571,68 @@ MARL 文献近年几乎被 off-policy 方法（MADDPG、值分解类 QMix/QPlex/
 **10. 一句话评价**
 **一次高质量的"经验纠偏"**：它证明了在协作多智能体里 PPO 不必被 off-policy 方法取代，并把"怎么配 PPO"从口口相传变成五条可操作的建议（尤其"少 epoch、不切 mini-batch"与单智能体惯例相反）；在方法谱系里它属于**基础工具链的配置手册**，与 LEO 路由无直接关系，但对任何打算用 MARL 做星上决策的工作构成必要的前置知识。
 
+
+## L2VKYTAV — Shaping Rewards, Shaping Routes: On Multi-Agent Deep Q-Networks for Routing in Satellite Constellation Networks
+
+**1. 一句话**
+对**全分布式多智能体 DQN（FD-MADRL）**做一次诚实的压力测试：重点不是提新算法，而是**逐条设计奖励函数并量化训练收敛**，结论是"**当前奖励设计能学出短路径，但会把链路用饱和，而且节点数一涨就不稳**"，于是提出一个 **CL-DC（集中式学习 + 分散式控制）** 的混合架构作为出路。
+
+**2. 问题设定**
+LEO 星座路由要在"高度动态、物理上巨大、流量非均匀分布且有 QoS 要求"的网络里找最优配置（L11）。FD-MADRL 的吸引力在于每颗星就地快速决策；**但代价是**：端到端连贯性与稳定性存疑，agent 之间必须互相学习对方的行为，可能出现复杂而意外的相互作用（L27）。SCN 的独特困难还包括：**频繁的 ISL 与星地链路切换**，以及**热点是地理性的而非拓扑性的**（L17 逐字："hot spots are geographical rather than topological"）。
+
+**3. 方法骨架**
+- **RL 设定（第 1.2 节）**：MDP，式 1 给出 Q 值的 Bellman 形式；DQN 用 DNN 逼近 Q，经验回放提稳定性。**FD-MADRL 的状态空间 = 相邻链路负载 + 上一跳 + 目的节点**；**动作空间 = 可用的 ISL，即下一跳的选择**（L29）。每颗星 4 条 ISL（L17）。
+- **奖励分层（第 1.3 节，本文核心）**：
+  - **全局奖励（面向 CDRL）**：$r^G_{t+T}=w_1U(t)-w_2L(t)-w_3D(t)$（式 2）——由链路利用率 U、流时延 L、丢包率 D 加权组成；**但只在多跳传播延迟 T 之后才收到**（L33 逐字："this reward is only received after a significant time lag, denoted by T, due to the multi-hop propagation delays"）。
+  - **局部奖励**：$r^L_{t+1}=w_4delta^L_{th}(t)-w_5l^L(t)-w_4d^L(t)$（式 3）——**注意这里 $w_4$ 被用了两次**（链路阈值项与丢包项），而正文说三项权重大小为 $w_4,w_5,w_6$（L42），**公式与文字不一致，疑为笔误**。
+  - **FD-MADRL 实际用的局部奖励（式 4，L53）**：不用局部时延，改用**到目的地的路径缩短量 ψ**（沿用 [4]）；**+Ψ 到达终点**；**−Ψ 若路径未缩短且成环**（量级至少比 ψ 大一个数量级，且**只惩罚真正造成环的那个节点**）；**+ξ₁ 若链路负载 < 0.4；−ξ₂ 若 0.4 < 负载 ≤ 0.8；−ξ₃ 若负载 > 0.8；−Ξ 若链路饱和**。−Ξ 与 −Ψ 同量级。
+  - 作者自述两个经验发现（L48/L50）：**加入与 −Ψ 同量级的 +Ψ（到达终点）能改善训练**，即使它没有沿路径传播到所有节点；**阈值式的负载均衡奖励被证明有效**。
+- **评估指标（第 2.1 节）**：**逐跳时延（即跳数）** 与**所选路径上的最大链路负载**（L60）。
+- **对比基线**：**动态最短路优先（SPF）**，一个基于 Dijkstra 的多代价规则算法，代表典型 SOTA，**主动避开负载 >80% 的链路**（L74）。
+
+**4. 它声称的效果**
+- **静态寻路（第 2.2.1 节）**：24 节点集群需要**两倍以上的 episode** 才能稳定达到最大奖励（L66）。
+- **典型的短视失败案例（L66，很具体）**：24 节点集群里，从节点 4 到节点 23，学习到的策略**先走到节点 8**（因为相邻链路负载低），但这条路由可能经过**节点 22，再从 22 走一条接近饱和的链路到 23**——**局部最优的下一跳选择导致端到端上的昂贵决策**。
+- **vs 动态 SPF（Fig 3，L74）**：**FD-MADRL 在多数路由上跳数更少**（路径更短），**但它倾向于把链路用饱和**。作者强调静态场景下这问题不明显，**但在动态场景中缺乏前瞻性会导致整体系统性能下降**。
+- **动态链路负载（第 2.2.2 节）**：把上一 episode 中用过的每条链路**额外加 20% 负载**（只在本 episode 内生效，避免所有链路都饱和）。结果：**奖励更低、更不稳定**；**12 节点集群还能保持高性能，24 节点集群结果不稳定**（L83）。原因：更大的网络里更容易出现"选中饱和链路"或"意外引入环路"从而产生大幅负奖励的情形；且**全分散的 agent 很难学会主动规避潜在瓶颈**。
+
+**5. 它的实验条件**
+- 自建 **gym** 环境，DQN 用 **Keras/TensorFlow** 实现（L60）。
+- 拓扑：**"SCN 的子网"，即分布式架构中的一个 cluster**——具体用 **12 节点**与 **24 节点**两个集群（Fig 1 展示 24 节点那个），不是完整星座。
+- **负载是随机设定的**，但声称"符合[6]中观测到的合理非均匀分布流量场景的链路特性"（L60 逐字："While the loads are set randomly, they comply with observed link characteristics of plausible non-uniformly distributed traffic scenarios [6]"）。
+- **动态场景的"动态"仅指**：上一 episode 用过的链路加 20% 负载（L78）。
+- **无流量到达率模型、无排队模型**；时延用**跳数**代替。
+- 评估：训练过程中的 smoothed reward 曲线 + 最终路径的跳数/最大负载散点。
+- 作者明确限定范围（L60 逐字）："Due to the limited scope of this manuscript, only the described reward design is investigated."
+
+**6. 它自述的局限**
+- **只考察了这一种奖励设计**（L60 逐字）："Due to the limited scope of this manuscript, only the described reward design is investigated."
+- **FD-MADRL 的短视在静态与动态场景下都损害端到端路由**（L87 逐字）："For FD-MADRL, we have shown that the limited scope of each agent negatively impacts the end-to-end routes, in both static and dynamic scenarios."
+- **策略越复杂，agent 之间要互相学习就越有反效果**（L87 逐字）："Moreover, with increasingly complex policies, the agents have to learn the behavior of other agents, which is counterproductive for scalability."
+- **CDRL 的代价**（L87 逐字）："A CDRL-based scheme on the other hand, loses the flexibility of decentralization, introduces a single point of failure, and needs additional signalling."
+- **结论保守**（L94 逐字）："while DQN-based architectures represent promising solutions for routing and network control in complex SCNs, they still have practical limitations... In-depth investigations are required to fully evaluate their actual viability."
+- 未来的 CL-DC 架构**只是提案**（Fig 5），**没有实现、没有实验**。
+
+**7. 它没做但看起来能做的地方**
+1. **CL-DC 混合架构只有一张示意图（Fig 5），没有任何实验**（L92）。它给出的理由很具体：**Q 函数在训练与执行时需要同样的信息，所以未来要考虑 policy gradient 的多智能体 actor-critic 架构**——这是一个明确、可执行、且尚未被执行的下一步。
+2. **"动态"负载的建模极其粗暴**：上一 episode 用过的链路 +20%。这既不是到达率变化，也不是排队动力学，**而是一个人为的、无时间结构的扰动**。真正的负载演化（到达率随时间变化 → 队列 → 拥塞）完全没建模。
+3. **时延用跳数代替**（L60）。而它的奖励里明明有"局部时延 $l^L(t)$"这一项（式 3），FD-MADRL 却**放弃了它**、改用路径缩短量（L48）。**为什么放弃时延信息、以及放弃的代价，没有被讨论**。
+4. **式 3 的权重 $w_4$ 重复使用**（应为 $w_6$），公式与正文不符——这处错误让"局部奖励的权重如何选"这件事无法独立复核。
+5. **只测 12 与 24 节点两个规模**，且都是"集群"而非完整星座。24 节点就不稳，那条"要到多少节点才会彻底失效"的曲线完全没有——**这恰恰是它宣称的 scalability 问题所最需要的证据**。
+6. **没有报告训练所需的时间/episode 数的绝对值**（只说"两倍以上"），也没有说明是否需要重训、多久重训一次。
+7. **负载阈值 0.4 / 0.8 是硬编码的**（式 4），与 JP79GMZS 的 ELB 用闭式公式反解阈值形成对比——**这篇没有做阈值敏感性分析**。
+
+**8. 和同批其他篇的关系**
+**与 J68GU76W 是同一族但更诚实的一篇**：两者都用**多智能体 DQN 做 LEO 转发**，J68 用残差学习叠在 backpressure 上、目标是队列长度，本篇用纯局部奖励、目标是时延+负载均衡，且**明确报告了方法在 24 节点就不稳**。与 **JP79GMZS（ELB）** 直接对照：ELB 用**闭式公式**动态设定阈值 α/β/χ，本篇用**硬编码阈值 0.4/0.8** + 学习——ELB 无学习但参数有依据，本篇有学习但阈值靠猜。与 **K7U4TYJN（SKYLINK）** 对照：SKYLINK 也是全分布式的（MAB），但它**明确报告卫星负载作为上下文无效**，而本篇恰恰把"相邻链路负载"放进状态空间——**两篇在"负载信息对分布式 agent 有没有用"上给出了相反的实践**，值得并列记录。与 **KPUZIMU5（MAPPO）** 的关系：本篇在讨论里自己指出"未来要用 policy gradient 的多智能体 actor-critic"（L92），而 MAPPO 正是这类方法的标准实现。它引用了 **[4] Soret et al. Q-learning for distributed routing in LEO**（也就是 K7U4TYJN 的基线之一 [24]），以及 [3] You et al. 全分布多智能体 DRL 路由、[5] Hierarchical Deep Double Q-Routing、[6] Roth et al. 分布式 SDN 负载均衡路由。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**有直接贡献，而且是负面的、很有价值的贡献**：
+- **"时延最优 ≠ 负载均衡"这个矛盾被实测出来**（L74）：FD-MADRL 学出来的路径**跳数更少**（时延代理更优），**但把链路用饱和**。也就是说，**当 agent 只看"能多快到达"时，它会给网络制造拥塞**——这条 trade-off 对"负载变化下的时延"是核心事实：**低时延的达成方式本身会推高未来的负载与时延**。
+- **负载变化直接摧毁分布式学习的稳定性**（第 2.2.2 节）：把用过的链路加 20% 负载后，**12 节点还能撑住，24 节点就不稳了**。这是一个**关于"负载动态性 → 学习稳定性"的规模阈值现象**，虽然实验粗糙，但结论方向清晰。
+- **明确点出"前瞻性"的缺失**（L74 逐字："a lack of foresight can result in decreased overall system performance"）：局部观测的 agent **无法主动规避潜在瓶颈**（L83）。这正是"负载变化"场景下最需要的那个能力。
+- **一条关于奖励时序的事实**（L33）：全局奖励**要等多跳传播延迟 T 之后才到达**——即**时延/丢包这类端到端指标天生是滞后信号**，而局部奖励是即时的。**"即时信号 vs 滞后信号"的取舍**，是任何做负载自适应路由的工作都必须面对的结构性问题，这篇把它明确写了出来。
+- 局限同样明确：**没有到达率模型、没有排队模型、时延用跳数**，所以它给不出"到达率 → 时延"的曲线。
+
+**10. 一句话评价**
+**一次有价值的负面结果报告**：它没有把 FD-MADRL 包装成成功案例，而是**用奖励消融和两档规模说明了全分布式 DQN 路由的短视与不稳定**，并诚实承认 CL-DC 方案还只是提案；在方法谱系里它属于"**对已有 FD-MADRL 路线做压力测试与诊断**"，对本选题的贡献是那条"**跳数更优 → 链路更饱和**"的实测矛盾与"**负载一变、24 节点就学不动**"的规模现象。
+

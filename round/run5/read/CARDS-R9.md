@@ -403,3 +403,80 @@ LEO 星座（Iridium NEXT / Starlink）的地面信关站**只能布在有限地
 **一篇把"信关站地理集中"当作第一性问题、用"分区 + 拥塞指数权值 + SR 拼接"求解的经典（非学习）负载均衡路由论文**；它在本批里的独特价值不在方法（Dijkstra + 手调权值，基线也全是同类启发式），而在于它**诚实地记录下了"高负载下平均时延反而下降"这一指标口径假象**——这是全库少见的、关于"怎么测"的自觉。
 
 
+## W5Z39E25 — A Wised Routing Protocols for Leo Satellite Networks
+
+> 会议短文（OPNET 仿真）。作者：Saeid Aghaei Nezhad Firouzja（上海交大）、Muhammad Yousefnezhad（南京航空航天大学）、Masoud Samadi, Mohd Fauzi Othman（马来西亚理工大学 UTM）。全文 167 行，逐行读完（一次读完全文；L143–L167 为参考文献）。
+
+**1. 一句话**
+把星上**分组调度**（PQ + WRR 混合，实时业务走严格优先级、非实时业务按权重分剩余带宽）与**基于卫星忙/闲状态的备用路径绕行**合起来：用**业务到达率 $\lambda$ 与两个阈值 $\alpha$（闲）/ $\beta$（忙）** 判定每颗星的状态，忙星被通告给邻居与路由控制中心（控制中心把它从拓扑里删掉并重算备用路由表），低优先级业务改走备用路径。
+
+**2. 问题设定**
+两类麻烦叠加（L23 逐字）："the resource onboard is constrained, **load distribution on satellite is unbalanced in terms of time and space**, traffic on board is constantly changing with the moving of sub-satellite point, these lead to congestion of some satellite node in the network, due to which network throughput drops"。多业务 QoS 差异化是第二个约束：实时业务（class A）要"three low one guarantee"（低时延、低抖动、低丢包、带宽保证），非实时业务（class B）"usually use **traffic arrival rate** as its QoS measure"（L27）。作者还担心一件事：纯优先级调度会让**低优先级业务被"饿死"**（"avoid low priority traffic to be 'starve' due to their weak resource competitiveness"，摘要 L9–L10）。谁遇到麻烦：被抢占到几乎没带宽的 class B 业务，以及因热点汇聚而过载的那几颗星。
+
+**3. 方法骨架（非 RL，排队调度 + 状态路由）**
+- **星上调度：PQWRR**（I.A 节，L25–L33，Fig 1）。class A 进**高优先级队列**（严格优先级 PQ）；class B 按服务等级进多个低优先级队列，**仅当 A 队列为空时**才按 **WRR** 分剩余带宽。作者自述这是"combines the advantages of algorithms WRR and PQ, overcomes their both shortcomings"（L33）。
+- **双路由表**（L36–L46，Fig 2）：
+  - **最短路径路由表（route table1）**：基于**虚拟拓扑（VT）**、按每个时隙的拓扑结构**离线计算**（L38 逐字："established based on virtual topology and calculated offline according to the network topology structure within each timeslot"）。
+  - **备用路由表**：基于拥塞控制。
+- **⭐ 状态判定与阈值**（L43 逐字，全文核心机制）："For satellite traffic arrival rate $\lambda$ set two state thresholds: **idle threshold $\alpha$ and busy threshold $\beta$**; Satellite nodes keep track of their own traffic arrival rate, when $\lambda>\beta$ namely determining satellite into busy state, when $\lambda<\alpha$ determining satellite into idle state, defining $\alpha<\lambda<\beta$ as a transition state."
+  - ⚠️ **$\alpha$ 与 $\beta$ 的具体取值全文从未给出**（我逐段检查了 I.A、II、III、IV 各节，无任何数值或选取规则）。
+- **状态传播**（L43–L44）：状态变化时通告邻居与路由控制中心；邻居收到"busy"信号后减少发往该星的流量；**控制中心把忙星从网络拓扑中移除并重算备用路由表**。
+- **转发判决**（L45 逐字）：先按最短路径表找下一跳 → 若下一跳**闲** → 直接转发；若**忙** → 按业务类别分流：**class A 仍然直接转发**（不绕行），**class B 查备用路由表找新下一跳**；若找不到符合条件的下一跳，class B **进入 routing waiting queue** 等待路由表更新。
+- **拓扑约束**（L38–L40）：每星 4 条链路 = 2 条 ISL（同轨，长度基本恒定、连接常驻）+ 2 条 IOL（异轨，长度随卫星移动变化、**过境高纬度且可见角过小时会关闭**、**跨缝（cross-seam）卫星之间没有 IOL**）。
+- 无学习、无 RL；拥塞控制是**规则式**的（阈值 + 拓扑删点 + 重算）。
+
+**4. 它声称的效果**
+- **丢包**（Fig 8–10，L89–L91）：卫星 S-1-1 在第 **11 min 和 20 min** 丢包；S-1-4 在第 **10 min**；S-5-4 在第 **4 min**。
+- ⭐ **一条明确的时空相关结论**（L91 逐字）："At the same time packet loss status on different satellites is **significantly different**, existing traffic unbalance in time and space, **packet loss rate is a function of time and space**."
+- **分级丢包**：class A 丢包率**恒为 0**（抢占权）；class B 在资源紧张时丢包；**拥塞较轻时只有最低权重的 B0 丢包**，拥塞加重后**所有 B 类都不同程度丢包**（L91）。
+- **跳数**（Fig 11，L~101）：class A 恒走最短路径，跳数在 6–7 之间；**第 12 个路由跳时 A 跳到 9**，原因是"time-slot updates during the traffic routing process, route table changes, routing path shifts"；拥塞时 class B 跳数增加，**多数情况下增幅不超过 2，但某些时刻备用路径跳数极大，class B 最大跳数达 14**（L~101）。
+- **端到端时延（CDF 的 90 分位，L126，全文唯一一组绝对数值）**：
+  - PQWRR（不绕行）：class A **< 102 ms**、B2 **< 98 ms**、B1 **< 567 ms**、B0 **< 790 ms**。
+  - 复合策略（PQWRR + 备用路径）：B2 **< 136 ms**、B1 **< 145 ms**、B0 **< 460 ms**。
+  - ⚠️ **注意 B2 从 98 ms 恶化到 136 ms**，而论文只写"ETE delay performance of traffic class B with different weights has been significantly improved"（L126），**对这一处恶化未作任何说明**。
+  - class A 的 ETE 时延"remains around **100 ms**"、抖动较小（L~103）。
+- **吞吐**（Fig 16/17，L~132）：纯 PQWRR 下 class B0 吞吐**仅约 15 packets/s、吞吐率仅 60%**；复合策略下各类业务吞吐"more than 90"（单位疑为 %，原文截断）。
+- **时延抖动**：class B 抖动严重（结论 L138 自认："although under this policy the delay jitter of class B is severe"）。
+
+**5. 实验条件**
+- **星座**（L79）：Iridium 模型，**6 个轨道面 × 每面 11 星**（= 66 颗）、**780 km**、纬度阈值 **60°**、最小仰角 **8.2°**；轨道文件用 **STK** 生成后导入 **OPNET**。
+- **星上参数**（L79）：**包长 1000 bits**、**星上处理速率 500 packets/s**、**缓存队列长度 50 packets**。
+- **业务构成**（L79）：class B 分 B0/B1/B2，权重依次增大；A、B2、B1、B0 **各占 25%**。
+- **业务背景**（L81）：用文献 [10] 把地球分成 **12×24 栅格**并给出每格业务需求预测（Fig 7）；用文献 [11] 的**洲际流量比**（Table 1，如北美→北美 86.18、欧洲→欧洲 55.88 等）确定目的地址。
+- **源/目的**（L81）：源 (56°S, 26°E)、目的 (65.2°N, 58°W)，**两点间总业务需求 100 packets/s**。
+- **两个仿真场景**：分别验证 PQWRR 调度与复合路由算法，**各仿真 30 min**。
+- **训练/评估**：无训练（非学习算法）。
+- ⚠️ **只有单一负载点（100 packets/s）**——全文没有扫过到达率。
+
+**6. 自述局限（L140 逐字，全文唯一一处）**
+"But in this paper **how to choose state threshold, has not been discussed**, the selection method will be the focus of our future research."
+（即承认 $\alpha$、$\beta$ 的选取方法没做。**未见**对 B2 时延恶化、单负载点、3 个方向状态（闲/过渡/忙）中"过渡态"如何处理等的任何说明。）
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. ⭐ **$\alpha$ 与 $\beta$ 从未给定值，而整个机制（忙/闲判决 → 删点 → 重算路由）完全建立在它们之上**（L43）。作者把这一点写进了局限。**这是本文最大、也最容易补的缺口**：阈值敏感性、阈值与负载水平的关系、阈值是否需要随星座位置自适应——全是现成的实验。
+2. **"过渡态"被定义了但从未被使用**：L43 定义 $\alpha<\lambda<\beta$ 为 transition state，可**后文的转发判决只用"idle"和"busy"两个分支**（L45）。**过渡态在机制里没有任何作用**——定义与用法脱节。
+3. **只测了一个负载点 100 packets/s**，而全文的核心机制（阈值判定）恰恰是**负载的函数**。没有到达率扫描，就无法知道阈值机制在什么负载区间才起作用。
+4. **它自己写了多径的代价，却没把它纳入决策**（L36 逐字）："if only a small amount of traffic needs to be transported, using multipath routing may cause waste of network resources"。即**低负载下绕行是浪费**——这是一个明确的、作者已经识别出的"负载依赖"开关，但转发判决里**没有任何基于负载水平启用/禁用备用路径的逻辑**。
+5. ⭐ **它给出了排队时延与路径长度的显式权衡**（L115 逐字）："although the **queuing delay on single satellite reduced**, but the **routing hop count get larger, times of queued get larger, path length get longer**, these lead to the increase of delay"。**这是"降排队但增跳数"的清晰机制描述**，但作者只当解释用，没有把它做成优化目标或分离测量。
+6. **B2 的 90 分位时延从 98 ms 恶化到 136 ms**（L126），与全文结论相反，**未解释**。
+7. **class A 时延 ~100 ms 在 Iridium 780 km 下偏高**（若纯传播，源目的跨半球约 4–6 跳、单跳 ~10 ms 量级），暗示排队/处理占比不小——**但论文没做时延分解**。
+8. 控制中心**全局重算备用路由表**是集中式的，**重算频率与信令开销未计**。
+
+**8. 和同批其他篇的关系**
+本批（R9）其余篇目尚未读完，暂无法逐篇比对。就谱系看：
+- 它与 **VFS59FHI（本批第 6 篇）最接近**——两者都是**非学习的经典拥塞路由**，都用"虚拟拓扑 + 离线最短路 + 拥塞触发的绕行"，**且都以"排队时延 vs 绕路成本"的权衡为隐患**。差别在触发信号：VFS59FHI 用**链路拥塞指数 $c(e)=F(e)/r(e)$**（连续量、算在链路上），本篇用**节点到达率 $\lambda$ 对阈值**（离散三态、算在节点上）。
+- 它与 **UF8IQTA2（本批第 1 篇）也同源**：都是"节点自报拥塞状态 → 上游改路"（UF8IQTA2 用预测流量 vs 邻居均值阈值 + RCS 信号；本篇用实测到达率 vs 固定阈值 + busy 信号），**且两篇的阈值都是手设常数、都不做敏感性分析**。
+- 本篇不引用本批其他任何一篇；其参考文献 [1]–[11] 大量为中文文献与教科书。
+
+**9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
+**⭐ 有直接且强相关的贡献——本批迄今"到达率"出现得最实质的一篇。** 三条：
+1. **它把"业务到达率 $\lambda$"直接作为状态变量**（L43），并给出三态划分（$\lambda>\beta$ 忙 / $\lambda<\alpha$ 闲 / 中间过渡）。这是全批少见的**把到达率写进判决逻辑而非只写进实验轴**的做法。**但阈值从未给值，因此这条贡献是"机制存在、参数缺失"的半成品。**
+2. **它给出了带绝对数值的时延-负载分级结果**（L126）：同一网络、同一负载（100 packets/s）下，**不同优先级业务的 90 分位时延跨越 98 ms → 790 ms 近一个数量级**。这直接说明：**在拥塞的 LEO 网络里谈"时延"必须绑定业务类别**，单一平均数会掩盖一个数量级的差异。
+3. ⭐ **它写清了"降排队时延"与"增路径长度"的对冲机制**（L115）：绕行到空闲星后**单星排队时延下降，但跳数与排队次数上升、路径变长**，净效应可能是**时延不降反升**（"at some point the time delay of class B has not been improved obviously"）。**这正是"负载变化下时延"问题的核心张力**，而作者是把它当作现象解释、而非研究对象。
+4. **"packet loss rate is a function of time and space"**（L91）——给出丢包率随卫星/时刻显著不同的实测观察，是"负载时空不均"的直接证据。
+**口径缺口**：只有**一个负载点**（100 packets/s）、无到达率扫描、无队列-到达率关系、阈值未定值；时延用 CDF 的 90 分位报告（比均值好），但**未说明被拒绝/丢包的业务是否计入 CDF**。
+
+**10. 一句话评价**
+**一篇用"到达率阈值三态 + 双路由表 + PQWRR 调度"处理多业务拥塞的工程型路由短文**；机制上它同时触及了本主题最关心的两件事——**把到达率当状态变量**、**指出降排队会以增跳数为代价**——但两件都停在半途（阈值从不给值、单负载点验证），属于"**问题提得准、证据给得少**"的一类。
+
+

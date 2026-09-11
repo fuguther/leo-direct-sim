@@ -312,83 +312,89 @@ LEO 拓扑随时间剧变（L21 段：卫星"cover an area of around five to twe
 - **简化假设**：星间信道**无丢包**，请求当拍必达、不会跨时隙留在链路上（L190 逐字："the channels between the two satellites are assumed to be no-loss"）。
 - **算法**：**多步 DQN**，损失式(17) $\left(R_t^{(n)}+\gamma_t^{(n)}\max_{a'}Q_G(s_{t+n},a';\theta_G)-Q(s_t,a_t;\theta)\right)^2$，估计网 + 目标网 + 经验回放（n-step buffer）+ $\epsilon$-greedy，目标网每 $N_F$ 步硬替换（Algorithm 1，L250 起）。
 
-## GPLEP83L — LLM-Driven Automated Reward Design for Reinforcement Learning-Based Routing in LEO Satellite Networks (LARGE)
+## GV9PPNZT — Information Freshness in Multi-Hop Wireless Networks
 
 **1. 一句话**
-提出 **LARGE**：用**三个 LLM 智能体**（Metrics Interpreter / Reward Design / Code Generator）组成一个**嵌套闭环**——外层拿仿真反馈的网络指标反复改写奖励函数、内层校验奖励代码能否用仿真器里真实存在的变量实现——从而**免去人工设计 RL 路由奖励函数**这件事（L39–L61 框架，L3 摘要）。
+把"多跳无线网里最小化信息年龄（AoI）"这件事做成一个统一框架，提出**三类调度/路由策略**——平稳随机（stationary randomized，可解析）、**年龄差（Age Difference，启发式贪心）**、**年龄债（Age Debt，把 AoI 优化等价转成虚队列的稳定性问题再用 Lyapunov 漂移求解）**——并证明年龄差策略在单源线网里恰好最优（L1 摘要，L92–L513 主体）。
 
 **2. 问题设定**
-LEO 路由用 RL 已很常见，但**RL 的效果"critically depends on the design of the reward function"**，而奖励设计"remains a complex manual process requiring significant domain expertise and extensive trial-and-error"（L3 摘要逐字；L13 段复述）。作者点名的缺口是：已有 LLM 自动奖励工作（Text2Reward、CARD、AutoReward 等）**主要面向机器人或游戏环境**——"where feedback signals are well defined and closely aligned with task objectives"（L17 逐字）——而**LLM 自动奖励在 LEO 这类高度动态系统上"remains largely unexplored"**（L3）。更具体地（L21 末尾逐字）："no prior work proposes a closed-loop framework in which an LLM autonomously generates and refines reward functions based on structured network metrics for DDQN-based routing in LEO satellite constellations"。
-形式化（§II，L27）：奖励设计问题 = 求 $r^*=\arg\max_{r\in\mathcal{R}} F(\mathcal{T}_M(r))$（式 1），其中 $\mathcal{T}_M(r)$ 是用奖励 $r$ 训练出的策略、$F$ 是在仿真里算出的适应度。
+AoI 的定义（L19）：目的节点在 $t$ 时刻的 AoI = **自最近一次收到的更新包「生成」以来流逝的时间**。收到新包时 AoI 降到"包的年龄"，否则线性增长（Fig 1，L19）。
+作者要解决的是**多跳网络**下的 AoI 最小化——他自述这在"一般干扰约束"下"received limited attention"（L23 逐字），并明确点出缺口（L25 逐字）："Finding low complexity near optimal scheduling and routing schemes for AoI minimization which handle general network topologies, interference constraints, cost functions, different types of flows and link reliabilities has remained an open problem."
+**最重要的动机陈述（L15 逐字，与"到达率"直接相关）**：
+> "In traditional communication systems, data or packet arrival is assumed to be an exogenous process that cannot be controlled. However, in a lot of real-time applications, the generation of update packets, such as sensor data, can be controlled. It has been shown [1] that **generating update packets at the right rate can improve freshness, striking a balance between too high a rate of generation that results in network congestion and too low a rate that results in updates being sent too infrequently**."
+以及为什么要换指标（L15 逐字）：
+> "traditional communication systems use packet centric performance measures such as throughput or delay... **delay of a stale packet, that got caught in the network due to network clogging, doesn't need to be accounted for** as long as the intended ground station gets fresh information regularly via other, promptly received, update packets."
 
-**3. 方法骨架**（核心是 LLM 闭环，不是 RL 算法创新）
-**三个 LLM 智能体**（L39）：
-- **Metrics Interpreter Agent**：分析仿真返回的网络指标，转成结构化 prompt；
-- **Reward Design Agent**：基于内部知识与上下文生成奖励函数定义 + 简短理由；
-- **Code Generator Agent**：把定义实现成可执行代码，并**校验每个变量在仿真环境里是否可直接获得或可由其他变量导出**。
+**3. 方法骨架**
+**系统模型（§II，L48 起）**：固定无向图 $G(V,E)$；**每条边每时隙最多传一个更新、恰好一个时隙送达**（时隙归一到 1）。$K$ 个源节点，每个源 **"active, i.e. they generate fresh updates on demand"（L52）**。流是三元组 $(k,C_k,D_k)$ =（源、被委托转发节点集、目的集）。三种流型：单播/组播/广播。
+- **关键简化（L60 逐字）**："We assume there to be **no queuing at any node** and that each node maintains a **single packet buffer for the freshest packet** of each flow."——**无排队，每流只有最新包的一个缓冲区**。
+- 干扰：可行动作集 $\mathcal{A}$（互不干扰的链路+流组合），策略每时隙必须从 $\mathcal{A}$ 中选一个（L64）。
+- 链路不可靠：$S_{ij}(t)\sim$ i.i.d.，成功概率 $\gamma_{ij}$（L66）。
+- **年龄演化（式 1）**：$A_j^k(t+1)=\min(A_j^k(t),A_i^k(t))+1$ 若成功传输，否则 $+1$。
+- 两个指标：加权和 AoI $A_{\mathrm{ave}}$（式 2）与**非线性代价** $B_{\mathrm{ave}}$（式 3–4，$B_j^k=g_j^k(A_j^k)$，$g$ 单调增）。
 
-**两阶段**（L39）：
-- **§III.A 冷启动生成**（L46）：Reward Design 收到描述路由问题与优化目标的 prompt，产出奖励定义 → Code Generator 检查变量可得性；**若某变量不可用，就带着"缺失变量清单"打回去要求重写**，如此往复直到能实现，防止奖励只依赖一小撮现成变量。这一阶段**不针对具体环境变量**，即刻意保持"无偏先验"。
-- **§III.B 迭代改进**（L55）：用上一轮的奖励训练 RL 智能体 → 仿真返回 **goodput (Mbps)、path stretch、端到端时延 (ms)** 以及训练指标（累积奖励、loss）→ Metrics Interpreter 判断是否满足收敛准则；**不满足则把指标转成结构化 prompt**（指出改进方向、强化优化目标、并**明确告知上一轮奖励是变好还是变差**）→ Reward Design 提出新奖励 + 理由 → Code Generator 校验并实现 → **用新奖励从零重训**，循环直到满足准则。实现成功后还会生成一份 markdown 文档解释奖励函数及设计理由。
-- **停止准则**：**goodput 一旦超过专家基线就停**（L75 逐字："The LARGE search loop terminates once a candidate reward function achieves a goodput higher than that of the baseline reward"）。
+**(1) 平稳随机策略（§III，L92）**：动作按固定分布 i.i.d. 抽取。**Theorem 1（L157）**给出线网下平均年龄的**闭式**：$A_{\mathrm{ave}}=\sum_{e\in E}\frac{1}{\gamma_e f_e}$——**平均年龄按链路分解成"链路激活频率 $\times$ 可靠度"的倒数之和**。**Lemma 2（L201）**：多跳最小化问题（式 13）可等价看成单跳问题（式 6）。
+- **重要负面结论**：线网例子里（L211），最优平稳随机策略给出 $A_{\mathrm{ave}}^*=(N-1)^2=\mathcal{O}(N^2)$。
 
-**RL 侧（不是本文贡献，照搬）**：多智能体设定，**每颗卫星是一个独立 agent**、只凭局部信息做下一跳决策；**全部实验统一用 DDQN**；分在线学习与离线部署两阶段（L67）。
+**(2) 年龄差策略（§IV，L204）**：核心直觉是**让相邻节点的年龄差尽量小**。调度使年龄差权重最大的链路（式 14 一维情形，式 15/16 一般情形），权重可含链路状态 $S$（已知时用瞬时值，未知时用平均可靠度 $\gamma$）。**Lemma 3（L226）**：年龄差策略是式(17) 那个（把受委托节点年龄也算进去的）平均年龄的**单步贪心（myopic）最优**。
+- **关键量化对比（L211）**：同一个单源线网，年龄差策略的平均年龄 $=(N-1)+N/2=\mathcal{O}(N)$，**比最优平稳随机的 $O(N^2)$ 好一个量级**。
 
-**4. 它声称的效果**
-**Table I（L102 附近）——12 秒推理阶段，10 个随机种子的均值 ± 标准差**：
-| 方法 | Goodput (Mbps) | Delay (ms) | Path stretch |
-|---|---|---|---|
-| **Baseline（仿真器自带、专家设计）** | **1451.62 ± 131.67** | 85.65 ± 2.44 | 1.464 ± 0.066 |
-| LARGE-GPT（GPT-5.4） | 1324.03 ± 237.34 | 88.41 ± 2.32 | 1.569 ± 0.088 |
-| **LARGE-Opus（Claude Opus 4.6）** | **1409.56 ± 133.10** | **85.13 ± 3.03** | 1.486 ± 0.034 |
-- 摘要的核心 claim（L3 逐字）："the best-performing configuration reaching goodput within approximately 3% of the baseline and slightly lower end-to-end delay, without manual reward engineering"——**核对 Table I：1409.56 vs 1451.62 差 2.90%，且时延 85.13 < 85.65，确实成立，但这里说的"最优配置"是 LARGE-Opus**。
-- 搜索阶段（Fig 3）：**第 3 次迭代就达到基于 goodput 的停止准则**；第 1 次迭代（冷启动）达不到，说明迭代改进是必需的（L89 附近）。
-- 达到准则后继续迭代**不再有实质增益**——作者归因于后续提案趋于保守，"modifications mainly consist of small changes to the coefficient values"（L89）。
-- **⚠️ 本文内部有一处明确矛盾，且影响到结论的归属**：
-  - §IV.D（L104）说："LARGE-Opus achieves the closest overall performance to the baseline, with comparable goodput, slightly lower delay, and a similar path stretch. **LARGE-GPT obtains lower goodput and a higher path stretch**"——**与 Table I 一致**。
-  - §IV.F（L123）却说："LARGE-Opus produces a more aggressive and structurally richer reward, but ... **it shows lower goodput and higher path stretch than the expert baseline**. In contrast, **LARGE-GPT produces a more conservative reward ... achieving comparable goodput, slightly lower delay, and similar path stretch**."——**按 Table I，LARGE-GPT 的 goodput 最低（1324）、时延最高（88.41），"slightly lower delay" 描述的是 LARGE-Opus 而非 LARGE-GPT。§IV.F 把两个 backbone 的角色写反了。**
-  这不是措辞含糊，而是**同一篇论文的两节给出互相颠倒的归因**；由于 §IV.F 正是"Discussion"，复现者若照它理解会得到相反的结论。**必须由作者澄清。**
+**(3) 年龄债策略（§V，L262）**：处理最一般情形——非线性代价、无固定路由、单播/组播/广播混杂。
+- **核心转化**：预设每个源-目的对的**目标平均年龄代价 $\alpha_j^k$**，定义**年龄债虚队列** $Q_j^k(t+1)=[Q_j^k(t)+B_j^k(t+1)-\alpha_j^k]^+$（式 20，L290）。**Lemma 4（L307）**：$\alpha$ 是"年龄可达"（age-achievable）**当且仅当**存在策略能稳定这组年龄债队列。⇒ **AoI 优化问题变成网络稳定性问题**。
+- **Lyapunov 漂移**：$L(t)=\sum Q^2$，策略为 $\pi^{AD}(t)=\arg\min_{a\in\mathcal{A}}\mathbb{E}[L(t+1)-L(t)]$（式 26/31）。
+- **单跳广播下的显式结构（Remark 1，式 27）**：近似漂移最小化策略 = $\arg\max_i \gamma_i Q_i(t)(g_i(A_i(t)+1)-g_i(1))$——**选"链路可靠度 × 当前年龄债 × 年龄代价增量"乘积最大的源**。作者拿它与 max-weight（[15] 的 $\gamma_iw_iA_i(A_i+2)$）和 Whittle index（[29]）对比结构。
+- **多跳的坑（L359）**：单时隙漂移在多跳**直接失效**。作者给了三节点反例（Fig 2，式 28–29）：若在 $t=1$ 时两条边对债队列的即时影响都是 0，平局规则会永远选错边，**债队列无论 $\alpha$ 取多少都会发散**，而最优策略只是交替使用两条边。
+- **解法（L381）**：为**每个中间节点**增设虚队列 $Q_j^{k\to i}(t)$（式 30/33/34），跟踪"此刻转发的包能带来多少目的地债务的乐观下降"，从而把"多跳"拆成可被单步漂移感知的形式。
+- **目标向量 $\alpha$ 怎么定（§V.C，L437 起）**：两条路——**Algorithm 1 梯度下降**（按 epoch 跑，队列超阈值就调高 $\alpha$，全部低就整体下移）与 **Algorithm 2 流控**（式 36 极简规则：$Q>V$ 就令 $\alpha=\alpha_{\max}$，否则 $\alpha=1$）。
+
+**4. 它声称的效果**（全部在 §VI，L513 起）
+| 场景 | 结果 |
+|---|---|
+| 单跳广播、不可靠信道（Fig 3） | 最优平稳随机**明显最差**；年龄差优于随机但**不如 Whittle/max-weight**；**年龄债在给定 max-weight 的平均代价作为目标时，能复现近最优性能**；流控与梯度下降两个变体在**不知道 $\alpha$** 的情况下只差一点点，与年龄差持平 |
+| 非线性 age 代价（Fig 4，代价函数取自 $\{15A,\ e^A,\ A^2,\ A^3\}$） | 年龄债给定 Whittle 平均代价时复现 Whittle；流控/梯度下降仍只差一点；**年龄差策略差得多，即使中等 $N$ 代价也迅速变大**——因为它不是为一般代价函数设计的。作者并引 [29] 指出：非线性代价下**即便 $N=2$，最优平稳随机策略的 AoI 代价也可能无界**，故该场景不画它 |
+| **$N=4$ 非线性细节（L527）** | 用动态规划求出最优策略 $\pi^*$，其各节点平均代价 $\alpha_1^*=45.0,\ \alpha_2^*=14.52,\ \alpha_3^*=17.20,\ \alpha_4^*=11.0$，**总和 87.72**。给定这组 $\alpha^*$ 的年龄债策略**稳定了债队列**（Fig 5，队列不随时间增长）⇒ 达成最优。**Whittle index 策略总和 88.34**，与最优差一个固定小量 |
+| 线网、奇偶干扰（Fig 6） | 年龄债（给定平稳随机的平均代价 $\alpha_{SR}$ 作目标）**优于**平稳随机；动态变体显著更优并与年龄差持平 |
+| 线网、全网互扰、扫节点数（Fig 7） | 平稳随机与所提方法差距大，与 §IV 的 $O(N^2)$ vs $O(N)$ 分析一致；年龄债变体与年龄差持平（而年龄差在该单源线网中**可证恰好最优**） |
+| **全连通广播多跳，5/6 节点共 133 张图（Fig 8）** | 与 [22] 的 MCDS 方案比：给定 MCDS 平均代价作目标时**年龄债性能相同**；**流控变体在不知 $\alpha$ 时也非常接近**。作者指出 MCDS 只适用于"全广播+单发"这一受限场景，且其复杂度随节点数**指数增长** |
+| **5 节点加权广播（Fig 9，21 张图）** | 一个节点权重 15、其余为 1。**流控变体竟然超过 MCDS**（因为能自适应到更好的 $\alpha$），与"MCDS 不是为加权和设计的"一致 |
 
 **5. 它的实验条件**
-- **仿真器**：文献 [18] 的开源 LEO 路由仿真器（Lozano-Cuadra 等，ESA SPAICE 2024），事件驱动离散时间、动态时变图（节点=卫星与网关，边=ISL 与 GSL），建模流量生成、包转发、排队、传输、传播（L65）。
-- **流量模型**（L65）：地面网关把附近用户的地面流量聚合成**固定大小 $B=64{,}800$ bit 的块**（同一目的地）注入星座，作为包在网络中逐跳转发到目的网关。
-- **星座**：**Kepler，140 颗卫星，7 个轨道面，轨道高度 600 km**（L73）。
-- **关键对照设计**：**用固定星座**，作者自述理由是"to isolate the effect of reward optimization from changes in orbital topology, link dynamics, and path-length distributions"，从而"between reward functions while keeping the routing environment unchanged"（L73）。
-- **DDQN 超参全部固定为仿真器默认值**，跨所有实验不变，确保**唯一变量是奖励函数**（L73）。
-- **基线**：仿真器自带的、由领域专家设计的奖励函数（L73）。
-- **两个 LLM backbone**：**GPT-5.4**（称 LARGE-GPT）与 **Claude Opus 4.6**（称 LARGE-Opus）；每个 backbone 在整条流水线的所有 LLM 智能体中保持一致，并各自独立跑到满足收敛准则（L73）。
-- **三阶段协议**（L75）：
-  1. **搜索期**：每个候选奖励**只训 0.2 秒**，产生约 **70,000 个逐跳奖励事件**与 **35,000 个训练步**；
-  2. **训练期**：用选中的奖励**从头重训 1 秒**，每 0.2 秒记一个 checkpoint；
-  3. **推理期**：不再学习，**部署 12 秒**，期间卫星位置随时间更新——作者称这是"the primary benchmark for assessing generalization under realistic dynamic conditions"。
-  全部结果在 **10 个不同随机种子**上报告均值 ± 标准差。
-- **负载设定：没有。** 流量块大小固定 64,800 bit，星座固定，**没有做任何负载/到达率扫描**。
-- **训练与评估的环境不是同一套**——但差别只在**时长**（0.2 s / 1 s / 12 s）与**是否继续学习**，拓扑与流量条件不变。
+- **拓扑**：单跳广播星型网（$N$ 节点）；单源线网（两种干扰约束：奇偶交替可发 / 全网互扰）；多跳全连通广播网 —— **5 或 6 个节点的全部连通图（133 张）**；加权版用 **5 节点全部连通图（21 张）**（L517、L543、L549）。
+- **信道**：单跳广播不可靠场景下"Link connection probabilities are chosen uniformly from the set [0.6, 1]"（L517）；非线性场景标题标为 "reliable channels"（Fig 4）。
+- **权重**：单跳广播设 $w_i=i/N$（L517）；5 节点加权场景把单节点权重设为 15、其余 4 个为 1（L549）。
+- **代价函数**：$\{15A(t),\ e^{A(t)},\ (A(t))^2,\ (A(t))^3\}$（L521）；$N=4$ 详例中四个节点各取一个（L527）。
+- **基线**：[15] 的 max-weight 与 Whittle index（已知近最优）、[29] 的 Whittle index（非线性）、[22] 的 MCDS（多跳广播）、以及自己 §III 的最优平稳随机。
+- **规模**：$N$ 从 2 到 6 为主，线网场景扫 $N$。**没有大规模网络实验**。
+- **负载/到达率：不存在。** 模型里**每节点无队列、每流单缓冲、源"on demand"生成**（L52、L60）——**到达过程不是外生参数，因而没有"到达率"这个自变量，也没有利用率扫描**。系统里唯一的"负载压力"来自**干扰约束**（同时只能激活少数链路）与**链路可靠度 $\gamma$**。
+- 训练与评估：本文**不是学习类方法**（除动态规划求 $\pi^*$ 作 oracle 外），无训练/测试划分问题。
 
 **6. 它自己承认的局限（逐字引用）**
-- L129 逐字（§V 结论）："Although this work focuses on a controlled Kepler constellation scenario to isolate reward optimization, **future work will extend the evaluation to additional constellation architectures, traffic loads, gateway deployments, and longer inference horizons**. Further directions include robust multiobjective stopping criteria, prompt sensitivity analysis, and fine-tuned LLMs to improve convergence speed and reward quality."——**"traffic loads"（负载）被明确列为未做、留作未来工作**，这是本文自己承认的最大空白之一。
-- L113 逐字（§IV.E）："However, the inference results also show that a more expressive reward does not necessarily lead to uniformly better generalization."——**更"丰富"的奖励不一定泛化更好**，这是它自己给出的负面结论。
-- **未见自述**：① 搜索期 0.2 秒、训练期 1 秒、推理期 12 秒这些**极端短的时长**是否足以说明问题，全文没有任何讨论；② **停止准则"goodput 一旦严格大于基线就停"在 10 个种子下有 ±131～±237 Mbps 的方差**，这个准则的统计效力问题**完全没被提及**；③ §IV.F 与 §IV.D 的矛盾**未被承认**（作者似乎没察觉）。
+- L565 逐字（§VII 结论）："Directions of future exploration involve 1) proving performance bounds for age-debt and its variants, and 2) considering **distributed implementation, stochastic arrivals** and time-varying network topologies."——**"stochastic arrivals"（随机到达）被明确列为未做**。这直接说明本文的"源按需生成"设定不是随机到达模型。
+- L543 逐字（§VI）："During our experiments, we found that **the gradient descent variant has parameters that are hard to configure for networks of different sizes and takes a long time to converge**. The flowcontrol method has just two parameters $V$ and $\alpha_{\mathrm{max}}$ that are relatively easy to configure and do not require any time for convergence."——**Algorithm 1 被自己的实验证伪为不实用**。
+- L539 逐字（附录 D）：证明 Lemma 4 时"under the assumption that the AoI cost functions $g_j^k(\cdot)$ are upper-bounded by a fixed constant $D$"，作者自称这是 "a mild assumption because D can be set to a very high value (in the order of years)"——**即该等价性依赖一个有界性假设**。
+- L359–L379 逐字承认单时隙 Lyapunov 漂移**在多跳下直接失效**，并给出反例——这是罕见地把自家方法的失效模式写成正文小节的写法。
+- **未见自述**：$N\le6$ 的实验规模、以及"年龄债需要预先知道 $\alpha$"这一前提对实际部署意味着什么，作者没有展开。
 
 **7. 它没做但看起来能做的地方（基于内容）**
-1. **把"负载"从 future work 变成实验**（L129 自己点名）：现在 $B=64{,}800$ bit 固定、星座固定、网关固定，**三个"环境维度"全部冻结**，只动奖励。至少要扫流量强度，才能判断 LLM 生成的奖励**在负载变化时是否还稳定**——而这恰恰是本文没回答、且最容易做的。
-2. **修掉那个停止准则**：现在"严格大于基线就停"在 $pm 200$ Mbps 量级的方差下几乎必然早停。**改成"连续 k 轮显著优于基线"或直接用置信区间**，是纯方法论改进，不需要动框架。
-3. **消融"迭代反馈"本身**：作者在结论里断言收益来自闭环（L129 逐字："showing that the benefit comes from the closed-loop interaction"），但**没有做"只冷启动、不迭代"的对照**，也没有做"随机扰动系数"的对照。这个消融是验证该 claim 的最低成本实验。
-4. **把 §IV.E 的奖励结构差异变成可复用的先验**：Table II（L121）已经列了 8 条"专家基线 vs LARGE-Opus"的结构差异（邻居排序、速率感知、队列罚项从"绝对排队时间"改成"相对服务时间"、显式逐跳代价、ping-pong 惩罚等）。**这些差异中哪一条真正带来增益，完全没有做逐项消融**——而这正是人工奖励设计最需要的知识。
-5. **澄清 §IV.D 与 §IV.F 的矛盾并给出结论**（见第 4 项）。
+1. **把 L15 那段"生成率 vs 拥塞"的动机真正做成实验**。这是本文最刺眼的落差：**引言明确说"生成率太高会导致网络拥塞、太低会不新鲜，要取平衡"，但模型里根本没有队列、源是 on demand 的**——于是这句话在全文从未被验证。补一个"包生成率"作为外生参数、并允许节点排队，就能把这段动机变成可测的曲线。**这正是它 L565 自认的 "stochastic arrivals"。**
+2. **把 AoI 与"新鲜包的实际时延"分离统计**。L15 已经指出"被堵在网络里的陈旧包的时延不该记账"。这句话其实暗含一个可测的量：**只有被目的端采纳的那些包的时延才重要**。本文没有报告任何"有效更新时延"分布——而这是通往"负载→时延"最直接的接口。
+3. **规模扩到真实的几十/上百节点**。现在 $N\le6$、133 张图的枚举式实验。作者证明了复杂度是每时隙线性/多项式（L339 附近），但没有在 $N=10^2$ 量级上验证过。
+4. **年龄债的分布式实现**（L565 自认）：现在假设**集中式控制器**（L86 逐字："We assume a centralized controller"）。而 $\alpha$ 目标与队列状态需要全局信息——这正是把该框架搬到 LEO 卫星网时必须跨过的门槛（也正是 LEO 路由论文普遍假设"集中式"的同一个软肋）。
+5. **Lemma 2 的"等价单跳"构造值得直接复用**：它把"每流 × 每链路"当成一个新的源-目的对（L577 的 $H=\{(k,e)\}$ 构造），从而把多跳问题变形为单跳。这个构造手法对任何想把多跳问题降维的工作都是现成工具，但作者只用它来做分析，没有拿它做算法。
 
 **8. 和同批其他篇的关系**
-- **与 GPDPLJNG（DRL-SR）是同一问题的两种做法**：两者都用 DRL 解 LEO 路由、都强调拓扑动态、都以"时延"为核心指标之一。差别在于 GPDPLJNG 把奖励**手工写死成 (13a)–(13h) 的分段打分**，而本篇正是要**自动化掉这个手工过程**——**本篇几乎可以看作对 GPDPLJNG 那类"手工势函数奖励"的直接替代方案**。本篇还多了一个 GPDPLJNG 完全没有的指标：**path stretch**（逐跳数与 Dijkstra 最短路的比值）。
-- **与 FLQLU3T4（DeepLaDu）**：同样做 LEO 路由，但 FLQLU3T4 完全不用 RL（对偶 + GNN），且优化目标从"吞吐"到"绕开拥塞链路"。本篇与 FLQLU3T4 共享"用学习解决组合优化"的框架，但一个学对偶价格、一个学奖励函数。
-- **与本批 FGQSH4AI（MADDPG）**：本篇的多智能体 DDQN 是"独立学习"（每星一个 agent、只凭局部信息、无集中式 critic），**正是 MADDPG 那篇所批评的"环境非平稳 + replay 失效"的设定**。两篇构成"问题"与"另一种解"的对照。
-- 参考文献（L135–L174）**无一篇来自本批其他 10 篇**。
+- **与本批的 LEO 路由论文（FLQLU3T4 / GPDPLJNG / GPLEP83L）是"目标函数"上的对立面**：那三篇全部最小化**时延**或最大化**吞吐**，本篇明确主张**这两个指标都不足以刻画实时应用**（L15 逐字），应改用 AoI。**这是一条可以直接引进 LEO 路由选题的替代目标**——而且 FLQLU3T4 在 §II 里引用的 [11][12] 正是"用 GNN 预测 AoI 做路由"的工作（L44 附近），说明这条路在 LEO 领域已经有人起步，但**用的不是本篇的框架**。
+- **与 FGQSH4AI（MADDPG）**：方法是两端——本篇是**免模型的在线优化（Lyapunov）**，MADDPG 是**学习式**；本篇明确假设集中式，MADDPG 是分散执行。**FGQSH4AI 所处理的"环境非平稳"问题，在本篇里被替换成了"时变拓扑"这一条 future work**（L565）。
+- **与 GGFJ3SEG（HitchHiking）有一条隐含的呼应**：GGFJ3SEG 实测发现"陈旧包被堵在网络里"不是主要问题，真正的方差来自路由切换；本篇在理论上正好给出了"为什么陈旧包的时延不该计入"的论证（L15）。一个出实测、一个出目标函数，**两者合起来构成"LEO 时延指标该不该换成 AoI"这个问题的两侧**。
+- 参考文献（L569–L643）**无一篇来自本批其他 10 篇**（全是 AoI/队列/无线调度文献）。
 
 **9. 对"负载变化下到达率/时延"这件事，它贡献了什么事实**
-**几乎没有直接贡献，但提供了一条极有价值的"负空间"。**
-- **没有直接贡献**：全文无负载变量、无到达率、无队列长度曲线。流量是固定大小 64,800 bit 的块，星座固定、网关固定（L65、L73）。作者自己在 L129 把 "traffic loads" 明确列进 future work——**即负载维度是被作者主动排除在实验设计之外的**。
-- **但有一条可用的事实**：**"更丰富/更激进的奖励不一定泛化更好"**（L113）。具体地，Table I 显示 LARGE-GPT 在搜索期与训练期 goodput 更高（§IV.D），到 12 秒推理期却掉到最低（1324 vs 1409），且方差最大（±237）。**这是一个"训练指标更好但部署更差"的实例**——对任何用 RL 做路由的人都适用。
-- **另一个可复用的对照设计**：作者用"固定星座"来"isolate the effect of reward optimization from changes in orbital topology, link dynamics, and path-length distributions"（L73）。**这个"冻结环境、只动一个变量"的设计选择是正确的**，也正是"负载变化"研究应该借鉴的反面——要研究负载，就得把负载当成那个唯一变动的变量，其余全冻结。
-- **一条可直接引用的时延量级**：Kepler 星座（140 星 / 7 面 / 600 km）下，专家基线奖励的端到端时延是 **85.65 ± 2.44 ms**，goodput **1451.62 ± 131.67 Mbps**，path stretch **1.464**（Table I）。这是本批里少见的"给出了具体星座参数 + 具体数值"的实验点。
+**贡献是"概念级 + 一条硬结论"，不是"数字级"。**
+- **最有价值的一条（L15 逐字）**：更新包的**生成率是可以控制的，且存在一个最优值**——"too high a rate of generation that results in network congestion and too low a rate that results in updates being sent too infrequently"。**这是本批 11 篇里唯一一处把"到达率过高 ⇒ 拥塞"这条因果写成明确论断的地方**，且它给出的解法不是"路由绕开拥塞"，而是**从源头调节到达率**。对"负载变化下的到达率/时延"这个选题，这提供了一条与路由优化正交的路径：**把到达率当成控制变量而非外生扰动**。
+- **第二条（L15 逐字）**：**指标本身要换**——"delay of a stale packet, that got caught in the network due to network clogging, doesn't need to be accounted for"。即在拥塞场景下，**"排队时延"与"信息新鲜度"会脱钩**：网络堵住导致某个包时延很大，但只要后续有新包及时到达，AoI 并不受影响。**这是对"时延"这个指标本身的一次结构性挑战。**
+- **一条硬的定量结论（L211）**：同一个单源线网，最优平稳随机策略的 AoI 是 $O(N^2)$，而年龄差策略是 $O(N)$——**差距随跳数平方级放大**。即**在多跳链路上，"每跳独立优化"与"端到端优化"的差距不是常数而是随跳数增长的**。这条对任何多跳 LEO 路由（ISL 路径通常十几跳）都有直接含义。
+- **但必须明确的边界**：本篇**没有队列、没有到达率参数、没有利用率扫描**（L52、L60），所以它**没有给出任何"负载 → 时延/AoI"的曲线或数值**。它所贡献的是**"到达率是可控变量"这一建模立场**，以及**"拥堵时旧包的时延不该记账"这一指标论证**——这两条都需要在带队列的模型里重新验证，而作者把它们留成了 future work（L565 的 "stochastic arrivals"）。
+- 另有一条可复用的量级：$N=4$ 非线性代价下最优总代价 **87.72**，Whittle index 达 **88.34**（L527）——差距很小，说明在这类问题上 Whittle 已经是很强的基线。
 
 **10. 一句话评价**
-**把"LLM 自动奖励设计"这个已经在机器人与自动驾驶领域成型的套路，第一次（作者自称）搬进 LEO 卫星路由**——方法谱系的位置是"**引入一个新域，不动任何一环的方法**"：LLM 三智能体分工、双层循环、Code Generator 校验变量可得性，全部照搬已有范式，RL 侧更是直接使用现成仿真器与默认超参。它的真实价值有两个：一是把"奖励函数能不能自动设计"这个问题在 LEO 路由上做了存在性证明（**3 次迭代内达到基线水平**），二是 §IV.E 的 Table II 给出一份**"LLM 生成的奖励比专家奖励多了什么结构"的差异清单**（邻居排序、相对服务时间罚项、显式逐跳代价、ping-pong 惩罚）——后者可能比论文本身的结论更有复用价值。但**实验时长（0.2 s / 1 s / 12 s）短到难以支撑其 generalization 主张，停止准则在 $pm 200$ Mbps 方差下缺乏统计效力，且 §IV.D 与 §IV.F 对两个 backbone 的归因互相颠倒**——这三点使它的结论目前只能当作"方向可行"的信号，不能当作可复现的性能结论。
+**把 AoI 从"单跳调度的指标"提升为"多跳网络的通用优化框架"的系统性工作**——方法谱系的位置是"**用标准工具（Lyapunov 漂移 + 虚队列）把一个新指标（AoI）的优化问题整体转成经典的网络稳定性问题**"，工具是老的、问题是新的；真正的原创在于**年龄债虚队列的构造**（尤其是为每个中间节点增设 $Q_j^{k\to i}$ 来修复单步漂移在多跳下的失效，L381）与**"年龄差策略在单源线网中可达最优、且把最优平稳随机的 $O(N^2)$ 降到 $O(N)$"这一清晰的量级分离**。它对"负载变化下到达率/时延"的最大贡献不是数据，而是**一个立场：到达率不是外生扰动，而是可以也应该被控制的设计变量**——但本文自己**没有任何队列、没有随机到达**，所以这条立场在本篇内尚未被验证。

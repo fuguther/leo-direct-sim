@@ -528,7 +528,85 @@ LEO 星座的流量需求**非均匀分布**（L17 逐字："traffic requirement
 **10. 一句话评价**
 **RL 的信用分配从"等结果"变成"看下一步"的那一步**——它是本批 11 篇里两篇方法论源头之一，为后来所有 Q-learning/DQN 类 LEO 路由工作提供了更新的合法性（TD(1)≡监督学习）、收敛保证的范围（线性 TD(0)）以及一个至今仍被忽视的警告：**要拟合的是期望，不是那一次实际发生的结果**。
 
+## 6GWNYSTT — LEO laser microwave hybrid inter-satellite routing strategy based on modified Q-routing algorithm
+
+**1. 一句话**
+把"同轨激光 + 异轨微波"的混合星间链路与"星上 CPU 资源池"两个新硬件假设写进路由代价模型，**用排队论（M/M/1/∞、M/M/1/N、M/M/c）把星上处理时延算出来**，再用 Dijkstra 引导 Q-routing 找最短时延路径；声称时延比 Dijkstra 低 83.3%。
+
+**2. 问题设定**
+LEO 通信网需要巨大负载容量与信息处理速度（L15）。现状是**所有 LEO 星座都没有完整星间链路**，相邻星之间靠地面站中继（L23）。技术约束是：激光链路带宽大、功耗低、轻量（L23），但**异轨卫星之间相对运动巨大，激光对准极难（数千公里距离上要求厘米级误差）**，Starlink 到 2020 年 9 月才宣布**同轨**激光链路测试成功（L23、L130）。因此作者主张的形态是：**同轨用激光、异轨用微波**（L23、L126–L130）。另一半动机是星上算力稀缺："一颗卫星覆盖面积大而负载小，导致计算资源受限"，地面站资源池技术已成熟但**星上资源池还停留在纸面**（L25 逐字："the resource virtualization technology of satellite ground station has been relatively mature, while the on-board resource virtualization technology is still remaining on paper"）。
+
+**3. 方法骨架**
+- **拓扑（§3.1）**：有向图 $G(V,E,P)$；**南北纬 70° 以上不存在异轨链路**（L58）。
+- **传播时延（§3.2，式 1–3）**：由经纬度算地心夹角 $\xi = \arccos[\sin\varphi_A\sin\varphi_B + \cos\varphi_A\cos\varphi_B\cos(\lambda_A-\lambda_B)]$，星间距离 $d_{AS} = R_A\sqrt{2(1-\cos\xi)}$，传播时延 $T_l = d_{AS}/c$。
+- **处理时延（§3.3，核心）**：用三个排队模型建模三段流程（Fig 5）：
+  - **接收端**：激光接收机用 $M/M/1/N/\infty$（**有限容量**），微波接收机用 $M/M/1/\infty/\infty$（无限容量）（L139）；
+  - **CPU 资源池**：$M/M/c/\infty/\infty$，$c$ = CPU 单元数（本文 5 个）（L112、L132、L141）；
+  - **发射端**：$M/M/1/\infty/\infty$（L143）。
+  原文给出三段的平均服务时延公式：式 (4) $W_s = 1/(\mu-\lambda)$；式 (5) $W_s = L_s/[\mu(1-P_0)]$，含 $L_s = \rho/(1-\rho) - (N+1)\rho^{N+1}/(1-\rho^{N+1})$；式 (6) $W_s = L_S/\lambda$。**总处理时延 $W_S = W_{S1}+W_{S2}+W_{S3}$**（式 7，L148）。
+- **到达过程假设**：每秒包数服从**泊松分布**，因此每条路径上包数仍服从泊松（L137 逐字："Per second packets number obeys Poisson distribution, so that in each path, the packets number still obey Poisson distribution"）；并利用"独立泊松过程之和仍为泊松"得资源池前强度 $\lambda_2 = \sum_{i=1}^{5}\lambda_{1i}$（L141）。
+- **路由数学建模（§4.2）**：拓扑切片把连续变化切成 n 个离散静态拓扑（L158）。三条约束：路径传播时延上界 $T_{l_{max}}$（式 8）、路径处理时延上界 $W_{S_{max}}$（式 9）、总时延阈值 $T_{max}$（式 10）。目标式 (11) 最小化 $\sum T_l + \sum W_S$。**注意式 (11) 在 MD 里渲染成了一团乱码**（L183），无法逐字核对。
+- **改进型 Q-routing（§4.3）**：Q 值 $Q_{u_i}(u_{N_P}, u_{i+1})$ 表示"从邻居 $u_{i+1}$ 送到目的地 $u_{N_P}$ 的估计代价"（式 12）。迭代式 (13)：$NewQ = (1-\alpha)Q + \alpha(T_l(u_i,u_{i+1}) + W_S(u_i) + \min_{u_{i+2}} Q_{u_{i+1}}(u_{N_P},u_{i+2}))$。**Dijkstra 的角色**：因为传播时延在每个拓扑切片内是常数，Dijkstra 只用传播时延就能给出一个"近似方向"，$O(N^2)$ 且每切片只算一次；Q-routing 则负责把**动态的处理时延**纳入（L206 逐字："the Dijkstra algorithm only take transmission delay into consideration, the reinforcement learning algorithm can use the dynamic processing delay to find the approximate optimal solution"）。
+- **复杂度对比（Table 1，L224）**：Dijkstra 全网空间 $O(N^2)$/时间 $O(N^3)$，每节点 $O(N)$/$O(N^2)$；Q-routing 全网 $O(NAH)$/时间 $O(NKH)$，每节点 $O(AH)$/$O(KH)$。
+
+**4. 它声称的效果**
+- **主结论（摘要，L15）**：改进算法的时延**比 Dijkstra 低 83.3%**，且"网络越大、流量越大，优势越明显"。
+- **收敛**：最短路径收敛约 **20 ms**，"满足 Oneweb 和 Starlink 的预期"（L240）。
+- **负载阈值（Fig 8，L242）**——**本节最关键的负载相关结论**：每批 2,000 到 10,000 个包时时延最终收敛到 **20 ms 以下**；**每批超过 10,000 个包时时延升到 20 ms 以上**。所有批次在**网络迭代轮数接近 30 时收敛到最小值**。**"随着负载增加，收敛时延也随之增加"**（逐字："As the load increases, the convergence delay also increases"）。**2,000 包/批是一个阈值**（逐字："The rate of delay convergence is slow at 2000 per batch but fast at 3000, which shows that 2000 is a threshold value"）。
+- **改进算法 vs 原版 Q-routing**：任意拓扑规模下改进算法收敛都更快（Fig 9 vs Fig 8，L244）。
+- **规模效应（Fig 10，L248）**：$5\times5, 10\times10, 15\times15, 20\times20, 25\times25$ 五档。随着网络变大，包的路由距离变长，但**传播时延反而呈下降趋势**——作者解释为传播时延的增幅跟不上处理时延的降幅；但下降趋势在减弱，"如果再变大，时延会重新上升"（L248）。收敛速度随规模变慢：前两个网络几乎立即收敛，$20\times20$ 与 $25\times25$ 分别在第 10 与第 20 轮收敛。
+- **跳数与直觉相反（Fig 11，L259）**：Dijkstra 跳数**最少**，其次 Q-routing，改进算法**最多**；但时延顺序**完全相反**。作者结论："智能算法通过增加跳数换取更低时延，绕开处理时延高的路径"（逐字："the smart algorithm increases the hop number to get a lower delay, the packets bypass the path with high processing delay and achieve a total delay reduction"）。
+- **学习率（Fig 12/13，L261–L269）**：大学习率时 20–40 批收敛；学习率越小收敛越慢。**同一网络中，$\alpha$ 越小收敛时延越小**，作者称"大学习率在小网络中会让流量变慢"（L269）。
+- **复杂度实算（Table 3，L235）**：Dijkstra 全网 $5.2\times10^5$、每节点 756；Q-routing 全网 $2.0\times10^6$、每节点 2880。
+
+**5. 实验条件**
+- 星座：Walker 构型，**轨道高度 1200 km、18 个轨道面、每面 40 星、倾角 87.9°**（Table 2，L229）——即 **720 星**。
+- 主实验规模报为 $18\times40$ 网络（L221、L242）；规模扫描用 $5\times5$ 到 $25\times25$（L248）。
+- 流量：**共路由 200 万个包**；**每批 20,000 包**（Fig 7）；Fig 8 的批次范围是**每批 2,000 到 10,000+ 包**；起点与终点**随机**（L221）。
+- **拓扑切片**：连续变化的拓扑切成 n 个离散静态拓扑，切片内视为常数（L158）；未给出具体的 n 值或切片长度。
+- 每星 5 个收发器：2 个激光（同轨）+ 3 个微波（异轨与地面）（L128）；CPU 资源池 5 个 CPU 单元（L132）。
+- 对比基线三个：Dijkstra、原版 Q-routing、改进 Q-routing（L219）。
+- **数据可用性声明（L293）**："Data sharing is not applicable to this article as no datasets were generated or analyzed during the current study."
+
+**6. 它自己承认的局限**
+**没有独立的 Limitations 章节**（全文通读，第 6 节 Results and discussion 只有两段总结）。可引用的自述：
+- 星上资源虚拟化仍停留在纸面，L25 逐字："the resource virtualization technology of satellite ground station has been relatively mature, while the on-board resource virtualization technology is still remaining on paper."（即本文所依赖的硬件前提尚未实现）
+- 规模-时延非单调，L248：传播时延随规模下降的趋势"is getting smaller, **if the network size increases again, the delay will increase**"。
+- 复杂度代价，Table 1/3：Q-routing 的全网空间复杂度 $O(NAH)$ 与实算值**都高于 Dijkstra**（Table 3：$2.0\times10^6$ vs $5.2\times10^5$）——作者没有讨论这个代价。
+- 数据无法共享，L293（逐字见上）。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **式 (11) 在 MD 中渲染为乱码（L183）**，无法核对目标函数的确切形式；这是 MinerU 解析问题，但意味着**该式的可复现性为零**。
+2. **排队模型的参数（$\lambda, \mu, c, N$）从未给出具体数值**（§3.3、§4.1 通读）：式 (4)(5)(6) 里所有符号都只有定义没有取值，$N$（激光接收缓存容量）与 $\mu$（CPU 处理速率）在实验部分完全没出现。**这是全文最大的复现障碍**。
+3. **"20,000 包/批"与"2,000–10,000 包/批"两套口径并列出现但从未统一说明**（L221 vs L242）：Fig 7 的批次是 20,000，Fig 8 的批次是 2,000–10,000+，读者无法判断哪个是主实验设置。
+4. **拓扑切片数 n 未给出**（L158），而切片粒度直接决定 Dijkstra 预计算的有效性与路由误差。
+5. **CPU 资源池的"5 个单元"是硬编码常量**（L132），没有任何 $c$ 的敏感性分析——而 $c$ 恰恰是 $M/M/c$ 模型里最关键的服务台数。
+6. **"处理时延随规模下降"这一反直觉结论没有分解验证**（L248）：只说是传播时延增幅跟不上处理时延降幅，但没有分别画出两个分量随规模的变化曲线。
+7. **改进算法跳数最多这一事实（L259）没有进一步讨论副作用**：更多的跳数意味着更多的星上处理次数与更多的排队点，在高负载下这个交换是否仍然成立，论文没有测。
+8. **未做与 53HEEK33 那类"控制面加速"方案的对比**（见第 8 项）。
+
+**8. 和同批其他篇的关系**
+- **与 53HEEK33（Ding 组，Fast-Convergence RL）**：**53HEEK33 把本篇列为参考文献 [27]**（53HEEK33 的 L367 逐字："Zheng, F.; Wang, C.; Zhou, Z. LEO laser microwave hybrid inter-satellite routing strategy based on modified Q-routing algorithm"）。因此本篇是 53HEEK33 的**上游引用**。两者都做 Q-routing + Dijkstra 对比 + 49/720 星规模，但**加速手段不同**：本篇用 Dijkstra 只在拓扑切片时预计算一次传播时延方向；53HEEK33 用周期性 hello 广播在运行中持续刷新整张 Q 表。
+- **与 5N5LQPPP（Ding 组，SDDRL-SR）**：**同一个"Dijkstra 引导 RL"思想的两种实现**。5N5LQPPP 的 DIRL 是把 Dijkstra 当 teacher 做蒸馏、把 ε-greedy 里的最优动作换成 Dijkstra 动作（其 L119–L124）；本篇是让 Dijkstra 只算传播时延方向、Q-routing 补处理时延（L206）。**5N5LQPPP 没有引用本篇**，但两条路线几乎撞车。
+- **与 67CSKFK4（Handley）**：**恰好是 Handley 所批评的那种"静态最短路"方案的后继**。Handley 在 L150 指出"网状网上的最短路径路由特别容易制造热点"，本篇给出的正是"用处理时延绕行来规避高负载节点"的机制（式 13 里的 $W_S(u_i)$ 项），并在 Fig 11 中用"跳数增多、时延反降"佐证了这一规避确实在发生。**这是本批唯一一篇给出了"负载规避"实证的论文。**
+- **与 5PYWVRC5**：5PYWVRC5 用实验证明 FD-MADRL 会为了低负载链路绕路最终打饱和下游；本篇的绕行是**由排队时延驱动**的，不是由链路利用率驱动，因此机制不同但风险同源。
+- **与 57EB6US5 / 6C843JTS**：本篇的 Q-routing 迭代（式 13）就是标准 Q-learning 形式；参考文献 [27] 指向 **Boyan & Littman 1993 的 Q-routing 原始论文**（L367），即 6C843JTS 的直接后继工作。
+- **与 5AZHJE7N / 5HJ8ATR7**：无关。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**这是本批 11 篇里对"到达率 → 时延"关系处理得最实的一篇**，因为它是唯一一个**把排队论写在路由代价里、并且真的扫了负载**的论文：
+1. **到达率是显式建模变量**：$\lambda$ 直接出现在三个排队模型的时延公式里（式 4/5/6，L99–L118），且明确声明到达过程为**泊松**（L137）。这是本批唯一一处把"到达率"写成模型符号而非实验设置的论文。
+2. **给出了负载-时延的阈值行为**：每批 ≤10,000 包 → 时延收敛 <20 ms；每批 >10,000 包 → 时延 >20 ms（L242）。**并且明确指出"负载越大，收敛时延越大"**（L242）。
+3. **给出了一个具体的负载阈值数**：**2,000 包/批是"收敛快慢"的分界**（L242 逐字："which shows that 2000 is a threshold value"）——虽然这个"阈值"的物理含义（是服务能力饱和还是别的）论文没有解释。
+4. **给出了时延对负载的传导机制**：$$W_S = W_{S1}+W_{S2}+W_{S3}$$（式 7）三段串联，且**资源池前的到达强度是五个接收端之和** $\lambda_2=\sum_{i=1}^{5}\lambda_{1i}$（L141）——这是"多路流量汇聚到单一星上算力"的显式拥塞点建模，**对"负载上升时星上处理成为瓶颈"这一假设给出了数学形式**。
+5. **给出了一个反直觉但重要的实证**：改进算法**跳数最多但时延最低**（L259）——即在高处理时延节点存在时，**绕路是降低总时延的正确策略**。这直接支持了"时延 = 传播 + 排队"而非"时延 ∝ 跳数"的建模取向。
+6. **受限之处**：它的负载是**每批包数（一次性批量注入）**，不是持续到达率（pps）；没有画出"到达率 → 稳态时延"的连续曲线；也没有扫 α 之外的任何系统参数；**且排队参数 $\mu$、$c$、$N$ 全部未给值**，导致这条曲线无法被任何人复现或复用。
+
+**10. 一句话评价**
+**本批唯一把"星上排队"真正建成路由代价的论文**——它用 M/M/1/N 与 M/M/c 把"激光接收缓存有限"和"CPU 资源池五单元"这两个硬件约束写进了 Q 值，并给出了负载阈值与"绕路降时延"的实证；但把所有排队参数留空、把目标函数式 (11) 留成乱码，使它成为**思路可用、数字不可用**的一篇。
+
 <!-- END-CARDS-R2 -->
+
 
 
 
