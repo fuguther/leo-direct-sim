@@ -1,0 +1,10 @@
+{
+ "cand_id": "c24abb72218",
+ "ledger_content_hash": "h24abb7221850",
+ "ledger_version": "1",
+ "card": "round/run2/drafts/C2-v2.md",
+ "card_sha256": "2851401fb9359b3929439e99b5e09d7100c696b371bb12673f13212410096c4f",
+ "verdict": "PASS",
+ "note": "三问四层: 现象✅(19篇审计0/19+TQF59BD7排除证据+M1理论背书) 原因✅(M1理论+M4原文实证) 改动✅(逐机制映射) 简单替代⚠️待实验判决(降级条款写死); ADVERSARIAL-C2+AUDIT-EXT-C2+NEIGHBOR-WAN25F",
+ "recorded_at": "2026-09-11T17:50:25"
+}

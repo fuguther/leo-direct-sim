@@ -1,0 +1,10 @@
+# Information Freshness of Updates Sent over LEO Satellite Multi-Hop Networks (ARXIV-2007.05449)
+
+分析型 AoI 论文：把 LEO 多跳中继建模为 K 节点串联队列，推导端到端平均 AoI / PAoI 尾的闭式界与紧近似。
+
+- **方法骨架**（解析，非 RL，无状态/动作/奖励/训练）：拓扑=串联队列网络，每个节点既是中继又是源（Sec III）；源为 Poisson(λ)，节点 k 有 cross traffic θk，其中 ψk 比例离开本连接，末节点经专用下行天线到地（downlink，DL）；错误信道 ε 下再分析（Sec III-B）。调度纪律三选一：FCFS、OPF（按生成时间而非到达时间排队→跨流公平）、HAF（按源当前年龄最高优先→AoI 优化），见 Sec II/III；界与 PAoI 尾在 Sec IV（IV-A FCFS 平均 AoI 界、IV-B OPF/HAF、IV-C PAoI 尾界）。
+- **实验合同**（Sec V + Table II）：Monte Carlo 仿真两个实例——line（K_line∈{2,6,10} 中继，地面各节点聚合源）与 dumbbell（K_db=4 中继、共享单条 ISL 瓶颈、N_db∈{2,6,10} 个 cross 源）；μ_ISL=1、μ_DL=0.8（下行即瓶颈）、ψ=0、ε=0.01、N_pkt=100000；负载 ρ=(λ+Σθ)/μ_DL，令 λ=θj=ρμ_DL/K；指标=平均 AoI、PAoI 尾、源间公平性；无星座/轨道/seed 记载，稳态前丢弃预热。
+  3. OPF/HAF 证明不改路径、只改排队纪律即可换 AoI/公平（Sec II,V）——支持把年龄感知下沉到 holding/队列管理而非多径重路由；
+OPF/HAF 与 PAoI 尾界为带年龄约束的调度形式化提供参照。数字存疑/未核实：μ_ISL=1、μ_DL=0.8 为归一化服务率（Table II，非真实星座速率）；N_pkt=10^5、无 seed 说明（TabII），仿真方差未报告；ε=0.01 对所有链路同值且重传机制未核实于正文。
+
+> 深读状态: 全文已读[ar5iv.labs.arxiv.org/html/2007.05449]；未核实: 作者/出处元数据、真实服务率设定、重传模型细节、seed 与方差数据

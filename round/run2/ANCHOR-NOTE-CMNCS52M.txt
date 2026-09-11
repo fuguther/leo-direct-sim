@@ -1,0 +1,1 @@
+【锚件已复核·重要】CMNCS52M 的三个队列分布模型同时改变了 5 个变量：空间分布模型、队列容量、平均占用率、是否时变、状态输入维度。原文 §III 逐字自述 zone 模型为 illustrative academic example with strong network congestion，且 zone 模型 not time-dependent 故其时间观测特征已从状态中移除（输入维度不同）。因此该文只支撑【三种队列分布设定下性能差异显著】的描述性事实，不支撑【负载分布漂移本身导致退化】的因果断言。详见 round/knowledge/notes-neutral/CMNCS52M-CONFOUND.md。

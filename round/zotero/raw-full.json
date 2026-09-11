@@ -1,0 +1,200 @@
+[
+ {
+  "key": "2FBBURX7",
+  "itemType": "preprint",
+  "title": "Graph Attention Reinforcement Learning for Multicast Routing and Age-Optimal Scheduling",
+  "creators": "Zhang, Yanning; Liao, Guocheng; Cao, Shengbin; Yang, Ning; Pappas, Nikolaos; Zhang, Meng",
+  "date": "2024",
+  "tags": [
+   "lib-exp-0908-final"
+  ],
+  "collections": [],
+  "dateAdded": "2026-09-08T09:46:35Z"
+ },
+ {
+  "key": "BLFJ6CLV",
+  "itemType": "preprint",
+  "title": "Analysis of Age of Information in Non-terrestrial Networks",
+  "creators": "Lu, Yanwu; Yang, Howard; Pappas, Nikolaos; Geraci, Giovanni; Ma, Chuan; Quek, Tony Q. S.",
+  "date": "2023",
+  "tags": [
+   "lib-exp-0908-final"
+  ],
+  "collections": [],
+  "dateAdded": "2026-09-08T09:46:32Z"
+ },
+ {
+  "key": "GV9PPNZT",
+  "itemType": "preprint",
+  "title": "Information Freshness in Multi-Hop Wireless Networks",
+  "creators": "Tripathi, Vishrant; Talak, Rajat; Modiano, Eytan",
+  "date": "2021",
+  "tags": [
+   "lib-exp-0908-final"
+  ],
+  "collections": [],
+  "dateAdded": "2026-09-08T09:46:31Z"
+ },
+ {
+  "key": "4QG5VYHQ",
+  "itemType": "preprint",
+  "title": "Information Freshness of Updates Sent over LEO Satellite Multi-Hop Networks",
+  "creators": "Chiariotti, Federico; Vikhrova, Olga; Soret, Beatriz; Popovski, Petar",
+  "date": "2020",
+  "tags": [
+   "lib-exp-0908-final"
+  ],
+  "collections": [],
+  "dateAdded": "2026-09-08T09:46:28Z"
+ },
+ {
+  "key": "R5QTFKD2",
+  "itemType": "preprint",
+  "title": "Age Optimal Sampling and Routing under Intermittent Links and Energy Constraints",
+  "creators": "Atasayar, Adem Utku; Li, Aimin; Arı, Çağrı; Uysal, Elif",
+  "date": "2025",
+  "tags": [
+   "lib-exp-0908-final"
+  ],
+  "collections": [],
+  "dateAdded": "2026-09-08T09:46:26Z"
+ },
+ {
+  "key": "EG9X569M",
+  "itemType": "journalArticle",
+  "title": "A robust routing strategy based on deep reinforcement learning for mega satellite constellations",
+  "creators": "Chu, Ke; Cheng, Sixi; Zhu, Lidong",
+  "date": "2023-6",
+  "publicationTitle": "Electronics Letters",
+  "volume": "59",
+  "DOI": "10.1049/ell2.12820",
+  "url": "https://ietresearch.onlinelibrary.wiley.com/doi/10.1049/ell2.12820",
+  "abstractNote": "For mega satellite constellations, it has been a great challenge to achieve global routing and guarantee the performance of inter‐satellite transmission. To address the problem, a robust routing strategy based on deep reinforcement learning is proposed in this letter. The proposed method is applicable to degraded transmission performance, which exhibits better conformity to real‐world scenarios. Moreover, the age of information (AoI) of packets are utilized as one of the multi‐optimization targets to ensure the effectiveness of message transmission throughout the network. Numerical simulations show the outstanding average AoI performance of the proposed method and its greater robustness to jamming compared to existing methods. Meanwhile, it is also more effective for utilizing resources.",
+  "tags": [
+   "lib-exp-0908-final"
+  ],
+  "collections": [],
+  "dateAdded": "2026-09-08T09:46:24Z"
+ },
+ {
+  "key": "X5Z98UPM",
+  "itemType": "journalArticle",
+  "title": "DRL-Based Load-Balancing Routing Scheme for 6G Space–Air–Ground Integrated Networks",
+  "creators": "Dong, Feihu; Song, Jiaxin; Zhang, Yasheng; Wang, Yuqi; Huang, Tao",
+  "date": "2023-5-28",
+  "publicationTitle": "Remote Sensing",
+  "volume": "15",
+  "issue": "11",
+  "pages": "2801",
+  "DOI": "10.3390/rs15112801",
+  "url": "https://www.mdpi.com/2072-4292/15/11/2801",
+  "abstractNote": "Due to the rapid development of the space–air–ground integrated network (SAGIN), a satellite communication system has the advantages of wide coverage and low requirements for a geographical environment and is gradually becoming the main competitive technology for 6G. The low-earth-orbit (LEO) satellite network has the characteristics of low transmission delay, small propagation loss, and global coverage, and its exploration has become the main research object of contemporary satellite communications. However, traditional routing algorithms cannot adapt to the characteristics of the high dynamics and load-balancing requirements of LEO satellite networks. In this paper, a load-balancing routing algorithm for LEO satellites based on Deep Q-Network (DQN-LLRA) is proposed by using deep reinforcement learning. Making use of the model obtained by the DQN training, satellite nodes can select the best routing results according to the delay, bandwidth, and queue utilization of the surrounding satellite nodes. The simulation and analysis show that the path load obtained by the proposed algorithm is low. Compared with the Q-learning-based algorithm, this algorithm reduces the maximum queue utilization rate of the routing path by 5%, reduces the average queue utilization rate of the routing path by 13%, and effectively balances the load in the network.",
+  "tags": [
+   "lib-exp-0908-final"
+  ],
+  "collections": [],
+  "dateAdded": "2026-09-08T09:46:21Z"
+ },
+ {
+  "key": "K7U4TYJN",
+  "itemType": "journalArticle",
+  "title": "SkyLink: Scalable and Resilient Link Management in LEO Satellite Networks",
+  "creators": "de Sombre, Wanja; Asadi, Arash; Bhattacherjee, Debopam; Vasisht, Deepak; Ortiz, Andrea",
+  "date": "2026",
+  "publicationTitle": "IEEE Transactions on Communications",
+  "volume": "74",
+  "pages": "1421-1434",
+  "DOI": "10.1109/tcomm.2025.3636092",
+  "url": "https://ieeexplore.ieee.org/document/11263845/",
+  "tags": [
+   "lib-exp-0908-final"
+  ],
+  "collections": [],
+  "dateAdded": "2026-09-08T07:57:26Z"
+ },
+ {
+  "key": "JP79GMZS",
+  "itemType": "journalArticle",
+  "title": "Explicit Load Balancing Technique for NGEO Satellite IP Networks With On-Board Processing Capabilities",
+  "creators": "Taleb, T.; Mashimo, D.; Jamalipour, A.; Kato, N.; Nemoto, Y.",
+  "date": "2009-2",
+  "publicationTitle": "IEEE/ACM Transactions on Networking",
+  "volume": "17",
+  "issue": "1",
+  "pages": "281-293",
+  "DOI": "10.1109/tnet.2008.918084",
+  "url": "http://ieeexplore.ieee.org/document/4472733/",
+  "tags": [
+   "lib-exp-0908-final"
+  ],
+  "collections": [],
+  "dateAdded": "2026-09-08T07:57:25Z"
+ },
+ {
+  "key": "CMNCS52M",
+  "itemType": "journalArticle",
+  "title": "Traffic-Aware Multi-Agent Reinforcement Learning-Based Distributed Routing for Low Earth Orbit Satellite Network",
+  "creators": "Ferrer, Estel; Escrig, Josep; Alarcón, Eduard; Park, Hyuk; Ruiz-De-Azua, Joan A.; Kaneko, Megumi",
+  "date": "2026",
+  "publicationTitle": "IEEE Open Journal of Vehicular Technology",
+  "volume": "7",
+  "pages": "1368-1383",
+  "DOI": "10.1109/ojvt.2026.3688868",
+  "url": "https://ieeexplore.ieee.org/document/11500452/",
+  "tags": [
+   "lib-exp-0908-final"
+  ],
+  "collections": [],
+  "dateAdded": "2026-09-08T07:57:24Z"
+ },
+ {
+  "key": "PIXWFHAC",
+  "itemType": "journalArticle",
+  "title": "Reinforcement Learning‐Based Routing Algorithm in Satellite‐Terrestrial Integrated Networks",
+  "creators": "Yin, Yabo; Huang, Chuanghe; Wu, Dong-Fang; Huang, Shidong; Ashraf, M. Wasim Abbas; Guo, Qianqian",
+  "date": "2021-1",
+  "publicationTitle": "Wireless Communications and Mobile Computing",
+  "DOI": "10.1155/2021/3759631",
+  "url": "https://onlinelibrary.wiley.com/doi/10.1155/2021/3759631",
+  "abstractNote": "Satellite‐terrestrial integrated network (STIN) is an indispensable component of the Next Generation Internet (NGI) due to its wide coverage, high flexibility, and seamless communication services. It uses the part of satellite network to provide communication services to the users who cannot communicate directly in terrestrial network. However, existing satellite routing algorithms ignore the users’ request resources and the states of the satellite network. Therefore, these algorithms cannot effectively manage network resources in routing, leading to the congestion of satellite network in advance. To solve this problem, we model the routing problem in satellite network as a finite‐state Markov decision process and formulate it as a combinatorial optimization problem. Then, we put forth a Q‐learning‐based routing algorithm (QLRA). By maximizing users’ utility, our proposed QLRA algorithm is able to select the optimal paths according to the dynamic characteristics of satellite network. Considering that the convergence speed of QLRA is slow due to the routing loop or ping‐pong effect in the process of routing, we propose a split‐based speed‐up convergence strategy and also design a speed‐up Q‐learning‐based routing algorithm, termed SQLRA. In addition, we update the                    Q                    value of each node from back to front in the learning process, which further accelerate the convergence speed of SQLRA. Experimental results show that our improved routing algorithm SQLRA greatly enhances the performance of satellite network in terms of throughput, delay, and bit error rate compared with other routing algorithms.",
+  "tags": [
+   "lib-exp-0908-final"
+  ],
+  "collections": [],
+  "dateAdded": "2026-09-08T07:57:23Z"
+ },
+ {
+  "key": "8N9QJHC2",
+  "itemType": "journalArticle",
+  "title": "Recovery Routing Based on Q-Learning for Satellite Network Faults",
+  "creators": "Gu, Rentao; Qin, Jiawen; Dong, Tao; Yin, Jie; Liu, Zhihui",
+  "date": "2020-9-4",
+  "publicationTitle": "Complexity",
+  "pages": "1-13",
+  "DOI": "10.1155/2020/8829897",
+  "url": "https://www.hindawi.com/journals/complexity/2020/8829897/",
+  "abstractNote": "With the fierce research on the space and terrestrial network, the satellite network as the main component has received increasing attention. Due to its special operating environment, there are temporary link failures caused by interference and permanent port failures caused by equipment problems. In this paper, we propose a new satellite network routing technology for fault recovery based on fault detection. Based on Bayesian decision, this technology judges the probability of each fault by a priori probability of the two faults to achieve the purpose of effectively distinguishing between two types of faults and locate faulty links and node ports. Then, corresponding to the previous two stages of the fault detection, different stages and different methods are updated for different types of fault. We also combine satellite network data from satellite simulation software to validate our study. The results show that the recovery strategy has good performance, and the effective resource utilization rate is improved significantly.",
+  "tags": [
+   "lib-exp-0908-final"
+  ],
+  "collections": [],
+  "dateAdded": "2026-09-08T07:57:22Z"
+ },
+ {
+  "key": "3MRQRWHU",
+  "itemType": "journalArticle",
+  "title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+  "creators": "Zhang, Yifan; Dong, Tao; Liu, Zhihui; Jin, Shichao",
+  "date": "2025-2",
+  "publicationTitle": "Journal of Systems Engineering and Electronics",
+  "issue": "1",
+  "pages": "37-47",
+  "DOI": "10.23919/jsee.2024.000041",
+  "url": "https://ieeexplore.ieee.org/document/10799936/",
+  "tags": [
+   "lib-exp-0908-final"
+  ],
+  "collections": [],
+  "dateAdded": "2026-09-08T07:57:21Z"
+ }
+]

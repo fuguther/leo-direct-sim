@@ -1,0 +1,575 @@
+# 读卡批次 R7
+
+> 读法：逐字通读 VM MinerU 导出 MD 全文（从第 1 行到最后一行），行号对应 VM MD。未用 grep 替代阅读；grep 仅用于定位章节起始行。
+> 批次：L63JISQN LBMABZJ7 ~~LJG6ZW7B~~ LNA28YZY LRSXMWX9 LZKNZA8B MXQVNU3P MYBALQ2D NPF75WS5 P6XJZNQK PIXWFHAC（共 11 篇）
+> **LJG6ZW7B 已按主控裁定移出本批**（Sutton & Barto《Reinforcement Learning: An Introduction》教材，9596 行 / 1.68 MB，由主控拆 8 片另行处理）。故本批实际写卡 **10 篇**。
+> **覆盖度声明（逐篇）**：
+> - 9 篇为逐行通读：L63JISQN(200行) / LBMABZJ7(341) / LZKNZA8B(342) / MXQVNU3P(352) / PIXWFHAC(538) / NPF75WS5(463) / P6XJZNQK(466) / MYBALQ2D(640) / LRSXMWX9(986，含全部 117 条参考文献)。
+> - **LNA28YZY 有缺口，如实标注**：正文 L1–L693 逐行读完；**L695–L1398 的约 350 条参考文献列表未逐条读**（仅确认起始行）。该篇正文的其余部分无缺口。
+> - 读取方式说明：bash 单次输出 >约 44 KB 会被截尾，故长文按 150–250 行窗口分段读；`![\](images/...)` 图注行与空行在读取时折叠，正文连续性未受影响。
+
+## L63JISQN — Making Sense of Constellations: Methodologies for Understanding Starlink's Scheduling Algorithms
+
+**1. 一句话**
+用 4 个真实 Starlink 终端的毫秒级测量，加上从 gRPC 遮挡图反推"当前服务卫星"的新方法，实证 Starlink 存在层级式流量工程：一个每 15 秒重分配一次的**全局卫星分配器** + 一个星上 MAC 调度器；再用随机森林给全局分配器做一个离线近似。全篇不是 RL，是测量+逆向工程。
+
+**2. 问题设定**
+Starlink 是目前最大的 LEO WAN，但其调度算法不透明，研究者因此无法提出也无法验证性能改进方法（L19）。具体的麻烦落在两类人身上：想优化 Starlink 性能的研究者，和想建 Starlink 仿真的研究者。L41 逐字："Internals of the algorithm that maps user terminals to satellites are currently known only to the operators of the Starlink network."
+
+**3. 方法骨架**
+非 RL。三块拼起来：
+
+- **高频测量（第 3 节，L49）**：4 个终端（西欧 / 美东北 / 美中 / 美西北），Starlink 路由器桥接模式 + 专用树莓派；目的服务器与终端所在 PoP 同址，以剔除地面网络干扰；iRTT 以 1 包/20 ms 发包、iPerf3 用 50% 上行带宽；NTP 同步时钟。选这个频率/带宽是因为更高频更高带宽时丢包与时延"highly variable"。
+- **卫星识别（第 4 节，L63–L89）**：不用 app（app 已不再显示服务卫星），改用遮挡图。gRPC 遮挡图是 123×123 二维图，作者标定出它是极坐标图：中心 62×62、极坐标半径 = 仰角（25–90）、θ = 方位角（θ=0 为北）、极坐标图半径 45 像素（L69）。对相邻两个 15 秒槽的图做 XOR 抹掉共同轨迹，隔离出槽 x 的那颗星（L71）；每 10 分钟重置终端防止轨迹重叠。候选星位置来自 CelesTrak TLE + SGP4 传播（L67）。最后把候选星的仰角/方位角轨迹转笛卡尔，用 DTW 距离匹配（L89）；作者用 500 组人工目视比对验证，DTW 与人工重合 >99%。
+- **全局分配器建模（第 6 节，L130–L134）**：把可用星按 (θ, φ, 年龄 a, 光照 ε) 的 **z-score 四元组**聚类（即"离组均值几个标准差"），特征是"本地时间 + 起始于最近 15 秒区间各簇的可用卫星数"；用随机森林（作者选它是因为抗过拟合 + 可解释），网格搜索 + 5 折交叉验证。
+
+**4. 它声称的效果**
+- 时延特征每 15 秒突变，发生在每分钟第 12/27/42/57 秒，四个站点、所有时段都能观察到；相邻 15 秒窗口的时延特征经 Mann-Whitney U 检验显著不同（p<.05）（L57）。
+- 仰角：被选中星的中位仰角比"可用但未选中"的星高 22.9°；45°–90° 区间只占可用星的 30%，却贡献了被选中星的 80%（L97）。
+- 方向：被选星方位角偏北（Ithaca 站例外，因西北被树遮挡，该站只从该区域拿 9.7%，其他站平均 55.4%）；其他站点平均 58% 可用星在北侧，但被选中 82% 来自北侧（L99）。
+- 发射批次：被选概率随发射月份单调上升（L111）。
+- 光照：同时有受照星与暗星时，72.3% 选受照星；只有当暗星占可用星 ≥35% 时才选暗星，且此时选中的暗星仰角比对应的受照星高 25°（L122）。
+- 模型：top-5 准确率 **65%**，基线 22%（L134）。基线 = 直接返回"可用星最多的 top-k 簇"。
+
+**5. 实验条件**
+真实网络，无仿真。4 个 Starlink 终端（美/欧），目的地在对应 PoP；为标定极坐标边界让终端连续在线 2 天；每 10 分钟重置终端。视野内任一 15 秒槽平均有 **35–44 颗**星（L93）。模型评估用 80% 数据做 5 折 CV，另 20% 作 holdout 验证抗过拟合（L132）。**没有做负载扫描**——测量是在终端"well under capacity"状态下做的。
+
+**6. 它自己承认的局限**
+L136 逐字："Our model is constructed using only publicly measurable data related to Starlink's satellites. However, based on disclosures in SpaceX's FCC filings, we expect that other publicly-unavailable features such as terminal density in a region and satellite load characteristics will also impact the global scheduler. Therefore, the performance of our model is constrained by the unavailability of data."
+另有 L59 对星上调度器自述："Further investigation is required to exactly identify the characteristics of this controller."
+
+**7. 它没做但看起来能做的地方**
+1. **卫星负载与终端密度**是作者自认缺失的两个特征（L136），而这两个恰恰是负载变化场景的核心；作者没试过用可观测量（如 15 秒窗口内的时延带结构）去代理它们。
+2. **星上 MAC 调度器只被观察到"几条相差几毫秒的平行带"，推测是 round-robin**（L59），明确说需要进一步研究——这是全篇留下的最大口子。
+3. 模型只预测"卫星属于哪个特征簇"，**不预测具体卫星 ID**，因此无法直接用于路由仿真。
+4. 没有把该模型接回仿真器，验证它对路由/时延的影响（L141 只说模型会在录用后公开）。
+5. 测量条件全是低负载，未做负载-时延的联合扫描。
+
+**8. 和同批其他篇的关系**
+与同批 LBMABZJ7（DisCoRoute）同属 Starlink 实体研究但角度正交：LBMABZJ7 做纯几何的最少跳路由，假设拓扑理想、无拥塞；本篇提供"卫星分配每 15 秒变一次、且与负载无关地抖动"这一实测约束，正好是几何路由忽略掉的那一层。方法上与 LZKNZA8B 完全不像（测量 vs 学习）。未见引用同批其他篇。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**基本没有直接贡献，但提供了一条关键的负事实。** 逐字 L57："these effects were noticed even when our terminals were running well under capacity" —— 即 15 秒周期性的时延台阶**不是负载驱动的**，终端远低于容量时依然存在。这反过来说明：在 LEO 场景下观察到的短周期时延抖动，可能主要来自调度周期而非排队，做"负载→时延"建模时必须把这两个来源分开。另一方面，负载确实进入分配决策（L43 引 FCC 专利：星上 MAC 调度器考虑 user priority、current load、per-terminal flow characteristics），但本篇**完全没有量化**负载的影响，也没做负载扫描。所以对到达率/时延的直接事实贡献≈0。
+
+**10. 一句话评价**
+测量与逆向工程类工作，把 Starlink 调度器从黑盒压成"可预测的特征簇代理"，并给出了一条被后续建模者必须处理的实测约束（15 秒全局重分配）；不涉及 RL，是 LEO 路由/调度仿真研究的外部对照物与约束来源。
+
+## LZKNZA8B — Spatial-Temporal Learning-Based Distributed Routing for Dynamic LEO Satellite Networks
+
+**1. 一句话**
+把 GAT（空间特征）+ LSTM（时间依赖）+ DQN（决策）拼成一个"每颗星自己当 agent"的分布式路由框架，问题建成 POMDP，主打"主动拥塞避免"，最后用一张碳排放表把它包装成 Green AI。
+
+**2. 问题设定**
+LEO 拓扑高速变化、ISL 时变，最短路/静态路由失效，导致时延、拥塞、丢包上升；集中式路由信令开销过大、大规模星座不可扩展（L21）。作者指出的三个具体缺口（L29）：(a) 既有方法把空间拓扑与时间动态**分开**处理；(b) 全连接网络不适合图结构；(c) 集中/半集中框架开销大。进一步的批评针对 [14]：它把"时空流量预测"与"路由决策"**解耦**，突变时预测与实时状态失配会造成次优路由与更差时延（L27）。
+
+**3. 方法骨架**
+POMDP (S, A, P, R)：
+- **状态**（式 3, L91）：$s_i(t)=[Q_i(t), \{D_{ij}(t)\}_{j\in\mathcal N_i(t)}, x_i(t)]$，即本星队列 + 到各邻居的时延 + 拓扑相关特征（相对位置/连通指示）。
+- **动作**（L96）：在邻居集 $\mathcal N_i(t)$ 中选下一跳。
+- **奖励**（式 4, L103）：$r_i(t)=-(\alpha D_{i,a_i(t)}(t)+\beta Q_i(t))$，**刻意取 β>α**，让 agent 愿意放弃更短的路径去走不拥塞的路，作者称这是"anticipate future congestion"（L108）。
+- **更新**（式 9/10）：DQN，$a=\arg\max Q_\theta(h_i^{(t)},a)$，目标 $y=r+\gamma\max_{a'}Q_{\theta^-}$，目标网 θ⁻ 每 C=200 步同步（算法 1）。
+- **GAT**（式 6/7, L135–143）：注意力系数 α_ij 由 $\sigma(w^T[x_i\|x_j])$ 经 softmax 得到，聚合 $z_i=\sum_j \alpha_{ij}x_j$。
+- **LSTM**（式 8, L155）：$h_i^{(t)}=\mathrm{LSTM}(z_i(t), h_i^{(t-1)})$。
+- 全分布式：每颗星独立构造局部状态、独立推理，不需要全局信息（第 III.E 节，L180）。
+
+**4. 它声称的效果**
+- 240 Mbps 时吞吐约 **210 Mbps**（ISL 容量 300 Mbps）（L254）。
+- 240 Mbps 时端到端时延约 **498 ms**，是所有对比方法里最低（L256）。
+- 丢包率降到"**低于 46.81%**"（L272）。
+- 平均队列长度最多降 **23.26%**（L274）。
+- 碳排：10000 次路由决策耗 $2.25\times10^{-4}$ kWh ≈ **0.111 g CO₂**，相当于 10 W LED 亮 81 秒（L294）。
+- 基线：Dijkstra [19]、GraphPR [11]（GNN+MARL）、DQN-IR [8]（单 agent DRL）、FDR-MARL [3]（MARL 分布式）。
+- 训练收敛（Fig 2）：本文方法收敛更快更稳，但**没有给任何收敛数值**（L248）。
+
+**5. 实验条件**
+45 颗星、倾角 70°、高度 570 km、载频 23.28 GHz、信道带宽 25 MHz、ISL 容量 300 Mbps、包长 1500 B、最大队列 640、TTL 30（表 I）。**负载 = 120 / 180 / 240 Mbps 三档**（轻/中/重）。流量模型 NHPP，$\lambda_i(t)=\lambda_0(1+\sin(2\pi t/T))$（L66）。超参（表 II）：GAT 4 头、GAT/LSTM 隐藏 64、最多 128 episodes、lr $1\times10^{-4}$、γ=0.99、回放 10 万、batch 128、目标网 200 步、ε 1.0→0.01 衰减 0.995。训练与评估在同一仿真环境，**未见跨分布测试**。注意 L188 逐字："Following the simulation setting in the thesis implementation" —— 这是学位论文衍生稿。
+
+**6. 它自己承认的局限**
+**没有独立的 Limitations 节。** 最接近的自述在结论 L300："Future work will extend this framework to QoS-aware routing, heterogeneous traffic scenarios, and cooperative multi-agent learning in large-scale LEO constellations."（即当前不支持 QoS、异构流量、协作多智能体）。另 L292 承认自身代价："the proposed GAT-LSTM-DQN based routing framework incurs higher computational complexity and inference time due to the joint spatial and temporal modeling."
+
+**7. 它没做但看起来能做的地方**
+1. **算力代价被承认却没被检验**：表 III 显示它的推理时间 2.70 ms，是最快的 FDR-MARL（0.56 ms）的 **4.8 倍**。作者只用"碳排绝对值很小"把它洗白，没做"星上算力受限时性能如何退化"的实验——而星上算力恰恰是硬约束。
+2. **负载只扫 3 个点**（120/180/240），没有连续负载曲线；也**没有做"训练负载 ≠ 测试负载"的泛化实验**，而这是负载变化场景最该问的问题。
+3. **NHPP 的参数没给**：周期 T 与基准 λ_0 全文未出现具体值，负载变化的"变化率"因此不可复现（L66 只有函数形式）。
+4. **β>α 是人为武断设定**，没有任何 α/β 敏感性分析——而整个"主动拥塞避免"的卖点就压在这个比值上。
+5. 式 2 定义了传播/传输/排队/处理四个时延分量，但**全文没有报告任何一个分量的占比**；498 ms 这个量级对 LEO 而言极高，不拆开就无法判断排队时延是否占绝对主导。
+
+**8. 和同批其他篇的关系**
+与 LBMABZJ7 方法相反（学习式 vs 几何闭式），但都做 LEO 分布式路由、都以时延为主要指标——是天然的对照组。与 L63JISQN 无关。它的基线 [3] FDR-MARL 与 [11] GraphPR 是 LEO DRL 路由的常见参照，同批其他学习式路由论文大概率也引这两篇。未见引用同批其他篇。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**直接相关，是同批里少见的把负载当自变量的论文。** 它把到达过程显式建成 NHPP 周期函数（L66），并把负载从 120 扫到 240 Mbps，Fig 3(b) 给出负载→端到端时延曲线（240 Mbps → 498 ms），Fig 4(b) 给出负载→队列长度，Fig 4(a) 给出负载→丢包率。但有三处硬伤：(a) 只有 3 个负载点，画不出拐点；(b) 498 ms 时延、46.81% 丢包这两个绝对值说明仿真里拥塞已极端严重，作者没有解释也没拆解成因；(c) 没有"训练-测试负载不匹配"实验，因此无法回答"负载分布变了策略还灵不灵"——而这正是选题要问的。
+
+**10. 一句话评价**
+把 GAT+LSTM+DQN 三个现成组件拼进 LEO 路由的"标准组合拳"论文；真正的论断是"空间与时间必须联合建模而非解耦"，但支撑它的实验只有 3 个负载点、单一拓扑、无跨分布测试，证据强度撑不起论断。
+
+## LBMABZJ7 — Distributed On-Demand Routing for LEO Mega-Constellations: A Starlink Case Study
+
+**1. 一句话**
+给 Walker Delta 星座（Starlink 所属类型）推导"两颗星之间最少需要几跳 ISL"的闭式公式，再用它把搜索空间压成球面矩形，得到两个几乎零开销的按需分布式路由算法；核心论点是**跳数比距离更应该被优先最小化**。
+
+**2. 问题设定**
+巨型星座下"为所有卫星对、所有时刻预计算最短路"在空间与时间上都不可行（L7）；而已有的分布式按需路由只针对特定配置（极轨 Walker Star、ATM 式小包，跳数不重要），不适配越来越流行的 Walker Delta 巨型星座（L21）。前人的跳数公式（Chen et al. [5]）有一个错误假设："若某方向路径过长（如 $H_h>P/2$），包就走反方向"，这会产生不必要的多余跳（L111）。
+
+**3. 方法骨架**
+纯几何/算法，非 RL。
+- **卫星模型**（第 II.B 节，L28–L50）：Kepler 元素 → 大地坐标 $\varphi=\arcsin(\sin\alpha\cdot\sin u)$、$\lambda=N(\Omega+\zeta(u))$，其中 $\zeta(u)=\arctan(\cos\alpha\tan u)+(0\ \text{或}\ \pi)$ 按升/降段取 → ECEF 笛卡尔 $(X,Y,Z)$。轨道半径 = h + WGS84 长半轴 6378.137 km。
+- **Walker Delta**（第 II.C 节，L54–L56）：$\alpha{:}PQ/P/F$，$\Delta\Omega=2\pi/P$、$\Delta\Phi=2\pi/Q$、$\Delta f=2\pi F/(PQ)$；卫星 $(o,i)$ 由 $(L_0=N(o\Delta\Omega),\ u=N(o\Delta f+i\Delta\Phi))$ 确定。每颗星 **4 条 ISL**：同轨前/后 + 邻轨左/右，跨面绕回规则见 L58。
+- **最少跳数模型**（第 III.A 节，L68–L107）：$\Delta L_0=(L_{0,2}-L_{0,1})\bmod 2\pi$ → 东西向的跨轨跳数 $H_h^{\leftarrow}=\lfloor(2\pi-\Delta L_0)/\Delta\Omega\rceil$、$H_h^{\rightarrow}=\lfloor \Delta L_0/\Delta\Omega\rceil$；跨轨跳会顺带改变相位角（每跳 +Δf），扣掉后得 $\Delta\vec u$、$\Delta\overleftarrow u$，再算四个方向的同类内跳数；**最终跳数 = 四种方向组合的最小值**，公式同时给出两个方向指示。
+- **路由算法**（第 IV 节）：已知 $H_h,H_\nu$ 后，路径被限制在"源与目的为对角的球面矩形"内，矩形内**所有路径跳数相同**（类比 Manhattan Street Network，L169），因此构成 DAG，可用拓扑排序在 $O(V+E)$ 求最短路（DAGshort，替代 Dijkstra）(L171)；另有 DijkstraHops（堆里存 $(hops,distance)$ 按字典序比较）(L173)。
+- **CoinFlipRoute**（第 IV.C 节，L177）：每跳抛硬币随机选两个方向之一，靠 $H_h/H_\nu$ 计数强制收尾。作者指出它**不等于**在矩形内均匀随机枚举路径。
+- **DisCoRoute**（第 IV.D 节，L213–L258）：两条洞察——(1) 同轨跳长度恒定；(2) 异轨跳越靠近极点越短。于是"把异轨跳尽量安排在远离赤道处"。分两种情况：A2A/D2D 把异轨跳分配到路径两端、同类跳放中间，选择准则是 $|\varphi_i+\varphi_{i+1}|$ 更大者优先（算法 2）；A2D/D2A 必须靠近极点（只有那里才有升降轨之间的链路），因此反过来把同类跳放两端、异轨跳放中间，准则改为 $|\varphi_i+\varphi_{i+1}|$ 更小者（算法 3，L256）。
+
+**4. 它声称的效果**
+- 对 Chen 公式的改进：Starlink 星座上约 **2.7%** 的星对跳数被高估（1.26% 多 1 跳、1.01% 多 3 跳、0.44% 多 5 跳）（L115）。
+- 最短路反而可能比最少跳路径多 1 跳，占 1% 的星对；此时两个公式一致（L117）。
+- "含最少跳数的最短路"比"整体最短路"最多长 **2%**（≈1284 km），只发生在 1% 的星对上（L165, Fig 3）。
+- 运行时间（Fig 5）：DAGshort 比 Dijkstra 平均快约 **22×**；DisCoRoute 比 Dijkstra 快约 **158×**、比 DAGshort 快 7×（L288）。CoinFlipRoute 平均比 DisCoRoute 略快但最坏情况更慢。
+- 精确性（Fig 6）：以 DAGshort 为基线，Dijkstra 平均只优 0.02%、最坏 2%（L303）。
+- 可扩展性（Fig 7）：4 个合成星座 60°:500/25/5、2000/50/10、8000/100/20、32000/200/40，各采样 10 万随机星对（L307）。
+
+**5. 实验条件**
+主星座 = Starlink 第一壳层 **Walker Delta 53.0°: 1584/72/39 @ 550 km**，其中相位因子 **F=39 是作者自己估计的**（L284 逐字："except for the phasing factor F = 39 which is not explicitly mentioned and had to be estimated based on the available documents and by inspecting the publicly available data"）。Python 与 Rust 双实现，测速用 Rust；Intel i7-6700 @3.40 GHz、32 GB；每个星对跑 10 次取平均（L280）。**全文没有负载、没有队列、没有拥塞、没有到达率** —— 只有几何与拓扑。训练/评估概念不适用。
+
+**6. 它自己承认的局限**
+L313 逐字："we are currently embarking on extensions of this work, taking into account congestion and background trafic, as well as further evaluations (e. g. route length and latency)."
+L262："it becomes trivial to prove that the approximative DisCoRoute algorithm can solve the shortest path problem exactly for Walker Delta constellations with zero phase ofset $\Delta f=0$" —— 即最优性只在 Δf=0 时成立。
+L270 承认 Theorem 2 在非零相位偏移下**无法形式化证明**，只能作为 Conjecture 1/2 提出。
+
+**7. 它没做但看起来能做的地方**
+1. **全文用跳数当时延代理但从未真算时延**。L167 给了一段很有用的量级论证（65535 B 包 @1 Gbps ≈ 500 μs 传输；一跳 ≈ 1000 km/光速 = 3.3 ms；星上处理可达数 ms），但**没有把它变成端到端时延指标**——作者自己在结论里承认要补 latency。
+2. **完全无排队/拥塞建模**，而 DisCoRoute 的策略是"把异轨跳全部推向极区"，在负载不均时这会造成极区链路热点。论文没有讨论这个风险——这是一个明显的、由它自己的算法设计引出的问题。
+3. **没有 ISL 失效/卫星故障场景**。
+4. **只支持固定的 4 度 ISL 邻接**，未考虑实际 Starlink 的 ISL 规划与切换。
+5. 相位因子 F 是估计值，但**没有做 F 的敏感性分析**——若 F 估错，跳数公式的误差有多大，未知。
+
+**8. 和同批其他篇的关系**
+同批里唯一的纯几何路由论文。与 LZKNZA8B（GAT-LSTM-DQN 分布式路由）构成方法对照：两者都主张分布式、都以 LEO 路由为题，但一个靠闭式几何、一个靠学习；LZKNZA8B 追求拥塞规避，本篇根本不建模拥塞。它直接改进的对象是 Chen et al. [5] 的 ISL 跳数模型。未见引用同批其他篇。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**无直接贡献，且作者明确承认。** 全文没有到达率、没有队列、没有负载扫描，所有结果都是"拓扑几何决定的最短路/最少跳路径"。唯一可复用的时延相关素材是 L167 的那段标尺：一跳 ≈ 1000 km 光速传播 = 3.3 ms，星上处理可达数 ms——这为"何时该为了少一跳而牺牲距离"提供了量化依据（作者的结论是：一跳的处理开销大于短路径省下的传播时延）。结论 L313 自认拥塞与背景流量是未做的扩展。
+
+**10. 一句话评价**
+把 Walker Delta 星座几何榨出闭式跳数公式的算法论文，用"跳数优先于距离"替换了经典最短路的度量选择；它是路由层的确定性基线，与 RL 路线的差距恰好在于它完全不处理负载与拥塞。
+
+## LNA28YZY — Satellite Communications in the New Space Era: A Survey and Future Challenges
+
+> 读法说明（诚实标注）：正文 L1–L693 逐行通读（分 150 行窗口读）。**L695–L1398 是约 350 条参考文献列表，本卡未逐条读完**——本批收尾时未能回收这部分预算，如实标注，不假装读完。页眉多次出现 "IEEE COMMUNICATIONS SURVEYS & TUTORIALS (SATCOM SURVEY DRAFT)"（L247/L486/L596/L681），判定为预印本/draft。
+
+**1. 一句话**
+一篇锁在 2020 年 1 月时间点的卫星通信全栈综述，把 New Space 的动机、5G NTN 用例、空口、MAC、网络与测试床铺成五大轴地图；它是"背景板"而不是"零件"——全篇没有一节讲 LEO 路由。
+
+**2. 问题设定**
+面向"New Space"三股力量——空间私有化、卫星小型化、空间数据服务（L46）——以及 5G 把卫星收编为 NTN 的趋势。它要服务的对象是"想进入 SatCom 但缺地图的研究者/工业界"：给出术语、架构选项、标准进展和一份开放问题清单。它并不针对某个具体技术故障。
+
+**3. 方法骨架**
+非 RL，是结构化综述。骨架按 L15 自述铺开：
+- **II 动机**：新星座类型（LEO/MEO/GEO/混合，L21–L30）、星上能力、NTN、New Space。
+- **III 应用**：5G NTN 三类用例 eMBB/mMTC/uRLLC（L57–L85）、VLEO+HAP+LAP 多层（L90–L124）、航空航海 ADS-B/AIS（L126–L135）、对地观测（L137–L147）、深空（L149–L155）。
+- **IV 系统**：星座类型（L161）、通信架构与星/网拓扑（L169–L183）、与 xG/云接口（L185–L189）、频谱（L194–L214）、标准化 DVB/3GPP-NTN/CCSDS（L216–L224）。
+- **V 空口**：信道建模（L233）、天线（L251）、UHTS 的数字载荷/预编码 MU-MIMO/NOMA（L280–L336）、数据采集（L338）、光通信与深空（L358–L398）。
+- **VI MAC**：UHTS 前向/回传调度、功率与信道化、beamhopping、载波聚合（L410–L476）；卫星 IoT 的固定分配 vs 随机接入（L478–L488）；系统共存（L490–L514）。
+- **VII 网络**：SDN/NFV（L520–L530）、缓存与 MEC（L532–L542）。
+- **VIII 测试床**：SDR（L548–L582）、网络仿真器/5G PoC（L584–L598）。
+- **IX 未来开放问题**：卫星蜂群、分层空中网、Internet of Space Things、飞行基站、动态频谱、资源编排、网络自动化、QKD、ML 应用、数字孪生（L600–L685）。
+
+**4. 它声称的效果**
+综述无自研实验，但给出若干可引用的量化事实（均非本文测量，是转述）：
+- 轨道高度与传播时延标尺（L163）：LEO 500–900 km、MEO 5 000–25 000 km、GEO 36 000 km。
+- 时延对照（L110）：HAP ∼50–85 µs、GEO ∼120 ms、MEO ∼15–85 ms、LEO ∼1.5–3 ms。
+- uRLLC 门槛（L85）：可用性 99.99%、时延 <1 ms、丢包 1 在 10⁵ 包中。同段逐字判定："It is clear that the satellite, regardless of the selected orbit altitude, is not able to fully support this service category due to the increased latency in the communication link."
+- 深空损耗与时延（表 II，L392）：月球 +20.9151 dB / 1.2 s；火星 +78.4164 dB / 12.5 min；木星 +86.9357 dB / 44 min；冥王星 +102.8534 dB / 4 h 37 min。
+
+**5. 实验条件**
+不适用（无实验）。需注意两点时点约束：L23 逐字"As of January 2020, SpaceX has deployed 242 satellites to build its Starlink constellation, with the goal to reach nearly 12000 satellites by mid-2020"——全文的星座规模认知停在 Starlink 242 颗；页眉为 DRAFT，说明未定稿。
+
+**6. 它自己承认的局限**
+无 Limitations 节。自认的开放/未决处（逐字）：
+- L320："The computational complexity that is required to implement multibeam satellite precoding techniques can be considerable... low-complexity linear precoding techniques are of great interest, and this is a problem that deserves further attention and research."
+- L313："Techniques to effectively monitor the on-board amplifiers and to identify possible degradation effects are open research topics with no definite solution at the moment."
+- L530："further research is still needed towards the practical implementation of integrated satellite-terrestrial solutions and their assessment under more realistic conditions."
+- L625（DTN 方向）："Open research topics in this direction include network modeling, routing, and congestion control."
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **整篇综述没有路由章节。** 五大轴的第 iv 轴叫"networking"，但 VII 节只写 SDN/NFV 与缓存/MEC（L520–L542）。routing 只在两处顺带出现：L178 说 mesh 拓扑"may require an intelligent routing of data packets by the satellite"，L625 把 routing 列为 DTN 的开放问题。这与同批的学习式路由论文形成刺眼对照——**2020 年主流 SatCom 综述里，LEO 路由还不是一个独立议题**。
+2. **L673 的 ML 用例清单里没有 routing**：只有 (i) 载波/功率自适应分配、(ii) 自适应波束成形、(iii) 调度与预编码、(iv) beamhopping 与多波束资源调度、(v) 频谱事件检测。即在该综述作者的视野里，ML 的落点是物理层与资源分配，不是路由决策。
+3. **L85 断言卫星无法满足 uRLLC 时延，但只给结论不给分解**——没有说传播/排队/处理各占多少，因此无法判断"如果去掉排队，LEO 能不能接近 1 ms"。
+4. **beamhopping 是天然的时变负载调度问题**（L455–L459），但只作为机制描述，没与时延/丢包指标挂钩。
+
+**8. 和同批其他篇的关系**
+与 LRSXMWX9（Satellite IoT 综述）覆盖面高度重叠：IoT 空口（NB-IoT/LoRa/Sigfox 三件套，L342）、MAC 的固定分配 vs 随机接入（L482/L484）、LPWAN、3GPP 标准化，两篇几乎讲同一批文献。两篇都是"面"，与同批的学习式路由论文（LZKNZA8B、MXQVNU3P、PIXWFHAC）不在一个层面，也没有引用关系。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**没有可用的定量结果**（无到达率扫描、无时延曲线），但有三条定性事实值得记：
+- L414 逐字承认宽带业务流量是突发的："the packet traffic in broadband services is bursty (i.e., the data rate needed to support the different services is not constant). Therefore, the goal of the forward link satellite scheduler is to optimize the bandwidth (capacity) utilization and QoS in the presence of traffic flows generated by different services with different requirements."
+- L422 逐字："Priority must be given to packets coming from highly congested buffers." —— 拥塞感知调度在卫星 MAC 里是既有问题，不是新问题。
+- L455 逐字给出负载的时空非均匀性："the beam data demand is not homogenous, shifting from beam to beam over the course of a day or seasonally"，并说明 beamhopping 靠调节各波束点亮的周期与时长来"achieved in different beams"不同容量。
+即：**负载时变与非均匀在这篇综述里是被承认的前提，但不是被测量的对象**。
+
+**10. 一句话评价**
+2020 年时间点的 SatCom 全景地图，把 LEO 当作 5G 的接入层而非一个可路由的网络；对"LEO RL 路由"选题的价值是反向的——它证明在那个时点，主流卫星通信综述里路由与拥塞控制基本缺席，负载只作为 MAC 调度的输入被顺带提及。
+## MXQVNU3P — Low Earth Orbit Satellite Network Routing Algorithm Based on Graph Neural Networks and Deep Q-Network
+
+**1. 一句话**
+用 GraphSAGE 做归纳式节点嵌入、再把嵌入喂给逐节点的 DQN 做下一跳决策，主打"别的 GNN 路由不能泛化到新拓扑、且在大图上算不动"；但**训练与评估全在 NSFNet 地面网络上完成**，LEO 只是名义场景。
+
+**2. 问题设定**
+LEO 节点多、拓扑高速变化、节点资源受限，传统路由失效（L11、L34）。作者点名的既有缺口（L36）：GRouting [1] 用 GNN+DL 但没考虑节点数带来的计算复杂度；Zuo [2] 只用深度学习、不处理动态拓扑；[4] 用 GNN 但收敛方法照搬无线传感网；[5][6] 也没考虑快速拓扑变化。核心诉求是**分布式训练 + 减少待训练节点数**（L38）。第二层动机是泛化的技术论证（L46）：经典 DQN 的输入输出维度由网络规模固定，换网络规模就要裁剪/填充，"will destroy the potential topological information in the matrix"；而 GCN 只取全图节点隐特征、不具备可扩展性（L48），所以选 GraphSAGE（归纳式）。
+
+**3. 方法骨架**
+- **两个系统假设（L60–L62）**：(1) 以 t₀ 为间隔把时间切成 n 段，段内物理拓扑不变；(2) **逐字**"the propagation delay between the two satellites in different orbits is almost the same as that in the same orbit" —— 这是个很强的简化。
+- **网络模型（L64–L68）**：agent **放在地面站上**，每个地面站管 m 颗星，构成 regional network；区域网之间选"同轨面且负载小"的 ISL 互联。时间片内拓扑固定、节点/链路状态可变的分层网络被**等价成 NSFNet**（L68 逐字："considered as equivalent to NSFNet networks with the same characteristics"）。图 G=(V,E)，边上特征含链路容量与时延。
+- **图重构（算法 1，L85–L95）**：因为 GraphSAGE 只能处理节点特征、**不能处理链路特征**（L81 逐字："GraphSAGE can only deal with the network topology and the network characteristics of nodes and cannot analyze the network characteristics of links. To solve this problem, the graph structure is reconstructed by aggregating link information into nodes."），所以先把每条边的属性聚合进节点：e'_k ← D^e(e_k, r_k, s_k)，ē_i ← ρ(E_i)，v'_i ← σ^v(ē_i, v_i)。
+- **节点特征（L97）**：x_i = [q_i, v'_i]，q_i 是流量，v'_i 是聚合后的链路容量与时延信息。全图特征矩阵 X（式 1）。
+- **MDP（第 2.2 节）**：状态 = 链路时延/容量/当前利用率（定长向量零填充）+ 用户状态 (src, dst, bw)（L111）；**动作 = 在 m 个邻居里选下一跳**（L117），而不是预构造整条路径；奖励（式 2，L124）R = αW − βL，W 是速率/吞吐、L 是时延，α,β∈[0,1]。
+- **GraphSAGE（第 3 节）**：L=2 层、**均值聚合**、每节点采样 q 个邻居（邻居不足则放回重采样，过多则无放回负采样，L158）；式 6/7 为 h_i^J = σ(W^J · CONCAT(h_i^{J-1}, AGGR(h_j^{J-1}, ∀v_j∈N_i)))。参数 W 用梯度下降最大化累计回报更新（式 8）。
+- **DQN（第 4 节）**：**逐节点分布执行、集中训练**（L209）；网络侧隐藏状态 h_i^τ 与用户侧状态 s_d^τ 拼接成 h^τ 作为 DQN 输入（L211）；输出各邻居 Q 值，贪心选最大。
+- **注意一处自相矛盾**：声称用 DQN，但第 4 节后半改用**优势函数 A^π** 与**策略梯度** ∇_θ J(θ) = E[Σ ∇_θ log π_θ(a|s) A^π(s,a)]（式 9、10，L226/L232）——这是 actor-critic 的写法，不是 DQN 的 TD 写法。算法 3 第 10 行又把 target 网络重置写成 Q̂ ← Q̄。全文没有解释这两套更新怎么共存。
+
+**4. 它声称的效果**
+- 平均吞吐：比 Dijkstra 高 **29.47%**，比 DQN 高 **18.42%**（L276，摘要同）。
+- 平均端到端时延：比 Dijkstra 低 **39.76%**，比 DQN 低 **15.29%**（L276）。
+- 拓扑变化（人为关闭 NSFNet 节点模拟节点/链路故障）场景下，在**训练未见过的拓扑**上：端到端时延比 Dijkstra 低 **29.46%**、比 DQN 低 **17.29%**（L287–L289）。
+- 节点数扩展：30 节点时端到端时延比 Dijkstra 低 30%、比 DQN 低 22%（L294）。
+- 收敛：只给了"归一化奖励曲线更好"（式 11、Fig 6，L274），无数值。
+- 基线是 Dijkstra 与 DQN 两个。
+
+**5. 实验条件**
+- **训练与评估都是用 NSFNet，不是 LEO**（L261）。作者的理由逐字："Since the LEO networks lack of the dataset for training, we use NSFNet dataset instead of the LEO dataset in this section for training." 数据来自 KDN（knowledge-defined networking）开源数据集，基于 OMNet++ 生成，含节点分布、节点属性、流量矩阵、传输时延、链路带宽。
+- 链路容量**统一设为 100 Mbps**（L265）——所有链路等容量。
+- 训练：GraphSAGE 每次执行 T=5 步消息传递，小批量 50，Adam，初始 lr 2×10⁻⁴ 指数衰减（L266）。框架 TensorFlow + OpenAI Gym。
+- 流量：L265 逐字 "Traffic demand is initially distributed on each node according to precomputed routing paths"——用预计算路径分配初始需求，不是随机到达过程；实验扫的是不同 traffic demand（Fig 7/8），但**没有给出到达率模型、队列模型、也没有给负载的具体取值区间**。
+- 拓扑变化实验是手动断节点，不是 LEO 的时变 ISL。
+- 训练与评估并非跨分布（除拓扑变化那一组）。
+
+**6. 它自己承认的局限**
+**未见 Limitations 节。** 最接近的自述是 L292 的一句现实性质疑："Due to the small number of nodes in the dataset used for training, it needs to be considered whether the algorithm is applicable to large networks." 随后用 30 节点的实验回应。除此之外没有任何对"LEO 假设"（L62 的跨轨/同轨时延近似、L68 的"等价于 NSFNet"）的自我审视。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **LEO 场景完全没有被仿真。** L68 把 LEO 分层网络"等价"成 NSFNet，L261 直接用 NSFNet 训练——于是"LEO 路由算法"这个标题的主语在实验里消失了。自然下一步是：在真实 Walker 星座 + 时变 ISL 上重跑同一套 GNN-DRL，看结论是否成立。
+2. **L62 的假设（跨轨与同轨传播时延近似相等）在物理上成疑**——同轨邻居间距由 ΔΦ 决定，跨轨邻居在极区可接近到几百公里且随纬度剧烈变化（对照同批 LBMABZJ7 的 Theorem 2：异轨跳越靠极点越短）。这条假设恰好抹掉了 LEO 路由最本质的几何结构，而它没有被检验。
+3. **奖励里的 W 与 L 没有量纲对齐**：R = αW − βL 直接把 Mbps 与 ms 相减，α/β 也从未给出取值或做敏感性分析（式 2 只写 α,β∈[0,1]）。
+4. **"节点资源受限"被当作动机，但算力从未被建模**：论文反复说 LEO 节点算力有限（L11、L36、L38），却没有任何关于推理时延、内存或能耗的测量。
+5. **攻击点最明确的一处**：它声称解决"节点数多导致算不动"，但 GraphSAGE 每节点只采样 q 个邻居、还要把链路特征聚合进节点，这与它自己引用的问题（L36 说 GNN 没考虑大节点数带来的计算复杂度）之间，**没有给出任何复杂度对比数字**（既没有 FLOPs 也没有推理时间）。同批 LZKNZA8B 至少给了 Table III 的时间复杂度表。
+6. 式 11 的归一化写成 (R−R_min)(R_max−R_min)（应为除法）——笔误级别，但会影响曲线可读性。
+
+**8. 和同批其他篇的关系**
+与 LZKNZA8B（GAT+LSTM+DQN 分布式路由）是**最直接的同族**：都是 GNN + DRL + 逐节点决策，都用 Dijkstra 与某个 DRL 变体当基线，都主打动态拓扑。差别在于 LZKNZA8B 在自建 LEO 仿真（45 星、NHPP 负载）上跑，本篇在 NSFNet 上跑——**同族的另一篇至少建了 LEO 环境，本篇没有**。与 PIXWFHAC（Q-learning 路由）同属"把 RL 用到卫星路由"，但本篇用 DQN+GNN、PIXWFHAC 用表格 Q-learning。它引的 [1] GRouting 与 [2] Zuo 是 LEO DRL 路由的早期常见参照。未见引用同批其他篇。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**贡献很弱且口径不清。** 正面：时延与吞吐同时进入奖励（式 2），实验确实按 different traffic demands 扫了一组流量需求（Fig 7/8），并在节点数变化下报告了时延（Fig 10/11）。负面：
+- **没有到达率模型**。流量是 (src, dst, bw) 形式的静态需求矩阵（L240 算法 3 的输入），不是随机到达过程，也没有队列演化方程。因此本篇无法回答"到达率上升时延怎么变"。
+- **所有链路容量统一 100 Mbps**（L265），等价于抹掉了负载在链路间的非均匀性，而拥塞恰恰来自非均匀。
+- 负载的绝对值、扫描点数、拐点都没有报告。
+所以：它与"负载变化下的到达率/时延"是**擦边**——有负载维度的实验，但没有可复用的到达率-时延定量事实。
+
+**10. 一句话评价**
+把已有 X（GraphSAGE 归纳嵌入）接到已有 Y（逐节点 DQN 路由）上，动机（LEO 算力受限、拓扑多变）是 LEO 的，实验环境却是 NSFNet 的；方法谱系上属于"GNN 提升 DRL 泛化性"这一支在卫星路由上的移植，真正的 LEO 验证缺席。
+## PIXWFHAC — Reinforcement Learning-Based Routing Algorithm in Satellite-Terrestrial Integrated Networks
+
+**1. 一句话**
+把卫星路由建成有限状态 MDP，用**表格 Q-learning**（QLRA）做路由，再用"按邻居分层 + 从终点反向更新 Q 值"的分裂加速策略（SQLRA）把收敛从 60 轮压到 30 轮；关键设定是**时延只算传播时延、拥塞只表现为链路被移出图**。
+
+**2. 问题设定**
+STIN 中，星间路由算法大多源自地面网络（OSPF/RIP/AODV，L23），依赖最短路径或最小代价，因此**卫星网络在路由过程中容易拥塞**；且星座规模扩大后这些算法无法在有限的通信时间内快速收敛。作者还点名一个被忽视的维度（L23 逐字）："most of the work on satellite routing ignores the impact of user request resources on the performance of satellite network"。此外 L23 末尾说："considering the power and computing resources of LEO satellite, it is not appropriate to deploy these algorithms on satellites"——即算法不该放在星上。
+
+**3. 方法骨架**
+- **时间离散化（L51–L63）**：把总运行时间 T 切成 N_T 个时间片，片内拓扑固定（快照法，引 [20]）；时间片长度 T_t ≤ min{τ(u,v)}（卫星对可见时间），**实际取 4 分钟**（L63）。假设用户通信时长 u_req−t ≥ T_t（式 5）。
+- **图与链路（式 3/4，L68/L74）**：无向图 G=(V,E)，链路 link(u,v) = (bandwidth, delay, error, time) = （可用带宽、传播时延、误码率、可用时间）。假设网络连通。
+- **目标（式 11–15，L129–L145）**：最大化全用户平均效用 (1/M)·max Σ_i [θ·B(path^i) + β·D(path^i) + λ·E(path^i) + ω·T(path^i)]，约束为带宽不超容（式 12）、指示函数 y∈{0,1}（式 13）、**中间节点流入=流出**（式 14）、权重和为 1（式 15）。四个权重用 **AHP（层次分析法）** 定，取 θ=0.30、β=0.15、λ=0.18、ω=0.37（L359）。
+- **注意式 11 的符号问题**：D（时延）与 E（误码率）越大越差，却在目标函数里是**加号**；作者在奖励里用单调递减归一化修正（式 19/20，L182/L186），但目标函数本身没改。
+- **MDP（第 4 节，L155–L171）**：状态 S_t = {link_i,j}，即**全网所有链路的联合状态**（式 17）；动作 = 跳到索引为 a 的卫星，动作集 A={1..N}，one-hot 编码（L173）；奖励 = 四个分量各自 min-max 归一化后加权求和，r = θ·r(b) + β·r(d) + λ·r(e) + ω·r(t)（式 22，L196）——带宽与可用时间用递增归一化，时延与误码率用递减归一化。
+- **QLRA（算法 2，L272–L298）**：先用 **PCA 路径检查算法**（算法 1，L225–L244，一个 BFS）判断可达性，不可达就直接停，省算力（L219）；可达则 ε-greedy 选动作、按 Bellman 式（26）更新 Q 表，收敛后按式（25）取最优路径；**每服务完一个用户就更新奖励矩阵 R 和网络图结构**（算法 2 第 17–18 行）——即**链路资源被消耗掉后从图中移除**。
+- **终点奖励（式 28，L259）**：到达终态时奖励额外加常数 C，加速收敛。
+- **SQLRA（算法 3，L312–L339）**：两点加速。(1) **分裂式收敛策略**：以目的节点 J 为中心，把网络按邻居关系分层（J 的邻居为第一层），**逐层横向更新 Q 值**，从而破坏成环条件（L270）；(2) **Q 值从后往前更新**：因为卫星网络状态可事先全部获知，用 BFS 从 end_node 反向遍历全网（L306）。作者给的理由逐字："according to Equation (26), we know that updating the node's Q value from back to front make Q-table converge faster"。
+- **部署位置**：agent 部署在地面控制中心（L154 逐字 "the agent is deployed in ground control center"；L431 重申在控制中心训练以节省星上算力）。
+
+**4. 它声称的效果**
+**这是本篇最大的问题：正文没有给出任何一个结果数字。**
+- 唯一给出的数字是收敛速度（L310）："SQLRA needs 30 episodes to converge, and QLRA needs 60 episodes to converge"。
+- 其余全部是定性描述：吞吐（Fig 9/13）、时延（Fig 10/14）、误码率（Fig 11/15）、可见时间（Fig 12/16）分别是"最好/最差/趋势上升或下降"，全部推给图。摘要里的 "greatly enhances the performance... in terms of throughput, delay, and bit error rate" 没有数值支撑。
+- 基线四个：QLAODV [42]、QSR [43]、OSPF [30]、ACO [44]（L347）。
+- 若干可复用的定性判断：QLAODV 因偏好跳数最少的路径而最差——L372 逐字解释了原因："In satellite network, the distance between satellites in the same orbit is different from that between satellites in different orbits; the path with the minimal hops is not always the optimal path." OSPF 因贪心易陷局部最优而劣于 ACO（L372）。在"不同源目对"场景下，**SQLRA 的误码率并非最好，OSPF 最好**（L425 逐字："the performance of QSR is worst and that of OSPF is best... although the performance of SQLRA is not the best, it is close to that of OSPF"）。
+
+**5. 实验条件**
+- **星座**：Walker delta，**8 个轨道面 × 每面 6 颗 = 48 颗 LEO**，倾角 45°，高度 650 km，每星 4 个邻居，RAAN 25°，**仿真时长 1400 s**（表 1，L357）。用 **STK** 建模（L349）。
+- **时延口径**：L354 逐字 "Due to the long distance between satellites, the delay of satellite communication is mainly determined by the propagation delay of satellite links. Therefore, we mainly consider the propagation delay of satellite links in this paper." 式（8）D(path) = Σ delay(link)——**没有排队时延、没有传输时延、没有处理时延**。
+- **两项分布假设（L354）**：链路误码率 "follows a uniform distribution"；**用户请求的带宽资源 "follows a Poisson distribution"**。
+- **超参（L359）**：α（学习率）= 0.001，γ（折扣）= 0.9，是通过"分析实验结果"选出的最优值。
+- **两个场景（L361）**：场景一全部用户共用同一源目卫星对；场景二用户使用不同源目卫星对。横轴都是**用户数**。
+- 平台：PyCharm，Win10，16 G RAM，3.2 GHz CPU（L355）——**没有用 GPU，也没有星上部署实验**。
+- 训练与评估同一环境，未见跨分布测试。
+
+**6. 它自己承认的局限**
+**有，而且很关键（L437 逐字）**："Although SQLRA algorithm performs better than other routing algorithms in two different scenarios, it does not have the ability of online learning. When the number of users in satellite network changes or some satellites do not work well, SQLRA needs to retrain model."
+后续计划："we are going to use deep neural network to design a routing algorithm with online learning ability... In addition, traffic scheduling and satellite handoff management are also our future research issues."
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **作者自己点破的缺口就是选题本身**：L437 说用户数变化就要重训。而全篇实验的横轴恰恰就是用户数——即它在一个**每变一次负载就要重训**的算法上，做了负载扫描。把"负载变化"从实验自变量升级成**在线适应问题**，是这篇留出的最直接下一步。
+2. **时延口径截断了最重要的那一项**。只算传播时延（L354），于是"拥塞导致时延上升"的机制只能是**路径变长**（链路被消耗后从图里移除，算法 2 第 18 行），而不是排队。这意味着本篇的"时延随用户数上升"曲线里，排队时延 = 0。这是一个可以被直接质疑并可被补上的缺口：把队列加回去，结论会怎么变？
+3. **表格 Q-learning 的状态空间是全网链路联合状态**（式 17）——48 颗星、每链路 4 个连续量，Q 表规模随网络规模爆炸。作者只用 48 星做实验，没有做规模扩展测试，也没讨论这个方法能不能上 Starlink 规模。这与它自己引用的痛点（L23 逐字 "with the expansion of satellite network (e.g., Starlink), these routing algorithms cannot converge quickly"）形成直接矛盾。
+4. **AHP 权重是主观给定的**（θ=0.30/β=0.15/λ=0.18/ω=0.37，L359），没有任何敏感性分析。而"可用时间"权重给到最大（0.37），比"时延"（0.15）高一倍多——这个选择对结论的影响完全没有被检验。
+5. **误码率用均匀分布**（L354）——不是物理模型，这使 BER 那一列结果（Fig 11/15）基本没有物理意义。
+6. **没有任何复杂度/开销数字**：它批评别的算法算不动（L23），自己却没给 Q 表大小、单次决策时间、收敛所需样本数。
+
+**8. 和同批其他篇的关系**
+与 MXQVNU3P、LZKNZA8B 同属"RL 做 LEO 路由"，但**方法代际明显更早**：本篇是**表格 Q-learning**（2010 年代的做法），另两篇是 DQN/GAT-LSTM-DQN 的深度版本。三篇的共同结构是"Dijkstra/OSPF 当基线 + RL 提升时延与吞吐"。与 LBMABZJ7 的关系值得注意：LBMABZJ7 用闭式几何论证"跳数优先于距离"，本篇用实验结果给出同一结论的另一个版本——L372 逐字 "the path with the minimal hops is not always the optimal path"，两者独立指向同一个事实。未见引用同批其他篇。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**这是同批里对这个问题最正面的一篇，但数字全在图里。**
+- **负载轴是显式的**：两个场景的横轴都是**用户数**（L365/L402），且用户请求带宽服从 Poisson 分布（L354）——这是本批中少数把"负载"做成实验自变量的论文。
+- **有机制解释**：时延随用户数上升，原因被作者讲清楚了（L378 逐字）："As the number of users increases, the current paths cannot meet the needs of users, and these algorithms begin to select new paths. At this time, the delay of the selected paths is greater than that of the previously selected paths." 即**负载上升 → 原路径饱和 → 改走更长的传播路径 → 时延上升**。
+- **但这个机制是"路径伸长"，不是"排队"**：由于式（8）只累加传播时延（L354），本篇的负载→时延曲线里**排队时延恒为零**。这一点必须在使用它的结论时标明。
+- **可复用的负事实**：QLAODV 的时延曲线 "mostly unchanged at the beginning"，只有当当前路径断开或饱和后才换路（L378）——即**负载上升初期，最短跳数类算法对负载不敏感**，时延上升是滞后的。
+- 缺：没有到达率的具体数值、没有负载扫描点数、没有时延的绝对值——全部依赖图。
+
+**10. 一句话评价**
+把 Q-learning 搬到卫星路由的最朴素版本（表格 Q + Bellman + ε-greedy），真正的贡献是两个工程加速技巧（分层分裂 + 反向更新）；它的价值不在方法新意，而在于它是本批里唯一把"用户数"当横轴、并**明确暴露了负载一变就得重训这一硬伤**的论文。
+## NPF75WS5 — A Multifaceted Look at Starlink Performance
+
+**1. 一句话**
+用 1920 万条 M-Lab 众包测速（34 国）、180 万条 RIPE Atlas 主动测量（21 国）加两个受控终端（德国 + 苏格兰），把 Starlink 从全球宏观性能到亚秒级内部调度一起量了一遍；**结论里最硬的一条是 Starlink 存在 bufferbloat，且负载下的 RTT 膨胀可达 2–4 倍**。
+
+**2. 问题设定**
+Starlink 已是唯一拥有 200 万+ 用户、4000+ 在轨卫星的商业 LEO 网络（L51），但学界对它的理解受限于**缺乏全球观测点**（L69）。作者指出既有研究要么只有几个地理位置（[25,35,36,40]），要么靠仿真/模拟外推（[26,31]），社区已公开呼吁建立全球 LEO 测量测试床（[52,61,74]）。本篇要补的就是这个全球视角的空白。
+
+**3. 方法骨架**
+非 RL，是四路测量拼图。
+- **M-Lab 全球测速（第 3.1 节，L99–L102）**：NDT 协议、单条 10 s WebSocket TCP 连接，通过 ASN **AS14593** 识别 Starlink 客户端；只取 ndt7（用 TCP BBR）且自 2021 年 6 月以来测量数 ≥1000 的国家 → **19.2M 样本、34 国**。注意 L102 的坑：M-Lab 用 PoP 分配的公共 IP 反推用户位置，所以"国家/城市"标签是被 PoP 决定的。
+- **RIPE Atlas（L104）**：**98 个 Starlink 探针、21 国**，目标是 7 家云厂商的 145 个数据中心（见附录 B）。用 ICMP traceroute 按跳拆出**终端→GS（静态 100.64.0.1 地址）、GS→PoP（172.16/12）、PoP→终点**三段，2 s 间隔；10 个月（2022-12 至 2023-09）得到 **≈1.8M 样本**。还用反向 DNS PTR 做地理位置校正（如 tata-level3-seattle2.level3.net）。
+- **实时应用测量（第 3.2 节）**：Zoom 会议（用 [41] 的工具链取亚秒级 QoS 指标）；Amazon Luna 云游戏（用 [17] 的自动化系统玩赛车游戏 The Crew，含自定义流媒体客户端记录帧/码率 + 机器人按预设间隔做游戏动作），并与 5G 调制解调器对比。游戏服务器放在靠近 Starlink PoP 的 AWS（≈1 ms RTT）。
+- **受控实验（第 3.3 节）**：两台终端分别在德国（接 53° 壳层）与苏格兰（高纬，用**金属板做法拉第屏蔽**遮住南向，把可见范围限制到 70° 和 97.6° 壳层），用 CelesTrak 等外部卫星跟踪器验证。工具为 irtt（3 ms 间隔小 UDP 包）与 iperf（100 ms 粒度），同时每秒轮询终端 gRPC 取连接状态。
+
+**4. 它声称的效果**
+- **全球时延**：Starlink 中位时延约 **40–50 ms**（L133）；多数国家地面 ISP 仍略优，但哥伦比亚反过来更好，马尼拉明显更差。欧洲的罗马/巴黎 75 分位比都柏林/伦敦/柏林长约 20 ms（L135）。南美 75 分位超 100 ms、尾部到 200 ms（L137）。
+- **负载下的时延膨胀（最关键）**：L144 逐字 "Figure 8 reveals significant delay inflation under load as during active downloads, Starlink experiences ≈ 2–4× increased RTTs, reaching almost 400–500 ms (Figure 8a)." 且**上行下行不对称**：上行 RTT 的 60 分位升至 ≤100 ms，下行约 200 ms。
+- **吞吐**：75 分位下下载 ≈50–100 Mbps、上传 ≈4–12 Mbps（L146）；丢包率在 75 分位 4–8%，与吞吐呈负相关。**17 个月里吞吐是"稳定"而非"增长"**（L146）。
+- **Luna 云游戏（表 1，L162）**：游戏时延——地面 133.53±19.79 ms、蜂窝 165.82±23.55 ms、**Starlink 167.13±23.12 ms**（三者中最差）；空闲 RTT 分别 9 / 46 / 40 ms；吞吐 1000 / 150 / 220 Mbps；1080p 时长占比 100% / 94.11% / **99.45%**；卡顿 0±0 / 0±220.34 / **0±119.74 ms/min**。
+- **Zoom（L160）**：上行单向时延 Starlink **52±14 ms** vs 地面 **27±7 ms**；下行 35±11 vs 32±7。Starlink 会主动多发 FEC 包（平均 146±99 Kbps vs 地面 2±2 Kbps）。帧率两边都 ≈27 FPS。
+- **bent-pipe 基线**：全球 ≈**40 ms**（区间 36–48 ms），蜂窝最后一公里比它低约 1.5 倍（L186）。
+- **15 秒重构**：受控实验确认每 15 s 一次全局重构，德国与苏格兰两地**时间对齐**，说明是全局协调调度；且用"视野内只剩单颗星"的实验**证伪了卫星切换假说**（L211）。
+- **附录 C 的一条长期趋势**：吞吐随时间下降被归因于 Starlink 用户数增加（L428 逐字 "We observe decreasing goodputs over time, which can be largely attributed to an increase of Starlink users."）。
+
+**5. 实验条件**
+- **测量对象**：真实 Starlink 商业网络，不是仿真。轨道壳层数据见附录表 2（L368）：53°/72 面/550 km/1401 在轨；53.2°/72/540/1542；70°/36/570/301；97.6°/10/560/230。
+- **目的端**：M-Lab 500+ 服务器、145 个云数据中心，全部选在靠近 Starlink PoP 的位置以剔除地面路径影响。
+- **受控终端**：德国（53° 壳层）与苏格兰（被屏蔽到 70°/97.6°），irtt 服务器部署在与两地 PoP 相距 <1 ms 的云 VM 上。
+- **两个对照基线**：地面有线（1 Gbps 以太网）与 5G 蜂窝。
+- 时间跨度：M-Lab 自 2021 年 6 月起；RIPE Atlas 2022-12 至 2023-09；云游戏 150 分钟。
+- 数据公开：>300 GB 数据集与脚本（[44][45]）。
+- 训练/评估概念不适用（无学习模型）。
+
+**6. 它自己承认的局限**
+- L176 逐字："Note, however, that our Starlink terminal was set up without obstructions and the weather conditions during measurements were favorable to its operation [36]. Different conditions, especially mobility, may change the relative performance of Starlink and cellular, which we plan to explore further in the near future."
+- L102 承认众包数据的定位伪影："all speed tests across countries are mapped to a city... we approached our analysis with caution, particularly when examining fine-grained region-specific insights."
+- L117 承认 RIPE Atlas 缺亚秒可见度："A significant limitation of RIPE Atlas measurements is their lack of sub-second visibility, which is essential for understanding the intricacies of Starlink network."
+- L92 承认 ISL 无法直接观测："Note that not all Starlink satellites are ISL-capable and it is difficult to effectively estimate ISL usage as Starlink satellites have no visibility at IP layer [52]."
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **bufferbloat 只给了一个相对量（2–4× / 400–500 ms），没有给"负载 → 时延"的完整函数**。测速是固定 10 s 满载下载，负载是二值状态（空闲 vs 满速），不是被扫描的自变量。把它做成"给定注入速率，测稳态 RTT"的曲线，是这篇最直接的空缺——而这是排队论模型可以直接吃的输入。
+2. **它自己指出时延膨胀可能来自三处队列**（L144 逐字："Possible explanations can be queue size differences at the Dishy (affecting uploads), the ground station (affecting downloads), or satellites (impacting both)."）——**但没有做归因实验**。上行/下行的不对称（≤100 ms vs ≈200 ms）是一个现成线索：若是 AQM 在起作用，上行应当更平缓——作者自己也提出 AQM 假说（L144）但没验证。
+3. **15 秒重构与 bufferbloat 是两个独立的时延来源，论文没有把它们分离开**。L226 承认重构造成 "brief sub-second connection disruptions"；做负载→时延建模时必须同时扣除这个周期性台阶（对照同批 L63JISQN 的同类发现）。
+4. **附录 C 的"吞吐随用户数下降"是宏观相关，不是受控因果**（L428）：用户数、卫星数、基础设施部署同时在变，无法分离。
+5. **没有排队模型、没有到达率**：全篇是端到端测量，没有应用层到达过程，因此不能直接给出"到达率 λ → 时延"的映射。
+
+**8. 和同批其他篇的关系**
+与 **L63JISQN 是相互印证的姊妹篇**：L63JISQN 用 4 个终端发现 15 秒全局调度器，本篇用德国+苏格兰两地**独立复现**并进一步**证伪卫星切换假说**（L211），还直接引用 L63JISQN 为 [74]（L396）。与 P6XJZNQK 同属"用真实 Starlink 测量应用层体验"这一支，且都关心抖动对应用的影响；本篇用 Zoom/Luna，P6XJZNQK 用 Netflix 视频流。与 LBMABZJ7（Starlink 几何路由）形成"实测 vs 理想几何"的对照——后者假设无拥塞，前者量到的正是拥塞。与 LZKNZA8B / MXQVNU3P / PIXWFHAC 这些仿真类路由论文是**靶子与射手的关系**：本篇提供了它们应当去对齐的真实数字。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**本批中贡献最大的两篇之一。**
+- **直接给出负载→时延的定量事实**：L144 逐字 "during active downloads, Starlink experiences ≈ 2–4× increased RTTs, reaching almost 400–500 ms"。基线取 minRTT，作者明确说明选它是因为 "not affected by queuing delays"（L121）——**即这条膨胀量就是排队时延本身**，口径干净。
+- **给出上行/下行不对称**：上行 60 分位 ≤100 ms，下行 ≈200 ms（L144），为"队列在哪一端"提供可判定证据。
+- **给出瓶颈位置的三候选**：Dishy（影响上行）/ 地面站（影响下行）/ 卫星（影响两者），并提到 AQM 假说（L144）——直接可用的归因实验设计。
+- **一条跨时间的负载效应**：吞吐随用户数增加而下降（L428），但属宏观相关。
+- **局限**：没有到达率作为自变量，没有稳态排队曲线；给的是"两种负载状态下的时延差"，不是"时延(λ) 函数"。
+
+**10. 一句话评价**
+本批里证据质量最高的测量论文：把 LEO 的"负载→时延"从传闻变成了可引用的数字（满载下载时 RTT 膨胀 2–4 倍、达 400–500 ms），并独立复现了 15 秒全局重构；它不提供模型，但提供了别人建模时必须对齐的靶子。
+## P6XJZNQK — A Global Perspective on the Past, Present, and Future of Video Streaming over Starlink
+
+**1. 一句话**
+站在 Netflix 的 vantage point 上，用 100 万+ 家庭、85 国、两年多的播放与性能数据，把"Starlink 上的视频流"从画质、卡顿、起播延迟到拥塞控制与 ABR 算法的适配全量了一遍；**核心结论是 Starlink 的画质其实不差，差的是抖动的形状——吞吐低、方差大、恢复慢，而根因指向 15 秒重构周期**。
+
+**2. 问题设定**
+LEO 的移动核心网会造成时延、吞吐、可用性的突变（L22），而理解运营中的 LEO 网络门槛极高，需要招募大量卫星用户或部署专用硬件（L24）。结果是：LEO 上的视频流研究一直是"小样本实验"（[34,57,59]），而针对 LEO 的传输算法改进"largely theoretical"（[13,37]）。本篇要补的就是**全局视角**这一层。服务对象是视频服务商与传输算法设计者。
+
+**3. 方法骨架**
+非 RL，是"大规模生产数据 + 仿真 + 真实 A/B 测试"三件套。
+- **识别方式**：用 **ASN 14593** 挑出 Starlink 家庭（L36）。
+- **会话过滤（L72–L80）**：只保留 (1) 订阅与设备支持 ≥720p 的（保证低画质归因于网络）；(2) 时长 ≥5 分钟的；(3) 目标是 TV 的（更可能静止，排除移动伪影）；(4) 2024 年 4 月第一周的。这套过滤覆盖 100 万+ Starlink 家庭、数百万会话。
+- **画质度量（L86–L88）**：用 **VMAF**（Netflix 的感知视频质量模型），并改进成 **Maximum Quality Ratio** = 时间加权 VMAF / 该会话可达的最大 VMAF。作者选 VMAF 而非 PSNR/SSIM 是因为前者与主观感受相关性更好（L86）。同时明确 VMAF 不覆盖起播延迟与卡顿（L90），所以另测吞吐、码率切换、时延、rebuffer。
+- **对照组（L84）**：not-Starlink 网络与 **Top 10 ISP**（后者当"金标准"）。
+- **拥塞控制实验（第 4 节）**：把 New Reno 改成 **New Reno with MulTCP**（模拟 3 条并发连接：每确认 1 字节窗口涨 3 字节，丢包时只按 1 条流退让），在 100 万+ Netflix Starlink 会话上做为期一周的 A/B 测试（L226）。作者明确拒绝换成 LEO 专用 TCP：在 Netflix 这种几亿用户、接入网五花八门的环境里，"dynamically choosing network-specific TCP replacements would introduce significant operational complexity"（L224）。
+- **ABR 实验（第 5 节）**：用 Netflix 自研的 trace-driven 模拟器（吞吐按 500 ms 桶记录），在 50 万 Starlink + 50 万非 Starlink 会话上扫三个 ABR 参数——**throughput smoothing（EWMA 半衰期）、throughput discount、buffer discount**（L251–L264）。基准取值：平滑窗口 ≈100 s、buffer 水线 ≈50 s、吞吐折扣 ≈15%。随后用约 30 万 Starlink 用户做真实 A/B（20 s vs 50 s 平滑），用 Mann-Whitney 检验（L290）。
+
+**4. 它声称的效果**
+- **画质**：Starlink 与非 LEO 网络"nearly identical"；49% 的会话（Starlink 与非 Starlink 都是）全程维持最高可用画质，Top 10 ISP 是 51%；但 **10% 的 Starlink 会话 Maximum Quality Ratio 低于 0.99，非 Starlink 只有 6%，Top 10 ISP 只有 4%**（L107）。
+- **43 个受检国家里 83% 的画质不低于本地替代网络，7 个国家更好**（L109）；马拉维最差 10% 会话画质比非 Starlink 好 **10.6%**，赞比亚好 **18.1%**；墨西哥/卢旺达/巴西最差会话差最多 **8%**（L111–L113）。
+- **抖动（核心）**：Starlink 用户经历码率切换的概率高 **60%**；卡顿（rebuffer）概率 vs Top 10 ISP 高 **216%**，vs 任意非 Starlink 高 **40%**；若已卡顿一次，Starlink 再卡第二次的概率高 **50%**（L168/L192）。
+- **吞吐**：**95% 以上的 Starlink 吞吐低于替代网络**，几乎总是 Top 10 ISP 的 **50%**，且跌到 **20 Mb/s 以下**（4K 所需）；**90% 以上的码率切换（无论哪个网络）发生在吞吐低于 20 Mb/s 时**（L170）。
+- **方差与恢复时间（最关键）**：**80% 的 Starlink 吞吐变化幅度大于 Top 10 ISP**；非 Starlink 网络里 50% 的"跌到 10 Mb/s 以下"事件约 **5 秒**恢复，**Starlink 约 15 秒**——而"15 秒恰好是 Starlink 重配置静态路由的间隔"（L172 逐字："Coincidentally, 15 seconds is the interval that Starlink re-configures static routes for packet forwarding between satellites and/or ground stations [2]."）。
+- **卡顿的区域不平等（表 1，L178）**：相对美国，加拿大 0.66x、亚太 0.9x、美国 1x、欧洲 1.07x、**非洲 2.7x、拉美 3.7x**。
+- **中断**：Starlink 会话经历 ≥8 秒中断的概率是非 Starlink 的 **6 倍**（L198）。
+- **MulTCP A/B（L235–L239）**：吞吐 **+30–40%**；低分位 VMAF **+0.08%–1%**；每小时卡顿 **−7%**、起播延迟 **−2%**、码率切换 **−5%**；但仍比非 Starlink 高 **33%** 的码率切换概率。**代价：重传率平均 +300%，95 分位时延平均 +77%**（L239）。
+- **ABR（L277–L296）**：平滑会高估吞吐，Starlink 上高估概率比非 Starlink 多 **10%**；同配置下 Starlink 卡顿比非 Starlink 高约 **35%**，**且无论怎么调平滑都追不上**；Starlink 需要 **50% 的吞吐折扣**才能达到非 Starlink 零折扣的卡顿率。真实 A/B（20 s vs 50 s 平滑）：卡顿 **−5%**，但最低 10% 的 VMAF **−7%**。
+- **时延**：75% 的 Starlink 最小 RTT 至少是非 Starlink 的 **2 倍**（L213）。
+
+**5. 实验条件**
+- **数据源**：Netflix 生产数据（自有 CDN，80+ IXP、25+ 国家）。含观看时长（不涉及内容）、客户端 QoE 指标、服务器 TCP 栈的网络指标（如 RTT）、元数据（ASN、国家、设备类型）。
+- **规模**：100 万+ Starlink 家庭、85 国、2022 年 1 月至 2024 年 4 月（L34/L26）。
+- **对照网络**：not-Starlink 全体 + Top 10 ISP（按观看秒数）。
+- **实验窗口**：主要统计取 2024 年 4 月第一周；A/B 测试在 2024 年 4 月中为期一周；ABR 仿真抽样取 2024-04-20 至 05-05。
+- **仿真器**：Netflix trace-driven 模拟器，吞吐以 500 ms 桶记录。
+- **伦理**：A/B 只做传输配置微调、影响小比例用户、可随时退出、异常可快速停止（L206）；不使用个人可识别信息（L36）。
+- 训练/评估概念不适用（无学习模型，VMAF 本身是预训练的 ML 模型，但不是本文训练）。
+
+**6. 它自己承认的局限**
+**有独立的第 6 节 LIMITATIONS（L307–L317），写得很实：**
+- L309 逐字："Our understanding of Starlink's growth in delivering video, the quality of experience of its users, and the impact of congestion control and adaptive bitrate streaming on video streaming over Starlink are inherently biased by our vantage point: Netflix."
+- L311：增长趋势"predominantly based on Netflix users and may not accurately represent Starlink's overall user base"；画质结论"relies on Netflix's streaming algorithms and congestion controller and might not hold for other streaming services"；且"the video buffer helps hide many of transient network disruptions typical of LEO access"（即视频缓冲掩盖了 LEO 的瞬时抖动）。
+- L315：过滤掉 <5 分钟的短会话，"such filtering could unintentionally exclude video sessions that are aborted early due to poor video quality"；作者用 ≥1 分钟的会话做了子集复核，趋势一致，但仍建议未来更严格地检验。
+- L129 另承认一个测量学硬限制：RTT"influenced by both terrestrial and satellite paths, and there is currently no methodology to isolate the latency attributed solely to the satellite component"。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **15 秒重构与吞吐恢复时间的关系只是"巧合"式并列，没有做因果实验**。L172 说 50% 的吞吐下跌恢复要 ~15 s，且"Coincidentally"这是重构间隔——这正是 L63JISQN 与 NPF75WS5 都已经独立确认的周期。把"吞吐下跌 → 恢复时长分布"按重构边界对齐，是现成可做的分析。
+2. **它明确点出 ABR 的根本缺陷是"点估计"**（L296 逐字："throughput smoothing, throughput and buffer discount all rely on point estimation that do not explicitly capture or handle high variance in throughput."），并提出"throughput variation should be measured, predicted, and used directly as part of the bitrate selection"（L298）——**但自己没做这个算法**，只做到"扫现成参数"。这是一个被作者亲手指出的空位。
+3. **对网络侧（路由）零干预**。全文只动拥塞控制与 ABR，没有讨论路由选择能否降低吞吐方差。而它测到的吞吐方差恰恰是 LEO 路由研究的直接目标函数——两边没有接上。
+4. **缓冲掩盖效应被承认但没被量化**（L311）：视频缓冲能掩盖 LEO 瞬时抖动，那么对**没有缓冲**的应用（实时控制、云游戏、交互式）结论会差多少？本篇用 Zoom/Luna 是 NPF75WS5 做的，两篇没有交叉。
+5. **MulTCP 的代价（重传 +300%、p95 时延 +77%）只被描述为"undesirable"，没有被纳入任何优化目标**——这是一个现成的多目标权衡问题。
+
+**8. 和同批其他篇的关系**
+与 **NPF75WS5 是同一题材的两条腿**：都测 Starlink 上的实时/流媒体应用，都用 ASN 14593 识别用户，都独立确认了 15 秒重构（NPF75WS5 说"correlate throughput drops with reconfiguration intervals"是它的贡献，本篇则把 15 s 与**恢复时间**挂钩）。两篇直接互引（本篇 [34] = NPF75WS5；NPF75WS5 [79] 引的是 Zhao 的 Starlink 实时多媒体）。与 L63JISQN 的关系是"下游应用"——L63JISQN 揭示 15 秒全局调度器的存在，本篇量化它在应用层的后果。与 LRSXMWX9（Satellite IoT 综述）同属"卫星通信的应用层"，但一个是窄带 IoT、一个是宽带视频。与三篇 RL 路由论文（LZKNZA8B / MXQVNU3P / PIXWFHAC）完全无关：那三篇优化网络的路径，本篇优化的是**跑在路径之上的传输与播放算法**。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**贡献集中在"抖动"而非"负载"，但有一个非常关键的副产品。**
+- **没有做负载→时延**：全文没有扫描到达率，也没有区分"负载高"与"负载低"两种状态。它的自变量是网络/地区/时间。
+- **但它给出了"时延/吞吐变化的恢复时间常数"**：Starlink 从吞吐跌破 10 Mb/s 恢复到 10 Mb/s 以上，中位要 **~15 秒**，而非 Starlink 约 **5 秒**（L172）。**这条对任何时变负载下的路由/调度建模都直接有用**——它是一个可引用的"网络状态恢复时间"。
+- **明确指出丢包的一个非拥塞来源**（L213）：Starlink WiFi 路由器上用了 **FQ-CoDel**（"minimizes latency at the expense of packet loss"），加上卫星链路的随机丢包与潜在的重排序。**即 Starlink 的丢包不能当成拥塞信号来用**——这是把损失当拥塞信号的学习式路由算法必须知道的负事实。
+- **拥塞控制的代价曲线**（L239）：吞吐 +30–40% 换来 p95 时延 +77%——这是**"提升吞吐 vs 拉高时延"的一条真实权衡曲线**，可直接当作负载-时延权衡的实证锚点。
+- **没有到达率 λ，也没有排队模型**。
+
+**10. 一句话评价**
+本批中数据规模最大、最"应用侧"的一篇：它不动路由，只动拥塞控制与 ABR，却给出了 LEO 网络抖动的完整形状（吞吐低 50%、方差大、恢复慢 15 秒、丢包非拥塞）；对路由选题的价值是提供**目标函数的实证形状**，而不是方法。
+## MYBALQ2D — Small-scale LEO Satellite Networking for Global-scale Demands (TinyLEO)
+
+**1. 一句话**
+反问"真的需要上万颗 LEO 卫星吗"，指出均匀星座与**时空非均匀的全球需求**严重错配，于是用压缩感知从 64800 条地球重访轨道（Earth-repeat ground track）里挑出稀疏组合，配合"地理意图 + 轨道 MPC + 地理分段任播"三层设计，把 Starlink 的 6793 颗压缩到 1763 颗（3.9×）而需求不变。
+
+**2. 问题设定**
+巨型星座的制造/发射/运营成本对小 ISP 与国家是门槛，导致全球 LEO 市场被少数巨头垄断，并严重占用轨道资源（L34）。作者的核心洞察是**大多数卫星被浪费了**：星座为了便于组网把卫星近似均匀铺开，但全球需求极不均匀——**70% 以上人口集中在 5% 的陆地上，而占地球表面 70.8% 的海洋几乎没有用户**（L38）。这个物理错配无法靠上层负载均衡消除（L38）。
+
+**3. 方法骨架**
+- **两个难点（L42–L44）**：(1) LEO 相对地球以约 7 km/s 异步移动，供给-需求匹配无法保持；单颗 Starlink 卫星对任一区域的覆盖最长只有 3 分钟（L120）。(2) 非均匀布局会让卫星相对运动复杂化，加剧链路切换、拓扑更新与路由变化。
+- **(1) 稀疏化（第 4.1 节，L199–L228）**：把地球划成 m 个地理格，格 i 在 t 时刻的最大可服务需求 $y_i^t$（单位是"卫星数"）作为输入；维护一个**地球重访轨道"纹理"库**（枚举式 1 的 (p,q) 对，T/T_E = p/q），第 j 条纹理由 (α_j, β_j, T_j) 刻画。优化问题（式 2–4，L208–L216）：
+  **min ||x||₁　s.t.　A_t x ≥ y_t ∀t,　x_i ∈ ℕ**
+  其中 A_t 是 t 时刻覆盖矩阵，**T_max = LCM(T₁,…,T_n)**。这是 NP-hard 的整数线性规划（L224），但 x、y_t、A_t **都是稀疏的**，于是作者用压缩感知里 matching pursuit 的变体（算法 1，L231）贪心求解：反复挑选能覆盖最多残余需求的纹理、确定加几颗星、更新残差，直到残差低于可用性阈值 ε（如 99%）。
+- **(2) 控制面（第 4.2 节，L235–L272）**：拆成"稳定意图 + 轨道 MPC"。**地理流量工程意图**：每个地理格 u 有位置 L_u 与最小可用卫星数 n_u，算子在其上自定义地理拓扑 G(V,E,N)，每条路由编码成一串地理格 u→w₁→…→v（L256）。**轨道 MPC**：三层稳定匹配——先用 **Gale-Shapley** 做格 u 到邻格 v 的 many-to-one 匹配（偏好是期望 ISL 生存期 $\tau_{s,v}=\frac{1}{n_v}\sum_{s'\in v}\tau_{s,s'}$，式 5，L266），再做格间的 one-to-one 匹配，最后在格内把所有匹配上的星连成**环**以保证连通（L270）。
+- **(3) 数据面（第 4.3 节，L278–L294）**：**地理分段任播**。基于 IETF 的 **SRv6**（Linux 5.4 内核原生支持），每个 segment 是一个地理格；任何覆盖该格的卫星都能接包并转给下一格的任意卫星。作者论证：由于高层路由意图是全局拓扑导出的、无环且可达的，只要每一跳可达就能保证投递；而格内环保证包最终能到达负责下一格的网关星（L294）。
+
+**4. 它声称的效果**
+- **压缩比（L363）**：对比 Starlink 的 **6 793 颗**，TinyLEO 分别用 **1 763 颗（3.9×）** 满足 Starlink 用户需求、**3 344 颗（2.0×）** 满足洲际互联网骨干备份需求、**1 066 颗（6.4×）** 满足拉丁美洲区域需求。
+- **放宽可用性可再省（L365）**：若把可用性目标从 100% 略降到 99%，进一步压到 **1 391（4.9×）/ 3 184（2.1×）/ 865（7.9×）**。
+- **求解速度（L363）**：TinyLEO 每个任务 **6.5–7.7 小时**完成；对比 **Gurobi v12.0** 精确解在一台 2×Xeon Gold 6430（32 核 64 线程）、1 TB DDR5 的工作站上**跑了 2 个月仍未完成任何一个**，作者只能截断。
+- **昼夜动态的价值（L367）**：引入 Cloudflare 的 Starlink 用户活动测量（2 天、15 分钟粒度）后，TinyLEO 比静态需求基线**再省 271 颗（18.5%）**；若同时放宽可用性，可省 **333 颗（26%）**。
+- **轨道参数重要性（L377）**：**倾角 β 与升交点赤经 α 贡献最大**（分别匹配纬度与经度上的不均匀需求）；**轨道周期 T 的作用"mixed"**——作者逐字："We have not observed significant satellite savings with them."
+- **控制面（L384–L399）**：相对 Aalyria 开源 TS-SDN，总信令消息省 **1–3 个数量级**；剩余的 ISL 本地更新消息比路由更新少 10×。注入 1000 次随机链路故障，**平均 83.8 ms 修复**（其中 83.5 ms 是故障上报与修复命令的往返时延）。对比 TS-SDN 需 100 ms 到数分钟。
+- **数据面（L429–L433）**：相对 Starlink（同样用轨道 MPC 建拓扑）路由拉伸 **90 分位 1.29、最大 1.63**；用标准 3-ISL 网格拓扑的 Starlink 反而更差。本地重路由只需 **13.6–44.3 ms**。
+
+**5. 实验条件**
+- **需求侧**三种真实需求，铺在 **4 050 个地理格**上：Starlink 全球客户分布（按其官方报告按总接入容量 652 Tbps / 6 793 星缩放，使每用户 100 Mbps）、国际互联网骨干（海底光缆备份场景）、拉丁美洲区域需求（L341）。
+- **供给侧**：**64 800 条候选地球重访轨道**（表 1，L320；高度 423–1873 km、周期 92.8–124.2 min、RAAN ∈ [−π,π]、倾角 ∈ [0,π]）。
+- **卫星参数**：每星 3 条 ISL（各 200 Gbps）+ 1 条用户接入链路（96 Gbps），每用户 100 Mbps → **每星最多服务 960 个并发用户**（L339）。
+- **基线**：Starlink（6 793 星、5 个壳层、2025.01）、MegaReduce（迭代微调均匀星座）、Gurobi（精确解，截断 2 个月）。
+- **测试台（L380）**：基于 StarryNet 变体，在高性能计算集群上**仿真 1 741 颗 TinyLEO 卫星**，每颗是独立轻量 Linux 容器，硬件在环，逐包实验。
+- 训练/评估概念不适用（无学习模型）。
+
+**6. 它自己承认的局限**
+**有，在第 7 节 Discussion 内（L441 逐字）**："As an initial attempt at small LEO networks for global-scale demands, TinyLEO has some inevitable limitations that deserve future work. First, TinyLEO shrinks the satellite network at the cost of more LEO dynamics, hence leading to more challenges for network availability, efficiency, and resiliency. While our current design has significantly mitigated these issues, it currently relies on Earth-repeat ground tracks. It would be nice to unlock ground tracks beyond Earth-repeat ones for more stable and sparser LEO networks. Second, TinyLEO's control plane can be decentralized to facilitate the above multi-party LEO network (akin to BGP). Last but not least, TinyLEO's data plane should be enhanced for future deterministic networking (DetNet)."
+另在 L377 承认轨道周期带来的收益不确定。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **需求函数 y_t 是外部输入，不是被建模的对象**。L201 明确说"如何在这些因素之间权衡超出本文范围"（接入容量、ISL 容量、冗余、故障备份、昼夜动态），把需求当作给定的每格"卫星数"。**即它把负载变化当作规划输入而不是性能问题**——时延与丢包在整个规划阶段没有出现。
+2. **数据面评估只有单一路由意图下的 RTT/拉伸**（L429–L433），**没有做"需求增长/热点迁移时性能如何退化"的实验**。而 TinyLEO 的整个卖点就是"匹配非均匀需求"，那"匹配不上时"的表现恰恰没被测量。
+3. **L441 承认稀疏化会加剧动态性**（"at the cost of more LEO dynamics"），但全文没有量化这个代价：ISL 切换频率增加多少？路由抖动增加多少？只给了拉伸与 RTT 的静态分布。
+4. **瓶颈被明确指认为最后一跳**（L112 逐字："most LEO networks' utilizations are bottlenecked by their last-hop radio access links to users rather than ISLs（e.g., 96 Gbps in Starlink versus its 200-Gbps ISLs）"）——那么排队与拥塞应当发生在接入链路，而 TinyLEO 完全没有接入链路的队列模型。
+5. **MPC 用了 Gale-Shapley 稳定匹配，但"稳定"的目标是 ISL 生存期最长，不是负载最均衡**。把负载均衡作为匹配偏好是现成可改的。
+6. **地球重访轨道依赖被自己点出**（L441），但没给出"非重访轨道能再省多少"的上界估计。
+
+**8. 和同批其他篇的关系**
+在批内是**异类也是补集**：它既不是测量论文（对照 L63JISQN / NPF75WS5 / P6XJZNQK），也不是学习式路由论文（对照 LZKNZA8B / MXQVNU3P / PIXWFHAC）。它做的是**星座设计与网络架构的协同**——把供给（卫星布局）当自变量。与 LBMABZJ7（Walker Delta 最少跳路由）恰好对立：LBMABZJ7 假设均匀 Walker 星座、优化跳数；TinyLEO 恰恰要**打破均匀性**，并必须处理由此带来的拓扑复杂度。与 PIXWFHAC 的"用户数=负载轴"相比，TinyLEO 的"负载轴"是**空间×时间的需求分布**，更接近选题要问的"负载变化"。它引用的 [18]（同组的 Stable Hierarchical Routing）与 [66]（MegaReduce）是同一研究线的前作。未见引用同批其他篇。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**本批中对"负载的时空非均匀性"贡献最系统的一篇，但它把负载当规划输入而非性能变量。**
+- **给出了负载非均匀的定量事实**：70% 以上人口在 5% 陆地、海洋占 70.8%（L38）；Starlink 全球流量呈长尾分布，且**存在跨时区的周期性昼夜波动**（L94，用 Cloudflare 的 DNS 活动测量、2 天、15 分钟粒度）。
+- **给出了"考虑时变负载"的价值量化**：把昼夜动态纳入规划可**少发 271 颗星（18.5%）**，配合放宽可用性可到 **333 颗（26%）**（L367）。这是对"静态按峰值规划"的直接反驳，也是一个可引用的规划收益数字。
+- **明确指认瓶颈在最后一跳接入链路而非 ISL**（L112，96 Gbps 接入 vs 200 Gbps ISL），但**没有队列建模、没有排队时延**——它的时延指标只有传播 RTT 与路由拉伸。
+- **缺口很清楚**：它证明"负载时空变化"值得建模，却没有回答"当实际负载超过规划值（热点突增）时时延/丢包如何变化"。这是本篇留给下游的直接问题。
+
+**10. 一句话评价**
+把"全球需求时空非均匀"这一物理事实做成星座设计问题的架构论文：算法上是用压缩感知替代 NP-hard 精确解（并赢了 Gurobi 的截断解），工程上是用地理意图 + SRv6 任播把非均匀星座的复杂度藏起来；它是本批中唯一从**供给侧**回应负载变化的论文，与所有从路由侧（学习式）或从测量侧（实测）入手的论文构成互补。
+## LRSXMWX9 — A Survey on Technologies, Standards and Open Challenges in Satellite IoT
+
+> 读法：全文 986 行逐行读完（含 L707–L986 的 117 条参考文献与作者简介）。
+
+**1. 一句话**
+一篇以"标准化与监管"为骨架的卫星物联网综述：把地面远距离 IoT 的四种制式（EC-GSM/Cat-M、NB-IoT、Sigfox、LoRaWAN）摊开，再讲把它们搬到卫星上需要什么（5G 的 O-RAN/PEP/网络切片 + LPWAN 变 LPGAN），最后把工业界玩家和 ITU 审批流程也一并列清；**与 RL 或宽带路由无关**。
+
+**2. 问题设定**
+IoT 要覆盖广阔但无地面网的区域（森林、海洋、矿山、跨境物流），地面 RAT 到不了也不划算，于是卫星成为补覆盖的候选（L15）。作者要解决的是**信息分散**问题：既有文献要么只谈技术、要么只谈标准，很少把"技术 + 标准 + 监管 + 工业落地"放在同一张图里（L25、L41）。另一层动机是商业：卫星 IoT 连接数预计从 2019 年的 270 万涨到 2025 年的 1030 万，25% CAGR（L17）。
+
+**3. 方法骨架**
+非 RL，也非仿真——是"分类学 + 标准对照 + 工业案例 + 开放问题"四段式综述。
+- **第二部分：地面远距离 IoT 分类学（第 II 节，L59–L132）**。共同特征：星型拓扑单跳、双向通信（下行主要走控制面）、有核心网做 RRM（L63–L69）。逐项拆解：蜂窝侧的 **EC-GSM-IoT**（200 kHz GSM 载波、900 MHz 附近、覆盖最多提升 20 dB）与 **LTE Cat-M1/M2**（最小 6 PRB 即 1.4 MHz）（L89）；**NB-IoT**（180 kHz 载波，可替换 GSM 载波或作为 LTE 的 PRB，下行每子帧 1 信道，上行单音 3.75/15 kHz、多音 15 kHz）（L103）；**Sigfox**（192 kHz 宏信道、上行 UNB-DBPSK、下行 GFSK、每天最多 140 条 12 字节上行）（L113）；**LoRa/LoRaWAN**（CSS 调制，125/250/500 kHz，Class A/B/C 三种接收窗口策略，后端含 Network/Join/Application 三服务器）（L122–L124）。表 II 汇总各制式"主要局限"（L128）。
+- **第三部分：卫星 IoT 范式（第 III 节，L134–L273）**。架构（L150–L173）：**间接接入（IoT 回传）** vs **直接接入（星上放网关）**；ISL 做"天上的交换"；再叠加边缘计算。频谱（L181–L183）：5 GHz 以下因雨衰小、天线简单而有优势；mMTC 类业务多用 3 GHz 以下。**KPI 对照（L187–L210）**：覆盖、上下行容量、频谱可得性、最小时延、终端复杂度、基础设施复杂度、漫游、能效——作者明确预判**卫星 IoT 的端到端时延会大于蜂窝或 LPWAN**（L197）。轨道与星座（L214–L238）：GEO/LEO/MEO/HEO 划分，五家传统 MSS 运营商（Inmarsat/Iridium/Eutelsat/Globalstar/Thuraya）。**独立 LEO 小卫星趋势（L240–L273）**：CubeSat（1U = 10 cm 立方、1.33 kg；下行最大 1 W、上行最大 100 W）（L249）；带/不带 ISL 的 RF 星座设计（Rosette 星座用于无 ISL 扩展覆盖；带 ISL 的例子是 5 个轨道面 40 颗星、每星 2 条同面双向 ISL）（L260–L262）；光 ISL（6000 km 量级、10 Gbps+、终端 15 kg / 80 W）（L271）。
+- **第四部分：使能技术（第 IV 节，L275–L349）**。5G 侧：**O-RAN**（RRH/BBU 分离）、**PEP**（性能增强代理，拆 TCP 连接以适配卫星长时延）、**网络切片**（专设 mMTC 切片）、**CoAP**（10–20 字节报文，跑在 UDP 上）；LPWAN 侧升格为 **LPGAN**：LoRaWAN 上星（Doppler 实验、Semtech 新调制 **LoRa-E**）与 NB-IoT 上星（多普勒补偿、上行调度）。表 VI 把各项创新按"短期/长期 × 三种场景"映射（L502）。
+- **第五部分：工业案例（第 V 节，L351–L432）**：独立 LEO（Astrocast 80 星 L 波段、Myriota、Kineis、Kepler、Swarm）、LoRa 系（**Lacuna Space**，单向上行、无 ISL、星上当天线网关）、NB-IoT 系（Sateliot、MediaTek、OQ、Ligado）。
+- **第六部分：开放挑战（第 VI 节，L434–L588）**：PHY 波形（SCS/ACS/Turbo-FSK/LoRa-E/随机交织复用/星座编码）、天线、SDR 实现、MAC（多为 Aloha 变体）、网络与高层（CoAP/QUIC/SCHC/网络编码/SDN/网络切片）、边缘计算；标准化与监管（ITU/CEPT/3GPP/ETSI/CCSDS）；商业机会。
+- **附录**：ITU 授权流程全文（L594–L619）。
+
+**4. 它声称的效果**
+综述无自研实验，但转述了一批可直接引用的量化事实：
+- **GEO 的时延下界**：36 000 km 高度给出 mMTC-UE 到 RAN 的**最小单向时延 238 ms**；改用低轨或几十公里高度的 HAPS/UAV 可把时延压到 **2 ms**（L283）。
+- **mMTC 终端需求（表 V，L291，引自 [46]）**：95% 成功率下的时延——遥测/跟踪 **<60 分钟**、告警 **<1 分钟**、一般流量 **<60 分钟**；每设备每天消息数 **1–96 / 1 / 24–96**；消息长度 **50 / 30–50 / 150–200 字节**；维护周期从 5 年延到 **10–15 年**。
+- **4G 基站的 mMTC 承载极限**：单个 BS 最多容纳"几千"个设备才能保证接入时延低于 100 ms；要做到 10 ms 级接入时延，只能服务"不现实地少"的设备数（L21，引 [7]）。
+- **ITU WRC-19 第 248 号决议的监管口径（L617 逐字）**：相关研究"are to be limited to those systems with space stations that have a maximum EIRP of 27 dBW or less, with a beam-width of no more than 120 degrees, and earth stations that individually communicate **no more than once every 15 minutes, for no more than 4 seconds at a time**, with a maximum EIRP of 7 dBW."
+- **ITU 审批周期**：最短 9 个月、最长 **7 年**（L554）；痛点包括申请者多且不熟悉流程、CubeSat 寿命短需常规补星、全球覆盖牵涉大量国家主管部门（L558–L568）。
+- 其他：LoRa 集群最远节点速率仅 **293 bps**（L269）；LoRa-E 两个码率 **162 / 325 bps**、用 FHSS（L443）；随机线性网络编码（RLNC）相对 RDP 有 **50–65% 的时延降低**（L478）；英国航天局估计卫星连网设备数从 2015 年 316 万增至 2025 年 597 万，且 **93% 的设备使用 3 GHz 以下频段**（L586）。
+- 商业里程碑：Astrocast 宣称 **<15 分钟**的低时延传输（L361）；Myriota 平均每天 4 次过境、每次约 9 分钟可发（L363）；Lacuna 的上下行时差 t₁−t₀"likely to be in the order of minutes"（L395）。
+
+**5. 实验条件**
+不适用（综述，无实验）。需注意时点：全文锁在 **2021 年 5 月前后**（多处 "Accessed: May 5, 2021"），5G NTN 的 Release 17 当时还在进行中（L534 逐字："At the time of writing, the 3GPP is working on the Release 17 of the specifications (which is expected to be rolled out by the end of 2021/beginning of 2022)"）。作者还提醒 5G 的卫星链路会**先用**于多媒体与广播，IoT 用例"may take a while"（L535）。
+
+**6. 它自己承认的局限**
+无独立 Limitations 节（综述体例）。作者自认的知识边界有两处值得记：
+- L25：作者群横跨工业与学术、物理层与网络层，综述是"an effort to provide a holistic view"，即自认是观点整合而非系统综述（未声明检索式/纳排标准）。
+- L403 对 Lacuna 的关键技术承认资料缺失："On these techniques, unfortunately, no public material is available at the time of writing, to the authors' best knowledge."
+- L251 有一处术语澄清：作者认为学界用滥的"Internet of Space Things"只是卫星 IoT 范式的一个子集，防止混淆。
+
+**7. 它没做但看起来能做的地方（基于内容）**
+1. **本篇完全没有提强化学习。** 第 VI 节的"创新方法"逐项覆盖 PHY、天线、SDR、MAC、网络与高层、边缘计算，ML 只在边缘计算段落以"federated approaches"一带而过（L489）。**即在这篇 2021 年的卫星 IoT 综述里，学习式方法不是被讨论的方向**——与同批的学习式路由论文形成鲜明的时间与领域错位。
+2. **时延被当作固定预算而非可变函数**：表 V 给的是"<1 分钟 / <60 分钟"这类阈值，全文没有"负载/到达率上升时延怎么变"的分析。而它引的 [7]（BS 容纳几千设备 vs 10 ms 时延）恰恰就是一个到达率-时延关系的结论（L21），却没有被展开。
+3. **MAC 一节承认"多为 Aloha 变体"**（L460–L461），并提到有工作"按服务卫星当前的流量负载来调整每个 MTD 的发送概率"（[88]，L461）——**这是本篇最接近"负载自适应"的一处**，但只有一句话，没有把它与端到端时延挂钩。
+4. **ITU 第 248 号决议给了一个现成的"稀疏到达率"定义**（≤1 次/15 分钟、≤4 秒），但作者没有用它去反推系统容量或时延预算。
+5. **星间 MAC 的时延有专门文献被提及但未整合**（L464：连接建立、信息年龄随跳数、平均时延，引 [92][93][94]）——这是 IoT 语境下唯一涉及多跳时延的地方。
+
+**8. 和同批其他篇的关系**
+与 **LNA28YZY（SatCom 综述）覆盖面高度重叠**：IoT 空口三件套（NB-IoT/LoRa/Sigfox）、MAC 的固定分配 vs 随机接入、3GPP NTN 标准化、LPWAN——两篇讲的是同一批文献，只是 LNA28YZY 的轴更宽（含波束/预编码/深空），本篇的轴更深（含监管全文与工业案例）。两篇都是"面"。与其余各篇的关系是**层级不同的两个世界**：本批的 L63JISQN / NPF75WS5 / P6XJZNQK 测的是每用户 100 Mbps 的宽带业务，本篇讨论的是每天 1–96 条、每条 30–200 字节的窄带业务——**两者的"负载"概念差 5–6 个数量级**。与 MYBALQ2D（需求非均匀的星座规划）有一处微弱呼应：本篇 L589 也提到可以"故意只覆盖局部区域"来降低部署成本，与 TinyLEO 的区域化思路同源。
+
+**9. 对"负载变化下到达率/时延"的贡献**
+**场景完全不同（窄带 IoT 而非宽带路由），但如果要研究"稀疏到达下的时延"，本篇提供了最完整的参数集。** 具体：
+- **它给出了 LEO/GEO 时延的硬下界**：GEO 单向 **238 ms**（L283）；对照 LNA28YZY 的 LEO 传播时延 ~1.5–3 ms（地面到星）。这是任何卫星时延预算的起点。
+- **它给出了 mMTC 的到达率画像**（表 V，L291）：每设备每天 **1–96 条消息**、消息 **30–200 字节**、时延容忍 **<1 分钟到 <60 分钟**。即这类业务的到达率是"每次/天"量级，与宽带业务的"每秒"量级完全不同——**两者需要完全不同的时延模型（排队 vs 机会窗口）**。
+- **它给出了到达率与接入时延的冲突事实**（L21）：4G BS 要保证 <100 ms 接入时延，只能承载几千设备；要 10 ms 则设备数"不现实地少"。这是本篇唯一一条真正的"到达率 → 时延"定量关系，但只是转述。
+- **它给出了监管层面对到达率的硬约束**（L617）：ITU WRC-19 第 248 号决议把窄带移动卫星系统的地球站限制为**每 15 分钟不超过一次、每次不超过 4 秒**。这是一条可引用的、由法规定义的稀疏导则。
+- **它指出时延瓶颈在几何与机会窗口而非排队**：GEO 238 ms 是物理距离决定的；Astrocast 的 "<15 分钟"、Myriota 的"每天 4 次过境、每次 9 分钟"、Lacuna 的"分钟级上下行时差"（L361/L363/L395）都是**过境窗口/存储转发**造成的，不是拥塞造成的。这对"何时该建排队模型、何时不该"是有用的边界提示。
+- **缺口**：全篇没有排队模型、没有负载扫描、没有把时延写成到达率的函数。
+
+**10. 一句话评价**
+一篇以监管与标准化为主轴的卫星 IoT 全景综述，与本批的宽带 LEO 路由主题基本不相交；它的价值在于提供**窄带稀疏业务的完整参数画像**（到达率、消息长度、时延容忍度、监管上限），从而标定了"LEO 时延问题"的另一端——在那一端，时延由过境窗口与物理距离决定，排队几乎不出现。
+
+
+
+
+
+
+
