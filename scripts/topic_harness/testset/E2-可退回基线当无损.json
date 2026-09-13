@@ -1,0 +1,14 @@
+{
+  "id": "E2-可退回基线当无损",
+  "check": "fallback_lossless",
+  "params": {
+    "claims_lossless": true,
+    "evaluated_variants": [
+      "u=1 回基线"
+    ],
+    "significance_evidence": 0,
+    "dropped_experience_analysis": false
+  },
+  "expected_verdict": "BLOCK",
+  "origin": "run-20260910 主线二裁决：u=1 可退回基线不意味着所选 u 不会更差；按年龄加权可能丢掉稀有但重要经验"
+}

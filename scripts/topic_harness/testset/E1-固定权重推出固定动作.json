@@ -1,0 +1,11 @@
+{
+  "id": "E1-固定权重推出固定动作",
+  "check": "fixed_weight_action_switch",
+  "params": {
+    "p_short": 2,
+    "p_detour": 5,
+    "mu": 1
+  },
+  "expected_verdict": "BLOCK",
+  "origin": "run-20260910 CODEX-CONTENT-REVIEW 主线一：成本 c=传播+排队，权重全为 1 时队列随负载变化仍可使最优动作切换"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "E3-相关性当因果",
+  "check": "correlation_causality",
+  "params": {
+    "causal_claim": true,
+    "intervention_design": false,
+    "evidence_note": "CKA 下降"
+  },
+  "expected_verdict": "BLOCK",
+  "origin": "run-20260910 主线二裁决：CKA 下降不证明路由受损，重算下一状态价值本身也不是缺陷"
+}

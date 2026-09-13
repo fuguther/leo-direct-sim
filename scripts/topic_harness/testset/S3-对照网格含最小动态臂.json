@@ -1,0 +1,17 @@
+{
+  "id": "S3-对照网格含最小动态臂",
+  "check": "grid_completeness",
+  "params": {
+    "required_arms": [
+      "静态最短路",
+      "双阈值滞回最小动态简单臂"
+    ],
+    "provided_arms": [
+      "静态最短路",
+      "双阈值滞回最小动态简单臂",
+      "固定权重RL"
+    ]
+  },
+  "expected_verdict": "PASS",
+  "origin": "run-20260910 open question：对照网格需补双阈值滞回臂——本例为补齐后的合规网格"
+}

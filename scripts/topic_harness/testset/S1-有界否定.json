@@ -1,0 +1,10 @@
+{
+  "id": "S1-有界否定",
+  "check": "bounded_negative",
+  "params": {
+    "claims_absolute": false,
+    "scope": "2026-09-03 检索式与数据库覆盖内（KNOWLEDGE-MAP 检索记录）"
+  },
+  "expected_verdict": "PASS",
+  "origin": "LITERATURE/KNOWLEDGE-MAP.md：检索无命中不能单独证明领域空白——正确表述范例"
+}

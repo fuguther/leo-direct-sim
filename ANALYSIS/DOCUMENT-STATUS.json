@@ -1,6 +1,6 @@
 {
   "schema": "leo-document-governance/v1",
-  "updated_at": "2026-09-05",
+  "updated_at": "2026-09-09",
   "allowed_statuses": [
     "CURRENT-CONTRACT",
     "CURRENT-VOLATILE",
@@ -28,7 +28,8 @@
     "CODE/experiment_platform/AGENT_EXPERIMENT_PROTOCOL.md",
     "docs/superpowers/**/*.md",
     "LITERATURE/**/*.md",
-    "PAPER/README.md"
+    "PAPER/README.md",
+    ".dsh/skills/leo-research-ops/**/*.md"
   ],
   "entry_point_invariants": [
     {
@@ -925,7 +926,7 @@
       "purpose": "Direction discovery, problem selection, source verification and staged evidence isolation",
       "may_direct_current_work": true,
       "owner": "literature-governance",
-      "last_reviewed": "2026-09-05",
+      "last_reviewed": "2026-09-09",
       "review_interval_days": 90,
       "replacement": null,
       "require_banner": false,
@@ -993,6 +994,58 @@
       "last_reviewed": null,
       "review_interval_days": null,
       "replacement": "LITERATURE/README.md",
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
+      "path": "LITERATURE/RESEARCH-OPS.md",
+      "status": "CURRENT-CONTRACT",
+      "purpose": "Research evidence operations; no candidate verdict authority",
+      "may_direct_current_work": true,
+      "owner": "codex-research-ops",
+      "last_reviewed": "2026-09-09",
+      "review_interval_days": 90,
+      "replacement": null,
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
+      "path": ".dsh/skills/leo-research-ops/SKILL.md",
+      "status": "CURRENT-CONTRACT",
+      "purpose": "Research evidence operations; no candidate verdict authority",
+      "may_direct_current_work": true,
+      "owner": "codex-research-ops",
+      "last_reviewed": "2026-09-09",
+      "review_interval_days": 90,
+      "replacement": null,
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
+      "path": ".dsh/skills/leo-research-ops/references/reading.md",
+      "status": "CURRENT-CONTRACT",
+      "purpose": "Research evidence operations; no candidate verdict authority",
+      "may_direct_current_work": true,
+      "owner": "codex-research-ops",
+      "last_reviewed": "2026-09-09",
+      "review_interval_days": 90,
+      "replacement": null,
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
+      "path": ".dsh/skills/leo-research-ops/references/research.md",
+      "status": "CURRENT-CONTRACT",
+      "purpose": "Research evidence operations; no candidate verdict authority",
+      "may_direct_current_work": true,
+      "owner": "codex-research-ops",
+      "last_reviewed": "2026-09-09",
+      "review_interval_days": 90,
+      "replacement": null,
       "require_banner": false,
       "archive_candidate": false,
       "suggested_archive_target": null
