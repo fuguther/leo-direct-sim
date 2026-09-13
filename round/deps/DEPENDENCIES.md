@@ -16,15 +16,15 @@
 | KNOWLEDGE-MAP.md（主库） | /Users/lge/Desktop/leo-direct-sim/LITERATURE/KNOWLEDGE-MAP.md | 主库（main） | 42453add8e26b47e2510b1161d1723f0e959d9485491400423eb6173bb97acff | 只读；生成入口用切片 round/knowledge/NEUTRAL-KNOWLEDGE-VIEW.md |
 | SOURCES.csv | /Users/lge/Desktop/leo-direct-sim/LITERATURE/SOURCES.csv | 主库（main） | a911419f38911eb93b02f8cf5e216921b39750c1c9ec2ead6d6a3c1d48b7b43a | 只读 |
 | tao25.pdf | /Users/lge/Desktop/leo-direct-sim/tao25.pdf | 用户放置 | 7ed18614cdf88fc94cc3d4cd6c3410b2e11923b5c702ebf49510bd674058dc7d | 只读；身份=arXiv 2512.03211（内容为 2001 Olpomdp 经典重贴） |
-| 本线 patched_checks.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/patched_checks.py | agent/20260910-topic-loop | 2782ce963843006509d77cd06d0ae5ff6bfaac0ce1242cacbf7f19f795ab8de0 | 本线自有 |
-| 本线 patched_audit.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/patched_audit.py | agent/20260910-topic-loop | b9f91423b42d26c9ca8dd96a60e09675b9e3db57b6e0a5dbe099236ce7c0253d | 本线自有 |
-| 本线 patched_novelty.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/patched_novelty.py | agent/20260910-topic-loop | c6f7e520558b5cab7fbb27b692f581dd13fef5d5755cf1df118acfc572435aba | 本线自有 |
-| 本线 ledger.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/ledger.py | agent/20260910-topic-loop | c6c8f75014e8db5f87e88ec92f650791cea70905cc352d31320d996a1d079044 | 本线自有 |
-| 本线 deps_check.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/deps_check.py | agent/20260910-topic-loop | 35ff71067c7512f8ab6ffe4dd2dd405827278473f88e35a0a42bc72b48b01316 | 本线自有 |
-| 本线 gen_manifest.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/gen_manifest.py | agent/20260910-topic-loop | 0eb40bd8e3f8b250b9d41c23e08db00ea1d6b6113ae2d400db234acc8f36ae46 | 本线自有 |
-| 本线 gen_neutral_view.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/gen_neutral_view.py | agent/20260910-topic-loop | 8176a4eeb145cd0ce4c9ac0970b1f18eb08d498ab8a08fdfdc7ab2d70feb5c59 | 本线自有 |
-| 本线 test_rework_regressions.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/tools/test_rework_regressions.py | agent/20260910-topic-loop | f49017876441a92f9bde2a16cc79b301380b1cf544582504a37781e1675ba699 | 本线自有 |
-| 本线 NEUTRAL-KNOWLEDGE-VIEW.md | /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/knowledge/NEUTRAL-KNOWLEDGE-VIEW.md | agent/20260910-topic-loop | 47995fa2fa057194f8647e9efd773e0dd242d7ef4df37432136c7a6dd5f462c9 | 本线自有（程序化切片） |
+| 本线 patched_checks.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/hook-closure-20260911/round/tools/patched_checks.py | agent/20260910-topic-loop | 2782ce963843006509d77cd06d0ae5ff6bfaac0ce1242cacbf7f19f795ab8de0 | 本线自有 |
+| 本线 patched_audit.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/hook-closure-20260911/round/tools/patched_audit.py | agent/20260910-topic-loop | b9f91423b42d26c9ca8dd96a60e09675b9e3db57b6e0a5dbe099236ce7c0253d | 本线自有 |
+| 本线 patched_novelty.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/hook-closure-20260911/round/tools/patched_novelty.py | agent/20260910-topic-loop | c6f7e520558b5cab7fbb27b692f581dd13fef5d5755cf1df118acfc572435aba | 本线自有 |
+| 本线 ledger.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/hook-closure-20260911/round/tools/ledger.py | agent/20260910-topic-loop | 5d47c1f79f0416b0dfa059da8fc129f2e25971ed70c82c222b46ae4cdfac9cda | 本线自有 |
+| 本线 deps_check.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/hook-closure-20260911/round/tools/deps_check.py | agent/20260910-topic-loop | 35ff71067c7512f8ab6ffe4dd2dd405827278473f88e35a0a42bc72b48b01316 | 本线自有 |
+| 本线 gen_manifest.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/hook-closure-20260911/round/tools/gen_manifest.py | agent/20260910-topic-loop | 0eb40bd8e3f8b250b9d41c23e08db00ea1d6b6113ae2d400db234acc8f36ae46 | 本线自有 |
+| 本线 gen_neutral_view.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/hook-closure-20260911/round/tools/gen_neutral_view.py | agent/20260910-topic-loop | 8176a4eeb145cd0ce4c9ac0970b1f18eb08d498ab8a08fdfdc7ab2d70feb5c59 | 本线自有 |
+| 本线 test_rework_regressions.py | /Users/lge/Desktop/leo-direct-sim/.worktrees/hook-closure-20260911/round/tools/test_rework_regressions.py | agent/20260910-topic-loop | f49017876441a92f9bde2a16cc79b301380b1cf544582504a37781e1675ba699 | 本线自有 |
+| 本线 NEUTRAL-KNOWLEDGE-VIEW.md | /Users/lge/Desktop/leo-direct-sim/.worktrees/hook-closure-20260911/round/knowledge/NEUTRAL-KNOWLEDGE-VIEW.md | agent/20260910-topic-loop | 47995fa2fa057194f8647e9efd773e0dd242d7ef4df37432136c7a6dd5f462c9 | 本线自有（程序化切片） |
 | notes/raw 规模 | /Users/lge/Desktop/leo-direct-sim/LITERATURE/notes/raw/ | 主库 | count=41（目录级，文件级不固定） | 只读 |
 
 变更政策：任何依赖内容变化 → deps_check.py 报告 drift（exit 1），主控显式决定是否重指纹；禁止静默使用另一版。

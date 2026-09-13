@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
-"""权限清单 v3（按 Codex 5 项实查收口）。
-
-v2 → v3 关键变化：
-  #2 票据机制：派发前 reserve，子代理**首次访问时原子领取** → 消除"登记前空窗"；
-     无票据的研究会话 → 暂停并报告（不再静默放行）；
-  #3 最小授权：deepener/history_reviewer/reviewer 的读与写一律按**具体文件**授予，
-     不用 cards/** 这类跨卡通配符；
-  #4 运行隔离：init 默认清空旧会话；权限文件损坏 → 研究会话失败关闭（主控可恢复）。
-"""
-import argparse, json, os, sys, time
+"""精确会话权限与暂停/接续。匿名票据停用；CLI 写入由 flock 串行化。"""
+import argparse, json, os, sys, time, fcntl
 from pathlib import Path
 
 HOOK_DIR = Path(__file__).resolve().parent
@@ -69,10 +61,16 @@ def cmd_init(a) -> int:
         return 2
     d, _ = load()
     old = d.get("sessions") or {}
+    if d and d.get("run_status", "active") == "active":
+        print("REFUSED: 已有活动运行；先 pause，再显式 resume 接续或 init 新建", file=sys.stderr)
+        return 2
+    if a.keep:
+        print("REFUSED: init 不继承旧权限；接续请用 resume", file=sys.stderr)
+        return 2
     if old and not a.keep:
         print("CLEARED %d 个旧会话绑定（新 run 不继承旧权限）" % len(old))
     save({
-        "run_id": a.run,
+        "run_id": a.run, "run_status": "active",
         "orchestrator_session": orch,
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "sessions": old if a.keep else {},
@@ -87,47 +85,13 @@ def cmd_init(a) -> int:
     return 0
 
 
-def cmd_reserve(a) -> int:
-    if a.role not in ROLE_GRANTS:
-        print("REFUSED: 未知角色 %s" % a.role, file=sys.stderr)
-        return 2
-    d, st = load()
-    if st != "ok":
-        print("REFUSED: 权限清单状态 %s，先 init" % st, file=sys.stderr)
-        return 2
-    pend = d.get("tickets") or []
-    roles = {t.get("role") for t in pend}
-    if roles and roles != {a.role}:
-        print("REFUSED: 已有未消费票据属其他角色（%s）——同批票据必须同角色以免错配"
-              % ", ".join(sorted(roles)), file=sys.stderr)
-        return 2
-    for _ in range(a.count):
-        pend.append({"role": a.role, "extra_read": a.extra_read or [],
-                     "extra_write": a.extra_write or [], "note": a.note or "",
-                     "reserved_at": time.strftime("%H:%M:%S")})
-    d["tickets"] = pend
-    save(d)
-    print("RESERVED %d×%s (pending=%d)" % (a.count, a.role, len(pend)))
-    return 0
+def cmd_reserve(a):
+    print("REFUSED: 匿名票据已停用。create 后按 session_id bind，再派发工作。", file=sys.stderr)
+    return 2
 
 
-def claim_ticket(session_id: str):
-    """原子领取票据（供 hook 调用）。返回 (entry, reason)。"""
-    d, st = load()
-    if st != "ok":
-        return None, "清单状态 %s" % st
-    pend = d.get("tickets") or []
-    if not pend:
-        return None, "无预留票据"
-    t = pend.pop(0)
-    entry = {"role": t["role"], "extra_read": t.get("extra_read") or [],
-             "extra_write": t.get("extra_write") or [],
-             "note": (t.get("note") or "") + " | 票据领取",
-             "bound_at": time.strftime("%Y-%m-%dT%H:%M:%S")}
-    d.setdefault("sessions", {})[session_id] = entry
-    d["tickets"] = pend
-    save(d)
-    return entry, "claimed:%s" % t["role"]
+def claim_ticket(session_id):
+    return None, "匿名领取已停用"
 
 
 def cmd_bind(a) -> int:
@@ -141,6 +105,14 @@ def cmd_bind(a) -> int:
     if a.session == d.get("orchestrator_session"):
         print("REFUSED: 不能把主控会话绑定为研究角色", file=sys.stderr)
         return 2
+    if a.role == "orchestrator":
+        print("REFUSED: 子任务不可提升为主控", file=sys.stderr); return 2
+    existing = (d.get("sessions") or {}).get(a.session)
+    if existing:
+        print("REFUSED: session 已绑定；不得静默覆盖", file=sys.stderr); return 2
+    for value in (a.extra_write or []):
+        if any(c in value for c in "*?[") or Path(value).is_absolute() or ".." in Path(value).parts:
+            print("REFUSED: 写授权必须是工作区内确切文件", file=sys.stderr); return 2
     d.setdefault("sessions", {})[a.session] = {
         "role": a.role, "note": a.note or "",
         "extra_read": a.extra_read or [], "extra_write": a.extra_write or [],
@@ -155,9 +127,52 @@ def cmd_unbind(a) -> int:
     d, st = load()
     if st != "ok":
         print("清单状态 %s" % st, file=sys.stderr); return 2
-    (d.get("sessions") or {}).pop(a.session, None)
+    d.setdefault("sessions", {})[a.session] = {"role": "revoked"}
     save(d)
     print("UNBOUND", a.session)
+    return 0
+
+
+def cmd_pause(a):
+    d, st = load()
+    if st != "ok": return 2
+    d["run_status"] = "paused"
+    save(d)
+    print("PAUSED: 后续工具调用拒绝；仍需在 Harness 取消活动请求并核对完成状态")
+    return 0
+
+
+def cmd_resume(a):
+    d, st = load()
+    if st != "ok" or d.get("run_status") != "paused" or d.get("run_id") != a.run:
+        print("REFUSED: 只能接续匹配的暂停运行", file=sys.stderr); return 2
+    if not a.orchestrator or not a.receipt or not Path(a.receipt).is_file():
+        print("REFUSED: 须提供新主控身份及任务接续核对记录", file=sys.stderr); return 2
+    try:
+        receipt = json.loads(Path(a.receipt).read_text())
+        if receipt.get("run_id") != a.run or receipt.get("active_sessions") != []:
+            raise ValueError("run_id 不匹配或仍有活动会话")
+        jobs = receipt["tasks"]
+        if not isinstance(jobs, list) or not all(isinstance(x, dict) and x.get("task_id") and
+                x.get("state") in {"completed", "cancelled", "failed", "pending"} for x in jobs):
+            raise ValueError("任务核对记录不完整")
+        for task in jobs:
+            if task["state"] == "completed":
+                import hashlib
+                artifact = Path(task["artifact"])
+                if hashlib.sha256(artifact.read_bytes()).hexdigest() != task["sha256"]:
+                    raise ValueError("完成产物缺失或哈希变化")
+    except Exception as exc:
+        print("REFUSED: 接续记录校验失败: %s" % exc, file=sys.stderr); return 2
+    # Old worker sessions remain revoked; outputs and research ledger remain intact.
+    d["sessions"] = {sid: {"role": "revoked"} for sid in d.get("sessions", {})}
+    d["tickets"] = []
+    d["orchestrator_session"] = a.orchestrator
+    d["run_status"] = "active"
+    d["resume_receipt"] = str(Path(a.receipt).resolve())
+    save(d)
+    ORCH_FILE.write_text(a.orchestrator, encoding="utf-8")
+    print("RESUMED: 根据核对记录只派发未完成任务，旧子会话权限已撤销")
     return 0
 
 
@@ -211,12 +226,17 @@ def main() -> int:
     b = sub.add_parser("bind"); b.add_argument("--session", required=True); b.add_argument("--role", required=True)
     b.add_argument("--note", default=""); b.add_argument("--extra-read", action="append"); b.add_argument("--extra-write", action="append")
     u = sub.add_parser("unbind"); u.add_argument("--session", required=True)
+    sub.add_parser("pause")
+    rs = sub.add_parser("resume"); rs.add_argument("--run", required=True)
+    rs.add_argument("--orchestrator", required=True); rs.add_argument("--receipt", required=True)
     sub.add_parser("show")
     g = sub.add_parser("grants"); g.add_argument("--role", required=True)
     sub.add_parser("audit")
     a = ap.parse_args()
+    lock = open(HOOK_DIR / "permissions.lock", "a")
+    fcntl.flock(lock, fcntl.LOCK_EX)
     return {"init": cmd_init, "reserve": cmd_reserve, "bind": cmd_bind, "unbind": cmd_unbind,
-            "show": cmd_show, "grants": cmd_grants, "audit": cmd_audit}[a.cmd](a)
+            "pause": cmd_pause, "resume": cmd_resume, "show": cmd_show, "grants": cmd_grants, "audit": cmd_audit}[a.cmd](a)
 
 
 if __name__ == "__main__":

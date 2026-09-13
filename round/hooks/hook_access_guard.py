@@ -8,7 +8,7 @@ v3 → v4 的关键修正：
 规则：
   - 主控（清单中的 orchestrator）：全权；
   - 已登记角色：按授权表校验其访问的**研究区路径**；
-  - 未登记（无票据）：只要访问到研究区路径 → 暂停并报告；只访问区外 → 放行并记录；
+  - 未登记（未绑定）：只要访问到研究区路径 → 暂停并报告；只访问区外 → 放行并记录；
   - 权限清单 missing/corrupt：研究会话失败关闭；主控凭 orchestrator.id 可修复。
 
 强制级别：【可强制】结构化路径参数；【尽力检测】bash/run_code 内任意代码。
@@ -24,7 +24,7 @@ from lib_hook import (EXTERNAL_DENY_SUBSTR, HOOK_WORKTREE, READ_TOOLS, WRITE_TOO
 
 SHELL_TOOLS = {"bash", "shell", "run_code"}
 PATHLIKE = re.compile(r"[A-Za-z0-9_./\-]*\.(?:md|csv|json|pdf|txt|py)\b|(?:round|LITERATURE|ANALYSIS)[A-Za-z0-9_./\-]*")
-HINT_UNREG = "已暂停本次操作。请主控执行 perm.py reserve --role <角色> --count N 预留票据，或 perm.py bind --session <id> --role <角色> --extra-read/--extra-write <具体文件> 后重试。"
+HINT_UNREG = "已暂停本次操作。请主控执行 perm.py bind --session <id> --role <角色> --extra-read/--extra-write <具体文件> 后重试。"
 
 
 def collect(payload_tool, ti, cwd):
@@ -65,13 +65,16 @@ def main():
         block("载荷缺少 session_id，无法判定角色（拒绝在无法判定时放行）")
 
     targets = collect(tool, ti, cwd)
-    research_touch = [(k, v, s) for (k, v, s) in targets if k == "worktree" and in_worktree(v)]
+    research_touch = [(k, v, s) for (k, v, s) in targets if k == "worktree"]
     external_touch = [(k, v, s) for (k, v, s) in targets if k == "external"]
 
     role, entry, why = resolve_role(session, HOOK_WORKTREE)
 
     if role == "orchestrator":
         sys.exit(0)
+
+    if role in {"suspended", "revoked"}:
+        block("本运行已暂停；主控恢复前拒绝子代理工具调用")
 
     if role == "unknown":
         if research_touch:
@@ -84,6 +87,10 @@ def main():
     grants = grants_for(role, entry)
     # 区外高危目标
     for kind, val, _src in external_touch:
+        if tool in READ_TOOLS and not any(glob_match(g, val) for g in grants["read"] if os.path.isabs(g)):
+            block("角色未获授权读取工作区外文件：%s" % val, "外部原文须按绝对路径逐文件授权")
+        if tool in WRITE_TOOLS:
+            block("研究子代理不得写工作区外文件：%s" % val)
         for sub in EXTERNAL_DENY_SUBSTR:
             if sub in val:
                 block("访问工作区外的高危目标（%s）" % sub, "跨会话/跨代理读取等同绕过隔离；需要该信息请由主控转述")

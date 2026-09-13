@@ -2,7 +2,7 @@
 """hook 共享库 v3（按 Codex 5 项实查收口）。
 
 v2 → v3 关键变化：
-  #2 首次访问即受控：未登记会话在**研究区内**首次访问时原子领取票据；无票据则暂停并报告；
+  #2 首次访问受控：未登记会话访问研究区即拒绝；由主控精确绑定后继续；
   #4 损坏即停：清单 missing/corrupt 时，研究会话失败关闭；主控凭 orchestrator.id 仍可操作；
   #3 最小授权：读/写一律按具体文件匹配（由 perm.py 的角色表 + 派发端 --extra-* 决定）。
 """
@@ -128,17 +128,10 @@ def resolve_role(session_id: str, wt, allow_claim: bool = True):
         return "orchestrator", {}, ""
     entry = (d.get("sessions") or {}).get(session_id or "")
     if entry:
+        if d.get("run_status", "active") != "active":
+            return "suspended", {}, "运行已暂停"
         return entry.get("role") or "unknown", entry, ""
-    if allow_claim and wt is not None and session_id:
-        try:
-            sys.path.insert(0, str(HOOK_DIR))
-            import perm as _perm
-            got, why = _perm.claim_ticket(session_id)
-            if got:
-                return got["role"], got, why
-        except Exception:
-            pass
-    return "unknown", {}, "未登记且无可用票据"
+    return "unknown", {}, "未绑定：请先按运行时 session_id 授权再继续"
 
 
 def grants_for(role: str, entry: dict) -> dict:

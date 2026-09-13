@@ -1094,6 +1094,19 @@
       "protected_sha256": null,
       "archive_candidate": false,
       "suggested_archive_target": null
+    },
+    {
+      "path": "ANALYSIS/TOPIC-LOOP-20260910/run2/RESUME-HANDOFF.md",
+      "status": "CURRENT-CONTRACT",
+      "purpose": "Hook closure continuation; live host deployment remains unverified",
+      "may_direct_current_work": true,
+      "owner": "codex/20260911-hook-closure",
+      "last_reviewed": "2026-09-11",
+      "review_interval_days": 7,
+      "replacement": null,
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
     }
   ]
 }

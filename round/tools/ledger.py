@@ -217,7 +217,7 @@ def cmd_add(args):
     return 0
 
 
-def _guard_recommendation(cand_id: str, status: str, ledger_path: str) -> bool:
+def _guard_recommendation(cand_id: str, status: str, ledger_path: str, expected_hash=None) -> bool:
     """推荐资格校验：状态转换的**共同入口**（status / revise 等一律经过）。
 
     绑定要求：候选当前 content_hash 必须有对应的 PASS 判定记录，且被审卡文件仍存在、未被改动。
@@ -231,7 +231,7 @@ def _guard_recommendation(cand_id: str, status: str, ledger_path: str) -> bool:
         _gv = _ilu.module_from_spec(_spec)
         sys.modules["gate_verdict_guard"] = _gv
         _spec.loader.exec_module(_gv)
-        ok, why = _gv.check(cand_id, Path(ledger_path))
+        ok, why = _gv.check(cand_id, Path(ledger_path), expected_hash=expected_hash)
     except Exception as e:
         print("REJECTED: 无法校验闸门判定（%s）—— 拒绝在无法校验时置为推荐" % e, file=sys.stderr)
         return False
@@ -270,8 +270,6 @@ def cmd_revise(args):
         if args.status not in STATUSES:
             print("REJECTED: 未知状态 %s（词表 %s）" % (args.status, STATUSES), file=sys.stderr)
             return 2
-        if not _guard_recommendation(args.cand_id, args.status, args.ledger):   # #5 共同入口
-            return 2
         row["status"] = args.status
     row.update({
         "row_no": len(rows) + 1, "version": int(cur["version"]) + 1, "op": "revise",
@@ -279,6 +277,16 @@ def cmd_revise(args):
         "writer": args.writer, "written_at": _now(),
         "note": "revise: " + args.reason,
     })
+    if row["status"] not in STATUSES:
+        print("REJECTED: 未知状态", file=sys.stderr)
+        return 2
+    # A content revision cannot inherit a recommendation for the previous content.
+    if lb_changed and row["status"] == "recommended_pending_review":
+        row["status"] = "needs_revision"
+        print("RECOMMENDATION_INVALIDATED: 承重修订退回待审")
+    if not _guard_recommendation(args.cand_id, row["status"], args.ledger,
+                                 expected_hash=row["content_hash"]):
+        return 2
     _append(args.ledger, row)
     print("REVISED %s v%s (supersede row %s) 承重变化=%s"
           % (args.cand_id, row["version"], cur["row_no"], lb_changed or "无"))

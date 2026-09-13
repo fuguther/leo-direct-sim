@@ -72,7 +72,7 @@ def cmd_record(a) -> int:
     return 0
 
 
-def check(cand_id: str, ledger_path: Path):
+def check(cand_id: str, ledger_path: Path, expected_hash=None):
     """返回 (ok: bool, reason: str)。供台账与 hook 共用。"""
     ch, ver = current_hash(ledger_path, cand_id)
     if ch is None:
@@ -84,6 +84,9 @@ def check(cand_id: str, ledger_path: Path):
         rec = json.loads(p.read_text(encoding="utf-8"))
     except Exception as e:
         return False, "判定记录损坏：%s" % e
+    if rec.get("cand_id") != cand_id:
+        return False, "判定候选身份不匹配"
+    ch = expected_hash if expected_hash is not None else ch
     if rec.get("ledger_content_hash") != ch:
         return False, ("判定记录绑定的是旧版本（记录 %s / 当前 %s）—— 卡内容已变更，须重新判定"
                        % (rec.get("ledger_content_hash"), ch))
