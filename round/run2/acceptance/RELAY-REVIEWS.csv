@@ -1,0 +1,4 @@
+review_id,cand_id,ledger_content_hash,candidate_file,candidate_file_sha256,role,file,status,updated_at,note
+RT1-builder,c06a1015b77,h06a1015b773f,round/run2/acceptance/CARD-T1-draft.md,79233e3d866de214f70c07de6be553f6aab1154c508187429566ab625c217ce4,builder,round/run2/acceptance/op-review-T1.md,active,2026-09-11T16:24:23+0800,T1 短链审查：草稿三行齐全，来源=授权读取的 ZOTERO-INDEX
+RT2-builder,cce244f2fe9,hce244f2fe992,round/run2/acceptance/CARD-T2-draft.md,cc44372edb2a202bca09bd5d44255331a2a3b9e6e1f9640fcc1cdda680b85e90,builder,round/run2/acceptance/op-review-T2.md,needs_review,2026-09-11T16:27:02+0800,T2 首轮审查：BLOCK（证据不实） | 承重字段变更，自动置待复核
+RT2-recheck,cce244f2fe9,h873b768d2a39,round/run2/acceptance/CARD-T2-draft.md,cc44372edb2a202bca09bd5d44255331a2a3b9e6e1f9640fcc1cdda680b85e90,builder,round/run2/acceptance/op-review-T2.md,active,2026-09-11T16:27:11+0800,T2 重审：更正后通过

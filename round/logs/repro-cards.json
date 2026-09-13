@@ -1,0 +1,1 @@
+[{"title": "D 卡:观测加入链路剩余寿命", "conditions": "星历可预报", "difficulty": "断链事后才可见", "cause_hypothesis": "寿命不在观测", "possible_change": "寿命特征+掩码", "strongest_alternative": "时间展开图规划", "decision_shift": "动作屏蔽", "next_cheap_check": "丢弃原因三分解", "new_evidence": "", "source": "test"}]

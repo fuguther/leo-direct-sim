@@ -1,0 +1,10 @@
+{
+ "cand_id": "c2abb1b7225",
+ "ledger_content_hash": "hc380487cc5bb",
+ "ledger_version": "5",
+ "card": "round/run2/acceptance/test-card.md",
+ "card_sha256": "9512cefdab82545a4fac0b82c2b14c24ca9517ece59a2b3bb7eb40be461a8442",
+ "verdict": "PASS",
+ "note": "返工后通过",
+ "recorded_at": "2026-09-11T04:16:09"
+}

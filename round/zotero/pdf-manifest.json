@@ -1,0 +1,890 @@
+[
+ {
+  "itemKey": "2FBBURX7",
+  "pdfKey": "RD9FVGI6",
+  "year": "2024",
+  "title": "Graph Attention Reinforcement Learning for Multicast Routing and Age-Optimal Scheduling",
+  "src": "/Users/lge/Zotero/storage/RD9FVGI6/Zhang 等 - 2024 - Graph Attention Reinforcement Learning for Multicast Routing and Age-Optimal Scheduling-796288.pdf",
+  "size": 4146974
+ },
+ {
+  "itemKey": "BLFJ6CLV",
+  "pdfKey": "ML2HFKFE",
+  "year": "2023",
+  "title": "Analysis of Age of Information in Non-terrestrial Networks",
+  "src": "/Users/lge/Zotero/storage/ML2HFKFE/Lu 等 - 2023 - Analysis of Age of Information in Non-terrestrial Networks-794243.pdf",
+  "size": 1079636
+ },
+ {
+  "itemKey": "GV9PPNZT",
+  "pdfKey": "5JCRUJK9",
+  "year": "2021",
+  "title": "Information Freshness in Multi-Hop Wireless Networks",
+  "src": "/Users/lge/Zotero/storage/5JCRUJK9/Tripathi 等 - 2021 - Information Freshness in Multi-Hop Wireless Networks-791793.pdf",
+  "size": 628631
+ },
+ {
+  "itemKey": "4QG5VYHQ",
+  "pdfKey": "CJU5CF9T",
+  "year": "2020",
+  "title": "Information Freshness of Updates Sent over LEO Satellite Multi-Hop Networks",
+  "src": "/Users/lge/Zotero/storage/CJU5CF9T/Chiariotti 等 - 2020 - Information Freshness of Updates Sent over LEO Satellite Multi-Hop Networks-790062.pdf",
+  "size": 810122
+ },
+ {
+  "itemKey": "R5QTFKD2",
+  "pdfKey": "7LIP9DU3",
+  "year": "2025",
+  "title": "Age Optimal Sampling and Routing under Intermittent Links and Energy Constraints",
+  "src": "/Users/lge/Zotero/storage/7LIP9DU3/Atasayar 等 - 2025 - Age Optimal Sampling and Routing under Intermittent Links and Energy Constraints-787822.pdf",
+  "size": 2869319
+ },
+ {
+  "itemKey": "EG9X569M",
+  "pdfKey": "5USLYX8S",
+  "year": "2023",
+  "title": "A robust routing strategy based on deep reinforcement learning for mega satellite constellations",
+  "src": "/Users/lge/Zotero/storage/5USLYX8S/Chu 等 - 2023 - A robust routing strategy based on deep reinforcement learning for mega satellite constellations-785031.pdf",
+  "size": 1714041
+ },
+ {
+  "itemKey": "X5Z98UPM",
+  "pdfKey": "GDG3QXXF",
+  "year": "2023",
+  "title": "DRL-Based Load-Balancing Routing Scheme for 6G Space–Air–Ground Integrated Networks",
+  "src": "/Users/lge/Zotero/storage/GDG3QXXF/Dong 等 - 2023 - DRL-Based Load-Balancing Routing Scheme for 6G Space–Air–Ground Integrated Networks-783159.pdf",
+  "size": 3344012
+ },
+ {
+  "itemKey": "K7U4TYJN",
+  "pdfKey": "FW37YV7A",
+  "year": "2026",
+  "title": "SkyLink: Scalable and Resilient Link Management in LEO Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/FW37YV7A/de Sombre 等 - 2026 - SkyLink Scalable and Resilient Link Management in LEO Satellite Networks-246996.pdf",
+  "size": 3125642
+ },
+ {
+  "itemKey": "JP79GMZS",
+  "pdfKey": "SARGKVK2",
+  "year": "2009",
+  "title": "Explicit Load Balancing Technique for NGEO Satellite IP Networks With On-Board Processing Capabilities",
+  "src": "/Users/lge/Zotero/storage/SARGKVK2/Taleb 等 - 2008 - Explicit Load Balancing Technique for NGEO Satellite IP Networks With On-Board Processing Capabiliti-246374.pdf",
+  "size": 796006
+ },
+ {
+  "itemKey": "CMNCS52M",
+  "pdfKey": "VK6ET5L4",
+  "year": "2026",
+  "title": "Traffic-Aware Multi-Agent Reinforcement Learning-Based Distributed Routing for Low Earth Orbit Satellite Network",
+  "src": "/Users/lge/Zotero/storage/VK6ET5L4/Ferrer 等 - 2026 - Traffic-Aware Multi-Agent Reinforcement Learning-Based Distributed Routing for Low Earth Orbit Satel-245184.pdf",
+  "size": 3150528
+ },
+ {
+  "itemKey": "PIXWFHAC",
+  "pdfKey": "VW4P7IDA",
+  "year": "2021",
+  "title": "Reinforcement Learning‐Based Routing Algorithm in Satellite‐Terrestrial Integrated Networks",
+  "src": "/Users/lge/Zotero/storage/VW4P7IDA/Yin 等 - 2021 - Reinforcement Learning‐Based Routing Algorithm in Satellite‐Terrestrial Integrated Networks-244138.pdf",
+  "size": 1635974
+ },
+ {
+  "itemKey": "8N9QJHC2",
+  "pdfKey": "C98WJZUA",
+  "year": "2020",
+  "title": "Recovery Routing Based on Q-Learning for Satellite Network Faults",
+  "src": "/Users/lge/Zotero/storage/C98WJZUA/Gu 等 - 2020 - Recovery Routing Based on Q-Learning for Satellite Network Faults-243078.pdf",
+  "size": 1320326
+ },
+ {
+  "itemKey": "3MRQRWHU",
+  "pdfKey": "M2VIFD6J",
+  "year": "2025",
+  "title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/M2VIFD6J/Zhang 等 - 2025 - Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks-242280.pdf",
+  "size": 998632
+ },
+ {
+  "itemKey": "MXQVNU3P",
+  "pdfKey": "SUR362KP",
+  "year": "2024",
+  "title": "Low Earth Orbit Satellite Network Routing Algorithm Based on Graph Neural Networks and Deep Q-Network",
+  "src": "/Users/lge/Zotero/storage/SUR362KP/Shi 等 - 2024 - Low Earth Orbit Satellite Network Routing Algorithm Based on Graph Neural Networks and Deep Q-Networ-241058.pdf",
+  "size": 3704381
+ },
+ {
+  "itemKey": "XM64YRAW",
+  "pdfKey": "SQIE3PYR",
+  "year": "2024",
+  "title": "Inter-Satellite Routing for LEO Satellite Networks: A GNN and DRL Integrated Approach",
+  "src": "/Users/lge/Zotero/storage/SQIE3PYR/Xu 等 - 2024 - Inter-Satellite Routing for LEO Satellite Networks A GNN and DRL Integrated Approach-239907.pdf",
+  "size": 2883049
+ },
+ {
+  "itemKey": "TSV3IE8S",
+  "pdfKey": "SNERHF9B",
+  "year": "2023",
+  "title": "An Adaptive Routing Algorithm for Inter-Satellite Networks Based on the Combination of Multipath Transmission and Q-Learning",
+  "src": "/Users/lge/Zotero/storage/SNERHF9B/Shi 等 - 2023 - An Adaptive Routing Algorithm for Inter-Satellite Networks Based on the Combination of Multipath Tra-239103.pdf",
+  "size": 1405751
+ },
+ {
+  "itemKey": "XM6NUPM4",
+  "pdfKey": "BNGCAA2H",
+  "year": "2024",
+  "title": "Your Mega-Constellations Can Be Slim:A Cost-Effective Approach for Constructing Survivable and Performant LEO Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/BNGCAA2H/2024 - Your Mega-Constellations Can Be SlimA Cost-Effective Approach for Constructing Survivable and Perfo-699619.pdf",
+  "size": 3145515
+ },
+ {
+  "itemKey": "CTWVLBCY",
+  "pdfKey": "JLHRI67W",
+  "year": "2023",
+  "title": "Transmitting, Fast and Slow: Scheduling Satellite Traffic through Space and Time",
+  "src": "/Users/lge/Zotero/storage/JLHRI67W/Tao 等 - 2023 - Transmitting, Fast and Slow Scheduling Satellite Traffic through Space and Time-697678.pdf",
+  "size": 10427449
+ },
+ {
+  "itemKey": "AZ72LM9Z",
+  "pdfKey": "XB6FHWFQ",
+  "year": "2025",
+  "title": "Towards Global Outage Detection for LEO Networks",
+  "src": "/Users/lge/Zotero/storage/XB6FHWFQ/Tran 等 - 2025 - Towards Global Outage Detection for LEO Networks-695336.pdf",
+  "size": 878136
+ },
+ {
+  "itemKey": "JS857IYN",
+  "pdfKey": "5SJX2ER5",
+  "year": "2025",
+  "title": "Time-Dependent Network Topology Optimization for LEO Satellite Constellations",
+  "src": "/Users/lge/Zotero/storage/5SJX2ER5/2025 - Time-Dependent Network Topology Optimization for LEO Satellite Constellations-693429.pdf",
+  "size": 4633289
+ },
+ {
+  "itemKey": "L5F3DK68",
+  "pdfKey": "E37VIYC2",
+  "year": "2022",
+  "title": "Satellite-based communications security: A survey of threats, solutions, and research challenges",
+  "src": "/Users/lge/Zotero/storage/E37VIYC2/Tedeschi 等 - 2022 - Satellite-based communications security A survey of threats, solutions, and research challenges-690644.pdf",
+  "size": 1397017
+ },
+ {
+  "itemKey": "5PYWVRC5",
+  "pdfKey": "5FX8SWT9",
+  "year": "",
+  "title": "Shaping Rewards, Shaping Routes: On Multi-Agent Deep Q-Networks for Routing in Satellite Constellation Networks",
+  "src": "/Users/lge/Zotero/storage/5FX8SWT9/Shaping Rewards, Shaping Routes On Multi-Agent Deep Q-Networks for Routing in Satellite Constellati-691152.pdf",
+  "size": 765089
+ },
+ {
+  "itemKey": "R37BNQQ8",
+  "pdfKey": "YW3KT8G6",
+  "year": "2019",
+  "title": "SDN-Based End-to-End Fragment-Aware Routing for Elastic Data Flows in LEO Satellite-Terrestrial Network",
+  "src": "/Users/lge/Zotero/storage/YW3KT8G6/Guo 等 - 2019 - SDN-Based End-to-End Fragment-Aware Routing for Elastic Data Flows in LEO Satellite-Terrestrial Netw-688183.pdf",
+  "size": 9798583
+ },
+ {
+  "itemKey": "DVS8C3CC",
+  "pdfKey": "9XBNLEDA",
+  "year": "2024",
+  "title": "On-Demand Routing in LEO Mega-Constellations With Dynamic Laser Inter-Satellite Links",
+  "src": "/Users/lge/Zotero/storage/9XBNLEDA/Bhattacharjee 等 - 2024 - On-Demand Routing in LEO Mega-Constellations With Dynamic Laser Inter-Satellite Links-686082.pdf",
+  "size": 7578244
+ },
+ {
+  "itemKey": "524XNF29",
+  "pdfKey": "ERS7C8AR",
+  "year": "2020",
+  "title": "Non-Terrestrial Networks in 5G &amp; Beyond: A Survey",
+  "src": "/Users/lge/Zotero/storage/ERS7C8AR/Rinaldi 等 - 2020 - Non-Terrestrial Networks in 5G &amp; Beyond A Survey-683963.pdf",
+  "size": 6206207
+ },
+ {
+  "itemKey": "5AZHJE7N",
+  "pdfKey": "XQM5QQXC",
+  "year": "2023",
+  "title": "Network Simulators for Satellite-Terrestrial Integrated Networks: A Survey",
+  "src": "/Users/lge/Zotero/storage/XQM5QQXC/Jiang 等 - 2023 - Network Simulators for Satellite-Terrestrial Integrated Networks A Survey-681239.pdf",
+  "size": 2565268
+ },
+ {
+  "itemKey": "L63JISQN",
+  "pdfKey": "FGAT5HM4",
+  "year": "2023",
+  "title": "Making Sense of Constellations: Methodologies for Understanding Starlink's Scheduling Algorithms",
+  "src": "/Users/lge/Zotero/storage/FGAT5HM4/2023 - Making Sense of Constellations Methodologies for Understanding Starlink's Scheduling Algorithms-679162.pdf",
+  "size": 1846835
+ },
+ {
+  "itemKey": "VFS59FHI",
+  "pdfKey": "G9ASGI9F",
+  "year": "2019",
+  "title": "Load-Balancing Routing Algorithm Based on Segment Routing for Traffic Return in LEO Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/G9ASGI9F/Liu 等 - 2019 - Load-Balancing Routing Algorithm Based on Segment Routing for Traffic Return in LEO Satellite Networ-677295.pdf",
+  "size": 1808474
+ },
+ {
+  "itemKey": "BV4XI6CU",
+  "pdfKey": "AWLW94ZN",
+  "year": "2020",
+  "title": "Load Balancing for 5G Integrated Satellite-Terrestrial Networks",
+  "src": "/Users/lge/Zotero/storage/AWLW94ZN/Shahid 等 - 2020 - Load Balancing for 5G Integrated Satellite-Terrestrial Networks-675385.pdf",
+  "size": 1245667
+ },
+ {
+  "itemKey": "X2FCSU4S",
+  "pdfKey": "BRRJWRGF",
+  "year": "2019",
+  "title": "Load Balancing Based on Cache Resource Allocation in Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/BRRJWRGF/Wang 等 - 2019 - Load Balancing Based on Cache Resource Allocation in Satellite Networks-673523.pdf",
+  "size": 9184180
+ },
+ {
+  "itemKey": "T9X6QCLL",
+  "pdfKey": "SRD5IVVJ",
+  "year": "2023",
+  "title": "LEO satellite networking relaunched: Survey and current research challenges",
+  "src": "/Users/lge/Zotero/storage/SRD5IVVJ/Westphal 等 - 2023 - LEO satellite networking relaunched Survey and current research challenges-671381.pdf",
+  "size": 4002338
+ },
+ {
+  "itemKey": "WHS8Z44C",
+  "pdfKey": "JQIYITSM",
+  "year": "2024",
+  "title": "Joint Network Function Placement and Routing Optimization in Dynamic Software-Defined Satellite-Terrestrial Integrated Networks",
+  "src": "/Users/lge/Zotero/storage/JQIYITSM/Yuan 等 - 2024 - Joint Network Function Placement and Routing Optimization in Dynamic Software-Defined Satellite-Terr-669449.pdf",
+  "size": 1518887
+ },
+ {
+  "itemKey": "AIH4GK37",
+  "pdfKey": "66ADQQW2",
+  "year": "2026",
+  "title": "How Area Geometry Shapes Link-State Routing Scalability in LEO Networks",
+  "src": "/Users/lge/Zotero/storage/66ADQQW2/2026 - How Area Geometry Shapes Link-State Routing Scalability in LEO Networks-667550.pdf",
+  "size": 1265494
+ },
+ {
+  "itemKey": "IP7RRM3A",
+  "pdfKey": "3QNTYNCD",
+  "year": "2019",
+  "title": "From Connectivity to Advanced Internet Services: A Comprehensive Review of Small Satellites Communications and Networks",
+  "src": "/Users/lge/Zotero/storage/3QNTYNCD/Burleigh 等 - 2019 - From Connectivity to Advanced Internet Services A Comprehensive Review of Small Satellites Communic-667004.pdf",
+  "size": 4321521
+ },
+ {
+  "itemKey": "JZA5SEQA",
+  "pdfKey": "VPPCABBA",
+  "year": "2023",
+  "title": "Fast Reroute Algorithms for Satellite Network With Segment Routing",
+  "src": "/Users/lge/Zotero/storage/VPPCABBA/Chen 等 - 2023 - Fast Reroute Algorithms for Satellite Network With Segment Routing-665043.pdf",
+  "size": 917243
+ },
+ {
+  "itemKey": "8AYW2Y78",
+  "pdfKey": "5WFCN9X6",
+  "year": "2020",
+  "title": "Exploring the \"Internet from space\" with Hypatia",
+  "src": "/Users/lge/Zotero/storage/5WFCN9X6/Kassing 等 - 2020 - Exploring the Internet from space with Hypatia-663133.pdf",
+  "size": 5344503
+ },
+ {
+  "itemKey": "Z74SR656",
+  "pdfKey": "9YYJFJGK",
+  "year": "2022",
+  "title": "Evolution of Non-Terrestrial Networks From 5G to 6G: A Survey",
+  "src": "/Users/lge/Zotero/storage/9YYJFJGK/Azari 等 - 2022 - Evolution of Non-Terrestrial Networks From 5G to 6G A Survey-660988.pdf",
+  "size": 3613949
+ },
+ {
+  "itemKey": "GGFJ3SEG",
+  "pdfKey": "KUHP4PJ6",
+  "year": "2024",
+  "title": "Democratizing LEO Satellite Network Measurement",
+  "src": "/Users/lge/Zotero/storage/KUHP4PJ6/Izhikevich 等 - 2024 - Democratizing LEO Satellite Network Measurement-658159.pdf",
+  "size": 2018722
+ },
+ {
+  "itemKey": "67CSKFK4",
+  "pdfKey": "LZCV7H2G",
+  "year": "2018",
+  "title": "Delay is Not an Option",
+  "src": "/Users/lge/Zotero/storage/LZCV7H2G/Handley - 2018 - Delay is Not an Option-656025.pdf",
+  "size": 10465642
+ },
+ {
+  "itemKey": "GJJQUMQ2",
+  "pdfKey": "EHS3TLID",
+  "year": "2026",
+  "title": "Deciphering Region-Level Signatures from Latency Measurements in LEO Satellite Internet",
+  "src": "/Users/lge/Zotero/storage/EHS3TLID/2026 - Deciphering Region-Level Signatures from Latency Measurements in LEO Satellite Internet-653863.pdf",
+  "size": 2745876
+ },
+ {
+  "itemKey": "YI9G7NR7",
+  "pdfKey": "UVDPSH96",
+  "year": "2026",
+  "title": "DQDRA: A Dyna-Q-Enhanced Distributed Routing Algorithm for Heterogeneous LEO Constellations",
+  "src": "/Users/lge/Zotero/storage/UVDPSH96/ZHAO 等 - 2026 - DQDRA A Dyna-Q-Enhanced Distributed Routing Algorithm for Heterogeneous LEO Constellations-653299.pdf",
+  "size": 1322379
+ },
+ {
+  "itemKey": "2QRYMWBI",
+  "pdfKey": "D3835KFJ",
+  "year": "2023",
+  "title": "Artificial Intelligence for Satellite Communication and Non-Terrestrial Networks: A Survey",
+  "src": "/Users/lge/Zotero/storage/D3835KFJ/2023 - Artificial Intelligence for Satellite Communication and Non-Terrestrial Networks A Survey-651358.pdf",
+  "size": 3680887
+ },
+ {
+  "itemKey": "W5Z39E25",
+  "pdfKey": "97STDHL7",
+  "year": "2015",
+  "title": "A wised routing protocols for LEO satellite networks",
+  "src": "/Users/lge/Zotero/storage/97STDHL7/Firouzja 等 - 2015 - A wised routing protocols for LEO satellite networks-649409.pdf",
+  "size": 701207
+ },
+ {
+  "itemKey": "LRSXMWX9",
+  "pdfKey": "TWE7L26C",
+  "year": "2021",
+  "title": "A Survey on Technologies, Standards and Open Challenges in Satellite IoT",
+  "src": "/Users/lge/Zotero/storage/TWE7L26C/Centenaro 等 - 2021 - A Survey on Technologies, Standards and Open Challenges in Satellite IoT-647543.pdf",
+  "size": 3719873
+ },
+ {
+  "itemKey": "7AXASN73",
+  "pdfKey": "UMK6W89Y",
+  "year": "2023",
+  "title": "A Survey on Nongeostationary Satellite Systems: The Communication Perspective",
+  "src": "/Users/lge/Zotero/storage/UMK6W89Y/Al-Hraishawi 等 - 2023 - A Survey on Nongeostationary Satellite Systems The Communication Perspective-645360.pdf",
+  "size": 2673796
+ },
+ {
+  "itemKey": "NPF75WS5",
+  "pdfKey": "8CPRQX5Y",
+  "year": "2024",
+  "title": "A Multifaceted Look at Starlink Performance",
+  "src": "/Users/lge/Zotero/storage/8CPRQX5Y/Mohan 等 - 2024 - A Multifaceted Look at Starlink Performance-643181.pdf",
+  "size": 2883841
+ },
+ {
+  "itemKey": "2W8BJ7ME",
+  "pdfKey": "AU42L7ZV",
+  "year": "2020",
+  "title": "A Load Balancing Routing Strategy for LEO Satellite Network",
+  "src": "/Users/lge/Zotero/storage/AU42L7ZV/Liu 等 - 2020 - A Load Balancing Routing Strategy for LEO Satellite Network-641055.pdf",
+  "size": 1834912
+ },
+ {
+  "itemKey": "P6XJZNQK",
+  "pdfKey": "HHGI3RMU",
+  "year": "2024",
+  "title": "A Global Perspective on the Past, Present, and Future of Video Streaming over Starlink",
+  "src": "/Users/lge/Zotero/storage/HHGI3RMU/Izhikevich 等 - 2024 - A Global Perspective on the Past, Present, and Future of Video Streaming over Starlink-638725.pdf",
+  "size": 1891847
+ },
+ {
+  "itemKey": "S2QZRBEJ",
+  "pdfKey": "TWKPMPQ6",
+  "year": "2022",
+  "title": "A first look at starlink performance",
+  "src": "/Users/lge/Zotero/storage/TWKPMPQ6/Michel 等 - 2022 - A first look at starlink performance-636599.pdf",
+  "size": 1248086
+ },
+ {
+  "itemKey": "W6M3GU7L",
+  "pdfKey": "SXC6PG66",
+  "year": "2023",
+  "title": "A Characterization of Route Variability in LEO Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/SXC6PG66/Bhosale 等 - 2023 - A Characterization of Route Variability in LEO Satellite Networks-634556.pdf",
+  "size": 5443130
+ },
+ {
+  "itemKey": "IEI3BYFF",
+  "pdfKey": "7S7BHQ3H",
+  "year": "2023",
+  "title": "StarryNet: Empowering Researchers to Evaluate Futuristic Integrated Space and Terrestrial Networks",
+  "src": "/Users/lge/Zotero/storage/7S7BHQ3H/2023 - StarryNet Empowering Researchers to Evaluate Futuristic Integrated Space and Terrestrial Networks-632293.pdf",
+  "size": 5736809
+ },
+ {
+  "itemKey": "MYBALQ2D",
+  "pdfKey": "9HGPXKQR",
+  "year": "2025",
+  "title": "Small-scale LEO Satellite Networking for Global-scale Demands",
+  "src": "/Users/lge/Zotero/storage/9HGPXKQR/Li 等 - 2025 - Small-scale LEO Satellite Networking for Global-scale Demands-631667.pdf",
+  "size": 14242944
+ },
+ {
+  "itemKey": "YD4JUT7G",
+  "pdfKey": "EXM2RIPG",
+  "year": "2020",
+  "title": "Internet backbones in space",
+  "src": "/Users/lge/Zotero/storage/EXM2RIPG/Giuliari 等 - 2020 - Internet backbones in space-629044.pdf",
+  "size": 707454
+ },
+ {
+  "itemKey": "5HJ8ATR7",
+  "pdfKey": "UZDCIQMG",
+  "year": "2024",
+  "title": "Democratizing Direct-to-Cell Low Earth Orbit Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/UZDCIQMG/2024 - Democratizing Direct-to-Cell Low Earth Orbit Satellite Networks-627029.pdf",
+  "size": 18318605
+ },
+ {
+  "itemKey": "5N5LQPPP",
+  "pdfKey": "UNRZGC2U",
+  "year": "2024",
+  "title": "SDDRL-SR: A High-Reliability Satellite Routing Algorithm Based on Deep Reinforcement Learning",
+  "src": "/Users/lge/Zotero/storage/UNRZGC2U/Ding 等 - 2024 - SDDRL-SR A High-Reliability Satellite Routing Algorithm Based on Deep Reinforcement Learning-625449.pdf",
+  "size": 649437
+ },
+ {
+  "itemKey": "LZKNZA8B",
+  "pdfKey": "LMAN7UPI",
+  "year": "2026",
+  "title": "Spatial-Temporal Learning-Based Distributed Routing for Dynamic LEO Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/LMAN7UPI/2026 - Spatial-Temporal Learning-Based Distributed Routing for Dynamic LEO Satellite Networks-625928.pdf",
+  "size": 503852
+ },
+ {
+  "itemKey": "J68GU76W",
+  "pdfKey": "66KTGV9Q",
+  "year": "2026",
+  "title": "Reinforcement Learning for Opportunistic Routing in Software-Defined LEO-Terrestrial Systems",
+  "src": "/Users/lge/Zotero/storage/66KTGV9Q/2026 - Reinforcement Learning for Opportunistic Routing in Software-Defined LEO-Terrestrial Systems-623604.pdf",
+  "size": 3683880
+ },
+ {
+  "itemKey": "GPLEP83L",
+  "pdfKey": "SKGJM3PN",
+  "year": "2026",
+  "title": "LLM-Driven Automated Reward Design for Reinforcement Learning-Based Routing in LEO Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/SKGJM3PN/2026 - LLM-Driven Automated Reward Design for Reinforcement Learning-Based Routing in LEO Satellite Network-622525.pdf",
+  "size": 1510678
+ },
+ {
+  "itemKey": "42E4NAQU",
+  "pdfKey": "KYUSZY34",
+  "year": "2026",
+  "title": "Queue-Aware and Resilient Routing in LEO Satellite Networks Using Multi-Agent Reinforcement Learning",
+  "src": "/Users/lge/Zotero/storage/KYUSZY34/2026 - Queue-Aware and Resilient Routing in LEO Satellite Networks Using Multi-Agent Reinforcement Learning-623033.pdf",
+  "size": 558726
+ },
+ {
+  "itemKey": "6GWNYSTT",
+  "pdfKey": "WY94IUPY",
+  "year": "2022",
+  "title": "LEO laser microwave hybrid inter-satellite routing strategy based on modified Q-routing algorithm",
+  "src": "/Users/lge/Zotero/storage/WY94IUPY/Zheng 等 - 2022 - LEO laser microwave hybrid inter-satellite routing strategy based on modified Q-routing algorithm-622006.pdf",
+  "size": 2529876
+ },
+ {
+  "itemKey": "FLQLU3T4",
+  "pdfKey": "D4INU2NW",
+  "year": "2026",
+  "title": "Duality-Guided Graph Learning for Real-Time Joint Connectivity and Routing in LEO Mega-Constellations",
+  "src": "/Users/lge/Zotero/storage/D4INU2NW/2026 - Duality-Guided Graph Learning for Real-Time Joint Connectivity and Routing in LEO Mega-Constellation-619927.pdf",
+  "size": 3603706
+ },
+ {
+  "itemKey": "39NJWBI7",
+  "pdfKey": "Y55LHBQI",
+  "year": "2025",
+  "title": "Asynchronous Risk-Aware Multi-Agent Packet Routing for Ultra-Dense LEO Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/Y55LHBQI/He 等 - 2025 - Asynchronous Risk-Aware Multi-Agent Packet Routing for Ultra-Dense LEO Satellite Networks-310970.pdf",
+  "size": 712627
+ },
+ {
+  "itemKey": "35T2JJRJ",
+  "pdfKey": "LTKNWWKL",
+  "year": "2023",
+  "title": "Attention Is All You Need",
+  "src": "/Users/lge/Zotero/storage/LTKNWWKL/Vaswani 等 - 2023 - Attention Is All You Need-500594.pdf",
+  "size": 2215244
+ },
+ {
+  "itemKey": "TAUEF8PF",
+  "pdfKey": "JIBSUT2S",
+  "year": "2015",
+  "title": "Deep Reinforcement Learning with Double Q-learning",
+  "src": "/Users/lge/Zotero/storage/JIBSUT2S/Hasselt 等 - 2015 - Deep Reinforcement Learning with Double Q-learning-498828.pdf",
+  "size": 789062
+ },
+ {
+  "itemKey": "57EB6US5",
+  "pdfKey": "3ZRCB356",
+  "year": "2015",
+  "title": "Human-level control through deep reinforcement learning",
+  "src": "/Users/lge/Zotero/storage/3ZRCB356/Mnih - Human-level control through deep reinforcement learning-496344.pdf",
+  "size": 4600582
+ },
+ {
+  "itemKey": "KPUZIMU5",
+  "pdfKey": "GY9KBVMM",
+  "year": "2022",
+  "title": "The Surprising Effectiveness of PPO in Cooperative, Multi-Agent Games",
+  "src": "/Users/lge/Zotero/storage/GY9KBVMM/Yu 等 - 2022 - The Surprising Effectiveness of PPO in Cooperative, Multi-Agent Games-493850.pdf",
+  "size": 16261854
+ },
+ {
+  "itemKey": "9FLZ88LZ",
+  "pdfKey": "2Z5R45Q2",
+  "year": "2018",
+  "title": "QMIX: Monotonic Value Function Factorisation for Deep Multi-Agent Reinforcement Learning",
+  "src": "/Users/lge/Zotero/storage/2Z5R45Q2/Rashid 等 - 2018 - QMIX Monotonic Value Function Factorisation for Deep Multi-Agent Reinforcement Learning-490099.pdf",
+  "size": 3808951
+ },
+ {
+  "itemKey": "I2WH9RRR",
+  "pdfKey": "6P5KYCNB",
+  "year": "",
+  "title": "Asymmetric DQN for Partially Observable Reinforcement Learning",
+  "src": "/Users/lge/Zotero/storage/6P5KYCNB/Baisero 等 - Asymmetric DQN for Partially Observable Reinforcement Learning-487993.pdf",
+  "size": 365006
+ },
+ {
+  "itemKey": "QGAREQUM",
+  "pdfKey": "6HR4HVT2",
+  "year": "2024",
+  "title": "Boosting Reinforcement Learning with Strongly Delayed Feedback Through Auxiliary Short Delays",
+  "src": "/Users/lge/Zotero/storage/6HR4HVT2/Wu 等 - 2024 - Boosting Reinforcement Learning with Strongly Delayed Feedback Through Auxiliary Short Delays-485946.pdf",
+  "size": 1467555
+ },
+ {
+  "itemKey": "E4NYGLGX",
+  "pdfKey": "KBIIV4NT",
+  "year": "2016",
+  "title": "Safe and Efficient Off-Policy Reinforcement Learning",
+  "src": "/Users/lge/Zotero/storage/KBIIV4NT/Munos 等 - 2016 - Safe and Efficient Off-Policy Reinforcement Learning-483309.pdf",
+  "size": 570301
+ },
+ {
+  "itemKey": "JSX5XG88",
+  "pdfKey": "VBVZJ8SG",
+  "year": "2018",
+  "title": "High-Dimensional Continuous Control Using Generalized Advantage Estimation",
+  "src": "/Users/lge/Zotero/storage/VBVZJ8SG/Schulman 等 - 2018 - High-Dimensional Continuous Control Using Generalized Advantage Estimation-480999.pdf",
+  "size": 1798117
+ },
+ {
+  "itemKey": "6C843JTS",
+  "pdfKey": "WIPWDCP5",
+  "year": "1988",
+  "title": "Learning to predict by the methods of temporal differences",
+  "src": "/Users/lge/Zotero/storage/WIPWDCP5/Sutton - 1988 - Learning to predict by the methods of temporal differences-478912.pdf",
+  "size": 2139288
+ },
+ {
+  "itemKey": "47J2H748",
+  "pdfKey": "LCTFK98Q",
+  "year": "",
+  "title": "Packet Routing in Dynamically Changing Networks: A Reinforcement Learning Approach",
+  "src": "/Users/lge/Zotero/storage/LCTFK98Q/Boyan和Littman - Packet Routing in Dynamically Changing Networks A Reinforcement Learning Approach-441744.pdf",
+  "size": 1500720
+ },
+ {
+  "itemKey": "JLF7IEBQ",
+  "pdfKey": "ZCPRDLU7",
+  "year": "2025",
+  "title": "SaTE: Low-Latency Traffic Engineering for Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/ZCPRDLU7/Wu 等 - 2025 - SaTE Low-Latency Traffic Engineering for Satellite Networks-440808.pdf",
+  "size": 3960858
+ },
+ {
+  "itemKey": "K93SCUF2",
+  "pdfKey": "K3TX88B4",
+  "year": "2019",
+  "title": "Network topology design at 27,000 km/hour",
+  "src": "/Users/lge/Zotero/storage/K3TX88B4/Bhattacherjee和Singla - 2019 - Network topology design at 27,000 kmhour-425351.pdf",
+  "size": 2503503
+ },
+ {
+  "itemKey": "BBNQ4EAQ",
+  "pdfKey": "UILMCSC5",
+  "year": "2019",
+  "title": "Temporal Netgrid Model-Based Dynamic Routing in Large-Scale Small Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/UILMCSC5/Li 等 - 2019 - Temporal Netgrid Model-Based Dynamic Routing in Large-Scale Small Satellite Networks-420063.pdf",
+  "size": 2943641
+ },
+ {
+  "itemKey": "SBCHGBCP",
+  "pdfKey": "MJRCLETB",
+  "year": "2024",
+  "title": "Segment routing for traffic engineering and effective recovery in low-earth orbit satellite constellations",
+  "src": "/Users/lge/Zotero/storage/MJRCLETB/Zhang 等 - 2024 - Segment routing for traffic engineering and effective recovery in low-earth orbit satellite constell-438392.pdf",
+  "size": 2303594
+ },
+ {
+  "itemKey": "TRM2HPFN",
+  "pdfKey": "54I7XP7R",
+  "year": "1997",
+  "title": "A dynamic routing concept for ATM-based satellite personal communication networks",
+  "src": "/Users/lge/Zotero/storage/54I7XP7R/Werner - 1997 - A dynamic routing concept for ATM-based satellite personal communication networks-325830.pdf",
+  "size": 465720
+ },
+ {
+  "itemKey": "CYMQ2GLA",
+  "pdfKey": "Q5UEMDUY",
+  "year": "2019",
+  "title": "A Two-Hops State-Aware Routing Strategy Based on Deep Reinforcement Learning for LEO Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/Q5UEMDUY/Wang 等 - 2019 - A Two-Hops State-Aware Routing Strategy Based on Deep Reinforcement Learning for LEO Satellite Netwo-449156.pdf",
+  "size": 3493308
+ },
+ {
+  "itemKey": "WT839JP7",
+  "pdfKey": "ZDFZJG52",
+  "year": "2018",
+  "title": "Fine-Grained Library Customization",
+  "src": "/Users/lge/Zotero/storage/ZDFZJG52/Song和Xing - 2018 - Fine-Grained Library Customization.pdf",
+  "size": 105752
+ },
+ {
+  "itemKey": "LJG6ZW7B",
+  "pdfKey": "A7GB7585",
+  "year": "1998",
+  "title": "Reinforcement learning: an introduction",
+  "src": "/Users/lge/Zotero/storage/A7GB7585/Sutton和Barto - 2018 - Reinforcement learning an introduction-737014.pdf",
+  "size": 73129769
+ },
+ {
+  "itemKey": "XLRW7XXN",
+  "pdfKey": "NJGR8I3S",
+  "year": "2025",
+  "title": "A DQN-Based Routing Algorithm for Load Balancing in LEO Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/NJGR8I3S/Sun 等 - 2025 - A DQN-Based Routing Algorithm for Load Balancing in LEO Satellite Networks.pdf",
+  "size": 1418082
+ },
+ {
+  "itemKey": "LBMABZJ7",
+  "pdfKey": "VVHSUIWB",
+  "year": "2022",
+  "title": "Distributed On-Demand Routing for LEO Mega-Constellations: A Starlink Case Study",
+  "src": "/Users/lge/Zotero/storage/VVHSUIWB/Stock 等 - 2022 - Distributed On-Demand Routing for LEO Mega-Constellations A Starlink Case Study-286471.pdf",
+  "size": 1295379
+ },
+ {
+  "itemKey": "L2VKYTAV",
+  "pdfKey": "M96YZIP7",
+  "year": "",
+  "title": "Shaping Rewards, Shaping Routes: On Multi-Agent Deep Q-Networks for Routing in Satellite Constellation Networks",
+  "src": "/Users/lge/Zotero/storage/M96YZIP7/Roth 等 - Shaping Rewards, Shaping Routes On Multi-Agent Deep Q-Networks for Routing in Satellite Constellati-304749.pdf",
+  "size": 750993
+ },
+ {
+  "itemKey": "X5K285MW",
+  "pdfKey": "CZFQHU6I",
+  "year": "2023",
+  "title": "Analyzing Source-Routed Approaches for Low Earth Orbit Satellite Constellation Networks",
+  "src": "/Users/lge/Zotero/storage/CZFQHU6I/Roth - 2023 - Analyzing Source-Routed Approaches for Low Earth Orbit Satellite Constellation Networks-429052.pdf",
+  "size": 2712481
+ },
+ {
+  "itemKey": "A7QNRKML",
+  "pdfKey": "SP9GEE8D",
+  "year": "2022",
+  "title": "LOTR: Face Landmark Localization Using Localization Transformer",
+  "src": "/Users/lge/Zotero/storage/SP9GEE8D/Watchareeruetai 等 - 2022 - LOTR Face Landmark Localization Using Localization Transformer.pdf",
+  "size": 1962921
+ },
+ {
+  "itemKey": "FGQSH4AI",
+  "pdfKey": "7N32QFLA",
+  "year": "2020",
+  "title": "Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments",
+  "src": "/Users/lge/Zotero/storage/7N32QFLA/Lowe 等 - 2020 - Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments-324815.pdf",
+  "size": 1502182
+ },
+ {
+  "itemKey": "LNA28YZY",
+  "pdfKey": "EYDW9SYP",
+  "year": "2021",
+  "title": "Satellite Communications in the New Space Era: A Survey and Future Challenges",
+  "src": "/Users/lge/Zotero/storage/EYDW9SYP/Kodheli 等 - 2021 - Satellite Communications in the New Space Era A Survey and Future Challenges-281085.pdf",
+  "size": 11623343
+ },
+ {
+  "itemKey": "UKBSA7WN",
+  "pdfKey": "9IXEERUD",
+  "year": "2023",
+  "title": "Reinforcement learning based dynamic distributed routing scheme for mega LEO satellite networks",
+  "src": "/Users/lge/Zotero/storage/9IXEERUD/Huang 等 - 2023 - Reinforcement learning based dynamic distributed routing scheme for mega LEO satellite networks-457459.pdf",
+  "size": 1642232
+ },
+ {
+  "itemKey": "ZIUBKVPZ",
+  "pdfKey": "FLYNNP94",
+  "year": "2025",
+  "title": "Routing in Low Earth Orbit Satellite Networks: Constrained DQN-Based Approach",
+  "src": "/Users/lge/Zotero/storage/FLYNNP94/Hegde 等 - 2025 - Routing in Low Earth Orbit Satellite Networks Constrained DQN-Based Approach-307501.pdf",
+  "size": 631411
+ },
+ {
+  "itemKey": "AJJI57M9",
+  "pdfKey": "NBNN3IUJ",
+  "year": "2001",
+  "title": "A distributed routing algorithm for datagram traffic in LEO satellite networks",
+  "src": "/Users/lge/Zotero/storage/NBNN3IUJ/Ekici 等 - 2001 - A distributed routing algorithm for datagram traffic in LEO satellite networks-416664.pdf",
+  "size": 230980
+ },
+ {
+  "itemKey": "53HEEK33",
+  "pdfKey": "5RXTKZZR",
+  "year": "2023",
+  "title": "Fast-Convergence Reinforcement Learning for Routing in LEO Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/5RXTKZZR/Ding 等 - 2023 - Fast-Convergence Reinforcement Learning for Routing in LEO Satellite Networks-459408.pdf",
+  "size": 772436
+ },
+ {
+  "itemKey": "UMKF328H",
+  "pdfKey": "7W3UKEQB",
+  "year": "2022",
+  "title": "LEO Satellites in 5G and Beyond Networks: A Review From a Standardization Perspective",
+  "src": "/Users/lge/Zotero/storage/7W3UKEQB/Darwish 等 - 2022 - LEO Satellites in 5G and Beyond Networks A Review From a Standardization Perspective.pdf",
+  "size": 5738778
+ },
+ {
+  "itemKey": "VACUFEHB",
+  "pdfKey": "K92GJZSK",
+  "year": "1998",
+  "title": "Computationally efficient algorithms for third order adaptive Volterra filters",
+  "src": "/Users/lge/Zotero/storage/K92GJZSK/Xiaohui Li 等 - 1998 - Computationally efficient algorithms for third order adaptive Volterra filters-616706.pdf",
+  "size": 405208
+ },
+ {
+  "itemKey": "ETTA3DIV",
+  "pdfKey": "S97RKF92",
+  "year": "2023",
+  "title": "Required toroidal confinement for fusion and omnigeneity",
+  "src": "/Users/lge/Zotero/storage/S97RKF92/Boozer - 2023 - Required toroidal confinement for fusion and omnigeneity-588290.pdf",
+  "size": 688545
+ },
+ {
+  "itemKey": "QSNRQ8PF",
+  "pdfKey": "WHLFUN8R",
+  "year": "2022",
+  "title": "Dynamic Routings in Satellite Networks: An Overview",
+  "src": "/Users/lge/Zotero/storage/WHLFUN8R/Cao 等 - 2022 - Dynamic Routings in Satellite Networks An Overview-510421.pdf",
+  "size": 1003106
+ },
+ {
+  "itemKey": "9GPFG5U3",
+  "pdfKey": "S22U6ZHS",
+  "year": "2025",
+  "title": "Link-Identified Routing Architecture in Space",
+  "src": "/Users/lge/Zotero/storage/S22U6ZHS/Zhang 等 - 2025 - Link-Identified Routing Architecture in Space-508240.pdf",
+  "size": 3098838
+ },
+ {
+  "itemKey": "7TASFUDR",
+  "pdfKey": "MLENDC86",
+  "year": "2024",
+  "title": "Available energy routing algorithm considering QoS requirements for LEO satellite network",
+  "src": "/Users/lge/Zotero/storage/MLENDC86/Yang 等 - 2024 - Available energy routing algorithm considering QoS requirements for LEO satellite network-504470.pdf",
+  "size": 1089040
+ },
+ {
+  "itemKey": "AF674CSF",
+  "pdfKey": "D7BQ374M",
+  "year": "2024",
+  "title": "Logic Path Identified Hierarchical Routing for Large-Scale LEO Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/D7BQ374M/Yan 等 - 2024 - Logic Path Identified Hierarchical Routing for Large-Scale LEO Satellite Networks-501520.pdf",
+  "size": 4317201
+ },
+ {
+  "itemKey": "UKEKU5ZG",
+  "pdfKey": "9RS6CG6K",
+  "year": "2025",
+  "title": "A Centralized–Distributed Joint Routing Algorithm for LEO Satellite Constellations Based on Multi-Agent Reinforcement Learning",
+  "src": "/Users/lge/Zotero/storage/9RS6CG6K/Xia 等 - 2025 - A Centralized–Distributed Joint Routing Algorithm for LEO Satellite Constellations Based on Multi-Ag-291961.pdf",
+  "size": 2550959
+ },
+ {
+  "itemKey": "GPDPLJNG",
+  "pdfKey": "KTTPMYHA",
+  "year": "2022",
+  "title": "Multi-Commodity Flow Routing for Large-Scale LEO Satellite Networks Using Deep Reinforcement Learning",
+  "src": "/Users/lge/Zotero/storage/KTTPMYHA/Tsai 等 - 2022 - Multi-Commodity Flow Routing for Large-Scale LEO Satellite Networks Using Deep Reinforcement Learnin-495110.pdf",
+  "size": 1759010
+ },
+ {
+  "itemKey": "Y2H4NPLU",
+  "pdfKey": "9M8AKZMQ",
+  "year": "2023",
+  "title": "Q-learning for distributed routing in LEO satellite constellations",
+  "src": "/Users/lge/Zotero/storage/9M8AKZMQ/Soret 等 - 2023 - Q-learning for distributed routing in LEO satellite constellations-444961.pdf",
+  "size": 871616
+ },
+ {
+  "itemKey": "TQF59BD7",
+  "pdfKey": "Z8FDK6R7",
+  "year": "2025",
+  "title": "IDLB: An SDN‐Based Load‐Balancing Routing Protocol for Autonomous Satellite Constellation Networks",
+  "src": "/Users/lge/Zotero/storage/Z8FDK6R7/Roth 等 - 2026 - IDLB An SDN‐Based Load‐Balancing Routing Protocol for Autonomous Satellite Constellation Networks-489584.pdf",
+  "size": 11514043
+ },
+ {
+  "itemKey": "DS9SPARV",
+  "pdfKey": "R2TMILZX",
+  "year": "2025",
+  "title": "OpenSN: An Open Source Library for Emulating LEO Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/R2TMILZX/Lu 等 - 2025 - OpenSN An Open Source Library for Emulating LEO Satellite Networks-486978.pdf",
+  "size": 6523628
+ },
+ {
+  "itemKey": "UF8IQTA2",
+  "pdfKey": "C4VBXRZV",
+  "year": "2023",
+  "title": "Traffic-Predictive Routing Strategy for Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/C4VBXRZV/Liu 等 - 2023 - Traffic-Predictive Routing Strategy for Satellite Networks-484037.pdf",
+  "size": 6057066
+ },
+ {
+  "itemKey": "WFA3CZLP",
+  "pdfKey": "PXMNI4HT",
+  "year": "2024",
+  "title": "FlexSATE: Flexible and Distributed Traffic Engineering with Supervised Learning in Ultra-Dense Low-Earth-Orbit Satellite Networks",
+  "src": "/Users/lge/Zotero/storage/PXMNI4HT/Liu 等 - 2024 - FlexSATE Flexible and Distributed Traffic Engineering with Supervised Learning in Ultra-Dense Low-E-294864.pdf",
+  "size": 808175
+ },
+ {
+  "itemKey": "S85KQ4FC",
+  "pdfKey": "TXF9JAWZ",
+  "year": "2024",
+  "title": "Enabling High-Throughput Routing for LEO Satellite Broadband Networks: A Flow-Centric Deep Reinforcement Learning Approach",
+  "src": "/Users/lge/Zotero/storage/TXF9JAWZ/Liu 等 - 2024 - Enabling High-Throughput Routing for LEO Satellite Broadband Networks A Flow-Centric Deep Reinforce-479322.pdf",
+  "size": 2614638
+ },
+ {
+  "itemKey": "9KZDXPKC",
+  "pdfKey": "J7S62YRW",
+  "year": "",
+  "title": "How to Route CUBIC and BBR Packets in Space",
+  "src": "/Users/lge/Zotero/storage/J7S62YRW/Huang 等 - How to Route CUBIC and BBR Packets in Space-476333.pdf",
+  "size": 4625411
+ },
+ {
+  "itemKey": "9C6HB6AF",
+  "pdfKey": "EG6HA6QG",
+  "year": "2024",
+  "title": "Deep Reinforcement Learning-Based Multipath Routing for LEO Megaconstellation Networks",
+  "src": "/Users/lge/Zotero/storage/EG6HA6QG/Han 等 - 2024 - Deep Reinforcement Learning-Based Multipath Routing for LEO Megaconstellation Networks-302979.pdf",
+  "size": 15807920
+ },
+ {
+  "itemKey": "36RZKNW5",
+  "pdfKey": "LHWBJMST",
+  "year": "2025",
+  "title": "An integrated routing and data fragmentation strategy for optimizing end-to-end delay in LEO satellite networks",
+  "src": "/Users/lge/Zotero/storage/LHWBJMST/Feng 等 - 2025 - An integrated routing and data fragmentation strategy for optimizing end-to-end delay in LEO satelli-471921.pdf",
+  "size": 2408222
+ },
+ {
+  "itemKey": "IXVSNEE3",
+  "pdfKey": "7EV344LI",
+  "year": "2024",
+  "title": "Distributed Satellite-Terrestrial Cooperative Routing Strategy Based on Minimum Hop-Count Analysis in Mega LEO Satellite Constellation",
+  "src": "/Users/lge/Zotero/storage/7EV344LI/Feng 等 - 2024 - Distributed Satellite-Terrestrial Cooperative Routing Strategy Based on Minimum Hop-Count Analysis i-468741.pdf",
+  "size": 3695918
+ }
+]

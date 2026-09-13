@@ -1,0 +1,10 @@
+{
+ "cand_id": "cc029fa6119",
+ "ledger_content_hash": "hce240d3ce2e4",
+ "ledger_version": "3",
+ "card": "round/run2/drafts/B3-v2.md",
+ "card_sha256": "a51f34a422eca8c2573ae70745562e962c370c2f507f38b8f4af2afbafed46ea",
+ "verdict": "INPUT_INSUFFICIENT",
+ "note": "现象层为四锚拼图(2篇笔记级+1篇非LEO+1篇极端合同),塌陷窗存在性本身待证;机制族与C2域随机化重叠,归因仪器已被C2-M1包含;判定:退出主线竞争,资产并入C2强度轴扩展",
+ "recorded_at": "2026-09-11T17:50:25"
+}

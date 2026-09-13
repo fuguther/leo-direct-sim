@@ -1,0 +1,237 @@
+{
+  "generated": "2026-09-10",
+  "stage": "post-P0-fix (语义抽查定点修复 + 3 处承重事实回补)",
+  "supersedes_out_hashes_in": "notes-neutral-manifest.json",
+  "files_total": 41,
+  "files_changed_since_sanitize": 20,
+  "changed_files": [
+    "ALMASAN-2022-DRLGNN.md",
+    "ARXIV-2007.05449.md",
+    "ARXIV-2111.09217.md",
+    "ARXIV-2310.03969.md",
+    "ARXIV-2512.00985.md",
+    "CHEN-2025-TMIX.md",
+    "CHU-2023-RRSDRL.md",
+    "HE-2025-PRIMAL.md",
+    "HUANG-2024-GMR.md",
+    "IZHIKEVICH-2024.md",
+    "LI-2025-POMAP.md",
+    "LIAQ-2026-QARR.md",
+    "LOZANO-2025-CONTINUAL.md",
+    "RAO-2025-DGAT.md",
+    "SORET-2024-QLEARN.md",
+    "TALEB-2009-ELB.md",
+    "WEIL-2024-RMP.md",
+    "XIANG-2025-MATGCIR.md",
+    "ZHANG-2024-NGAT.md",
+    "ZHOU-2026-DTAR.md"
+  ],
+  "note": "sanitize 阶段 out_sha256 已过期；本文件为当前权威指纹。语义修复依据见 P0-SEMANTIC-SPOTCHECK.md。",
+  "entries": [
+    {
+      "file": "ALMASAN-2022-DRLGNN.md",
+      "sha256": "2138b0d680747b8e9ed68d97880162f70ca81667edcf237201507c6fea0d6903",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "ARXIV-2007.05449.md",
+      "sha256": "752fafdf9e1689486e871096dd579ab3138da0df68419470eeae76b7a460a526",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "ARXIV-2111.09217.md",
+      "sha256": "9e58243268b17abae8f347cd9416e7a59a71a73c79c50257c7a2f7017a67aca9",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "ARXIV-2310.03969.md",
+      "sha256": "4017afb580fe30d32b6a705992427cd9eaa61d0b68205ef750b72bf91c8a8216",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "ARXIV-2512.00985.md",
+      "sha256": "1e08b3cade28c154b622953200d98e8893a741d9db4a6e0e6b1afd0f9a65fef6",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "BAI-2025-GRLRR.md",
+      "sha256": "d8f3740abc0fd25aec28efb9adf156b86830a266a58413f1bf199b2593552a90",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "BHAVANASI-2023-GNNMADRL.md",
+      "sha256": "7e6a7555047468b297aae1c0dd691d8e98f283d5f8ae80e650f6a3cb1b1dc304",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "CHEN-2025-TMIX.md",
+      "sha256": "f405f5f9116e077185a10c48acb1260c6533ce1fb64fcca9295a9571369886a4",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "CHOU-2026-STL.md",
+      "sha256": "930e2de3100c15f62738cf345bc964c735d203c80fd18cc1ccb4581615762f2b",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "CHU-2023-RRSDRL.md",
+      "sha256": "a93569253d49eb6face7bb299fd3821ad93516360c1b5076cbd8f98424211134",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "DONG-2023-DQNLLRA.md",
+      "sha256": "50e30c148849c3942255eaceb360a118c73f58eef3584062ca591ba2de2f6535",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "GANNON-2024.md",
+      "sha256": "4197908e7d27246eccf5f0d3593a24923a6e53959f45dcf5a3f4f206bb4f3cab",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "GAO-2026-RAOI.md",
+      "sha256": "91c985e689bfda68418a471fd200cce5ac173b32fc495c04724eb974eb6eb2e0",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "GILBERT-ELLIOTT.md",
+      "sha256": "ce2f1b01f8b9610c883f6aa4e19bb1172ed857bda16878d1c342525874ff1756",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "GUVEN-2023.md",
+      "sha256": "5b9b9601cea92c3283cb30901ca95dbcd3a9391f947d2937b94758be64977687",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "HAN-2024-DMR.md",
+      "sha256": "65d8dec5f5c444dfc7c56ab95188a34e957caf04859d831ae60a54857470b85c",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "HE-2025-PRIMAL.md",
+      "sha256": "661dca776e9bf67811fad9ea1a3fc0352d2e0489ad44e9b5d158a0975a1d1323",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "HUANG-2024-GMR.md",
+      "sha256": "39007cb7c8af39c2d6f7790da74ad79047ab1c17e8ef76188d2befa9542bf20e",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "IZHIKEVICH-2024.md",
+      "sha256": "b6cf2de3992f42c04f75b35140b91992ca00cfc7f3dc09977d2e81e64644c071",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "LI-2023-LUR.md",
+      "sha256": "b7b41a59d0cf7c07ae9fd738c4b9d1dee946d1d410f4a51d88ee728f30d0f752",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "LI-2025-POMAP.md",
+      "sha256": "478d12ae90050521a5ec21e4944d28d74bb7d82bc383b5dcbd97ae36b613c44a",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "LIAQ-2026-QARR.md",
+      "sha256": "8ea3c2e98a6ed049baca0bdf7689d0d5ed683f26ebdb3862d394c3d015f7aaea",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "LOZANO-2025-CONTINUAL.md",
+      "sha256": "4186c5405841f9dc663167fd529fe4e54ac831a7604379feb432d228ceec8bbc",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "LYU-2024-CMADR.md",
+      "sha256": "6dd50a25e60ce4b95f4a57a6f87b55ff61e1dea75c41c43aa6a6dfb5627a0a52",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "MA-2022.md",
+      "sha256": "445413011bb666a1b47d64184f75531e84fb2bd9d38b25e0f44c080a8ad283cb",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "MANFREDI-2021-RELATIONAL.md",
+      "sha256": "1afcd5ea4da157ae3fdd5ebe855b38e428a6f5f918af93de2ad45d2b39b3691f",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "OPENALEX-SENSORS-DRL-ROUT.md",
+      "sha256": "21e3ab1771603b62cfd12ba814e391707b3deb9019dd6b4606415bf9bbf7c8a9",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "RAN-2025-GRAPHPR.md",
+      "sha256": "c2cfc65602e30b1cde7024e753576d15c2c25c9c90d78e992f52350f0687907d",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "RAO-2025-DGAT.md",
+      "sha256": "c09c660ce306f17121fd71e2ce34e68eab0d2682e5b64b544fce79de1da2eee4",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "SHI-2024-GNNDQN.md",
+      "sha256": "a5523379a3ec5c75a710715e1ff24d08ad3c1d6ac9a5b706f6a3003f51059195",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "SONG-2014-TLR.md",
+      "sha256": "2aa4188a814ca2c94e689f7dec65756dbf9bf94c3e44e4057021bd6e402670c4",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "SORET-2024-QLEARN.md",
+      "sha256": "923bba9beda71094518f926d6439bb167c2916f974f6f8c2fa65a3d6f13a65b8",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "STARTCAP-2024.md",
+      "sha256": "03be1bbf7ed11f49f8cec964ce11e7e62ea93b643e2238b015d7dfc93634a9d8",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "TALEB-2009-ELB.md",
+      "sha256": "dbfe9ab09d280404df2c78a8b1995b9bd5d93188e0dd04153294687497ef12a5",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "WANG-2021-GROUTING.md",
+      "sha256": "ad863948e2081cb2092c1989aa80241cabcc3c683744a6e1c8703f289fb780f0",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "WEIL-2024-RMP.md",
+      "sha256": "b1f33bafe80d080da8963b197d848c1fb30f574ff49a54742ca41504bb07663d",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "WIGMORE-2025-MAGNN.md",
+      "sha256": "512b1fd7ce020ea4e1637f03868e49e55dba5e5be2687ac556b36e621449e953",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "XIANG-2025-MATGCIR.md",
+      "sha256": "c7535cf11370bfa64a3b4e0861a3eae7a1a468a79e888fe509bcbdb1b8493015",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "ZHANG-2024-NGAT.md",
+      "sha256": "4136d053c039a8ad290fdd06188ed60171cc3c87463dd24163d787c053d6b4f8",
+      "changed_since_sanitize": true
+    },
+    {
+      "file": "ZHANG-2025-GRLR.md",
+      "sha256": "c0ccd18139b560810a825eb38ce777f0541a9e98e94c2fef9edd2127b78241b1",
+      "changed_since_sanitize": false
+    },
+    {
+      "file": "ZHOU-2026-DTAR.md",
+      "sha256": "45990158e7a2225e15264e21d5623fef692ef98c20dfb773e27ab070f4e2f368",
+      "changed_since_sanitize": true
+    }
+  ]
+}

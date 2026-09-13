@@ -1,0 +1,20 @@
+# 研究运行护航 hook —— 追加到 ~/.dsh/profiles/web/cordis.patch.yml 的片段。
+#
+# 设计要点（影响范围最小）：
+#   1. 注册是全局的（profile 层），但**脚本按载荷 cwd 自限**：
+#      只有 cwd 在本 worktree 内的会话受约束；区外会话在脚本内直接放行（仅记日志）。
+#   2. command 用**绝对路径**，避免 CLAUDE_PROJECT_DIR 未设时命令失败。
+#   3. 配置解析失败时桥接只记警告、不注册 hook —— 不会让 harness 起不来。
+#   4. 关闭方式：把下面这段从 cordis.patch.yml 删除即可（或整段注释）。
+#
+# 生效后自检：
+#   python3 /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/hooks/selftest.py            # 离线自测
+#   python3 /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/hooks/perm.py show           # 运行身份与票据
+#   python3 /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/hooks/perm.py audit          # 未登记访问审计
+- insert:
+    - id: hooks-research-guard
+      name: '@deepseek-ai/dsh-hooks-claude-code'
+      config:
+        configPath: /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/hooks/hooks.json
+        projectDir: /Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910
+        defaultTimeoutMs: 15000

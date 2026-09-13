@@ -1,0 +1,987 @@
+[
+ {
+  "key": "2FBBURX7",
+  "title": "Graph Attention Reinforcement Learning for Multicast Routing and Age-Optimal Scheduling",
+  "year": "2024",
+  "type": "preprint",
+  "creators": "Zhang, Yanning; Liao, Guocheng; Cao, Shengbin; Yang, Ning; Pappas, Nikolaos; Zhang, Meng",
+  "pdf": 1,
+  "pdfKey": "RD9FVGI6"
+ },
+ {
+  "key": "BLFJ6CLV",
+  "title": "Analysis of Age of Information in Non-terrestrial Networks",
+  "year": "2023",
+  "type": "preprint",
+  "creators": "Lu, Yanwu; Yang, Howard; Pappas, Nikolaos; Geraci, Giovanni; Ma, Chuan; Quek, Tony Q. S.",
+  "pdf": 1,
+  "pdfKey": "ML2HFKFE"
+ },
+ {
+  "key": "GV9PPNZT",
+  "title": "Information Freshness in Multi-Hop Wireless Networks",
+  "year": "2021",
+  "type": "preprint",
+  "creators": "Tripathi, Vishrant; Talak, Rajat; Modiano, Eytan",
+  "pdf": 1,
+  "pdfKey": "5JCRUJK9"
+ },
+ {
+  "key": "4QG5VYHQ",
+  "title": "Information Freshness of Updates Sent over LEO Satellite Multi-Hop Networks",
+  "year": "2020",
+  "type": "preprint",
+  "creators": "Chiariotti, Federico; Vikhrova, Olga; Soret, Beatriz; Popovski, Petar",
+  "pdf": 1,
+  "pdfKey": "CJU5CF9T"
+ },
+ {
+  "key": "R5QTFKD2",
+  "title": "Age Optimal Sampling and Routing under Intermittent Links and Energy Constraints",
+  "year": "2025",
+  "type": "preprint",
+  "creators": "Atasayar, Adem Utku; Li, Aimin; Arı, Çağrı; Uysal, Elif",
+  "pdf": 1,
+  "pdfKey": "7LIP9DU3"
+ },
+ {
+  "key": "EG9X569M",
+  "title": "A robust routing strategy based on deep reinforcement learning for mega satellite constellations",
+  "year": "2023",
+  "type": "journalArticle",
+  "creators": "Chu, Ke; Cheng, Sixi; Zhu, Lidong",
+  "pdf": 1,
+  "pdfKey": "5USLYX8S"
+ },
+ {
+  "key": "X5Z98UPM",
+  "title": "DRL-Based Load-Balancing Routing Scheme for 6G Space–Air–Ground Integrated Networks",
+  "year": "2023",
+  "type": "journalArticle",
+  "creators": "Dong, Feihu; Song, Jiaxin; Zhang, Yasheng; Wang, Yuqi; Huang, Tao",
+  "pdf": 1,
+  "pdfKey": "GDG3QXXF"
+ },
+ {
+  "key": "K7U4TYJN",
+  "title": "SkyLink: Scalable and Resilient Link Management in LEO Satellite Networks",
+  "year": "2026",
+  "type": "journalArticle",
+  "creators": "de Sombre, Wanja; Asadi, Arash; Bhattacherjee, Debopam; Vasisht, Deepak; Ortiz, Andrea",
+  "pdf": 1,
+  "pdfKey": "FW37YV7A"
+ },
+ {
+  "key": "JP79GMZS",
+  "title": "Explicit Load Balancing Technique for NGEO Satellite IP Networks With On-Board Processing Capabilities",
+  "year": "2009",
+  "type": "journalArticle",
+  "creators": "Taleb, T.; Mashimo, D.; Jamalipour, A.; Kato, N.; Nemoto, Y.",
+  "pdf": 1,
+  "pdfKey": "SARGKVK2"
+ },
+ {
+  "key": "CMNCS52M",
+  "title": "Traffic-Aware Multi-Agent Reinforcement Learning-Based Distributed Routing for Low Earth Orbit Satellite Network",
+  "year": "2026",
+  "type": "journalArticle",
+  "creators": "Ferrer, Estel; Escrig, Josep; Alarcón, Eduard; Park, Hyuk; Ruiz-De-Azua, Joan A.; Kaneko, Megumi",
+  "pdf": 1,
+  "pdfKey": "VK6ET5L4"
+ },
+ {
+  "key": "PIXWFHAC",
+  "title": "Reinforcement Learning‐Based Routing Algorithm in Satellite‐Terrestrial Integrated Networks",
+  "year": "2021",
+  "type": "journalArticle",
+  "creators": "Yin, Yabo; Huang, Chuanghe; Wu, Dong-Fang; Huang, Shidong; Ashraf, M. Wasim Abbas; Guo, Qianqian",
+  "pdf": 1,
+  "pdfKey": "VW4P7IDA"
+ },
+ {
+  "key": "8N9QJHC2",
+  "title": "Recovery Routing Based on Q-Learning for Satellite Network Faults",
+  "year": "2020",
+  "type": "journalArticle",
+  "creators": "Gu, Rentao; Qin, Jiawen; Dong, Tao; Yin, Jie; Liu, Zhihui",
+  "pdf": 1,
+  "pdfKey": "C98WJZUA"
+ },
+ {
+  "key": "3MRQRWHU",
+  "title": "Multi-QoS Routing Algorithm Based on Reinforcement Learning for LEO Satellite Networks",
+  "year": "2025",
+  "type": "journalArticle",
+  "creators": "Zhang, Yifan; Dong, Tao; Liu, Zhihui; Jin, Shichao",
+  "pdf": 1,
+  "pdfKey": "M2VIFD6J"
+ },
+ {
+  "key": "MXQVNU3P",
+  "title": "Low Earth Orbit Satellite Network Routing Algorithm Based on Graph Neural Networks and Deep Q-Network",
+  "year": "2024",
+  "type": "journalArticle",
+  "creators": "Shi, Yuanji; Wang, Weian; Zhu, Xiaorong; Zhu, Hongbo",
+  "pdf": 1,
+  "pdfKey": "SUR362KP"
+ },
+ {
+  "key": "XM64YRAW",
+  "title": "Inter-Satellite Routing for LEO Satellite Networks: A GNN and DRL Integrated Approach",
+  "year": "2024",
+  "type": "conferencePaper",
+  "creators": "Xu, Peng; Feng, Mingjie; Zhou, Jiaxi; Xiao, Lixia; Xiao, Pei; Jiang, Tao",
+  "pdf": 1,
+  "pdfKey": "SQIE3PYR"
+ },
+ {
+  "key": "TSV3IE8S",
+  "title": "An Adaptive Routing Algorithm for Inter-Satellite Networks Based on the Combination of Multipath Transmission and Q-Learning",
+  "year": "2023",
+  "type": "journalArticle",
+  "creators": "Shi, Yuanji; Yuan, Zhiwei; Zhu, Xiaorong; Zhu, Hongbo",
+  "pdf": 1,
+  "pdfKey": "SNERHF9B"
+ },
+ {
+  "key": "XM6NUPM4",
+  "title": "Your Mega-Constellations Can Be Slim:A Cost-Effective Approach for Constructing Survivable and Performant LEO Satellite Networks",
+  "year": "2024",
+  "type": "journalArticle",
+  "pdf": 1,
+  "pdfKey": "BNGCAA2H"
+ },
+ {
+  "key": "CTWVLBCY",
+  "title": "Transmitting, Fast and Slow: Scheduling Satellite Traffic through Space and Time",
+  "year": "2023",
+  "type": "conferencePaper",
+  "creators": "Tao, Bill; Masood, Maleeha; Gupta, Indranil; Vasisht, Deepak",
+  "pdf": 1,
+  "pdfKey": "JLHRI67W"
+ },
+ {
+  "key": "AZ72LM9Z",
+  "title": "Towards Global Outage Detection for LEO Networks",
+  "year": "2025",
+  "type": "conferencePaper",
+  "creators": "Tran, Manda; Huynh, Khiet; Jain, Dravya; Truong, Dylan; Theeranantachai, Sirapop; Zhang, Beichuan; Zhang, Lixia; Izhikevich, Liz",
+  "pdf": 1,
+  "pdfKey": "XB6FHWFQ"
+ },
+ {
+  "key": "JS857IYN",
+  "title": "Time-Dependent Network Topology Optimization for LEO Satellite Constellations",
+  "year": "2025",
+  "type": "preprint",
+  "pdf": 1,
+  "pdfKey": "5SJX2ER5"
+ },
+ {
+  "key": "L5F3DK68",
+  "title": "Satellite-based communications security: A survey of threats, solutions, and research challenges",
+  "year": "2022",
+  "type": "journalArticle",
+  "creators": "Tedeschi, Pietro; Sciancalepore, Savio; Di Pietro, Roberto",
+  "pdf": 1,
+  "pdfKey": "E37VIYC2"
+ },
+ {
+  "key": "5PYWVRC5",
+  "title": "Shaping Rewards, Shaping Routes: On Multi-Agent Deep Q-Networks for Routing in Satellite Constellation Networks",
+  "year": "",
+  "type": "preprint",
+  "pdf": 1,
+  "pdfKey": "5FX8SWT9"
+ },
+ {
+  "key": "R37BNQQ8",
+  "title": "SDN-Based End-to-End Fragment-Aware Routing for Elastic Data Flows in LEO Satellite-Terrestrial Network",
+  "year": "2019",
+  "type": "journalArticle",
+  "creators": "Guo, Qize; Gu, Rentao; Dong, Tao; Yin, Jie; Liu, Zhihui; Bai, Lin; Ji, Yuefeng",
+  "pdf": 1,
+  "pdfKey": "YW3KT8G6"
+ },
+ {
+  "key": "DVS8C3CC",
+  "title": "On-Demand Routing in LEO Mega-Constellations With Dynamic Laser Inter-Satellite Links",
+  "year": "2024",
+  "type": "journalArticle",
+  "creators": "Bhattacharjee, Dhiraj; Madoery, Pablo G.; Chaudhry, Aizaz U.; Yanikomeroglu, Halim; Kurt, Güneş Karabulut; Hu, Peng; Ahmed, Khaled; Martel, Stéphane",
+  "pdf": 1,
+  "pdfKey": "9XBNLEDA"
+ },
+ {
+  "key": "524XNF29",
+  "title": "Non-Terrestrial Networks in 5G &amp; Beyond: A Survey",
+  "year": "2020",
+  "type": "journalArticle",
+  "creators": "Rinaldi, Federica; Maattanen, Helka-Liina; Torsner, Johan; Pizzi, Sara; Andreev, Sergey; Iera, Antonio; Koucheryavy, Yevgeni; Araniti, Giuseppe",
+  "pdf": 1,
+  "pdfKey": "ERS7C8AR"
+ },
+ {
+  "key": "5AZHJE7N",
+  "title": "Network Simulators for Satellite-Terrestrial Integrated Networks: A Survey",
+  "year": "2023",
+  "type": "journalArticle",
+  "creators": "Jiang, Weiwei; Zhan, Yafeng; Xiao, Xiaolong; Sha, Guanglin",
+  "pdf": 1,
+  "pdfKey": "XQM5QQXC"
+ },
+ {
+  "key": "L63JISQN",
+  "title": "Making Sense of Constellations: Methodologies for Understanding Starlink's Scheduling Algorithms",
+  "year": "2023",
+  "type": "journalArticle",
+  "pdf": 1,
+  "pdfKey": "FGAT5HM4"
+ },
+ {
+  "key": "VFS59FHI",
+  "title": "Load-Balancing Routing Algorithm Based on Segment Routing for Traffic Return in LEO Satellite Networks",
+  "year": "2019",
+  "type": "journalArticle",
+  "creators": "Liu, Wei; Tao, Ying; Liu, Liang",
+  "pdf": 1,
+  "pdfKey": "G9ASGI9F"
+ },
+ {
+  "key": "BV4XI6CU",
+  "title": "Load Balancing for 5G Integrated Satellite-Terrestrial Networks",
+  "year": "2020",
+  "type": "journalArticle",
+  "creators": "Shahid, Syed Maaz; Seyoum, Yemane Teklay; Won, Seok Ho; Kwon, Sungoh",
+  "pdf": 1,
+  "pdfKey": "AWLW94ZN"
+ },
+ {
+  "key": "X2FCSU4S",
+  "title": "Load Balancing Based on Cache Resource Allocation in Satellite Networks",
+  "year": "2019",
+  "type": "journalArticle",
+  "creators": "Wang, Erbao; Li, Hongyan; Zhang, Shun",
+  "pdf": 1,
+  "pdfKey": "BRRJWRGF"
+ },
+ {
+  "key": "T9X6QCLL",
+  "title": "LEO satellite networking relaunched: Survey and current research challenges",
+  "year": "2023",
+  "type": "journalArticle",
+  "creators": "Westphal, Cedric; Han, Lin; Li, Richard",
+  "pdf": 1,
+  "pdfKey": "SRD5IVVJ"
+ },
+ {
+  "key": "WHS8Z44C",
+  "title": "Joint Network Function Placement and Routing Optimization in Dynamic Software-Defined Satellite-Terrestrial Integrated Networks",
+  "year": "2024",
+  "type": "journalArticle",
+  "creators": "Yuan, Shuo; Sun, Yaohua; Peng, Mugen",
+  "pdf": 1,
+  "pdfKey": "JQIYITSM"
+ },
+ {
+  "key": "AIH4GK37",
+  "title": "How Area Geometry Shapes Link-State Routing Scalability in LEO Networks",
+  "year": "2026",
+  "type": "journalArticle",
+  "pdf": 1,
+  "pdfKey": "66ADQQW2"
+ },
+ {
+  "key": "IP7RRM3A",
+  "title": "From Connectivity to Advanced Internet Services: A Comprehensive Review of Small Satellites Communications and Networks",
+  "year": "2019",
+  "type": "journalArticle",
+  "creators": "Burleigh, Scott C.; De Cola, Tomaso; Morosi, Simone; Jayousi, Sara; Cianca, Ernestina; Fuchs, Christian",
+  "pdf": 1,
+  "pdfKey": "3QNTYNCD"
+ },
+ {
+  "key": "JZA5SEQA",
+  "title": "Fast Reroute Algorithms for Satellite Network With Segment Routing",
+  "year": "2023",
+  "type": "journalArticle",
+  "creators": "Chen, Xun; Chen, Zhengjian; Chang, Xiaolei; Ji, Tian; Wu, Zhenzhou; Li, Chenxi",
+  "pdf": 1,
+  "pdfKey": "VPPCABBA"
+ },
+ {
+  "key": "8AYW2Y78",
+  "title": "Exploring the \"Internet from space\" with Hypatia",
+  "year": "2020",
+  "type": "conferencePaper",
+  "creators": "Kassing, Simon; Bhattacherjee, Debopam; Águas, André Baptista; Saethre, Jens Eirik; Singla, Ankit",
+  "pdf": 1,
+  "pdfKey": "5WFCN9X6"
+ },
+ {
+  "key": "Z74SR656",
+  "title": "Evolution of Non-Terrestrial Networks From 5G to 6G: A Survey",
+  "year": "2022",
+  "type": "journalArticle",
+  "creators": "Azari, M. Mahdi; Solanki, Sourabh; Chatzinotas, Symeon; Kodheli, Oltjon; Sallouha, Hazem; Colpaert, Achiel; Mendoza Montoya, Jesus Fabian; Pollin, Sofie; Haqiqatnejad, Alireza; Mostaani, Arsham; Lagunas, Eva; Ottersten, Bjorn",
+  "pdf": 1,
+  "pdfKey": "9YYJFJGK"
+ },
+ {
+  "key": "GGFJ3SEG",
+  "title": "Democratizing LEO Satellite Network Measurement",
+  "year": "2024",
+  "type": "journalArticle",
+  "creators": "Izhikevich, Liz; Tran, Manda; Izhikevich, Katherine; Akiwate, Gautam; Durumeric, Zakir",
+  "pdf": 1,
+  "pdfKey": "KUHP4PJ6"
+ },
+ {
+  "key": "67CSKFK4",
+  "title": "Delay is Not an Option",
+  "year": "2018",
+  "type": "conferencePaper",
+  "creators": "Handley, Mark",
+  "pdf": 1,
+  "pdfKey": "LZCV7H2G"
+ },
+ {
+  "key": "GJJQUMQ2",
+  "title": "Deciphering Region-Level Signatures from Latency Measurements in LEO Satellite Internet",
+  "year": "2026",
+  "type": "preprint",
+  "pdf": 1,
+  "pdfKey": "EHS3TLID"
+ },
+ {
+  "key": "YI9G7NR7",
+  "title": "DQDRA: A Dyna-Q-Enhanced Distributed Routing Algorithm for Heterogeneous LEO Constellations",
+  "year": "2026",
+  "type": "journalArticle",
+  "creators": "ZHAO, Yanchun; LIN, Baojun; TIAN, Feng; REN, Chaoyu; CHEN, Zhihao",
+  "pdf": 1,
+  "pdfKey": "UVDPSH96"
+ },
+ {
+  "key": "2QRYMWBI",
+  "title": "Artificial Intelligence for Satellite Communication and Non-Terrestrial Networks: A Survey",
+  "year": "2023",
+  "type": "preprint",
+  "pdf": 1,
+  "pdfKey": "D3835KFJ"
+ },
+ {
+  "key": "W5Z39E25",
+  "title": "A wised routing protocols for LEO satellite networks",
+  "year": "2015",
+  "type": "conferencePaper",
+  "creators": "Firouzja, Saeid Aghaei Nezhad; Yousefnezhad, Muhammad; Othman, Mohd Fauzi; Samadi, Masoud",
+  "pdf": 1,
+  "pdfKey": "97STDHL7"
+ },
+ {
+  "key": "LRSXMWX9",
+  "title": "A Survey on Technologies, Standards and Open Challenges in Satellite IoT",
+  "year": "2021",
+  "type": "journalArticle",
+  "creators": "Centenaro, Marco; Costa, Cristina E.; Granelli, Fabrizio; Sacchi, Claudio; Vangelista, Lorenzo",
+  "pdf": 1,
+  "pdfKey": "TWE7L26C"
+ },
+ {
+  "key": "7AXASN73",
+  "title": "A Survey on Nongeostationary Satellite Systems: The Communication Perspective",
+  "year": "2023",
+  "type": "journalArticle",
+  "creators": "Al-Hraishawi, Hayder; Chougrani, Houcine; Kisseleff, Steven; Lagunas, Eva; Chatzinotas, Symeon",
+  "pdf": 1,
+  "pdfKey": "UMK6W89Y"
+ },
+ {
+  "key": "NPF75WS5",
+  "title": "A Multifaceted Look at Starlink Performance",
+  "year": "2024",
+  "type": "conferencePaper",
+  "creators": "Mohan, Nitinder; Ferguson, Andrew E.; Cech, Hendrik; Bose, Rohan; Renatin, Prakita Rayyan; Marina, Mahesh K.; Ott, Jörg",
+  "pdf": 1,
+  "pdfKey": "8CPRQX5Y"
+ },
+ {
+  "key": "2W8BJ7ME",
+  "title": "A Load Balancing Routing Strategy for LEO Satellite Network",
+  "year": "2020",
+  "type": "journalArticle",
+  "creators": "Liu, Jiang; Luo, Ruizhi; Huang, Tao; Meng, Chunwei",
+  "pdf": 1,
+  "pdfKey": "AU42L7ZV"
+ },
+ {
+  "key": "P6XJZNQK",
+  "title": "A Global Perspective on the Past, Present, and Future of Video Streaming over Starlink",
+  "year": "2024",
+  "type": "journalArticle",
+  "creators": "Izhikevich, Liz; Enghardt, Reese; Huang, Te-Yuan; Teixeira, Renata",
+  "pdf": 1,
+  "pdfKey": "HHGI3RMU"
+ },
+ {
+  "key": "S2QZRBEJ",
+  "title": "A first look at starlink performance",
+  "year": "2022",
+  "type": "conferencePaper",
+  "creators": "Michel, François; Trevisan, Martino; Giordano, Danilo; Bonaventure, Olivier",
+  "pdf": 1,
+  "pdfKey": "TWKPMPQ6"
+ },
+ {
+  "key": "W6M3GU7L",
+  "title": "A Characterization of Route Variability in LEO Satellite Networks",
+  "year": "2023",
+  "type": "conferencePaper",
+  "creators": "Bhosale, Vaibhav; Saeed, Ahmed; Bhardwaj, Ketan; Gavrilovska, Ada",
+  "pdf": 1,
+  "pdfKey": "SXC6PG66"
+ },
+ {
+  "key": "IEI3BYFF",
+  "title": "StarryNet: Empowering Researchers to Evaluate Futuristic Integrated Space and Terrestrial Networks",
+  "year": "2023",
+  "type": "journalArticle",
+  "pdf": 1,
+  "pdfKey": "7S7BHQ3H"
+ },
+ {
+  "key": "MYBALQ2D",
+  "title": "Small-scale LEO Satellite Networking for Global-scale Demands",
+  "year": "2025",
+  "type": "conferencePaper",
+  "creators": "Li, Yuanjie; Chen, Yimei; Yang, Jiabo; Zhang, Jinyao; Sun, Bowen; Liu, Lixin; Li, Hewu; Wu, Jianping; Lai, Zeqi; Wu, Qian; Liu, Jun",
+  "pdf": 1,
+  "pdfKey": "9HGPXKQR"
+ },
+ {
+  "key": "YD4JUT7G",
+  "title": "Internet backbones in space",
+  "year": "2020",
+  "type": "journalArticle",
+  "creators": "Giuliari, Giacomo; Klenze, Tobias; Legner, Markus; Basin, David; Perrig, Adrian; Singla, Ankit",
+  "pdf": 1,
+  "pdfKey": "EXM2RIPG"
+ },
+ {
+  "key": "5HJ8ATR7",
+  "title": "Democratizing Direct-to-Cell Low Earth Orbit Satellite Networks",
+  "year": "2024",
+  "type": "journalArticle",
+  "pdf": 1,
+  "pdfKey": "UZDCIQMG"
+ },
+ {
+  "key": "5N5LQPPP",
+  "title": "SDDRL-SR: A High-Reliability Satellite Routing Algorithm Based on Deep Reinforcement Learning",
+  "year": "2024",
+  "type": "conferencePaper",
+  "creators": "Ding, Zhao-Long; Liu, Hui-Jie; Tian, Feng; Yang, Zi-Jian",
+  "pdf": 1,
+  "pdfKey": "UNRZGC2U"
+ },
+ {
+  "key": "LZKNZA8B",
+  "title": "Spatial-Temporal Learning-Based Distributed Routing for Dynamic LEO Satellite Networks",
+  "year": "2026",
+  "type": "preprint",
+  "pdf": 1,
+  "pdfKey": "LMAN7UPI"
+ },
+ {
+  "key": "J68GU76W",
+  "title": "Reinforcement Learning for Opportunistic Routing in Software-Defined LEO-Terrestrial Systems",
+  "year": "2026",
+  "type": "preprint",
+  "pdf": 1,
+  "pdfKey": "66KTGV9Q"
+ },
+ {
+  "key": "GPLEP83L",
+  "title": "LLM-Driven Automated Reward Design for Reinforcement Learning-Based Routing in LEO Satellite Networks",
+  "year": "2026",
+  "type": "preprint",
+  "pdf": 1,
+  "pdfKey": "SKGJM3PN"
+ },
+ {
+  "key": "42E4NAQU",
+  "title": "Queue-Aware and Resilient Routing in LEO Satellite Networks Using Multi-Agent Reinforcement Learning",
+  "year": "2026",
+  "type": "preprint",
+  "pdf": 1,
+  "pdfKey": "KYUSZY34"
+ },
+ {
+  "key": "6GWNYSTT",
+  "title": "LEO laser microwave hybrid inter-satellite routing strategy based on modified Q-routing algorithm",
+  "year": "2022",
+  "type": "journalArticle",
+  "creators": "Zheng, Fei; Wang, Chao; Zhou, Zou; Pi, Zhao; Huang, Dongyan",
+  "pdf": 1,
+  "pdfKey": "WY94IUPY"
+ },
+ {
+  "key": "FLQLU3T4",
+  "title": "Duality-Guided Graph Learning for Real-Time Joint Connectivity and Routing in LEO Mega-Constellations",
+  "year": "2026",
+  "type": "preprint",
+  "pdf": 1,
+  "pdfKey": "D4INU2NW"
+ },
+ {
+  "key": "39NJWBI7",
+  "title": "Asynchronous Risk-Aware Multi-Agent Packet Routing for Ultra-Dense LEO Satellite Networks",
+  "year": "2025",
+  "type": "preprint",
+  "creators": "He, Ke; Vu, Thang X.; He, Le; Fan, Lisheng; Chatzinotas, Symeon; Ottersten, Bjorn",
+  "pdf": 1,
+  "pdfKey": "Y55LHBQI"
+ },
+ {
+  "key": "35T2JJRJ",
+  "title": "Attention Is All You Need",
+  "year": "2023",
+  "type": "preprint",
+  "creators": "Vaswani, Ashish; Shazeer, Noam; Parmar, Niki; Uszkoreit, Jakob; Jones, Llion; Gomez, Aidan N.; Kaiser, Lukasz; Polosukhin, Illia",
+  "pdf": 1,
+  "pdfKey": "LTKNWWKL"
+ },
+ {
+  "key": "TAUEF8PF",
+  "title": "Deep Reinforcement Learning with Double Q-learning",
+  "year": "2015",
+  "type": "preprint",
+  "creators": "Hasselt, Hado van; Guez, Arthur; Silver, David",
+  "pdf": 1,
+  "pdfKey": "JIBSUT2S"
+ },
+ {
+  "key": "57EB6US5",
+  "title": "Human-level control through deep reinforcement learning",
+  "year": "2015",
+  "type": "journalArticle",
+  "creators": "Mnih, Volodymyr",
+  "pdf": 1,
+  "pdfKey": "3ZRCB356"
+ },
+ {
+  "key": "KPUZIMU5",
+  "title": "The Surprising Effectiveness of PPO in Cooperative, Multi-Agent Games",
+  "year": "2022",
+  "type": "preprint",
+  "creators": "Yu, Chao; Velu, Akash; Vinitsky, Eugene; Gao, Jiaxuan; Wang, Yu; Bayen, Alexandre; Wu, Yi",
+  "pdf": 1,
+  "pdfKey": "GY9KBVMM"
+ },
+ {
+  "key": "9FLZ88LZ",
+  "title": "QMIX: Monotonic Value Function Factorisation for Deep Multi-Agent Reinforcement Learning",
+  "year": "2018",
+  "type": "preprint",
+  "creators": "Rashid, Tabish; Samvelyan, Mikayel; Witt, Christian Schroeder de; Farquhar, Gregory; Foerster, Jakob; Whiteson, Shimon",
+  "pdf": 1,
+  "pdfKey": "2Z5R45Q2"
+ },
+ {
+  "key": "I2WH9RRR",
+  "title": "Asymmetric DQN for Partially Observable Reinforcement Learning",
+  "year": "",
+  "type": "journalArticle",
+  "creators": "Baisero, Andrea; Daley, Brett; Amato, Christopher",
+  "pdf": 1,
+  "pdfKey": "6P5KYCNB"
+ },
+ {
+  "key": "QGAREQUM",
+  "title": "Boosting Reinforcement Learning with Strongly Delayed Feedback Through Auxiliary Short Delays",
+  "year": "2024",
+  "type": "preprint",
+  "creators": "Wu, Qingyuan; Zhan, Simon Sinong; Wang, Yixuan; Wang, Yuhui; Lin, Chung-Wei; Lv, Chen; Zhu, Qi; Schmidhuber, Jürgen; Huang, Chao",
+  "pdf": 1,
+  "pdfKey": "6HR4HVT2"
+ },
+ {
+  "key": "E4NYGLGX",
+  "title": "Safe and Efficient Off-Policy Reinforcement Learning",
+  "year": "2016",
+  "type": "preprint",
+  "creators": "Munos, Rémi; Stepleton, Tom; Harutyunyan, Anna; Bellemare, Marc G.",
+  "pdf": 1,
+  "pdfKey": "KBIIV4NT"
+ },
+ {
+  "key": "JSX5XG88",
+  "title": "High-Dimensional Continuous Control Using Generalized Advantage Estimation",
+  "year": "2018",
+  "type": "preprint",
+  "creators": "Schulman, John; Moritz, Philipp; Levine, Sergey; Jordan, Michael; Abbeel, Pieter",
+  "pdf": 1,
+  "pdfKey": "VBVZJ8SG"
+ },
+ {
+  "key": "6C843JTS",
+  "title": "Learning to predict by the methods of temporal differences",
+  "year": "1988",
+  "type": "journalArticle",
+  "creators": "Sutton, Richard S.",
+  "pdf": 1,
+  "pdfKey": "WIPWDCP5"
+ },
+ {
+  "key": "47J2H748",
+  "title": "Packet Routing in Dynamically Changing Networks: A Reinforcement Learning Approach",
+  "year": "",
+  "type": "journalArticle",
+  "creators": "Boyan, Justin A; Littman, Michael L",
+  "pdf": 1,
+  "pdfKey": "LCTFK98Q"
+ },
+ {
+  "key": "JLF7IEBQ",
+  "title": "SaTE: Low-Latency Traffic Engineering for Satellite Networks",
+  "year": "2025",
+  "type": "conferencePaper",
+  "creators": "Wu, Hao; Han, Yizhan; Rajpal, Mohit; Zhang, Qizhen; Wang, Jingxian",
+  "pdf": 1,
+  "pdfKey": "ZCPRDLU7"
+ },
+ {
+  "key": "K93SCUF2",
+  "title": "Network topology design at 27,000 km/hour",
+  "year": "2019",
+  "type": "conferencePaper",
+  "creators": "Bhattacherjee, Debopam; Singla, Ankit",
+  "pdf": 1,
+  "pdfKey": "K3TX88B4"
+ },
+ {
+  "key": "BBNQ4EAQ",
+  "title": "Temporal Netgrid Model-Based Dynamic Routing in Large-Scale Small Satellite Networks",
+  "year": "2019",
+  "type": "journalArticle",
+  "creators": "Li, Jian; Lu, Hancheng; Xue, Kaiping; Zhang, Yongdong",
+  "pdf": 1,
+  "pdfKey": "UILMCSC5"
+ },
+ {
+  "key": "SBCHGBCP",
+  "title": "Segment routing for traffic engineering and effective recovery in low-earth orbit satellite constellations",
+  "year": "2024",
+  "type": "journalArticle",
+  "creators": "Zhang, Shengyu; Li, Xiaoqian; Yeung, Kwan Lawrence",
+  "pdf": 2,
+  "pdfKey": "MJRCLETB"
+ },
+ {
+  "key": "TRM2HPFN",
+  "title": "A dynamic routing concept for ATM-based satellite personal communication networks",
+  "year": "1997",
+  "type": "journalArticle",
+  "creators": "Werner, M.",
+  "pdf": 2,
+  "pdfKey": "54I7XP7R"
+ },
+ {
+  "key": "CYMQ2GLA",
+  "title": "A Two-Hops State-Aware Routing Strategy Based on Deep Reinforcement Learning for LEO Satellite Networks",
+  "year": "2019",
+  "type": "journalArticle",
+  "creators": "Wang, Cheng; Wang, Huiwen; Wang, Weidong",
+  "pdf": 2,
+  "pdfKey": "Q5UEMDUY"
+ },
+ {
+  "key": "WT839JP7",
+  "title": "Fine-Grained Library Customization",
+  "year": "2018",
+  "type": "preprint",
+  "creators": "Song, Linhai; Xing, Xinyu",
+  "pdf": 1,
+  "pdfKey": "ZDFZJG52"
+ },
+ {
+  "key": "LJG6ZW7B",
+  "title": "Reinforcement learning: an introduction",
+  "year": "1998",
+  "type": "book",
+  "creators": "Sutton, Richard S.; Barto, Andrew G.",
+  "pdf": 1,
+  "pdfKey": "A7GB7585"
+ },
+ {
+  "key": "XLRW7XXN",
+  "title": "A DQN-Based Routing Algorithm for Load Balancing in LEO Satellite Networks",
+  "year": "2025",
+  "type": "bookSection",
+  "creators": "Chen, Hsiao-Hwa; Meng, Weixiao; Sun, Ziqi; Meng, Jing; Ma, Ruofei; Liu, Gongliang; Che, Xiaoling; Kang, Guodong",
+  "pdf": 1,
+  "pdfKey": "NJGR8I3S"
+ },
+ {
+  "key": "LBMABZJ7",
+  "title": "Distributed On-Demand Routing for LEO Mega-Constellations: A Starlink Case Study",
+  "year": "2022",
+  "type": "conferencePaper",
+  "creators": "Stock, Gregory; Fraire, Juan A.; Hermanns, Holger",
+  "pdf": 2,
+  "pdfKey": "VVHSUIWB"
+ },
+ {
+  "key": "L2VKYTAV",
+  "title": "Shaping Rewards, Shaping Routes: On Multi-Agent Deep Q-Networks for Routing in Satellite Constellation Networks",
+  "year": "",
+  "type": "journalArticle",
+  "creators": "Roth, Manuel M H; Hegde, Anupama; Delamotte, Thomas; Knopp, Andreas",
+  "pdf": 2,
+  "pdfKey": "M96YZIP7"
+ },
+ {
+  "key": "X5K285MW",
+  "title": "Analyzing Source-Routed Approaches for Low Earth Orbit Satellite Constellation Networks",
+  "year": "2023",
+  "type": "conferencePaper",
+  "creators": "Roth, Manuel M. H.",
+  "pdf": 2,
+  "pdfKey": "CZFQHU6I"
+ },
+ {
+  "key": "A7QNRKML",
+  "title": "LOTR: Face Landmark Localization Using Localization Transformer",
+  "year": "2022",
+  "type": "journalArticle",
+  "creators": "Watchareeruetai, Ukrit; Sommana, Benjaphan; Jain, Sanjana; Noinongyao, Pavit; Ganguly, Ankush; Samacoits, Aubin; Earp, Samuel W. F.; Sritrakool, Nakarin",
+  "pdf": 1,
+  "pdfKey": "SP9GEE8D"
+ },
+ {
+  "key": "FGQSH4AI",
+  "title": "Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments",
+  "year": "2020",
+  "type": "preprint",
+  "creators": "Lowe, Ryan; Wu, Yi; Tamar, Aviv; Harb, Jean; Abbeel, Pieter; Mordatch, Igor",
+  "pdf": 2,
+  "pdfKey": "7N32QFLA"
+ },
+ {
+  "key": "LNA28YZY",
+  "title": "Satellite Communications in the New Space Era: A Survey and Future Challenges",
+  "year": "2021",
+  "type": "journalArticle",
+  "creators": "Kodheli, Oltjon; Lagunas, Eva; Maturo, Nicola; Sharma, Shree Krishna; Shankar, Bhavani; Montoya, Jesus Fabian Mendoza; Duncan, Juan Carlos Merlano; Spano, Danilo; Chatzinotas, Symeon; Kisseleff, Steven; Querol, Jorge; Lei, Lei; Vu, Thang X; Goussetis, George",
+  "pdf": 2,
+  "pdfKey": "EYDW9SYP"
+ },
+ {
+  "key": "UKBSA7WN",
+  "title": "Reinforcement learning based dynamic distributed routing scheme for mega LEO satellite networks",
+  "year": "2023",
+  "type": "journalArticle",
+  "creators": "Huang, Yixin; Wu, Shufan; Kang, Zeyu; Mu, Zhongcheng; Huang, Hai; Wu, Xiaofeng; Tang, Andrew Jack; Cheng, Xuebin",
+  "pdf": 2,
+  "pdfKey": "9IXEERUD"
+ },
+ {
+  "key": "ZIUBKVPZ",
+  "title": "Routing in Low Earth Orbit Satellite Networks: Constrained DQN-Based Approach",
+  "year": "2025",
+  "type": "conferencePaper",
+  "creators": "Hegde, Anupama; Roth, Manuel; Bischl, Hermann",
+  "pdf": 2,
+  "pdfKey": "FLYNNP94"
+ },
+ {
+  "key": "AJJI57M9",
+  "title": "A distributed routing algorithm for datagram traffic in LEO satellite networks",
+  "year": "2001",
+  "type": "journalArticle",
+  "creators": "Ekici, E.; Akyildiz, I.F.; Bender, M.D.",
+  "pdf": 2,
+  "pdfKey": "NBNN3IUJ"
+ },
+ {
+  "key": "53HEEK33",
+  "title": "Fast-Convergence Reinforcement Learning for Routing in LEO Satellite Networks",
+  "year": "2023",
+  "type": "journalArticle",
+  "creators": "Ding, Zhaolong; Liu, Huijie; Tian, Feng; Yang, Zijian; Wang, Nan",
+  "pdf": 2,
+  "pdfKey": "5RXTKZZR"
+ },
+ {
+  "key": "UMKF328H",
+  "title": "LEO Satellites in 5G and Beyond Networks: A Review From a Standardization Perspective",
+  "year": "2022",
+  "type": "journalArticle",
+  "creators": "Darwish, Tasneem; Kurt, Gunes Karabulut; Yanikomeroglu, Halim; Bellemare, Michel; Lamontagne, Guillaume",
+  "pdf": 1,
+  "pdfKey": "7W3UKEQB"
+ },
+ {
+  "key": "VACUFEHB",
+  "title": "Computationally efficient algorithms for third order adaptive Volterra filters",
+  "year": "1998",
+  "type": "conferencePaper",
+  "creators": "Xiaohui Li; Jenkins, W.K.; Therrien, C.W.",
+  "pdf": 1,
+  "pdfKey": "K92GJZSK"
+ },
+ {
+  "key": "ETTA3DIV",
+  "title": "Required toroidal confinement for fusion and omnigeneity",
+  "year": "2023",
+  "type": "journalArticle",
+  "creators": "Boozer, Allen H.",
+  "pdf": 1,
+  "pdfKey": "S97RKF92"
+ },
+ {
+  "key": "QSNRQ8PF",
+  "title": "Dynamic Routings in Satellite Networks: An Overview",
+  "year": "2022",
+  "type": "journalArticle",
+  "creators": "Cao, Xiaoli; Li, Yitao; Xiong, Xingzhong; Wang, Jun",
+  "pdf": 1,
+  "pdfKey": "WHLFUN8R"
+ },
+ {
+  "key": "9GPFG5U3",
+  "title": "Link-Identified Routing Architecture in Space",
+  "year": "2025",
+  "type": "journalArticle",
+  "creators": "Zhang, Hefan; Wang, Zhiyuan; Zhang, Shan; Meng, Qingkai; Luo, Hongbin",
+  "pdf": 1,
+  "pdfKey": "S22U6ZHS"
+ },
+ {
+  "key": "7TASFUDR",
+  "title": "Available energy routing algorithm considering QoS requirements for LEO satellite network",
+  "year": "2024",
+  "type": "journalArticle",
+  "creators": "Yang, Li; Zhang, Huitao; Qi, Yaowen; Huang, Qilong",
+  "pdf": 1,
+  "pdfKey": "MLENDC86"
+ },
+ {
+  "key": "AF674CSF",
+  "title": "Logic Path Identified Hierarchical Routing for Large-Scale LEO Satellite Networks",
+  "year": "2024",
+  "type": "journalArticle",
+  "creators": "Yan, Fei; Wang, Zhiyuan; Zhang, Shan; Meng, Qingkai; Luo, Hongbin",
+  "pdf": 1,
+  "pdfKey": "D7BQ374M"
+ },
+ {
+  "key": "UKEKU5ZG",
+  "title": "A Centralized–Distributed Joint Routing Algorithm for LEO Satellite Constellations Based on Multi-Agent Reinforcement Learning",
+  "year": "2025",
+  "type": "journalArticle",
+  "creators": "Xia, Licheng; Lin, Baojun; Zhao, Shuai; Zhao, Yanchun",
+  "pdf": 2,
+  "pdfKey": "9RS6CG6K"
+ },
+ {
+  "key": "GPDPLJNG",
+  "title": "Multi-Commodity Flow Routing for Large-Scale LEO Satellite Networks Using Deep Reinforcement Learning",
+  "year": "2022",
+  "type": "conferencePaper",
+  "creators": "Tsai, Kai-Chu; Fan, Lei; Wang, Li-Chun; Lent, Ricardo; Han, Zhu",
+  "pdf": 1,
+  "pdfKey": "KTTPMYHA"
+ },
+ {
+  "key": "Y2H4NPLU",
+  "title": "Q-learning for distributed routing in LEO satellite constellations",
+  "year": "2023",
+  "type": "preprint",
+  "creators": "Soret, Beatriz; Leyva-Mayorga, Israel; Lozano-Cuadra, Federico; Thorsager, Mathias D.",
+  "pdf": 2,
+  "pdfKey": "9M8AKZMQ"
+ },
+ {
+  "key": "TQF59BD7",
+  "title": "IDLB: An SDN‐Based Load‐Balancing Routing Protocol for Autonomous Satellite Constellation Networks",
+  "year": "2025",
+  "type": "journalArticle",
+  "creators": "Roth, Manuel M. H.; Brandt, Hartmut; Bischl, Hermann; Piñas, David Fernández; Acar, Guray",
+  "pdf": 1,
+  "pdfKey": "Z8FDK6R7"
+ },
+ {
+  "key": "DS9SPARV",
+  "title": "OpenSN: An Open Source Library for Emulating LEO Satellite Networks",
+  "year": "2025",
+  "type": "journalArticle",
+  "creators": "Lu, Wenhao; Wang, Zhiyuan; Zhang, Hefan; Zhang, Shan; Luo, Hongbin",
+  "pdf": 1,
+  "pdfKey": "R2TMILZX"
+ },
+ {
+  "key": "UF8IQTA2",
+  "title": "Traffic-Predictive Routing Strategy for Satellite Networks",
+  "year": "2023",
+  "type": "journalArticle",
+  "creators": "Liu, Zhiguo; Liu, Zhengxia; Wang, Lin; Li, Weijie",
+  "pdf": 1,
+  "pdfKey": "C4VBXRZV"
+ },
+ {
+  "key": "WFA3CZLP",
+  "title": "FlexSATE: Flexible and Distributed Traffic Engineering with Supervised Learning in Ultra-Dense Low-Earth-Orbit Satellite Networks",
+  "year": "2024",
+  "type": "conferencePaper",
+  "creators": "Liu, Xiaoyu; Zhang, Zitian; Qin, Xiaohan; Zhou, Haibo; Zhao, Lian",
+  "pdf": 2,
+  "pdfKey": "PXMNI4HT"
+ },
+ {
+  "key": "S85KQ4FC",
+  "title": "Enabling High-Throughput Routing for LEO Satellite Broadband Networks: A Flow-Centric Deep Reinforcement Learning Approach",
+  "year": "2024",
+  "type": "journalArticle",
+  "creators": "Liu, Huashuo; Lai, Junyu; Zhu, Junhong; Gan, Lianqiang; Chang, Zheng",
+  "pdf": 1,
+  "pdfKey": "TXF9JAWZ"
+ },
+ {
+  "key": "9KZDXPKC",
+  "title": "How to Route CUBIC and BBR Packets in Space",
+  "year": "",
+  "type": "journalArticle",
+  "creators": "Huang, Shuo; Wang, Zhiyuan; Lu, Wenhao; Shen, Kai; Zhang, Jiayi; Zhang, Shan; Luo, Hongbin",
+  "pdf": 1,
+  "pdfKey": "J7S62YRW"
+ },
+ {
+  "key": "9C6HB6AF",
+  "title": "Deep Reinforcement Learning-Based Multipath Routing for LEO Megaconstellation Networks",
+  "year": "2024",
+  "type": "journalArticle",
+  "creators": "Han, Chi; Xiong, Wei; Yu, Ronghuan",
+  "pdf": 2,
+  "pdfKey": "EG6HA6QG"
+ },
+ {
+  "key": "36RZKNW5",
+  "title": "An integrated routing and data fragmentation strategy for optimizing end-to-end delay in LEO satellite networks",
+  "year": "2025",
+  "type": "journalArticle",
+  "creators": "Feng, Zhuotong; Li, Bo; Ding, Hongwei; Hou, Fen",
+  "pdf": 1,
+  "pdfKey": "LHWBJMST"
+ },
+ {
+  "key": "IXVSNEE3",
+  "title": "Distributed Satellite-Terrestrial Cooperative Routing Strategy Based on Minimum Hop-Count Analysis in Mega LEO Satellite Constellation",
+  "year": "2024",
+  "type": "journalArticle",
+  "creators": "Feng, Xin'ao; Sun, Yaohua; Peng, Mugen",
+  "pdf": 1,
+  "pdfKey": "7EV344LI"
+ }
+]

@@ -1,0 +1,17 @@
+{
+  "session": "session-100ff665-026e-4fcf-9a5c-ffa39cb9551c",
+  "role": "auditor",
+  "scope": "read-only bootstrap; not orchestrator transfer",
+  "backup": "/Users/lge/Desktop/leo-direct-sim/.worktrees/topic-loop-20260910/round/run2/incident-20260911/permissions-before-reader-20260911-171620-392068.json",
+  "before_sha256": "57c33a90d8ef9a3a66b15e2bcccfe6bce979313248362b18528e5a6a21e15a15",
+  "verification": [
+    {
+      "tool": "read",
+      "exit": 0
+    },
+    {
+      "tool": "write",
+      "exit": 2
+    }
+  ]
+}

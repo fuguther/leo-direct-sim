@@ -1,0 +1,616 @@
+A Multi-Agent, Policy-Gradient approach to Network Routin g
+Nigel T ao Nigel.Tao@cs.anu.edu.au
+Department of Computer Science, The Australian National Univers ity, Canberra 0200, Australia
+Jonathan Baxter jbaxter@whizbang.com
+WhizBang! Labs. 4616 Henry Street Pittsburgh, PA 15213
+Lex Weaver Lex.Weaver@cs.anu.edu.au
+Department of Computer Science, The Australian National Univers ity, Canberra 0200, Australia
+Abstract
+Network routing is a distributed decision
+problem which naturally admits numerical
+performance measures, such as the average
+time for a packet to travel from source to
+destination. Olpomdp, a policy-gradient reinforcement learning algorithm, was successfully applied to simulated network routing
+under a number of network models. Multiple distributed agents (routers) learned cooperative behavior without explicit interagent communication, and they avoided behavior which was individually desirable, but
+detrimental to the group’s overall performance. Furthermore, shaping the reward signal by explicitly penalizing certain patterns
+of sub-optimal behavior was found to dramatically improve the convergence rate.
+1. Introduction
+Network routing is the problem of eﬃciently using
+communication paths. The standard example is Internet packet routing, but a broader view incorporates
+messaging in multi-processor computers, and the design of transport networks (such as vehicle traﬃc, airline scheduling and water distribution).
+Current approaches to routing model the network as a
+graph with nodes representing routers and weighted
+edges representing links and their associated costs.
+Finding good approaches to routing is thus reduced to
+analytically solving various optimization problems for
+weighted graphs (Deo & Pang, 1984). Although elegant solutions to such problems have been found (Dijkstra, 1956; Bellman, 1958; Cormen et al., 1990; Tanenbaum, 1996), the algorithms can become intractable,
+as the models approach realism. In one example, Orda
+et al. (1993) consider the problem of graphs where the
+edge weights can change probabilistically (as a Markov
+process). In this case, they conclude that the minimal
+expected delay routing problem is NP-hard.
+Even if the problem posed by the model is tractable,
+unrealistic modeling may mean that the derived solution is sub-optimal. Real world networks exhibit
+a variety of features which are not captured in the
+standard weighted-graph model. Such complexities
+include links having limited bandwidth or capacity,
+limited buﬀering at either or both ends of channels,
+packet collisions, mobile hosts (i.e. changing link delays), deadlock concerns, unreliable links, non-uniform
+traﬃc (e.g. Poisson distributed, or bursty), minimum
+Quality-of-Service requirements, and prioritized traﬃc
+(Tanenbaum, 1996).
+There is also the problem of co-ordination, whether
+between routers or between packets from one router.
+Synchronization problems can occur where two routers
+sharing two links simultaneously notice that one of
+the links is not congested and both attempt to use it,
+causing congestion. This problem is worsened when
+the two routers notice the other link is now free and
+both choose to use it, causing congestion again. This
+situation repeats, with the two routers oscillating between the two links — a phenomenon known as ﬂapping (Tanenbaum, 1996).
+In view of the potential diﬃculties with model-based
+approaches to network routing, in this paper we pursue an alternative, model-free approach in which the
+routing problem is treated as a multi-agent reinforcement learning problem. Each router is viewed as a single independent agent, and makes its routing decisions
+according to a local parameterized stochastic policy.
+The negative of the trip time of each packet is used as
+an instantaneous reward signal delivered to all agents
+(routers) upon arrival of the packet at its destination.
+Each agent uses a policy-gradient reinforcement learnarXiv:2512.03211v1  [cs.LG]  2 Dec 2025
+ing algorithm to adjust the parameters of its policy
+in the direction of the gradient of the average reward,
+leading to convergence of all router parameters to a
+local maximum of the average reward, or equivalently
+to a local minimum of the average packet trip time.
+The policy-gradient algorithm we use is a multi-agent
+variant of the Olpomdp algorithm introduced in Baxter et al. (2001), and analyzed in (Bartlett & Baxter,
+2000b).
+The key feature of multi-agent Olpomdp that makes it
+attractive for the network routing problem is that the
+only non-local information each router needs is the instantaneous reward signal distributed upon a packet’s
+arrival at its destination. In particular, routers do not
+need to know the network topology or any other information about the network in order to climb the gradient of the global average reward.
+We describe experiments on several diﬀerent network
+models in which multiple distributed routers learned
+to successfully minimize average packet trip-time. The
+networks were designed such that routers had to avoid
+individually desirable behaviour (minimizing trip-time
+for the single router’s packets alone) in order to achieve
+co-operative behaviour that maximized the global objective. We also show that shaping the reward signal by explicitly penalizing certain patterns of suboptimal behavior can dramatically improve the convergence rate, alleviating one of the major diﬃculties
+with the use of stochastic gradient algorithms.
+1.1 Reinforcement Learning and Routing
+The idea of applying reinforcement learning to network routing is not new. Boyan and Littman (1993)
+introduced Q-routing, an adaptation of Q-learning to
+network routing. In this application, the destination
+node is given, and the value of a state (i.e. node) is the
+expected time-to-arrival from that node to the destination node. Value estimates are communicated between nodes, i.e. state evaluations are updated based
+on values of future states.
+This approach is very similar to Distance Vector routing, and the two methods have the same roots. Distance Vector routing is also known as Bellman-Ford
+routing (Bellman, 1958), and Q-learning has its roots
+in dynamic programming, also due to Bellman (1957).
+Although Q-routing adapted well to rising link costs
+(i.e. queueing times), it has a number of weaknesses.
+First, it is a deterministic algorithm, in that at a particular time, there is only one link chosen for trafﬁc from a node. If this link has limited bandwidth,
+then routing all traﬃc through it may not be an optimal choice. Second, Q-routing does not maintain
+exploratory behavior — when a link is continually valued highest, then other links are never tried. Network changes (e.g. new hosts, faster links) may not
+be discovered, since a sub-optimal policy can be continually followed whilst the value of a better policy is
+under-estimated. Third, the “Count-to-Inﬁnity” problem may occur (Tanenbaum, 1996), when node A’s
+value is calculated from node B’s value, which is calculated from node A’s value. This indirect self-reference
+can lead to long convergence times.
+Stone (2000) later applied TPOT-RL to network routing. His algorithm is explicitly multi-agent, and efﬁciently incorporates domain-speciﬁc features such as
+link utilization rates into the agents’ observation space.
+However, TPOT-RL learns value functions, like Qrouting, and may suﬀer from the ﬁrst two weaknesses
+outlined above. It does avoid the “Count-to-Inﬁnity”
+problem, by using a TD(1) style update rather than
+Q-routing’s simpler TD(0) approach.
+2. Network Routing as a Multi-Agent,
+Partially Observable Markov
+Decision Process
+Each router in a network may be viewed as an agent
+that receives as input packets destined for some other
+node in the network. The agent (router) must decide
+on which of the possible outgoing links to send the
+packet. Assuming a stochastic agent, let µ i
+u(y) denote
+the probability that router i chooses link u for a packet
+routed to destination node y. The decision problem is
+only partially observable, since each agent sees only
+a subset of the packets, and not the state of the entire network. It is a Markov process, because the next
+state of the network is dependent only upon the current state and the decisions of all the routers. Finally,
+multiple nodes makes it a multi-agent problem. Thus,
+network routing is a multi-agent, partially observable,
+Markov decision process ( Pomdp).
+To complete the picture we need to deﬁne a performance measure for the network. A natural performance measure at the packet level is trip time, or the
+time taken for a packet to get from source node to destination node. Longer trip times are less desirable, so
+at time t we set the reward signal to be the negative
+sum of the trip times of all packets which arrived at
+time t:
+rt := −
+∑
+p
+trip
+time of ( p ) (1)
+where the sum is over all packets that arrive at their
+destination at time t.1 Note that provided the probability of each routing decision, µ i
+u(y), is non-zero, every packet will eventually arrive at its destination with
+probability 1.
+To make the routers trainable, we parameterize each
+with a set of real-valued parameters θi
+yu, one for each
+possible destination / outgoing link pair ( y, u ). To
+keep the computations simple, we use a Gibbs distribution so that a packet arriving at router i, destined
+for node y, is sent on link u with probability
+µ i
+u(y, θ ) := eθ i
+yu
+∑
+u′ eθ i
+yu′
+(2)
+where the sum is over all outgoing links at router i.
+2.1 Multi-Agent Policy-Gradient Using
+OLPOMDP
+Our aim is to ﬁnd parameter settings for all the routers
+that maximizes the expected long-term average reward:
+η(θ) := E
+[
+lim
+T →∞
+1
+T
+T∑
+t=1
+rt
+]
+(3)
+where θ is the concatentaion of the parameters from
+all routers. Provided that the system is ergodic (i.e. it
+converges to a unique steady state, given θ), the righthand-side of (3) is independent of the network starting
+state, and converges with probability 1 over all possible reward sequences {rt}. Note that maximizing the
+long-term average reward η(θ) is equivalent to minimizing the average packet trip-time.
+We use stochastic gradient ascent to ﬁnd local optima
+of η(θ). That is, at each time step t the parameters θt
+of all the routers are updated by
+θt+1 = θt + ∆ θt (4)
+where the long-term average of the updates ∆ θt lie
+in the gradient direction ∇ η(θ). Since we are adjusting the policy parameters θ to climb the gradient of
+1This is unrealistic, in that information at a node (i.e.
+the trip times of all arriving packets) has to be instantaneously communicated to all other nodes. Alternatively,
+each node i can calculate its component of the reward signal ri
+t := − ∑
+p trip
+time of ( p ) where now the sum is only
+over packets destined for i. This component can be regularly broadcast via the network, and each router’s reward
+signal is merely the sum of all components received in that
+time step. This means that rewards are delayed, but this
+does not aﬀect a policy’s long-term average reward, although it may aﬀect the training algorithm in that the
+delay between an action and its eﬀect on the reward signal is increased. In practice, we found that modeling the
+broadcast and receipt of reward components via the network does not signiﬁcantly aﬀect results (Tao, 2000).
+the average reward η(θ), this approach is known as a
+policy-gradient algorithm.
+Policy-gradient algorithms were introduced into Machine Learning by Williams (1992) with his Reinforce algorithm (similar algorithms were described
+earlier in the Monte-Carlo literature by Glynn (1986);
+Reiman and Weiss (1986)). A practical diﬃculty with
+Reinforce, and a number of subsequent algorithms
+(Marbach & Tsitsiklis, 1998; Baird & Moore, 1999;
+Meuleau et al., 1999; Meuleau et al., 2000) is that they
+estimate the gradient from a speciﬁed recurrent state,
+which requires perfect, rather than partial, observability (at least in that state). In addition, the variance
+of the gradient estimate is related to the time to return to this recurrent state, which can be large, particularly in multiple-agent environments. For example,
+with network routing, the time between identical conﬁgurations of the network can grow exponentially with
+the size of the network.
+Removing the need to identify a particular recurrent state, Baxter and Bartlett (2001) introduced
+Gpomdp, an algorithm for generating a biased estimate of the gradient ∇ β η(θ). Gpomdp takes one free
+parameter β ∈ [0, 1) which controls both the bias and
+the variance of the estimates produced by the algorithm. In particular, the bias of Gpomdp is small
+provided τalg := 1 / (1 − β ) is small compared to a
+certain mixing time τ of a Markov process associated
+with the pomdp. The relevant mixing time is essentially the time constant in the decay of the inﬂuence
+of an action on the reward signal. τ is always shorter
+than the recurrence time, and is often considerably so.
+The variance of the estimate produced by Gpomdp after T steps is proportional to τalg/T , illustrating the
+bias/variance trade-oﬀ in the selection of β : large β
+gives small bias but large variance and vice-versa. See
+(Bartlett & Baxter, 2000a) for a detailed exposition.
+Olpomdp is an online adaptation of Gpomdp which
+applies policy parameter updates as soon as they are
+calculated (Baxter et al., 2001). If θi
+t is the parameter vector of the i-th router at time t, the updated
+parameter vector vector θi
+t+1 is given by
+θi
+t+1 := θi
+t + γt.r t.z i
+t (5)
+where rt is the sum of the rewards (negative trip times)
+for all packets arriving at time t, γt are suitable stepsizes2, and zi
+t is an eligibility trace of the same dimen2Suﬃcient conditions on γt are γt > 0, ∑ γt = ∞ ,∑ γ 2
+t < ∞ , which is satisﬁed, for example, by γt = 1 /t ,
+although to speed convergence in this paper we set γt to
+be a suitably small constant.
+sionality as θi
+t, which is updated according to
+zi
+t+1 := β.z i
+t + ∇ µ i
+ut (yt, θ i)
+µ i
+ut (yt, θ i) (6)
+Here yt is the destination node of the packet at router
+i at time t, and ut is the outgoing link on which it was
+routed. The gradient operator ∇ is with respect to the
+parameters of the i-th router, θi.
+With the Gibbs parameterization in (2),
+∇ µ i
+ut (yt, θ i)
+µ i
+ut (yt, θ i) = − [ µ i
+1(yt,θ i), ..., µ i
+ut (yt,θ i)− 1, ..., µ i
+n(yt,θ i) ]
+(7)
+Since Olpomdp computes a biased estimate of the gradient, it cannot be guaranteed to converge to a local
+optimum of the average reward. However, provided
+the bias is suﬃciently small (i.e β is suﬃciently large),
+Olpomdp will converge to a region of near-zero gradient (Bartlett & Baxter, 2000b). This can be extended
+to the multi-agent case.
+Apart from the globally distributed reward signal rt,
+each router uses only local information in its parameter updates (the router’s parameters, the packet destination, and the link on which the packet is routed).
+Thus, multi-agent Olpomdp is particularly attractive
+as an algorithm for optimizing the co-operative behaviour of all routers. For similar observations in the
+context of episodic tasks, see (Peshkin et al., 2000).
+3. Experiments
+3.1 A Simple Network
+Figure 1 depicts a simple network with three nodes,
+and three links. The numbers on the links are the link
+delay; the time between when a packet is placed on
+the link and when it arrives at the other end. Note
+that the shortest path from A to C is actually via B.
+In this simulation, traﬃc was generated at a rate of
+one packet per time step at each of the three nodes,
+with the destination node chosen at random.
+A
+1
+1
+3 B
+C
+Figure 1. The triangle network.
+Figure 2 shows a typical run of the Olpomdp routing
+algorithm (with parameters β = 0 . 99 and γ = 10 − 5)
+on the simple network. The top chart shows that the
+reward signal 3 improves, on average, over time to an
+optimum. The bottom chart shows the probability of
+the agent at A routing packets destined for C on link
+AB. Initially, it learns to avoid that link, since the AC
+link (at a cost of 3 for certain) is preferable to going
+via B (which chooses the wrong link half the time).
+However, as B learns to route packets destined for C,
+the AB link (followed by the BC link) becomes a better
+option. The family of agents have learned the best
+collective policy, even though it requires the agent at
+A to rely on the agent at B.
+0
+0.2
+0.4
+0.6
+0.8
+1
+0 1e+06 2e+06 3e+06 4e+06 5e+06 6e+06 7e+06 8e+06 9e+06
+Probability of Router A Choosing the AB Link for C
+Time
+-8
+-7.5
+-7
+-6.5
+-6
+-5.5
+-5
+-4.5
+-4
+0 1e+06 2e+06 3e+06 4e+06 5e+06 6e+06 7e+06 8e+06 9e+06
+Reward Signal
+Time
+Figure 2. Reward signal rt and probability µ A
+AB(C) for
+Olpomdp on the triangle network.3The chart actually shows a moving average, since the
+reward signal is quite volatile. Rewards are generated only
+when packets arrive at their destination, whilst traﬃc is
+generated probabilistically, and routed probabilistical ly.
+3.2 Mixed Strategies
+Figure 3 shows a two-node network, with two links
+from A to B. Unlike the previous example, these links
+have a limited capacity, and packets placed on a saturated link are simply dropped. To capture the undesirability of losing packets, a penalty term d is subtracted
+from the reward signal every time a packet is dropped.
+A B
+6 [capacity 100]
+1 [capacity 1]
+Figure 3. The contention network.
+In this experiment, traﬃc was only generated at A
+(and destined for B), at a rate of two packets every
+time step. If the top link is chosen every time, then
+the average reward signal is − 1 − d, since one packet
+gets through (for a trip time of 1) and one packet is
+dropped. If the bottom link is chosen every time, then
+the average reward signal is − 12, since two packets get
+through (for a trip time of 6 each). If a probabilistic
+policy is pursued, then the long-term expected average
+reward can be calculated based on the probabilities of
+each possible outcome occuring: both packets placed
+on the top link, both on the bottom link, or one on
+each link.
+If the drop penalty d is set to 21, then a simple calculation shows that the optimal probability of choosing
+the top link is 1
+4 . Figure 4 shows the performance of
+the Olpomdp routing algorithm (with β = 0 . 99 and
+γ = 10 − 7) on such a situation. The routing agent
+has learned the optimal non-deterministic policy, for
+a long-term average performance of -10 3
+4 . This outperforms either deterministic strategy (-22 for the top
+link only, and -12 for the bottom link only).
+3.3 Penalizing Cycles
+The routing algorithm thus far does not include any
+domain knowledge. In general, no shortest path can
+contain a cycle 4. This fact has been exploited by Caro
+and Dorigo (1998), who drop all links of a cycle out
+of their eligibility trace equivalent, and Stone (2000),
+who immediately downgrades an appropriate Q-value
+by some proportion of the duration of the cycle.
+4This is because each extra link in a cycle taken incurs a
+further cost, but traversing a cycle has no net eﬀect. However, this result breaks down if links chosen for one packet
+can aﬀect another packet, e.g. with limited bandwidth.
+0
+0.2
+0.4
+0.6
+0.8
+1
+0 1e+06 2e+06 3e+06 4e+06 5e+06 6e+06
+Probability of Router A Choosing the Top Link for B
+Title
+-12.2
+-12
+-11.8
+-11.6
+-11.4
+-11.2
+-11
+-10.8
+-10.6
+-10.4
+0 1e+06 2e+06 3e+06 4e+06 5e+06 6e+06
+Reward Signal
+Time
+Figure 4. Reward signal rt and probability µ A
+top
+link(B) for
+Olpomdp on the 2-node contention network.
+In this paper, we incorporate an explicit global penalty
+term for cycles. The penalty is delivered as a negative component to the reward signal. This an example
+of reward shaping, where the reinforcement signal r
+consists of both an underlying performance measure
+runderlying and a shaping term rshaping . The two components are simply summed:
+rt := runderlying
+t + rshaping
+t
+where the underlying performance measure is as before, given by equation 1.
+Note that an optimal policy (under the original performance measure) remains optimal even when cycles are
+penalized, since such a policy cannot contain cycles
+Figure 5 depicts a simple network with six nodes with
+each link having delay 1 and unlimited capacity. Packets maintained a history of the last 2 nodes visited, and
+signalled a cycle if it arrived at a node it had visited
+before. The shaping term was set to − 100 multiplied
+by the number of cycles detected in that time step.
+C D
+B
+A F
+E
+Figure 5. The complete six-node network. All links have
+delay 1 and unlimited capacity.
+Figure 6 shows the underlying performance measure
+for two typical runs of the Olpomdp algorithm (with
+β = 0 . 9, and γ = 10 − 6). Clearly, the introduction
+of cycle penalties has dramatically improved the convergence rate. Note that this occurred even without explicit credit assignment. All agents were penalized even if only one agent made the wrong decision.
+Nonetheless, this scheme was very eﬀective.
+-30
+-25
+-20
+-15
+-10
+-5
+0 1e+07 2e+07 3e+07 4e+07 5e+07 6e+07 7e+07 8e+07 9e+07
+Underlying Reward Signal
+Time
+Cycle Penalties
+No Cycle Penalties
+Figure 6. Improvement in the underlying reward signal,
+with and without cycle penalties, for Olpomdp on the complete six-node network.
+3.4 Braess’ Network Paradox
+Braess (1968) discovered a routing problem in which
+adding an extra path had the paradoxical eﬀect of
+worsening overall performance. This paradox has been
+constructed for queueing networks (Cohen & Kelly,
+1990), but we take our formulation from Tumer and
+Wolpert (1999), which is simpler to analyze.
+The two networks are shown in ﬁgure 7. The network
+model here diﬀers from the previous experiments, in
+that costs are incurred at nodes, rather than travelling
+through links. The formulae (e.g. 50 + x) marking
+each node denote the cost per packet of using that
+node, where x is the traﬃc ﬂow through that node.
+The motivation for this model comes from vehicular
+traﬃc, where each additional packet (i.e. car) causes
+a cost (i.e. congestion and waiting time) for each other
+packet through that node (i.e. cars at that junction).
+50+x
+10x
+B
+50+x
+10x
+A
+C
+D
+E
+F
+50+x
+10x
+10+x
+50+x
+10x
+A
+B
+D
+C E
+F
+G
+Figure 7. Braess’ networks: the left hand network is
+Braess 0, and the right hand network is Braess 1.
+Consider the left hand network, which we denote
+Braess 0. Suppose that there are six packets to be
+routed from A to B. If all packets go down the left
+hand path, nodes C and D record a ﬂow of x = 6,
+and so the cost per packet is (50 + 6) + (10 × 6) = 116.
+Similarly, if all packets are routed down the right hand
+side, the total cost is 6 × 116. In fact, the lowest cost
+routing strategy is three packets down each path, for
+a cost per packet of (50 + 3) + (10 × 3) = 83.
+Now consider the right hand network, denoted
+Braess 1. Again, let there be six packets to be routed
+from A to B. Any valid routing strategy for Braess 0
+remains a valid routing strategy for Braess 1, since
+Braess 1 is simply Braess 0 augmented by the node
+G and the two links EG and GD. In particular, it is
+possible to achieve an average cost of 83.
+However, packets at E now have two paths to B: either
+EFB or EGDB. A greedy strategy (such as Q-routing)
+will not stay at three packets down each path ACDB
+and AEFB (and none down AEGDB). This is because
+the cost from E to B via F is an extra 53 at F. However, the cost from E to B via G and D is 11 at G
+(with ﬂow 1), and 40 at D (with ﬂow 4), which totals to 51. Thus, the lowest cost path from E to B for
+the marginal packet is actually through G. In Braess 1,
+equilibrium is achieved when two packets go down each
+path: ACDB, AEFB, and AEGDB. However, in this
+case, the average cost per packet is 92, which is higher
+than the best strategy for Braess 0.
+The Olpomdp routing algorithm (with β = 0 . 99 and
+γ = 10 − 5) was run on Braess 1, the augmented network. In this simulation, traﬃc was only generated at
+A for B (at a rate of six packets per time step), and
+links were one-way and downward (i.e. C has only one
+link to choose from, and E has two). Figure 8 shows
+a typical run, with the top chart depicting the probability of packets at A taking the left link, and the
+bottom chart depicting the probability of packets at
+E taking the downward link. Note that the ﬁrst number hovers around 50%, whilst the second converges
+to 100%. This represents the optimal policy, with half
+of the traﬃc (i.e. three packets) going through ACDB,
+and of the remaining three packets through E, zero go
+through G, with three going through AEFB.
+0
+0.2
+0.4
+0.6
+0.8
+1
+0 2e+06 4e+06 6e+06 8e+06 1e+07 1.2e+07 1.4e+07 1.6e+07 1.8e+07 2e+07
+Probability of Router E Choosing the EF Link
+Time
+0
+0.2
+0.4
+0.6
+0.8
+1
+0 2e+06 4e+06 6e+06 8e+06 1e+07 1.2e+07 1.4e+07 1.6e+07 1.8e+07 2e+07
+Probability of Router A Choosing the AC Link
+Time
+Figure 8. Probabilities µ A
+AC(B) and µ E
+EF(B) for Olpomdp in
+Braess’ second network.
+4. Conclusion
+We have shown that Olpomdp, a policy-gradient reinforcement learning algorithm, can successfully tackle a
+distributed, delayed reward, partially observable, multiple agent learning problem. Optimum solutions were
+found, and this was achieved without an explicit system model (i.e. a set of system states and the state
+transition function).
+The algorithm was robust, performing well under
+a number of network models: the link-delay-as-cost
+model (with and without link capacities) of §3.1-3, and
+the node-ﬂow-determines-cost model of §3.4. This is
+in contrast to most routing algorithms that are tailored to a speciﬁc network model and may fail if their
+assumptions are broken.
+In particular, we have shown that Olpomdp, and
+policy-gradient methods in general, can
+• learn co-operative behavior without explicit credit
+assignment, or even inter-agent communication
+other than the reward signal. (See §3.1)
+• learn mixed (or non-deterministic) strategies,
+when they are preferable to any deterministic
+strategy. (See §3.2)
+• learn at a much faster rate, when the reward signal is altered to explicitly penalize certain patterns of sub-optimal behavior. (See §3.3)
+• learn to avoid behavior which is individually desirable, but detrimental to the group’s performance.
+(See §3.4)
+These strengths are not limited to the domain of network routing. Policy-gradient reinforcement learning
+is an eﬀective approach with wide applicability.
+Acknowledgements
+Nigel Tao received ﬁnancial support from the Australian National University and Burgmann College.
+This research was supported by the Australian Research Council.
+References
+Baird, L., & Moore, A. (1999). Gradient Descent for
+General Reinforcement Learning. Advances in Neural Information Processing Systems 11 . MIT Press.
+Bartlett, P. L., & Baxter, J. (2000a). Estimation
+and Approximation Bounds for Gradient-Based Reinforcement Learning. Proceedings of the Thirteenth Annual Conference on Computational Learning Theory (pp. 133–141).
+Bartlett, P. L., & Baxter, J. (2000b). Stochastic Optimization of Controlled Partially Observable Markov
+Decision Processes. Proceedings of the 39th IEEE
+Conference on Decision and Control (CDC00) .
+Baxter, J., & Bartlett, P. L. (2001). Algorithms for
+inﬁnite-horizon policy-gradient estimation. Journal
+of Artiﬁcial Intelligence Research , 14. To appear.
+Baxter, J., Bartlett, P. L., & Weaver, L. (2001). Experiments with inﬁnite-horizon, policy-gradient estimation. Journal of Artiﬁcial Intelligence Research ,
+14. To appear.
+Bellman, R. E. (1957). Dynamic Programming .
+Princeton University Press, Princeton.
+Bellman, R. E. (1958). On a Routing Problem. Quarterly of Applied Mathematics , 16, 87–90.
+Boyan, J. A., & Littman, M. L. (1993). Packet Routing in Dynamically Changing Networks: A Reinforcement Learning Approach. Advances in Neural
+Information Processing Systems , 6, 671–678.
+Braess, D. (1968). Uber ein Paradoxon aus der
+Verkehrsplanung [A paradox of traﬃc assignment
+problems]. Unternehmensforschung, 12, 258–268.
+Caro, G. D., & Dorigo, M. (1998). Ant colonies
+for adaptive routing in packet–switched communications networks. Proceedings of the Fifth International Conference on Parallel Problem Solving from
+Nature. Amsterdam, Holland: Springer–Verlag.
+Cohen, J. E., & Kelly, F. P. (1990). A Paradox of Congestion in a Queueing Network. Journal of Applied
+Probability, 27, 730–734.
+Cormen, T. H., Leiserson, C. E., & Rivest, R. L.
+(1990). Introduction to Algorithms . MIT Press,
+Cambridge, MA.
+Deo, N., & Pang, C. (1984). Shortest Path Algorithms:
+Taxonomy and Annotation. Networks, 14, 275–323.
+Dijkstra, E. (1956). A Note on Two Problems in Connection with Graphs. Canadian Journal of Mathematics, 8, 419–433.
+Glynn, P. W. (1986). Stochastic Approximation for
+Monte-Carlo Optimization. Proceedings of the 1986
+Winter Simulation Conference (pp. 356–365).
+Marbach, P., & Tsitsiklis, J. N. (1998). SimulationBased Optimization of Markov Reward Processes
+(Technical Report). MIT.
+Meuleau, N., Peshkin, L., Kaelbling, L. P., & Kim,
+K.-E. (2000). Oﬀ-Policy Policy Search (Technical
+Report TR-1713). MIT Artiﬁcial Intelligence Laboratory.
+Meuleau, N., Peshkin, L., Kim, K.-E., & Kaelbling,
+L. P. (1999). Learning Finite-State Controllers for
+Partially Observable Environments. Proceedings of
+the Fifteenth International Conference on Uncertainty in Artiﬁcial Intelligence .
+Orda, A., Rom, R., & Sidi, M. (1993). Minimum Delay Routing in Multisatellite Networks. IEEE/ACM
+Transactions on Networking , 1, 187–198.
+Peshkin, L., Kim, K.-E., Meuleau, N., & Kaelbling,
+L. P. (2000). Learning to Cooperate via Policy
+Search. Proceedings of the Sixteenth International
+Conference on Uncertainty in Artiﬁcial Intelligence .
+Reiman, M. I., & Weiss, A. (1986). Sensitivity Analysis via Likelihood Ratios. Proceedings of the 1986
+Winter Simulation Conference .
+Stone, P. (2000). TPOT-RL Applied to Network Routing. Proceedings of the Seventeenth International
+Conference on Machine Learning .
+Tanenbaum, A. S. (1996). Computer Networks . Prentice Hall International. 3 rd edition.
+Tao, N. (2000). Walking the Path: An Application of
+Policy-Gradient Reinforcement Learning to Network
+Routing. Unpublished Honours Thesis. Department
+of Computer Science, Australian National University. http://cs.anu.edu.au/∼ Nigel.Tao/thesis.ps.
+Tumer, K., & Wolpert, D. H. (1999). Avoiding Braess’
+Paradox through Collective Intelligence (Technical
+Report). NASA Ames Research Center.
+Williams, R. J. (1992). Simple Statistical GradientFollowing Algorithms for Connectionist Reinforcement Learning. Machine Learning, 8, 229–256.

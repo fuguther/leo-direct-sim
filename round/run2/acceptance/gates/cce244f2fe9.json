@@ -1,0 +1,10 @@
+{
+ "cand_id": "cce244f2fe9",
+ "ledger_content_hash": "h873b768d2a39",
+ "ledger_version": "3",
+ "card": "round/run2/acceptance/CARD-T2-draft.md",
+ "card_sha256": "cc44372edb2a202bca09bd5d44255331a2a3b9e6e1f9640fcc1cdda680b85e90",
+ "verdict": "PASS",
+ "note": "重审通过（证据已更正）",
+ "recorded_at": "2026-09-11T16:27:11"
+}
