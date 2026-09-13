@@ -201,8 +201,16 @@ def grants_for(role: str, entry: dict) -> dict:
             "shell": base.get("shell", "deny")}
 
 
+MAX_LOG_BYTES = 512 * 1024
+KEEP_LINES = 200
+
+
 def log_unregistered(session_id: str, tool: str, detail: str) -> None:
+    """追加审计行。超过 MAX_LOG_BYTES 先裁剪, 避免无界增长(实测单会话一天可写数十 KB)。"""
     try:
+        if LOG_FILE.exists() and LOG_FILE.stat().st_size > MAX_LOG_BYTES:
+            tail = LOG_FILE.read_text(encoding="utf-8", errors="replace").splitlines()[-KEEP_LINES:]
+            LOG_FILE.write_text("\n".join(tail) + "\n", encoding="utf-8")
         with LOG_FILE.open("a", encoding="utf-8") as f:
             f.write("%s\t%s\t%s\t%s\n" % (session_id or "?", tool, detail[:200], time.strftime("%H:%M:%S")))
     except Exception:

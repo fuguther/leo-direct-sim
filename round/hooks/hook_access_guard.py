@@ -57,9 +57,21 @@ def collect(payload_tool, ti, cwd):
         blob = " ".join(str(ti.get(k, "")) for k in ("command", "code", "script"))
 
         def dual_base(seg):
-            """字面量在两个基准下解析；任一落入研究区即取之（解决 cwd=主仓库的漏判）。"""
+            """字面量基准解析。
+
+            修复(2026-09-12 实测): 旧版对**任何**字面量都用 worktree 兜底一次, 而
+            normalize() 只做词法解析、不检查文件存在, 于是任何裸文件名都会被算成研究区
+            路径 —— 区外会话全被误拦(实测: 本机日常会话被连续拦停十余次)。
+            现仅当字面量**带路径分隔符**时才用 worktree 兜底: 真正的研究区访问都是带
+            目录的路径, 照样捕获; 裸文件名只按会话自身 cwd 解析。
+            """
+            bases = [shell_cwd]
+            in_scope = bool(shell_cwd) and in_worktree(shell_cwd)
+            research_path = bool(re.match(r"^\.{0,2}/?(round|LITERATURE|ANALYSIS)/", seg))
+            if in_scope or research_path:
+                bases.append(str(HOOK_WORKTREE))
             first = None
-            for cand_base in (shell_cwd, str(HOOK_WORKTREE)):
+            for cand_base in bases:
                 k2, v2 = normalize(seg, cand_base, HOOK_WORKTREE)
                 if k2 == "worktree":
                     return (k2, v2)
