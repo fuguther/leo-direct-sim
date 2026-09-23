@@ -1,0 +1,26 @@
+{
+  "artifact_hashes": {
+    "RUNBOOK.md": "3faa99eca0cae4a5fbda635f0bef3947d47f9b7f64fa3e2821340812ba712797",
+    "analysis-request.json": "bf9e45f6a3031f31dda8529b4a4f03f95fc0b5bffeff152ab2bbfe496abc5a91",
+    "request.json": "c14e50e8dda845156e2e1427b7d4b8cc6249407f5e3b20e3ba62f3d3eea23ca0",
+    "resolved/EXP-20260923-T1-STEP5-MICRO-R06-cd05-s7.leo-sim.yaml": "21a15e74af8a8e743ef9475ae53ea837c66d7607bad4ed029c671bd7bb81a8cc",
+    "resolved/EXP-20260923-T1-STEP5-MICRO-R06-control-s7.leo-sim.yaml": "4eb001c5a45665a5c941d5e5af9e58f90471e59f430ea26db1281d20ce8b9924",
+    "run-manifest.json": "1767df6e73154ffce761f48d55791a421b1990e27a2220e490a358bb148475cd"
+  },
+  "design_accounting": {
+    "exact_reexecution_cells": 0,
+    "exact_reexecution_groups": [],
+    "independent_condition_rule": "one independent condition per unique resolved config SHA256",
+    "planned_cells": 2,
+    "schema": "leo-sim-matrix-design-accounting/v1",
+    "unique_resolved_configurations": 2
+  },
+  "errors": [],
+  "execution_authorized": false,
+  "experiment_id": "EXP-20260923-T1-STEP5-MICRO-R06",
+  "launcher_generated": false,
+  "request_sha256": "c14e50e8dda845156e2e1427b7d4b8cc6249407f5e3b20e3ba62f3d3eea23ca0",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-matrix-compile-report/v2",
+  "status": "COMPILED_REVIEW_REQUIRED"
+}
