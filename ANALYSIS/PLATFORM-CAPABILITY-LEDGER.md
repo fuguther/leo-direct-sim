@@ -1,8 +1,24 @@
 # leo_sim V2 平台能力账本
 
-> **CURRENT-VOLATILE**；最后核验：2026-09-03。本文承担当前能力与迁移取舍，但其中代码基线、部署、候选合入和 VM 状态必须实时复核。不能把候选证据冒充已部署证据；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移理由见 `MIGRATION-BACKLOG-20260816.md`。
+> **CURRENT-VOLATILE**；最后核验：2026-09-23。本文承担当前能力与迁移取舍，但其中代码基线、部署、候选合入和 VM 状态必须实时复核。不能把候选证据冒充已部署证据；旧平台逐行证据见 `LEGACY-DESIGN-AUDIT-20260819.md`，历史迁移理由见 `MIGRATION-BACKLOG-20260816.md`。
 
-## 2026-09-03 快照要点（CURRENT）
+## 2026-09-23 复核要点（CURRENT）
+
+本节取代 2026-09-03 节的“当前”地位；09-03 节及其下均为历史快照。
+
+- 代码基线更新为 `origin/main=8a3040990a607c12778e551fce58258b49d60bed`（PR #197）；09-03 节记录的 `79796b6` 已过期。**VM 部署为 `b3a66d2054d8881e5d7b6e7d9002d3ff81817741`**（PR #188，2026-08-30T05:58，部署分支 `deploy-main-3`），落后 `origin/main` 7 个提交——不得把 `origin/main` 的代码能力当作 VM 已部署能力。
+- `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24/24 `VERIFIED` 与 `READY_FOR_INDEPENDENT_CLAIM_REVIEW` 仍成立，但**原始证据链已断**：VM `CODE/Results/` 缺失、全 `/data` 检索 0 命中、2026-09-13 归档包内也不含 `Results`。库内仅存派生分析（28 个文件）与 115 份 launch witness。因此“正式证据链已闭合”只在**派生工件可重算**的意义上继续成立，raw event 级复现能力当前为 UNVERIFIED。
+- **CI 门禁当前为红**：`test.yml` 的 `check_document_governance.py --mode all` 步骤 `exit 1`（6 份 CURRENT 文档过期），任何 PR 都无法 CI 绿。本次刷新即为解除该阻塞。
+- **VM 真实规格**（`/data/liguang13/AUDIT-2026-09-13.md`）：Docker 容器，cgroup 实额 **24 核 / 64 GiB**、`/dev/shm` 4 GiB、1× A100-40GB；无 nvcc/gcc、无 cron/systemd/docker、`~/.ssh` 无私钥。本账本此前若以 `lscpu`/`free` 的 256 核 / 628 GiB 做过容量判断，一律作废。
+- **T1 缺口（2026-09-23 分层审查结论）**：数据平面/SimPy 事件、控制平面/AoI、几何拓扑、流量 provenance、信息泄漏控制、正式证据链均达标（A/A-/B+），**不需要重写模拟器**；相对 T1 研究问题缺的是**测量与反事实能力**：
+  - 决策计算时间未进入模拟时间（`_decide` 在 `kernel.py:3274-3437` 内零 `yield`，观察→选择→提交同处一个 `env.now`）；
+  - 每决策无唯一 `decision_id`，同一包的重决策在 decision sink 里不可区分；
+  - `peer_egress_queue_bits`（`kernel.py:3218-3220`）是邻居**全部方向**求和，不是包到达后实际竞争的出口；真正对应的是同处的 `reverse_link_queue_bits`；
+  - 无严格配对的候选动作反事实 harness（全仓 `counterfactual` 仅 1 处命中，且是 legacy 工件名）；
+  - 现有 R02 无可饱和有向 ISL / 持续 hotspot，不能充当压力窗口。
+- 指标/重算侧：`link utilization` 与 `packet delay decomposition` 在 `experiment-program.yaml` 中仍标 `blocked`；`metrics.summarize` 可从 raw packet_events + service_windows 重算，事件词表闭合（未知 kind 直接报错）。
+
+## 2026-09-03 历史快照要点（已被 2026-09-23 节取代）
 
 - `origin/main=79796b6d2bf9e471f951b6e4a6a80f11701eda81` 已保存 `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24/24 `VERIFIED` 分析：12 个唯一 resolved config + 12 个精确重执行；24/24 scene check 都是 `ACCESS_LIMITED`，claim gate 为 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`。
 - 这关闭的是正式工件、重复执行和描述性场景分类的工程证据缺口，不关闭场景适用性、真实 ISL 压力、Q0、信息价值、公平算法矩阵、RL 效果或论文 claim。测试与回执能力也不是平台研究贡献已经成立的证明。

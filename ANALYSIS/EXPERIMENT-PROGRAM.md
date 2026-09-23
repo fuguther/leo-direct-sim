@@ -2,14 +2,25 @@
 
 > **CURRENT-VOLATILE**：实验问题和顺序仍由本文承载，但顶部诊断进度、SHA、VM 和 run 状态只表示最近一次核验。执行前必须通过 `DOCUMENT-STATUS.json` 的时效检查并实时核对外部证据。
 
-## 2026-09-03 当前实验裁决：不扩矩阵，先完成去锚定选题（CURRENT）
+## 2026-09-23 当前实验裁决：先解 CI 门禁，再补 T1 测量与反事实能力（CURRENT）
+
+本节取代 2026-09-03 节的“当前”地位；09-03 节及其下均为历史快照。
+
+- 仓库证据基线更新为 `origin/main=8a3040990a607c12778e551fce58258b49d60bed`（PR #197，2026-09-06）；09-03 节记录的 `79796b6` 已过期。
+- `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24/24 `VERIFIED` 派生分析仍在库（`ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/{scene-check,v2-paired}`），claim gate 仍为 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`。**但 VM 上 `CODE/Results/` 已缺失**：R02 的 raw trace/ledger/receipt 无法再从原始事件重算，该 `VERIFIED` 应读作“对已提交派生工件的重算通过”，不得读作“原始证据仍可复现”。
+- **执行顺序变更**：原“先完成去锚定选题”的下一步不变，但当前直接阻塞是 `.github/workflows/test.yml` 的文档治理步骤 `exit 1`——任何 PR 都无法 CI 绿。必须先刷新 6 份过期 CURRENT 文档，其余工作才可推进。
+- T1（邻居状态时间错位 / 候选到达时刻对齐）方向已由 2026-09-23 分层审查确认继续使用本平台，不重写模拟器；进入正式 T1 前必须依次通过 `T1-TIME-LEDGER-PASS`、`T1-DOWNSTREAM-RESOURCE-PASS`、`T1-COUNTERFACTUAL-REPLAY-PASS`、`T1-COMPUTE-DELAY-PASS`、`T1-PRESSURE-WINDOW-PASS` 五个门（定义见 `CURRENT-EXPERIMENT-READINESS.md`）。
+- 现有 `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` **不适合作为 T1 主压力场景**：10/20/40/80 Mbps 下无可饱和有向 ISL、无持续 hotspot（80 Mbps 的 1 s active-window p99 utilization 仅约 0.5%，最大约 1%）。T1 压力窗口须另行构造固定 OD corridor / hotspot、access 不限流、constant PHY 的可解析场景。
+- 任何新正式实验仍须从当前 clean `main` 重编译、独立审阅、授权、经 `push-remote.sh` clean-main 部署后再运行；VM 当前部署为 `b3a66d2`，落后 `origin/main` 7 个提交。
+
+## 2026-09-03 历史实验裁决：不扩矩阵，先完成去锚定选题（已被 2026-09-23 节取代）
 
 - `origin/main=79796b6d2bf9e471f951b6e4a6a80f11701eda81`（PR #192）已保存 `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24/24 `VERIFIED` 分析证据。设计有效样本口径是 12 个唯一 resolved config 加 12 个精确重执行，不得把 a/b 重执行当作额外 seed 或不同实验条件。
 - 24/24 scene check 均为 `ACCESS_LIMITED`，claim gate 为 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`。该 cohort 只支持描述性场景/load 指标与重复一致性审阅；不支持 ISL 压力阈值或曲线、因果统计、算法优越性、信息/RL 价值、新算法贡献或 paper-ready 结论。
 - 当前组会任务优先于继续扩实验：先按 `LITERATURE/README.md` 独立形成可证伪的问题候选并完成外部文献碰撞，不继承历史候选、算法清单或实验解释，也不要求为了交付而强行推荐一个中心问题。未冻结研究问题前，不预注册新大矩阵、不启动完整 RL 复现、不包装新方法。
 - 候选形成后，才可揭示 `ACCESS_LIMITED` 等既有场景和结果，用于攻击候选、限定外部有效性与判断测量可行性；不得由旧 run、历史 `next_gate` 或平台现成功能反向生成论文题目。任何正式运行仍须从当前 clean `main` 重编译、独立审阅和授权。
 
-> **历史分界**：从下一节开始均为日期快照或旧方案全文，只用于研究谱系、证据追溯和反例复用；其中的“当前”“实际执行顺序”和待运行项目均不得直接派活，冲突时只采用本节。
+> **历史分界**：从下一节开始均为日期快照或旧方案全文，只用于研究谱系、证据追溯和反例复用；其中的“当前”“实际执行顺序”和待运行项目均不得直接派活，冲突时只采用最新的 2026-09-23 节。
 
 ## 2026-08-29 历史快照：全球人口陆地场景后验分析与场景分类闭合
 
