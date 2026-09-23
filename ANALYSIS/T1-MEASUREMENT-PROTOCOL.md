@@ -76,6 +76,15 @@ decision sink 是 append-only 流（`_DecisionLogWriter` 逐行写 JSONL）。�
 - 全量测试通过的真实计数；
 - `decision_id` 唯一性与「同一包多次重决策可区分」的定向测试。
 
+### 3.9 已知语义边界（消费方必读）
+
+独立复核（2026-09-23）与自审后确认的边界，下游分析不得越过：
+
+1. **`t_control_rx` 在非学习运行中是"可能已知"而非"实际使用"**。学习运行按 contract 裁剪 cache 条目；非学习运行没有 contract 可裁，因此记录该节点**全部有效 cache 条目**中最新的 `received_at`（`mapping_status` 仍为 `truth_audit_not_learner_tensor`）。对**从不读 cache 的确定性路由**而言这是一个反事实上界，**不得**读作"路由实际使用的那个值"。
+2. **"每个 id 都有归属"这条不变量只在挂载 `timeline_sink` 时成立**。只开 `decision_sink` 时，hold/fail 消费的 id 不落任何记录，于是 sink 中的 id 是稀疏的（例如 14 个已分配 id 只有 2 个出现在决策行里）。需要完整 id 账目时必须同时挂 timeline。
+3. **`t_local_queue_enter` 取该决策名下第一条 `queue_enter`**。提交型决策自身的入队必然早于其后任何重新入队，故该字段稳定；但**按 `decision_id` 索引的"全部入队"集合**只包含归属于该决策的那些——链路 stall/退休造成的重新入队不归属任何决策（`decision_id` 为 `None`），这是刻意的（见 R8-A8）。
+4. **`t_measure` / `t_decision_start` / `t_decision_commit` 当前恒相等**，三字段分开保留是为 `T1-COMPUTE-DELAY-PASS` 落地时回填，不得据此认为已测量决策时延。
+
 ## 4. 其余门禁的设计要点
 
 - **`T1-DOWNSTREAM-RESOURCE-PASS`**：`peer_egress_queue_bits`（`kernel.py:3218-3220`）是邻居全部方向 data+ctrl 求和，不代表包到达后实际进入的队列。真正对应的是同处的 `reverse_link_queue_bits`（`3212-3217`）。需要新增的是**候选动作级**、固定 downstream policy 下的具体 egress、到达前 workload、在服务剩余量与控制积压。保留旧字段以免破坏既有消费方，但必须在文档与 schema 中标注其语义边界。

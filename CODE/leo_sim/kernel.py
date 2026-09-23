@@ -577,7 +577,8 @@ class DownlinkServer(_DRRMixin):
         self.queued_bits += pkt.bits
         self.area.add(pkt.bits, self.k.env.now)
         self.k._metric_queue_enter(
-            pkt, "downlink", f"gsl:downlink:{self.sat}:{pkt.dst}")
+            pkt, "downlink", f"gsl:downlink:{self.sat}:{pkt.dst}",
+            decision_id=pkt.decision_id)
         self.k._note_busy(pkt.dst)
         self.k._poke(self.wake)
 
@@ -810,7 +811,8 @@ class ISLLink:
         self.data_q.append(pkt)
         self.data_bits += pkt.bits
         self.data_area.add(pkt.bits, self.k.env.now)
-        self.k._metric_queue_enter(pkt, "isl", f"isl:{self.sat}:{self.peer}")
+        self.k._metric_queue_enter(pkt, "isl", f"isl:{self.sat}:{self.peer}",
+                                   decision_id=pkt.decision_id)
         self.k._poke(self.wake)
 
     def put_ctrl(self, pkt: ControlPacket) -> None:
@@ -1419,7 +1421,8 @@ class Kernel:
         silently (R8-A7).
         """
         if self.pending[sat].put(pkt, self.env.now):
-            self._metric_queue_enter(pkt, "holding", f"holding:{sat}")
+            self._metric_queue_enter(pkt, "holding", f"holding:{sat}",
+                                     decision_id=decision_id)
             if self.timeline_sink is not None and decision_id is not None:
                 self._timeline("hold", pkt, decision_id, sat=int(sat))
             self._note_busy(pkt.dst)
@@ -1475,7 +1478,19 @@ class Kernel:
         })
 
     def _metric_queue_enter(self, pkt: DataPacket, queue: str,
-                            link_id: str) -> None:
+                            link_id: str,
+                            decision_id: int | None = None) -> None:
+        """Record one enqueue into a physical queue.
+
+        ``decision_id`` is the decision that CAUSED this enqueue and must be
+        passed explicitly.  Attributing by ``pkt.decision_id`` is wrong for
+        every enqueue that is not the direct consequence of the packet's last
+        committed decision (R8-A8): a hold that follows a commit would be
+        credited to the previous decision.  Requeues caused by a link stall
+        or retirement therefore pass None, the ISL and downlink enqueues a
+        commit performs pass the committed id, and the holding enqueue passes
+        the id of the holding attempt.
+        """
         qid = self._metric_queue_seq
         self._metric_queue_seq += 1
         pkt.metric_queue_id = qid
@@ -1485,7 +1500,7 @@ class Kernel:
             "link_id": link_id, "queue_id": qid,
         })
         if self.timeline_sink is not None:
-            self._timeline("queue_enter", pkt, pkt.decision_id,
+            self._timeline("queue_enter", pkt, decision_id,
                            queue=queue, link_id=link_id)
 
     def _metric_link_id(self, link_ref, occ_key: str) -> tuple[str, str]:
@@ -3362,9 +3377,10 @@ class Kernel:
         now = self.env.now
         decision_id = self._next_decision_id()
         if self.timeline_sink is not None and pkt.decision_id is not None:
-            # the packet was already decided somewhere (a hold, a failed
-            # attempt, or a previous satellite).  The explicit link is what
-            # the old (t, pid, sat, kind) row key could not express.
+            # the packet was COMMITTED at least once before (pkt.decision_id
+            # is written only by the two commit sites), possibly at another
+            # satellite.  The explicit link is what the old (t, pid, sat,
+            # kind) row key could not express.
             self._timeline("redecision", pkt, decision_id,
                            prev_decision_id=pkt.decision_id, sat=int(sat))
         if pkt.deadline is not None and now >= pkt.deadline:

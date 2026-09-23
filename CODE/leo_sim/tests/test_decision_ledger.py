@@ -267,3 +267,36 @@ def test_default_off_allocates_nothing_even_when_holds_would_occur():
     kern.run()
     assert kern._decision_seq == 0
 
+
+# ------------------------------- R8-A8: an enqueue belongs to its own causer
+
+def test_holding_enqueue_is_not_credited_to_the_previous_decision():
+    """R8-A8: _metric_queue_enter attributed by pkt.decision_id, so a hold
+    that followed a commit credited its holding enqueue to the PREVIOUS
+    committed decision.  Drive the two causally distinct enqueues directly."""
+    kern, sink, timeline = _kernel_with_sinks({}, [row(1, 0.0, A, B)])
+    pkt = kernel.DataPacket(1, A, B, 8_000_000, None, 0.0)
+    pkt.decision_id = 42                      # a previous COMMITTED decision
+    assert kern._hold_packet(0, pkt, decision_id=99)
+    enq = [m for m in timeline if m["milestone"] == "queue_enter"]
+    hold = [m for m in timeline if m["milestone"] == "hold"]
+    assert len(enq) == 1 and len(hold) == 1
+    assert enq[0]["decision_id"] == 99, \
+        "the holding enqueue must not inherit the previous decision id"
+    assert hold[0]["decision_id"] == 99
+    assert enq[0]["queue"] == "holding"
+
+
+def test_commit_caused_enqueue_carries_the_committed_decision():
+    """The complement: the ISL enqueue a forward commit performs must be
+    credited to that commit, or t_local_queue_enter could never resolve."""
+    sink, timeline = [], []
+    _run([row(1, 0.0, A, B)], decision_sink=sink, timeline_sink=timeline)
+    forward = [r for r in sink if r["kind"] == "forward"]
+    assert forward, "fixture must forward at least once"
+    did = forward[0]["decision_id"]
+    credited = [m for m in timeline
+                if m["milestone"] == "queue_enter" and m["decision_id"] == did]
+    assert credited, "the committed decision must own its own enqueue"
+    assert credited[0]["queue"] == "isl"
+
