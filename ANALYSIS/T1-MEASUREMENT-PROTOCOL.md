@@ -20,7 +20,7 @@
 | `T1-TIME-LEDGER-PASS` | 每个决策有唯一 `decision_id`；同一包的重决策可区分；第 3 节列出的 11 个时间戳可从落盘工件重建，且缺项显式标记为缺失而非静默填 0 |
 | `T1-DOWNSTREAM-RESOURCE-PASS` | 对每个候选动作记录**该包到达后实际竞争的出口**（固定 downstream policy 下的具体 egress）、到达前 workload、在服务剩余量与控制积压；不再用「邻居全部方向求和」代替 |
 | `T1-COUNTERFACTUAL-REPLAY-PASS` | 存在严格配对的反事实 harness：同 immutable trace / config / seed 重放到同一 decision，校验 pre-branch state hash，只强制改变目标包这一次动作；**不得** deepcopy SimPy 环境，**不得**从原轨迹读取未选候选的未来状态 |
-| `T1-COMPUTE-DELAY-PASS` | 决策计算时延进入模拟时间，且**两种模式分别建模、分别可证**：(a) `refresh`（**已实现**）= `decision_start → timeout → 在提交时刻重新观测并重新求解 → commit`；(b) `frozen`（**阶段 1d 必做**）= `在 decision_start 冻结观测 o(t0) → 对 o(t0) 推理 → commit 时只做合法性校验（链路是否断开、队列是否已满），不得用最新状态重新求最优`。默认关闭（延迟 0），关闭时与旧行为等价。**只有 (b) 代表「计算期间状态陈旧」这一类真实同步推理** |
+| `T1-COMPUTE-DELAY-PASS` | 决策计算时延进入模拟时间，且**两种模式分别建模、分别可证**：(a) `refresh`（**已实现**）= `decision_start → timeout → 在提交时刻重新观测并重新求解 → commit`；(b) `frozen`（**已实现 2026-09-23**）= `在 decision_start 冻结观测 o(t0) → 对 o(t0) 推理 → commit 时只做合法性校验（链路是否断开、队列是否已满），不得用最新状态重新求最优`。默认关闭（延迟 0），关闭时与旧行为等价。**只有 (b) 代表「计算期间状态陈旧」这一类真实同步推理** |
 | `T1-PRESSURE-WINDOW-PASS` | 存在可解析的 ISL 压力窗口（固定 OD corridor / hotspot、access 不限流、constant PHY），且能量化其有向 ISL 利用率量级 |
 
 ## 3. `T1-TIME-LEDGER-PASS` 设计
@@ -120,12 +120,15 @@ decision sink 是 append-only 流（`_DecisionLogWriter` 逐行写 JSONL）。�
   - V2 中 `t0` 时链路是断的，延迟版却在链路刚恢复的 `t1` 提交 `forward` ⇒ 决策使用了**计算开始时并不存在的信息**。
   - 附带发现：`delay` 会把一个在计算开始时合法的转发决策变成**无限 hold**（V1 delay=2 全程无决策行），这是 `refresh` 的语义副产品，不是链路问题。
 
-  **4.4 阶段 1d 必须补的模式 = `frozen`（冻结观测推理）**
+  **4.4 `frozen` 模式（已实现，2026-09-23；R8-A10）**
 
-  - 语义：在 `t0` 取观测快照 `o(t0)`（本地队列、候选集与几何、速率、缓存/AoI 视图），推理只许读 `o(t0)`；`timeout(delay)` 后**只**做合法性校验（链路仍通？队列仍有余量？包未过期？）。
-  - 被拒绝的动作**不得**被静默替换为「用最新状态重算的最优动作」——那正是 `refresh`。拒绝要 fail-loud 记录（`commit_rejected` 里程碑 + 原因），并按声明策略重新决策（再次计时）。
-  - 两种模式并存、互斥、由配置显式选择，**默认仍是延迟 0 的旧行为**，关闭时逐位等价。
-  - 该模式的验收必须包含本节的 2×2 夹具反例：`frozen` 下 V2 的 delay 版**不得**提交 `forward`。
+  - 配置：`execution.decision_observation_mode ∈ {refresh, frozen}`，默认 `refresh`；未知值 fail-loud；`frozen` 要求 `compute_delay_s > 0`（没有计算时间就没有可冻结的区间，属配置错误而非静默 no-op）。
+  - 语义：在 `decision_start` 取观测并据此推理（`_observe_preferred_action`），`timeout(delay)` 后**只**做合法性校验（`_deliver_legal_now` / `_forward_legal_now`：链路仍通？队列仍有余量？包未过期？）。
+  - 被拒绝的动作**不得**被静默替换为「用最新状态重算的最优动作」——那正是 `refresh`。拒绝写 `commit_rejected` 里程碑（含 `inferred_at` / `action` / `reason`）并把包 park，包要为下一次推理**再付一次计算时间**。
+  - 两种模式并存、互斥、由配置显式选择，**默认仍是延迟 0 的旧行为**：`_decide` 仅在传入观测时提前分支，延迟为 0 时 `decide_deferred` 根本不创建。
+  - **v1 边界（刻意限制，不是遗漏）**：不与 learning arm 组合（学习需要自己的观测契约）、不与 `forced_actions` 组合（反事实 harness 在分支点强制动作，而 frozen 把分支点移到了观测时刻）；两者都 fail-loud 抛 `KernelError`。拒绝记录只走 timeline sink——**不新增 mechanism counter**，因为那会改变 receipt 的 `MECHANISM_COUNTER_KEYS` 键集。
+  - 验收证据（`CODE/leo_sim/tests/test_frozen_observation.py`，10 个测试）：① 4.3 的 2×2 反例——`frozen` 下 V2 的 delay 版**不提交** `forward`，而 `refresh` 提交；② V1 下 `frozen` 记 `commit_rejected`，`refresh` 什么都不记；③ 状态不变时两种模式**逐条相同**（负对照）；④ 关闭新特性（默认 `refresh` + 延迟 0）与基线逐位等价（digest `NO_RESULT_DIFFERENCES`）。
+  - **已知行为差异（必须随 claim 一起说明）**：某目的 cell 的**第一次**决策会因 endpoint 惰性创建而看到空服务集（`no_info`）——`refresh` 靠同一时刻的重新求解把它掩盖过去，`frozen` 会如实地把这个 `no_info` 当作观测结果并 hold 一个计算周期。这不是 frozen 的缺陷，而是 `refresh` 一直在掩盖的一个冷启动效应。
 - **`T1-PRESSURE-WINDOW-PASS`**：现有 `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 在 10/20/40/80 Mbps 下无可饱和有向 ISL、无持续 hotspot（80 Mbps 的 1 s active-window p99 utilization 约 0.5%，最大约 1%），**不能充当 T1 主压力场景**；须另建固定 OD corridor / hotspot、access 不限流、constant PHY 的可解析场景。
 
 ## 5. 明确不做

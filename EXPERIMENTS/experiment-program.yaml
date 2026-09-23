@@ -166,12 +166,13 @@ gates:
       - gate: T1-COMPUTE-DELAY-PASS
         finding: R8-A10
         detail: >-
-          The shipped mode defers and then RE-OBSERVES at commit time
-          (decide_deferred -> _decide reads env.now and the live state). It
-          therefore cannot represent inference on an observation captured at
-          compute start, i.e. it cannot produce compute-induced state
-          staleness. A frozen-observation mode with a commit-time legality
-          check is required (Phase 1d).
+          RESOLVED 2026-09-23 (PR #210): refresh is still the default and
+          still cannot represent compute-induced staleness, but the second
+          mode now exists -- execution.decision_observation_mode=frozen infers
+          on the observation captured at decision start and only checks
+          legality at commit, recording commit_rejected when the inferred
+          action is refused. Producer-verified only; has NOT run on a formal
+          VM artifact; v1 restricts it (no learning arm, no forced_actions).
       - gate: T1-PRESSURE-WINDOW-PASS
         finding: R8-A9
         detail: >-
