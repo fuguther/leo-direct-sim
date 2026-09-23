@@ -65,6 +65,31 @@ It must exit 0 with `all_checks_ok: true`. Then judge the gate itself — this i
 Three earlier review rounds found the same defect class: process documents never mechanically checked
 against the tools they invoke. Judge whether this gate really closes that class or only its examples.
 
+### Negative controls are mandatory - and you must RUN them, not read them
+
+Every check now carries an executed negative control, and the report prints it:
+
+- **G1a** injects a foreign revision id and requires the scan to report it as foreign.
+- **G1b** corrupts one documented session name and requires a mismatch.
+- **G2** probes an unsupported metric name and requires the analyzer to REJECT it.
+- **G3** (phase all) probes a wrong run id and requires a REJECT.
+- **G4** checks a synthetic artifact set with a zeroed gate hash and requires a reported problem.
+
+**A check whose control did not trigger is reported as an UNPROVEN GATE, appears in `unproven_gates`,
+and must NOT be counted as passed.** Verify that `all_checks_ok` is false whenever a check is unproven or
+failed; if you can construct a case where an unproven or failed check still yields `all_checks_ok: true`,
+that is a blocking finding. Checks that cannot run yet (G3 before an authorization exists) appear in
+`skipped_checks` and are likewise not counted as passed.
+
+Then try to DEFEAT a control yourself: copy the procedure to /tmp, put a stale revision id into a run
+command, and confirm the gate (pointed at your copy) reports it; or tamper a session and confirm G1b
+fires. Report exactly what you tried and the observed result.
+
+**Disclosure you must check, not trust:** the first version of G1a used a regex that forbade hyphens,
+matched none of the real ids, and passed vacuously (measured: real ids seen = `[]`). The producer found
+and fixed it before requesting review, and added the control. Confirm the current gate cannot repeat
+that: the report must show the real ids it actually saw.
+
 ## Also verify yourself
 
 1. **F2 disclosure**: every one of the four R04 resolved configs must carry
