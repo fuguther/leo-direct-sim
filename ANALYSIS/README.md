@@ -1,6 +1,8 @@
 # 分析与实验文档入口
 
-> 文档状态最后核验：2026-08-23。机器可读状态以 `DOCUMENT-STATUS.json` 为准；仓库统一入口为 `../AGENT-START-HERE.md`。带日期的报告、旧工作包和旧实验目录不得自动解释为当前状态。
+> 文档状态最后核验：2026-09-23。机器可读状态以 `DOCUMENT-STATUS.json` 为准；仓库统一入口为 `../AGENT-START-HERE.md`。带日期的报告、旧工作包和旧实验目录不得自动解释为当前状态。
+>
+> **2026-09-23 复核提示**：本次复核确认 `origin/main=8a30409`（PR #197），VM 部署为 `b3a66d2`（落后 7 个提交）；`EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的原始 `CODE/Results/` 证据已缺失，库内 `VERIFIED` 只覆盖派生工件（见 `FINDINGS-REGISTRY.md` 的 R8-A1）。
 
 ## 当前真相源
 

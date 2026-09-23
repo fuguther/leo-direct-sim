@@ -62,6 +62,11 @@
 | R6-B2 | kernel (transmit) | minor | INFERENCE | open(follow-up) | down-wait 独占 server 与等待统计真空（Q0 holding-queue 同根） | #41 R4B 二审 | 设计缺口，Q0 holding-queue 一并处理 |
 | R6-G2b | governance | minor | INFERENCE | fixed | 绝对路径下 macOS 系统级 symlink（/var→/private/var）会被误拒 | review47 复审 | #51（已合并）：词法根做扫描边界+解析根 containment；symlink 根绝对路径回归锁定 |
 | R6-P02b | routing | minor | INFERENCE | open(follow-up) | hop 改 BFS 后 sorted_adj 未预传时仍会构建（kernel 已预计算，非逐决策成本） | review49 复审 | 可选清理：未预传时不构建 |
+| R8-A1 | experiment/evidence | major | FACT | open | VM canonical 工作区 `CODE/Results/` 已不存在：`EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 raw trace/ledger/receipt 在 VM 与本地均缺失，库内 24/24 `VERIFIED` 只覆盖已提交派生工件，raw event 级复现能力当前 UNVERIFIED | 2026-09-23 实测：`ls /data/论文/leo-direct-sim/CODE/Results` 不存在；全 `/data` `find -name 'EXP-20260829-...-load*'` 0 命中；`/data/liguang13/_archive-LEO-20260913/leo-direct-sim.tar.gz` 包内无 `Results`；Mac 侧同样无 `Results` | 待用户确认是否有离线备份；确认后决定是否把 raw 证据固化进 `push-remote.sh`/`pull-results-remote.sh` 的保留契约；本条不改变 R02 派生分析结论 |
+| R8-A2 | CI/governance | blocking | FACT | fixed | `.github/workflows/test.yml` 在 `pytest` 前执行 `check_document_governance.py --mode all`，该步骤因 6 份 CURRENT 文档 review 过期而 `exit 1`，导致**任何 PR 都无法 CI 绿** | 2026-09-23 本地实测 `exit 1`，6 条 `STALE_CURRENT`；定时任务 `document-governance-weekly` 连续失败（2026-09-14、2026-09-21，run 34819970392 / 35575424542） | 本次 docs PR：重新核对外部状态后刷新 6 份文档的 `last_reviewed` 并更新内容；不削弱检查器 |
+| R8-A3 | docs/state drift | major | FACT | fixed | CURRENT 文档记录的仓库基线与 VM 部署 SHA 双双过期，且把 `origin/main` 代码能力默认当成 VM 已部署能力 | 2026-09-23 实测：文档写 `origin/main=79796b6`，实为 `8a30409`；VM `.deployment_commit=b3a66d2`（2026-08-30），落后 7 个提交 | 本次 docs PR：三份 CURRENT 文档批量更新基线并显式区分 GitHub / VM / 本地三态 |
+| R8-A4 | kernel (audit) | major | FACT | open | 决策审计字段 `peer_egress_queue_bits` 是邻居**全部方向** data+ctrl 求和，不代表包到达后实际竞争的出口队列；真正对应的是同一处的 `reverse_link_queue_bits` | `CODE/leo_sim/kernel.py:3218-3220`（求和）对比 `3212-3217`（`reverse_link_queue_bits`）；`ISLLink` 为单方向链路、data+ctrl 共享一个有限队列（`kernel.py:743-747`）；兄弟字段 `own_queue_bits` 是逐方向（`3180-3181`）；唯一相关测试仅在对称双星上断言 `==0`（`tests/test_decision_snapshot.py:65`），从未区分求和与逐方向 | 由 `T1-DOWNSTREAM-RESOURCE-PASS` 门关闭：新增候选动作级、固定 downstream policy 下的具体 egress / 到达前 workload / 在服务剩余量 / 控制积压真值 |
+| R8-A5 | kernel (timing) | major | FACT | open | 每决策无唯一 `decision_id`，同一包的重决策在 decision sink 中不可区分；且 `_decide` 全段无 `yield`，观察→选择→提交共处一个 `env.now`，决策计算时延未进入模拟时间 | 全仓 `decision_id` grep 0 命中；`_decide` `kernel.py:3274-3437` 区间内 `yield` 计数为 0；sink 行仅以 `(t,pid,sat,kind)` 为键（`3168-3184`）；重决策入口 `_redecide_pending` `3439-3444`、`_redecide_cell_pending` `2762-2782` | 由 `T1-TIME-LEDGER-PASS`（`decision_id` + 完整时间链）与 `T1-COMPUTE-DELAY-PASS`（`decision_start → timeout → revalidate → commit`）两门关闭；均为 opt-in，关闭时须与旧行为等价 |
 
 ## Open / Follow-up 清单
 
@@ -69,6 +74,8 @@
 - R4B2-A3b：控制包在途跟踪、Q0 snapshot → 完整 checkpoint/resume（设计 follow-up）。
 - R6-F1/R6-F3/R6-M1：Q0-I/J/F、物理目标和精确算法合同。
 - R6-A1/R6-A2/R6-A3/R6-B2/R6-P02b：已登记的 snapshot/holding/routing follow-up。
+- R8-A1：R02 raw 证据缺失，待用户确认离线备份后决定保留契约（不阻塞 T1 工程，但阻塞 raw event 级复现声明）。
+- R8-A4/R8-A5：T1 测量能力缺口，分别由 `T1-DOWNSTREAM-RESOURCE-PASS` 与 `T1-TIME-LEDGER-PASS` + `T1-COMPUTE-DELAY-PASS` 关闭。
 - `EXPERT-REVIEW` 与 NOTES 只作证据来源；任何仍需处置的历史项必须先在本表分配 ID，
   不允许只存在于其他文档的“隐形 open item”。本轮已先迁入 R1-A1/R1-A2；其余历史项
   需逐条核验后再登记，不能批量假设仍 open 或已 fixed。
