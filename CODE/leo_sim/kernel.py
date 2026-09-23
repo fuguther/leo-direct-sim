@@ -68,7 +68,8 @@ class DataPacket:
     __slots__ = ("pid", "src", "dst", "bits", "deadline", "emitted_at", "path",
                  "assigned_sat", "learning_state", "learning_action",
                  "learning_reward", "isl_enqueued_at", "holding_until",
-                 "metric_queue_id", "metric_prop_id", "metric_ingress_at")
+                 "metric_queue_id", "metric_prop_id", "metric_ingress_at",
+                 "decision_id")
 
     def __init__(self, pid, src, dst, bits, deadline, emitted_at):
         self.pid = pid
@@ -89,6 +90,11 @@ class DataPacket:
         self.metric_queue_id = None
         self.metric_prop_id = None
         self.metric_ingress_at = None
+        # identity of the most recent COMMITTED decision for this packet;
+        # set only when a decision/timeline sink is attached, so that
+        # downstream milestones can be attributed to the decision that
+        # caused them without touching packet_events
+        self.decision_id = None
 
 
 class QueueArea:
@@ -1021,7 +1027,7 @@ class ISLLink:
 
 class Kernel:
     def __init__(self, resolved: dict, rows: list[dict], geometry=None,
-                 learning_out_dir=None, decision_sink=None):
+                 learning_out_dir=None, decision_sink=None, timeline_sink=None):
         cfg = resolved["config"]
         self.resolved = resolved
         self.cfg_sc = cfg["scenario"]
@@ -1078,6 +1084,13 @@ class Kernel:
         # optional output-only per-hop decision snapshot sink (a list); when
         # None the recording code paths are never entered
         self.decision_sink = decision_sink
+        # optional output-only decision lifecycle stream (a list of dicts).
+        # Deliberately a SEPARATE sink: the per-hop decision rows are asserted
+        # by shape and count in existing tests, so lifecycle milestones must
+        # never be appended to decision_sink.  When None no row is built.
+        self.timeline_sink = timeline_sink
+        # per-decision identity; allocated only when a sink can record it
+        self._decision_seq = 0
 
         self.ge_enabled = bool(self.cfg_links["ge_enabled"])
 
@@ -1410,6 +1423,41 @@ class Kernel:
         if self.monitor:
             self.monitor_log.append((self.env.now, kind, tuple(sorted(kv.items()))))
 
+    # -------------------------------------------------- decision ledger
+    def _next_decision_id(self) -> int | None:
+        """Allocate one per-decision identity, or None when nothing records.
+
+        Output only: the counter never influences routing, learning, timing
+        or fates.  With both sinks absent (the default) nothing is allocated
+        and the hot path is unchanged.
+        """
+        if self.decision_sink is None and self.timeline_sink is None:
+            return None
+        decision_id = self._decision_seq
+        self._decision_seq += 1
+        return decision_id
+
+    def _timeline(self, milestone: str, pkt: DataPacket,
+                  decision_id: int | None, **extra) -> None:
+        """Append one decision-lifecycle milestone to the optional sink.
+
+        Output only: never influences routing, learning, timing or fates.
+        Callers guard on ``self.timeline_sink is not None`` before calling, so
+        this method never runs on the default path.  ``decision_id`` is the
+        decision the milestone belongs to; it stays None for traffic that was
+        never decided (e.g. pre-ingress uplink service).  ``extra`` may carry
+        ``at`` to override the environment clock (used where a window end is
+        authoritative).
+        """
+        row = {
+            "milestone": milestone,
+            "at": float(self.env.now),
+            "pid": pkt.pid,
+            "decision_id": decision_id,
+        }
+        row.update(extra)
+        self.timeline_sink.append(row)
+
     # ------------------------------------------------------- raw metrics
     def _metric_packet_emitted(self, pkt: DataPacket) -> None:
         self.packet_events.append({
@@ -1427,6 +1475,9 @@ class Kernel:
             "at": float(self.env.now), "queue": queue,
             "link_id": link_id, "queue_id": qid,
         })
+        if self.timeline_sink is not None:
+            self._timeline("queue_enter", pkt, pkt.decision_id,
+                           queue=queue, link_id=link_id)
 
     def _metric_link_id(self, link_ref, occ_key: str) -> tuple[str, str]:
         if link_ref[0] == "isl":
@@ -1447,6 +1498,9 @@ class Kernel:
             "bits": bits, "rate_bps": float(rate_bps),
         })
         pkt.metric_queue_id = None
+        if self.timeline_sink is not None:
+            self._timeline("service_start", pkt, pkt.decision_id,
+                           stage=stage, link_id=link_id)
 
     def _metric_service_window(self, pkt: DataPacket, stage: str,
                                link_id: str, start: float, end: float,
@@ -1460,6 +1514,10 @@ class Kernel:
             "served_bits": int(pkt.bits) if outcome == "ok" else 0,
             "bits": int(pkt.bits), "outcome": outcome,
         })
+        if self.timeline_sink is not None:
+            self._timeline("service_finish", pkt, pkt.decision_id,
+                           stage=stage, link_id=link_id, outcome=outcome,
+                           at=float(end))
 
     def _metric_propagation_start(self, pkt: DataPacket, stage: str,
                                   link_id: str, delay_s: float) -> None:
@@ -1482,6 +1540,8 @@ class Kernel:
             "at": float(self.env.now), "prop_id": prop_id,
         })
         pkt.metric_prop_id = None
+        if self.timeline_sink is not None:
+            self._timeline("peer_arrival", pkt, pkt.decision_id)
 
     def _metric_satellite_ingress(self, pkt: DataPacket, sat: int) -> None:
         """Record the one physical uplink admission boundary exactly once."""
@@ -1493,6 +1553,9 @@ class Kernel:
             "at": float(self.env.now), "endpoint": pkt.src,
             "satellite": int(sat), "bits": int(pkt.bits),
         })
+        if self.timeline_sink is not None:
+            self._timeline("satellite_ingress", pkt, pkt.decision_id,
+                           satellite=int(sat))
 
     def _metric_delivered(self, pkt: DataPacket) -> None:
         self.packet_events.append({
@@ -3142,7 +3205,8 @@ class Kernel:
 
     def _record_decision(self, pkt: DataPacket, sat: int, kind: str,
                          candidates: list, chosen: str,
-                         audit_candidates: list | None = None) -> None:
+                         audit_candidates: list | None = None,
+                         decision_id: int | None = None) -> None:
         """Append one per-hop decision snapshot to the optional decision sink.
 
         Output only: never influences routing, learning, timing, or fates.
@@ -3167,6 +3231,7 @@ class Kernel:
             pkt, sat, candidates if audit_candidates is None else audit_candidates)
         self.decision_sink.append({
             "t": float(self.env.now),
+            "decision_id": decision_id,
             "state_version": self._state_version,
             "pid": pkt.pid,
             "src": pkt.src,
@@ -3273,6 +3338,13 @@ class Kernel:
 
     def _decide(self, pkt: DataPacket, sat: int) -> None:
         now = self.env.now
+        decision_id = self._next_decision_id()
+        if self.timeline_sink is not None and pkt.decision_id is not None:
+            # the packet was already decided somewhere (a hold, a failed
+            # attempt, or a previous satellite).  The explicit link is what
+            # the old (t, pid, sat, kind) row key could not express.
+            self._timeline("redecision", pkt, decision_id,
+                           prev_decision_id=pkt.decision_id, sat=int(sat))
         if pkt.deadline is not None and now >= pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             return
@@ -3323,8 +3395,9 @@ class Kernel:
                     )
                     if action != "deliver":
                         raise KernelError("DDQN selected a non-deliver action from deliver-only mask")
+                pkt.decision_id = decision_id
                 self._record_decision(pkt, sat, "deliver", ["deliver"],
-                                      "deliver")
+                                      "deliver", decision_id=decision_id)
                 dl.put(pkt)
             else:
                 self._fail(pkt, "ACCESS_QUEUE_OVERFLOW")
@@ -3418,8 +3491,10 @@ class Kernel:
                         f"legal mask {sorted(legal)}")
             else:
                 action = legal[0]
+            pkt.decision_id = decision_id
             self._record_decision(pkt, sat, "forward", legal, action,
-                                  audit_candidates=cands)
+                                  audit_candidates=cands,
+                                  decision_id=decision_id)
             self.isls[sat][action].put_data(pkt)
             return
         if unavailable:
@@ -3748,8 +3823,9 @@ class Kernel:
 
 
 def run_simulation(resolved: dict, rows: list[dict], geometry=None,
-                   learning_out_dir=None, decision_sink=None) -> dict:
+                   learning_out_dir=None, decision_sink=None,
+                   timeline_sink=None) -> dict:
     kern = Kernel(resolved, rows, geometry=geometry,
                   learning_out_dir=learning_out_dir,
-                  decision_sink=decision_sink)
+                  decision_sink=decision_sink, timeline_sink=timeline_sink)
     return kern.run()
