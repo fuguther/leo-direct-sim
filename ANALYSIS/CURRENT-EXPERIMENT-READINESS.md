@@ -2,14 +2,39 @@
 
 > **CURRENT-VOLATILE**：本文是最近一次仓库内状态快照，不是外部实时查询结果。引用其中的 branch、SHA、PR、CI、VM、run、完成状态或时间估计前，必须在当前 checkout、GitHub 和 VM 重新核验；过期检查由 `DOCUMENT-STATUS.json` 与 `scripts/check_document_governance.py` fail-loud。
 
-## 2026-09-03 当前裁决：描述性证据已闭合，研究问题未冻结且选题须去锚定（CURRENT）
+## 2026-09-23 当前复核：外部状态已重核；CI 门禁为红；T1 需要五项新能力
+
+本节取代 2026-09-03 节的“当前”地位；09-03 节及其下均为历史快照。
+
+**实时核验（2026-09-23，本地 checkout + GitHub + VM 均实测）**
+
+- 仓库证据基线：`origin/main=8a3040990a607c12778e551fce58258b49d60bed`（PR #197，2026-09-06）。09-03 节记录的 `79796b6` 已过期。
+- **CI 门禁当前为红，且会拦住每一个 PR**：`.github/workflows/test.yml` 的 `pytest` 之前先执行 `python scripts/check_document_governance.py --mode all`，该检查当前 `exit 1`（6 份 CURRENT 文档 review 过期：`ANALYSIS/README.md`、本文、`EXPERIMENT-PROGRAM.md`、`PLATFORM-CAPABILITY-LEDGER.md`、`FINDINGS-REGISTRY.md`、`EXPERIMENTS/experiment-program.yaml`）。**在文档刷新前，任何 PR 都无法 CI 绿。** 定时任务 `document-governance-weekly` 已连续两次失败（2026-09-14、2026-09-21）。本次刷新即针对该阻塞。
+- **VM 部署落后 origin/main 7 个提交**：canonical VM `/data/论文/leo-direct-sim` 的 `.deployment_commit=b3a66d2054d8881e5d7b6e7d9002d3ff81817741`（PR #188，部署于 2026-08-30T05:58），部署分支 `deploy-main-3`。任何新正式实验前必须重新走 `push-remote.sh` clean-main 部署。
+- **⚠️ R02 原始 run 证据在 VM 上已不存在**：`CODE/Results/` 目录缺失，全 `/data` 检索 `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02-load*` 0 命中；VM 2026-09-13 归档（`/data/liguang13/_archive-LEO-20260913/`，脚本自述“仅打包,不删原件”）包内也不含 `Results`；Mac 侧同样无 `Results`。仓库内仅保留派生证据 `ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/{scene-check,v2-paired}`（28 个文件）与 VM `.remote_runtime/launches/` 的 115 份 launch witness。**结论：R02 的 raw trace/ledger/receipt 目前无法从原始事件重算**，本仓库的 `VERIFIED` 是对已提交派生工件的重算结论，不等于原始证据仍可复现。是否另有离线备份待用户确认。
+- **VM 形态与真实限额**（来源：VM 侧 `/data/liguang13/AUDIT-2026-09-13.md`，2026-09-13 实测）：VM 实为 Docker 容器 `cuda-liguang13`，cgroup 实额 **24 核 / 64 GiB**，`/dev/shm` 仅 4 GiB；1× **A100-PCIE-40GB**（driver 570.133.20，无 nvcc、无 gcc，只能跑预编译 wheel）；无 cron / systemd / docker；`~/.ssh` 无私钥（不能 git over SSH，HTTPS 需 token）。**`lscpu`/`free` 显示的 256 核 / 628 GiB 是宿主视角，不得用于容量规划。**
+- 平台质量评审（2026-09-23 分层审查）：数据平面 / SimPy 事件、控制平面 / AoI、信息泄漏控制、正式证据链均达标（A 级），**不需要重写模拟器**；相对 T1 研究问题的缺口集中在测量与反事实能力（见下）。
+
+**T1 门禁：补齐前不得进入正式 T1 实验**
+
+平台在进入 T1（邻居状态时间错位 / 候选到达时刻对齐）研究前，必须依次通过：
+
+1. `T1-TIME-LEDGER-PASS`——每决策唯一 `decision_id` 与完整时间链（`t_measure`、`t_control_rx`、`t_decision_start`、`t_decision_commit`、`t_local_queue_enter`、`t_service_start`、`t_service_finish`、`t_peer_arrival`、`t_peer_redecision`、`t_peer_target_egress_enter`、`t_peer_target_egress_service_start`）。
+2. `T1-DOWNSTREAM-RESOURCE-PASS`——候选动作级的真实下游竞争资源真值（固定 downstream policy 下的具体 egress、到达前 workload、在服务剩余量与控制积压），取代当前把邻居**全部方向**求和的 `peer_egress_queue_bits`。
+3. `T1-COUNTERFACTUAL-REPLAY-PASS`——严格配对的候选动作反事实 harness：同 immutable trace/config/seed 重放到同一 decision，校验 pre-branch state hash，只强制改变目标包这一次动作；不使用 deepcopy SimPy 环境，不从原轨迹读取未选候选的未来状态。
+4. `T1-COMPUTE-DELAY-PASS`——决策计算时延进入模拟时间（`decision_start → yield timeout(delay) → revalidate → commit`），默认关闭以保持语义兼容。
+5. `T1-PRESSURE-WINDOW-PASS`——可解析的 ISL 压力窗口（固定 OD corridor / hotspot、access 不限流、constant PHY），因为现有 `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 在 10/20/40/80 Mbps 下无可饱和有向 ISL、无持续 hotspot，**不适合作为 T1 主压力场景**。
+
+**等价性硬要求**：以上 1–2、4 项均为 opt-in 且默认关闭；关闭时必须与旧行为 bit/semantic 等价，并按“先记录旧版数值、再在新版重跑同一检查”的新旧对照方式验证。
+
+## 2026-09-03 历史裁决：描述性证据已闭合，研究问题未冻结且选题须去锚定（已被 2026-09-23 节取代）
 
 - 仓库证据基线：`origin/main=79796b6d2bf9e471f951b6e4a6a80f11701eda81`（PR #192）。`EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的持久化分析为 `VERIFIED`，共 24 个 verified run；设计账本明确它们是 **12 个唯一 resolved config + 12 个相同配置精确重执行**，不能按 24 个独立条件或 24 个独立样本解释。
 - 24/24 scene check 均为 `ACCESS_LIMITED`；claim gate 是 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`，不是 `SUPPORTED`、论文可用或科研结论已成立。当前证据允许报告各 load 的描述值、运行完整性和精确重执行一致性；不能声称全球 ISL 压力阈值/响应曲线、因果效应、算法优越性、信息价值、RL 价值或新方法贡献。
 - **当前最重要的项目任务不是继续挑旧实验跑，也不是从历史候选中强行选一个。** 论文选题先按 `LITERATURE/README.md` 完成冷启动问题生成和外部文献碰撞；在独立候选形成前，不读取旧实验解释、旧候选排序或平台功能清单。随后才可把 `ACCESS_LIMITED`、既有诊断和平台能力作为反证、边界与可行性材料。中心问题冻结前继续暂停扩矩阵，不启动完整 RL 复现，不包装新方法。
 - GitHub、VM deployment 和本地 checkout 是不同状态：本节只确认已进入 `origin/main` 的证据工件，不据此宣称当前 main 已重新部署或 VM 可直接继续运行。任何新正式实验仍须重新走编译、审阅、授权、clean-main 部署、自然结束回执与分析重算。
 
-> **历史分界**：从下一节开始均为按日期保留的历史设计或状态快照，只用于追溯证据与决策变化；其中的“当前”“下一步”和运行中状态均不得指导新任务，冲突时只采用本节。
+> **历史分界**：从下一节开始均为按日期保留的历史设计或状态快照，只用于追溯证据与决策变化；其中的“当前”“下一步”和运行中状态均不得指导新任务，冲突时只采用最新的 2026-09-23 节。
 
 ## 2026-08-30 历史设计口径：全球 R02 是描述性场景/稳定性诊断
 
