@@ -2,18 +2,22 @@ schema: leo-experiment-program/v1
 updated_at: "2026-09-23"
 reviewed_at: "2026-09-23"
 external_state_recheck:
-  origin_main: 8a3040990a607c12778e551fce58258b49d60bed
-  origin_main_pr: 197
-  vm_deployed_commit: b3a66d2054d8881e5d7b6e7d9002d3ff81817741
-  vm_deployed_at: "2026-08-30T05:58:56+08:00"
-  vm_commits_behind_origin_main: 7
+  origin_main: d24521d7a29d136408695edd17feaa210b5143cf
+  origin_main_pr: 202
+  vm_deployed_commit: c5a0ca781fad1baa7a62dd1c7c1b9586eabc2aaa
+  vm_deployed_at: "2026-09-23T18:03:03+08:00"
+  vm_deployed_verification: local_manifest_source_tree_sha256_equals_remote_install_711_of_711_files_match
+  vm_commits_behind_origin_main: 1
   r02_raw_results_present: false
   r02_raw_results_note: >-
     VM CODE/Results is absent and no copy exists locally; only derived
     analysis under ANALYSIS/EXP-20260829-.../{scene-check,v2-paired} and
     .remote_runtime/launches witnesses survive. R02 VERIFIED covers derived
-    artifacts only; raw-event recomputation is UNVERIFIED. See R8-A1.
-  ci_test_workflow_document_governance: failing_before_this_refresh
+    artifacts only; raw-event recomputation is PERMANENTLY UNAVAILABLE.
+    The owner confirmed on 2026-09-23 that no offline backup exists, so this
+    is not a recoverable gap: no claim may rely on recomputing R02 raw
+    events. Recurrence prevention is tracked as R8-A9 in FINDINGS-REGISTRY.
+  ci_test_workflow_document_governance: passing_after_this_refresh
   vm_shape: docker_container_24_core_64gib_cgroup_a100_40gb_no_nvcc_no_cron
 authority:
   human_plan: ANALYSIS/EXPERIMENT-PROGRAM.md
