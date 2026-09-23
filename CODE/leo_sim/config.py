@@ -211,6 +211,14 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         # at commit time.  Only "frozen" can represent a state that went stale
         # during the computation.
         "decision_observation_mode": str,
+        # F2 (node processing / scheduling cost): how long ONE satellite visit
+        # occupies the node's receive/process/schedule element, in SIMULATED
+        # seconds, before the arriving packet becomes available to the
+        # forwarding function.  Deliberately NOT a transmit-time term: it never
+        # scales pkt.bits / rate, so it cannot degenerate into the same
+        # variable as the PHY bandwidth (F3, links.isl_rate_mbps).  0 keeps the
+        # historical instantaneous arrival path exactly.
+        "node_process_delay_s": (int, float),
     },
     "outputs": {
         "out_dir": str,
@@ -403,6 +411,9 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "compute_delay_s": 0.0,
         # Historical runs re-read state at commit time; frozen is opt-in.
         "decision_observation_mode": "refresh",
+        # Historical runs process an arriving packet instantaneously; a
+        # non-zero node cost is opt-in.
+        "node_process_delay_s": 0.0,
     },
     "outputs": {"out_dir": "leo_sim_out", "trace_path": None, "plotting": False},
 }
@@ -867,6 +878,11 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
         raise ConfigError(
             "execution.decision_observation_mode=frozen requires "
             "execution.compute_delay_s > 0")
+    node_delay = ex["node_process_delay_s"]
+    if (isinstance(node_delay, bool) or node_delay < 0
+            or not math.isfinite(node_delay)):
+        raise ConfigError(
+            "execution.node_process_delay_s must be finite and >= 0")
 
 
 # The five demand fields defaulted since identity/v2 (Task 1 global scene

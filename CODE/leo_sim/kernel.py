@@ -1132,6 +1132,25 @@ class Kernel:
                 "branch point, and frozen moves the branch point to the "
                 "observation instant")
 
+        # F2 (node processing / scheduling cost).  A satellite visit costs the
+        # node the configured receive/process/schedule time BEFORE the packet
+        # is handed to the forwarding function, so this stage ends exactly
+        # where the decision stage begins: F2 and compute_delay_s are disjoint
+        # intervals and can never be mistaken for each other.  It is recorded
+        # on the timeline sink only (see _node_process) because the four frozen
+        # packet-event stages cannot carry it without becoming unattributable,
+        # and extending the closed kind whitelist in metrics.py is a contract
+        # change owned by a separate task.
+        self.node_process_delay_s = float(self.cfg_ex["node_process_delay_s"])
+        if self.node_process_delay_s > 0 and self.timeline_sink is None:
+            # Fail loud: node processing time that no stream can attribute is
+            # exactly the "time hidden inside an existing stage" this mechanism
+            # exists to avoid (AGENTS.md hard fact 4).
+            raise KernelError(
+                "execution.node_process_delay_s > 0 requires a timeline_sink: "
+                "F2 node processing time must be attributable, never added "
+                "silently")
+
         self.ge_enabled = bool(self.cfg_links["ge_enabled"])
 
         self.ul_rate_bps = self.cfg_access["uplink_rate_mbps"] * 1e6
@@ -3954,6 +3973,50 @@ class Kernel:
             self._pending_wake[sat] = None
             self._redecide_pending(sat)
 
+    # ------------------------------------------------------- F2 node cost
+    def _node_process(self, pkt: DataPacket, sat: int, via: str):
+        """Occupy the arriving satellite node for the configured F2 cost.
+
+        One satellite visit == one receive/process/schedule occupancy.  The
+        packet has physically arrived (its ``propagation_arrival`` is already
+        recorded, and so is ``satellite_ingress`` on the uplink path) but it is
+        not yet available to the forwarding function; the occupancy ends where
+        the decision stage begins.
+
+        The interval is recorded as the milestone pair ``node_process_start`` /
+        ``node_process_end`` on the timeline sink, the same output-only channel
+        frozen mode uses for its rejected commits.  It is deliberately NOT
+        folded into any frozen stage:
+
+        * reusing queue/holding would make the cost indistinguishable from
+          queueing, and reusing service_start/service_window would put it into
+          tx_s -- the same variable as the PHY bandwidth (F3);
+        * a new packet_events kind would extend the closed kind whitelist in
+          metrics.py:90-218 (a frozen contract, not this task's to change),
+          and a new mechanism counter would extend
+          receipt.MECHANISM_COUNTER_KEYS.
+
+        Scope (deliberate): data packets only, one cost per satellite visit --
+        uplink ingress and every ISL arrival.  The destination ground endpoint
+        and the control plane are not satellite-node processing and are left
+        untouched, so F2 cannot perturb the control plane or the delivery
+        terminus.
+
+        With the default delay of 0 the generator returns before touching the
+        clock, so no event is created, the same-time ordering of the arrival
+        path is preserved, and historical runs stay bit-identical.
+        """
+        delay = self.node_process_delay_s
+        if delay <= 0:
+            return
+        started_at = float(self.env.now)
+        self._timeline("node_process_start", pkt, pkt.decision_id,
+                       sat=int(sat), via=via, node_cost_s=delay)
+        yield self.env.timeout(delay)
+        self._timeline("node_process_end", pkt, pkt.decision_id,
+                       sat=int(sat), via=via, started_at=started_at,
+                       node_cost_s=delay)
+
     def _ingress_after_prop(self, pkt: DataPacket, sat: int, prop: float):
         yield self.env.timeout(prop)
         self._in_flight.pop(pkt.pid, None)
@@ -3964,6 +4027,7 @@ class Kernel:
             return
         pkt.path.append(sat)
         self._note_busy(pkt.dst)  # new downlink demand may have appeared
+        yield from self._node_process(pkt, sat, "uplink")
         if self.compute_delay_s > 0:
             yield from self.decide_deferred(pkt, sat)
         else:
@@ -3978,6 +4042,7 @@ class Kernel:
             return
         pkt.path.append(sat)
         self._note_busy(pkt.dst)  # new downlink demand may have appeared
+        yield from self._node_process(pkt, sat, "isl")
         if self.compute_delay_s > 0:
             yield from self.decide_deferred(pkt, sat)
         else:
