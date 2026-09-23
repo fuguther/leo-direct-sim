@@ -1,0 +1,141 @@
+{
+  "acceptance": {
+    "min_delivered_packets": 6,
+    "min_multisat_deliveries": 6,
+    "require_control_delivery": true,
+    "require_data_isl": true
+  },
+  "analysis": {
+    "analysis_id": "AN-T1-STEP5-GATE-EVIDENCE",
+    "estimand": "Two-implementation agreement check on the SAME trace/seed/config differing only in execution.compute_delay_s. Gate evidence: every uncovered interval ('gap') in each delivered packet's timeline equals compute_delay_s exactly (per gap, not merely in sum), and the independent per-link utilisation / per-packet phase recomputation closes against the production reading with zero unexplained mismatches. The declared primary metric e2e_delay_mean_s is the quantity both implementations compute, so it is the natural meeting point for the second opinion; it is reported descriptively and is NOT an effect-size, superiority, causal or performance claim. Note explicitly: the aggregate difference in e2e delay between the two arms is NOT required to equal (decisions x compute_delay_s), because a non-zero compute delay legitimately changes event ordering and therefore the other phases.",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "Two-implementation agreement check on the SAME trace/seed/config differing only in execution.compute_delay_s. Gate evidence: every uncovered interval ('gap') in each delivered packet's timeline equals compute_delay_s exactly (per gap, not merely in sum), and the independent per-link utilisation / per-packet phase recomputation closes against the production reading with zero unexplained mismatches. The declared primary metric e2e_delay_mean_s is the quantity both implementations compute, so it is the natural meeting point for the second opinion; it is reported descriptively and is NOT an effect-size, superiority, causal or performance claim. Note explicitly: the aggregate difference in e2e delay between the two arms is NOT required to equal (decisions x compute_delay_s), because a non-zero compute delay legitimately changes event ordering and therefore the other phases.",
+        "left_arm": "control",
+        "name": "cd05_vs_control",
+        "right_arm": "cd05"
+      }
+    ],
+    "primary_metric": "e2e_delay_mean_s"
+  },
+  "arms": [
+    {
+      "arm_id": "control",
+      "config_overrides": {},
+      "intervention_paths": []
+    },
+    {
+      "arm_id": "cd05",
+      "config_overrides": {
+        "execution": {
+          "compute_delay_s": 0.05
+        }
+      },
+      "intervention_paths": [
+        "execution.compute_delay_s"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "arm_id": "control",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260923-T1-STEP5-MICRO-R02-control-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "cd05",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260923-T1-STEP5-MICRO-R02-cd05-s7",
+      "trace_seed": 7
+    }
+  ],
+  "claim_boundary": {
+    "can_claim": [
+      "per-link utilisation recomputed independently from the immutable event record, including zero-service links",
+      "per-packet delay phase decomposition closing against the realised end-to-end delay",
+      "each uncovered interval of a delivered packet equals execution.compute_delay_s",
+      "fate-appropriate truncated accounting for packets not delivered"
+    ],
+    "cannot_claim": [
+      "any algorithmic superiority, information value, learning value or new-mechanism contribution",
+      "an effect-size, performance curve, threshold, or causal claim about compute delay",
+      "real subscriber traffic or a calibrated demand model",
+      "reproduction of the #212 scripted-geometry micro-mechanism fixture (this batch uses real Walker geometry)"
+    ]
+  },
+  "common_config": {
+    "access": {
+      "acquisition_delay_s": 0.0,
+      "association": "bbm",
+      "downlink_rate_mbps": 1000.0,
+      "hysteresis_deg": 0.0,
+      "min_dwell_s": 0.0,
+      "unavailable_policy": "queue",
+      "uplink_rate_mbps": 1000.0
+    },
+    "control_plane": {
+      "advertise_interval_s": 2.0,
+      "enabled": true,
+      "packet_bits": 8000,
+      "ttl_s": 30.0,
+      "vis_k": 2
+    },
+    "demand": {
+      "csv_path": "CODE/data/traffic/t1_step5_micro_ab.csv",
+      "mode": "csv",
+      "packet_bits": 1000000
+    },
+    "execution": {
+      "available_capacity_interval_s": 0.1,
+      "max_entities": 20000,
+      "max_events": 20000000,
+      "max_packets": 1000
+    },
+    "learning": {
+      "algorithm": "none"
+    },
+    "links": {
+      "ge_enabled": false,
+      "isl_rate_mbps": 10.0,
+      "rate_model": "constant"
+    },
+    "outputs": {
+      "plotting": false
+    },
+    "routing": {
+      "policy": "hop"
+    },
+    "scenario": {
+      "duration_s": 40.0,
+      "name": "t1-step5-micro-ab",
+      "num_planes": 1,
+      "num_satellites": 8,
+      "seed": 7,
+      "time_step_s": 0.1
+    }
+  },
+  "experiment_id": "EXP-20260923-T1-STEP5-MICRO-R02",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-matrix-request/v1",
+  "work_finalization": "CODE/work/WP-LEO-V2-T1-STEP5-GATE-EVIDENCE/R02/finalization.json"
+}

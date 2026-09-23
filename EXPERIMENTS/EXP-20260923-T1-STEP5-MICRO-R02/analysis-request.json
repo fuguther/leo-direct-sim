@@ -1,0 +1,88 @@
+{
+  "analysis": {
+    "analysis_id": "AN-T1-STEP5-GATE-EVIDENCE",
+    "estimand": "Two-implementation agreement check on the SAME trace/seed/config differing only in execution.compute_delay_s. Gate evidence: every uncovered interval ('gap') in each delivered packet's timeline equals compute_delay_s exactly (per gap, not merely in sum), and the independent per-link utilisation / per-packet phase recomputation closes against the production reading with zero unexplained mismatches. The declared primary metric e2e_delay_mean_s is the quantity both implementations compute, so it is the natural meeting point for the second opinion; it is reported descriptively and is NOT an effect-size, superiority, causal or performance claim. Note explicitly: the aggregate difference in e2e delay between the two arms is NOT required to equal (decisions x compute_delay_s), because a non-zero compute delay legitimately changes event ordering and therefore the other phases.",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "Two-implementation agreement check on the SAME trace/seed/config differing only in execution.compute_delay_s. Gate evidence: every uncovered interval ('gap') in each delivered packet's timeline equals compute_delay_s exactly (per gap, not merely in sum), and the independent per-link utilisation / per-packet phase recomputation closes against the production reading with zero unexplained mismatches. The declared primary metric e2e_delay_mean_s is the quantity both implementations compute, so it is the natural meeting point for the second opinion; it is reported descriptively and is NOT an effect-size, superiority, causal or performance claim. Note explicitly: the aggregate difference in e2e delay between the two arms is NOT required to equal (decisions x compute_delay_s), because a non-zero compute delay legitimately changes event ordering and therefore the other phases.",
+        "left_arm": "control",
+        "name": "cd05_vs_control",
+        "right_arm": "cd05"
+      }
+    ],
+    "primary_metric": "e2e_delay_mean_s"
+  },
+  "claim_boundary": {
+    "can_claim": [
+      "per-link utilisation recomputed independently from the immutable event record, including zero-service links",
+      "per-packet delay phase decomposition closing against the realised end-to-end delay",
+      "each uncovered interval of a delivered packet equals execution.compute_delay_s",
+      "fate-appropriate truncated accounting for packets not delivered"
+    ],
+    "cannot_claim": [
+      "any algorithmic superiority, information value, learning value or new-mechanism contribution",
+      "an effect-size, performance curve, threshold, or causal claim about compute delay",
+      "real subscriber traffic or a calibrated demand model",
+      "reproduction of the #212 scripted-geometry micro-mechanism fixture (this batch uses real Walker geometry)"
+    ]
+  },
+  "design_accounting": {
+    "exact_reexecution_cells": 0,
+    "exact_reexecution_groups": [],
+    "independent_condition_rule": "one independent condition per unique resolved config SHA256",
+    "planned_cells": 2,
+    "schema": "leo-sim-matrix-design-accounting/v1",
+    "unique_resolved_configurations": 2
+  },
+  "experiment_id": "EXP-20260923-T1-STEP5-MICRO-R02",
+  "matrix_manifest_sha256": "fef29bb5311f81c3a1fe3ccd846f426212932b9439b25ae1a5ca8d4d9185cc69",
+  "planned_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 6,
+        "min_multisat_deliveries": 6,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "control",
+      "config_sha256": "e6b9044684ddf29381c8a1249d6913ad171205a62451ae7dcbd5303144afd2ce",
+      "controlled_signature": "0bdbd1973e92cbfebe91c9e065bd5003f59923fe4a6e33701ff0b7cc40e8f120",
+      "input_sha256": "26536d8b3b894a13d74289131653fddfdae8fe095f7c4edb2dc6a1683ec37592",
+      "learning_seed": null,
+      "pairing_key": "s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260923-T1-STEP5-MICRO-R02-control-s7",
+      "trace_identity_sha256": "a101e0d5d182ada545d5dce5e411aec43ffcdbbebc4807dad1a7aba99469384a",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 6,
+        "min_multisat_deliveries": 6,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "cd05",
+      "config_sha256": "2d39a7f2a37cb2da88bd7744087a60e7fd9f0fe09cf5d3987125fe34537d7030",
+      "controlled_signature": "0bdbd1973e92cbfebe91c9e065bd5003f59923fe4a6e33701ff0b7cc40e8f120",
+      "input_sha256": "26536d8b3b894a13d74289131653fddfdae8fe095f7c4edb2dc6a1683ec37592",
+      "learning_seed": null,
+      "pairing_key": "s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260923-T1-STEP5-MICRO-R02-cd05-s7",
+      "trace_identity_sha256": "a101e0d5d182ada545d5dce5e411aec43ffcdbbebc4807dad1a7aba99469384a",
+      "trace_seed": 7
+    }
+  ],
+  "planned_run_ids": [
+    "EXP-20260923-T1-STEP5-MICRO-R02-control-s7",
+    "EXP-20260923-T1-STEP5-MICRO-R02-cd05-s7"
+  ],
+  "request_sha256": "94bc74b1c11aa9e42c1d38de42e7d1be09b8f595a2a36d47de073d12ad7a4563",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-matrix-analysis-request/v1",
+  "status": "WAITING_FOR_VERIFIED_RUNS"
+}
