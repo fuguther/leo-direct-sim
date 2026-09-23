@@ -1103,6 +1103,34 @@ class Kernel:
         # compute.  0 (the default) keeps every historical run exactly as it
         # was: _decide stays a plain synchronous call with no yield at all.
         self.compute_delay_s = float(self.cfg_ex["compute_delay_s"])
+        # T1-COMPUTE-DELAY observation semantics (protocol doc 4.1/4.4):
+        #   "refresh" (default) -- the deferred decision re-reads env.now and
+        #       the live state when it lands.  That is a *delayed re-observation*
+        #       decision: it CANNOT represent a state that went stale during the
+        #       computation, because the staleness is erased by the re-read.
+        #   "frozen" -- the observation is taken at decision start, the action
+        #       is inferred from that observation, and commit time only checks
+        #       whether the inferred action is still LEGAL.  A rejected action
+        #       is recorded and the packet is parked; it is never silently
+        #       replaced by a freshly solved optimum.
+        # The first version of "frozen" is deliberately restricted: a learning
+        # arm needs its own observation contract, and the counterfactual
+        # harness forces actions at the branch point, which frozen moves to the
+        # observation instant.
+        self.obs_mode = str(self.cfg_ex["decision_observation_mode"])
+        if self.obs_mode not in ("refresh", "frozen"):
+            raise KernelError(
+                f"unknown execution.decision_observation_mode {self.obs_mode!r}")
+        if self.obs_mode == "frozen" and self.learner is not None:
+            raise KernelError(
+                "execution.decision_observation_mode=frozen is not supported "
+                "together with a learning arm in the first version")
+        if self.obs_mode == "frozen" and self.forced_actions:
+            raise KernelError(
+                "execution.decision_observation_mode=frozen cannot be combined "
+                "with forced_actions: the counterfactual harness forces at the "
+                "branch point, and frozen moves the branch point to the "
+                "observation instant")
 
         self.ge_enabled = bool(self.cfg_links["ge_enabled"])
 
@@ -3557,11 +3585,159 @@ class Kernel:
         stay bit-identical.
         """
         started = float(self.env.now)
+        # frozen: the observation and the inference happen NOW, before the
+        # timeout; only the legality check and the commit happen after it.
+        observation = (self._observe_preferred_action(pkt, sat)
+                       if self.obs_mode == "frozen" else None)
         yield self.env.timeout(self.compute_delay_s)
-        self._decide(pkt, sat, compute_started_at=started)
+        self._decide(pkt, sat, compute_started_at=started,
+                     observation=observation)
+
+    # ------------------------------- T1-COMPUTE-DELAY frozen observation
+
+    def _deliver_legal_now(self, pkt: DataPacket, sat: int, now: float) -> bool:
+        """Is the deliver action legal at instant now?  Shared by the frozen
+        observer (as part of the observation) and by the frozen commit check
+        (as a legality gate)."""
+        ep = self._ensure_endpoint(pkt.dst)
+        link = ep.links.get(sat)
+        if not (link is not None and link.state == "active"
+                and self.geometry.gsl_available(sat, ep.lat, ep.lon, now)):
+            return False
+        if (self.rate_model == "mcs"
+                and self._link_rate("downlink", now, sat, ep=ep) <= 0):
+            return False
+        return self.downlinks[sat].room(pkt.bits)
+
+    def _forward_legal_now(self, pkt: DataPacket, sat: int, now: float,
+                           cands) -> list:
+        """Which of these directions is legal at instant now: geometry up, a
+        non-zero rate under the MCS model, and queue room for this packet."""
+        legal = []
+        for d in cands:
+            link = self.isls[sat][d]
+            geom_up = (not self.cfg_links["geometry_loss"]
+                       or self.geometry.isl_available(sat, link.peer, now))
+            if not geom_up:
+                continue
+            if (self.rate_model == "mcs"
+                    and self._link_rate("isl", now, sat, peer=link.peer) <= 0):
+                continue
+            if link.room(pkt.bits):
+                legal.append(d)
+        return legal
+
+    def _observe_preferred_action(self, pkt: DataPacket, sat: int) -> dict:
+        """Observation + inference half of the frozen mode: decide what to do
+        from the state visible NOW, committing nothing.
+
+        Kept deliberately parallel to _decide's choice rule for the
+        deterministic router -- deliver wins whenever it is legal, otherwise
+        the first legal candidate in choose_next_hop's order -- so that the two
+        implementations cannot drift apart unnoticed (test_frozen_observation
+        asserts the equivalence directly).
+        """
+        now = self.env.now
+        if self._deliver_legal_now(pkt, sat, now):
+            return {"t_observe": now, "kind": "deliver", "action": "deliver",
+                    "legal": ["deliver"], "cands": ["deliver"], "status": "ok"}
+        own_q = {d: lnk.data_bits + lnk.ctrl_bits
+                 for d, lnk in self.isls[sat].items()}
+        cands, status = routing.choose_next_hop(
+            self.cfg_rt["policy"], sat, pkt.dst, now, self.geometry, self.topo,
+            self.caches[sat], own_q, self.isl_rate_bps,
+            model.propagation_delay_s,
+            oracle_targets=([s for s in self._serving_sats(pkt.dst) if s != sat]
+                            if self.cfg_rt["policy"] == "oracle" else None),
+            best_only=False,
+            reverse_adj=self._routing_reverse_adj,
+            sorted_adj=self._routing_sorted_rev_adj,
+            rate_from_propagation=(
+                (lambda prop_s: link_budget.mcs_rate_bps(
+                    prop_s * model.C_KM_S, self.rf_isl, self.mcs_table))
+                if self.rate_model == "mcs" else None),
+            cache_hops=None)
+        cands = [d for d in cands if self.topo[sat][d] not in pkt.path]
+        legal = self._forward_legal_now(pkt, sat, now, cands)
+        if legal:
+            return {"t_observe": now, "kind": "forward", "action": legal[0],
+                    "legal": legal, "cands": cands, "status": status}
+        return {"t_observe": now, "kind": "hold", "action": None,
+                "legal": [], "cands": cands, "status": status}
+
+    def _decide_from_frozen_observation(self, pkt: DataPacket, sat: int,
+                                        obs: dict,
+                                        compute_started_at: float | None = None
+                                        ) -> None:
+        """Commit half of the frozen mode.
+
+        The action was inferred from the observation taken at obs["t_observe"];
+        this only asks whether that action is still LEGAL.  A rejected action
+        is never silently replaced by an optimum re-solved against fresh state
+        -- that is precisely the refresh semantics this mode exists to be
+        distinguished from -- so the packet is parked and must pay for another
+        computation before it can act.  The rejection is recorded on the
+        timeline sink (an additive output channel) rather than in a new
+        mechanism counter, which would change the receipt key set.
+        """
+        now = self.env.now
+        decision_id = self._next_decision_id()
+        if self.timeline_sink is not None and pkt.decision_id is not None:
+            self._timeline("redecision", pkt, decision_id,
+                           prev_decision_id=pkt.decision_id, sat=int(sat))
+        if pkt.deadline is not None and now >= pkt.deadline:
+            self._fail(pkt, "DATA_DEADLINE_EXPIRED", decision_id=decision_id)
+            return
+        if len(pkt.path) > self.cfg_rt["max_hops"]:
+            self._fail(pkt, "NO_ROUTE", decision_id=decision_id)
+            return
+        kind = obs["kind"]
+        if kind == "deliver" and self._deliver_legal_now(pkt, sat, now):
+            pkt.decision_id = decision_id
+            self._record_decision(pkt, sat, "deliver", ["deliver"], "deliver",
+                                  decision_id=decision_id,
+                                  decision_started_at=compute_started_at)
+            self.downlinks[sat].put(pkt)
+            return
+        if kind == "forward":
+            action = obs["action"]
+            if self._forward_legal_now(pkt, sat, now, [action]):
+                pkt.decision_id = decision_id
+                self._record_decision(
+                    pkt, sat, "forward", obs["legal"], action,
+                    audit_candidates=obs["cands"], decision_id=decision_id,
+                    decision_started_at=compute_started_at)
+                self.isls[sat][action].put_data(pkt)
+                return
+            if self.timeline_sink is not None:
+                self._timeline("commit_rejected", pkt, decision_id,
+                               sat=int(sat), inferred_at=obs["t_observe"],
+                               action=action,
+                               reason="action_no_longer_legal")
+        elif kind == "deliver":
+            if self.timeline_sink is not None:
+                self._timeline("commit_rejected", pkt, decision_id,
+                               sat=int(sat), inferred_at=obs["t_observe"],
+                               action="deliver",
+                               reason="deliver_no_longer_legal")
+        else:
+            if self.timeline_sink is not None:
+                self._timeline("frozen_inferred_hold", pkt, decision_id,
+                               sat=int(sat), inferred_at=obs["t_observe"],
+                               status=obs["status"])
+        # Park it: the inferred action is gone, and re-solving against the
+        # state that killed it is exactly what this mode refuses to do.
+        if pkt.deadline is not None:
+            self._schedule_pending_wake(sat, pkt.deadline)
+        self._hold_packet(sat, pkt, decision_id=decision_id)
 
     def _decide(self, pkt: DataPacket, sat: int,
-                compute_started_at: float | None = None) -> None:
+                compute_started_at: float | None = None,
+                observation: dict | None = None) -> None:
+        if observation is not None:
+            self._decide_from_frozen_observation(
+                pkt, sat, observation, compute_started_at)
+            return
         now = self.env.now
         decision_id = self._next_decision_id()
         if self.timeline_sink is not None and pkt.decision_id is not None:

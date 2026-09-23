@@ -205,6 +205,12 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         # Greater than 0 defers the commit, so the body revalidates against
         # the state that exists when the decision actually lands.
         "compute_delay_s": (int, float),
+        # Which observation a delayed decision infers on: "refresh" re-reads
+        # the state when the computation lands; "frozen" infers on the
+        # observation captured at decision start and only re-checks legality
+        # at commit time.  Only "frozen" can represent a state that went stale
+        # during the computation.
+        "decision_observation_mode": str,
     },
     "outputs": {
         "out_dir": str,
@@ -226,6 +232,11 @@ VALID_CONTRACTS = {"C1", "C3", "C4", "C5", "C6", "C7", "GAT", "MPNN"}
 VALID_ALGORITHMS = {"none", "ddqn", "qlearning"}
 VALID_ISL_DIRS = {"N", "S", "E", "W"}
 VALID_RATE_MODELS = {"constant", "mcs"}
+# T1-COMPUTE-DELAY observation semantics.  "refresh" is the historical
+# behaviour (the deferred decision re-reads state when it lands, so staleness
+# during the computation cannot exist); "frozen" infers on the observation
+# taken at decision start and only checks legality at commit time.
+VALID_OBSERVATION_MODES = {"refresh", "frozen"}
 RF_KEYS = {
     "frequency_hz", "bandwidth_hz", "max_ptx_w",
     "antenna_diameter_tx_m", "antenna_diameter_rx_m",
@@ -390,6 +401,8 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         "available_capacity_interval_s": None,
         # Historical runs decide instantaneously; a non-zero delay is opt-in.
         "compute_delay_s": 0.0,
+        # Historical runs re-read state at commit time; frozen is opt-in.
+        "decision_observation_mode": "refresh",
     },
     "outputs": {"out_dir": "leo_sim_out", "trace_path": None, "plotting": False},
 }
@@ -842,6 +855,18 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
             or not math.isfinite(compute_delay)):
         raise ConfigError(
             "execution.compute_delay_s must be finite and >= 0")
+    if ex["decision_observation_mode"] not in VALID_OBSERVATION_MODES:
+        raise ConfigError(
+            "execution.decision_observation_mode must be one of "
+            f"{sorted(VALID_OBSERVATION_MODES)}")
+    if ex["decision_observation_mode"] == "frozen" and compute_delay <= 0:
+        # Fail loud instead of silently ignoring the requested mode: with no
+        # computation time there is no interval during which an observation
+        # could go stale, so the two modes are the same run and the request is
+        # a configuration error rather than a no-op.
+        raise ConfigError(
+            "execution.decision_observation_mode=frozen requires "
+            "execution.compute_delay_s > 0")
 
 
 # The five demand fields defaulted since identity/v2 (Task 1 global scene
