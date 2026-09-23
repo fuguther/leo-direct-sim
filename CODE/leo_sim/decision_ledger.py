@@ -86,8 +86,13 @@ def build_ledger(decision_rows, timeline_rows):
             duplicates.append(decision_id)
             continue
         committed = float(row["t"])
-        # t_measure == t_decision_start == t_decision_commit until the
-        # compute-delay gate separates them; kept distinct on purpose.
+        # The three instants are kept as distinct fields on purpose.  With the
+        # default zero compute delay they coincide.  With a non-zero delay the
+        # decision body re-reads the state when the computation lands, so
+        # t_measure (what the choice was actually based on) coincides with
+        # t_decision_commit while t_decision_start precedes both --
+        # the interval between them is the computation latency.
+        started = float(row.get("t_decision_start", committed))
         by_decision[decision_id] = {
             "pid": row.get("pid"),
             "sat": row.get("sat"),
@@ -95,7 +100,7 @@ def build_ledger(decision_rows, timeline_rows):
             "chosen": row.get("chosen"),
             "t_measure": committed,
             "t_control_rx": _freshest_control_rx(row),
-            "t_decision_start": committed,
+            "t_decision_start": started,
             "t_decision_commit": committed,
             "t_local_queue_enter": _first_at(milestones, "queue_enter",
                                              decision_id),
