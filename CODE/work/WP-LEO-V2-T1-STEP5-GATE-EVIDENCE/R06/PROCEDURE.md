@@ -86,6 +86,32 @@ edits **one character** inside the generated block and requires detection, compl
 markers and requires detection, and the control result is printed on every run. A control that does not
 trigger makes G0 an UNPROVEN GATE, which cannot be counted as passed.
 
+### G0 GUARANTEE BOUNDARY (verbatim; do not widen)
+
+- G0 GUARANTEES that this PROCEDURE contains, byte-for-byte, the four commands derived from the
+  compiled run-manifests, with no deviation anywhere inside that derived block.
+- G0 does NOT guarantee and does NOT claim that any other command text elsewhere in this document is
+  covered. The initiator's boundary sentence, quoted verbatim: "派生块之外的命令文本不受本保证约束"
+  (command text outside the derived block is NOT covered by this guarantee).
+
+Any statement presenting G0 as "no wrong command can appear in the document" is an over-claim and
+is forbidden. This boundary is stated together with the demotion of G1a/G1b: those are HYGIENE
+(additional, cheap sanity checks), they are explicitly NOT the structural guarantee, they catch only
+realistic accidental drift, and they are known to be evadable by line-splitting and re-casing.
+
+### FINDINGS SELF-DISCOVERED BY THE PRODUCER (both fixed; recorded as findings)
+
+1. **End-to-end single-byte mutation, measured rather than simulated.** Editing exactly one byte of the
+   generated block in the real procedure file (offset 9719, character "6" changed to "7") made the gate
+   exit 1 with G0 failed. The file was then restored byte-identically
+   (sha256 e936b2db32d836982f68507536cdb7aa49ea88ff7005095aabe6376ee2fca317) and the gate returned green.
+2. **A G0 control that could never trigger.** The first marker-removal control stripped the markers off
+   the generated BLOCK; the remaining body is exactly what legitimately appears inside the marked
+   region, so the control could never fire - and G0 was reported as an UNPROVEN GATE instead of passing.
+   It was corrected to strip the marker LINES FROM THE DOCUMENT and require the containment check to
+   fail. The unproven-gate rule is what surfaced this second defect. Both were found and fixed by the
+   producer.
+
 The remaining checks are supporting, not structural:
 
 - **G1a / G1b (HYGIENE ONLY, explicitly NOT the structural guarantee)** — G1a scans the whole document

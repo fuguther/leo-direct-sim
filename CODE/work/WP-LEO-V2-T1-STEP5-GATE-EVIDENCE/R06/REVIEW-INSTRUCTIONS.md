@@ -20,6 +20,19 @@ lower-case id, passed). R06 therefore abandons scanning:
 - `G1a/G1b` are retained **only as hygiene checks** and are explicitly NOT the structural guarantee.
 - `G3` walks the **derived** commands to the launcher accept/reject decision point.
 
+### G0's guarantee boundary is now written down - judge the documents against it
+
+R06/PROCEDURE.md section 3 states G0's boundary verbatim: G0 guarantees that the procedure contains,
+byte-for-byte, the four commands derived from the run-manifests, and it does NOT claim that command text
+elsewhere in the document is covered (`派生块之外的命令文本不受本保证约束`). Therefore:
+
+- commands placed outside the marked block are **explicitly out of scope**. Report them as observations,
+  not as blocking defects, unless you find a document that **claims** they are covered.
+- **Any over-claim IS blocking**: if the procedure, the brief or the gate output presents G0 as
+  guaranteeing that no wrong command can appear anywhere in the document, that is a defect. Check the
+  wording, including the gate's own report fields.
+- The gate must honour exactly the stated boundary: verify G0 fails on a single-character edit inside the
+  block and on marker removal, and that it does not silently pass when the block is missing or duplicated.
 **Scope: review the CHANGED artifacts** — the generator, the generated command block in PROCEDURE.md,
 and the gate. The evidence chain (compiled cells, paired design, corridor equivalence, F2-disabled
 evidence, harness self-test, registered chain-2 blind spot and its backstops) carries over from R05
