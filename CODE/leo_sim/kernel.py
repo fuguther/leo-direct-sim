@@ -1555,7 +1555,8 @@ class Kernel:
             "delay_s": float(delay_s),
         })
 
-    def _metric_propagation_arrival(self, pkt: DataPacket) -> None:
+    def _metric_propagation_arrival(self, pkt: DataPacket,
+                                    sat: int | None = None) -> None:
         prop_id = pkt.metric_prop_id
         if prop_id is None:
             raise KernelError(f"packet {pkt.pid} propagation arrived without start")
@@ -1565,7 +1566,15 @@ class Kernel:
         })
         pkt.metric_prop_id = None
         if self.timeline_sink is not None:
-            self._timeline("peer_arrival", pkt, pkt.decision_id)
+            extra = {} if sat is None else {
+                "sat": int(sat),
+                # realized ground truth for scoring the decision-time
+                # downstream prediction (T1-DOWNSTREAM-RESOURCE-PASS).
+                # Attached only for ISL arrivals, where the peer satellite
+                # really does own ISL egresses to contend for.
+                "egress_snapshot": self._egress_snapshot(sat),
+            }
+            self._timeline("peer_arrival", pkt, pkt.decision_id, **extra)
 
     def _metric_satellite_ingress(self, pkt: DataPacket, sat: int) -> None:
         """Record the one physical uplink admission boundary exactly once."""
@@ -3272,6 +3281,58 @@ class Kernel:
             "info_audit": info_audit,
         })
 
+    def _in_service_remaining(self, link, now: float):
+        """In-service work on one ISL egress, with an honest method label.
+
+        Returns (bits, remaining_bits, phase, is_control, method).  Linear
+        extrapolation of the remaining work is only valid when the service
+        rate cannot change mid-transmission; under MCS the rate is
+        distance-dependent, so no number is produced rather than a wrong one.
+        """
+        if link.current is None:
+            return 0, None, None, False, "no_service"
+        current = link.current
+        phase = link._svc_phase
+        is_ctrl = isinstance(current, ControlPacket)
+        if phase == "transmitting" and link._tx_started_at is not None:
+            if self.rate_model == "constant":
+                elapsed = max(0.0, now - float(link._tx_started_at))
+                return (int(current.bits),
+                        max(0.0, float(current.bits)
+                            - elapsed * self.isl_rate_bps),
+                        phase, is_ctrl, "linear_at_constant_rate")
+            return (int(current.bits), None, phase, is_ctrl,
+                    "unavailable_varying_rate")
+        # transmission has not actually started: the whole packet is ahead
+        return int(current.bits), float(current.bits), phase, is_ctrl, \
+            "not_started_full_bits"
+
+    def _egress_snapshot(self, sat: int) -> dict:
+        """Realized per-egress state of one satellite, for scoring predictions.
+
+        Taken when a packet ARRIVES at this satellite and before it
+        re-decides, so it is the ground truth a decision-time prediction can
+        be scored against: the difference between the two is exactly the
+        stale-neighbour-state misalignment T1 studies.
+        """
+        now = float(self.env.now)
+        out = {}
+        for direction, link in self.isls[sat].items():
+            bits, remaining, phase, is_ctrl, method = \
+                self._in_service_remaining(link, now)
+            out[direction] = {
+                "peer": int(link.peer),
+                "data_bits": int(link.data_bits),
+                "ctrl_bits": int(link.ctrl_bits),
+                "ctrl_packets": len(link.ctrl_q),
+                "in_service_bits": bits,
+                "in_service_remaining_bits": remaining,
+                "in_service_remaining_method": method,
+                "in_service_phase": phase,
+                "in_service_is_control": bool(is_ctrl),
+            }
+        return out
+
     def _peer_downstream_truth(self, pkt: DataPacket, peer: int,
                                now: float) -> dict:
         """Audit-only prediction of the resource the packet would contend for.
@@ -3306,33 +3367,14 @@ class Kernel:
             if status == "ok" and cands:
                 egress = cands[0]
         link = self.isls[peer].get(egress) if egress is not None else None
-        in_service_bits = 0
-        remaining = None
-        phase = None
-        is_ctrl = False
-        remaining_method = "no_service_on_predicted_egress"
-        if link is not None and link.current is not None:
-            current = link.current
-            in_service_bits = int(current.bits)
-            is_ctrl = isinstance(current, ControlPacket)
-            phase = link._svc_phase
-            if phase == "transmitting" and link._tx_started_at is not None:
-                if self.rate_model == "constant":
-                    # Linear extrapolation is only honest when the service
-                    # rate cannot change mid-transmission.  Under MCS the
-                    # rate is distance-dependent, so no number is recorded
-                    # rather than a wrong one.
-                    elapsed = max(0.0, now - float(link._tx_started_at))
-                    remaining = max(
-                        0.0, float(current.bits) - elapsed * self.isl_rate_bps)
-                    remaining_method = "linear_at_constant_rate"
-                else:
-                    remaining_method = "unavailable_varying_rate"
-            else:
-                # transmission has not actually started, so the whole packet
-                # is still ahead of anything arriving later
-                remaining = float(current.bits)
-                remaining_method = "not_started_full_bits"
+        if link is None:
+            in_service_bits, remaining, phase, is_ctrl = 0, None, None, False
+            remaining_method = "no_service_on_predicted_egress"
+        else:
+            (in_service_bits, remaining, phase, is_ctrl,
+             remaining_method) = self._in_service_remaining(link, now)
+            if remaining_method == "no_service":
+                remaining_method = "no_service_on_predicted_egress"
         return {
             "prediction_method": "same_policy_full_cache_at_decision_time",
             "peer_is_destination": bool(is_destination),
@@ -3671,7 +3713,7 @@ class Kernel:
     def _isl_arrive_after_prop(self, pkt: DataPacket, sat: int, prop: float):
         yield self.env.timeout(prop)
         self._in_flight.pop(pkt.pid, None)
-        self._metric_propagation_arrival(pkt)
+        self._metric_propagation_arrival(pkt, sat)
         if pkt.deadline is not None and self.env.now > pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED")
             return

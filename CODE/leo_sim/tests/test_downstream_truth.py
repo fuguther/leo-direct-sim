@@ -8,7 +8,7 @@ in-service remaining work.
 """
 from __future__ import annotations
 
-from CODE.leo_sim import kernel
+from CODE.leo_sim import decision_ledger, kernel
 from CODE.leo_sim.tests.helpers import StaticGeometry, cell, cell_center, make_cfg, row
 
 A = cell(0.0, 0.0)
@@ -163,3 +163,80 @@ def test_plain_runs_pay_nothing():
                          geometry=_line_geo())
     assert kern.decision_sink is None and kern.timeline_sink is None
     assert kern._decision_seq == 0
+
+# ------------------- predicted vs realized: the actual T1 misalignment measure
+
+def _contended(rate_mbps, n_packets=4, bits=8_000_000):
+    cfg = {"scenario": {"duration_s": 60.0, "num_satellites": 3,
+                        "num_planes": 1, "seed": 3},
+           "control_plane": {"enabled": True},
+           "routing": {"policy": "oracle"},
+           "links": {"isl_rate_mbps": rate_mbps}}
+    rows = [row(i, 0.5 * i, A, B, bits=bits) for i in range(1, n_packets + 1)]
+    res, sink, timeline = _run(_line_geo(), rows, cfg)
+    scores, summary = decision_ledger.score_downstream_predictions(sink, timeline)
+    return res, sink, timeline, scores, summary
+
+
+def test_arrival_snapshot_is_attached_only_for_isl_arrivals():
+    _, _, timeline, _, _ = _contended(1000.0)
+    arrivals = [m for m in timeline if m["milestone"] == "peer_arrival"]
+    assert arrivals, "fixture must produce ISL arrivals"
+    with_snap = [m for m in arrivals if m.get("egress_snapshot") is not None]
+    assert with_snap, "ISL arrivals must carry the realized egress snapshot"
+    for m in with_snap:
+        assert isinstance(m["sat"], int)
+        for _direction, slot in m["egress_snapshot"].items():
+            assert set(slot) == {"peer", "data_bits", "ctrl_bits",
+                                 "ctrl_packets", "in_service_bits",
+                                 "in_service_remaining_bits",
+                                 "in_service_remaining_method",
+                                 "in_service_phase", "in_service_is_control"}
+
+
+def test_scorer_pairs_prediction_with_the_realized_state():
+    _, _, _, scores, summary = _contended(1000.0)
+    assert summary["scored_decisions"] > 0
+    assert summary["with_prediction"] > 0
+    assert summary["with_arrival_snapshot"] > 0
+    assert summary["egress_compared"] == summary["with_prediction"]
+    for s in scores.values():
+        if s["egress_match"] is not None:
+            assert s["realized_egress"] == s["predicted_egress"] \
+                or s["egress_match"] is False
+
+
+def test_scorer_detects_real_misalignment_under_contention():
+    """The whole point of the gate: with a fast link nothing contends, so the
+    belief and the reality agree; with a slow link the neighbour's egress
+    changes between deciding and arriving, and the scorer must see it."""
+    _, _, _, _, fast = _contended(1000.0)
+    _, _, _, _, slow = _contended(1.0)
+    assert fast["egress_bits_delta_max"] == 0, \
+        "an uncontended fixture must show no misalignment"
+    assert slow["egress_bits_delta_max"] > 0, \
+        "a contended fixture must show real misalignment"
+    assert slow["egress_bits_delta_mean"] > fast["egress_bits_delta_mean"]
+    # direction prediction stays correct: it is the RESOURCE that is stale
+    assert slow["egress_match_rate"] == 1.0
+
+
+def test_scorer_ignores_non_forward_decisions():
+    _, sink, _, scores, _ = _contended(8.0)
+    kinds = {r["decision_id"]: r["kind"] for r in sink}
+    for did in scores:
+        assert kinds[did] == "forward"
+    assert all(r["decision_id"] not in scores
+               for r in sink if r["kind"] == "deliver")
+
+
+def test_scorer_handles_empty_input():
+    """A run without sinks produces nothing to score; the scorer must say so
+    with an explicit None rate rather than dividing by zero."""
+    scores, summary = decision_ledger.score_downstream_predictions([], [])
+    assert scores == {}
+    assert summary["scored_decisions"] == 0
+    assert summary["egress_compared"] == 0
+    assert summary["egress_match_rate"] is None
+    assert summary["egress_bits_delta_mean"] is None
+
