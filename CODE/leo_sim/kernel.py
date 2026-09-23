@@ -1029,7 +1029,8 @@ class ISLLink:
 
 class Kernel:
     def __init__(self, resolved: dict, rows: list[dict], geometry=None,
-                 learning_out_dir=None, decision_sink=None, timeline_sink=None):
+                 learning_out_dir=None, decision_sink=None, timeline_sink=None,
+                 forced_actions=None):
         cfg = resolved["config"]
         self.resolved = resolved
         self.cfg_sc = cfg["scenario"]
@@ -1093,6 +1094,11 @@ class Kernel:
         self.timeline_sink = timeline_sink
         # per-decision identity; allocated only when a sink can record it
         self._decision_seq = 0
+        # T1-COUNTERFACTUAL-REPLAY: strictly opt-in override of the action
+        # taken at specific decisions, keyed by decision_id.  Empty by
+        # default, so normal runs never consult it.
+        self.forced_actions = dict(forced_actions or {})
+        self._forced_applied: set[int] = set()
 
         self.ge_enabled = bool(self.cfg_links["ge_enabled"])
 
@@ -3373,6 +3379,33 @@ class Kernel:
             "cache_entries": cache_entries,
         }
 
+    def _apply_forced_action(self, pkt: DataPacket, sat: int,
+                             decision_id: int | None, action: str,
+                             legal: list) -> str:
+        """Override the chosen direction for a counterfactual replay.
+
+        Strictly opt-in: only decision ids present in this kernel's
+        forced_actions are touched, each at most once.  The forced direction
+        must be legal AT THE BRANCH POINT, otherwise the replay would commit
+        an action the kernel itself refused, so this fails loud instead of
+        guessing.  A timeline milestone records the original and the forced
+        choice, so a substitution is auditable rather than invisible.
+        """
+        if not self.forced_actions or decision_id is None:
+            return action
+        forced = self.forced_actions.get(decision_id)
+        if forced is None or decision_id in self._forced_applied:
+            return action
+        if forced not in legal:
+            raise KernelError(
+                f"forced action {forced!r} for decision {decision_id} is not "
+                f"legal at the branch point {sorted(legal)}")
+        self._forced_applied.add(decision_id)
+        if self.timeline_sink is not None:
+            self._timeline("forced_action", pkt, decision_id, sat=int(sat),
+                           original=action, forced=forced)
+        return forced
+
     def _decide(self, pkt: DataPacket, sat: int) -> None:
         now = self.env.now
         decision_id = self._next_decision_id()
@@ -3433,6 +3466,11 @@ class Kernel:
                     )
                     if action != "deliver":
                         raise KernelError("DDQN selected a non-deliver action from deliver-only mask")
+                if decision_id in self.forced_actions:
+                    raise KernelError(
+                        f"decision {decision_id} is a deliver decision; the "
+                        f"first version of the counterfactual harness only "
+                        f"forces a choice among the ISL forward candidates")
                 pkt.decision_id = decision_id
                 self._record_decision(pkt, sat, "deliver", ["deliver"],
                                       "deliver", decision_id=decision_id)
@@ -3531,6 +3569,8 @@ class Kernel:
                         f"legal mask {sorted(legal)}")
             else:
                 action = legal[0]
+            action = self._apply_forced_action(pkt, sat, decision_id, action,
+                                               legal)
             pkt.decision_id = decision_id
             self._record_decision(pkt, sat, "forward", legal, action,
                                   audit_candidates=cands,
@@ -3870,8 +3910,9 @@ class Kernel:
 
 def run_simulation(resolved: dict, rows: list[dict], geometry=None,
                    learning_out_dir=None, decision_sink=None,
-                   timeline_sink=None) -> dict:
+                   timeline_sink=None, forced_actions=None) -> dict:
     kern = Kernel(resolved, rows, geometry=geometry,
                   learning_out_dir=learning_out_dir,
-                  decision_sink=decision_sink, timeline_sink=timeline_sink)
+                  decision_sink=decision_sink, timeline_sink=timeline_sink,
+                  forced_actions=forced_actions)
     return kern.run()
