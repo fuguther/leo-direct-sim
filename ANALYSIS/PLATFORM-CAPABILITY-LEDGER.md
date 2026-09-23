@@ -7,7 +7,7 @@
 本节取代 2026-09-03 节的“当前”地位；09-03 节及其下均为历史快照。
 
 - 代码基线更新为 `origin/main=8a3040990a607c12778e551fce58258b49d60bed`（PR #197）；09-03 节记录的 `79796b6` 已过期。**VM 部署为 `b3a66d2054d8881e5d7b6e7d9002d3ff81817741`**（PR #188，2026-08-30T05:58，部署分支 `deploy-main-3`），落后 `origin/main` 7 个提交——不得把 `origin/main` 的代码能力当作 VM 已部署能力。
-- `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24/24 `VERIFIED` 与 `READY_FOR_INDEPENDENT_CLAIM_REVIEW` 仍成立，但**原始证据链已断**：VM `CODE/Results/` 缺失、全 `/data` 检索 0 命中、2026-09-13 归档包内也不含 `Results`。库内仅存派生分析（28 个文件）与 115 份 launch witness。因此“正式证据链已闭合”只在**派生工件可重算**的意义上继续成立，raw event 级复现能力当前为 UNVERIFIED。
+- `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24/24 `VERIFIED` 与 `READY_FOR_INDEPENDENT_CLAIM_REVIEW` 仍成立，但**原始证据链已断**：VM `CODE/Results/` 缺失、全 `/data` 检索 0 命中、2026-09-13 归档包内也不含 `Results`。库内仅存派生分析（28 个文件）与 115 份 launch witness。因此“正式证据链已闭合”只在**派生工件可重算**的意义上继续成立；raw event 级复现能力**已永久失效**（owner 2026-09-23 确认无离线备份）。任何声称可复现 R02 raw 事件的表述一律作废。防复发项见 R8-A9。
 - **CI 门禁当前为红**：`test.yml` 的 `check_document_governance.py --mode all` 步骤 `exit 1`（6 份 CURRENT 文档过期），任何 PR 都无法 CI 绿。本次刷新即为解除该阻塞。
 - **VM 真实规格**（`/data/liguang13/AUDIT-2026-09-13.md`）：Docker 容器，cgroup 实额 **24 核 / 64 GiB**、`/dev/shm` 4 GiB、1× A100-40GB；无 nvcc/gcc、无 cron/systemd/docker、`~/.ssh` 无私钥。本账本此前若以 `lscpu`/`free` 的 256 核 / 628 GiB 做过容量判断，一律作废。
 - **T1 缺口（2026-09-23 分层审查结论）**：数据平面/SimPy 事件、控制平面/AoI、几何拓扑、流量 provenance、信息泄漏控制、正式证据链均达标（A/A-/B+），**不需要重写模拟器**；相对 T1 研究问题缺的是**测量与反事实能力**：

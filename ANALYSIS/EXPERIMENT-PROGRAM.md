@@ -7,7 +7,7 @@
 本节取代 2026-09-03 节的“当前”地位；09-03 节及其下均为历史快照。
 
 - 仓库证据基线更新为 `origin/main=8a3040990a607c12778e551fce58258b49d60bed`（PR #197，2026-09-06）；09-03 节记录的 `79796b6` 已过期。
-- `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24/24 `VERIFIED` 派生分析仍在库（`ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/{scene-check,v2-paired}`），claim gate 仍为 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`。**但 VM 上 `CODE/Results/` 已缺失**：R02 的 raw trace/ledger/receipt 无法再从原始事件重算，该 `VERIFIED` 应读作“对已提交派生工件的重算通过”，不得读作“原始证据仍可复现”。
+- `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 的 24/24 `VERIFIED` 派生分析仍在库（`ANALYSIS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/{scene-check,v2-paired}`），claim gate 仍为 `READY_FOR_INDEPENDENT_CLAIM_REVIEW`。**但 VM 上 `CODE/Results/` 已缺失**：R02 的 raw trace/ledger/receipt 无法再从原始事件重算，该 `VERIFIED` 应读作“对已提交派生工件的重算通过”，不得读作“原始证据仍可复现”；且 **owner 已确认无离线备份，该损失永久**（raw event 级复现能力永久失效，见 R8-A1/R8-A9）。
 - **执行顺序变更**：原“先完成去锚定选题”的下一步不变，但当前直接阻塞是 `.github/workflows/test.yml` 的文档治理步骤 `exit 1`——任何 PR 都无法 CI 绿。必须先刷新 6 份过期 CURRENT 文档，其余工作才可推进。
 - T1（邻居状态时间错位 / 候选到达时刻对齐）方向已由 2026-09-23 分层审查确认继续使用本平台，不重写模拟器；进入正式 T1 前必须依次通过 `T1-TIME-LEDGER-PASS`、`T1-DOWNSTREAM-RESOURCE-PASS`、`T1-COUNTERFACTUAL-REPLAY-PASS`、`T1-COMPUTE-DELAY-PASS`、`T1-PRESSURE-WINDOW-PASS` 五个门（定义见 `CURRENT-EXPERIMENT-READINESS.md`）。
 - 现有 `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` **不适合作为 T1 主压力场景**：10/20/40/80 Mbps 下无可饱和有向 ISL、无持续 hotspot（80 Mbps 的 1 s active-window p99 utilization 仅约 0.5%，最大约 1%）。T1 压力窗口须另行构造固定 OD corridor / hotspot、access 不限流、constant PHY 的可解析场景。
