@@ -88,7 +88,11 @@ decision sink 是 append-only 流（`_DecisionLogWriter` 逐行写 JSONL）。�
 ## 4. 其余门禁的设计要点
 
 - **`T1-DOWNSTREAM-RESOURCE-PASS`**：`peer_egress_queue_bits`（`kernel.py:3218-3220`）是邻居全部方向 data+ctrl 求和，不代表包到达后实际进入的队列。真正对应的是同处的 `reverse_link_queue_bits`（`3212-3217`）。需要新增的是**候选动作级**、固定 downstream policy 下的具体 egress、到达前 workload、在服务剩余量与控制积压。保留旧字段以免破坏既有消费方，但必须在文档与 schema 中标注其语义边界。
-- **`T1-COUNTERFACTUAL-REPLAY-PASS`**：从相同 immutable trace / config / seed 重放到同一 decision，比对 pre-branch state hash 后只改目标包这一次动作；第一版限定 deterministic router、GE off、learning off。
+- **`T1-COUNTERFACTUAL-REPLAY-PASS`**：从相同 immutable trace / config / seed 重放到同一 decision，比对 pre-branch state hash 后只改目标包这一次动作；第一版限定 deterministic router、GE off、learning off。**实现口径（2026-09-23）**：
+  - 新增 `CODE/leo_sim/counterfactual.py`：**两跑一强制**。基线跑与强制跑各自完整执行同一 config/trace/seed；强制跑通过 `Kernel(forced_actions={decision_id: action})` 只在该决策处改一次动作（每个 id 至多生效一次，由 `_forced_applied` 保证），并写一条 `forced_action` 里程碑记录 original/forced，使替换**可审计而非隐形**。
+  - **pre-branch 配对证明**：指纹覆盖「目标之前（按提交顺序）的**全部**决策行完整内容」+「目标行去掉 `chosen` 之后的 pre-commit 字段」。两跑指纹不等则**拒绝出结论**（抛 `CounterfactualError`）——从不同分支点算出来的不是反事实。
+  - **fail-loud 边界**：强制动作在分支点必须合法，否则抛 `KernelError`；强制成基线本来就选的动作会被拒（测不出差异）；目标决策若是 deliver 会被拒（第一版只支持在 ISL forward 候选间强制）；`learning.algorithm != none` 被拒。
+  - 不 deepcopy SimPy 环境；不从原轨迹读取未选候选的未来状态——强制跑是独立的完整重放，未选候选的后果只能由它在**强制跑里**实际发生的事件给出。
 - **`T1-COMPUTE-DELAY-PASS`**：默认关闭的 `execution.compute_delay_s`（默认 `0.0`）；旧实验默认为 0 以保持语义兼容。**实现口径（2026-09-23）**：
   - 不改 `_decide` 本体。它本来就重读 `env.now`、重建候选集并重查几何/速率/队列余量，**所以「延迟后提交」本身就是 revalidate**——动作是对计算落地时刻的状态做出的，而不是对计算开始时可见的状态。
   - 新增 `Kernel.decide_deferred` 生成器；**只有 `compute_delay_s > 0` 时才被创建**。四个调用点按需分支：两个在生成器内（`_ingress_after_prop` / `_isl_arrive_after_prop`）用 `yield from`；两个在普通函数内（`_redecide_cell_pending` / `_redecide_pending`）用 `env.process`。延迟为 0 时仍走原来的同步调用，**逐位不变**。
