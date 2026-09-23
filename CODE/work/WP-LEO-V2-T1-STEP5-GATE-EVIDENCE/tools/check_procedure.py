@@ -1,43 +1,47 @@
 #!/usr/bin/env python3
-"""Mechanical executable-procedure gate (step-5 batch, R04).
+"""Mechanical executable-procedure gate (step-5 batch, revision R05).
 
 WHY THIS EXISTS
 ===============
-Three review rounds found the same class of defect: a process document was
-treated as if it were executable, and nothing mechanically compared the prose to
-the tools it invokes. Round 1: the compiler-generated RUNBOOK mandates a
-post-run analysis step whose metric whitelist unconditionally rejects the metric
-the request declared, so the documented flow could not complete. Round 2: the
-procedure named superseded experiment directories, and because run-remote.sh
-derives the run id from the config filename, following it would have run the
-wrong revision - and the procedure documented no finalization/authorization step
-even though the launcher refuses to start without an authorization.
+Four review rounds kept finding the same class of defect: a process document was
+treated as if it were executable while nothing mechanically compared the prose to
+the tools it invokes - a RUNBOOK mandating a tool that rejects the declared
+metric; a procedure naming superseded experiment directories; a procedure that
+never documented the authorization step the launcher requires.
 
 NEGATIVE CONTROLS ARE MANDATORY
 ===============================
 A check that cannot fail is not a check. The first version of G1a used a regex
-that forbade hyphens, matched none of the real ids, and passed VACUOUSLY - the
-very failure mode this gate exists to prevent. Therefore EVERY check here runs a
-negative control in the same invocation and prints its result:
+that forbade hyphens, matched none of the real ids and passed VACUOUSLY. The
+second version scanned only backtick-fenced bash blocks, so a complete run command
+placed in unfenced prose was accepted (found by the R04 adversarial review,
+reproduced by the producer). Both are the failure mode this gate exists to
+prevent. Therefore EVERY check runs a negative control in the same invocation and
+prints its result:
 
-  * a check whose negative control does NOT trigger is reported as an
-    UNPROVEN GATE, is listed in unproven_gates, and does NOT count as passed;
-  * all_checks_ok is true only when no executed check failed AND no executed
-    check is unproven.
+  * a check whose negative control does NOT trigger is reported as an UNPROVEN
+    GATE, listed in unproven_gates, and does NOT count as passed;
+  * all_checks_ok is true only when no executed check failed AND none is unproven.
 
 CHECKS
 ======
-G1a no run command references another revision (control: inject a foreign id and
-    require detection).
-G1b the documented run commands are exactly this revision's compiled cells -
-    config path, authorization path and session (control: corrupt one session and
-    require a mismatch).
-G2  the declared primary_metric is actually ACCEPTED by the analyzer dispatch
-    (control: an unsupported metric name must be REJECTED).
+G1a NO line of the procedure - fenced or not - may contain an experiment id from
+    another revision. The whole document text is scanned; there is no fence
+    exemption. Control: a foreign id injected into UNFENCED text must be found.
+G1b every command-like run-remote invocation anywhere in the document must be
+    inside a fenced block that parses to a compiled cell of this revision, and the
+    set of documented invocations must equal the compiled cells (config path,
+    authorization path, session). Control: an unfenced complete invocation must be
+    reported.
+G2  the declared primary_metric must actually be ACCEPTED by the analyzer dispatch.
+    Control: an unsupported metric name must be REJECTED.
 G3  (phase all) the documented chain reaches the launcher accept/reject decision
-    point for every cell (control: a wrong run id must be REJECTED).
-G4  the gate and the procedure are inside the revision's reviewed artifact set
-    (control: a synthetic set with a wrong gate hash must report a problem).
+    point for every cell. Control: a wrong run id must be REJECTED.
+G4  the gate and the procedure are inside the revision's reviewed artifact set.
+    Control: a synthetic set with a zeroed gate hash must report a problem.
+G5  every cell's resolved config must have F2 DISABLED and the gate must report the
+    actual resolved value, so the F2 disclosure is mechanically backed.
+    Control: a synthetic config with node_process_delay_s = 0.5 must be flagged.
 """
 from __future__ import annotations
 
@@ -51,21 +55,34 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-SCHEMA = "leo-sim-step5-procedure-gate/v2"
+SCHEMA = "leo-sim-step5-procedure-gate/v3"
 FENCE = chr(96) * 3
 REVISION_ID = re.compile(r"EXP-[A-Za-z0-9_-]*-R(\d\d)\b")
 CONFIG_ARG = re.compile(r"--config\s+(\S+?\.leo-sim\.yaml)")
 AUTH_ARG = re.compile(r"--authorization\s+(\S+?\.json)")
 SESSION_ARG = re.compile(r"--session\s+(\S+)")
 UNSUPPORTED_METRIC = "definitely_not_a_supported_metric_xyz"
+F2_KEY = "node_process_delay_s"
 
 
 def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _fence_index(text: str):
+    """Return (lines, inside) where inside[i] says whether line i is fenced."""
+    lines = text.splitlines()
+    inside, flags = False, []
+    for line in lines:
+        if line.strip().startswith(FENCE):
+            flags.append(False)
+            inside = not inside
+            continue
+        flags.append(inside)
+    return lines, flags
+
+
 def bash_blocks(text: str):
-    """Yield the body of every fenced bash block."""
     out, current, inside = [], [], False
     for line in text.splitlines():
         if line.strip().startswith(FENCE):
@@ -82,18 +99,6 @@ def bash_blocks(text: str):
     return out
 
 
-def command_lines(text: str):
-    """Command lines only: bash-block lines that are not prose or comments."""
-    lines = []
-    for block in bash_blocks(text):
-        for raw in block.splitlines():
-            line = raw.strip()
-            if not line or line.startswith("#"):
-                continue
-            lines.append(line)
-    return lines
-
-
 def _verdict(name, ok, control, control_triggered, detail, skipped_reason=None):
     entry = {"check": name, "ok": bool(ok), "control": control,
              "control_triggered": bool(control_triggered),
@@ -104,45 +109,54 @@ def _verdict(name, ok, control, control_triggered, detail, skipped_reason=None):
 
 
 # ------------------------------------------------------------------ G1a
-def _scan_revision_ids(text):
-    joined = "\n".join(command_lines(text))
-    return sorted({m.group(0) for m in REVISION_ID.finditer(joined)})
+def _foreign_ids(text, own):
+    """Scan the WHOLE document text; no fence exemption."""
+    seen = sorted({m.group(0) for m in REVISION_ID.finditer(text)})
+    return seen, sorted(t for t in seen if t not in own)
 
 
-def check_g1a(procedure_text, own, results):
-    seen = _scan_revision_ids(procedure_text)
-    foreign = sorted(t for t in seen if t not in own)
-    if own:
-        first = sorted(own)[0]
+def check_g1a(procedure_text, own_set, results):
+    seen, foreign = _foreign_ids(procedure_text, own_set)
+    # control: inject a foreign id into UNFENCED text
+    injected = None
+    if own_set:
+        first = sorted(own_set)[0]
         injected = first[:-3] + "R99"
-        ctrl_seen = _scan_revision_ids(procedure_text.replace(first, injected))
-        ctrl_foreign = sorted(t for t in ctrl_seen if t not in own)
-        control = {"injected_id": injected, "detected": bool(ctrl_foreign),
-                   "control_ids_seen": ctrl_seen}
-        ctrl_ok = bool(ctrl_foreign)
+        mutated = procedure_text + chr(10) + "See also " + injected + " for history." + chr(10)
+        _s, ctrl_foreign = _foreign_ids(mutated, own_set)
+        ctrl_ok = injected in ctrl_foreign
+        control = {"injected_id": injected, "injected_outside_fences": True,
+                   "detected": bool(ctrl_ok),
+                   "note": None if ctrl_ok else "unfenced foreign id NOT detected - G1a is defeatable"}
     else:
-        control = {"injected_id": None, "detected": False, "note": "no own id available to mutate"}
         ctrl_ok = False
-    results.append(_verdict("G1a_no_foreign_revision_in_commands", not foreign,
-                            control, ctrl_ok,
-                            {"revision_ids_in_commands": seen,
-                             "this_revision_ids": sorted(own), "foreign": foreign}))
+        control = {"injected_id": None, "detected": False, "note": "no own id to mutate"}
+    results.append(_verdict("G1a_no_foreign_revision_anywhere_in_document",
+                            not foreign, control, ctrl_ok,
+                            {"revision_ids_in_document": seen,
+                             "this_revision_ids": sorted(own_set), "foreign": foreign}))
 
 
 # ------------------------------------------------------------------ G1b
-def _compare_run_commands(root, text, experiment_ids):
+def _planned_cells(root, experiment_ids):
     planned = {}
     for eid in experiment_ids:
         man = json.loads((root / "EXPERIMENTS" / eid / "run-manifest.json").read_text())
         for cell in man["cells"]:
             planned[cell["run_id"]] = cell["config_path"]
+    return planned
+
+
+def _is_command_like(line: str) -> bool:
+    return "run-remote.sh" in line and ("--config" in line or "--runtime-kind" in line)
+
+
+def _parse_fenced_invocations(text):
     found, mismatches = {}, []
     for block in bash_blocks(text):
         if "run-remote.sh" not in block:
             continue
-        cfg = CONFIG_ARG.search(block)
-        auth = AUTH_ARG.search(block)
-        sess = SESSION_ARG.search(block)
+        cfg, auth, sess = CONFIG_ARG.search(block), AUTH_ARG.search(block), SESSION_ARG.search(block)
         if not (cfg and auth and sess):
             mismatches.append({"block": block.strip()[:160],
                                "reason": "incomplete run-remote invocation"})
@@ -150,51 +164,56 @@ def _compare_run_commands(root, text, experiment_ids):
         run_id = Path(cfg.group(1)).name.removesuffix(".leo-sim.yaml")
         found[run_id] = {"config": cfg.group(1), "authorization": auth.group(1),
                          "session": sess.group(1)}
+    return found, mismatches
+
+
+def _g1b_evaluate(root, text, experiment_ids):
+    lines, inside = _fence_index(text)
+    planned = _planned_cells(root, experiment_ids)
+    found, mismatches = _parse_fenced_invocations(text)
+    # every command-like run-remote line must sit inside a fence
+    for i, line in enumerate(lines):
+        if _is_command_like(line) and not inside[i]:
+            mismatches.append({"line_number": i + 1, "reason": "command-like run-remote line OUTSIDE any fence",
+                               "line": line.strip()[:160]})
+    for run_id, got in found.items():
         if run_id not in planned:
-            mismatches.append({"run_id": run_id,
-                               "reason": "not a compiled cell of this revision"})
+            mismatches.append({"run_id": run_id, "reason": "not a compiled cell of this revision"})
             continue
         exp_id = run_id.rsplit("-", 2)[0]
         expected_cfg = "EXPERIMENTS/" + exp_id + "/" + planned[run_id]
-        if cfg.group(1) != expected_cfg:
+        if got["config"] != expected_cfg:
             mismatches.append({"run_id": run_id, "reason": "config path mismatch",
-                               "documented": cfg.group(1), "expected": expected_cfg})
+                               "documented": got["config"], "expected": expected_cfg})
         expected_auth = "EXPERIMENTS/" + exp_id + "/authorization.json"
-        if auth.group(1) != expected_auth:
+        if got["authorization"] != expected_auth:
             mismatches.append({"run_id": run_id, "reason": "authorization path mismatch",
-                               "documented": auth.group(1), "expected": expected_auth})
-        if sess.group(1) != run_id.lower():
+                               "documented": got["authorization"], "expected": expected_auth})
+        if got["session"] != run_id.lower():
             mismatches.append({"run_id": run_id, "reason": "session name does not match run id",
-                               "documented": sess.group(1), "expected": run_id.lower()})
+                               "documented": got["session"], "expected": run_id.lower()})
     missing = sorted(set(planned) - set(found))
     extra = sorted(set(found) - set(planned))
     return planned, found, mismatches, missing, extra
 
 
 def check_g1b(root, procedure_text, experiment_ids, results):
-    planned, found, mismatches, missing, extra = _compare_run_commands(
-        root, procedure_text, experiment_ids)
-    # negative control: corrupt one documented session and require a mismatch
-    mutated, injected = procedure_text, None
-    if found:
-        any_run = sorted(found)[0]
-        want = "--session " + any_run.lower()
-        if want in mutated:
-            injected = "WRONG-session-for-" + any_run
-            mutated = mutated.replace(want, "--session " + injected, 1)
-            _p, _f, mm, _mi, _e = _compare_run_commands(root, mutated, experiment_ids)
-            ctrl_ok = bool(mm) or bool(_e)
-            control = {"injected": injected, "detected": bool(ctrl_ok),
-                       "control_mismatches": mm[:3]}
-            if not control["detected"]:
-                control["note"] = "corrupted session was NOT reported - G1b is vacuous"
-        else:
-            ctrl_ok, control = False, {"injected": None, "detected": False,
-                                       "note": "no session token found to corrupt"}
-    else:
-        ctrl_ok, control = False, {"injected": None, "detected": False,
-                                   "note": "no run-remote block found to corrupt"}
-    results.append(_verdict("G1b_run_commands_match_compiled_cells",
+    planned, found, mismatches, missing, extra = _g1b_evaluate(root, procedure_text, experiment_ids)
+    # negative control: append a COMPLETE run-remote invocation in unfenced prose
+    own = sorted(experiment_ids)[0] if experiment_ids else None
+    ctrl_ok, control = False, {"injected": None, "detected": False}
+    if own:
+        bogus = ("Prose: CODE/scripts/remote/run-remote.sh --runtime-kind leo_sim_v2 "
+                 "--config EXPERIMENTS/" + own + "/resolved/DOES-NOT-EXIST.leo-sim.yaml "
+                 "--authorization EXPERIMENTS/" + own + "/authorization.json --session bogus")
+        _p, _f, mm, _mi, _e = _g1b_evaluate(root, procedure_text + chr(10) + bogus + chr(10), experiment_ids)
+        hit = [m for m in mm if "OUTSIDE any fence" in m.get("reason", "")]
+        ctrl_ok = bool(hit)
+        control = {"injected": "unfenced complete run-remote invocation",
+                   "detected": bool(ctrl_ok), "hits": hit[:2]}
+        if not ctrl_ok:
+            control["note"] = "unfenced invocation NOT reported - G1b is defeatable"
+    results.append(_verdict("G1b_run_commands_match_compiled_cells_and_are_fenced",
                             not (mismatches or missing or extra), control, ctrl_ok,
                             {"planned_cells": len(planned), "documented_runs": len(found),
                              "missing_from_procedure": missing, "extra_in_procedure": extra,
@@ -237,13 +256,11 @@ def check_g2(root, experiment_ids, results):
     bad = [{"experiment": eid, "primary_metric": m,
             "status": "REJECTED by the analyzer toolchain"}
            for eid, m in declared.items() if m not in accepted]
-    # negative control: an unsupported name must be rejected, else the probe
-    # accepts everything and proves nothing.
     try:
         V._metric_from_result(receipt, ledgers, UNSUPPORTED_METRIC)
         ctrl_ok = False
         control = {"probe": UNSUPPORTED_METRIC, "rejected": False,
-                   "note": "unsupported metric was ACCEPTED - the G2 probe is vacuous"}
+                   "note": "unsupported metric ACCEPTED - G2 probe is vacuous"}
     except V.V2AnalysisError as exc:
         ctrl_ok = True
         control = {"probe": UNSUPPORTED_METRIC, "rejected": True, "error": str(exc)[:120]}
@@ -290,7 +307,6 @@ def check_g3(root, experiment_ids, results, phase):
             if proc.returncode != 0:
                 ok = False
             per_cell.append(entry)
-    # negative control: a wrong run id must be REJECTED for every experiment
     ctrl, ctrl_ok = [], True
     for eid in experiment_ids:
         exp_dir = root / "EXPERIMENTS" / eid
@@ -310,15 +326,17 @@ def check_g3(root, experiment_ids, results, phase):
             ctrl.append({"experiment": eid, "wrong_run_id": run_id,
                          "result": "REJECTED: " + type(exc).__name__})
     results.append(_verdict("G3_chain_reaches_launcher_decision_point", ok,
-                            {"wrong_run_id_probe": ctrl}, ctrl_ok,
-                            {"cells": per_cell}))
+                            {"wrong_run_id_probe": ctrl}, ctrl_ok, {"cells": per_cell}))
 
 
 # ------------------------------------------------------------------ G4
 def _binding_problems(arts, procedure_path, root, gate_path):
     problems = []
-    rel_gate = str(gate_path.resolve().relative_to(root.resolve()))
-    rel_proc = str(procedure_path.resolve().relative_to(root.resolve()))
+    if not root.is_absolute() or not str(gate_path).startswith(str(root)):
+        problems.append("gate path " + str(gate_path) + " is NOT inside root " + str(root))
+        return problems, None, None
+    rel_gate = str(gate_path.relative_to(root))
+    rel_proc = str(procedure_path.relative_to(root))
     if rel_gate not in arts:
         problems.append("gate not bound: " + rel_gate)
     elif arts[rel_gate] != sha256_file(gate_path):
@@ -331,25 +349,56 @@ def _binding_problems(arts, procedure_path, root, gate_path):
 
 
 def check_g4(root, procedure, artifact_set, results):
+    gate_path = Path(__file__).resolve()
     if not artifact_set.is_file():
         results.append(_verdict("G4_gate_is_inside_reviewed_set", False, {}, False,
                                 {"reason": "artifact-set.json not found"}))
         return
     arts = json.loads(artifact_set.read_text())
-    gate_path = Path(__file__).resolve()
     problems, rel_gate, rel_proc = _binding_problems(arts, procedure, root, gate_path)
-    # negative control: a synthetic set with a wrong gate hash must report a problem
-    synth = dict(arts)
-    synth[rel_gate] = "0" * 64
-    ctrl_problems, _g, _p = _binding_problems(synth, procedure, root, gate_path)
-    ctrl_ok = bool(ctrl_problems)
-    results.append(_verdict("G4_gate_is_inside_reviewed_set", not problems,
-                            {"injected": "gate hash replaced with zeros in a synthetic set",
-                             "detected": bool(ctrl_problems),
-                             "control_problems": ctrl_problems},
-                            ctrl_ok,
+    ctrl_ok, ctrl_problems = False, []
+    if rel_gate is not None:
+        synth = dict(arts); synth[rel_gate] = "0" * 64
+        ctrl_problems, _g, _p = _binding_problems(synth, procedure, root, gate_path)
+        ctrl_ok = bool(ctrl_problems)
+    control = {"injected": "gate hash replaced with zeros in a synthetic set",
+               "detected": bool(ctrl_problems), "control_problems": ctrl_problems}
+    if not ctrl_ok:
+        control["note"] = "zeroed gate hash NOT reported - G4 is vacuous"
+    results.append(_verdict("G4_gate_is_inside_reviewed_set", not problems, control, ctrl_ok,
                             {"gate_path": rel_gate, "procedure_path": rel_proc,
                              "problems": problems}))
+
+
+# ------------------------------------------------------------------ G5
+def _f2_ok(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and float(value) == 0.0
+
+
+def check_g5(root, experiment_ids, results):
+    per_cell, ok = [], True
+    for eid in experiment_ids:
+        exp_dir = root / "EXPERIMENTS" / eid
+        man = json.loads((exp_dir / "run-manifest.json").read_text())
+        for cell in man["cells"]:
+            cfg = json.loads((exp_dir / cell["config_path"]).read_text())
+            ex = cfg["execution"]
+            f2 = ex.get(F2_KEY)
+            good = _f2_ok(f2)
+            if not good:
+                ok = False
+            per_cell.append({"run_id": cell["run_id"],
+                             F2_KEY: f2,
+                             "compute_delay_s": ex.get("compute_delay_s"),
+                             "f2_disabled": good})
+    # control: a non-zero F2 value must be rejected by the same predicate
+    ctrl_ok = not _f2_ok(0.5)
+    control = {"probe": {F2_KEY: 0.5}, "flagged_as_not_disabled": bool(ctrl_ok)}
+    if not ctrl_ok:
+        control["note"] = "non-zero F2 value NOT flagged - G5 is vacuous"
+    results.append(_verdict("G5_f2_disabled_and_actual_value_reported", ok, control, ctrl_ok,
+                            {"cells": per_cell,
+                             "statement": "deployment contains F2 code with F2 DISABLED; actual resolved values reported per cell"}))
 
 
 def main() -> int:
@@ -369,11 +418,12 @@ def main() -> int:
         return 2
     text = procedure.read_text(encoding="utf-8")
     results = []
-    check_g1a(text, a.experiment_id, results)
+    check_g1a(text, set(a.experiment_id), results)
     check_g1b(root, text, a.experiment_id, results)
     check_g2(root, a.experiment_id, results)
     check_g3(root, a.experiment_id, results, a.phase)
     check_g4(root, procedure, artifact_set, results)
+    check_g5(root, a.experiment_id, results)
 
     executed = [c for c in results if "skipped_reason" not in c]
     failed = [c["check"] for c in executed if not c["ok"]]
@@ -395,7 +445,8 @@ def main() -> int:
                    encoding="utf-8")
     print(json.dumps({"wrote": str(out), "phase": a.phase, "all_checks_ok": ok,
                       "failed_checks": failed, "unproven_gates": unproven,
-                      "skipped_checks": [s["check"] for s in skipped]}, sort_keys=True))
+                      "skipped_checks": [s["check"] for s in skipped],
+                      "checks_executed": len(executed)}, sort_keys=True))
     return 0 if ok else 1
 
 
