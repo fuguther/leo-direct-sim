@@ -199,6 +199,12 @@ SCHEMA: dict[str, dict[str, type | tuple[type, ...]]] = {
         # Physical-capacity measurement samples are diagnostic evidence; a
         # fixed interval makes the denominator explicit and reproducible.
         "available_capacity_interval_s": (int, float, type(None)),
+        # T1-COMPUTE-DELAY: how long one routing decision takes to compute, in
+        # SIMULATED seconds.  0 keeps the historical instantaneous decision
+        # exactly (the decision body then runs synchronously with no yield).
+        # Greater than 0 defers the commit, so the body revalidates against
+        # the state that exists when the decision actually lands.
+        "compute_delay_s": (int, float),
     },
     "outputs": {
         "out_dir": str,
@@ -382,6 +388,8 @@ DEFAULTS: dict[str, dict[str, Any]] = {
         # Opt in for E0/diagnostic profiles; training/smoke runs that do not
         # report utilization should not pay the sampling and artifact cost.
         "available_capacity_interval_s": None,
+        # Historical runs decide instantaneously; a non-zero delay is opt-in.
+        "compute_delay_s": 0.0,
     },
     "outputs": {"out_dir": "leo_sim_out", "trace_path": None, "plotting": False},
 }
@@ -829,6 +837,11 @@ def _validate_semantics(cfg: Mapping[str, Any]) -> None:
         raise ConfigError(
             "execution.available_capacity_interval_s creates more than "
             "100000 sampling intervals")
+    compute_delay = ex["compute_delay_s"]
+    if (isinstance(compute_delay, bool) or compute_delay < 0
+            or not math.isfinite(compute_delay)):
+        raise ConfigError(
+            "execution.compute_delay_s must be finite and >= 0")
 
 
 # The five demand fields defaulted since identity/v2 (Task 1 global scene

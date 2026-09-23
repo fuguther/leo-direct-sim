@@ -1093,6 +1093,10 @@ class Kernel:
         self.timeline_sink = timeline_sink
         # per-decision identity; allocated only when a sink can record it
         self._decision_seq = 0
+        # T1-COMPUTE-DELAY: simulated seconds one routing decision takes to
+        # compute.  0 (the default) keeps every historical run exactly as it
+        # was: _decide stays a plain synchronous call with no yield at all.
+        self.compute_delay_s = float(self.cfg_ex["compute_delay_s"])
 
         self.ge_enabled = bool(self.cfg_links["ge_enabled"])
 
@@ -2875,7 +2879,10 @@ class Kernel:
             for pkt in waiting:
                 q.remove(pkt, self.env.now)
             for pkt in waiting:
-                self._decide(pkt, s)
+                if self.compute_delay_s > 0:
+                    self.env.process(self.decide_deferred(pkt, s))
+                else:
+                    self._decide(pkt, s)
 
     def _control_advertiser(self, sat: int):
         interval = self.cfg_cp["advertise_interval_s"]
@@ -3239,7 +3246,8 @@ class Kernel:
     def _record_decision(self, pkt: DataPacket, sat: int, kind: str,
                          candidates: list, chosen: str,
                          audit_candidates: list | None = None,
-                         decision_id: int | None = None) -> None:
+                         decision_id: int | None = None,
+                         decision_started_at: float | None = None) -> None:
         """Append one per-hop decision snapshot to the optional decision sink.
 
         Output only: never influences routing, learning, timing, or fates.
@@ -3262,8 +3270,15 @@ class Kernel:
             }
         info_audit = self._decision_info_audit(
             pkt, sat, candidates if audit_candidates is None else audit_candidates)
+        committed_at = float(self.env.now)
         self.decision_sink.append({
-            "t": float(self.env.now),
+            "t": committed_at,
+            # When computation consumed simulated time these two differ:
+            # t_decision_start is when the computation began, t is when the
+            # chosen action was committed against the revalidated state.
+            "t_decision_start": (committed_at
+                                 if decision_started_at is None
+                                 else float(decision_started_at)),
             "decision_id": decision_id,
             "state_version": self._state_version,
             "pid": pkt.pid,
@@ -3493,7 +3508,27 @@ class Kernel:
             "cache_entries": cache_entries,
         }
 
-    def _decide(self, pkt: DataPacket, sat: int) -> None:
+    def decide_deferred(self, pkt: DataPacket, sat: int):
+        """Decide after consuming simulated computation time (T1-COMPUTE-DELAY).
+
+        Only used when execution.compute_delay_s > 0.  The decision body is
+        NOT modified: it re-reads env.now, rebuilds the candidate set and
+        re-checks geometry, rate and queue room, so the body that runs after
+        this timeout IS the revalidation step -- the action is chosen against
+        the state that exists when the computation lands, not the state that
+        was visible when it began.  The decision row records both ends of the
+        interval (t_decision_start and t).
+
+        With the default delay of 0 this generator is never created: the call
+        sites call _decide synchronously exactly as before, so historical runs
+        stay bit-identical.
+        """
+        started = float(self.env.now)
+        yield self.env.timeout(self.compute_delay_s)
+        self._decide(pkt, sat, compute_started_at=started)
+
+    def _decide(self, pkt: DataPacket, sat: int,
+                compute_started_at: float | None = None) -> None:
         now = self.env.now
         decision_id = self._next_decision_id()
         if self.timeline_sink is not None and pkt.decision_id is not None:
@@ -3555,7 +3590,8 @@ class Kernel:
                         raise KernelError("DDQN selected a non-deliver action from deliver-only mask")
                 pkt.decision_id = decision_id
                 self._record_decision(pkt, sat, "deliver", ["deliver"],
-                                      "deliver", decision_id=decision_id)
+                                      "deliver", decision_id=decision_id,
+                                      decision_started_at=compute_started_at)
                 dl.put(pkt)
             else:
                 self._fail(pkt, "ACCESS_QUEUE_OVERFLOW",
@@ -3654,7 +3690,8 @@ class Kernel:
             pkt.decision_id = decision_id
             self._record_decision(pkt, sat, "forward", legal, action,
                                   audit_candidates=cands,
-                                  decision_id=decision_id)
+                                  decision_id=decision_id,
+                                  decision_started_at=compute_started_at)
             self.isls[sat][action].put_data(pkt)
             return
         if unavailable:
@@ -3678,7 +3715,10 @@ class Kernel:
             return
         waiting = self.pending[sat].take_ready(self.env.now)
         for pkt in waiting:
-            self._decide(pkt, sat)
+            if self.compute_delay_s > 0:
+                self.env.process(self.decide_deferred(pkt, sat))
+            else:
+                self._decide(pkt, sat)
 
     def _schedule_pending_wake(self, sat: int, at: float) -> None:
         """Certified re-decision for parked packets on `sat` (D1 precise
@@ -3708,7 +3748,10 @@ class Kernel:
             return
         pkt.path.append(sat)
         self._note_busy(pkt.dst)  # new downlink demand may have appeared
-        self._decide(pkt, sat)
+        if self.compute_delay_s > 0:
+            yield from self.decide_deferred(pkt, sat)
+        else:
+            self._decide(pkt, sat)
 
     def _isl_arrive_after_prop(self, pkt: DataPacket, sat: int, prop: float):
         yield self.env.timeout(prop)
@@ -3719,7 +3762,10 @@ class Kernel:
             return
         pkt.path.append(sat)
         self._note_busy(pkt.dst)  # new downlink demand may have appeared
-        self._decide(pkt, sat)
+        if self.compute_delay_s > 0:
+            yield from self.decide_deferred(pkt, sat)
+        else:
+            self._decide(pkt, sat)
 
     def _deliver_after_prop(self, pkt: DataPacket, sat: int, prop: float):
         yield self.env.timeout(prop)
