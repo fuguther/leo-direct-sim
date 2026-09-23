@@ -996,6 +996,19 @@
       "require_banner": false,
       "archive_candidate": false,
       "suggested_archive_target": null
+    },
+    {
+      "path": "ANALYSIS/T1-MEASUREMENT-PROTOCOL.md",
+      "status": "CURRENT-CONTRACT",
+      "purpose": "Current T1 measurement and counterfactual capability contract plus the five T1 gates",
+      "may_direct_current_work": true,
+      "owner": "platform-readiness",
+      "last_reviewed": "2026-09-23",
+      "review_interval_days": 30,
+      "replacement": null,
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
     }
   ]
 }
