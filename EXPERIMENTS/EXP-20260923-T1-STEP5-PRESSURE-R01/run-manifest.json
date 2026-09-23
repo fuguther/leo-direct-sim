@@ -1,0 +1,98 @@
+{
+  "arms": [
+    {
+      "arm_id": "control",
+      "config_overrides": {},
+      "intervention_paths": []
+    },
+    {
+      "arm_id": "cd05",
+      "config_overrides": {
+        "execution": {
+          "compute_delay_s": 0.05
+        }
+      },
+      "intervention_paths": [
+        "execution.compute_delay_s"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "control",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "72a2a6e4caea3be7e5e37a02644a59e8270c12f486074c67145f018da9e8ddf0",
+      "config_overrides": {},
+      "config_path": "resolved/EXP-20260923-T1-STEP5-PRESSURE-R01-control-s7.leo-sim.yaml",
+      "config_sha256": "d45c6a50580958c3d14bc7ff576cb36f0f57c91953e12c8c80478842277fd27f",
+      "controlled_signature": "11017efc5d26dc29141d6282fd4138187367012293ef4f3241976faf7062ea2a",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "",
+      "learning_seed": null,
+      "pairing_key": "s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260923-T1-STEP5-PRESSURE-R01-control-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "4e28833c8b693e023c0c4abad87e764fc7adef938a5fa43767914d650807e912",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 1,
+        "min_multisat_deliveries": 1,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "cd05",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "72a2a6e4caea3be7e5e37a02644a59e8270c12f486074c67145f018da9e8ddf0",
+      "config_overrides": {},
+      "config_path": "resolved/EXP-20260923-T1-STEP5-PRESSURE-R01-cd05-s7.leo-sim.yaml",
+      "config_sha256": "49439fe75b711b77b5afb60fbd942c79c046807a029b710e31aeceecd45cee45",
+      "controlled_signature": "11017efc5d26dc29141d6282fd4138187367012293ef4f3241976faf7062ea2a",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "",
+      "learning_seed": null,
+      "pairing_key": "s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260923-T1-STEP5-PRESSURE-R01-cd05-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "4e28833c8b693e023c0c4abad87e764fc7adef938a5fa43767914d650807e912",
+      "trace_seed": 7
+    }
+  ],
+  "common_config_sha256": "d65e62484a593da11278834688cf77e16039aeeca533a965d881bea7df33d929",
+  "execution_authorized": false,
+  "experiment_id": "EXP-20260923-T1-STEP5-PRESSURE-R01",
+  "request_sha256": "47fa78d35972a91c987d553bd4eab6ae9cfa4c8b76b2c2eae85ec55c6d310d12",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-matrix-manifest/v1"
+}
