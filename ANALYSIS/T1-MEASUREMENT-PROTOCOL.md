@@ -20,7 +20,7 @@
 | `T1-TIME-LEDGER-PASS` | 每个决策有唯一 `decision_id`；同一包的重决策可区分；第 3 节列出的 11 个时间戳可从落盘工件重建，且缺项显式标记为缺失而非静默填 0 |
 | `T1-DOWNSTREAM-RESOURCE-PASS` | 对每个候选动作记录**该包到达后实际竞争的出口**（固定 downstream policy 下的具体 egress）、到达前 workload、在服务剩余量与控制积压；不再用「邻居全部方向求和」代替 |
 | `T1-COUNTERFACTUAL-REPLAY-PASS` | 存在严格配对的反事实 harness：同 immutable trace / config / seed 重放到同一 decision，校验 pre-branch state hash，只强制改变目标包这一次动作；**不得** deepcopy SimPy 环境，**不得**从原轨迹读取未选候选的未来状态 |
-| `T1-COMPUTE-DELAY-PASS` | 决策计算时延进入模拟时间：`decision_start → yield timeout(delay) → revalidate → commit`；默认关闭，关闭时语义与现行为等价 |
+| `T1-COMPUTE-DELAY-PASS` | 决策计算时延进入模拟时间，且**两种模式分别建模、分别可证**：(a) `refresh`（**已实现**）= `decision_start → timeout → 在提交时刻重新观测并重新求解 → commit`；(b) `frozen`（**阶段 1d 必做**）= `在 decision_start 冻结观测 o(t0) → 对 o(t0) 推理 → commit 时只做合法性校验（链路是否断开、队列是否已满），不得用最新状态重新求最优`。默认关闭（延迟 0），关闭时与旧行为等价。**只有 (b) 代表「计算期间状态陈旧」这一类真实同步推理** |
 | `T1-PRESSURE-WINDOW-PASS` | 存在可解析的 ISL 压力窗口（固定 OD corridor / hotspot、access 不限流、constant PHY），且能量化其有向 ISL 利用率量级 |
 
 ## 3. `T1-TIME-LEDGER-PASS` 设计
@@ -83,7 +83,7 @@ decision sink 是 append-only 流（`_DecisionLogWriter` 逐行写 JSONL）。�
 1. **`t_control_rx` 在非学习运行中是"可能已知"而非"实际使用"**。学习运行按 contract 裁剪 cache 条目；非学习运行没有 contract 可裁，因此记录该节点**全部有效 cache 条目**中最新的 `received_at`（`mapping_status` 仍为 `truth_audit_not_learner_tensor`）。对**从不读 cache 的确定性路由**而言这是一个反事实上界，**不得**读作"路由实际使用的那个值"。
 2. **"每个 id 都有归属"这条不变量只在挂载 `timeline_sink` 时成立**。只开 `decision_sink` 时，hold/fail 消费的 id 不落任何记录，于是 sink 中的 id 是稀疏的（例如 14 个已分配 id 只有 2 个出现在决策行里）。需要完整 id 账目时必须同时挂 timeline。
 3. **`t_local_queue_enter` 取该决策名下第一条 `queue_enter`**。提交型决策自身的入队必然早于其后任何重新入队，故该字段稳定；但**按 `decision_id` 索引的"全部入队"集合**只包含归属于该决策的那些——链路 stall/退休造成的重新入队不归属任何决策（`decision_id` 为 `None`），这是刻意的（见 R8-A8）。
-4. **`t_measure` / `t_decision_start` / `t_decision_commit` 在默认（延迟为 0）下恒相等**。`T1-COMPUTE-DELAY-PASS` 落地后：`t_decision_start` 早于其余两者，`t_measure` 仍等于 `t_decision_commit`——因为决策体在计算落地时**重读**状态，`t_measure` 是「选择实际依据的状态」的时刻，两者之间即计算时延。见第 4 节。
+4. **`t_measure` / `t_decision_start` / `t_decision_commit` 在默认（延迟为 0）下恒相等**。`T1-COMPUTE-DELAY-PASS` 落地后：`t_decision_start` 早于其余两者，`t_measure` 仍等于 `t_decision_commit`——**但这条只在已实现的 `refresh` 模式下成立**，因为决策体在计算落地时重读状态，`t_measure` 就是「选择实际依据的状态」的时刻。**2026-09-23 复核判定：这恰恰是缺陷**——`refresh` 模式下计算时延把状态陈旧**抹掉**而不是产生。`frozen` 模式（阶段 1d）下 `t_measure` 应等于 `t_decision_start`。见 4.3 与 R8-A10。
 
 ## 4. 其余门禁的设计要点
 
@@ -93,11 +93,39 @@ decision sink 是 append-only 流（`_DecisionLogWriter` 逐行写 JSONL）。�
   - **pre-branch 配对证明**：指纹覆盖「目标之前（按提交顺序）的**全部**决策行完整内容」+「目标行去掉 `chosen` 之后的 pre-commit 字段」。两跑指纹不等则**拒绝出结论**（抛 `CounterfactualError`）——从不同分支点算出来的不是反事实。
   - **fail-loud 边界**：强制动作在分支点必须合法，否则抛 `KernelError`；强制成基线本来就选的动作会被拒（测不出差异）；目标决策若是 deliver 会被拒（第一版只支持在 ISL forward 候选间强制）；`learning.algorithm != none` 被拒。
   - 不 deepcopy SimPy 环境；不从原轨迹读取未选候选的未来状态——强制跑是独立的完整重放，未选候选的后果只能由它在**强制跑里**实际发生的事件给出。
-- **`T1-COMPUTE-DELAY-PASS`**：默认关闭的 `execution.compute_delay_s`（默认 `0.0`）；旧实验默认为 0 以保持语义兼容。**实现口径（2026-09-23）**：
-  - 不改 `_decide` 本体。它本来就重读 `env.now`、重建候选集并重查几何/速率/队列余量，**所以「延迟后提交」本身就是 revalidate**——动作是对计算落地时刻的状态做出的，而不是对计算开始时可见的状态。
-  - 新增 `Kernel.decide_deferred` 生成器；**只有 `compute_delay_s > 0` 时才被创建**。四个调用点按需分支：两个在生成器内（`_ingress_after_prop` / `_isl_arrive_after_prop`）用 `yield from`；两个在普通函数内（`_redecide_cell_pending` / `_redecide_pending`）用 `env.process`。延迟为 0 时仍走原来的同步调用，**逐位不变**。
+- **`T1-COMPUTE-DELAY-PASS`**：默认关闭的 `execution.compute_delay_s`（默认 `0.0`）；旧实验默认为 0 以保持语义兼容。
+
+  **4.1 已实现模式 = `refresh`（延迟后重新观测决策）**
+
+  - 不改 `_decide` 本体。它重读 `env.now`、重建候选集并重查几何/速率/队列余量，**所以「延迟后提交」在实现上就等于「提交时刻重新求解」**——动作是对计算落地时刻的状态做出的，而不是对计算开始时可见的状态。
+  - 新增 `Kernel.decide_deferred` 生成器（`kernel.py:3544-3561`）；**只有 `compute_delay_s > 0` 时才被创建**。四个调用点按需分支：两个在生成器内（`_ingress_after_prop` / `_isl_arrive_after_prop`）用 `yield from`；两个在普通函数内（`_redecide_cell_pending` / `_redecide_pending`）用 `env.process`。延迟为 0 时仍走原来的同步调用，**逐位不变**。
   - 决策行新增 `t_decision_start`；折叠器据此填 `t_decision_start`，字段缺失时退化为等于 `t`。
-  - **已知后果（必须与重新编译、重新授权一并规划）**：新增 config key 会改变**所有**配置的 `config_sha256`，因此既有 `EXPERIMENTS/EXP-*/run-manifest.json` 中记录的 `config_sha256` 与对应 `authorization.json` **不可再对新代码复用**；历史实验的授权不得重放。trace identity 不受影响（该哈希只覆盖 `scenario`/`endpoints`/`demand`/`execution.max_packets`）。
+
+  **4.2 已知后果（必须与重新编译、重新授权一并规划）**
+
+  新增 config key 会改变**所有**配置的 `config_sha256`，因此既有 `EXPERIMENTS/EXP-*/run-manifest.json` 中记录的 `config_sha256` 与对应 `authorization.json` **不可再对新代码复用**；历史实验的授权不得重放。trace identity 不受影响（该哈希只覆盖 `scenario`/`endpoints`/`demand`/`execution.max_packets`）。
+
+  **4.3 2026-09-23 复核判定：`refresh` 不能代表真实同步推理（R8-A10）**
+
+  真实同步 DDQN 的时序是「在 `t0` 读取观测 `o(t0)` → 在 `t0~t1` 对 `o(t0)` 推理 → 在 `t1` 提交」。已实现的 `refresh` 是「在 `t0` 等待 → 在 `t1` 重新读状态并立即求出动作」。差别不是措辞：**`refresh` 会把「计算期间状态已经变化」这件事从决策里消掉**，而这正是 T1 要测的错位。用它做 compute-delay 实验，等于把自变量抹平后宣称该自变量无效应。
+
+  实测证据（2×2 夹具，两变体各自 `delay=0` 与 `delay=2`，`t0=5.082`、`t1=7.082`，其余配置与 `t0` 状态逐位相同；唯一 ISL 方向的可达性在窗口内翻转）：
+
+  | 变体 | ISL@t0 | ISL@t1 | delay=0 | delay=2 |
+  |---|---|---|---|---|
+  | V1 上→下（flip 6.0） | 通 | 断 | `forward` @5.082 → DELIVERED | **无决策行，一直 hold** → IN_SYSTEM |
+  | V2 下→上（flip 6.0） | 断 | 通 | hold@5.082，6.100 `forward` → DELIVERED | **`forward` @7.082** → DELIVERED |
+
+  - V1 中 `t0` 状态完全相同而延迟改变结果 ⇒ 动作**不是**对 `t0` 状态做出的。
+  - V2 中 `t0` 时链路是断的，延迟版却在链路刚恢复的 `t1` 提交 `forward` ⇒ 决策使用了**计算开始时并不存在的信息**。
+  - 附带发现：`delay` 会把一个在计算开始时合法的转发决策变成**无限 hold**（V1 delay=2 全程无决策行），这是 `refresh` 的语义副产品，不是链路问题。
+
+  **4.4 阶段 1d 必须补的模式 = `frozen`（冻结观测推理）**
+
+  - 语义：在 `t0` 取观测快照 `o(t0)`（本地队列、候选集与几何、速率、缓存/AoI 视图），推理只许读 `o(t0)`；`timeout(delay)` 后**只**做合法性校验（链路仍通？队列仍有余量？包未过期？）。
+  - 被拒绝的动作**不得**被静默替换为「用最新状态重算的最优动作」——那正是 `refresh`。拒绝要 fail-loud 记录（`commit_rejected` 里程碑 + 原因），并按声明策略重新决策（再次计时）。
+  - 两种模式并存、互斥、由配置显式选择，**默认仍是延迟 0 的旧行为**，关闭时逐位等价。
+  - 该模式的验收必须包含本节的 2×2 夹具反例：`frozen` 下 V2 的 delay 版**不得**提交 `forward`。
 - **`T1-PRESSURE-WINDOW-PASS`**：现有 `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 在 10/20/40/80 Mbps 下无可饱和有向 ISL、无持续 hotspot（80 Mbps 的 1 s active-window p99 utilization 约 0.5%，最大约 1%），**不能充当 T1 主压力场景**；须另建固定 OD corridor / hotspot、access 不限流、constant PHY 的可解析场景。
 
 ## 5. 明确不做
@@ -106,3 +134,23 @@ decision sink 是 append-only 流（`_DecisionLogWriter` 逐行写 JSONL）。�
 - 不 deepcopy SimPy 环境做反事实；不从原轨迹读取未选候选的未来状态。
 - 不加"转发效率"这类与物理带宽混淆的旋钮：`isl_rate_mbps` 已是链路带宽，若用同一参数表示"转发效率"，F2 与 F3 会退化成同一个实验。F2 必须定义为独立于 PHY 带宽的节点处理/调度开销。
 - 不在本文授权任何运行。
+
+## 6. 阶段 1 微观机制场景契约（2026-09-23 复核新增）
+
+正式因果实验之前，必须先有**宏观星座上不可辩驳的微观证据**。以下四项构成阶段 1 的验收面，全部以可执行场景夹具（而非叙述）交付，且必须能在小星座（4–12 星）上复现：
+
+- **M1 无排队负对照**：链路不拥塞时，候选动作排序必须与「先到先服务 + 物理时延」一致；任何"排序反转"都不允许出现。用于证明 M2/M3 的反转不是夹具噪声。
+- **M2 单次 burst 导致候选动作排序反转**：一次突发必须能把某个候选动作从最优挤到非最优，并给出反转前后的排队量 / 在服务量证据。**若反复尝试都无法产生符合 FIFO 与物理时序、且可解释的反转，则按第 7 节停止**，不得改用大星座或复杂预测模型掩盖。
+- **M3 后到包不得插入目标包 FIFO 前方**：在目标包已入队 / 已开始服务的时刻之后到达的包，**不得**出现在目标包之前的服务序列里。这条直接检验排队语义与 `t_local_queue_enter` 的时序归属。
+- **M4 计算时延时间语义（`frozen` vs `refresh`）**：4.3 的 2×2 夹具必须同时覆盖两种模式；`frozen` 下延迟版**不得**使用 `t1` 才出现的信息（V2 的 delay 版不得提交 `forward`）。
+
+M2/M3 的证据必须来自**不可变事件**（`packet_events` + `link_service_windows`），不接受从决策行反推。
+
+## 7. 停止条件（2026-09-23 复核新增）
+
+若 4–12 星微观夹具无法产生**符合 FIFO 与物理时序、且可解释**的候选动作排序反转，则：
+
+- **不得**用加大星座、加大负载或上复杂预测模型来掩盖该缺失；
+- T1 预测价值路线（四路真值比较 → 轻量模型 → 复杂模型）**不得启动**；
+- 应把结论记录为「当前机制的候选动作排序对排队不敏感」，回到机制层重新设计，而不是继续堆平台功能。
+

@@ -1,24 +1,54 @@
 schema: leo-experiment-program/v1
 updated_at: "2026-09-23"
 reviewed_at: "2026-09-23"
+# Three layers, deliberately separated after the 2026-09-23 owner review:
+#   current    = what was verified NOW, by whom, with which command;
+#   historical = recorded past states; a record of a past deployment is NOT
+#                evidence of what the VM runs right now;
+#   evidence   = artefact-level facts that constrain what claims are allowed.
+# Never read a "historical" entry as a "current" one, and never let a recorded
+# deployment receipt stand in for a live re-verification.
 external_state_recheck:
-  origin_main: d24521d7a29d136408695edd17feaa210b5143cf
-  origin_main_pr: 202
-  vm_deployed_commit: c5a0ca781fad1baa7a62dd1c7c1b9586eabc2aaa
-  vm_deployed_at: "2026-09-23T18:03:03+08:00"
-  vm_deployed_verification: local_manifest_source_tree_sha256_equals_remote_install_711_of_711_files_match
-  vm_commits_behind_origin_main: 1
-  r02_raw_results_present: false
-  r02_raw_results_note: >-
-    VM CODE/Results is absent and no copy exists locally; only derived
-    analysis under ANALYSIS/EXP-20260829-.../{scene-check,v2-paired} and
-    .remote_runtime/launches witnesses survive. R02 VERIFIED covers derived
-    artifacts only; raw-event recomputation is PERMANENTLY UNAVAILABLE.
-    The owner confirmed on 2026-09-23 that no offline backup exists, so this
-    is not a recoverable gap: no claim may rely on recomputing R02 raw
-    events. Recurrence prevention is tracked as R8-A9 in FINDINGS-REGISTRY.
-  ci_test_workflow_document_governance: passing_after_this_refresh
-  vm_shape: docker_container_24_core_64gib_cgroup_a100_40gb_no_nvcc_no_cron
+  as_of: "2026-09-23T22:00+08:00"
+  current:
+    origin_main: 9f8f6266e0d129c8556ef63732793a11249d04aa
+    origin_main_verified_by: local_git_rev_parse_origin_main_after_git_fetch
+    origin_main_verified_at: "2026-09-23T21:25+08:00"
+    vm_live_state: unverified
+    vm_live_state_note: >-
+      ssh to the canonical VM was refused twice at 2026-09-23T21:25+08:00
+      ("Connection closed by 192.168.200.23 port 12130"), so the code actually
+      running on the VM right now has NOT been re-verified. The deployment
+      records below are historical. Until a fresh hash-verified check is run,
+      no claim in this repository may present a recorded deployment as the
+      current online state.
+  historical:
+    - at: "2026-09-23T20:59:32+08:00"
+      vm_deployed_commit: 9f8f6266e0d129c8556ef63732793a11249d04aa
+      vm_deployed_verification: >-
+        producer-recorded deployment: source_tree_sha256 equal local vs remote
+        (fdfa010c04fa6df7b23474d522595b517bd66054b71373fcfc367535d4de31d6),
+        720/720 files SHA256-matched, 0 missing/changed/extra
+      receipt_sha256: e705b9f471708d914fc7b55ef32aed09c57e5b68a4881c14a647f1681a679b6f
+      caveat: Not re-verified live on 2026-09-23T21:25 (see current.vm_live_state_note)
+    - at: "2026-09-23T18:03:03+08:00"
+      vm_deployed_commit: c5a0ca781fad1baa7a62dd1c7c1b9586eabc2aaa
+      vm_deployed_verification: local_manifest_source_tree_sha256_equals_remote_install_711_of_711_files_match
+    - at: "2026-08-30"
+      vm_deployed_commit: b3a66d2
+      note: pre-task baseline recorded before this work started
+  evidence:
+    r02_raw_results_present: false
+    r02_raw_results_note: >-
+      VM CODE/Results is absent and no copy exists locally; only derived
+      analysis under ANALYSIS/EXP-20260829-.../{scene-check,v2-paired} and
+      .remote_runtime/launches witnesses survive. R02 VERIFIED covers derived
+      artifacts only; raw-event recomputation is PERMANENTLY UNAVAILABLE.
+      The owner confirmed on 2026-09-23 that no offline backup exists, so this
+      is not a recoverable gap: no claim may rely on recomputing R02 raw
+      events. Recurrence prevention is tracked as R8-A9 in FINDINGS-REGISTRY.
+    ci_test_workflow_document_governance: passing
+    vm_shape: docker_container_24_core_64gib_cgroup_a100_40gb_no_nvcc_no_cron
 authority:
   human_plan: ANALYSIS/EXPERIMENT-PROGRAM.md
   readiness: ANALYSIS/CURRENT-EXPERIMENT-READINESS.md
@@ -92,13 +122,45 @@ gates:
       - T1-COUNTERFACTUAL-REPLAY-PASS
       - T1-COMPUTE-DELAY-PASS
       - T1-PRESSURE-WINDOW-PASS
+    scope: >-
+      PLATFORM CAPABILITY ONLY. This gate says the measurement and
+      counterfactual instrumentation exists and was producer-verified. It does
+      NOT say the T1 scientific question is answered, that predictive routing
+      has value, that an ISL-saturating scenario exists, or that any causal
+      experiment is authorized.
+    scope_note: >-
+      Wording tightened on 2026-09-23 after owner review, to be read as
+      "measurement and counterfactual capability finished and PRODUCER-verified;
+      the formal causal experiment is NOT yet authorized". Claims that go
+      further -- predictive value, stale-neighbour-state effect, ISL saturation
+      -- require the Phase 1 micro-mechanism evidence described in
+      ANALYSIS/T1-MEASUREMENT-PROTOCOL.md first.
     note: >-
       Review 2026-09-23: keep leo-direct-sim, no simulator rewrite. Data plane,
       control plane/AoI, information-leak control and the formal evidence chain
       are adequate; what is missing is measurement and counterfactual ability
       for the T1 stale-neighbour-state / candidate-arrival-alignment question.
-      All five capabilities landed on main in PRs #202-#207 and were deployed
-      to the canonical VM at commit aca65c1 with a hash-verified receipt.
+      All five capabilities landed on main in PRs #201-#208. Deployment history
+      lives in external_state_recheck.historical: the newest recorded
+      deployment is 9f8f626 at 2026-09-23T20:59:32+08:00, and the live VM was
+      NOT re-verified afterwards, so this entry must not be cited as the
+      current online state.
+    known_partial_criteria:
+      - gate: T1-COMPUTE-DELAY-PASS
+        finding: R8-A10
+        detail: >-
+          The shipped mode defers and then RE-OBSERVES at commit time
+          (decide_deferred -> _decide reads env.now and the live state). It
+          therefore cannot represent inference on an observation captured at
+          compute start, i.e. it cannot produce compute-induced state
+          staleness. A frozen-observation mode with a commit-time legality
+          check is required (Phase 1d).
+      - gate: T1-PRESSURE-WINDOW-PASS
+        finding: R8-A9
+        detail: >-
+          Access is not unthrottled above ~20 Mbps offered; utilisation
+          plateaus near 0.56 instead of approaching 1.0. It is a medium-high
+          pressure window and must NOT be used to claim ISL saturation.
     verification_provenance: >-
       SELF-VERIFIED. On 2026-09-23 the owner instructed that the independent
       cold-start review mechanism no longer be used, so no verdict from an
