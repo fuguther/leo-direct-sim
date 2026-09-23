@@ -23,8 +23,13 @@ def _two_sat_geo():
     return StaticGeometry(2, neighbors_map=nb, visible=vis)
 
 
-def _run(rows, decision_sink=None, timeline_sink=None):
-    return kernel.run_simulation(make_cfg(), rows, geometry=_two_sat_geo(),
+def _cfg(overrides=None):
+    return make_cfg(overrides)
+
+
+def _run(rows, decision_sink=None, timeline_sink=None, overrides=None):
+    return kernel.run_simulation(_cfg(overrides), rows,
+                                 geometry=_two_sat_geo(),
                                  decision_sink=decision_sink,
                                  timeline_sink=timeline_sink)
 
@@ -170,3 +175,95 @@ def test_ledger_marks_missing_instead_of_filling_zero():
     # provably knew nothing from cache; that must read as MISSING, not 0.0
     assert "t_control_rx" in gaps[last_id]
     assert last["t_control_rx"] == decision_ledger.MISSING
+
+# ---------------------------------------------- R8-A6: control arrival time
+
+def test_control_arrival_time_is_recorded_without_a_learner():
+    """R8-A6: the T1 first version is a deterministic router with learning
+    OFF, so the audit must still record what the node knew.  Before the fix
+    cache_entries was populated only when a learner existed, which left
+    t_control_rx permanently MISSING for exactly that configuration."""
+    sink, timeline = [], []
+    _run([row(1, 0.0, A, B)], decision_sink=sink, timeline_sink=timeline,
+         overrides={"control_plane": {"enabled": True},
+                    "routing": {"policy": "hop"}})
+    assert sink[0]["info_audit"]["cache_entries"], \
+        "CP on + learner off must still audit the cache"
+    by_decision, _ = decision_ledger.build_ledger(sink, timeline)
+    assert any(e["t_control_rx"] != decision_ledger.MISSING
+               for e in by_decision.values())
+
+
+def test_control_arrival_time_stays_missing_with_the_control_plane_off():
+    """Companion negative control: with no control plane nothing can arrive,
+    so the field must read MISSING rather than 0.0."""
+    sink, timeline = [], []
+    _run([row(1, 0.0, A, B)], decision_sink=sink, timeline_sink=timeline)
+    assert sink[0]["info_audit"]["cache_entries"] == {}
+    by_decision, _ = decision_ledger.build_ledger(sink, timeline)
+    assert all(e["t_control_rx"] == decision_ledger.MISSING
+               for e in by_decision.values())
+
+
+# ------------------------------- R8-A7: holds/fails must not leak identifiers
+
+def _kernel_with_sinks(overrides, rows):
+    sink, timeline = [], []
+    kern = kernel.Kernel(_cfg(overrides), rows, geometry=_two_sat_geo(),
+                         decision_sink=sink, timeline_sink=timeline)
+    return kern, sink, timeline
+
+
+def _unaccounted(kern, sink, timeline):
+    """Ids that were allocated but left no record anywhere."""
+    row_ids = {r["decision_id"] for r in sink}
+    terminal = {m["decision_id"] for m in timeline
+                if m["milestone"] in ("hold", "fail")
+                and m["decision_id"] is not None}
+    return sorted(set(range(kern._decision_seq)) - (row_ids | terminal))
+
+
+def test_holds_do_not_leak_decision_ids():
+    """R8-A7: _decide allocates an id at entry but only the two commit sites
+    wrote a decision row, so every hold/fail consumed an id and vanished.
+    Forcing the no_info hold path (deterministic router, control plane on,
+    packet emitted before any advertisement arrives) used to leak 12 ids."""
+    kern, sink, timeline = _kernel_with_sinks(
+        {"control_plane": {"enabled": True}, "routing": {"policy": "hop"}},
+        [row(1, 0.0, A, B)])
+    kern.run()
+    holds = [m for m in timeline if m["milestone"] == "hold"]
+    assert holds, "this fixture must actually produce holds"
+    assert len(holds) > len(sink), "holds outnumber commits here"
+    assert _unaccounted(kern, sink, timeline) == []
+
+
+def test_every_allocated_id_is_accounted_for_in_a_plain_run():
+    kern, sink, timeline = _kernel_with_sinks(
+        {}, [row(i, 0.5 * i, A, B) for i in (1, 2, 3)])
+    kern.run()
+    assert _unaccounted(kern, sink, timeline) == []
+    assert kern._decision_seq >= len(sink)
+
+
+def test_hold_milestones_do_not_enter_the_decision_sink():
+    """Holds go on the timeline only: hold rows in the decision sink would
+    break the per-hop decision contract its tests pin."""
+    kern, sink, timeline = _kernel_with_sinks(
+        {"control_plane": {"enabled": True}, "routing": {"policy": "hop"}},
+        [row(1, 0.0, A, B)])
+    kern.run()
+    assert {r["kind"] for r in sink} <= {"forward", "deliver"}
+    assert all("milestone" not in r for r in sink)
+    assert all(m["pid"] == 1 for m in timeline)
+
+
+def test_default_off_allocates_nothing_even_when_holds_would_occur():
+    """The zero-overhead guarantee must hold on a path that would otherwise
+    hold: with no sinks attached, no id may be consumed at all."""
+    kern = kernel.Kernel(_cfg({"control_plane": {"enabled": True},
+                               "routing": {"policy": "hop"}}),
+                         [row(1, 0.0, A, B)], geometry=_two_sat_geo())
+    kern.run()
+    assert kern._decision_seq == 0
+

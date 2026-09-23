@@ -68,6 +68,9 @@
 | R8-A4 | kernel (audit) | major | FACT | open | 决策审计字段 `peer_egress_queue_bits` 是邻居**全部方向** data+ctrl 求和，不代表包到达后实际竞争的出口队列；真正对应的是同一处的 `reverse_link_queue_bits` | `CODE/leo_sim/kernel.py:3218-3220`（求和）对比 `3212-3217`（`reverse_link_queue_bits`）；`ISLLink` 为单方向链路、data+ctrl 共享一个有限队列（`kernel.py:743-747`）；兄弟字段 `own_queue_bits` 是逐方向（`3180-3181`）；唯一相关测试仅在对称双星上断言 `==0`（`tests/test_decision_snapshot.py:65`），从未区分求和与逐方向 | 由 `T1-DOWNSTREAM-RESOURCE-PASS` 门关闭：新增候选动作级、固定 downstream policy 下的具体 egress / 到达前 workload / 在服务剩余量 / 控制积压真值 |
 | R8-A5 | kernel (timing) | major | FACT | open | 每决策无唯一 `decision_id`，同一包的重决策在 decision sink 中不可区分；且 `_decide` 全段无 `yield`，观察→选择→提交共处一个 `env.now`，决策计算时延未进入模拟时间 | 全仓 `decision_id` grep 0 命中；`_decide` `kernel.py:3274-3437` 区间内 `yield` 计数为 0；sink 行仅以 `(t,pid,sat,kind)` 为键（`3168-3184`）；重决策入口 `_redecide_pending` `3439-3444`、`_redecide_cell_pending` `2762-2782` | 由 `T1-TIME-LEDGER-PASS`（`decision_id` + 完整时间链）与 `T1-COMPUTE-DELAY-PASS`（`decision_start → timeout → revalidate → commit`）两门关闭；均为 opt-in，关闭时须与旧行为等价 |
 
+| R8-A6 | kernel (audit) | major | FACT | fixed | 控制信息到达时刻 `t_control_rx` 在**目标配置**下恒为 MISSING：`_decision_info_audit` 只在 `learner is not None` 时填 `cache_entries`，而非学习运行的 `contract` 为 `None`，于是 2026-09-23 分层审查指定的 T1 第一版配置（deterministic router + learning off）拿不到该字段 | 280 星诊断 profile（`population_global_1deg_diagnostic.yaml`，`control_plane.enabled: true` + `routing.policy: hop` + `learning.algorithm: none`）实测 `t_control_rx` **0/534**；6 星环夹具 0/19；该字段是"邻居状态时间错位"的核心自变量 | 本 PR：`_decision_info_audit` 增 `elif self.cfg_cp["enabled"]` 分支，用 `caches[sat].valid_entries(now)` 记录节点实际已知的全部有效 cache 条目（非学习运行无 contract 可裁）；修后 6 星环 19/19、280 星 534/534；`test_decision_snapshot.py` 断言 `cache_entries == {}` 的场景控制面关闭，不受影响 |
+| R8-A7 | kernel (audit) | major | FACT | fixed | hold / fail 决策**静默泄漏 decision_id**：`_decide` 入口无条件分配 id，但 `_record_decision` 只在 forward/deliver 两个提交点调用，故每次 hold（`no_info` 等广告、几何/GE 暂不可用、MCS 零速率）或 fail 都消费一个 id 却不留任何落盘痕迹——既无决策行，也无里程碑（`redecision` 里程碑只在 `pkt.decision_id is not None` 时写且携带新尝试的 id） | 精确 id 账目：强制 hold 场景（hop + 控制面开）`ROW ids=[12,13]` 而 **id 0..11 全部无痕**；连最简单的双星 oracle 场景也有 1 次无痕 hold（`ROW ids=[1,2]`，id 0 无痕） | 本 PR：`_hold_packet`/`_fail` 增 `decision_id` 形参并在 `timeline_sink` 上写 `hold`/`fail` 终止里程碑；`_decide` 内 10 个终止点显式传入。修后三个场景 **0 个无归属 id**。只写 timeline，不碰 `decision_sink`（其形状与条数被既有测试锁定） |
+
 ## Open / Follow-up 清单
 
 - R7-F1 已由 R02 真实授权 cohort 关闭；逐实验 claim/value review 是持续治理要求，不再作为同一平台缺陷重复登记。
@@ -76,6 +79,7 @@
 - R6-A1/R6-A2/R6-A3/R6-B2/R6-P02b：已登记的 snapshot/holding/routing follow-up。
 - R8-A1：R02 raw 证据缺失，待用户确认离线备份后决定保留契约（不阻塞 T1 工程，但阻塞 raw event 级复现声明）。
 - R8-A4/R8-A5：T1 测量能力缺口，分别由 `T1-DOWNSTREAM-RESOURCE-PASS` 与 `T1-TIME-LEDGER-PASS` + `T1-COMPUTE-DELAY-PASS` 关闭。
+- R8-A6/R8-A7 已 fixed（见上表）；二者是 `T1-TIME-LEDGER-PASS` 判定为"未通过"的直接原因，修后该门禁的能力项才齐备。
 - `EXPERT-REVIEW` 与 NOTES 只作证据来源；任何仍需处置的历史项必须先在本表分配 ID，
   不允许只存在于其他文档的“隐形 open item”。本轮已先迁入 R1-A1/R1-A2；其余历史项
   需逐条核验后再登记，不能批量假设仍 open 或已 fixed。

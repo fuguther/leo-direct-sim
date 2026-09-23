@@ -1409,14 +1409,23 @@ class Kernel:
         """Last-activity stamp for fair-access idle measurement."""
         self.access_last_busy[cell] = self.env.now
 
-    def _hold_packet(self, sat: int, pkt: DataPacket) -> bool:
-        """Admit a packet to finite satellite holding, or assign its fate."""
+    def _hold_packet(self, sat: int, pkt: DataPacket,
+                     decision_id: int | None = None) -> bool:
+        """Admit a packet to finite satellite holding, or assign its fate.
+
+        ``decision_id``, when given, is the id of the decision attempt that
+        is parking the packet: a hold IS a decision (it decided not to
+        forward now), so the id must be accounted for or the id space leaks
+        silently (R8-A7).
+        """
         if self.pending[sat].put(pkt, self.env.now):
             self._metric_queue_enter(pkt, "holding", f"holding:{sat}")
+            if self.timeline_sink is not None and decision_id is not None:
+                self._timeline("hold", pkt, decision_id, sat=int(sat))
             self._note_busy(pkt.dst)
             return True
         self.mech["holding_queue_overflows"] += 1
-        self._fail(pkt, "HOLDING_QUEUE_OVERFLOW")
+        self._fail(pkt, "HOLDING_QUEUE_OVERFLOW", decision_id=decision_id)
         return False
 
     def _log(self, kind, **kv):
@@ -3315,19 +3324,32 @@ class Kernel:
                 obs_hops=(1 if contract == "C1"
                           else self.cfg_learning.get("obs_hops")),
             )
-            for origin, entry in sorted(entries.items()):
-                age = float(max(0.0, entry.aoi(now)))
-                payload = entry.payload if isinstance(entry.payload, dict) else {}
-                cache_entries[str(origin)] = {
-                    "generated_at": float(entry.generated_at),
-                    "received_at": float(entry.received_at),
-                    "age_s": age,
-                    "hops": int(entry.hops),
-                    "source": "control_cache",
-                    "payload_field_age_s": {
-                        str(field): age for field in sorted(payload)
-                    },
-                }
+        elif self.cfg_cp["enabled"]:
+            # R8-A6: a non-learning run has no observation contract to crop
+            # against, but the node's actual knowledge is still exactly its
+            # valid control cache.  Recording it is required for T1: the
+            # intended first-version configuration is a deterministic router
+            # with learning OFF, and the control-arrival time is the
+            # independent variable of the stale-neighbour-state question.
+            # Without this branch that timeline field is MISSING for exactly
+            # that configuration.  test_decision_snapshot.py asserts
+            # cache_entries == {} only with the control plane disabled.
+            entries = self.caches[sat].valid_entries(now)
+        else:
+            entries = {}
+        for origin, entry in sorted(entries.items()):
+            age = float(max(0.0, entry.aoi(now)))
+            payload = entry.payload if isinstance(entry.payload, dict) else {}
+            cache_entries[str(origin)] = {
+                "generated_at": float(entry.generated_at),
+                "received_at": float(entry.received_at),
+                "age_s": age,
+                "hops": int(entry.hops),
+                "source": "control_cache",
+                "payload_field_age_s": {
+                    str(field): age for field in sorted(payload)
+                },
+            }
         return {
             "schema": "leo-sim-decision-info/v1",
             "contract": contract,
@@ -3346,10 +3368,10 @@ class Kernel:
             self._timeline("redecision", pkt, decision_id,
                            prev_decision_id=pkt.decision_id, sat=int(sat))
         if pkt.deadline is not None and now >= pkt.deadline:
-            self._fail(pkt, "DATA_DEADLINE_EXPIRED")
+            self._fail(pkt, "DATA_DEADLINE_EXPIRED", decision_id=decision_id)
             return
         if len(pkt.path) > self.cfg_rt["max_hops"]:
-            self._fail(pkt, "NO_ROUTE")
+            self._fail(pkt, "NO_ROUTE", decision_id=decision_id)
             return
         ep = self._ensure_endpoint(pkt.dst)
         link = ep.links.get(sat)
@@ -3384,7 +3406,7 @@ class Kernel:
                         self._schedule_pending_wake(sat, nxt_up)
                 if pkt.deadline is not None:
                     self._schedule_pending_wake(sat, pkt.deadline)
-                self._hold_packet(sat, pkt)
+                self._hold_packet(sat, pkt, decision_id=decision_id)
                 return
             dl = self.downlinks[sat]
             if dl.room(pkt.bits):
@@ -3400,7 +3422,8 @@ class Kernel:
                                       "deliver", decision_id=decision_id)
                 dl.put(pkt)
             else:
-                self._fail(pkt, "ACCESS_QUEUE_OVERFLOW")
+                self._fail(pkt, "ACCESS_QUEUE_OVERFLOW",
+                           decision_id=decision_id)
             return
         own_q = {d: lnk.data_bits + lnk.ctrl_bits for d, lnk in self.isls[sat].items()}
         # The action/decision gate is observable information too.  A learning
@@ -3431,15 +3454,16 @@ class Kernel:
                 if self.rate_model == "mcs" else None),
             cache_hops=cache_hops)
         if status == "unreachable":
-            self._fail(pkt, "NO_ROUTE")
+            self._fail(pkt, "NO_ROUTE", decision_id=decision_id)
             return
         if status == "no_info":
             if not self.cfg_cp["enabled"] and self.cfg_rt["policy"] != "oracle":
-                self._fail(pkt, "NO_ROUTE")
+                self._fail(pkt, "NO_ROUTE", decision_id=decision_id)
             else:
                 if pkt.deadline is not None:
                     self._schedule_pending_wake(sat, pkt.deadline)
-                self._hold_packet(sat, pkt)  # wait for re-decision
+                self._hold_packet(sat, pkt,
+                                  decision_id=decision_id)  # wait
             return
         # loop avoidance: never forward back onto a satellite already visited
         cands = [d for d in cands if self.topo[sat][d] not in pkt.path]
@@ -3504,12 +3528,14 @@ class Kernel:
                 self._schedule_pending_wake(sat, pkt.deadline)
             if recover_at != float("inf"):
                 self._schedule_pending_wake(sat, recover_at)
-            self._hold_packet(sat, pkt)  # temporarily unavailable: wait
+            self._hold_packet(sat, pkt,
+                              decision_id=decision_id)  # unavailable: wait
             return
         if cands:
-            self._fail(pkt, "ISL_QUEUE_OVERFLOW")
+            self._fail(pkt, "ISL_QUEUE_OVERFLOW", decision_id=decision_id)
         else:
-            self._fail(pkt, "NO_ROUTE")  # every candidate loops
+            self._fail(pkt, "NO_ROUTE",
+                       decision_id=decision_id)  # every candidate loops
 
     def _redecide_pending(self, sat: int):
         if not self.pending[sat]:
@@ -3581,7 +3607,11 @@ class Kernel:
         self._log("delivered", pid=pkt.pid, sat=sat)
 
     # ----------------------------------------------------------------- fates
-    def _fail(self, pkt, fate: str):
+    def _fail(self, pkt, fate: str, decision_id: int | None = None):
+        if self.timeline_sink is not None and decision_id is not None:
+            # R8-A7: a failed attempt is still a decision; without this row
+            # its decision_id would be consumed and vanish
+            self._timeline("fail", pkt, decision_id, fate=fate)
         if isinstance(pkt, ControlPacket):
             self.ctrl_ledger.record(pkt.iid, fate, pkt.bits)
         else:
