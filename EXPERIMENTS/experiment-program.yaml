@@ -14,14 +14,31 @@ external_state_recheck:
     origin_main: 9f8f6266e0d129c8556ef63732793a11249d04aa
     origin_main_verified_by: local_git_rev_parse_origin_main_after_git_fetch
     origin_main_verified_at: "2026-09-23T21:25+08:00"
-    vm_live_state: unverified
+    vm_live_state: verified
+    vm_live_verified_at: "2026-09-23T21:38+08:00"
+    vm_live_evidence:
+      method: >-
+        ssh to the canonical VM, read .remote_runtime/deployment.json, then
+        re-hash every recorded file ON the VM, and separately re-hash the same
+        relative paths in the local worktree.
+      vm_deployment_commit: 9f8f6266e0d129c8556ef63732793a11249d04aa
+      equals_origin_main: true
+      files_recorded: 720
+      vm_files_missing: 0
+      vm_files_changed: 0
+      source_tree_sha256: fdfa010c04fa6df7b23474d522595b517bd66054b71373fcfc367535d4de31d6
+      local_vs_receipt: >-
+        719 of 720 recorded paths match the local worktree byte-for-byte with
+        0 changed; the single non-compared path is .deployment_commit, which
+        the deploy tool writes only on the VM and deliberately excludes from
+        the tree hash (deployment_guard.build_archive).
     vm_live_state_note: >-
-      ssh to the canonical VM was refused twice at 2026-09-23T21:25+08:00
-      ("Connection closed by 192.168.200.23 port 12130"), so the code actually
-      running on the VM right now has NOT been re-verified. The deployment
-      records below are historical. Until a fresh hash-verified check is run,
-      no claim in this repository may present a recorded deployment as the
-      current online state.
+      A first re-verification attempt at 2026-09-23T21:25+08:00 was refused
+      twice ("Connection closed by 192.168.200.23 port 12130") and was recorded
+      as unverified rather than assumed. ssh became reachable again and the
+      live state was verified at the time above. The fact that a recorded
+      deployment is now confirmed is a re-check result, not a promotion of the
+      historical record; a later claim must re-check again.
   historical:
     - at: "2026-09-23T20:59:32+08:00"
       vm_deployed_commit: 9f8f6266e0d129c8556ef63732793a11249d04aa

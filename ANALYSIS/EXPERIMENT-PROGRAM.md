@@ -19,7 +19,7 @@
 
 **停止条件**：若 4–12 星微观夹具无法产生符合 FIFO 与物理时序、且可解释的候选动作排序反转，**不得**用大星座与复杂预测模型掩盖，T1 预测价值路线不得启动。
 
-**状态与证据的三层分离（R8-A11）**：`EXPERIMENTS/experiment-program.yaml` 的 `external_state_recheck` 已拆为 `current`（现在核实了什么、由谁、用什么命令）/ `historical`（历史部署记录，**不是**在线状态证明）/ `evidence`（约束 claim 的工件级事实）。截至 `2026-09-23T22:00+08:00`：远端 `main` 已核实为 `9f8f626`；最近一次**记录在案**的部署是 `9f8f626`（20:59:32）；**当前 VM 实际代码版本未现场复核**（21:25 两次 ssh 被拒：`Connection closed by 192.168.200.23 port 12130`）。不为让文字一致而修改任何 SHA。
+**状态与证据的三层分离（R8-A11）**：`EXPERIMENTS/experiment-program.yaml` 的 `external_state_recheck` 已拆为 `current`（现在核实了什么、由谁、用什么命令）/ `historical`（历史部署记录，**不是**在线状态证明）/ `evidence`（约束 claim 的工件级事实）。**现场复核结果（`2026-09-23T21:38+08:00`）**：21:25 首次复核时 ssh 被拒两次（`Connection closed by 192.168.200.23 port 12130`），当时记为 `unverified` 而非假设可用；ssh 恢复后完成现场核验——**远端 `main` = VM `.deployment_commit` = `9f8f626`**，VM 侧按回执重算 **720/720 文件命中、0 缺失、0 变更**，`source_tree_sha256 = fdfa010c…31d6`，本地工作树按同一路径清单比对 **719/719 逐字节一致、0 变更**（唯一未比对项为部署工具只在 VM 写入且被排除出树哈希的 `.deployment_commit`）。**这次是"重新核验通过"，不是把历史记录提升为在线状态**——后续 claim 仍须重新核验。不为让文字一致而修改任何 SHA。
 
 **其余待决**：规则 20 与"停用冷启动复核"的冲突**暂不降低门槛**，规则 20 对承重改动保持 UNSATISFIED（自测通过不等于独立复核通过）；已合并分支的 worktree 回收**暂缓**（非科研关键路径）。
 
