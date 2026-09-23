@@ -132,6 +132,114 @@ def build_ledger(decision_rows, timeline_rows):
     return by_decision, diagnostics
 
 
+def score_downstream_predictions(decision_rows, timeline_rows):
+    """Score each forward decision's downstream prediction against reality.
+
+    Pairs the decision-time belief recorded in
+    info_audit.candidate_truth[chosen].downstream (what the decision expected
+    the neighbour's contended egress to be) with the egress snapshot taken
+    when the packet ACTUALLY arrived at that neighbour, plus the direction the
+    neighbour then really chose.  The gap between the two is the
+    stale-neighbour-state misalignment T1 studies.
+
+    Returns (scores, summary); scores maps decision_id to a dict.
+    """
+    arrivals = {}
+    successor = {}
+    for row in timeline_rows:
+        if row.get("egress_snapshot") is not None:
+            arrivals[row.get("decision_id")] = row
+        if row["milestone"] == "redecision":
+            previous = row.get("prev_decision_id")
+            if previous is not None and previous not in successor:
+                successor[previous] = row.get("decision_id")
+
+    by_id = {}
+    for row in decision_rows:
+        if row.get("decision_id") is not None:
+            by_id[row["decision_id"]] = row
+
+    scores = {}
+    for decision_id, row in sorted(by_id.items()):
+        if row.get("kind") != "forward":
+            continue
+        truth = (row.get("info_audit") or {}).get("candidate_truth") or {}
+        entry = truth.get(row.get("chosen"))
+        prediction = (entry or {}).get("downstream")
+        arrival = arrivals.get(decision_id)
+        succ = successor.get(decision_id)
+        realized_direction = None
+        if succ is not None and succ in by_id:
+            realized_direction = by_id[succ].get("chosen")
+
+        predicted_direction = None
+        predicted_bits = None
+        predicted_remaining = None
+        if prediction is not None:
+            predicted_direction = prediction.get("peer_egress_direction")
+            predicted_bits = (prediction.get("peer_egress_data_bits", 0)
+                              + prediction.get("peer_egress_ctrl_bits", 0))
+            predicted_remaining = prediction.get("peer_in_service_remaining_bits")
+
+        realized_bits = None
+        realized_remaining = None
+        realized_actual_bits = None
+        if arrival is not None:
+            snapshot = arrival.get("egress_snapshot") or {}
+            if predicted_direction is not None:
+                slot = snapshot.get(predicted_direction)
+                if slot is not None:
+                    realized_bits = slot["data_bits"] + slot["ctrl_bits"]
+                    realized_remaining = slot["in_service_remaining_bits"]
+            if realized_direction is not None:
+                slot = snapshot.get(realized_direction)
+                if slot is not None:
+                    realized_actual_bits = slot["data_bits"] + slot["ctrl_bits"]
+
+        match = None
+        if predicted_direction is not None and realized_direction is not None:
+            match = predicted_direction == realized_direction
+
+        scores[decision_id] = {
+            "pid": row.get("pid"),
+            "sat": row.get("sat"),
+            "predicted_egress": predicted_direction,
+            "realized_egress": realized_direction,
+            "egress_match": match,
+            "arrival_recorded": arrival is not None,
+            "predicted_egress_bits": predicted_bits,
+            "realized_egress_bits": realized_bits,
+            "egress_bits_delta": (None if (predicted_bits is None
+                                           or realized_bits is None)
+                                  else realized_bits - predicted_bits),
+            "realized_actual_egress_bits": realized_actual_bits,
+            "predicted_remaining_bits": predicted_remaining,
+            "realized_remaining_bits": realized_remaining,
+            "remaining_delta": (None if (predicted_remaining is None
+                                         or realized_remaining is None)
+                                else realized_remaining - predicted_remaining),
+        }
+
+    compared = [s for s in scores.values() if s["egress_match"] is not None]
+    deltas = [s["egress_bits_delta"] for s in scores.values()
+              if s["egress_bits_delta"] is not None]
+    summary = {
+        "scored_decisions": len(scores),
+        "with_prediction": sum(1 for s in scores.values()
+                               if s["predicted_egress"] is not None),
+        "with_arrival_snapshot": sum(1 for s in scores.values()
+                                     if s["arrival_recorded"]),
+        "egress_compared": len(compared),
+        "egress_matched": sum(1 for s in compared if s["egress_match"]),
+        "egress_match_rate": ((sum(1 for s in compared if s["egress_match"])
+                               / len(compared)) if compared else None),
+        "egress_bits_delta_samples": len(deltas),
+        "egress_bits_delta_mean": (sum(deltas) / len(deltas)) if deltas else None,
+        "egress_bits_delta_max": max(deltas) if deltas else None,
+    }
+    return scores, summary
+
+
 def audit_ledger(by_decision):
     """Report which of the eleven fields are still MISSING, per decision."""
     gaps = {}
