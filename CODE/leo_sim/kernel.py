@@ -3272,6 +3272,83 @@ class Kernel:
             "info_audit": info_audit,
         })
 
+    def _peer_downstream_truth(self, pkt: DataPacket, peer: int,
+                               now: float) -> dict:
+        """Audit-only prediction of the resource the packet would contend for.
+
+        For one candidate direction this records the egress the PEER would
+        pick for this destination under the same fixed downstream policy,
+        together with that egress's current occupancy, control backlog and
+        in-service remaining work.  This is the candidate-specific downstream
+        truth that peer_egress_queue_bits -- a sum over ALL of the peer's
+        directions -- cannot express (R8-A4 / T1-DOWNSTREAM-RESOURCE-PASS).
+
+        Truth audit only: it reads the peer's own control cache and the true
+        topology, and is never fed to a policy
+        (mapping_status = truth_audit_not_learner_tensor).  Called only from
+        the decision-sink path, so normal runs pay nothing.
+        """
+        is_destination = peer in self._serving_sats(pkt.dst)
+        egress = None
+        if not is_destination and self.isls[peer]:
+            own_q = {d: lnk.data_bits + lnk.ctrl_bits
+                     for d, lnk in self.isls[peer].items()}
+            cands, status = routing.choose_next_hop(
+                self.cfg_rt["policy"], peer, pkt.dst, now, self.geometry,
+                self.topo, self.caches[peer], own_q, self.isl_rate_bps,
+                model.propagation_delay_s,
+                oracle_targets=([s for s in self._serving_sats(pkt.dst)
+                                 if s != peer]
+                                if self.cfg_rt["policy"] == "oracle" else None),
+                best_only=False,
+                reverse_adj=self._routing_reverse_adj,
+                sorted_adj=self._routing_sorted_rev_adj)
+            if status == "ok" and cands:
+                egress = cands[0]
+        link = self.isls[peer].get(egress) if egress is not None else None
+        in_service_bits = 0
+        remaining = None
+        phase = None
+        is_ctrl = False
+        remaining_method = "no_service_on_predicted_egress"
+        if link is not None and link.current is not None:
+            current = link.current
+            in_service_bits = int(current.bits)
+            is_ctrl = isinstance(current, ControlPacket)
+            phase = link._svc_phase
+            if phase == "transmitting" and link._tx_started_at is not None:
+                if self.rate_model == "constant":
+                    # Linear extrapolation is only honest when the service
+                    # rate cannot change mid-transmission.  Under MCS the
+                    # rate is distance-dependent, so no number is recorded
+                    # rather than a wrong one.
+                    elapsed = max(0.0, now - float(link._tx_started_at))
+                    remaining = max(
+                        0.0, float(current.bits) - elapsed * self.isl_rate_bps)
+                    remaining_method = "linear_at_constant_rate"
+                else:
+                    remaining_method = "unavailable_varying_rate"
+            else:
+                # transmission has not actually started, so the whole packet
+                # is still ahead of anything arriving later
+                remaining = float(current.bits)
+                remaining_method = "not_started_full_bits"
+        return {
+            "prediction_method": "same_policy_full_cache_at_decision_time",
+            "peer_is_destination": bool(is_destination),
+            "peer_egress_direction": egress,
+            "peer_egress_link_id": (None if link is None
+                                    else "isl:%d:%d" % (peer, link.peer)),
+            "peer_egress_data_bits": int(link.data_bits) if link else 0,
+            "peer_egress_ctrl_bits": int(link.ctrl_bits) if link else 0,
+            "peer_egress_ctrl_packets": len(link.ctrl_q) if link else 0,
+            "peer_in_service_bits": in_service_bits,
+            "peer_in_service_phase": phase,
+            "peer_in_service_is_control": bool(is_ctrl),
+            "peer_in_service_remaining_bits": remaining,
+            "peer_in_service_remaining_method": remaining_method,
+        }
+
     def _decision_info_audit(self, pkt: DataPacket, sat: int,
                              candidates: list) -> dict:
         """Record decision-time physical truth without feeding it to a policy.
@@ -3316,6 +3393,7 @@ class Kernel:
                 "reverse_link_queue_bits": reverse_queue,
                 "topology_available": bool(
                     self.topo.get(sat, {}).get(direction) == peer),
+                "downstream": self._peer_downstream_truth(pkt, peer, now),
             }
             truth[direction] = {
                 "edge": [int(sat), int(peer)],
