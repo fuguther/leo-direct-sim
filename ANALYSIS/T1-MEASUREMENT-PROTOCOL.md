@@ -83,7 +83,7 @@ decision sink 是 append-only 流（`_DecisionLogWriter` 逐行写 JSONL）。�
 1. **`t_control_rx` 在非学习运行中是"可能已知"而非"实际使用"**。学习运行按 contract 裁剪 cache 条目；非学习运行没有 contract 可裁，因此记录该节点**全部有效 cache 条目**中最新的 `received_at`（`mapping_status` 仍为 `truth_audit_not_learner_tensor`）。对**从不读 cache 的确定性路由**而言这是一个反事实上界，**不得**读作"路由实际使用的那个值"。
 2. **"每个 id 都有归属"这条不变量只在挂载 `timeline_sink` 时成立**。只开 `decision_sink` 时，hold/fail 消费的 id 不落任何记录，于是 sink 中的 id 是稀疏的（例如 14 个已分配 id 只有 2 个出现在决策行里）。需要完整 id 账目时必须同时挂 timeline。
 3. **`t_local_queue_enter` 取该决策名下第一条 `queue_enter`**。提交型决策自身的入队必然早于其后任何重新入队，故该字段稳定；但**按 `decision_id` 索引的"全部入队"集合**只包含归属于该决策的那些——链路 stall/退休造成的重新入队不归属任何决策（`decision_id` 为 `None`），这是刻意的（见 R8-A8）。
-4. **`t_measure` / `t_decision_start` / `t_decision_commit` 当前恒相等**，三字段分开保留是为 `T1-COMPUTE-DELAY-PASS` 落地时回填，不得据此认为已测量决策时延。
+4. **`t_measure` / `t_decision_start` / `t_decision_commit` 在默认（延迟为 0）下恒相等**。`T1-COMPUTE-DELAY-PASS` 落地后：`t_decision_start` 早于其余两者，`t_measure` 仍等于 `t_decision_commit`——因为决策体在计算落地时**重读**状态，`t_measure` 是「选择实际依据的状态」的时刻，两者之间即计算时延。见第 4 节。
 
 ## 4. 其余门禁的设计要点
 
@@ -93,7 +93,11 @@ decision sink 是 append-only 流（`_DecisionLogWriter` 逐行写 JSONL）。�
   - **pre-branch 配对证明**：指纹覆盖「目标之前（按提交顺序）的**全部**决策行完整内容」+「目标行去掉 `chosen` 之后的 pre-commit 字段」。两跑指纹不等则**拒绝出结论**（抛 `CounterfactualError`）——从不同分支点算出来的不是反事实。
   - **fail-loud 边界**：强制动作在分支点必须合法，否则抛 `KernelError`；强制成基线本来就选的动作会被拒（测不出差异）；目标决策若是 deliver 会被拒（第一版只支持在 ISL forward 候选间强制）；`learning.algorithm != none` 被拒。
   - 不 deepcopy SimPy 环境；不从原轨迹读取未选候选的未来状态——强制跑是独立的完整重放，未选候选的后果只能由它在**强制跑里**实际发生的事件给出。
-- **`T1-COMPUTE-DELAY-PASS`**：默认关闭的 `compute_delay_s`；旧实验默认为 0 以保持语义兼容。注意引入 config key 会改变 `config_sha256`，须与重新编译、重新授权一并规划。
+- **`T1-COMPUTE-DELAY-PASS`**：默认关闭的 `execution.compute_delay_s`（默认 `0.0`）；旧实验默认为 0 以保持语义兼容。**实现口径（2026-09-23）**：
+  - 不改 `_decide` 本体。它本来就重读 `env.now`、重建候选集并重查几何/速率/队列余量，**所以「延迟后提交」本身就是 revalidate**——动作是对计算落地时刻的状态做出的，而不是对计算开始时可见的状态。
+  - 新增 `Kernel.decide_deferred` 生成器；**只有 `compute_delay_s > 0` 时才被创建**。四个调用点按需分支：两个在生成器内（`_ingress_after_prop` / `_isl_arrive_after_prop`）用 `yield from`；两个在普通函数内（`_redecide_cell_pending` / `_redecide_pending`）用 `env.process`。延迟为 0 时仍走原来的同步调用，**逐位不变**。
+  - 决策行新增 `t_decision_start`；折叠器据此填 `t_decision_start`，字段缺失时退化为等于 `t`。
+  - **已知后果（必须与重新编译、重新授权一并规划）**：新增 config key 会改变**所有**配置的 `config_sha256`，因此既有 `EXPERIMENTS/EXP-*/run-manifest.json` 中记录的 `config_sha256` 与对应 `authorization.json` **不可再对新代码复用**；历史实验的授权不得重放。trace identity 不受影响（该哈希只覆盖 `scenario`/`endpoints`/`demand`/`execution.max_packets`）。
 - **`T1-PRESSURE-WINDOW-PASS`**：现有 `EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02` 在 10/20/40/80 Mbps 下无可饱和有向 ISL、无持续 hotspot（80 Mbps 的 1 s active-window p99 utilization 约 0.5%，最大约 1%），**不能充当 T1 主压力场景**；须另建固定 OD corridor / hotspot、access 不限流、constant PHY 的可解析场景。
 
 ## 5. 明确不做
