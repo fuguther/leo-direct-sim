@@ -487,12 +487,19 @@ def witness(args) -> int:
 
     decisions = []
     log_path = Path(args.decision_log)
-    if log_path.is_file():
-        with log_path.open(encoding="utf-8") as fh:
-            for line in fh:
-                line = line.strip()
-                if line:
-                    decisions.append(json.loads(line))
+    if log_path.is_symlink() or not log_path.is_file():
+        log(f"decision log is missing or symbolic: {log_path}; refusing to report a "
+            f"witness from zero rows")
+        return 2
+    with log_path.open(encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if line:
+                decisions.append(json.loads(line))
+    if not decisions:
+        log(f"decision log is empty: {log_path}; refusing to report a witness from "
+            f"zero rows")
+        return 2
     deferred = [r for r in decisions
                 if r.get("t_decision_start") is not None
                 and float(r["t"]) > float(r["t_decision_start"]) + TOL["production_abs_s"]]
@@ -545,6 +552,7 @@ def witness(args) -> int:
         "schema": WITNESS_SCHEMA,
         "run_id": args.run_id,
         "compute_delay_s": args.cd,
+        "tolerance_contract_s": TOL,
         "admissible": identical,
         "identity_checks": checks,
         "decision_rows_total": len(decisions),
@@ -742,6 +750,7 @@ def selftest(_args) -> int:
     ok = all(r["ok"] for r in results)
     report = {
         "schema": "leo-sim-step5-selftest/v1",
+        "tolerance_contract_s": TOL,
         "compute_delay_s_synthetic": 1.0,
         "checks": results,
         "all_checks_ok": ok,
