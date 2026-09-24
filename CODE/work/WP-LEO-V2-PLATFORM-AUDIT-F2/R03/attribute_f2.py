@@ -197,9 +197,14 @@ def analyse_arm(results_root: Path, run_id: str,
     }
 
 
-def run(results_root: Path, experiment: str,
-        compute_delay_s: float | None) -> dict:
-    arms = {arm: analyse_arm(results_root, f"{experiment}-{arm}-s7",
+def run(results_root: Path, experiment: str, compute_delay_s: float | None,
+        pairing_key: str = "s7") -> dict:
+    if not pairing_key or "/" in pairing_key or not pairing_key.isalnum():
+        raise AttributionError(
+            f"pairing_key must be a non-empty alphanumeric string, got "
+            f"{pairing_key!r}")
+    arms = {arm: analyse_arm(results_root,
+                             f"{experiment}-{arm}-{pairing_key}",
                              compute_delay_s)
             for arm in ARMS}
     if arms["control"]["node_process_milestones"]["start"] != 0:
@@ -337,6 +342,10 @@ def main() -> int:
     parser.add_argument("--results-root", type=Path, default=Path("CODE/Results"))
     parser.add_argument("--experiment")
     parser.add_argument("--compute-delay-s", type=float, default=None)
+    parser.add_argument("--pairing-key", default="s7",
+                        help="the trace-seed suffix of the compiled run ids "
+                             "(default s7); it is read from the request, not "
+                             "guessed")
     parser.add_argument("--out", type=Path)
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
@@ -345,7 +354,8 @@ def main() -> int:
     if not args.experiment or args.out is None:
         parser.error("--experiment and --out are required (or use --self-test)")
 
-    report = run(args.results_root, args.experiment, args.compute_delay_s)
+    report = run(args.results_root, args.experiment, args.compute_delay_s,
+                 args.pairing_key)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n",
                         encoding="utf-8")
