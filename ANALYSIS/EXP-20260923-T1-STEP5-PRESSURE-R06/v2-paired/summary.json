@@ -1,0 +1,27 @@
+{
+  "claim_status": "READY_FOR_INDEPENDENT_CLAIM_REVIEW",
+  "design_accounting": {
+    "exact_reexecution_cells": 0,
+    "exact_reexecution_groups": [],
+    "independent_condition_rule": "one independent condition per unique resolved config SHA256",
+    "planned_cells": 2,
+    "schema": "leo-sim-matrix-design-accounting/v1",
+    "unique_resolved_configurations": 2
+  },
+  "experiment_id": "EXP-20260923-T1-STEP5-PRESSURE-R06",
+  "planned_contrasts": [
+    {
+      "differences": [
+        -0.14801011167936323
+      ],
+      "left_arm": "control",
+      "mean_difference": -0.14801011167936323,
+      "metric": "e2e_delay_mean_s",
+      "n_pairs": 1,
+      "name": "cd05_vs_control",
+      "right_arm": "cd05"
+    }
+  ],
+  "primary_metric": "e2e_delay_mean_s",
+  "schema": "leo-sim-v2-analysis-summary/v1"
+}

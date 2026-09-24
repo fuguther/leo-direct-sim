@@ -1,0 +1,12 @@
+{
+  "analysis_manifest": "ANALYSIS/EXP-20260923-T1-STEP5-MICRO-R06/v2-paired/analysis-manifest.json",
+  "analysis_manifest_sha256": "df3107f19f5356d204608193be1f3fad7ed00ded24c20b06039ee24c9bd6ed4b",
+  "cannot_claim": [
+    "any algorithmic superiority, information value, learning value or new-mechanism contribution",
+    "an effect-size, performance curve, threshold, or causal claim about compute delay",
+    "real subscriber traffic or a calibrated demand model",
+    "reproduction of the #212 scripted-geometry micro-mechanism fixture (this batch uses real Walker geometry)"
+  ],
+  "schema": "leo-sim-v2-claim-gate/v1",
+  "status": "READY_FOR_INDEPENDENT_CLAIM_REVIEW"
+}
