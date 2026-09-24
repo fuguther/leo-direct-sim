@@ -99,8 +99,59 @@ requirements:
   topology_cadence_calibration_verified: {status: completed_verified, evidence: main_0f7249f_vm_cadence_0p5_1_2_5_receipts_raw_metrics_recompute}
   global_scene_repeat_analysis_verified: {status: completed_verified, evidence: "origin_main_79796b6_EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02_manifest_4ed749aeb9362aa37c80330779b92b654cad31d5a15d87a7f3317b3d60200455_VERIFIED_24_runs_12_unique_configs_plus_12_exact_reexecutions_scene_ACCESS_LIMITED_x24_claim_READY_FOR_INDEPENDENT_CLAIM_REVIEW"}
   e0_load_calibration_verified: {status: rerun_required, reason: access_boundary_queue_semantics_require_new_coverage_horizon_vm_smoke_and_e0_training, historical_evidence: main_0f7249f_vm_mlab_multiod_burst_50_100_200_receipts_metrics_recompute}
-  link_utilization_recomputation_verified: {status: blocked}
-  packet_delay_decomposition_verified: {status: blocked}
+  # Closed 2026-09-24 by owner decision on the authorized step-5 verification
+  # batch (PR #217, main 046eea35; persisted evidence in PR #218).  Each gate
+  # is closed on its own evidence chain.  Provenance is recorded honestly: the
+  # recomputation output was produced by the producer; the harness and the
+  # reviewed artifacts (not the output) passed three independent cold-start
+  # reviews by different model families.
+  link_utilization_recomputation_verified:
+    status: completed_verified
+    evidence: >-
+      Independent second implementation (CODE/leo_sim/metrics_independent.py, does not import
+      metrics) recomputed every directed link from immutable events on four formal runs
+      (EXP-20260923-T1-STEP5-{MICRO,PRESSURE}-R06-{control,cd05}-s7): micro 20 links / corridor 52
+      links, per-link mismatch_total = 0, mismatch list EMPTY; zero-service links covered and
+      listed individually (16/16 and 44/44); zero-available-capacity links 0; degenerate
+      denominator ABSENT (availability_sampled=true, degenerate_denominator_links=[]);
+      negative controls rejected in all four arms (capacity != rate*(end-start); overlapping
+      available windows on one link), proving the checker is not vacuous.
+      Per-run artifacts: CODE/Results/<run>/step5-recompute.json sha256
+      556a777e6ed65915208a431cfa58c38ef61f372740e0eaf4fe5ec81b0f8c9e75,
+      0c6d6c31585d2e5ced4fd4088ddfbc321596f409cb849bdfa45a70a4a469385d,
+      5a04c3a96ab95ef164c1b37bdcd637fdbaa8d495dfc6051812be4027ca0819bf,
+      438e8c7eaa2e42f1fb0f23f526e55366fd59792024448c4bd9f456d0cef68ac0.
+    limits:
+      - "OPEN BLIND SPOT: metrics_independent.py:297-363 does not check end-start == served/rate.
+         This gate therefore rests on the three hard backstops, NOT on the checker alone."
+      - "PRODUCER-COMPUTED: the recomputation output was produced by the producer and was NOT
+         independently re-derived by a third party. Do not read this as independent review."
+  packet_delay_decomposition_verified:
+    status: completed_verified
+    evidence: >-
+      Same four formal runs. Max closure residual 4.44e-16 (tolerance 1e-9). Every individual gap
+      equals compute_delay_s: micro-cd05 histogram {0.05: 18}, corridor-cd05 {0.05: 3321} - all
+      3339 gaps, none deviating, so no merged 2*cd blanks exist; gap_length_violation_total = 0
+      and the unexplained-extra-blank list is EMPTY in all four arms. sum_gaps == n*cd holds for
+      every delivered packet. Decision-count substitute witness: admissible=true with four
+      identity digests bit-identical (formal runs refuse --decision-log); micro 18 vs 18 delivered
+      gaps, corridor 3329 vs 3321 with the 4 remaining decision rows belonging to undelivered
+      packets, reported separately by fate. Fate-appropriate truncated accounting applied to 3527
+      ACCESS_QUEUE_OVERFLOW and 162 IN_SYSTEM_AT_STOP without the delivered-packet formula.
+      Per-packet production comparison mismatch_total = 0. Section 6b hard backstops all satisfied
+      in all four arms (--cd cross-checked 4/4 including F2=0.0; delivered_gap_reconciliation_all_agree
+      4/4 true; delivered_packets_checked == delivered_packets 6=6, 6=6, 1107=1107, 1107=1107);
+      failure path empty (no exit 3 / exit 4).
+    limits:
+      - "PRODUCER-COMPUTED: same as the utilization gate - harness reviewed, output not independently re-derived."
+      - "The 0.05-only histogram is the positive evidence against absorbed gaps; no artificial
+         injection of an unexplainable blank was performed (that would need a new authorization)."
+    deployment: >-
+      main 046eea3549f7089118d85efc3300b6d20e6a3c21 == VM .deployment_commit; source_tree_sha256
+      5a0ce1681daa826802a9cbe48fb11fd774cf03a8cd5cac92c5883784bdf6de5d identical local/remote; VM
+      per-file 880 OK / 0 MISSING / 0 CHANGED; local mismatch 0; receipt
+      356bdf34a1f38372593f7f84da5875888765f62958ef105b2fd8985e394455b7.  This deployment contains
+      F2 code with F2 DISABLED (all four resolved configs measured execution.node_process_delay_s = 0.0).
   q0_minimum_loop_verified: {status: blocked}
   q0_replay_review_approved: {status: blocked}
   three_final_audit_rounds_no_new_major: {status: blocked}
