@@ -231,6 +231,32 @@
       "suggested_archive_target": null
     },
     {
+      "path": "ANALYSIS/PLATFORM-AUDIT-REPORT.md",
+      "status": "CURRENT-VOLATILE",
+      "purpose": "Platform research-usability audit: confirmed capabilities, limitations, blocking issues, non-issues, and the paper-claim classification",
+      "may_direct_current_work": true,
+      "owner": "platform-audit",
+      "last_reviewed": "2026-09-24",
+      "review_interval_days": 14,
+      "replacement": null,
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
+      "path": "ANALYSIS/BURST-DESIGN.md",
+      "status": "CURRENT-CONTRACT",
+      "purpose": "Burstiness experiment design: the confounding proof, Mode A (fixed mean, vary burst) and Mode B (fixed burst, vary mean)",
+      "may_direct_current_work": true,
+      "owner": "platform-audit",
+      "last_reviewed": "2026-09-24",
+      "review_interval_days": 60,
+      "replacement": null,
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
       "path": "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
       "status": "CURRENT-VOLATILE",
       "purpose": "Latest repository snapshot of readiness and blockers",
