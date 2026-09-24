@@ -78,8 +78,22 @@
 | `ARXIV-2509.08455` | SKYLINK 链路管理 | B | arXiv | queued | 2026-09-03 扩展检索新增 |
 | `ARXIV-2512.09453` | BlockFlex 韧性虚拟覆盖 | B | arXiv | queued | 2026-09-03 扩展检索新增 |
 | `ARXIV-2601.21914` | 激光 ISL 匹配+路由联合 | B | arXiv | queued | 2026-09-03 扩展检索新增 |
+| `ARXIV-2608.01649` | LLM 自动奖励设计（LEO 路由 RL） | A | arXiv | queued | 2026-09-03 冷启动碰撞新增 |
+| `ARXIV-2605.26286` | MARL 陈旧观测执行期补偿（信念状态滤波） | B | arXiv | queued | 2026-09-03 冷启动碰撞新增（候选A邻域） |
+| `ARXIV-2512.20835` | QoS+物理感知光学 ISL DRL 路由 | A | arXiv | queued | 2026-09-03 冷启动碰撞新增（候选D邻域） |
+| `ARXIV-2601.21921` | 对偶引导图学习：LISL 建链+路由+流率联合 | B | arXiv | queued | 2026-09-03 冷启动碰撞新增（候选D邻域） |
+| `ARXIV-2601.21914` | LCT 机械约束 LISL 匹配+路由联合（Lagrangian） | B | arXiv | queued | 2026-09-03 碰撞核验完成：按快照集中式 |
+| `ARXIV-2406.01953` | 动态 LISL 按需路由 | B | arXiv | queued | 2026-09-03 冷启动碰撞新增 |
+| `ARXIV-2510.25498` | 学习式拥塞控制 LEO 评估（LeoEM） | B | arXiv | queued | 2026-09-03 冷启动碰撞新增（评估方法学） |
+| `ARXIV-2508.19067` | OrbCC：LEO 传输（瞬态热点/改道未知特征） | B | arXiv | queued | 2026-09-03 冷启动碰撞新增（候选C旁证） |
+| `ARXIV-2608.02095` | 仿真 vs 实现在 LEO CC 之比较 | B | arXiv | queued | 2026-09-03 冷启动碰撞新增（评估现实性） |
+| `ARXIV-2604.27854` | NetSatBench：分布式 LEO 仿真器（SRv6 案例） | C | arXiv | queued | 2026-09-03 冷启动碰撞新增（评估基础设施） |
+| `ARXIV-2605.01243` | 在轨边缘计算+路由的 AoI（野火检测） | B | arXiv | queued | 2026-09-03 冷启动碰撞新增（数据新鲜度谱系） |
+| `ARXIV-1310.7919` | Gossip 网络的 AoI（年龄传播模型） | C | arXiv | queued | 2026-09-03 冷启动碰撞新增（理论邻域） |
+| `OPENALEX-LEOCC` | LeoCC：拥塞控制对 LEO 动态鲁棒（SIGCOMM 2025） | B | ACM gold | queued | dl.acm 403，需人工下载（2026-09-03 核验） |
 
 ## 变更日志
+- 2026-09-03（第六轮·冷启动碰撞）：新增 13 条外部检索发现入队（含 AoII+routing 零命中复核记录、LeoCC 需人工下载）；仅登记排队，不改变候选状态。
 - 2026-09-03（第五轮）：本轮选择的 17 篇全文阅读完成；该完成状态不产生选题冻结、领域空白或实验设计结论。
 - 2026-09-03（第四轮）：36/36 笔记全部落地；OpenAlex/引用链新增 9 篇（含 LeoCC SIGCOMM2025、FSO 调度+路由、MWC2026 分层路由）；MATGCIR DOI 修正为 10.1109/lcomm.2025.3601011；DONG 队列值以摘要 5%/13% 为准。
 - 2026-09-03（第三轮）：sa1+sa3 两批 20 篇笔记落地（raw/），并记录逐篇检查与 arXiv API 查询范围。
