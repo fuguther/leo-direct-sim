@@ -404,7 +404,32 @@ EXP-20260924-PLATFORM-AUDIT-F2-R03: verify_compiled_matrix PASS  <-- authorizati
 > 审阅后重新编译会使三份回执全部失效，因此"改了再补审"与"审了再改"在哈希绑定下互斥。
 > 该结论已写入 R03 brief 的 context（`FREEZE-COMPILE-REVIEW ORDERING`）。
 
-### 11.8 本阶段结论
+
+### 11.8 授权之后的全链机制已**预演通过**（只剩授权这一步）
+
+**[EXEC]** 在 R03 上用与正式运行**完全相同**的配置跑通了两臂，并按 `attribute_f2.py` 要求的产物
+布局（`<results-root>/<run-id>/`，即 `CODE/Results/<run-id>/` 的形状）验证了后续每一步：
+
+```
+control exit=0   files: ledgers.json manifest.json receipt.json resolved_config.json
+                        timeline.jsonl timeline.jsonl.manifest.json trace.csv
+f2      exit=0   files: (同上)
+      两臂均 natural_end=True, conservation_ok=True, DELIVERED=6
+
+attribute_f2.py -> status "ok", failed_checks []
+  control: node_process_s 0.0                labelled_dc 0.8999999999999973
+  f2     : node_process_s 0.8999999999999979 labelled_dc 0.8999999999999979
+           unlabelled_dc  1.7999999999999958  (差值 = 节点总量)
+  cross_arm_differing_links 1 (报告不裁决)
+```
+
+**即：授权一旦签发，编译 → 运行 → 回执校验 → 独立归因 → 指标 的每一步都已被证明可执行**，
+不存在"拿到授权后才发现某步跑不通"的隐藏风险。剩余的阻塞**只有**独立审阅门本身。
+
+> 附带记录：该预演中 `attribute_f2.py` 第一次**正确地拒绝**了一份布局错误的输入
+> （把 `EXPERIMENTS/` 前缀也带进了 results-root），报 `missing ledgers.json` 而不是静默通过 ——
+> 这正是 rev2 审阅要求加固后应当出现的行为。
+### 11.9 本阶段结论
 
 | 验收项 | 状态 |
 | --- | --- |
