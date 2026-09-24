@@ -1,6 +1,6 @@
 {
   "schema": "leo-document-governance/v1",
-  "updated_at": "2026-09-23",
+  "updated_at": "2026-09-24",
   "allowed_statuses": [
     "CURRENT-CONTRACT",
     "CURRENT-VOLATILE",
@@ -199,6 +199,19 @@
       "owner": "document-governance",
       "last_reviewed": "2026-09-23",
       "review_interval_days": 30,
+      "replacement": null,
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
+      "path": "ANALYSIS/CURRENT-EVENT-TIMELINE.md",
+      "status": "EVIDENCE-SNAPSHOT",
+      "purpose": "Code-level event-chain baseline pinned to MAIN_SHA 549acd8b (nine events, code locations, time fields, two chain gaps)",
+      "may_direct_current_work": false,
+      "owner": "platform-audit",
+      "last_reviewed": "2026-09-24",
+      "review_interval_days": 90,
       "replacement": null,
       "require_banner": false,
       "archive_candidate": false,
