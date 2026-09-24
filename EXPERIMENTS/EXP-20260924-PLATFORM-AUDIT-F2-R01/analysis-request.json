@@ -1,0 +1,87 @@
+{
+  "analysis": {
+    "analysis_id": "AN-PLATFORM-AUDIT-F2-SEPARATION",
+    "estimand": "Strictly paired single-factor check that execution.node_process_delay_s moves ONLY the satellite node-processing stage: with PHY rate, routing policy, trace, topology and seed shared, the f2 arm must add exactly (packets x satellite visits x node_process_delay_s) to the realised end-to-end delay and must NOT change the independent per-link utilisation, the tx/propagation/queue phases, or the decision-compute reading. Descriptive structural check, NOT an effect size, superiority or causal claim.",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "Paired structural comparison of the SAME trace/seed/config differing only in execution.node_process_delay_s (0.0 vs 0.05). Tested property: the node-processing occupancies recorded on the timeline sink account for the e2e increase exactly, and no other phase moves. NOT an effect-size, performance or causal claim.",
+        "left_arm": "control",
+        "name": "f2_vs_control",
+        "right_arm": "f2"
+      }
+    ],
+    "primary_metric": "e2e_delay_mean_s"
+  },
+  "claim_boundary": {
+    "can_claim": [
+      "the F2 node-processing stage is separately attributable on the timeline sink and is disjoint from the decision stage",
+      "adding execution.node_process_delay_s leaves the independent per-link utilisation, queue, tx and propagation phases unchanged on this fixture",
+      "the realised e2e increase equals the recorded node-processing occupancy on this fixture"
+    ],
+    "cannot_claim": [
+      "any algorithmic superiority, information value, learning value or new-mechanism contribution",
+      "an effect-size, performance curve, threshold or causal claim about node processing delay",
+      "real subscriber traffic or a calibrated demand model",
+      "that this design is executable by the canonical remote runner today: remote_job.py never passes the timeline stream F2 requires"
+    ]
+  },
+  "design_accounting": {
+    "exact_reexecution_cells": 0,
+    "exact_reexecution_groups": [],
+    "independent_condition_rule": "one independent condition per unique resolved config SHA256",
+    "planned_cells": 2,
+    "schema": "leo-sim-matrix-design-accounting/v1",
+    "unique_resolved_configurations": 2
+  },
+  "experiment_id": "EXP-20260924-PLATFORM-AUDIT-F2-R01",
+  "matrix_manifest_sha256": "6758eb25acc791dea17580f110e0b3296bd67e49b0e521e92ef7f4a606470009",
+  "planned_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 6,
+        "min_multisat_deliveries": 6,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "control",
+      "config_sha256": "a4b4e4300b448187a1758c4209c5c85ea3adedb24bbd73dea23855f793bfa828",
+      "controlled_signature": "daf58e42575b0405d1509ccd8c8d743e13d2a16eea66b50f0c0da992c7632ab2",
+      "input_sha256": "26536d8b3b894a13d74289131653fddfdae8fe095f7c4edb2dc6a1683ec37592",
+      "learning_seed": null,
+      "pairing_key": "s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260924-PLATFORM-AUDIT-F2-R01-control-s7",
+      "trace_identity_sha256": "97f4313cabe3723be71166b93e76ec7442ba77801d50c674e944dd10abc6e361",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 6,
+        "min_multisat_deliveries": 6,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "f2",
+      "config_sha256": "0e622604d450fac52d9ec9e258d4258358271ff2b978b986c2f29dbdec04a6c4",
+      "controlled_signature": "daf58e42575b0405d1509ccd8c8d743e13d2a16eea66b50f0c0da992c7632ab2",
+      "input_sha256": "26536d8b3b894a13d74289131653fddfdae8fe095f7c4edb2dc6a1683ec37592",
+      "learning_seed": null,
+      "pairing_key": "s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260924-PLATFORM-AUDIT-F2-R01-f2-s7",
+      "trace_identity_sha256": "97f4313cabe3723be71166b93e76ec7442ba77801d50c674e944dd10abc6e361",
+      "trace_seed": 7
+    }
+  ],
+  "planned_run_ids": [
+    "EXP-20260924-PLATFORM-AUDIT-F2-R01-control-s7",
+    "EXP-20260924-PLATFORM-AUDIT-F2-R01-f2-s7"
+  ],
+  "request_sha256": "517c0a5034d778b6f3f25c691a953814a90c3b309deceb6e741e206b96b673e3",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-matrix-analysis-request/v1",
+  "status": "WAITING_FOR_VERIFIED_RUNS"
+}
