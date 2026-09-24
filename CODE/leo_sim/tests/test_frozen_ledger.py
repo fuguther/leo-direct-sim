@@ -68,12 +68,12 @@ def _line_flip_geo(up_before: bool):
 
 
 def _cfg(mode="frozen", delay=DELAY, duration=60.0, num_sats=3,
-         isl_rate_mbps=1.0, cp=True):
+         isl_rate_mbps=1.0, cp=True, policy="oracle"):
     return make_cfg({
         "scenario": {"duration_s": duration, "num_satellites": num_sats,
                      "num_planes": 1, "seed": 3},
         "control_plane": {"enabled": cp},
-        "routing": {"policy": "oracle"},
+        "routing": {"policy": policy},
         "links": {"isl_rate_mbps": isl_rate_mbps},
         "execution": {"compute_delay_s": delay,
                       "decision_observation_mode": mode},
@@ -224,6 +224,37 @@ def test_the_estimate_is_built_from_t0_information_never_from_truth():
     # the truth at commit DID know that quantity: the two are different facts
     downstream = row_["truth_at_commit"]["candidate_truth"]["E"]["downstream"]
     assert downstream["peer_in_service_remaining_bits"] is not None
+
+
+def test_the_estimate_names_the_information_it_actually_used():
+    """The intended T1 configuration is a deterministic router with learning
+    OFF, where what a node can know about its neighbour is exactly the control
+    advertisement it received.  The estimate must say so -- and must be the
+    advertised number, not the neighbour's real backlog."""
+    _, sink, _ = _run(
+        _cfg("frozen", policy="hop"),
+        [row(i, 3.0 * i, A, B, bits=BITS) for i in range(1, 5)], _line_geo())
+    candidates = [row_ for row_ in sink
+                  if row_["kind"] == "forward" and row_["estimate_at_start"]]
+    assert candidates, "a cache-driven run must still commit forwards"
+    checked = 0
+    for row_ in candidates:
+        estimate = row_["estimate_at_start"]
+        assert estimate["information_source"] == "control_cache"
+        assert estimate["truth_used"] is False
+        peer = str(estimate["for_peer"])
+        neighbour = row_["observation_at_start"]["neighbours"][peer]
+        if estimate["peer_egress_direction"] is None:
+            continue
+        assert estimate["peer_egress_queue_bits_estimate"] == \
+            neighbour["advertised_isl_queue_bits"][
+                estimate["peer_egress_direction"]]
+        assert estimate["neighbour_measurement"]["received_at"] == \
+            neighbour["received_at"]
+        assert estimate["neighbour_measurement"]["received_at"] <= \
+            row_["t_decision_start"]
+        checked += 1
+    assert checked, "the fixture must predict a downstream egress from cache"
 
 
 def test_no_prediction_is_recorded_as_none_not_as_a_truth_value():
