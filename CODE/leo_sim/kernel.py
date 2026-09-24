@@ -1481,7 +1481,8 @@ class Kernel:
             self._metric_queue_enter(pkt, "holding", f"holding:{sat}",
                                      decision_id=decision_id)
             if self.timeline_sink is not None and decision_id is not None:
-                self._timeline("hold", pkt, decision_id, sat=int(sat))
+                self._timeline("hold", pkt, decision_id, sat=int(sat),
+                               obs_mode=self.obs_mode)
             self._note_busy(pkt.dst)
             return True
         self.mech["holding_queue_overflows"] += 1
@@ -3296,11 +3297,203 @@ class Kernel:
         self._learning_open.add(pkt)
         return action
 
+    # ------------------------- T1-FROZEN-LEDGER: what was known, and when
+
+    def _observed_cache_entries(self, sat: int, now: float) -> dict:
+        """{origin: CacheEntry} that this node had ACTUALLY been told by now.
+
+        One definition of "what could be known", shared by the truth audit
+        (which reports the age of every contributing origin) and the
+        observation record (which reports the measurement time of every
+        neighbour separately).  Two call sites that disagreed about the
+        information boundary would silently break the very quantity the T1
+        ledger exists to measure.
+        """
+        if self.learner is not None:
+            contract = self.cfg_rt["contract"]
+            return _learning.information_set(
+                contract, sat, self.caches[sat], now, self.topo,
+                obs_hops=(1 if contract == "C1"
+                          else self.cfg_learning.get("obs_hops")))
+        if self.cfg_cp["enabled"]:
+            # R8-A6: a non-learning run has no observation contract to crop
+            # against, but the node's actual knowledge is still exactly its
+            # valid control cache.
+            return self.caches[sat].valid_entries(now)
+        return {}
+
+    def _observation_at_start(self, pkt: DataPacket, sat: int, now: float, *,
+                              mode: str, source: str, own_queue_bits: dict,
+                              considered: list, legal: list,
+                              status: str | None, kind: str,
+                              action: str | None) -> dict:
+        """The observation a decision was ACTUALLY based on.
+
+        Every contributing neighbour keeps its OWN measurement/arrival time:
+        a single scalar cannot represent several advertisements that were
+        generated and arrived at different instants, and averaging them would
+        invent a time at which nothing was measured.
+
+        mode="frozen": the snapshot taken before the computation, so obs-time
+        is t_decision_start and no later state may appear here.  mode
+        ="refresh": the state re-read when the computation landed, so obs-time
+        is t_decision_commit.  The label, never the numbers, is what keeps the
+        two apart.
+        """
+        neighbours = {}
+        for origin, entry in sorted(
+                self._observed_cache_entries(sat, now).items()):
+            payload = entry.payload if isinstance(entry.payload, dict) else {}
+            advertised = {}
+            for direction, record in (payload.get("isl_queue_bits")
+                                      or {}).items():
+                if not isinstance(record, dict):
+                    continue
+                # the advertised metric is bound to the peer it was measured
+                # on: after a rematch the same direction may point elsewhere,
+                # and then this record is not information about this topology
+                if record.get("peer") != self.topo.get(int(origin), {}).get(
+                        direction):
+                    continue
+                advertised[direction] = int(record["value"])
+            neighbours[str(origin)] = {
+                "origin": int(origin),
+                "measurement": "control_cache_advertisement",
+                "generated_at": float(entry.generated_at),
+                "received_at": float(entry.received_at),
+                "age_s": float(max(0.0, entry.aoi(now))),
+                "hops": int(entry.hops),
+                "advertised_isl_queue_bits": advertised,
+                "advertised_serve_cells": sorted(
+                    payload.get("serve_cells", ())),
+            }
+        return {
+            "schema": "leo-sim-observation-at-start/v1",
+            "mode": mode,
+            "source": source,
+            "t_observed": float(now),
+            "sat": int(sat),
+            "own_queue_bits": {d: int(bits)
+                               for d, bits in own_queue_bits.items()},
+            "neighbours": neighbours,
+            "candidate_directions": list(considered),
+            "legal_directions": list(legal),
+            "routing_status": status,
+            "kind": kind,
+            "action": action,
+        }
+
+    def _estimate_at_start(self, pkt: DataPacket, sat: int, now: float,
+                           chosen: str | None, kind: str
+                           ) -> tuple[dict | None, str | None]:
+        """Predict the downstream resource from information available at now.
+
+        Returns (estimate, unavailable_reason); exactly one of the two is not
+        None.  Only what this node had ACTUALLY been told at obs-time may
+        enter the estimate: its own queues, static topology, current geometry
+        and the control advertisements it has received.  The peer's real
+        queues and the peer's OWN cache are deliberately NOT read -- that is
+        the truth audit (_peer_downstream_truth), and reading it here would
+        backfill the deployable prediction with hindsight, which is exactly
+        the confusion this record exists to remove.
+        """
+        if kind != "forward" or chosen is None \
+                or chosen not in self.isls[sat]:
+            return None, "no_downstream_isl_resource_for_%s" % kind
+        link = self.isls[sat][chosen]
+        peer = link.peer
+        if peer is None:
+            return None, "chosen_direction_has_no_peer"
+        policy = self.cfg_rt["policy"]
+        cache_hops = None
+        if policy == "oracle":
+            # The labeled oracle has perfect global current knowledge by
+            # contract, and the kernel already hands it the true serving set
+            # at decision time; the estimate stays inside that same contract
+            # instead of pretending the oracle is cache-limited.
+            serving = self._serving_sats(pkt.dst)
+            is_destination = peer in serving
+            targets = [s for s in serving if s != peer]
+            information_source = "oracle_global_knowledge"
+        else:
+            cache_hops = (1 if self.cfg_rt["contract"] == "C1"
+                          else self.cfg_learning.get("obs_hops")) \
+                if self.learner is not None else None
+            serving = routing.destinations_in_cache(
+                self.caches[sat], pkt.dst, now, max_cache_hops=cache_hops)
+            is_destination = peer in serving
+            targets = [s for s in serving if s != peer]
+            information_source = "control_cache"
+        entry = self._observed_cache_entries(sat, now).get(peer)
+        advertised_q: dict[str, int] = {}
+        if entry is not None:
+            payload = entry.payload if isinstance(entry.payload, dict) else {}
+            for direction, record in (payload.get("isl_queue_bits")
+                                      or {}).items():
+                if not isinstance(record, dict):
+                    continue
+                if record.get("peer") != self.topo.get(peer, {}).get(direction):
+                    continue
+                advertised_q[direction] = int(record["value"])
+        if is_destination:
+            egress = None
+        elif not self.topo.get(peer):
+            return None, "peer_has_no_isl_egress"
+        else:
+            cands, status = routing.choose_next_hop(
+                policy, peer, pkt.dst, now, self.geometry, self.topo,
+                self.caches[sat], advertised_q, self.isl_rate_bps,
+                model.propagation_delay_s,
+                oracle_targets=(targets if policy == "oracle" else None),
+                best_only=False,
+                reverse_adj=self._routing_reverse_adj,
+                sorted_adj=self._routing_sorted_rev_adj,
+                rate_from_propagation=(
+                    (lambda prop_s: link_budget.mcs_rate_bps(
+                        prop_s * model.C_KM_S, self.rf_isl, self.mcs_table))
+                    if self.rate_model == "mcs" else None),
+                cache_hops=cache_hops)
+            if status != "ok" or not cands:
+                return None, "peer_route_%s" % status
+            egress = cands[0]
+        return {
+            "schema": "leo-sim-estimate-at-start/v1",
+            # explicit, because "was this number known then or only later" is
+            # the single question that separates this object from
+            # truth_at_commit
+            "truth_used": False,
+            "for_direction": chosen,
+            "for_peer": int(peer),
+            "t_observed": float(now),
+            "information_source": information_source,
+            "neighbour_measurement": (None if entry is None else {
+                "origin": int(peer),
+                "generated_at": float(entry.generated_at),
+                "received_at": float(entry.received_at),
+                "age_s": float(max(0.0, entry.aoi(now))),
+                "hops": int(entry.hops),
+            }),
+            "peer_is_destination": bool(is_destination),
+            "peer_egress_direction": egress,
+            # the advertised per-direction backlog; None means "not told",
+            # never "told it was zero"
+            "peer_egress_queue_bits_estimate": (
+                advertised_q.get(egress) if egress is not None else None),
+            "peer_egress_queue_bits_known": bool(
+                egress is not None and egress in advertised_q),
+            # the advertisement carries no in-service work, so no number can
+            # be produced here at all
+            "peer_in_service_remaining_bits_estimate": None,
+            "not_advertised": ["peer_in_service_remaining_bits"],
+            "prediction_method": "same_policy_on_advertised_peer_state",
+        }, None
+
     def _record_decision(self, pkt: DataPacket, sat: int, kind: str,
                          candidates: list, chosen: str,
                          audit_candidates: list | None = None,
                          decision_id: int | None = None,
-                         decision_started_at: float | None = None) -> None:
+                         decision_started_at: float | None = None,
+                         observation: dict | None = None) -> None:
         """Append one per-hop decision snapshot to the optional decision sink.
 
         Output only: never influences routing, learning, timing, or fates.
@@ -3308,6 +3501,23 @@ class Kernel:
         runs ``obs`` summarizes the observation actually used (dim, short
         content hash, L2 norm) so decision streams are diffable without
         storing full vectors.
+
+        T1-FROZEN-LEDGER: the row keeps four DISTINCT objects instead of one
+        ambiguous measurement instant --
+
+        * observation_at_start -- what the decision was actually based on,
+          with the measurement time of every contributing neighbour;
+        * estimate_at_start -- the prediction that observation supported
+          (None when it supported none; never backfilled from truth);
+        * truth_at_commit -- the kernel's own truth when the action was
+          committed (the pre-existing info_audit content);
+        * truth_at_target -- folded later from the arrival snapshot, because
+          it does not exist yet at commit time.
+
+        The observation argument is the frozen half's snapshot when the
+        caller is the frozen commit path; None means the decision re-read the
+        state when the computation landed (refresh), which is then recorded
+        as such rather than left to be inferred from the numbers.
         """
         if self.decision_sink is None:
             return
@@ -3321,9 +3531,43 @@ class Kernel:
                 "sha256_16": hashlib.sha256(arr.tobytes()).hexdigest()[:16],
                 "l2_norm": float(np.linalg.norm(arr)),
             }
-        info_audit = self._decision_info_audit(
-            pkt, sat, candidates if audit_candidates is None else audit_candidates)
+        considered = (candidates if audit_candidates is None
+                      else audit_candidates)
+        info_audit = self._decision_info_audit(pkt, sat, considered)
         committed_at = float(self.env.now)
+        own_queue_bits = {d: int(lnk.data_bits + lnk.ctrl_bits)
+                          for d, lnk in self.isls[sat].items()}
+        if observation is None:
+            obs_mode = "refresh"
+            observation_record = self._observation_at_start(
+                pkt, sat, committed_at, mode="refresh",
+                # refresh re-reads the live state where the computation
+                # landed: its observation instant IS the commit instant, and
+                # the label -- not the numbers -- says so
+                source="commit_time_state",
+                own_queue_bits=own_queue_bits, considered=list(considered),
+                legal=list(candidates), status=None, kind=kind, action=chosen)
+            estimate, estimate_reason = self._estimate_at_start(
+                pkt, sat, committed_at, chosen, kind)
+        else:
+            obs_mode = "frozen"
+            observation_record = observation["observation"]
+            estimate = observation["estimate"]
+            estimate_reason = observation["estimate_unavailable_reason"]
+        if estimate_reason is not None:
+            observation_record = dict(observation_record)
+            observation_record["estimate_unavailable_reason"] = estimate_reason
+        truth_at_commit = {
+            "schema": "leo-sim-truth-at-commit/v1",
+            "t_observed": committed_at,
+            "source": "kernel_state_at_commit",
+            "mapping_status": info_audit["mapping_status"],
+            "contract": info_audit["contract"],
+            # the pre-existing audit content, unchanged and by reference: it
+            # is the t1 truth, NOT a prediction available at t0
+            "candidate_truth": info_audit["candidate_truth"],
+            "cache_entries": info_audit["cache_entries"],
+        }
         self.decision_sink.append({
             "t": committed_at,
             # When computation consumed simulated time these two differ:
@@ -3343,10 +3587,15 @@ class Kernel:
                        else f"{self.cfg_learning['algorithm']}:{self.cfg_rt['contract']}"),
             "candidates": list(candidates),
             "chosen": chosen,
-            "own_queue_bits": {d: int(lnk.data_bits + lnk.ctrl_bits)
-                               for d, lnk in self.isls[sat].items()},
+            "own_queue_bits": own_queue_bits,
             "obs": obs_summary,
             "info_audit": info_audit,
+            # T1-FROZEN-LEDGER: additive keys on the existing sink.  The
+            # simulation reads none of them.
+            "obs_mode": obs_mode,
+            "observation_at_start": observation_record,
+            "estimate_at_start": estimate,
+            "truth_at_commit": truth_at_commit,
         })
 
     def _in_service_remaining(self, link, now: float):
@@ -3519,27 +3768,18 @@ class Kernel:
             }
 
         cache_entries: dict[str, dict] = {}
-        contract = None
-        if self.learner is not None:
-            contract = self.cfg_rt["contract"]
-            entries = _learning.information_set(
-                contract, sat, self.caches[sat], now, self.topo,
-                obs_hops=(1 if contract == "C1"
-                          else self.cfg_learning.get("obs_hops")),
-            )
-        elif self.cfg_cp["enabled"]:
-            # R8-A6: a non-learning run has no observation contract to crop
-            # against, but the node's actual knowledge is still exactly its
-            # valid control cache.  Recording it is required for T1: the
-            # intended first-version configuration is a deterministic router
-            # with learning OFF, and the control-arrival time is the
-            # independent variable of the stale-neighbour-state question.
-            # Without this branch that timeline field is MISSING for exactly
-            # that configuration.  test_decision_snapshot.py asserts
-            # cache_entries == {} only with the control plane disabled.
-            entries = self.caches[sat].valid_entries(now)
-        else:
-            entries = {}
+        contract = (self.cfg_rt["contract"]
+                    if self.learner is not None else None)
+        # R8-A6: a non-learning run has no observation contract to crop
+        # against, but the node's actual knowledge is still exactly its valid
+        # control cache.  Recording it is required for T1: the intended
+        # first-version configuration is a deterministic router with learning
+        # OFF, and the control-arrival time is the independent variable of the
+        # stale-neighbour-state question.  Without that branch the timeline
+        # field is MISSING for exactly that configuration.  The definition
+        # lives in _observed_cache_entries so the truth audit and the
+        # observation record can never disagree about what could be known.
+        entries = self._observed_cache_entries(sat, now)
         for origin, entry in sorted(entries.items()):
             age = float(max(0.0, entry.aoi(now)))
             payload = entry.payload if isinstance(entry.payload, dict) else {}
@@ -3657,32 +3897,47 @@ class Kernel:
         asserts the equivalence directly).
         """
         now = self.env.now
-        if self._deliver_legal_now(pkt, sat, now):
-            return {"t_observe": now, "kind": "deliver", "action": "deliver",
-                    "legal": ["deliver"], "cands": ["deliver"], "status": "ok"}
         own_q = {d: lnk.data_bits + lnk.ctrl_bits
                  for d, lnk in self.isls[sat].items()}
-        cands, status = routing.choose_next_hop(
-            self.cfg_rt["policy"], sat, pkt.dst, now, self.geometry, self.topo,
-            self.caches[sat], own_q, self.isl_rate_bps,
-            model.propagation_delay_s,
-            oracle_targets=([s for s in self._serving_sats(pkt.dst) if s != sat]
-                            if self.cfg_rt["policy"] == "oracle" else None),
-            best_only=False,
-            reverse_adj=self._routing_reverse_adj,
-            sorted_adj=self._routing_sorted_rev_adj,
-            rate_from_propagation=(
-                (lambda prop_s: link_budget.mcs_rate_bps(
-                    prop_s * model.C_KM_S, self.rf_isl, self.mcs_table))
-                if self.rate_model == "mcs" else None),
-            cache_hops=None)
-        cands = [d for d in cands if self.topo[sat][d] not in pkt.path]
-        legal = self._forward_legal_now(pkt, sat, now, cands)
-        if legal:
-            return {"t_observe": now, "kind": "forward", "action": legal[0],
-                    "legal": legal, "cands": cands, "status": status}
-        return {"t_observe": now, "kind": "hold", "action": None,
-                "legal": [], "cands": cands, "status": status}
+        if self._deliver_legal_now(pkt, sat, now):
+            kind, action = "deliver", "deliver"
+            legal, cands, status = ["deliver"], ["deliver"], "ok"
+        else:
+            cands, status = routing.choose_next_hop(
+                self.cfg_rt["policy"], sat, pkt.dst, now, self.geometry,
+                self.topo, self.caches[sat], own_q, self.isl_rate_bps,
+                model.propagation_delay_s,
+                oracle_targets=([s for s in self._serving_sats(pkt.dst)
+                                 if s != sat]
+                                if self.cfg_rt["policy"] == "oracle" else None),
+                best_only=False,
+                reverse_adj=self._routing_reverse_adj,
+                sorted_adj=self._routing_sorted_rev_adj,
+                rate_from_propagation=(
+                    (lambda prop_s: link_budget.mcs_rate_bps(
+                        prop_s * model.C_KM_S, self.rf_isl, self.mcs_table))
+                    if self.rate_model == "mcs" else None),
+                cache_hops=None)
+            cands = [d for d in cands if self.topo[sat][d] not in pkt.path]
+            legal = self._forward_legal_now(pkt, sat, now, cands)
+            if legal:
+                kind, action = "forward", legal[0]
+            else:
+                kind, action, legal = "hold", None, []
+        # T1-FROZEN-LEDGER: the observation the commit half will be judged
+        # against, plus the only prediction it legally supports.  Both are
+        # read-only records: they never enter the routing decision.
+        observation = self._observation_at_start(
+            pkt, sat, now, mode="frozen",
+            source="frozen_snapshot_before_compute",
+            own_queue_bits=own_q, considered=cands, legal=legal,
+            status=status, kind=kind, action=action)
+        estimate, estimate_reason = self._estimate_at_start(
+            pkt, sat, now, action, kind)
+        return {"t_observe": now, "kind": kind, "action": action,
+                "legal": legal, "cands": cands, "status": status,
+                "observation": observation, "estimate": estimate,
+                "estimate_unavailable_reason": estimate_reason}
 
     def _decide_from_frozen_observation(self, pkt: DataPacket, sat: int,
                                         obs: dict,
@@ -3703,19 +3958,23 @@ class Kernel:
         decision_id = self._next_decision_id()
         if self.timeline_sink is not None and pkt.decision_id is not None:
             self._timeline("redecision", pkt, decision_id,
-                           prev_decision_id=pkt.decision_id, sat=int(sat))
+                           prev_decision_id=pkt.decision_id, sat=int(sat),
+                           obs_mode="frozen", observed_at=obs["t_observe"])
         if pkt.deadline is not None and now >= pkt.deadline:
-            self._fail(pkt, "DATA_DEADLINE_EXPIRED", decision_id=decision_id)
+            self._fail(pkt, "DATA_DEADLINE_EXPIRED", decision_id=decision_id,
+                       observation=obs["observation"])
             return
         if len(pkt.path) > self.cfg_rt["max_hops"]:
-            self._fail(pkt, "NO_ROUTE", decision_id=decision_id)
+            self._fail(pkt, "NO_ROUTE", decision_id=decision_id,
+                       observation=obs["observation"])
             return
         kind = obs["kind"]
         if kind == "deliver" and self._deliver_legal_now(pkt, sat, now):
             pkt.decision_id = decision_id
             self._record_decision(pkt, sat, "deliver", ["deliver"], "deliver",
                                   decision_id=decision_id,
-                                  decision_started_at=compute_started_at)
+                                  decision_started_at=compute_started_at,
+                                  observation=obs)
             self.downlinks[sat].put(pkt)
             return
         if kind == "forward":
@@ -3725,25 +3984,49 @@ class Kernel:
                 self._record_decision(
                     pkt, sat, "forward", obs["legal"], action,
                     audit_candidates=obs["cands"], decision_id=decision_id,
-                    decision_started_at=compute_started_at)
+                    decision_started_at=compute_started_at,
+                    observation=obs)
                 self.isls[sat][action].put_data(pkt)
                 return
             if self.timeline_sink is not None:
+                # a rejected commit is still an ATTEMPT: it keeps the
+                # observation it was inferred from and the reason it died, or
+                # the ledger would count only the attempts that happened to
+                # succeed and the frozen cost would be invisible
                 self._timeline("commit_rejected", pkt, decision_id,
                                sat=int(sat), inferred_at=obs["t_observe"],
+                               t_observed=obs["t_observe"],
                                action=action,
-                               reason="action_no_longer_legal")
+                               reason="action_no_longer_legal",
+                               obs_mode="frozen",
+                               observation_at_start=obs["observation"],
+                               estimate_at_start=obs["estimate"],
+                               estimate_unavailable_reason=(
+                                   obs["estimate_unavailable_reason"]))
         elif kind == "deliver":
             if self.timeline_sink is not None:
                 self._timeline("commit_rejected", pkt, decision_id,
                                sat=int(sat), inferred_at=obs["t_observe"],
+                               t_observed=obs["t_observe"],
                                action="deliver",
-                               reason="deliver_no_longer_legal")
+                               reason="deliver_no_longer_legal",
+                               obs_mode="frozen",
+                               observation_at_start=obs["observation"],
+                               estimate_at_start=obs["estimate"],
+                               estimate_unavailable_reason=(
+                                   obs["estimate_unavailable_reason"]))
         else:
             if self.timeline_sink is not None:
                 self._timeline("frozen_inferred_hold", pkt, decision_id,
                                sat=int(sat), inferred_at=obs["t_observe"],
-                               status=obs["status"])
+                               t_observed=obs["t_observe"],
+                               status=obs["status"],
+                               reason="observation_inferred_hold",
+                               obs_mode="frozen",
+                               observation_at_start=obs["observation"],
+                               estimate_at_start=obs["estimate"],
+                               estimate_unavailable_reason=(
+                                   obs["estimate_unavailable_reason"]))
         # Park it: the inferred action is gone, and re-solving against the
         # state that killed it is exactly what this mode refuses to do.
         if pkt.deadline is not None:
@@ -3765,7 +4048,8 @@ class Kernel:
             # satellite.  The explicit link is what the old (t, pid, sat,
             # kind) row key could not express.
             self._timeline("redecision", pkt, decision_id,
-                           prev_decision_id=pkt.decision_id, sat=int(sat))
+                           prev_decision_id=pkt.decision_id, sat=int(sat),
+                           obs_mode=self.obs_mode)
         if pkt.deadline is not None and now >= pkt.deadline:
             self._fail(pkt, "DATA_DEADLINE_EXPIRED", decision_id=decision_id)
             return
@@ -4070,11 +4354,17 @@ class Kernel:
         self._log("delivered", pid=pkt.pid, sat=sat)
 
     # ----------------------------------------------------------------- fates
-    def _fail(self, pkt, fate: str, decision_id: int | None = None):
+    def _fail(self, pkt, fate: str, decision_id: int | None = None,
+              observation: dict | None = None):
         if self.timeline_sink is not None and decision_id is not None:
             # R8-A7: a failed attempt is still a decision; without this row
-            # its decision_id would be consumed and vanish
-            self._timeline("fail", pkt, decision_id, fate=fate)
+            # its decision_id would be consumed and vanish.  The observation
+            # the attempt was based on is attached when the caller has it
+            # (frozen mode), so a failure is never an unattributed attempt.
+            extra = {} if observation is None else {
+                "observation_at_start": observation}
+            self._timeline("fail", pkt, decision_id, fate=fate,
+                           obs_mode=self.obs_mode, **extra)
         if isinstance(pkt, ControlPacket):
             self.ctrl_ledger.record(pkt.iid, fate, pkt.bits)
         else:
