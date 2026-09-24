@@ -1,10 +1,4 @@
 {
-  "acceptance": {
-    "min_delivered_packets": 6,
-    "min_multisat_deliveries": 6,
-    "require_control_delivery": true,
-    "require_data_isl": true
-  },
   "analysis": {
     "analysis_id": "AN-PLATFORM-AUDIT-F2-SEPARATION",
     "estimand": "Strictly paired single-factor check that execution.node_process_delay_s moves ONLY the satellite node-processing stage, ON A DESIGN WHERE THE DECISION STAGE IS ACTIVE. execution.compute_delay_s is 0.05 in BOTH arms (shared, not a factor), so every decision consumes simulated time and decision_compute_s is non-zero and discriminating; the single factor is execution.node_process_delay_s (0.0 vs 0.05). Requirement: with the timeline spans supplied, node_process_s is a separate named term and decision_compute_s closes to (decisions x compute_delay_s) per arm, and the UNLABELLED reading exceeds the labelled one by exactly the node total. Descriptive structural check, NOT an effect size, superiority or causal claim.",
@@ -21,54 +15,6 @@
     ],
     "primary_metric": "e2e_delay_mean_s"
   },
-  "arms": [
-    {
-      "arm_id": "control",
-      "config_overrides": {},
-      "intervention_paths": []
-    },
-    {
-      "arm_id": "f2",
-      "config_overrides": {
-        "execution": {
-          "node_process_delay_s": 0.05
-        }
-      },
-      "intervention_paths": [
-        "execution.node_process_delay_s"
-      ]
-    }
-  ],
-  "cells": [
-    {
-      "arm_id": "control",
-      "checkpoint_lineage": {
-        "mode": "not_applicable",
-        "source_run_id": null,
-        "source_sha256": null
-      },
-      "config_overrides": {},
-      "learning_seed": null,
-      "pairing_key": "s7",
-      "phase": "non_learning",
-      "run_id": "EXP-20260924-PLATFORM-AUDIT-F2-R02-control-s7",
-      "trace_seed": 7
-    },
-    {
-      "arm_id": "f2",
-      "checkpoint_lineage": {
-        "mode": "not_applicable",
-        "source_run_id": null,
-        "source_sha256": null
-      },
-      "config_overrides": {},
-      "learning_seed": null,
-      "pairing_key": "s7",
-      "phase": "non_learning",
-      "run_id": "EXP-20260924-PLATFORM-AUDIT-F2-R02-f2-s7",
-      "trace_seed": 7
-    }
-  ],
   "claim_boundary": {
     "can_claim": [
       "the F2 node-processing stage is separately attributable on the timeline sink and is disjoint from the decision stage",
@@ -84,61 +30,60 @@
       "that the min_delivered_packets / min_multisat_deliveries acceptance values are enforced on the local execution route used here: they live only in the canonical remote runner"
     ]
   },
-  "common_config": {
-    "access": {
-      "acquisition_delay_s": 0,
-      "association": "bbm",
-      "downlink_rate_mbps": 1000,
-      "hysteresis_deg": 0,
-      "min_dwell_s": 0,
-      "unavailable_policy": "queue",
-      "uplink_rate_mbps": 1000
-    },
-    "control_plane": {
-      "advertise_interval_s": 2,
-      "enabled": true,
-      "packet_bits": 8000,
-      "ttl_s": 30,
-      "vis_k": 2
-    },
-    "demand": {
-      "csv_path": "CODE/data/traffic/t1_step5_micro_ab.csv",
-      "mode": "csv",
-      "packet_bits": 1000000
-    },
-    "execution": {
-      "available_capacity_interval_s": 0.1,
-      "max_entities": 20000,
-      "max_events": 20000000,
-      "max_packets": 1000,
-      "node_process_delay_s": 0,
-      "compute_delay_s": 0.05
-    },
-    "learning": {
-      "algorithm": "none"
-    },
-    "links": {
-      "ge_enabled": false,
-      "isl_rate_mbps": 10,
-      "rate_model": "constant"
-    },
-    "outputs": {
-      "plotting": false
-    },
-    "routing": {
-      "policy": "hop"
-    },
-    "scenario": {
-      "duration_s": 40,
-      "name": "t1-step5-micro-ab",
-      "num_planes": 1,
-      "num_satellites": 8,
-      "seed": 7,
-      "time_step_s": 0.1
-    }
+  "design_accounting": {
+    "exact_reexecution_cells": 0,
+    "exact_reexecution_groups": [],
+    "independent_condition_rule": "one independent condition per unique resolved config SHA256",
+    "planned_cells": 2,
+    "schema": "leo-sim-matrix-design-accounting/v1",
+    "unique_resolved_configurations": 2
   },
-  "experiment_id": "EXP-20260924-PLATFORM-AUDIT-F2-R02",
+  "experiment_id": "EXP-20260924-PLATFORM-AUDIT-F2-R03",
+  "matrix_manifest_sha256": "00d02e919ad7b2ef5525871b6e83bbf01df25438c3b6f1fab61ce00a296d3e35",
+  "planned_cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 6,
+        "min_multisat_deliveries": 6,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "control",
+      "config_sha256": "abd803fac0cc3e19498b0fd847de227a86fcb7010a8c4816b5252f286adafb94",
+      "controlled_signature": "ef1913b08a0c93b8dfa829cfb11bae08d6edf538a3d50cfe9fb2b8bc2a3f78b3",
+      "input_sha256": "26536d8b3b894a13d74289131653fddfdae8fe095f7c4edb2dc6a1683ec37592",
+      "learning_seed": null,
+      "pairing_key": "s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260924-PLATFORM-AUDIT-F2-R03-control-s7",
+      "trace_identity_sha256": "97f4313cabe3723be71166b93e76ec7442ba77801d50c674e944dd10abc6e361",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 6,
+        "min_multisat_deliveries": 6,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "f2",
+      "config_sha256": "3ef23ac8cb40daa90e4bf23c382d30c4ce1da79027ee877de0fa37cbf0fa9125",
+      "controlled_signature": "ef1913b08a0c93b8dfa829cfb11bae08d6edf538a3d50cfe9fb2b8bc2a3f78b3",
+      "input_sha256": "26536d8b3b894a13d74289131653fddfdae8fe095f7c4edb2dc6a1683ec37592",
+      "learning_seed": null,
+      "pairing_key": "s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260924-PLATFORM-AUDIT-F2-R03-f2-s7",
+      "trace_identity_sha256": "97f4313cabe3723be71166b93e76ec7442ba77801d50c674e944dd10abc6e361",
+      "trace_seed": 7
+    }
+  ],
+  "planned_run_ids": [
+    "EXP-20260924-PLATFORM-AUDIT-F2-R03-control-s7",
+    "EXP-20260924-PLATFORM-AUDIT-F2-R03-f2-s7"
+  ],
+  "request_sha256": "e3fe88e8179f5ce31bfc09ff4c96bc06c2293fc05ba38b053413cabd695fe44d",
   "runtime_kind": "leo_sim_v2",
-  "schema": "leo-sim-experiment-matrix-request/v1",
-  "work_finalization": "CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R02/finalization.json"
+  "schema": "leo-sim-matrix-analysis-request/v1",
+  "status": "WAITING_FOR_VERIFIED_RUNS"
 }

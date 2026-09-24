@@ -1,6 +1,6 @@
-# PROCEDURE — WP-LEO-V2-PLATFORM-AUDIT-F2 revision 2
+# PROCEDURE — WP-LEO-V2-PLATFORM-AUDIT-F2 revision 3
 
-Experiment: `EXP-20260924-PLATFORM-AUDIT-F2-R02` (leo_sim_v2, strict 2-cell paired design).
+Experiment: `EXP-20260924-PLATFORM-AUDIT-F2-R03` (leo_sim_v2, strict 2-cell paired design).
 Revision 1 of this work package was **BLOCKed** by the satellite_drl and adversarial roles
 (and PASSed by cold_start). This revision is the response; the revision-1 artifacts
 (`...-R01`) are preserved unchanged as revision-1 evidence.
@@ -30,7 +30,7 @@ NOT DELIVERED — declared limitations, not omissions:
   does NOT claim the chain closes through analysis.
 - **The F2 separation is not in `v2_analysis`.** `v2_analysis` does not import
   `metrics_independent` at all. The only non-test importers in this repository are this work
-  package own `R02/attribute_f2.py` (added in revision 2 precisely because the analyzer does
+  package own `R03/attribute_f2.py` (added in revision 3 precisely because the analyzer does
   not do it) and another work package `step5_recompute.py`, which takes no timeline argument.
   The separation is produced by step 5b below, on purpose and visibly, not by the analyzer.
 
@@ -38,8 +38,8 @@ NOT DELIVERED — declared limitations, not omissions:
 
 ```bash
 PYTHONPATH=. python3 CODE/experiment_platform/compile_matrix_experiment.py \
-  EXPERIMENTS/request-sources/EXP-20260924-PLATFORM-AUDIT-F2-R02.json \
-  --out EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R02 --root .
+  EXPERIMENTS/request-sources/EXP-20260924-PLATFORM-AUDIT-F2-R03.json \
+  --out EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R03 --root .
 ```
 
 Sentinel: `compile-report.json` `status=COMPILED_REVIEW_REQUIRED`, `errors=[]`,
@@ -53,7 +53,7 @@ arms and is deliberately shared so the decision stage is active and the
 Three separate cold-start sessions (independence = distinct session ids only; see the brief
 independence disclosure) produce `cold_start`, `satellite_drl` and `adversarial`
 receipts (`agent-review-receipt/v2`), each binding the 11 hashes in `artifact-set.json`.
-Receipts are copied into `CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R02/` and bound there as
+Receipts are copied into `CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R03/` and bound there as
 repo-relative paths in `decision.json.applied_review_receipts`;
 `finalize_decision.py:43-51` rejects paths outside the repository, and
 `finalize_decision.py:175-183` requires all three roles PASS with distinct reviewer sessions
@@ -61,18 +61,18 @@ and no duplicate `receipt_id`/`reviewer_id`.
 
 ```bash
 python3 CODE/work/finalize_decision.py \
-  --brief  CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R02/brief.json \
-  --decision CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R02/decision.json \
-  --out CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R02/finalization.json
+  --brief  CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R03/brief.json \
+  --decision CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R03/decision.json \
+  --out CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R03/finalization.json
 ```
 
 ## 3. Authorize
 
 ```bash
 python3 CODE/experiment_platform/authorize_experiment.py \
-  --experiment EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R02 \
-  --finalization CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R02/finalization.json \
-  --out EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R02/authorization.json
+  --experiment EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R03 \
+  --finalization CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R03/finalization.json \
+  --out EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R03/authorization.json
 ```
 
 Sentinel: `status=AUTHORIZED`, `authorized_runs` = exactly the two compiled run ids,
@@ -85,8 +85,8 @@ run permission — see the audit report limitation L19).
 
 ```bash
 CODE/scripts/remote/run-remote.sh --runtime-kind leo_sim_v2 \
-  --config EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R02/resolved/EXP-20260924-PLATFORM-AUDIT-F2-R02-f2-s7.leo-sim.yaml \
-  --authorization EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R02/authorization.json \
+  --config EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R03/resolved/EXP-20260924-PLATFORM-AUDIT-F2-R03-f2-s7.leo-sim.yaml \
+  --authorization EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R03/authorization.json \
   --session exp-20260924-platform-audit-f2-r02-f2-s7
 ```
 
@@ -102,14 +102,14 @@ observed identically.
 
 ```bash
 for arm in control f2; do
-  mkdir -p CODE/Results/EXP-20260924-PLATFORM-AUDIT-F2-R02-$arm-s7
+  mkdir -p CODE/Results/EXP-20260924-PLATFORM-AUDIT-F2-R03-$arm-s7
   python3 -m CODE.leo_sim run \
-    --config EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R02/resolved/EXP-20260924-PLATFORM-AUDIT-F2-R02-$arm-s7.leo-sim.yaml \
-    --out CODE/Results/EXP-20260924-PLATFORM-AUDIT-F2-R02-$arm-s7 \
-    --authorization EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R02/authorization.json \
+    --config EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R03/resolved/EXP-20260924-PLATFORM-AUDIT-F2-R03-$arm-s7.leo-sim.yaml \
+    --out CODE/Results/EXP-20260924-PLATFORM-AUDIT-F2-R03-$arm-s7 \
+    --authorization EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R03/authorization.json \
     --launch-nonce <32 lowercase hex> \
-    --expect-run-id EXP-20260924-PLATFORM-AUDIT-F2-R02-$arm-s7 \
-    --timeline-log CODE/Results/EXP-20260924-PLATFORM-AUDIT-F2-R02-$arm-s7/timeline.jsonl
+    --expect-run-id EXP-20260924-PLATFORM-AUDIT-F2-R03-$arm-s7 \
+    --timeline-log CODE/Results/EXP-20260924-PLATFORM-AUDIT-F2-R03-$arm-s7/timeline.jsonl
 done
 ```
 
@@ -119,18 +119,18 @@ arm is expected to contain zero `node_process_*` milestones; that is the negativ
 ## 5. Verify and decompose
 
 ```bash
-python3 -m CODE.leo_sim receipt verify CODE/Results/EXP-20260924-PLATFORM-AUDIT-F2-R02-control-s7
-python3 -m CODE.leo_sim receipt verify CODE/Results/EXP-20260924-PLATFORM-AUDIT-F2-R02-f2-s7
+python3 -m CODE.leo_sim receipt verify CODE/Results/EXP-20260924-PLATFORM-AUDIT-F2-R03-control-s7
+python3 -m CODE.leo_sim receipt verify CODE/Results/EXP-20260924-PLATFORM-AUDIT-F2-R03-f2-s7
 ```
 
 ### 5b. F2 attribution step (REQUIRED — this is the step revision 1 was missing)
 
 ```bash
-python3 CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R02/attribute_f2.py \
+python3 CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R03/attribute_f2.py \
   --results-root CODE/Results \
-  --experiment EXP-20260924-PLATFORM-AUDIT-F2-R02 \
+  --experiment EXP-20260924-PLATFORM-AUDIT-F2-R03 \
   --compute-delay-s 0.05 \
-  --out ANALYSIS/EXP-20260924-PLATFORM-AUDIT-F2-R02/f2-attribution.json
+  --out ANALYSIS/EXP-20260924-PLATFORM-AUDIT-F2-R03/f2-attribution.json
 ```
 
 The tool reads each arm ledger, folds the arm timeline into per-packet F2 occupancies with

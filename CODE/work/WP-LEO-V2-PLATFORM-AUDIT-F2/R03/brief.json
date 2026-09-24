@@ -1,11 +1,11 @@
 {
   "schema": "agent-work-package/v2",
   "work_id": "WP-LEO-V2-PLATFORM-AUDIT-F2",
-  "revision": 2,
-  "parent_revision": 1,
-  "revision_reason": "Revision 1 was BLOCKed by the satellite_drl and adversarial roles (cold_start PASSed). This revision responds to every blocking finding: (B1) the false 'the repaired chain closes end-to-end' completeness claim is removed and the analysis-leg gap is now declared in the same place as the remote-runner gap; (B2/B4) PROCEDURE section 5b now adds an explicit, sentinel-bearing F2 attribution step backed by a reviewed tool (R02/attribute_f2.py), so the promised independent decomposition is actually produced — previously no documented step produced it; (B3) execution.compute_delay_s is now 0.05 in BOTH arms, so decision_compute_s is non-zero and the separation is discriminating rather than 0==0; (B4) the remote-only acceptance gate is disclosed as unenforced on the executed route, and the 6-packet one-route-property caveat is stated; (B5) reviewer independence is disclosed as session-id distinctness with no model semantics; (B6) CURRENT-EVENT-TIMELINE.md section 5 was refreshed to the post-fix state. The reported single-factor claim was FALSIFIED by the adversarial reviewer on the real fixture (e2e gain 0.850000245 s vs 6x3x0.05 = 0.900 s) and is now stated as a cannot_claim; the achievable claim is narrowed to what was measured. Revision-1 artifacts (EXP-...-R01) are preserved unchanged as revision-1 evidence. REVISION 3 RESPONSES: (F1, load-bearing) the revision-2 matrix was compiled at 17:21 and CODE/leo_sim/metrics_independent.py changed at 17:24, so the manifest bound the PRE-fix code identity and authorize_experiment refused it ('matrix manifest cells do not derive from request'); the matrix was RECOMPILED after the leo_sim tree was frozen, and the freeze-compile-review ordering is now stated here explicitly. (F2) PROCEDURE 4b now creates the --timeline-log parent first and documents the symlink-free requirement. (F3) the R01/R02 number conflation is corrected here and in the audit report. (F4) the false 'only non-test importer' statement is corrected. (satellite_drl BF1 / adversarial B1) the falsified e2e-additivity clause was moved OUT of can_claim in the hash-bound request source and the matrix recompiled. (adversarial B2) attribute_f2.py was hardened and now ships --self-test exercising seven refusal controls. (adversarial B3) the audit report X5/X20 clauses are corrected, and the report now records that it was executed rather than read.",
+  "revision": 3,
+  "parent_revision": 2,
+  "revision_reason": "Revision 1 was BLOCKed by the satellite_drl and adversarial roles (cold_start PASSed). This revision responds to every blocking finding: (B1) the false 'the repaired chain closes end-to-end' completeness claim is removed and the analysis-leg gap is now declared in the same place as the remote-runner gap; (B2/B4) PROCEDURE section 5b now adds an explicit, sentinel-bearing F2 attribution step backed by a reviewed tool (R02/attribute_f2.py), so the promised independent decomposition is actually produced \u2014 previously no documented step produced it; (B3) execution.compute_delay_s is now 0.05 in BOTH arms, so decision_compute_s is non-zero and the separation is discriminating rather than 0==0; (B4) the remote-only acceptance gate is disclosed as unenforced on the executed route, and the 6-packet one-route-property caveat is stated; (B5) reviewer independence is disclosed as session-id distinctness with no model semantics; (B6) CURRENT-EVENT-TIMELINE.md section 5 was refreshed to the post-fix state. The reported single-factor claim was FALSIFIED by the adversarial reviewer on the real fixture (e2e gain 0.850000245 s vs 6x3x0.05 = 0.900 s) and is now stated as a cannot_claim; the achievable claim is narrowed to what was measured. Revision-1 artifacts (EXP-...-R01) are preserved unchanged as revision-1 evidence. REVISION 3 RESPONSES: (F1, load-bearing) the revision-2 matrix was compiled at 17:21 and CODE/leo_sim/metrics_independent.py changed at 17:24, so the manifest bound the PRE-fix code identity and authorize_experiment refused it ('matrix manifest cells do not derive from request'); the matrix was RECOMPILED after the leo_sim tree was frozen, and the freeze-compile-review ordering is now stated here explicitly. (F2) PROCEDURE 4b now creates the --timeline-log parent first and documents the symlink-free requirement. (F3) the R01/R02 number conflation is corrected here and in the audit report. (F4) the false 'only non-test importer' statement is corrected. (satellite_drl BF1 / adversarial B1) the falsified e2e-additivity clause was moved OUT of can_claim in the hash-bound request source and the matrix recompiled. (adversarial B2) attribute_f2.py was hardened and now ships --self-test exercising seven refusal controls. (adversarial B3) the audit report X5/X20 clauses are corrected, and the report now records that it was executed rather than read.",
   "producer_id": "producer:platform-audit",
-  "producer_session_id": "P-platform-audit-r02",
+  "producer_session_id": "P-platform-audit-r03",
   "objective": "Produce one minimal, review-gated, end-to-end experiment that demonstrates the formal chain as far as it is reachable in this environment (compile -> three independent reviews -> decision -> finalization -> authorization -> run -> receipt -> explicit independent F2 attribution), and that pins the F2 node-processing stage as a separately attributable term which is NOT counted as decision computation time.",
   "context": [
     "AUDIT work package, not a research contribution. It adds no algorithm, changes no simulator behaviour, and makes no performance claim.",
@@ -23,11 +23,11 @@
     "HARD-WON PLATFORM FINDING, first-hand on this work package: the revision-2 block was caused by exactly the code_sha256 drift that ANALYSIS/PLATFORM-AUDIT-REPORT.md records as blocker B2. It is not hypothetical - it stopped this batch. Any change to CODE/leo_sim/*.py voids every compiled matrix and every issued authorization on that checkout, and no pre-merge guard reports the blast radius."
   ],
   "allowed_inputs": [
-    "EXPERIMENTS/request-sources/EXP-20260924-PLATFORM-AUDIT-F2-R02.json",
-    "EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R02/",
-    "CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R02/PROCEDURE.md",
-    "CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R02/attribute_f2.py",
-    "CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R02/artifact-set.json",
+    "EXPERIMENTS/request-sources/EXP-20260924-PLATFORM-AUDIT-F2-R03.json",
+    "EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R03/",
+    "CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R03/PROCEDURE.md",
+    "CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R03/attribute_f2.py",
+    "CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R03/artifact-set.json",
     "CODE/data/traffic/t1_step5_micro_ab.csv",
     "ANALYSIS/CURRENT-EVENT-TIMELINE.md",
     "ANALYSIS/TRAFFIC-MODEL-SPEC.md",
@@ -54,11 +54,11 @@
     "any claim that the canonical remote route or the v2_analysis leg was exercised"
   ],
   "deliverables": [
-    "a compiled matrix for EXP-20260924-PLATFORM-AUDIT-F2-R02 with errors=[] and execution_authorized=false",
+    "a compiled matrix for EXP-20260924-PLATFORM-AUDIT-F2-R03 with errors=[] and execution_authorized=false",
     "authorization.json with status=AUTHORIZED covering exactly the two compiled run ids",
     "a natural-end receipt plus formal_run.json for both arms, and a verifying receipt for both arms",
     "the f2 arm timeline stream with equal numbers of node_process_start and node_process_end milestones, plus its sha256-bound sidecar manifest; the control arm timeline must contain ZERO node_process milestones",
-    "the explicit F2 attribution report from R02/attribute_f2.py (hardened; run with --self-test first), containing for both arms the labelled and unlabelled decision-compute readings, the leakage identity, the per-arm resolved delays, and the reported (not asserted) cross-arm per-link capacity comparison",
+    "the explicit F2 attribution report from R03/attribute_f2.py (hardened; run with --self-test first), containing for both arms the labelled and unlabelled decision-compute readings, the leakage identity, the per-arm resolved delays, and the reported (not asserted) cross-arm per-link capacity comparison",
     "a written statement, in the final audit report, of which parts of the chain were and were not exercised"
   ],
   "cannot_claim": [
@@ -79,7 +79,7 @@
     "A3 finalize_decision.py emits agent-work-finalization/v1 and authorize_experiment.py emits status=AUTHORIZED with exactly the two compiled run ids",
     "A4 both arms reach natural_end=true with conservation_ok=true and their receipts verify",
     "A5 the f2 arm timeline has node_process_start count == node_process_end count > 0; the control arm timeline has zero node_process milestones",
-    "A6 R02/attribute_f2.py --self-test triggers all seven refusal controls, and the analysis run reports ok=true with: spans supplied on both arms; labelled closure ok with max_abs_residual_s <= 1e-9; per-arm labelled total_node_process_s equal to the occupancy folded from that arm timeline; per-arm labelled total_decision_compute_s an exact multiple of that arm resolved compute_delay_s; and unlabelled minus labelled total_decision_compute_s equal to total_node_process_s within 1e-9",
+    "A6 R03/attribute_f2.py --self-test triggers all seven refusal controls, and the analysis run reports ok=true with: spans supplied on both arms; labelled closure ok with max_abs_residual_s <= 1e-9; per-arm labelled total_node_process_s equal to the occupancy folded from that arm timeline; per-arm labelled total_decision_compute_s an exact multiple of that arm resolved compute_delay_s; and unlabelled minus labelled total_decision_compute_s equal to total_node_process_s within 1e-9",
     "A7 the cross-arm per-link capacity comparison is PRESENT in the report and marked asserted_equal=false",
     "A8 every negative control in PROCEDURE section 6 was executed and triggered; any control that did not trigger is reported as UNPROVEN and not counted as passed"
   ],

@@ -197,7 +197,7 @@ python3 -m pytest CODE/leo_sim/tests CODE/experiment_platform/tests \
 | X2 | 端到端 OD 需求矩阵 | L1：18 765 : 75 的 client→server 不对称，是 Speedtest 式测量 |
 | X3 | 「实测 burst / diurnal profile」 | L1 + `README.md:14-17`：是 reproducible stress transform，非实测 |
 | X4 | flow-level / 每流结果 | L2：无 `flow_id` |
-| X5 | 默认配置下的任何「链路利用率」数字 | L6 / B5：`utilization ≡ 1.0`，且 `v2_analysis` 据此误报全部 ISL 饱和 |
+| X5 | 默认配置下的任何「链路利用率」数字 | L6 / B5：`utilization ≡ 1.0`（`available_samples=0`，分母=服务窗口容量）；且 `v2_analysis` 在该读数上**硬中止**（`V2AnalysisError`，`v2_analysis.py:302-306`），**并非**「标为饱和」——该更正由独立对抗复核实跑得出 |
 | X6 | 「两次 run full state identical」 | L5：无任何状态哈希，只有 decision-row 指纹 |
 | X7 | F2 作为**正式 VM 实验因子** | B7 / L9：`remote_job.py` 不传 timeline stream，`run-remote.sh` 无 passthrough |
 | X8 | 「已入库实验今天可正式启动」 | B2：20/20 授权在严格门下失败（code_sha256 漂移） |
@@ -212,7 +212,7 @@ python3 -m pytest CODE/leo_sim/tests CODE/experiment_platform/tests \
 | X17 | 「配置 burst 就等于施加 burst」 | L17：窗可落在 `emission_end_s` 之外且 manifest 仍记录 |
 | X18 | 用 `burst_multiplier` 判断一个实验是 burst 实验 | L18：55/126 resolved config 携带但永不生效 |
 | X19 | 「本地执行的实验可进入 canonical 分析」 | B10：`governance_receipt.json` 只由 `remote_job.py` 写入 |
-| X20 | 「F2 的 e2e 增量恰为 包数×访问数×时延」 | B11：有竞争时实测 0.850 ≠ 0.900 |
+| X20 | 「F2 的 e2e 增量恰为 包数×访问数×时延」 | B11：有竞争时实测 **R02 设计 0.849200279 s ≠ 0.900 s**（R01 设计 0.850000245 s；两个数字不可互换） |
 | X21 | 「严格设计规则由机械门禁保证」 | B12：`matrix.py` 无 one-change 校验 |
 
 ---
@@ -368,7 +368,53 @@ rev 1 的三个独立冷启动角色给出 **1 PASS / 2 BLOCK**，共 10 条 blo
 | **canonical 远端执行（VM provenance）** | ❌ **不可达**（B7 / L9）：`remote_job.py` 不传 timeline stream，无 passthrough |
 | **`v2_analysis` 分析腿** | ❌ **不可达**（B10）：需要只由 `remote_job.py` 写入的 `governance_receipt.json` + VM 外部启动证人 |
 
-### 11.6 授权与运行的最终产物
+### 11.6 授权门：**可达但未达成**，且这是刻意的
 
-见 §11.7（在 rev 2 审阅门关闭后补记）。
+**rev 2 的三个独立角色全部给出 BLOCK**（cold_start 4 条、satellite_drl 1 条、adversarial 4 条，
+共 9 条，**全部成立**）。因此**没有** `authorization.json`，也**没有**正式运行。
+
+这不是"没跑通"，而是**门禁按设计生效**：任务书明确禁止"为了跑通实验而修改测试标准 / 降低 fail-loud 条件"，
+所以本审计**不接受**用削弱门禁的方式换取一份授权。9 条 findings 及其修复（revision 3 已全部落实）如下：
+
+| 来源 | finding | 修复 |
+| --- | --- | --- |
+| cold_start F1（承重） | **被审的编译产物不是被审代码的产物**：R02 在 17:21 编译，而 `CODE/leo_sim/metrics_independent.py` 在 17:24 被改，manifest 绑定的是**改前**的 `code_sha256`（`ebd752af…` vs 现行 `ffcad9fc…`） → `matrix.verify_compiled_matrix` 抛 `matrix manifest cells do not derive from request`，**授权不可达** | 冻结 `CODE/leo_sim` 后**重新编译为 R03**，并核对 `manifest.code_sha256 == receipt.code_sha256()`；已实测 **R03 PASS**，R01/R02 仍正确地 FAIL |
+| cold_start F2 | PROCEDURE §4b 按字面**不可执行**：`--timeline-log` 的父目录必须先存在且不得位于符号链接路径下（`/tmp` 在 macOS 是符号链接） | 补 `mkdir -p` 与符号链接说明 |
+| cold_start F3 / adversarial B4 | brief 把 **R01** 的测量值（0.850000245 s）当成**本设计**的数字 | 全面区分 R01/R02 数字；R02 实测 0.849200279 s |
+| cold_start F4 | "唯一的非测试调用者是 step5_recompute.py" **不成立** —— 本工作包自己的 `attribute_f2.py` 也 import 它 | 更正为两个调用者 |
+| satellite_drl BF1 / adversarial B1 | **被证伪的 e2e 可加性声明仍留在 `can_claim` 里**，且 `request.json`/`analysis-request.json` 是**哈希绑定**的，`v2_analysis.py:955` 还会把它复制进 canonical 分析 manifest —— 假声明落在**授权路径**上 | 把该项**移出** `can_claim`、写入 `cannot_claim` 并附实测数字，然后**重新编译** |
+| adversarial B2 | 我写的 `attribute_f2.py` **可被击败**：截断时间线 / 空时间线 / 空账本都会 `ok=true`；`--compute-delay-s` 未与配置绑定 | 加固：延迟从**每臂自己的** `resolved_config.json` 读取（flag 只用于交叉校验）、校验 timeline 侧车（`row_count`/`log_sha256`）与 receipt 绑定、要求 f2 臂占用数为正且 control 为 0、拒绝空投递集，并新增 `--self-test` 覆盖**七个**拒绝路径（已实测全部触发） |
+| adversarial B3 | 报告 X5 仍写 `v2_analysis` "误报全部 ISL 饱和"，与本报告 B5 的"硬中止"自相矛盾 | X5/X20 已更正；并记录该结论系**实跑**所得 |
+
+### 11.7 ★ 第一手证实阻塞项 B2（本批次被它直接拦下）
+
+**[EXEC]** 在冻结代码后对三个矩阵逐一重算身份：
+
+```
+EXP-20260924-PLATFORM-AUDIT-F2-R01: verify_compiled_matrix FAIL -> matrix manifest cells do not derive from request
+EXP-20260924-PLATFORM-AUDIT-F2-R02: verify_compiled_matrix FAIL -> matrix manifest cells do not derive from request
+EXP-20260924-PLATFORM-AUDIT-F2-R03: verify_compiled_matrix PASS  <-- authorization precondition reachable
+```
+
+即：**任何对 `CODE/leo_sim/*.py` 的改动都会作废该 checkout 上全部已编译矩阵与已发授权**，
+而 `receipt.code_sha256()` 覆盖 `CODE/leo_sim/*.py`（`receipt.py:124-131`）。
+这把 §3 的 **B2 从"读码推断"升级为"本审计亲自踩中"**：
+
+> **唯一可行的顺序是：冻结 `CODE/leo_sim` → 编译 → 审阅 → 授权 → 运行。**
+> 审阅后重新编译会使三份回执全部失效，因此"改了再补审"与"审了再改"在哈希绑定下互斥。
+> 该结论已写入 R03 brief 的 context（`FREEZE-COMPILE-REVIEW ORDERING`）。
+
+### 11.8 本阶段结论
+
+| 验收项 | 状态 |
+| --- | --- |
+| compile artifact | ✅ R01 / R02 / R03 三份；R03 绑定冻结代码身份并通过 `verify_compiled_matrix` |
+| authorization | ❌ **未产生** —— 两轮独立审阅均 BLOCK，且**拒绝以削弱门禁换取授权** |
+| receipt | ✅ 本地 formal-flag 运行产出 receipt + `formal_run.json`；**未**声明为 VM 正式执行 |
+| metrics | ✅ `ledgers.json` + 独立 F2 归因报告（标注/未标注/泄漏恒等式/跨臂对照），`ok=true`、`failed_checks=[]` |
+| 分析腿 | ❌ 不可达（B10） |
+
+**任务书验收标准中"至少一个最小实验完整产生 authorization"一项未能达成，原因是独立的审阅门两轮均判定 BLOCK，
+而任务书同时禁止为跑通实验而降低门禁。** 本审计选择如实记录 BLOCK，而不是削弱门禁。
+下一轮（R03）的全部修复已落实，第三次独立审阅是本记录之后的第一步。
 

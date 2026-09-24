@@ -51,7 +51,7 @@
       "learning_seed": null,
       "pairing_key": "s7",
       "phase": "non_learning",
-      "run_id": "EXP-20260924-PLATFORM-AUDIT-F2-R02-control-s7",
+      "run_id": "EXP-20260924-PLATFORM-AUDIT-F2-R03-control-s7",
       "trace_seed": 7
     },
     {
@@ -65,7 +65,7 @@
       "learning_seed": null,
       "pairing_key": "s7",
       "phase": "non_learning",
-      "run_id": "EXP-20260924-PLATFORM-AUDIT-F2-R02-f2-s7",
+      "run_id": "EXP-20260924-PLATFORM-AUDIT-F2-R03-f2-s7",
       "trace_seed": 7
     }
   ],
@@ -108,11 +108,11 @@
     },
     "execution": {
       "available_capacity_interval_s": 0.1,
+      "compute_delay_s": 0.05,
       "max_entities": 20000,
       "max_events": 20000000,
       "max_packets": 1000,
-      "node_process_delay_s": 0,
-      "compute_delay_s": 0.05
+      "node_process_delay_s": 0
     },
     "learning": {
       "algorithm": "none"
@@ -137,8 +137,8 @@
       "time_step_s": 0.1
     }
   },
-  "experiment_id": "EXP-20260924-PLATFORM-AUDIT-F2-R02",
+  "experiment_id": "EXP-20260924-PLATFORM-AUDIT-F2-R03",
   "runtime_kind": "leo_sim_v2",
   "schema": "leo-sim-experiment-matrix-request/v1",
-  "work_finalization": "CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R02/finalization.json"
+  "work_finalization": "CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R03/finalization.json"
 }
