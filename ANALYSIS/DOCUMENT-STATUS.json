@@ -218,6 +218,19 @@
       "suggested_archive_target": null
     },
     {
+      "path": "ANALYSIS/TRAFFIC-MODEL-SPEC.md",
+      "status": "CURRENT-CONTRACT",
+      "purpose": "What the traffic model is and what the M-Lab data can and cannot support as a paper claim",
+      "may_direct_current_work": true,
+      "owner": "platform-audit",
+      "last_reviewed": "2026-09-24",
+      "review_interval_days": 60,
+      "replacement": null,
+      "require_banner": false,
+      "archive_candidate": false,
+      "suggested_archive_target": null
+    },
+    {
       "path": "ANALYSIS/CURRENT-EXPERIMENT-READINESS.md",
       "status": "CURRENT-VOLATILE",
       "purpose": "Latest repository snapshot of readiness and blockers",
