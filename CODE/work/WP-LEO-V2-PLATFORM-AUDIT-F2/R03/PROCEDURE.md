@@ -1,6 +1,16 @@
 # PROCEDURE — WP-LEO-V2-PLATFORM-AUDIT-F2 revision 3
 
 Experiment: `EXP-20260924-PLATFORM-AUDIT-F2-R03` (leo_sim_v2, strict 2-cell paired design).
+
+FROZEN PRIOR REVISIONS. Both earlier revisions are preserved byte-for-byte as evidence and must
+NOT be edited: `R01/` (revision 1: 1 PASS / 2 BLOCK) and `R02/` (revision 2: 0 PASS / 3 BLOCK).
+Revision 3 initially violated this - its own fix commit rewrote revision-2 `PROCEDURE.md`,
+`attribute_f2.py`, `brief.json` and request source AFTER the revision-2 receipts were issued -
+and those four files have since been RESTORED to the reviewed bytes, so that
+`R02/artifact-set.json` verifies again (11/11). One residual divergence is unavoidable and is
+declared here: the revision-2 receipts also hash-bound `ANALYSIS/CURRENT-EVENT-TIMELINE.md`, and
+the revision-2 adversarial review *required* that document to be corrected (section 5 was
+stale), so restoring it would undo a required fix.
 Revision 1 of this work package was **BLOCKed** by the satellite_drl and adversarial roles
 (and PASSed by cold_start). This revision is the response; the revision-1 artifacts
 (`...-R01`) are preserved unchanged as revision-1 evidence.
@@ -29,9 +39,10 @@ NOT DELIVERED — declared limitations, not omissions:
   executed cell therefore CANNOT be verified by `v2_analysis`. This batch does NOT run it and
   does NOT claim the chain closes through analysis.
 - **The F2 separation is not in `v2_analysis`.** `v2_analysis` does not import
-  `metrics_independent` at all. The only non-test importers in this repository are this work
-  package own `R03/attribute_f2.py` (added in revision 3 precisely because the analyzer does
-  not do it) and another work package `step5_recompute.py`, which takes no timeline argument.
+  `metrics_independent` at all. The non-test importers in this repository are this work
+  package own `R03/attribute_f2.py` and its frozen revision-2 twin `R02/attribute_f2.py`
+  (both added precisely because the analyzer does not do it), plus another work package
+  `step5_recompute.py`, which takes no timeline argument.
   The separation is produced by step 5b below, on purpose and visibly, not by the analyzer.
 
 ## 1. Compile
@@ -55,7 +66,11 @@ independence disclosure) produce `cold_start`, `satellite_drl` and `adversarial`
 receipts (`agent-review-receipt/v2`), each binding the 11 hashes in `artifact-set.json`.
 Receipts are copied into `CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R03/` and bound there as
 repo-relative paths in `decision.json.applied_review_receipts`;
-`finalize_decision.py:43-51` rejects paths outside the repository, and
+`decision.json` is authored by the producer as `agent-work-decision/v1` (schema
+`CODE/work/decision.schema.json`, example `CODE/work/decision.example.json`). For an ACCEPT it
+must carry `applied_review_receipts` (all PASS), empty `blocking_findings`, empty
+`revision_instructions`, `next_revision: null`, and an `artifact_hashes` map covering the
+reviewed set. `finalize_decision.py:43-51` rejects receipt paths outside the repository, and
 `finalize_decision.py:175-183` requires all three roles PASS with distinct reviewer sessions
 and no duplicate `receipt_id`/`reviewer_id`.
 
@@ -176,9 +191,13 @@ computation time; supplied with the spans, the labelled `decision_compute_s` clo
 `decisions x compute_delay_s` per arm; without the spans the uncovered reading exceeds the
 labelled one by exactly the node total.
 
-MAY NOT: that the end-to-end delay increase equals the node total — measured on this fixture it
-is 0.850000245 s against a declared 0.900 s, because one whole node occupancy is absorbed by a
-pre-existing holding/ISL-queue wait (`holding_wait_s` falls by 0.050000000000000266 s).
+MAY NOT: that the end-to-end delay increase equals the node total. MEASURED ON THIS EXACT R03
+DESIGN (both arms `execution.compute_delay_s = 0.05`): the total gain is **0.849200279 s**
+against a node total of 0.900 s, because one whole node occupancy is absorbed by a
+pre-existing holding/ISL-queue wait — packet 99 carries a 0.15 s occupancy but its e2e rises
+only 0.099999964 s while its `holding_wait_s` FALLS by 0.050000000 s, and packet 2 diverts
+8.000e-04 s into `queue_wait`. The figure 0.850000245 s belongs to the REVISION-1 design
+(`compute_delay_s = 0`) and must never be quoted as this design's measurement.
 Additivity holds only on the contention-free unit fixture. Nor may it claim per-link phase
 identity between arms, any effect size or causal statement, VM provenance, a completed analysis
 leg, or that the `min_delivered_packets` / `min_multisat_deliveries` acceptance values are

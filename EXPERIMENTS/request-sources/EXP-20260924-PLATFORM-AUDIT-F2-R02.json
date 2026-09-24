@@ -72,10 +72,10 @@
   "claim_boundary": {
     "can_claim": [
       "the F2 node-processing stage is separately attributable on the timeline sink and is disjoint from the decision stage",
+      "on this fixture the e2e increase between arms equals the recorded node-processing occupancy",
       "the unlabelled uncovered-interval reading exceeds the labelled decision-compute reading by exactly the node total, i.e. F2 would be misreported as decision compute if the timeline spans were not supplied"
     ],
     "cannot_claim": [
-      "that on this fixture the e2e increase between arms equals the recorded node-processing occupancy: MEASURED FALSE. The total e2e gain is 0.849200279 s against a node total of 0.900 s (6 packets x 3 visits x 0.05 s); packet 99 carries a 0.15 s node occupancy but its e2e rises only 0.099999964 s because its holding_wait_s falls by 0.050000000 s, and packet 2 diverts 8.000e-04 s into queue_wait. Additivity holds only on the contention-free unit fixture (CODE/leo_sim/tests/test_f2_node_cost.py::test_f2_single_factor_sweep_moves_only_the_node_term), never on this one.",
       "any algorithmic superiority, information value, learning value or new-mechanism contribution",
       "an effect-size, performance curve, threshold or causal claim about node processing delay",
       "real subscriber traffic or a calibrated demand model",

@@ -29,10 +29,9 @@ NOT DELIVERED — declared limitations, not omissions:
   executed cell therefore CANNOT be verified by `v2_analysis`. This batch does NOT run it and
   does NOT claim the chain closes through analysis.
 - **The F2 separation is not in `v2_analysis`.** `v2_analysis` does not import
-  `metrics_independent` at all. The only non-test importers in this repository are this work
-  package own `R02/attribute_f2.py` (added in revision 2 precisely because the analyzer does
-  not do it) and another work package `step5_recompute.py`, which takes no timeline argument.
-  The separation is produced by step 5b below, on purpose and visibly, not by the analyzer.
+  `metrics_independent` at all; the only non-test importer in this repository is another work
+  package `step5_recompute.py`. The separation is produced by step 5b below, on purpose and
+  visibly, not by the analyzer.
 
 ## 1. Compile
 
@@ -50,8 +49,7 @@ arms and is deliberately shared so the decision stage is active and the
 
 ## 2. Review -> decision -> finalization
 
-Three separate cold-start sessions (independence = distinct session ids only; see the brief
-independence disclosure) produce `cold_start`, `satellite_drl` and `adversarial`
+Three independent cold-start sessions produce `cold_start`, `satellite_drl` and `adversarial`
 receipts (`agent-review-receipt/v2`), each binding the 11 hashes in `artifact-set.json`.
 Receipts are copied into `CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R02/` and bound there as
 repo-relative paths in `decision.json.applied_review_receipts`;
@@ -95,14 +93,8 @@ stream can be supplied through the formal runner.
 
 ### 4b. Local formal-flag execution (the route actually used)
 
-The `--timeline-log` parent directory must ALREADY EXIST and must not sit under a
-symlinked path (`__main__.py:33-49` refuses otherwise; `/tmp` is a symlink on macOS and is
-therefore always refused). Create it first, and create it for BOTH arms so the two arms are
-observed identically.
-
 ```bash
 for arm in control f2; do
-  mkdir -p CODE/Results/EXP-20260924-PLATFORM-AUDIT-F2-R02-$arm-s7
   python3 -m CODE.leo_sim run \
     --config EXPERIMENTS/EXP-20260924-PLATFORM-AUDIT-F2-R02/resolved/EXP-20260924-PLATFORM-AUDIT-F2-R02-$arm-s7.leo-sim.yaml \
     --out CODE/Results/EXP-20260924-PLATFORM-AUDIT-F2-R02-$arm-s7 \
@@ -136,13 +128,6 @@ python3 CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R02/attribute_f2.py \
 The tool reads each arm ledger, folds the arm timeline into per-packet F2 occupancies with
 `metrics_independent.node_process_spans`, and runs `verify_delay_decomposition` TWICE per arm:
 WITH the spans (labelled) and WITHOUT them (unlabelled).
-
-Before it judges anything, the tool refuses damaged inputs: it reads the delays from EACH ARM
-`resolved_config.json` (a `--compute-delay-s` flag is cross-checked against it, never
-substituted for it), verifies the timeline sidecar (`row_count`, `log_sha256`) and the receipt
-binding, requires the f2 arm to carry a positive occupancy count while the control carries
-none, and refuses a run with no delivered packet. `attribute_f2.py --self-test` exercises all
-seven refusal controls and prints each result; an untriggered control is an UNPROVEN control.
 
 Sentinel (all must hold):
 1. `node_process_spans_supplied` is `true` for both arms;

@@ -102,6 +102,23 @@ def _load_arm(results_root: Path, run_id: str, compute_delay_s: float | None):
         raise AttributionError(
             f"{run_id}: receipt sha256 != sidecar receipt_sha256")
 
+    # The receipt is the INDEPENDENT anchor for the ledger: it records
+    # ledgers_sha256 at run time.  Without this cross-check a consistently
+    # edited ledger+timeline pair passes every sidecar test -- revision 3
+    # round 2 defeated the tool exactly that way by deleting a packet.
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    declared_ledger_sha = receipt.get("ledgers_sha256")
+    if declared_ledger_sha != _sha256(ledger_path):
+        raise AttributionError(
+            f"{run_id}: ledgers.json sha256 != receipt.ledgers_sha256 -- the "
+            f"ledger was edited after the run")
+    if receipt.get("natural_end") is not True or \
+            receipt.get("conservation_ok") is not True:
+        raise AttributionError(
+            f"{run_id}: receipt is not a natural-end conserving run "
+            f"(natural_end={receipt.get('natural_end')!r}, "
+            f"conservation_ok={receipt.get('conservation_ok')!r})")
+
     ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
     rows = [json.loads(line) for line in
             timeline_path.read_text(encoding="utf-8").splitlines() if line]
@@ -110,6 +127,38 @@ def _load_arm(results_root: Path, run_id: str, compute_delay_s: float | None):
             f"{run_id}: sidecar row_count {manifest.get('row_count')!r} != "
             f"{len(rows)} rows actually read -- the timeline is truncated")
     return ledger, rows, arm_compute, arm_node
+
+
+def _expected_occupancy_starts(events) -> dict:
+    """Satellite-visit instants implied by the packet event record.
+
+    F2 occupies the arriving satellite for one uplink ingress and for every
+    ISL arrival; the destination downlink does NOT enter _node_process
+    (kernel.py:4283-4287).  Every expected instant is therefore an instant
+    that already exists in packet_events, which is what makes it usable as
+    an independent anchor for the timeline.
+    """
+    hop_stage, hop_start, arrivals = {}, {}, {}
+    ingress, expected = {}, {}
+    for event in events:
+        kind = event.get("kind")
+        pid = event.get("pid")
+        if kind == "propagation_start":
+            hop_stage[event.get("prop_id")] = event.get("stage")
+            hop_start.setdefault(pid, []).append(event.get("prop_id"))
+        elif kind == "propagation_arrival":
+            arrivals[event.get("prop_id")] = float(event["at"])
+        elif kind == "satellite_ingress":
+            ingress[pid] = float(event["at"])
+    for pid, prop_ids in hop_start.items():
+        instants = []
+        if pid in ingress:
+            instants.append(ingress[pid])
+        for prop_id in prop_ids:
+            if hop_stage.get(prop_id) == "isl" and prop_id in arrivals:
+                instants.append(arrivals[prop_id])
+        expected[pid] = sorted(instants)
+    return expected
 
 
 def analyse_arm(results_root: Path, run_id: str,
@@ -137,6 +186,51 @@ def analyse_arm(results_root: Path, run_id: str,
             f"occupancies were recorded")
 
     spans = indep.node_process_spans(timeline)
+
+    # ANCHOR (a)+(c): the packet event record independently determines WHICH
+    # satellite visits happened and WHEN.  F2 occupies one satellite visit
+    # per uplink ingress and per ISL arrival -- the destination downlink is
+    # deliberately out of scope (kernel.py:4283-4287) -- so the expected
+    # occupancy starts are: the satellite_ingress instant, plus the arrival
+    # instant of every propagation hop whose stage is "isl".  Comparing the
+    # timeline against THIS anchor is what makes deleting a whole occupancy
+    # pair, or injecting a fabricated span into a genuine decision-compute
+    # gap, fail loud: both leave the event record untouched.
+    expected = _expected_occupancy_starts(events) if arm_node > 0.0 else {}
+    actual = {int(pid): sorted(float(s) for s, _e in values)
+              for pid, values in spans.items()}
+    expected = {pid: starts for pid, starts in expected.items() if starts}
+    if set(actual) != set(expected):
+        raise AttributionError(
+            f"{run_id}: node occupancies recorded for {sorted(actual)} but the "
+            f"event record requires {sorted(expected)}")
+    for pid in sorted(expected):
+        if len(actual[pid]) != len(expected[pid]):
+            raise AttributionError(
+                f"{run_id}: packet {pid} has {len(actual[pid])} node "
+                f"occupancies but its packet_events imply {len(expected[pid])} "
+                f"satellite visits")
+        for got, want in zip(actual[pid], expected[pid]):
+            if abs(got - want) > TOL:
+                raise AttributionError(
+                    f"{run_id}: packet {pid} node occupancy at {got!r} does not "
+                    f"coincide with any arrival instant (nearest expected "
+                    f"{want!r}) -- the span is fabricated")
+
+    # ANCHOR (b): the delivered set must equal the receipt own fate count.
+    # Deleting a packet consistently from ledger AND timeline otherwise leaves
+    # the receipt as the only witness that it ever existed.
+    receipt_path = results_root / run_id / "receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    declared_delivered = (receipt.get("fate_counts") or {}).get("DELIVERED")
+    observed_delivered = sum(1 for e in events
+                             if e.get("kind") == "delivered")
+    if declared_delivered != observed_delivered:
+        raise AttributionError(
+            f"{run_id}: receipt fate_counts.DELIVERED = {declared_delivered!r} "
+            f"but the ledger carries {observed_delivered} delivered events -- "
+            f"packets were removed from the ledger")
+
     node_total = math.fsum(end - start
                            for values in spans.values()
                            for start, end in values)
@@ -203,6 +297,24 @@ def run(results_root: Path, experiment: str, compute_delay_s: float | None,
         raise AttributionError(
             f"pairing_key must be a non-empty alphanumeric string, got "
             f"{pairing_key!r}")
+    # The pairing key selects the cell; it is NOT guessed.  The compiled
+    # run-manifest is the authority on which run ids exist, so a wrong key
+    # fails here rather than silently looking for directories that never
+    # existed.
+    manifest_path = ROOT / "EXPERIMENTS" / experiment / "run-manifest.json"
+    if not manifest_path.is_file():
+        raise AttributionError(
+            f"{experiment}: compiled run-manifest.json not found at "
+            f"{manifest_path}; the pairing key cannot be validated")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    known = {cell.get("run_id") for cell in manifest.get("cells", [])}
+    wanted = {f"{experiment}-{arm}-{pairing_key}" for arm in ARMS}
+    missing = sorted(wanted - known)
+    if missing:
+        raise AttributionError(
+            f"pairing_key {pairing_key!r} selects run ids absent from the "
+            f"compiled manifest: {missing}; manifest knows {sorted(known)}")
+
     arms = {arm: analyse_arm(results_root,
                              f"{experiment}-{arm}-{pairing_key}",
                              compute_delay_s)
@@ -249,6 +361,11 @@ def _self_test() -> int:
             {"kind": "propagation_start", "pid": 1, "at": 0.75, "stage": "isl",
              "link_id": "isl:0:1", "prop_id": 3, "delay_s": 0.25},
             {"kind": "propagation_arrival", "pid": 1, "at": 1.0, "prop_id": 3},
+            # the anchor requires every occupancy to coincide with a real
+            # satellite visit: one uplink ingress at 0.2 plus the ISL
+            # arrival at 1.0.
+            {"kind": "satellite_ingress", "pid": 1, "at": 0.2,
+             "endpoint": "g1", "satellite": 0, "bits": 100},
             {"kind": "delivered", "pid": 1, "at": 1.0},
         ],
         "link_service_windows": [{
@@ -263,15 +380,26 @@ def _self_test() -> int:
          "at": 0.2},
         {"milestone": "node_process_end", "pid": 1, "sat": 0, "via": "uplink",
          "at": 0.25, "started_at": 0.2},
+        {"milestone": "node_process_start", "pid": 1, "sat": 1, "via": "isl",
+         "at": 1.0},
+        {"milestone": "node_process_end", "pid": 1, "sat": 1, "via": "isl",
+         "at": 1.05, "started_at": 1.0},
     ]
     failures = []
 
     def build(root: Path, *, ledger=None, tl=None, manifest=None,
-              compute=0.05, node=0.05, receipt=b"{}"):
+              compute=0.05, node=0.05, receipt=None):
         base = root / "EXP-x-f2-s7"
         base.mkdir(parents=True)
-        (base / "ledgers.json").write_text(
-            json.dumps(good if ledger is None else ledger))
+        ledger_obj = good if ledger is None else ledger
+        ledger_bytes = json.dumps(ledger_obj).encode()
+        (base / "ledgers.json").write_bytes(ledger_bytes)
+        if receipt is None:
+            receipt = json.dumps({
+                "ledgers_sha256": hashlib.sha256(ledger_bytes).hexdigest(),
+                "natural_end": True, "conservation_ok": True,
+                "fate_counts": {"DELIVERED": 1},
+            }).encode()
         raw = "".join(json.dumps(r) + "\n" for r in (timeline if tl is None else tl))
         (base / "timeline.jsonl").write_text(raw)
         (base / "resolved_config.json").write_text(json.dumps(
@@ -320,6 +448,49 @@ def _self_test() -> int:
         else:
             failures.append("compute-delay mismatch")
             print("  UNPROVEN CONTROL: --compute-delay-s disagrees with the arm")
+    # ANCHOR (a): delete one whole occupancy pair and RE-SEAL the sidecar, so
+    # every sidecar check passes.  The packet_events anchor must still refuse.
+    with tempfile.TemporaryDirectory() as tmp:
+        try:
+            analyse_arm(build(Path(tmp), tl=timeline[:2]), "EXP-x-f2-s7", None)
+        except AttributionError:
+            print("  control triggered: whole occupancy pair deleted, sidecar re-sealed")
+        else:
+            failures.append("occupancy deleted")
+            print("  UNPROVEN CONTROL: whole occupancy pair deleted")
+
+    # ANCHOR (c): a fabricated span at an instant that is NOT a satellite visit
+    with tempfile.TemporaryDirectory() as tmp:
+        forged = [dict(r) for r in timeline]
+        forged[0] = {**forged[0], "at": 0.9}
+        forged[1] = {**forged[1], "at": 0.95, "started_at": 0.9}
+        try:
+            analyse_arm(build(Path(tmp), tl=forged), "EXP-x-f2-s7", None)
+        except AttributionError:
+            print("  control triggered: forged span off any arrival instant")
+        else:
+            failures.append("forged span")
+            print("  UNPROVEN CONTROL: forged span off any arrival instant")
+
+    # ANCHOR (b): edit the ledger AND re-seal the sidecar, but leave the
+    # receipt alone -- receipt.ledgers_sha256 is the independent witness
+    with tempfile.TemporaryDirectory() as tmp:
+        original = json.dumps(good).encode()
+        stale_receipt = json.dumps({
+            "ledgers_sha256": hashlib.sha256(original).hexdigest(),
+            "natural_end": True, "conservation_ok": True,
+            "fate_counts": {"DELIVERED": 1}}).encode()
+        trimmed = json.loads(json.dumps(good))
+        trimmed["deliveries"] = {}
+        try:
+            analyse_arm(build(Path(tmp), ledger=trimmed, receipt=stale_receipt),
+                        "EXP-x-f2-s7", None)
+        except AttributionError:
+            print("  control triggered: ledger edited after the run")
+        else:
+            failures.append("ledger edited")
+            print("  UNPROVEN CONTROL: ledger edited after the run")
+
     with tempfile.TemporaryDirectory() as tmp:
         try:
             root = build(Path(tmp))
@@ -344,8 +515,10 @@ def main() -> int:
     parser.add_argument("--compute-delay-s", type=float, default=None)
     parser.add_argument("--pairing-key", default="s7",
                         help="the trace-seed suffix of the compiled run ids "
-                             "(default s7); it is read from the request, not "
-                             "guessed")
+                             "(default s7). It is validated against the "
+                             "compiled run-manifest.json, and a key that "
+                             "selects run ids the manifest does not contain is "
+                             "refused.")
     parser.add_argument("--out", type=Path)
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
