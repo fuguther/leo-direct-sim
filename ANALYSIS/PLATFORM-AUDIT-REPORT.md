@@ -151,7 +151,17 @@ python3 -m pytest CODE/leo_sim/tests CODE/experiment_platform/tests \
   `CURRENT-EVENT-TIMELINE.md`（EVIDENCE-SNAPSHOT）、`TRAFFIC-MODEL-SPEC.md`（CURRENT-CONTRACT），
   以及本文件（CURRENT-VOLATILE）与 `BURST-DESIGN.md`（CURRENT-CONTRACT）。
 - **未删除任何测试、未放宽任何 tolerance、未降低任何 fail-loud 条件。**
-- 新增测试：8 个（3 个 F2 时延/单因素/CLI 入口族 + 4 个 CLI timeline 族 + 2 个分母族 + 2 个边界族，去重后按测试函数计）。
+- **新增测试函数 11 个**（`git diff main -- CODE/leo_sim/tests/ | grep -c "^+def test"` = 11），
+  分布在 6 个测试文件、净增 599 行：
+  - F2 归因族（3）：`test_f2_delay_is_not_decision_compute`、
+    `test_f2_single_factor_sweep_moves_only_the_node_term`、`test_f2_runs_through_the_official_cli`
+  - CLI timeline 族（3）：`test_node_process_delay_without_a_timeline_log_is_refused`、
+    `test_timeline_log_rejects_an_existing_target`、`test_the_timeline_log_is_output_only`
+  - 分母族（2）：`test_idle_link_denominator`、`test_idle_capacity_is_absent_when_the_link_is_in_outage`
+  - 声明边界族（2）：`test_branch_fingerprint_covers_the_decision_log_and_nothing_else`、
+    `test_frozen_refusals_are_visible_only_through_the_timeline_sink`
+  - 第二实现读取族（1）：`test_the_persisted_ledger_mapping_is_accepted_after_a_json_round_trip`
+- 全量测试：**基线 `main` 本地 966 passed / 1 failed（局部污染）→ 本分支 982 passed / 2 skipped / 0 failed**。
 
 ---
 
