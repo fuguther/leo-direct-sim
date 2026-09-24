@@ -120,6 +120,25 @@ def _nonneg_int(value, name):
     return value
 
 
+def _declared_pid(value, name):
+    """Accept an int pid or its JSON-object-key form ("7").
+
+    JSON serialises mapping keys as strings, so a persisted ledger's
+    delivery set arrives as {"1", ...} while the event pids are ints.  A
+    module whose whole purpose is to re-check a PERSISTED run must be able
+    to read that form.  Only the canonical decimal spelling is accepted:
+    "07", "7.0", " 7", True and None all fail loud rather than being
+    silently coerced to a pid that happens to exist.
+    """
+    if isinstance(value, str):
+        if not value.isdigit() or str(int(value)) != value:
+            raise IndependentMetricsError(
+                f"{name} must be a canonical decimal integer string, "
+                f"got {value!r}")
+        value = int(value)
+    return _nonneg_int(value, name)
+
+
 def _positive_int(value, name):
     value = _nonneg_int(value, name)
     if value <= 0:
@@ -831,16 +850,28 @@ def verify_delay_decomposition(packet_events, service_windows,
         if service_windows is None:
             service_windows = result.get("link_service_windows")
         if "deliveries" in result:
-            declared = set(result["deliveries"])
+            # A JSON round-trip turns mapping keys into strings, so the
+            # PERSISTED ledger (ledgers.json) presents its delivery set as
+            # {"1", ...} while the event pids are ints.  Without coercion
+            # the declared set matches no observed packet at all and every
+            # packet is reported as "declared delivered but has no
+            # delivered event" -- the second implementation could not read
+            # the very artifact format it exists to re-check.  Coerce
+            # through the same validator used for explicit pid
+            # collections, so a non-numeric key still fails loud instead of
+            # silently matching nothing.
+            declared = {_declared_pid(pid, "delivered pid")
+                        for pid in result["deliveries"]}
         elif "delivered_pids" in result:
-            declared = set(result["delivered_pids"])
+            declared = {_declared_pid(pid, "delivered pid")
+                        for pid in result["delivered_pids"]}
         else:
             raise IndependentMetricsError(
                 "result mapping has neither deliveries nor delivered_pids")
     elif delivered_pids is None:
         declared = None
     else:
-        declared = {_nonneg_int(pid, "delivered pid") for pid in delivered_pids}
+        declared = {_declared_pid(pid, "delivered pid") for pid in delivered_pids}
 
     records = _scan_packet_events(_mapping_list(packet_events, "packet_events"))
     _, by_pid = _validate_service_windows(

@@ -1,176 +1,253 @@
 # BURST-DESIGN — Burstiness 实验合法性设计与两个模式
 
-> 本文件即任务书第六阶段要求的 `burst_experiment_design.md`（文件名为验收标准所列的
-> `BURST-DESIGN.md`）。
+> 本文件即任务书第六阶段要求的 `burst_experiment_design.md`（验收标准所列文件名为 `BURST-DESIGN.md`）。
+>
+> **修订记录**：rev 1 用 **Fano 因子**作为突发度统计量。独立复核（`leo-runs/audit-notes/E4-burst.md`）
+> 实测证明 **Fano 是负载相关的**（同一形状下负载 ×16 使 Fano ×11），用它在 **Mode B** 里会把
+> "负载更高" 误读成 "更突发"。rev 2 因此改用**无量纲、尺度不变**的 **CV²**作为主统计量，
+> 并补入 `emission_end_s` 截断、`mode=csv` 静默失效、编译路径三处更正。**E4 的复核意见正确。**
 
 | 字段 | 值 |
 | --- | --- |
 | MAIN_SHA | `549acd8b7cb7a1bb573e7146653f55273999086d` |
 | 日期 | 2026-09-24 |
-| 取证 | 全部数字为 **[EXEC]** 实跑所得，命令见 §6 |
-| 涉及代码 | `CODE/leo_sim/trace.py`（`_rate_multiplier` 302-321、生成 733-770）、`CODE/leo_sim/config.py`（83-98、570-597、291-293） |
+| 取证 | 机制与代数 **[READ]**；数字 **[EXEC]**，§6 给出命令 |
+| 涉及代码 | `CODE/leo_sim/trace.py`（`_rate_multiplier` 302-321、生成 733-770、manifest 871-892）、`CODE/leo_sim/config.py`（83-98、291-293、570-597） |
 
 ---
 
-## 1. 问题：现有 burst 旋钮是**混淆**的
-
-平台的 burst 机制是一个**两级阶跃速率乘子**：
+## 1. 机制：两级阶跃速率的非齐次泊松（精确稀释）
 
 ```
 _rate_multiplier(mode, t, src_lon, dm)                     trace.py:302-307
-    if start <= t < start + dur:  return burst_multiplier      # B
-    return 1.0
-
-generation:  max_mult = max(1.0, burst_multiplier)             trace.py:757
-             draw  ~ exponential(1 / (base_rate * max_mult))   trace.py:765-770
-             thin  ~ m(t) / max_mult
-base_rate:   lambda_i = (offered_mbps*1e6/packet_bits) * w_i/sum(w)   trace.py:733-737
+    if mode in ("burst","mlab") and burst_start_s is not None:
+        if start <= t < start + dur:  return burst_multiplier      # B
+        return 1.0
+生成（精确稀释 / exact thinning）
+    total_rate = generation_mbps * 1e6 / bits_per_pkt        trace.py:733
+    base_rate  = total_rate * weights[i] / wsum              trace.py:751
+    max_mult   = max(1.0, burst_multiplier)                  trace.py:757
+    t += exponential(1 / (base_rate * max_mult))             trace.py:766
+    if gen.random() > _rate_multiplier(...) / max_mult: continue   trace.py:769
 ```
 
-即：瞬时到达率 `λ_i · m(t)`，其中 `m(t) ∈ {1, B}`，突发窗 `[start, start+W)`。
+瞬时到达率 `λ_i · m(t)`，`m(t) ∈ {1, B}`，突发窗 `[s, s+W)`。
 
-**地平线 `[0,T)` 上的平均乘子**：
+### 1.1 精确代数（**取代 rev 1 的近似式**）
+
+令突发窗在地平线上的**有效占比** `f`（`T_e = emission_end_s`，未设时为 `scenario.duration_s`）：
 
 ```
-mean_mult = 1 + W·(B − 1) / T          ⇒     平均 offered load = offered_mbps × mean_mult
+f         = max(0, min(s+W, T_e) − max(s, 0)) / T_e
+mean_mult = 1 + (B − 1) · f                  ⇒  平均 offered load = offered_mbps × mean_mult
+CV²_int   = (B − 1)² · f · (1 − f) / mean_mult²      （到达间隔的平方变异系数）
 ```
 
-因此：
-
-- 固定 `(W, T)` 只改 **B** → 平均负载 **和** 突发幅度**同时**变；
-- 固定 `(B, T)` 只改 **W** → 平均负载 **和** 突发时长**同时**变。
-
-> **结论：任何"只动一个 burst 旋钮"的实验都无法把效应归因于 burstiness。**
+`f` 依赖 `T_e` 是**关键**：窗口可以因为 `emission_end_s` 被截断而**完全落在观测区间之外**（§4 F4）。
 
 ---
 
-## 2. 实测证据（混淆是真的，不是推理）
+## 2. 混淆：只用**一个** burst 旋钮无法归因
 
-固定 `duration_s=40`、`offered_mbps=50`、`packet_bits=1e6`、`seed=7`、`burst_start_s=8`
-（`mode=burst`，均匀目的）。统计量：1 s 分箱到达数的**方差/均值比（Fano 因子）**，
-Poisson 基准 = 1。
+由 §1.1，"只动一个旋钮"必然同时改变 `mean_mult` 与 `CV²_int`：
 
-| B | W | mean_mult | 实测 offered (Mbps) | 预测 offered×mult | **Fano** | 峰值箱 | 空闲箱 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 1.0 | 8 | 1.00 | 49.150 | 50.00 | **0.808** | 61 | 0 |
-| 2.0 | 8 | 1.20 | 58.975 | 60.00 | **9.438** | 115 | 0 |
-| 3.0 | 8 | 1.40 | 70.100 | 70.00 | **27.160** | 176 | 0 |
-| 2.0 | 16 | 1.40 | 69.025 | 70.00 | **10.838** | 115 | 0 |
-| 5.0 | 4 | 1.40 | 69.475 | 70.00 | **56.138** | 277 | 0 |
+| 旋钮 | 改平均负载？ | 改突发度？ | 判决 |
+| --- | --- | --- | --- |
+| `burst_multiplier` B | **是**，×`1+(B−1)f` | **是** | **(c) 两者都改 → 混淆** |
+| `burst_duration_s` W | **是**，×`1+(B−1)W/T_e` | **是** | **(c) 两者都改 → 混淆** |
+| `burst_start_s`（窗口完全在地平线内） | 否 | 否 | 仅相位 |
+| `burst_start_s`（被截断）/ `emission_end_s` / `duration_s` | **是** | **是** | **(c) 混淆** |
+| `diurnal_amplitude` | **是**（有限地平线） | **是** | **(c) 混淆** |
+| `hotspot_concentration` / `hotspot_fraction` | 否 | 仅**空间**集中度 | 保均值，但**非时间**突发 |
+| `nested_master_offered_mbps` | 否（子 trace 不变） | 否 | 仅稀释分辨率 |
+| `packet_bits` | 否（bits/s 不变） | 否（无量纲）；**但改计数 Fano** | 陷阱 |
 
-**读法**：
-
-1. **负对照成立**：`B=1`（无突发）Fano = 0.808 ≈ 1，与 Poisson 一致 —— 统计量没有系统性偏差。
-2. **混淆被证实**：只把 `B` 从 2 改到 3（`W=8` 不动），实测负载 **58.975 → 70.100 Mbps（+18.9%）**，
-   同时 Fano **9.44 → 27.16（+188%）**。只看这一个旋钮的实验**不能**说"效应来自 burstiness"。
-3. **Mode A 的可行解已经存在**：`(B=3,W=8)`、`(B=2,W=16)`、`(B=5,W=4)` 三者
-   `mean_mult` 全为 **1.40**，实测负载落在 **69.0–70.1 Mbps**（极差 ≈1.6%），
-   而 Fano 依次 **27.2 / 10.8 / 56.1** —— **在几乎相同的平均负载下得到 5.2 倍的突发度范围**。
-   即：**沿双曲线 `W·(B−1) = const` 联动，就能用现有旋钮实现"固定平均负载、只变突发度"。**
+**代码中不存在任何 cv / cv² / scv / Hurst / Pareto / on-off 参数化**
+（`grep -rniE "burstiness|fano|cv2|scv|coefficient of variation|hurst|self-similar|pareto|on-off" CODE/` → 0）。
 
 ---
 
-## 3. 两个模式（设计定义）
+## 3. 实测证据
 
-### Mode A —— 固定平均负载，改变 burst 系数
+### 3.1 单旋钮混淆（**[EXEC]**，T=600 s，`packet_bits=1e5`，窗 [240,360) s，seed 7，`offered=1.0`）
 
-**做法**：令 `C = W·(B − 1)` 为常数（`mean_mult = 1 + C/T` 恒定），在超曲线上取若干点。
+| arm | 实测 Mbps | 预测 `offered×mean_mult` | **CV²** | Fano(1 s) |
+| --- | --- | --- | --- | --- |
+| uniform（负对照） | 0.9862 | 1.0000 | **1.048** | 1.115 |
+| B=2 | **1.1683** | 1.2000 | **1.184** | 2.239 |
+| B=4 | **1.5993** | 1.6000 | **1.720** | 9.814 |
+| B=8 | **2.3845** | 2.4000 | **2.993** | 33.485 |
+| B=0.5 | 0.8880 | 0.9000 | **1.161** | 1.419 |
 
-可直接使用的三个点（已实测，`T=40`，`C=16`，`offered_mbps=50`，`burst_start_s=8`）：
+只改 B：平均负载 **+19% / +60% / +138%**，CV² 同时上升。**混淆成立。**
+负对照 CV² = 1.048 ≈ 1，与泊松一致 —— 统计量无系统性偏差。
+仅改 W（B=2，W=30/120/300/600）：1.0298 / 1.1683 / 1.4807 / 1.5820（预测 1.05/1.20/1.50/1.60）。
+仅改 `burst_start_s`（B=2，W=120，s=0/60/240/480）：1.1642 / 1.1658 / 1.1683 / 1.1828 —— **均值中性**。
 
-| arm | burst_multiplier B | burst_duration_s W | mean_mult | 实测 Mbps | Fano |
+### 3.2 ★ Fano 是负载相关的，CV² 不是（rev 2 的核心更正）
+
+Mode B 形状固定（B=4，W=120），只扫 `offered_mbps`：
+
+| offered | 实测 Mbps | **CV²** | Fano(1 s) |
+| --- | --- | --- | --- |
+| 0.25 | 0.4012 | **1.713** | 3.37 |
+| 0.5 | 0.7852 | **1.728** | 5.28 |
+| 1.0 | 1.5993 | **1.720** | 9.81 |
+| 2.0 | 3.1923 | **1.747** | 19.33 |
+| 4.0 | 6.4127 | **1.720** | 37.25 |
+
+**CV² 基本恒定（1.713–1.747，极差 2%），Fano 却从 3.37 涨到 37.25（×11）。**
+
+> → **报告纪律（强制）**：突发度主统计量用 **CV²**（到达间隔平方变异系数）或 `CV²_int`。
+> 若必须用 Fano，**必须同时给出分箱宽度，且禁止跨不同负载水平的 arm 比较 Fano 数值。**
+
+### 3.3 Mode A 构造成功（固定平均负载，变突发度）
+
+沿等均值双曲线 `W·(B−1) = C`，并把 `offered_mbps` 反向缩放以抵消 `mean_mult`：
+
+| arm | B | W | offered | 实测 Mbps（4 seed 均值±sd） | **CV²** |
 | --- | --- | --- | --- | --- | --- |
-| A0（负对照，无突发） | 1.0 | 8 | 1.00 | 49.150 | 0.808 |
-| A1 | 3.0 | 8 | 1.40 | 70.100 | 27.160 |
-| A2 | 2.0 | 16 | 1.40 | 69.025 | 10.838 |
-| A3 | 5.0 | 4 | 1.40 | 69.475 | 56.138 |
+| A0（对照 uniform） | 1 | — | — | 0.9961 ± 0.012 | 1.048 |
+| A1 | 2 | 300 | 0.6667 | 0.9820 | **1.214** |
+| A2 | 4 | 150 | 0.5714 | 0.9938 | **1.828** |
+| A3 | 8 | 75 | 0.5333 | 0.9902 | **2.319** |
 
-**A1/A2/A3 之间平均负载一致（±1.6%），突发度相差 5.2 倍。** 这是 Mode A 的合法对照骨架。
+**平均负载一致到 ±1%，CV² 从 1.21 单调升到 2.32（≈1.9×）。** 对照的混淆 arm 跨 4 seed 为
+1.1940 ± 0.019 / 1.6018 ± 0.017 / 2.4033 ± 0.026 —— **混淆幅度远大于噪声**。
 
-**⚠️ 设计规则限制（必须如实声明）**：Mode A **同时改动两条参数路径**
-（`demand.burst_multiplier` 与 `demand.burst_duration_s`）。
-平台的严格设计规则要求「恰有一个变化因素」，因此 Mode A 只能编译为
-`exploratory_multi_factor`，并且：
+### 3.4 rev 1 §2 数字的独立复算（同一结构，不同装置）
 
-> **Mode A 允许运行，但不得声称单因素因果。**（AGENTS.md / AGENT_EXPERIMENT_PROTOCOL.md「设计规则」）
-
-这**不是**平台缺陷 —— 平台把"平均负载"显式建模为两个旋钮的函数，因此"固定均值改形状"
-在参数空间里本来就是二维路径。要求之一维化等于要求新增一个 `scv`/`cv2` 旋钮，
-那属于**新增机制**，任务书明确禁止。
-
-### Mode B —— 固定 burst，改变平均 offered load
-
-**做法**：固定 `burst_start_s` / `burst_duration_s` / `burst_multiplier` 三个字段**完全不动**，
-只扫 `demand.offered_mbps`。
-
-- 只改 **1** 条参数路径 → 满足严格单因素设计 → 可声明单因素因果。
-- 保持的是"突发形状"（窗长、幅度、位置），变化的是整体负载水平。
-
-推荐 arm 骨架（`W=8, B=2, start=8, T=40`，即 `mean_mult=1.20`）：
-
-| arm | offered_mbps | 预期平均负载 Mbps |
+| (B,W) | rev 1（我的装置） | E4 独立复算 |
 | --- | --- | --- |
-| B1 | 25 | 30.0 |
-| B2 | 50 | 60.0 |
-| B3 | 100 | 120.0 |
+| (1,8) | 49.150 Mbps / Fano 0.808 | 48.450 / 1.217 |
+| (2,8) | 58.975 / 9.438 | 58.600 / 8.275 |
+| (3,8) | 70.100 / 27.160 | 68.625 / 25.646 |
+| (2,16) | 69.025 / 10.838 | 69.800 / 10.933 |
+| (5,4) | 69.475 / 56.138 | 69.500 / 59.782 |
 
-> **Mode B 的声明边界**：三个 arm 的**平均**负载不同，但**瞬时峰值率同样成比例变化**
-> （峰值 ≈ `offered_mbps×B`）。因此 Mode B 建立的是"负载水平效应"，
-> **不是**"突发度效应"。任何跨 Mode B arm 的差异都不得归因于 burstiness。
+**结构被独立复现**（等均值三点负载极差 ≈1.7%、Fano 比 ×5.47 vs ×5.18）；
+**具体数字是单次运行、装置特定的**（rev 1 的探针装置不在库内），不得当作可引用常数。
 
 ---
 
-## 4. 归因矩阵：哪个模式支持哪种声明
+## 4. 三个新发现的陷阱
+
+| # | 陷阱 | 事实 |
+| --- | --- | --- |
+| **F4** | **声明了但从未观测的处理** | burst 窗可以完全落在 `emission_end_s` 之外。**[EXEC]** `emission_end_s=20`、窗 `[30,40)` → 实测 0.9800（= 无突发），**而 manifest 仍记录 `traffic_transform.burst`**。`config.py:585-589` 的窗口校验只比对 `scenario.duration_s`，**不比对 `emission_end_s`**。→ 任何 burst 实验必须报告**实测**负载与窗内有效占比 `f`，不能只报配置。 |
+| **F5** | **`mode=csv/uniform` 下 burst 旋钮静默失效** | `trace.py:303` 只在 `mode ∈ {burst, mlab}` 时应用。**[EXEC]** csv + `burst_multiplier=5` → `traffic_transform.burst = None`、`load_mode=observed_trace`。本库 **126 份 resolved config 中 55 份**携带 `burst_multiplier` 而其 mode 永不生效（`population_gravity`/`uniform` 等）。 |
+| **F6** | **编译路径** | `CODE/experiment_platform/parameter-catalog.json` **不含** V2 的 `demand.burst_*` 键，而 `compile_experiment.py:469-472` 拒绝目录外的因子 → burst 因子**必须**走 V2 matrix 编译器（`compile_matrix_experiment.py`）。 |
+
+**F3 的推论**：由于 `demand.burst_*` 会进入 `trace_identity_sha256`（`config.py:900-917`），
+**同一配对内的两个 arm 不能共享 trace identity**；V2 配对靠 `controlled_signature`
+（`matrix.py:410-414` 会剥离已声明的 intervention paths）。这不影响合法性，但会影响配对实现方式。
+
+---
+
+## 5. 两个模式（设计定义）
+
+### Mode A —— 固定平均负载，改变突发度
+
+**做法**：令 `C = W·(B − 1)` 恒定（`mean_mult = 1 + C/T_e` 恒定），沿超曲线取点，
+并相应缩放 `offered_mbps`。
+
+**arm 骨架**（V2 matrix request，共享 `common_config.demand = {mode: burst, packet_bits: 1e6, burst_start_s: 8}`，
+`scenario.duration_s = 40`，`C = W(B−1) = 16` ⇒ `mean_mult = 1.40`）：
+
+| arm | B | W | offered_mbps | 预期平均 Mbps | CV²（预期） |
+| --- | --- | --- | --- | --- | --- |
+| A0（control） | 1 | 8 | 35.71 | 50 | ≈1 |
+| A1 | 3 | 8 | 35.71 | 50 | 中 |
+| A2 | 2 | 16 | 35.71 | 50 | 低 |
+| A3 | 5 | 4 | 35.71 | 50 | 高 |
+
+（更宽动态范围可用 T=600、`offered=1.0`、C=300 的 `(B,W) = (2,300)/(4,150)/(8,75)` 组合，见 §3.3。）
+
+**每条 A arm 必须声明两条路径**：
+
+```json
+{"arm_id": "A1",
+ "config_overrides": {"demand": {"burst_multiplier": 3, "burst_duration_s": 8}},
+ "intervention_paths": ["demand.burst_multiplier", "demand.burst_duration_s"]}
+```
+
+**⚠️ 设计规则（rev 2 更正）**：Mode A 改**两条**参数路径。
+- `AGENT_EXPERIMENT_PROTOCOL.md`「设计规则」要求严格设计恰有一个变化因素 →
+  **Mode A 必须声明 `one_change_policy = exploratory_multi_factor`，且不得声称单因素因果。**
+- **但（rev 2 新增缺陷）**：**V2 matrix 编译器并不机械强制这一条** —— `matrix.py` 内
+  `grep "one_change_policy|single_factor|exactly one"` 只命中配对键检查（`:474`/`:500`），
+  **没有任何"恰一个变化因素"的机械门**。因此"不得声称单因素因果"目前**只是协议纪律，
+  不是可执行门禁**。→ 记为缺陷；在修复前，Mode A 的单因素声明风险由人工复核承担。
+- 要求一维化等于要求新增 `demand.burst_cv2` 之类的旋钮 —— 属**新增机制**，任务书明确禁止。
+
+### Mode B —— 固定 burst 形状，改变平均 offered load
+
+**做法**：固定 `burst_start_s` / `burst_duration_s` / `burst_multiplier` **三个字段完全不动**，
+只扫 `demand.offered_mbps` → **一条路径 → 严格单因素，可声明**。
+
+**库内既有先例**：`EXPERIMENTS/EXP-20260829-GLOBAL-PRESSURE-BRACKET-R02/request.json`
+已经只用 `demand.offered_mbps`（10/20/40/80）扫负载、且共享 `common_config` —— Mode B 的形状已经在库内成立。
+
+**带 burst 的骨架**（T=40，start=8，W=8，B=2 ⇒ `mean_mult=1.20`）：
+
+| arm | offered_mbps | 预期平均 Mbps |
+| --- | --- | --- |
+| B1 | 25 | 30 |
+| B2 | 50 | 60 |
+| B3 | 100 | 120 |
+
+建议把 `nested_master_offered_mbps` 固定在最高负载以取得共同随机数（实测子 trace 0.948–1.018、CV² 0.95–1.12）。
+
+> **Mode B 的声明边界**：平均负载与**瞬时峰值率同比例**变化（峰值 ≈ `offered×B`），
+> 因此 Mode B 建立的是**负载水平效应**，**不是**突发度效应。
+> **并且严禁跨 Mode B arm 比较 Fano**（§3.2）。
+
+---
+
+## 6. 归因矩阵与汇报纪律
 
 | 想要的声明 | 用哪个模式 | 允许？ |
 | --- | --- | --- |
-| 「在固定平均负载下，突发度变化导致 X」 | **Mode A** | ✅ 可运行；**只能**作为 exploratory 描述，**不得**声称单因素因果 |
+| 「固定平均负载下，突发度变化导致 X」 | **Mode A** | ✅ 可运行；声明 `exploratory_multi_factor`，**不得**声称单因素因果 |
 | 「负载水平变化导致 X」 | **Mode B** | ✅ 严格单因素，可声明 |
-| 「burst 导致 X」（只动 `burst_multiplier`） | 两者都不是 | ❌ **禁止** —— 实测已证明该旋钮同时改变平均负载（+18.9%） |
-| 「突发度与负载的交互效应」 | A×B 因子设计 | ⚠️ 需显式声明为多因素；当前平台无此预注册模板 |
+| 「burst 导致 X」（只动 `burst_multiplier`） | 都不是 | ❌ **禁止** —— 实测该旋钮同时改变平均负载（+19%/+60%/+138%） |
+| 「突发度与负载的交互」 | A×B 因子设计 | ⚠️ 需显式多因素预注册；当前平台无此模板 |
 
----
+**汇报纪律（写进论文前必须遵守）**：
 
-## 5. 汇报纪律（写进论文前必须遵守）
-
-1. **报告实测负载，不报告配置值**。`offered_mbps` 在 burst 开启时**不等于**实际负载
-   （实测 49.15 / 58.98 / 70.10 vs 配置 50）：必须从 trace manifest 的
-   `offered_bits` / `offered_packets` 反算，或按 §2 的方式统计。
-2. **同时报告突发度统计量**（Fano 或到达间隔 CV²）与**其定义与分箱宽度**。
-   本文件使用 1 s 分箱 Fano；换分箱宽度会改变数值。
-3. **Mode A 的结论必须写明"平均负载在 ±x% 内固定"**，并给出各 arm 的实测负载。
-4. **不得**用 `t1_pressure_corridor.yaml:69-73` 的 "duty cycle" 措辞描述比特比 —— 该措辞
-   与 goodput 利用率混淆（见 `PLATFORM-AUDIT-REPORT.md` §2 L6 / B5）。
-
----
-
-## 6. 复现命令
-
-```bash
-cd <repo>   # MAIN_SHA 549acd8b7cb7a1bb573e7146653f55273999086d
-python3 /Users/lge/Desktop/topic/leo-runs/probe_burst.py     # §2 全表
-# 逻辑：对每组 (B, W) 解析配置 -> compile_trace -> load_trace
-#       -> 1 s 分箱到达计数 -> Fano = pvariance/mean
-#       实测 Mbps = sum(bits)/duration/1e6
-```
-
-单点最小复现（B=3, W=8, T=40, offered=50）：
-
-```python
-demand = {"mode": "burst", "offered_mbps": 50, "packet_bits": 1_000_000,
-          "burst_start_s": 8.0, "burst_duration_s": 8.0,
-          "burst_multiplier": 3.0}
-# -> mean_mult = 1 + 8*(3-1)/40 = 1.40 ; 实测 70.100 Mbps ; Fano 27.160
-```
+1. **报告实测负载，不报告配置值**。burst 开启时 `offered_mbps` **不等于**实际负载
+   （§3.1：配置 1.0 vs 实测 1.1683）。从 manifest 的 `offered_bits`/`offered_packets` 反算。
+2. **主统计量用 CV²**；用 Fano 必须给出分箱宽度，且**禁止跨负载水平比较**。
+3. **报告有效窗占比 `f`**，并显式确认 burst 窗落在 `emission_end_s` 之内（F4）。
+4. **Mode A 必须写明"平均负载在 ±x% 内固定"**并给出各 arm 实测值。
+5. **不得**用 `t1_pressure_corridor.yaml:69-73` 的 "duty cycle" 措辞描述比特比 —— 与 goodput 利用率混淆
+   （见 `PLATFORM-AUDIT-REPORT.md` §2 L6 / §3 B5）。
 
 ---
 
 ## 7. 与既有测试的关系
 
-- `CODE/leo_sim/tests/test_micro_mechanism.py` 中的 burst 排序反转场景使用固定 burst 配置；
-  本文件不改变其判据，只补充"该配置在同一平均负载下还有哪些等价点"。
-- `config.py:570-597` 对 burst 字段做 fail-loud 校验：`mode=burst` 必须有
-  `burst_start_s` 与 `burst_duration_s`；窗口必须与地平线相交（"非观测处理必须 fail closed"）；
-  `burst_multiplier > 0`。这些条件**不得**放宽。
-- 本文件**不新增任何代码**，只定义实验设计；任何 `scv`/`cv2` 一维参数化属于新增机制，
-  不在本次审计授权范围内。
+- `test_micro_mechanism.py:327` 的 `test_m2_burst_reverses_candidate_order_on_equal_cost_branches`
+  **并不使用** `demand.burst_*`：它把手工排定的 50 ms 包列直接注入 kernel（`:335-337`），
+  断言的是**路由队列排序**（`:359`/`:363`/`:369`/`:392`）。对混淆而言它是干净的，
+  但它**不覆盖真实 burst 旋钮**。真实旋钮的覆盖目前只是元数据回显
+  （`test_trace.py:277-281`/`:332`/`:336-339`）与配置门（`test_config.py:78-107`）；
+  **没有任何测试断言实测负载、`mean_mult` 或任何突发度统计量**。
+- `config.py:570-597` 的 fail-loud 校验（`mode=burst` 必须给出 start/duration；窗口必须与
+  `scenario.duration_s` 相交；`burst_multiplier > 0`）**不得放宽**；F4 建议的
+  `emission_end_s` 校验属新增门禁，不在本审计授权范围内。
+- 本文件**不新增任何代码**。
+
+---
+
+## 8. 复现命令
+
+```bash
+cd <repo>   # MAIN_SHA 549acd8b7cb7a1bb573e7146653f55273999086d
+python3 /Users/lge/Desktop/topic/leo-runs/probe_burst.py     # §3.4 rev 1 数字
+# 完整实测（§3.1–§3.3 的 4-seed 版本）见 /Users/lge/Desktop/topic/leo-runs/audit-notes/E4-burst.md
+
+# 陷阱 F5 复现（csv 下 burst 旋钮静默失效）
+grep -n "burst_multiplier" CODE/leo_sim/trace.py            # :303 只在 burst/mlab 生效
+grep -rn "burst_multiplier" CODE/leo_sim/config.py          # :291-293 默认 2.0 恒写入 resolved
+```

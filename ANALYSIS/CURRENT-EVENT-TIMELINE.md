@@ -136,17 +136,48 @@ isl / downlink（由 _metric_link_id 1564-1570 命名）
 
 ---
 
-## 5. 与本次审查相关的两处链缺口（详见 `PLATFORM-AUDIT-REPORT.md`）
+## 5. 链缺口：审查发现 → 修复状态
 
-1. **F2 无法经正式 CLI 运行**。`node_process_delay_s > 0` 硬要求 `timeline_sink`（kernel.py:1145），
-   但 CLI `run` 只把 `decision_sink` 接出去（`__main__.py:407-412`），**没有任何 timeline 出口**，
-   也没有 `--timeline-log` 参数（argparse 定义 `__main__.py:529-540`）。
-   → F2 目前只能由手写 `kernel.Kernel(..., timeline_sink=[...])` 触发，属**未闭合的实验链**。
-2. **`decision_compute_s` 的定义是"未覆盖时间"**（`metrics_independent.py:671`：
-   `decision_compute_s = math.fsum(gap[2] for gap in gaps)`）。
-   而 F2 的占用**正是**未覆盖区间（`test_the_uncovered_set_is_exactly_the_node_stage`，
-   test_f2_node_cost.py:344-359 明确断言这一点）。
-   → 一旦启用 F2，第二实现会把**节点处理时间读成决策计算时间**。
+> **本节在 549acd8 基线上写作，随后由提交 `03aecfb`/`8e69d79`/`fb6b1a6` 部分修复。**
+> 下表给出**修复后**的准确状态；凡与 549acd8 的旧叙述冲突，以本节为准。
+> （独立对抗复核在本分支 rev 1 上指出旧叙述已过期 —— 该复核意见正确，已在此改正。）
+
+### 5.1 F2 的入口可达性
+
+| 状态 | 事实 |
+| --- | --- |
+| 基线 549acd8 | `node_process_delay_s > 0` 硬要求 `timeline_sink`（kernel.py:1145），而 CLI `run` 只接出 `decision_sink`（`__main__.py:407-412`），**无任何 timeline 出口** → F2 只能由手写 `kernel.Kernel(..., timeline_sink=[...])` 触发。 |
+| **修复后（`03aecfb`）** | CLI 新增 `run --timeline-log PATH`；`__main__.py:422-431` 在 `node_process_delay_s > 0` 且未给该参数时**入口级拒绝**（exit 3）；`__main__.py:455-467` 预检 + `:528` 把 sink 传入 `run_simulation`。测试：`test_f2_runs_through_the_official_cli`、`test_node_process_delay_without_a_timeline_log_is_refused`。 |
+| **仍然残留（B7，未修）** | canonical **远端** runner 仍不可用：`remote_job.py:304-309` 只传 6 个固定参数、从无 timeline stream；`run-remote.sh:44` 显式拒绝 `--`。**没有任何 passthrough**（独立对抗复核已尝试证伪并确认）。 |
+
+### 5.2 `decision_compute_s` 与 F2 的混淆
+
+| 状态 | 事实 |
+| --- | --- |
+| 基线 549acd8 | `decision_compute_s` 定义为「未覆盖区间之和」，而 F2 的占用**正是**未覆盖区间（`test_f2_node_cost.py:344-359` 明确断言）→ 启用 F2 会把节点处理时间读成决策计算时间。 |
+| **修复后（`8e69d79`）** | 新增 keyword-only `node_spans` / `node_spans_by_pid` 与桥函数 `node_process_spans(timeline_rows)`；`node_process_s` 成为独立命名项，`decision_compute_s` 变成残差未覆盖时间。**实测（R02 设计，两臂均 `compute_delay_s=0.05`）**：f2 臂未标注读数 **1.800 s**、标注读数 **0.900 s**，差值 **0.900 s** 恰等于节点占用总量；对照臂两者均为 0.900 s。 |
+| **仍然残留** | 该分离**必须由调用方显式传入 span**；`metrics_independent` 无法自行探测 F2（有无 span，未覆盖区间都一样）。`v2_analysis` 全库范围内**不 import** 它（唯一非测试调用者是另一个工作包的 `step5_recompute.py`）。 |
+
+### 5.3 新增缺口：第二实现**读不了持久化产物**
+
+`verify_delay_decomposition(events, windows, result)` 在 `result` 来自 `json.load(ledgers.json)` 时，
+`deliveries` 的键是**字符串**（`"1"`）而事件 `pid` 是 **int**，因此 declared 集合与 observed 集合**交集为空**，
+N 个包全部被报成 `declared delivered but has no delivered event`，`checked_packets = 0`。
+→ 该模块**无法读取它本应复核的产物格式**，且失败形态像数据问题而非读取器缺陷。
+
+**已在 `_declared_pid` 中修复**（接受 int 与其规范十进制 JSON 键形式；`"07"`/`"7.0"`/`" 7"` 一律 fail-loud），
+测试 `test_the_persisted_ledger_mapping_is_accepted_after_a_json_round_trip`。
+
+### 5.4 新增缺口：F2 的 e2e 可加性**在有竞争时失效**
+
+在**无竞争**的 2 星装置上，e2e 增量恰等于节点占用（`test_f2_single_factor_sweep_moves_only_the_node_term`）。
+但在**有竞争**的真实装置（8 星 / 1 面 / csv 微 trace，每包 3 次卫星访问）上实测：
+
+**总 e2e 增量 0.850000245 s ≠ 6×3×0.05 = 0.900 s**；pid 99 的节点占用为 0.15 s 而 e2e 只增加 0.09999996 s，
+其 `holding_wait_s` 减少 0.050000000000000266 s —— 一次完整的节点占用被**既有的 holding/ISL 队列等待吸收**。
+
+→ 因此**不得**声明「F2 只移动节点处理阶段」或「e2e 增量恰为 包数×访问数×时延」；
+   只能声明「节点占用被**独立记录**，且未被计入决策计算时间」。
 
 ---
 
