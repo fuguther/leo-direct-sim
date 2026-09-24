@@ -1,0 +1,98 @@
+{
+  "arms": [
+    {
+      "arm_id": "control",
+      "config_overrides": {},
+      "intervention_paths": []
+    },
+    {
+      "arm_id": "f2",
+      "config_overrides": {
+        "execution": {
+          "node_process_delay_s": 0.05
+        }
+      },
+      "intervention_paths": [
+        "execution.node_process_delay_s"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "acceptance": {
+        "min_delivered_packets": 6,
+        "min_multisat_deliveries": 6,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "control",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "ebd752af65218e5c0e45e199160abf913b88fa32b4a908d884f041ec591e3882",
+      "config_overrides": {},
+      "config_path": "resolved/EXP-20260924-PLATFORM-AUDIT-F2-R02-control-s7.leo-sim.yaml",
+      "config_sha256": "abd803fac0cc3e19498b0fd847de227a86fcb7010a8c4816b5252f286adafb94",
+      "controlled_signature": "ef1913b08a0c93b8dfa829cfb11bae08d6edf538a3d50cfe9fb2b8bc2a3f78b3",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "26536d8b3b894a13d74289131653fddfdae8fe095f7c4edb2dc6a1683ec37592",
+      "learning_seed": null,
+      "pairing_key": "s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260924-PLATFORM-AUDIT-F2-R02-control-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "97f4313cabe3723be71166b93e76ec7442ba77801d50c674e944dd10abc6e361",
+      "trace_seed": 7
+    },
+    {
+      "acceptance": {
+        "min_delivered_packets": 6,
+        "min_multisat_deliveries": 6,
+        "require_control_delivery": true,
+        "require_data_isl": true
+      },
+      "arm_id": "f2",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "code_sha256": "ebd752af65218e5c0e45e199160abf913b88fa32b4a908d884f041ec591e3882",
+      "config_overrides": {},
+      "config_path": "resolved/EXP-20260924-PLATFORM-AUDIT-F2-R02-f2-s7.leo-sim.yaml",
+      "config_sha256": "3ef23ac8cb40daa90e4bf23c382d30c4ce1da79027ee877de0fa37cbf0fa9125",
+      "controlled_signature": "ef1913b08a0c93b8dfa829cfb11bae08d6edf538a3d50cfe9fb2b8bc2a3f78b3",
+      "execution_chain_sha256": {
+        "CODE/experiment_platform/authorize_experiment.py": "14f6d5ebc8f913764045c112b0b10ba3c3871f8820b7e2d3c1fa47ac9a72aebb",
+        "CODE/experiment_platform/v2_analysis.py": "1085a5bf5618eb06fd0e79e91071ceaf237c6860c9e6185cd6b4920cb7bb2135",
+        "CODE/experiment_platform/v2_serial_gate.py": "a139f232236acf921874e177817361288f0799f58f78e12a00d4ea3fce7953a3",
+        "CODE/scripts/remote/deployment_guard.py": "c1580fdc42c3fdd5c650304998688d8ccdf69825c0070c65ba5b8c59c063973b",
+        "CODE/scripts/remote/remote_job.py": "e52ac7b16ca6755163a50b21684092bb2812b3c06d13e042628d33a969c53563",
+        "CODE/scripts/remote/run-remote.sh": "9b78a509fb5deb63c270247588b6390c3ec82f1c67ee983272174fedc5ad24e3"
+      },
+      "input_sha256": "26536d8b3b894a13d74289131653fddfdae8fe095f7c4edb2dc6a1683ec37592",
+      "learning_seed": null,
+      "pairing_key": "s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260924-PLATFORM-AUDIT-F2-R02-f2-s7",
+      "runtime_kind": "leo_sim_v2",
+      "trace_identity_sha256": "97f4313cabe3723be71166b93e76ec7442ba77801d50c674e944dd10abc6e361",
+      "trace_seed": 7
+    }
+  ],
+  "common_config_sha256": "225ba9af146f2159337476492cc04c75a4ee09b4959d0465a6e8eb051de00b30",
+  "execution_authorized": false,
+  "experiment_id": "EXP-20260924-PLATFORM-AUDIT-F2-R02",
+  "request_sha256": "e95375bbb2536f92af925eb8bb58f898ef14767c8dc343ba335cde1b8bbd789f",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-matrix-manifest/v1"
+}

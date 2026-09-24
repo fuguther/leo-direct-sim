@@ -1,0 +1,144 @@
+{
+  "acceptance": {
+    "min_delivered_packets": 6,
+    "min_multisat_deliveries": 6,
+    "require_control_delivery": true,
+    "require_data_isl": true
+  },
+  "analysis": {
+    "analysis_id": "AN-PLATFORM-AUDIT-F2-SEPARATION",
+    "estimand": "Strictly paired single-factor check that execution.node_process_delay_s moves ONLY the satellite node-processing stage, ON A DESIGN WHERE THE DECISION STAGE IS ACTIVE. execution.compute_delay_s is 0.05 in BOTH arms (shared, not a factor), so every decision consumes simulated time and decision_compute_s is non-zero and discriminating; the single factor is execution.node_process_delay_s (0.0 vs 0.05). Requirement: with the timeline spans supplied, node_process_s is a separate named term and decision_compute_s closes to (decisions x compute_delay_s) per arm, and the UNLABELLED reading exceeds the labelled one by exactly the node total. Descriptive structural check, NOT an effect size, superiority or causal claim.",
+    "paired_by": [
+      "pairing_key"
+    ],
+    "planned_contrasts": [
+      {
+        "estimand": "Paired structural comparison of the SAME trace/seed/config differing only in execution.node_process_delay_s (0.0 vs 0.05), with compute_delay_s=0.05 shared by both arms. Tested property: (a) supplying the timeline spans separates node_process_s from decision_compute_s; (b) without the spans the uncovered set absorbs F2 exactly; (c) per arm the labelled decision_compute_s closes to decisions x compute_delay_s. NOT an effect-size, performance or causal claim.",
+        "left_arm": "control",
+        "name": "f2_vs_control",
+        "right_arm": "f2"
+      }
+    ],
+    "primary_metric": "e2e_delay_mean_s"
+  },
+  "arms": [
+    {
+      "arm_id": "control",
+      "config_overrides": {},
+      "intervention_paths": []
+    },
+    {
+      "arm_id": "f2",
+      "config_overrides": {
+        "execution": {
+          "node_process_delay_s": 0.05
+        }
+      },
+      "intervention_paths": [
+        "execution.node_process_delay_s"
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "arm_id": "control",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260924-PLATFORM-AUDIT-F2-R03-control-s7",
+      "trace_seed": 7
+    },
+    {
+      "arm_id": "f2",
+      "checkpoint_lineage": {
+        "mode": "not_applicable",
+        "source_run_id": null,
+        "source_sha256": null
+      },
+      "config_overrides": {},
+      "learning_seed": null,
+      "pairing_key": "s7",
+      "phase": "non_learning",
+      "run_id": "EXP-20260924-PLATFORM-AUDIT-F2-R03-f2-s7",
+      "trace_seed": 7
+    }
+  ],
+  "claim_boundary": {
+    "can_claim": [
+      "the F2 node-processing stage is separately attributable on the timeline sink and is disjoint from the decision stage",
+      "the unlabelled uncovered-interval reading exceeds the labelled decision-compute reading by exactly the node total, i.e. F2 would be misreported as decision compute if the timeline spans were not supplied"
+    ],
+    "cannot_claim": [
+      "that on this fixture the e2e increase between arms equals the recorded node-processing occupancy: MEASURED FALSE. The total e2e gain is 0.849200279 s against a node total of 0.900 s (6 packets x 3 visits x 0.05 s); packet 99 carries a 0.15 s node occupancy but its e2e rises only 0.099999964 s because its holding_wait_s falls by 0.050000000 s, and packet 2 diverts 8.000e-04 s into queue_wait. Additivity holds only on the contention-free unit fixture (CODE/leo_sim/tests/test_f2_node_cost.py::test_f2_single_factor_sweep_moves_only_the_node_term), never on this one.",
+      "any algorithmic superiority, information value, learning value or new-mechanism contribution",
+      "an effect-size, performance curve, threshold or causal claim about node processing delay",
+      "real subscriber traffic or a calibrated demand model",
+      "that this design is executable by the canonical remote runner today: remote_job.py never passes the timeline stream F2 requires",
+      "that the per-link utilisation, queue, tx and propagation phases are bit-identical between arms: a 0.05 s shift can move an availability window across the 0.1 s sampling boundary, so that comparison is REPORTED, not asserted",
+      "that the min_delivered_packets / min_multisat_deliveries acceptance values are enforced on the local execution route used here: they live only in the canonical remote runner"
+    ]
+  },
+  "common_config": {
+    "access": {
+      "acquisition_delay_s": 0,
+      "association": "bbm",
+      "downlink_rate_mbps": 1000,
+      "hysteresis_deg": 0,
+      "min_dwell_s": 0,
+      "unavailable_policy": "queue",
+      "uplink_rate_mbps": 1000
+    },
+    "control_plane": {
+      "advertise_interval_s": 2,
+      "enabled": true,
+      "packet_bits": 8000,
+      "ttl_s": 30,
+      "vis_k": 2
+    },
+    "demand": {
+      "csv_path": "CODE/data/traffic/t1_step5_micro_ab.csv",
+      "mode": "csv",
+      "packet_bits": 1000000
+    },
+    "execution": {
+      "available_capacity_interval_s": 0.1,
+      "compute_delay_s": 0.05,
+      "max_entities": 20000,
+      "max_events": 20000000,
+      "max_packets": 1000,
+      "node_process_delay_s": 0
+    },
+    "learning": {
+      "algorithm": "none"
+    },
+    "links": {
+      "ge_enabled": false,
+      "isl_rate_mbps": 10,
+      "rate_model": "constant"
+    },
+    "outputs": {
+      "plotting": false
+    },
+    "routing": {
+      "policy": "hop"
+    },
+    "scenario": {
+      "duration_s": 40,
+      "name": "t1-step5-micro-ab",
+      "num_planes": 1,
+      "num_satellites": 8,
+      "seed": 7,
+      "time_step_s": 0.1
+    }
+  },
+  "experiment_id": "EXP-20260924-PLATFORM-AUDIT-F2-R03",
+  "runtime_kind": "leo_sim_v2",
+  "schema": "leo-sim-experiment-matrix-request/v1",
+  "work_finalization": "CODE/work/WP-LEO-V2-PLATFORM-AUDIT-F2/R03/finalization.json"
+}
